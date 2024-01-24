@@ -92,18 +92,24 @@ public class GameManager extends BaseManager {
             BattleBoxArea battleBoxArea = getBattleBoxManager().getArea(area);
             if (battleBoxArea == null)
                 return false;
-            teamStatus.put(rightChampionshipTeam, battleBoxArea);
-            teamStatus.put(leftChampionshipTeam, battleBoxArea);
-            return battleBoxArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam);
+            if (battleBoxArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
+                teamStatus.put(rightChampionshipTeam, battleBoxArea);
+                teamStatus.put(leftChampionshipTeam, battleBoxArea);
+                return true;
+            }
+            return false;
         }
 
         if (gameTypeEnum == GameTypeEnum.ParkourTag) {
             ParkourTagArea parkourTagArea = getParkourTagManager().getArea(area);
             if (parkourTagArea == null)
                 return false;
-            teamStatus.put(rightChampionshipTeam, parkourTagArea);
-            teamStatus.put(leftChampionshipTeam, parkourTagArea);
-            return parkourTagArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam);
+            if (parkourTagArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
+                teamStatus.put(rightChampionshipTeam, parkourTagArea);
+                teamStatus.put(leftChampionshipTeam, parkourTagArea);
+                return true;
+            }
+            return false;
         }
 
         return true;
