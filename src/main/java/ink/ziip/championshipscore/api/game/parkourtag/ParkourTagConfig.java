@@ -55,7 +55,7 @@ public class ParkourTagConfig extends BaseGameConfig {
     @ConfigOption(path = "left-area.chaser-spawn-point")
     private Location leftAreaChaserSpawnPoint;
 
-    @ConfigOption(path = "left-area.escapee-spawn-points:")
+    @ConfigOption(path = "left-area.escapee-spawn-points")
     private List<String> leftAreaEscapeeSpawnPoints;
 
     @ConfigOption(path = "right-area.area-pos1")
@@ -67,6 +67,6 @@ public class ParkourTagConfig extends BaseGameConfig {
     @ConfigOption(path = "right-area.chaser-spawn-point")
     private Location rightAreaChaserSpawnPoint;
 
-    @ConfigOption(path = "right-area.escapee-spawn-points:")
+    @ConfigOption(path = "right-area.escapee-spawn-points")
     private List<String> rightAreaEscapeeSpawnPoints;
 }

@@ -19,8 +19,6 @@ public class SkyWarsConfig extends BaseGameConfig {
 
     public SkyWarsConfig(@NotNull ChampionshipsCore plugin, String areaName) {
         super(plugin, areaName);
-        this.areaName = areaName;
-        this.timer = 240;
     }
 
     @Override

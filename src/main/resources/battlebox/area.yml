@@ -37,8 +37,7 @@ right-spawn-point:
   z: 0.0
   pitch: 0.0
   yaw: 0.0
-potion-spawn-points:
-  - battlebox:0.0:0.0:0.0:0.0:0.0
+potion-spawn-points: [ ]
 left-pre-spawn-point:
   ==: org.bukkit.Location
   world: battlebox

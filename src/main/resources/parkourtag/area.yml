@@ -10,10 +10,10 @@ left-area:
   area-pos1:
   area-pos2:
   chaser-spawn-point:
-  escapee-spawn-points:
+  escapee-spawn-points: [ ]
 spectator-spawn-point:
 right-area:
   area-pos1:
   area-pos2:
   chaser-spawn-point:
-  escapee-spawn-points:
+  escapee-spawn-points: [ ]

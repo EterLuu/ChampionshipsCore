@@ -6,7 +6,7 @@ area-pos1:
 area-pos2:
 pre-spawn-point:
 spectator-spawn-point:
-team-spawn-points:
+team-spawn-points: [ ]
 boundary:
   default-height: 150
   lowest-height: 60
