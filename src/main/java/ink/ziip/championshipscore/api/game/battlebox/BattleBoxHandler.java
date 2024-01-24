@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -194,7 +195,14 @@ public class BattleBoxHandler extends BaseListener {
 
         Location location = player.getLocation();
         if (battleBoxArea.notInArea(location)) {
-            // TODO Player leave area
+            if (battleBoxArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
+                player.teleport(battleBoxArea.getGameConfig().getSpectatorSpawnPoint());
+            }
+            if (battleBoxArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+                if (player.getGameMode() == GameMode.SPECTATOR) {
+                    player.teleport(battleBoxArea.getGameConfig().getSpectatorSpawnPoint());
+                }
+            }
             return;
         }
 

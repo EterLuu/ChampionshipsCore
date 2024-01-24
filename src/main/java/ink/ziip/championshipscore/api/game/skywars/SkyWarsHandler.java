@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -220,7 +221,14 @@ public class SkyWarsHandler extends BaseListener {
 
         Location location = player.getLocation();
         if (skyWarsArea.notInArea(location)) {
-            // TODO Player leave area
+            if (skyWarsArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
+                player.teleport(skyWarsArea.getGameConfig().getSpectatorSpawnPoint());
+            }
+            if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+                if (player.getGameMode() == GameMode.SPECTATOR) {
+                    player.teleport(skyWarsArea.getGameConfig().getSpectatorSpawnPoint());
+                }
+            }
             return;
         }
 

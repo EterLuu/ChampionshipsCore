@@ -343,7 +343,14 @@ public class ParkourTagHandler extends BaseListener {
 
         Location location = player.getLocation();
         if (parkourTagArea.notInArea(location)) {
-            // TODO Player leave area
+            if (parkourTagArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
+                player.teleport(parkourTagArea.getGameConfig().getSpectatorSpawnPoint());
+            }
+            if (parkourTagArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+                if (player.getGameMode() == GameMode.SPECTATOR) {
+                    player.teleport(parkourTagArea.getGameConfig().getSpectatorSpawnPoint());
+                }
+            }
             return;
         }
 

@@ -42,6 +42,11 @@ public class TGTTOSHandler extends BaseListener {
             return;
         }
 
+        if (tgttosTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
+            event.setCancelled(true);
+            return;
+        }
+
         if (!tgttosTeamArea.getGameConfig().getAreaType().equals("ROAD") || tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
             return;
@@ -60,6 +65,11 @@ public class TGTTOSHandler extends BaseListener {
 
         Location location = player.getLocation();
         if (tgttosTeamArea.notInArea(location)) {
+            return;
+        }
+
+        if (tgttosTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
+            event.setCancelled(true);
             return;
         }
 
