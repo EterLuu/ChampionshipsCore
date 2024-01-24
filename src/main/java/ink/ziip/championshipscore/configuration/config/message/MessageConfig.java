@@ -118,4 +118,100 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "bingo.rank-board-info")
     public static String BINGO_RANK_BOARD_INFO;
+
+    // Spectator
+    @ConfigOption(path = "spectator.is-player")
+    public static String SPECTATOR_IS_PLAYER;
+
+    @ConfigOption(path = "spectator.leaving-area")
+    public static String SPECTATOR_LEAVING_AREA;
+
+    @ConfigOption(path = "spectator.cant-leaving-area")
+    public static String SPECTATOR_CANT_LEAVING_AREA;
+
+    @ConfigOption(path = "spectator.join-area")
+    public static String SPECTATOR_JOIN_AREA;
+
+    @ConfigOption(path = "spectator.cant-join-area")
+    public static String SPECTATOR_CANT_JOIN_AREA;
+
+    // Game
+    @ConfigOption(path = "game.team-game-start-successful")
+    public static String GAME_TEAM_GAME_START_SUCCESSFUL;
+
+    @ConfigOption(path = "game.team-game-start-failed")
+    public static String GAME_TEAM_GAME_START_FAILED;
+
+    // BattleBox
+    @ConfigOption(path = "battlebox.start-preparation")
+    public static String BATTLE_BOX_START_PREPARATION;
+
+    @ConfigOption(path = "battlebox.start-preparation-title")
+    public static String BATTLE_BOX_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "battlebox.start-preparation-subtitle")
+    public static String BATTLE_BOX_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "battlebox.game-start-soon")
+    public static String BATTLE_BOX_GAME_START_SOON;
+
+    @ConfigOption(path = "battlebox.game-start-soon-title")
+    public static String BATTLE_BOX_GAME_START_SOON_TITLE;
+
+    @ConfigOption(path = "battlebox.game-start-soon-subtitle")
+    public static String BATTLE_BOX_GAME_START_SOON_SUBTITLE;
+
+    @ConfigOption(path = "battlebox.count-down")
+    public static String BATTLE_BOX_COUNT_DOWN;
+
+    @ConfigOption(path = "battlebox.game-start")
+    public static String BATTLE_BOX_GAME_START;
+
+    @ConfigOption(path = "battlebox.game-start-title")
+    public static String BATTLE_BOX_GAME_START_TITLE;
+
+    @ConfigOption(path = "battlebox.game-start-subtitle")
+    public static String BATTLE_BOX_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "battlebox.game-end")
+    public static String BATTLE_BOX_GAME_END;
+
+    @ConfigOption(path = "battlebox.game-end-title")
+    public static String BATTLE_BOX_GAME_END_TITLE;
+
+    @ConfigOption(path = "battlebox.game-end-subtitle")
+    public static String BATTLE_BOX_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "battlebox.win")
+    public static String BATTLE_BOX_WIN;
+
+    @ConfigOption(path = "battlebox.draw")
+    public static String BATTLE_BOX_DRAW;
+
+    @ConfigOption(path = "battlebox.kill-player")
+    public static String BATTLE_BOX_KILL_PLAYER;
+
+    @ConfigOption(path = "battlebox.player-leave")
+    public static String BATTLE_BOX_PLAYER_LEAVE;
+
+    @ConfigOption(path = "battlebox.kit-choose")
+    public static String BATTLE_BOX_KIT_CHOOSE;
+
+    @ConfigOption(path = "battlebox.kit-already-choose")
+    public static String BATTLE_BOX_KIT_ALREADY_CHOOSE;
+
+    @ConfigOption(path = "battlebox.action-bar-count-down")
+    public static String BATTLE_BOX_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "battlebox.kits.punch")
+    public static String BATTLE_BOX_KITS_PUNCH;
+
+    @ConfigOption(path = "battlebox.kits.knock-back")
+    public static String BATTLE_BOX_KITS_KNOCK_BACK;
+
+    @ConfigOption(path = "battlebox.kits.jump")
+    public static String BATTLE_BOX_KITS_JUMP;
+
+    @ConfigOption(path = "battlebox.kits.pull")
+    public static String BATTLE_BOX_KITS_PULL;
 }

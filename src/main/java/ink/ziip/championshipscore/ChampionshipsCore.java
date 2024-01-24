@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore;
 
+import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.CCPlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
@@ -19,27 +20,19 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.logging.Level;
 
+@Getter
 public final class ChampionshipsCore extends JavaPlugin {
     @Getter
     private static ChampionshipsCore instance;
-
-    @Getter
     private TeamManager teamManager;
-    @Getter
     private CCPlayerManager ccPlayerManager;
-    @Getter
     private ListenerManager listenerManager;
-    @Getter
     private ConfigurationManager configurationManager;
-    @Getter
     private DatabaseManager databaseManager;
-    @Getter
     private CommandManager commandManager;
-    @Getter
     private WorldEditManager worldEditManager;
-    @Getter
+    private GameManager gameManager;
     private RankManager rankManager;
-    @Getter
     private BingoManager bingoManager;
 
     @Override
@@ -59,11 +52,6 @@ public final class ChampionshipsCore extends JavaPlugin {
             Bukkit.getPluginManager().disablePlugin(this);
         }
 
-        if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
-            bingoManager = new BingoManager(this);
-            bingoManager.load();
-        }
-
         configurationManager = new ConfigurationManager(this);
         databaseManager = new DatabaseManager(this);
         ccPlayerManager = new CCPlayerManager(this);
@@ -71,19 +59,27 @@ public final class ChampionshipsCore extends JavaPlugin {
         commandManager = new CommandManager(this);
         teamManager = new TeamManager(this);
         worldEditManager = new WorldEditManager(this);
+        gameManager = new GameManager(this);
         rankManager = new RankManager(this);
 
         // Plugin startup logic
         configurationManager.load();
         databaseManager.load();
         listenerManager.load();
+
         ccPlayerManager.load();
+        teamManager.load();
+        rankManager.load();
+
         worldEditManager.load();
 
-        teamManager.load();
-        commandManager.load();
+        gameManager.load();
+        if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
+            bingoManager = new BingoManager(this);
+            bingoManager.load();
+        }
 
-        rankManager.load();
+        commandManager.load();
 
         getLogger().log(Level.INFO, CCConfig.MODE);
     }
@@ -91,8 +87,22 @@ public final class ChampionshipsCore extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        gameManager.unload();
+        rankManager.unload();
+
         listenerManager.unload();
+        ccPlayerManager.unload();
+        teamManager.unload();
         commandManager.unload();
+
+        databaseManager.unload();
+        configurationManager.unload();
+
+        worldEditManager.unload();
+
+        if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
+            bingoManager.unload();
+        }
     }
 
     public @NotNull Path getFolder() {

@@ -2,9 +2,10 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.command.bingo.BingoMainCommand;
+import ink.ziip.championshipscore.command.game.GameMainCommand;
 import ink.ziip.championshipscore.command.member.MemberMainCommand;
 import ink.ziip.championshipscore.command.rank.RankMainCommand;
+import ink.ziip.championshipscore.command.spectate.SpectateSubCommand;
 import ink.ziip.championshipscore.command.team.TeamMainCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandMap;
@@ -28,11 +29,9 @@ public class CommandManager extends BaseManager {
 
         mainCommand.addSubCommand(new TeamMainCommand());
         mainCommand.addSubCommand(new MemberMainCommand());
+        mainCommand.addSubCommand(new GameMainCommand());
+        mainCommand.addSubCommand(new SpectateSubCommand());
         mainCommand.addSubCommand(new RankMainCommand());
-
-        if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
-            mainCommand.addSubCommand(new BingoMainCommand());
-        }
 
         if (this.corePluginCommand != null) {
             this.corePluginCommand.setExecutor(mainCommand);

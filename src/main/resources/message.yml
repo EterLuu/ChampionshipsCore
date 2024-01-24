@@ -1,6 +1,7 @@
 dont-edit-this:
   version: 2
 no-permission: "&7&l[&7!&7]&r &4你没有权限！"
+prefix: "&b[&3WCC&b]&r"
 team:
   successfully-added: "&b[&3WCC&b]&r &f成功添加队伍 %team%"
   added-failed: "&b[&3WCC&b]&r &7添加队伍 %team% 失败（%reason%）"
@@ -37,3 +38,40 @@ bingo:
   task-expired: "&b[&3WCC&b] &c&l警告&6 %task% &c&l将不再得到额外积分（只积10分）。"
   rank-board-bar: "&f========== &eBingo &f=========="
   rank-board-info: "&r  &f%team_rank%. &b%team%&7（&6%team_point%&7）"
+spectator:
+  is-player: "&b[&3WCC&b] &7你想加入黑队吗？"
+  leaving-area: "&b[&3WCC&b] &7退出旁观模式。"
+  cant-leaving-area: "&b[&3WCC&b] &7你没有旁观游戏。"
+  join-area: "&b[&3WCC&b] &7你正在旁观 %game% 游戏的 %area% 场地。"
+  cant-join-area: "&b[&3WCC&b] &7你已经在旁观了，使用“/cc spectate leave”退出旁观。"
+game:
+  team-game-start-successful: "&b[&3WCC&b] %team% &fvs %rival% &f启动成功（游戏：%game%，场地：%area%）。"
+  team-game-start-failed: "&b[&3WCC&b] %team% &fvs %rival% &c启动失败（游戏：%game%，场地：%area%）。"
+battlebox:
+  start-preparation: "&b[&3WCC&b] &f请双方队伍选择装备。"
+  start-preparation-title: "&6[&c斗战方框]"
+  start-preparation-subtitle: "&b请双方队伍选择装备"
+  game-start-soon: "&b[&3WCC&b] &f游戏即将开始。"
+  game-start-soon-title: "&6[&c斗战方框]"
+  game-start-soon-subtitle: "&b游戏即将开始"
+  count-down: "&c倒计时：&6%time%"
+  game-start: "&b[&3WCC&b] &c游戏开始！"
+  game-start-title: "&6[&c斗战方框]"
+  game-start-subtitle: "&6游戏开始！"
+  game-end: "&b[&3WCC&b] &7游戏结束。"
+  game-end-title: "&6[&c斗战方框]"
+  game-end-subtitle: "&b[&3WCC&b] &7游戏结束。"
+  win: "&b[&3WCC&b] &f队伍 %team% &f取得胜利！获得积分：%points%。"
+  draw: "&b[&3WCC&b] &f双方平局！各获得积分：%points%。"
+  kill-player: "&b[&3WCC&b] %player_team% &f%player% &c被 &f%killer% &c击杀。"
+  player-leave: "&b[&3WCC&b] %player_team% &f%player% &c离开游戏。"
+  kit-choose: "&b[&3WCC&b] &f你选择的武器包为：&6%kit%&f。"
+  kit-already-choose: "&b[&3WCC&b] &f选择失败：你的队伍中已经有人选择了：&6%kit%&f。"
+  action-bar-count-down: "&b游戏剩余时间：&c%time%&b。"
+  kits:
+    punch: "弩击！"
+    knock-back: "击退！"
+    jump: "跳跃！"
+    pull: "拉扯！"
+
+

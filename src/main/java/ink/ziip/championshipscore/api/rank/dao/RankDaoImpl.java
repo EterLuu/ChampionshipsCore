@@ -140,20 +140,27 @@ public class RankDaoImpl implements RankDao {
                     INSERT INTO `team_points` (`teamId`, `rivalId`, `team`, `rival`, `game`, `area`, `round`, `points`, `time`)
                     VALUES (?,?,?,?,?,?,?,?,?);
                     """, Statement.RETURN_GENERATED_KEYS)) {
+                String team = teamPointEntry.getTeam();
+                String rival = teamPointEntry.getRival();
+                String game = teamPointEntry.getGame().name();
+                String area = teamPointEntry.getArea();
+                int points = teamPointEntry.getPoints();
                 statement.setInt(1, teamPointEntry.getTeamId());
                 statement.setInt(2, teamPointEntry.getRivalId());
-                statement.setString(3, teamPointEntry.getTeam());
-                statement.setString(4, teamPointEntry.getRival());
-                statement.setString(5, teamPointEntry.getGame().name());
-                statement.setString(6, teamPointEntry.getArea());
+                statement.setString(3, team);
+                statement.setString(4, rival);
+                statement.setString(5, game);
+                statement.setString(6, area);
                 statement.setString(7, teamPointEntry.getRound());
-                statement.setInt(8, teamPointEntry.getPoints());
+                statement.setInt(8, points);
                 statement.setString(9, teamPointEntry.getTime());
 
                 int affectedRows = statement.executeUpdate();
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
+                            plugin.getLogger().log(Level.INFO, "Team points added: " + team + ", " + rival + ", " + game + ", " + area + ", " + points);
+                            connection.close();
                             return generatedKeys.getInt(1);
                         } else {
                             connection.close();
@@ -178,20 +185,27 @@ public class RankDaoImpl implements RankDao {
                     INSERT INTO `player_points` (`uuid`, `username`, `teamId`, `team`, `game`, `area`, `round`, `points`, `time`)
                     VALUES (?,?,?,?,?,?,?,?,?);
                     """, Statement.RETURN_GENERATED_KEYS)) {
+                String username = playerPointEntry.getUsername();
+                String teamName = playerPointEntry.getTeam();
+                String gameName = playerPointEntry.getGame().name();
+                String areaName = playerPointEntry.getArea();
+                int points = playerPointEntry.getPoints();
                 statement.setString(1, playerPointEntry.getUuid().toString());
-                statement.setString(2, playerPointEntry.getUsername());
+                statement.setString(2, username);
                 statement.setInt(3, playerPointEntry.getTeamId());
-                statement.setString(4, playerPointEntry.getTeam());
-                statement.setString(5, playerPointEntry.getGame().name());
-                statement.setString(6, playerPointEntry.getArea());
+                statement.setString(4, teamName);
+                statement.setString(5, gameName);
+                statement.setString(6, areaName);
                 statement.setString(7, playerPointEntry.getRound());
-                statement.setInt(8, playerPointEntry.getPoints());
+                statement.setInt(8, points);
                 statement.setString(9, playerPointEntry.getTime());
 
                 int affectedRows = statement.executeUpdate();
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
+                            plugin.getLogger().log(Level.INFO, "Player points added: " + username + ", " + teamName + ", " + gameName + ", " + areaName + ", " + points);
+                            connection.close();
                             return generatedKeys.getInt(1);
                         } else {
                             connection.close();
@@ -278,6 +292,7 @@ public class RankDaoImpl implements RankDao {
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
+                            connection.close();
                             return generatedKeys.getInt(1);
                         } else {
                             connection.close();

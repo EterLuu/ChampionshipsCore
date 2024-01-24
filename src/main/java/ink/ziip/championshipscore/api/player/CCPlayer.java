@@ -8,6 +8,7 @@ import com.comphenix.protocol.reflect.StructureModifier;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import ink.ziip.championshipscore.util.Utils;
+import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -22,6 +23,7 @@ public class CCPlayer {
     @NotNull
     private final UUID playerUUID;
     @Nullable
+    @Getter
     private Player player;
     @Nullable
     private OfflinePlayer offlinePlayer;

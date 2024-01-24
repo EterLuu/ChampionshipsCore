@@ -1,4 +1,4 @@
-package ink.ziip.championshipscore.command.bingo;
+package ink.ziip.championshipscore.command.game.start;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import org.bukkit.command.Command;
@@ -11,7 +11,7 @@ import java.util.List;
 
 public class BingoStartSubCommand extends BaseSubCommand {
     public BingoStartSubCommand() {
-        super("start");
+        super("bingo");
     }
 
     @Override

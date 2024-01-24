@@ -55,6 +55,7 @@ public class TeamDaoImpl implements TeamDao {
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
+                            connection.close();
                             return generatedKeys.getInt(1);
                         } else {
                             connection.close();

@@ -2,7 +2,6 @@ package ink.ziip.championshipscore.api.team;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.object.status.TeamStatusEnum;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
@@ -75,8 +74,9 @@ public class TeamManager extends BaseManager {
 
     public boolean deleteTeam(@NotNull String name) {
         Team team = cachedTeams.get(name);
-        if (team != null && team.getTeamStatusEnum() != TeamStatusEnum.NONE)
-            return false;
+
+        // TODO detect playing status
+
         team = cachedTeams.remove(name);
         if (team == null) return false;
         int id = team.getId();
@@ -120,6 +120,11 @@ public class TeamManager extends BaseManager {
 
         team.addMember(uuid);
         teamDaoImpl.addTeamMember(team.getId(), uuid, username);
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null)
+            plugin.getGameManager().leaveSpectating(player);
+        else
+            plugin.getGameManager().removeSpectatingPlayerFromList(uuid);
         return true;
     }
 

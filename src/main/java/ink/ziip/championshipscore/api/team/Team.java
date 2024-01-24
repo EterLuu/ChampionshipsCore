@@ -1,7 +1,6 @@
 package ink.ziip.championshipscore.api.team;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.object.status.TeamStatusEnum;
 import ink.ziip.championshipscore.api.player.CCPlayer;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
@@ -26,7 +25,6 @@ public class Team {
     private String colorName;
     @Getter
     private String colorCode;
-    private TeamStatusEnum teamStatusEnum;
     private TeamDaoImpl teamDao;
 
     private Team() {
@@ -37,7 +35,6 @@ public class Team {
         this.name = name;
         this.colorName = colorName;
         this.colorCode = colorCode;
-        this.teamStatusEnum = TeamStatusEnum.NONE;
         this.teamDao = new TeamDaoImpl();
     }
 
@@ -46,7 +43,6 @@ public class Team {
         this.name = name;
         this.colorName = colorName;
         this.colorCode = colorCode;
-        this.teamStatusEnum = TeamStatusEnum.NONE;
         this.addMembers(members);
         this.teamDao = new TeamDaoImpl();
     }
@@ -183,18 +179,6 @@ public class Team {
     public void playSoundToAllPlayers(Sound sound, float volume, float pitch) {
         for (Player player : getOnlinePlayers()) {
             player.playSound(player.getLocation(), sound, volume, pitch);
-        }
-    }
-
-    public void setTeamStatusEnum(TeamStatusEnum teamStatusEnum) {
-        synchronized (this) {
-            this.teamStatusEnum = teamStatusEnum;
-        }
-    }
-
-    public TeamStatusEnum getTeamStatusEnum() {
-        synchronized (this) {
-            return this.teamStatusEnum;
         }
     }
 

@@ -35,6 +35,7 @@ public class BingoManager extends BaseManager {
     @Setter
     private boolean started = false;
     private BingoHandler bingoHandler;
+    private BingoSession session;
 
     public BingoManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -49,6 +50,9 @@ public class BingoManager extends BaseManager {
 
     @Override
     public void unload() {
+        if (session != null) {
+            session.endGame();
+        }
         bingoHandler.unRegister();
     }
 
@@ -59,7 +63,7 @@ public class BingoManager extends BaseManager {
 
             SingularGameManager singularGameManager = (SingularGameManager) gameManagerField.get(bingoReloaded);
 
-            BingoSession bingoSession = singularGameManager.getSession();
+            session = singularGameManager.getSession();
             TeamManager teamManager = singularGameManager.getSession().teamManager;
             for (Team team : plugin.getTeamManager().getTeamList()) {
                 team.teleportAllPlayers(CCConfig.BINGO_SPAWN_LOCATION);
@@ -72,7 +76,7 @@ public class BingoManager extends BaseManager {
                 }
             }
 
-            bingoSession.startGame();
+            session.startGame();
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }

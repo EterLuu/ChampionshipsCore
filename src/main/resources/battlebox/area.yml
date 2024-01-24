@@ -1,0 +1,66 @@
+dont-edit-this:
+  version: 1
+timer: 60
+area-pos1:
+  ==: Vector
+  x: 0.0
+  y: 0.0
+  z: 0.0
+area-pos2:
+  ==: Vector
+  x: 0.0
+  y: 0.0
+  z: 0.0
+wool-pos1:
+  ==: Vector
+  x: 0.0
+  y: 0.0
+  z: 0.0
+wool-pos2:
+  ==: Vector
+  x: 0.0
+  y: 0.0
+  z: 0.0
+left-spawn-point:
+  ==: org.bukkit.Location
+  world: battlebox
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  pitch: 0.0
+  yaw: 0.0
+right-spawn-point:
+  ==: org.bukkit.Location
+  world: battlebox
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  pitch: 0.0
+  yaw: 0.0
+potion-spawn-points:
+  - battlebox:0.0:0.0:0.0:0.0:0.0
+left-pre-spawn-point:
+  ==: org.bukkit.Location
+  world: battlebox
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  pitch: 0.0
+  yaw: 0.0
+right-pre-spawn-point:
+  ==: org.bukkit.Location
+  world: battlebox
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  pitch: 0.0
+  yaw: 0.0
+name: area
+spectator-spawn-point:
+  ==: org.bukkit.Location
+  world: battlebox
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  pitch: 0.0
+  yaw: 0.0

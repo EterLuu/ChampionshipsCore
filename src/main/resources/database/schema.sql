@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `team_members`
 CREATE TABLE IF NOT EXISTS `player_points`
 (
     `id`       INTEGER      NOT NULL AUTO_INCREMENT,
-    `uuid`     VARCHAR(16)  NOT NULL,
+    `uuid`     VARCHAR(255)  NOT NULL,
     `username` VARCHAR(255) NOT NULL,
     `teamId`   INTEGER      NOT NULL,
     `team`     VARCHAR(255) NOT NULL,
