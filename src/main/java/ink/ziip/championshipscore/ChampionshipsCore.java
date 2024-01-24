@@ -3,6 +3,7 @@ package ink.ziip.championshipscore;
 import ink.ziip.championshipscore.api.player.CCPlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
+import ink.ziip.championshipscore.integration.bingo.BingoManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
 import ink.ziip.championshipscore.command.CommandManager;
@@ -38,6 +39,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     private WorldEditManager worldEditManager;
     @Getter
     private RankManager rankManager;
+    @Getter
+    private BingoManager bingoManager;
 
     @Override
     public void onEnable() {
@@ -54,6 +57,11 @@ public final class ChampionshipsCore extends JavaPlugin {
         if (Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") == null) {
             getLogger().warning("Could not find FastAsyncWorldEdit!");
             Bukkit.getPluginManager().disablePlugin(this);
+        }
+
+        if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
+            bingoManager = new BingoManager(this);
+            bingoManager.load();
         }
 
         configurationManager = new ConfigurationManager(this);

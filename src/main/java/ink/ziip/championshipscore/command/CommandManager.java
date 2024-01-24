@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.command.bingo.BingoMainCommand;
 import ink.ziip.championshipscore.command.member.MemberMainCommand;
 import ink.ziip.championshipscore.command.rank.RankMainCommand;
 import ink.ziip.championshipscore.command.team.TeamMainCommand;
@@ -15,9 +16,6 @@ import java.util.logging.Level;
 
 public class CommandManager extends BaseManager {
     private final PluginCommand corePluginCommand;
-    private MainCommand mainCommand;
-    private TeamMainCommand teamMainCommand;
-    private MemberMainCommand memberMainCommand;
 
     public CommandManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -28,18 +26,17 @@ public class CommandManager extends BaseManager {
     public void load() {
         MainCommand mainCommand = new MainCommand();
 
-        this.teamMainCommand = new TeamMainCommand();
-        this.memberMainCommand = new MemberMainCommand();
-
-        this.mainCommand.addSubCommand(teamMainCommand);
-        this.mainCommand.addSubCommand(memberMainCommand);
         mainCommand.addSubCommand(new TeamMainCommand());
         mainCommand.addSubCommand(new MemberMainCommand());
         mainCommand.addSubCommand(new RankMainCommand());
 
+        if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
+            mainCommand.addSubCommand(new BingoMainCommand());
+        }
+
         if (this.corePluginCommand != null) {
-            this.corePluginCommand.setExecutor(this.mainCommand);
-            this.corePluginCommand.setTabCompleter(this.mainCommand);
+            this.corePluginCommand.setExecutor(mainCommand);
+            this.corePluginCommand.setTabCompleter(mainCommand);
         }
     }
 

@@ -109,6 +109,13 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.github.Steaf23</groupId>
+            <artifactId>BingoReloaded</artifactId>
+            <version>v2.0.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/BingoReloaded-2.1.0.jar</systemPath>
+        </dependency>
+        <dependency>
             <groupId>com.fastasyncworldedit</groupId>
             <artifactId>FastAsyncWorldEdit-Core</artifactId>
             <scope>provided</scope>

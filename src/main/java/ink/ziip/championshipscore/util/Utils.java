@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.util;
 
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
@@ -82,9 +83,21 @@ public class Utils {
         }
     }
 
-    public static String getCurrentTimeString(){
+    public static String getCurrentTimeString() {
         LocalDateTime currentTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
         return currentTime.format(formatter);
+    }
+
+    public static void sendMessageToAllPlayers(String message) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.sendMessage(message);
+        }
+    }
+
+    public static void sendMessageToAllSpigotPlayers(BaseComponent message) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.spigot().sendMessage(message);
+        }
     }
 }

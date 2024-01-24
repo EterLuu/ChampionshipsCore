@@ -30,3 +30,10 @@ rank:
   player-board-row: "&r  &f%player_rank%. &b%player%&7（&6%player_point%&7）"
   not-player: "&b[&3WCC&b] &7你是黑队的？"
   no-record: "&b[&3WCC&b] &7暂未查询到相关记录。"
+bingo:
+  game-start: "&b[&3WCC&b] &f游戏开始！积分系统启动。"
+  game-end: "&b[&3WCC&b] &f游戏结束！积分结算中。"
+  task-complete: "&b[&3WCC&b] &f队伍 %team%&f 完成了&e %task%&f，获得积分&b %points%。"
+  task-expired: "&b[&3WCC&b] &c&l警告&6 %task% &c&l将不再得到额外积分（只积10分）。"
+  rank-board-bar: "&f========== &eBingo &f=========="
+  rank-board-info: "&r  &f%team_rank%. &b%team%&7（&6%team_point%&7）"

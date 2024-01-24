@@ -99,4 +99,23 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "rank.no-record")
     public static String RANK_NO_RECORD;
+
+    // Bingo
+    @ConfigOption(path = "bingo.game-start")
+    public static String BINGO_GAME_START;
+
+    @ConfigOption(path = "bingo.game-end")
+    public static String BINGO_GAME_END;
+
+    @ConfigOption(path = "bingo.task-complete")
+    public static String BINGO_TASK_COMPLETE;
+
+    @ConfigOption(path = "bingo.task-expired")
+    public static String BINGO_TASK_EXPIRED;
+
+    @ConfigOption(path = "bingo.rank-board-bar")
+    public static String BINGO_RANK_BOARD_BAR;
+
+    @ConfigOption(path = "bingo.rank-board-info")
+    public static String BINGO_RANK_BOARD_INFO;
 }

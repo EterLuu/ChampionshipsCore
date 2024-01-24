@@ -49,4 +49,8 @@ public class CCConfig extends BaseConfigurationFile {
     // Lobby
     @ConfigOption(path = "lobby.location")
     public static Location LOBBY_LOCATION;
+
+    // Bingo
+    @ConfigOption(path = "bingo.spawn")
+    public static Location BINGO_SPAWN_LOCATION;
 }
