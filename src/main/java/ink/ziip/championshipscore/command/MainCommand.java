@@ -51,7 +51,8 @@ public class MainCommand implements TabExecutor, TabCompleter {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
             List<String> returnList = new java.util.ArrayList<>(subCommandMap.keySet().stream().toList());
-            returnList.removeIf(s -> s != null && !s.startsWith(args[0]) || !sender.hasPermission("cc." + args[0]));
+            returnList.removeIf(s -> !sender.hasPermission("cc." + s));
+            returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
             return returnList;
         }
 
