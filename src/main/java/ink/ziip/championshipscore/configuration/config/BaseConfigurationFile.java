@@ -153,7 +153,7 @@ public abstract class BaseConfigurationFile {
     protected void loadCustomFileOptions() {
     }
 
-    private void loadFromConfiguration(@NotNull YamlConfiguration yamlConfiguration) {
+    public void loadFromConfiguration(@NotNull YamlConfiguration yamlConfiguration) {
         Field[] fields = getClass().getFields();
         for (Field field : fields) {
             ConfigOption configOption = field.getAnnotation(ConfigOption.class);
@@ -229,7 +229,7 @@ public abstract class BaseConfigurationFile {
         }
     }
 
-    private void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) {
+    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) {
         try {
             Field[] fields = getClass().getFields();
             for (Field field : fields) {

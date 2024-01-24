@@ -2,13 +2,14 @@ package ink.ziip.championshipscore.util;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.Color;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,12 +44,47 @@ public class Utils {
         return players;
     }
 
-    public static List<String> getPlayerNamesByUUIDs(Set<UUID> uuids) {
-        List<String> players = new ArrayList<>();
-        for (UUID uuid : uuids) {
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
-            players.add(offlinePlayer.getName());
+    public static Location getLocation(String content) {
+        String[] str = content.split(":", 6);
+        ;
+        return new Location(Bukkit.getWorld(str[0]),
+                Double.parseDouble(str[1]),
+                Double.parseDouble(str[2]),
+                Double.parseDouble(str[3]),
+                Float.parseFloat(str[4]),
+                Float.parseFloat(str[5]));
+    }
+
+    public static String getLocationConfigString(Location location) {
+        if (location.getWorld() != null)
+            return location.getWorld().getName() +
+                    ":" +
+                    location.getX() +
+                    ":" +
+                    location.getY() +
+                    ":" +
+                    location.getZ() +
+                    ":" +
+                    location.getYaw() +
+                    ":" +
+                    location.getPitch();
+        return "";
+    }
+
+    public static Color hex2rgb(String hexColor) {
+        try {
+            return Color.fromBGR(
+                    Integer.valueOf(hexColor.substring(5, 7), 16),
+                    Integer.valueOf(hexColor.substring(3, 5), 16),
+                    Integer.valueOf(hexColor.substring(1, 3), 16));
+        } catch (Exception ignored) {
+            return Color.fromBGR(0, 0, 0);
         }
-        return players;
+    }
+
+    public static String getCurrentTimeString(){
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        return currentTime.format(formatter);
     }
 }

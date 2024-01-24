@@ -10,3 +10,12 @@ database:
   password: "password"
 team:
   max-members: 4
+lobby:
+  location:
+    ==: org.bukkit.Location
+    world: world
+    x: 0
+    y: 60
+    z: 0
+    pitch: 0
+    yaw: 0

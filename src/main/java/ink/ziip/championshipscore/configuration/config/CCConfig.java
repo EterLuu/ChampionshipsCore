@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.configuration.config;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
+import org.bukkit.Location;
 
 @Getter
 public class CCConfig extends BaseConfigurationFile {
@@ -44,4 +45,8 @@ public class CCConfig extends BaseConfigurationFile {
     // Team
     @ConfigOption(path = "team.max-members")
     public static int TEAM_MAX_MEMBERS;
+
+    // Lobby
+    @ConfigOption(path = "lobby.location")
+    public static Location LOBBY_LOCATION;
 }
