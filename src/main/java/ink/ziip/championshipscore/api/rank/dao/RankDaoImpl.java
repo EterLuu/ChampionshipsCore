@@ -45,8 +45,6 @@ public class RankDaoImpl implements RankDao {
                             .build();
                     teamPointEntries.add(teamPointEntry);
                 }
-
-                connection.close();
                 return teamPointEntries;
             }
         } catch (SQLException exception) {
@@ -84,8 +82,6 @@ public class RankDaoImpl implements RankDao {
                             .build();
                     playerPointEntries.add(playerPointEntry);
                 }
-
-                connection.close();
                 return playerPointEntries;
             }
         } catch (SQLException exception) {
@@ -123,8 +119,6 @@ public class RankDaoImpl implements RankDao {
                             .build();
                     playerPointEntries.add(playerPointEntry);
                 }
-
-                connection.close();
                 return playerPointEntries;
             }
         } catch (SQLException exception) {
@@ -160,15 +154,12 @@ public class RankDaoImpl implements RankDao {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
                             plugin.getLogger().log(Level.INFO, "Team points added: " + team + ", " + rival + ", " + game + ", " + area + ", " + points);
-                            connection.close();
                             return generatedKeys.getInt(1);
                         } else {
-                            connection.close();
                             return -1;
                         }
                     }
                 } else {
-                    connection.close();
                     return -1;
                 }
             }
@@ -205,15 +196,12 @@ public class RankDaoImpl implements RankDao {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
                             plugin.getLogger().log(Level.INFO, "Player points added: " + username + ", " + teamName + ", " + gameName + ", " + areaName + ", " + points);
-                            connection.close();
                             return generatedKeys.getInt(1);
                         } else {
-                            connection.close();
                             return -1;
                         }
                     }
                 } else {
-                    connection.close();
                     return -1;
                 }
             }
@@ -243,8 +231,6 @@ public class RankDaoImpl implements RankDao {
                             .build();
                     gameStatusEntries.add(gameStatusEntry);
                 }
-
-                connection.close();
                 return gameStatusEntries;
             }
         } catch (SQLException exception) {
@@ -262,13 +248,10 @@ public class RankDaoImpl implements RankDao {
                     WHERE game=?
                     """)) {
                 statement.setString(1, gameTypeEnum.name());
-
                 final ResultSet resultSet = statement.executeQuery();
                 if (resultSet.next()) {
                     return resultSet.getInt("order");
                 }
-
-                connection.close();
                 return -1;
             }
         } catch (SQLException exception) {
@@ -287,20 +270,16 @@ public class RankDaoImpl implements RankDao {
                 statement.setString(1, gameStatusEntry.getTime());
                 statement.setString(2, gameStatusEntry.getGame().name());
                 statement.setInt(3, gameStatusEntry.getOrder());
-
                 int affectedRows = statement.executeUpdate();
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
-                            connection.close();
                             return generatedKeys.getInt(1);
                         } else {
-                            connection.close();
                             return -1;
                         }
                     }
                 } else {
-                    connection.close();
                     return -1;
                 }
             }
@@ -319,9 +298,7 @@ public class RankDaoImpl implements RankDao {
                     WHERE `id`=?
                     """)) {
                 statement.setInt(1, id);
-
                 statement.executeUpdate();
-                connection.close();
             }
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);

@@ -30,8 +30,6 @@ public class TeamDaoImpl implements TeamDao {
                     String colorCode = resultSet.getString("colorCode");
                     teamEntries.add(new TeamEntry(id, name, colorName, colorCode));
                 }
-
-                connection.close();
                 return teamEntries;
             }
         } catch (SQLException exception) {
@@ -55,15 +53,12 @@ public class TeamDaoImpl implements TeamDao {
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
-                            connection.close();
                             return generatedKeys.getInt(1);
                         } else {
-                            connection.close();
                             return -1;
                         }
                     }
                 } else {
-                    connection.close();
                     return -1;
                 }
             }
@@ -84,7 +79,6 @@ public class TeamDaoImpl implements TeamDao {
                 statement.setInt(1, teamId);
 
                 statement.executeUpdate();
-                connection.close();
             }
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
@@ -113,7 +107,6 @@ public class TeamDaoImpl implements TeamDao {
                     members.add(teamMemberEntry);
                 }
 
-                connection.close();
                 return members;
             }
         } catch (SQLException exception) {
@@ -133,7 +126,6 @@ public class TeamDaoImpl implements TeamDao {
                 statement.setInt(1, teamId);
 
                 statement.executeUpdate();
-                connection.close();
             }
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
@@ -151,7 +143,6 @@ public class TeamDaoImpl implements TeamDao {
                 statement.setString(1, uuid.toString());
 
                 statement.executeUpdate();
-                connection.close();
             }
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
@@ -170,7 +161,6 @@ public class TeamDaoImpl implements TeamDao {
                 statement.setInt(3, teamId);
 
                 statement.executeUpdate();
-                connection.close();
             }
         } catch (SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);

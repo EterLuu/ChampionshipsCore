@@ -99,15 +99,15 @@ public final class ChampionshipsCore extends JavaPlugin {
         teamManager.unload();
         commandManager.unload();
 
-        databaseManager.unload();
-        configurationManager.unload();
-
         worldEditManager.unload();
         worldManager.unload();
 
         if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
             bingoManager.unload();
         }
+
+        configurationManager.unload();
+        databaseManager.unload();
     }
 
     public @NotNull Path getFolder() {

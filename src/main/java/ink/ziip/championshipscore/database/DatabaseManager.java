@@ -29,21 +29,29 @@ public class DatabaseManager extends BaseManager {
 
     @Override
     public void unload() {
-        dataSource.close();
+        if (dataSource != null) {
+            if (!dataSource.isClosed()) {
+                dataSource.close();
+            }
+        }
     }
 
     public void initialize() throws IllegalStateException {
         dataSource = new HikariDataSource();
+
+        dataSource.setPoolName(DATA_POOL_NAME);
         dataSource.setDriverClassName(driverClass);
-        dataSource.setJdbcUrl("jdbc:mariadb://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME);
+
+        dataSource.setJdbcUrl("jdbc:mariadb://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
         dataSource.setUsername(CCConfig.DATABASE_USERNAME);
         dataSource.setPassword(CCConfig.DATABASE_PASSWORD);
+
         dataSource.setMaximumPoolSize(12);
         dataSource.setMinimumIdle(12);
+
         dataSource.setMaxLifetime(1800000);
         dataSource.setKeepaliveTime(30000);
         dataSource.setConnectionTimeout(20000);
-        dataSource.setPoolName(DATA_POOL_NAME);
 
         Properties properties = getProperties();
         dataSource.setDataSourceProperties(properties);
@@ -84,6 +92,10 @@ public class DatabaseManager extends BaseManager {
     }
 
     public Connection getConnection() throws SQLException {
+        if (!dataSource.isClosed())
+            return dataSource.getConnection();
+
+        initialize();
         return dataSource.getConnection();
     }
 }
