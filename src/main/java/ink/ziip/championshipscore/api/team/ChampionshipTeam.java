@@ -197,6 +197,12 @@ public class ChampionshipTeam {
         }
     }
 
+    public void setFoodLevelForAllPlayers(int level) {
+        for (Player player : getOnlinePlayers()) {
+            player.setFoodLevel(level);
+        }
+    }
+
     public void clearEffectsForAllPlayers() {
         for (Player player : getOnlinePlayers()) {
             for (PotionEffect potionEffect : player.getActivePotionEffects())

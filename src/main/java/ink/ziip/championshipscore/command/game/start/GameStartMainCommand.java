@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.game.start;
 
 import ink.ziip.championshipscore.command.BaseMainCommand;
+import ink.ziip.championshipscore.command.game.start.skywars.SkyWarsStartMainCommand;
 import org.bukkit.Bukkit;
 
 public class GameStartMainCommand extends BaseMainCommand {
@@ -12,5 +13,6 @@ public class GameStartMainCommand extends BaseMainCommand {
             addSubCommand(new BingoStartSubCommand());
         }
         addSubCommand(new ParkourTagStartSubCommand());
+        addSubCommand(new SkyWarsStartMainCommand());
     }
 }

@@ -10,9 +10,7 @@ import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,6 +58,29 @@ public class ChampionshipPlayer {
         }
         packetContainer.getChatComponents().write(0, wrappedChatComponent);
         protocolManager.sendServerPacket(player, packetContainer);
+    }
+
+    public void setRedScreen() {
+        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
+
+        if (player == null)
+            return;
+
+        World world = player.getWorld();
+
+        WorldBorder worldBorder = world.getWorldBorder();
+
+        packet.getModifier().writeDefaults();
+        packet.getIntegers().write(0, (int) worldBorder.getSize());
+        ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+    }
+
+    public void removeRedScreen() {
+        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
+
+        packet.getModifier().writeDefaults();
+        packet.getIntegers().write(0, 0);
+        ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
     }
 
     public void sendMessage(String content) {

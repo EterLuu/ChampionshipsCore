@@ -1,0 +1,16 @@
+dont-edit-this:
+  version: 1
+name: area
+timer: 240
+area-pos1:
+area-pos2:
+pre-spawn-point:
+spectator-spawn-point:
+team-spawn-points:
+boundary:
+  default-height: 150
+  lowest-height: 60
+  radius: 50
+time:
+  enable-boundary-shrink: 210
+  disable-health-regain: 20

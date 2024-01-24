@@ -151,6 +151,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.team-game-start-failed")
     public static String GAME_TEAM_GAME_START_FAILED;
 
+    @ConfigOption(path = "game.board-bar")
+    public static String GAME_BOARD_BAR;
+
+    @ConfigOption(path = "game.board-row")
+    public static String GAME_BOARD_RWO;
+
     // BattleBox
     @ConfigOption(path = "battlebox.start-preparation")
     public static String BATTLE_BOX_START_PREPARATION;
@@ -302,4 +308,71 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "parkourtag.kits.use-feather")
     public static String PARKOUR_TAG_KITS_USE_FEATHER;
+    
+    // SkyWars
+    @ConfigOption(path = "skywars.start-preparation")
+    public static String SKY_WARS_START_PREPARATION;
+
+    @ConfigOption(path = "skywars.start-preparation-title")
+    public static String SKY_WARS_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "skywars.start-preparation-subtitle")
+    public static String SKY_WARS_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "skywars.game-start-soon")
+    public static String SKY_WARS_GAME_START_SOON;
+
+    @ConfigOption(path = "skywars.game-start-soon-title")
+    public static String SKY_WARS_GAME_START_SOON_TITLE;
+
+    @ConfigOption(path = "skywars.game-start-soon-subtitle")
+    public static String SKY_WARS_GAME_START_SOON_SUBTITLE;
+
+    @ConfigOption(path = "skywars.count-down")
+    public static String SKY_WARS_COUNT_DOWN;
+
+    @ConfigOption(path = "skywars.game-start")
+    public static String SKY_WARS_GAME_START;
+
+    @ConfigOption(path = "skywars.game-start-title")
+    public static String SKY_WARS_GAME_START_TITLE;
+
+    @ConfigOption(path = "skywars.game-start-subtitle")
+    public static String SKY_WARS_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "skywars.game-end")
+    public static String SKY_WARS_GAME_END;
+
+    @ConfigOption(path = "skywars.game-end-title")
+    public static String SKY_WARS_GAME_END_TITLE;
+
+    @ConfigOption(path = "skywars.game-end-subtitle")
+    public static String SKY_WARS_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "skywars.kill-player")
+    public static String SKY_WARS_KILL_PLAYER;
+
+    @ConfigOption(path = "skywars.kill-player-by-void")
+    public static String SKY_WARS_KILL_PLAYER_BY_VOID;
+
+    @ConfigOption(path = "skywars.player-death")
+    public static String SKY_WARS_PLAYER_DEATH;
+
+    @ConfigOption(path = "skywars.player-death-by-void")
+    public static String SKY_WARS_PLAYER_DEATH_BY_VOID;
+    
+    @ConfigOption(path = "skywars.player-leave")
+    public static String SKY_WARS_PLAYER_LEAVE;
+    
+    @ConfigOption(path = "skywars.action-bar-count-down")
+    public static String SKY_WARS_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "skywars.whole-team-was-killed")
+    public static String SKY_WARS_WHOLE_TEAM_WAS_KILLED;
+
+    @ConfigOption(path = "skywars.board-shrink")
+    public static String SKY_WARS_BOARD_SHRINK;
+
+    @ConfigOption(path = "skywars.deduct-food-level")
+    public static String SKY_WARS_DEDUCT_FOOD_LEVEL;
 }

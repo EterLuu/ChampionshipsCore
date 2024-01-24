@@ -10,6 +10,8 @@ import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoTeamArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
+import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
+import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
@@ -32,18 +34,22 @@ public class GameManager extends BaseManager {
     private final BattleBoxManager battleBoxManager;
     @Getter
     private final ParkourTagManager parkourTagManager;
+    @Getter
+    private final SkyWarsManager skyWarsManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
         gameManagerHandler = new GameManagerHandler(championshipsCore);
         battleBoxManager = new BattleBoxManager(plugin);
         parkourTagManager = new ParkourTagManager(plugin);
+        skyWarsManager = new SkyWarsManager(plugin);
     }
 
     @Override
     public void load() {
         battleBoxManager.load();
         parkourTagManager.load();
+        skyWarsManager.load();
 
         gameManagerHandler.register();
     }
@@ -52,6 +58,8 @@ public class GameManager extends BaseManager {
     public void unload() {
         battleBoxManager.unload();
         parkourTagManager.unload();
+        skyWarsManager.unload();
+
         gameManagerHandler.unRegister();
     }
 
@@ -128,6 +136,20 @@ public class GameManager extends BaseManager {
             return true;
         }
 
+        if (gameTypeEnum == GameTypeEnum.SkyWars) {
+            SkyWarsTeamArea skyWarsArea = skyWarsManager.getArea(area);
+            if (skyWarsArea == null)
+                return false;
+
+            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                teamStatus.put(championshipTeam, skyWarsArea);
+            }
+            return skyWarsArea.tryStartGame(plugin.getTeamManager().getTeamList());
+        }
+
+        return false;
+    }
+
     public void teamGameEndHandler(TeamGameEndEvent event) {
         teamStatus.remove(event.getLeftChampionshipTeam());
         teamStatus.remove(event.getRightChampionshipTeam());
@@ -158,6 +180,16 @@ public class GameManager extends BaseManager {
                 }
                 playerSpectatorStatus.put(uuid, parkourTagArea);
                 parkourTagArea.addSpectator(player);
+            }
+        }
+        if (gameTypeEnum == GameTypeEnum.SkyWars) {
+            SkyWarsTeamArea skyWarsArea = getSkyWarsManager().getArea(area);
+            if (skyWarsArea != null) {
+                if (playerSpectatorStatus.containsKey(uuid)) {
+                    return false;
+                }
+                playerSpectatorStatus.put(uuid, skyWarsArea);
+                skyWarsArea.addSpectator(player);
             }
         }
 

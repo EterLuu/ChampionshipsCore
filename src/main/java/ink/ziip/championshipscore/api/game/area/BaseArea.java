@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -62,6 +63,38 @@ public abstract class BaseArea {
         }
 
         return points;
+    }
+
+    public String getPlayerPointsRank(GameTypeEnum gameTypeEnum) {
+        ArrayList<Map.Entry<UUID, Integer>> list;
+        list = new ArrayList<>(playerPoints.entrySet());
+        list.sort(Map.Entry.comparingByValue());
+
+        Collections.reverse(list);
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(MessageConfig.GAME_BOARD_BAR
+                        .replace("%game%", gameTypeEnum.toString())
+                        .replace("%area%", getAreaName()))
+                .append("\n");
+
+        int i = 1;
+        for (Map.Entry<UUID, Integer> entry : list) {
+            // TODO changed method getting name
+            String username = Bukkit.getOfflinePlayer(entry.getKey()).getName();
+            if (username != null) {
+                String row = MessageConfig.RANK_PLAYER_BOARD_ROW
+                        .replace("%player_rank%", String.valueOf(i))
+                        .replace("%player%", username)
+                        .replace("%player_point%", String.valueOf(entry.getValue()));
+
+                stringBuilder.append(row).append("\n");
+                i++;
+            }
+        }
+
+        return stringBuilder.toString();
     }
 
     public void setGameStageEnum(GameStageEnum gameStageEnum) {
