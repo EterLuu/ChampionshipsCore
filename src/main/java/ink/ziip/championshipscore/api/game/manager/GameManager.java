@@ -8,6 +8,8 @@ import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoArea;
+import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
+import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
@@ -28,23 +30,30 @@ public class GameManager extends BaseManager {
     private final GameManagerHandler gameManagerHandler;
     @Getter
     private final BattleBoxManager battleBoxManager;
+    @Getter
+    private final ParkourTagManager parkourTagManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
         gameManagerHandler = new GameManagerHandler(championshipsCore);
         battleBoxManager = new BattleBoxManager(plugin);
+        parkourTagManager = new ParkourTagManager(plugin);
     }
 
     @Override
     public void load() {
         battleBoxManager.load();
+        parkourTagManager.load();
+
         gameManagerHandler.register();
     }
 
     @Override
     public void unload() {
         gameManagerHandler.unRegister();
+
         battleBoxManager.unload();
+        parkourTagManager.unload();
     }
 
     @Nullable
@@ -88,6 +97,15 @@ public class GameManager extends BaseManager {
             return battleBoxArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam);
         }
 
+        if (gameTypeEnum == GameTypeEnum.ParkourTag) {
+            ParkourTagArea parkourTagArea = getParkourTagManager().getArea(area);
+            if (parkourTagArea == null)
+                return false;
+            teamStatus.put(rightChampionshipTeam, parkourTagArea);
+            teamStatus.put(leftChampionshipTeam, parkourTagArea);
+            return parkourTagArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam);
+        }
+
         return true;
     }
 
@@ -106,6 +124,16 @@ public class GameManager extends BaseManager {
                 }
                 playerSpectatorStatus.put(uuid, battleBoxArea);
                 battleBoxArea.addSpectator(player);
+            }
+        }
+        if (gameTypeEnum == GameTypeEnum.ParkourTag) {
+            ParkourTagArea parkourTagArea = getParkourTagManager().getArea(area);
+            if (parkourTagArea != null) {
+                if (playerSpectatorStatus.containsKey(uuid)) {
+                    return false;
+                }
+                playerSpectatorStatus.put(uuid, parkourTagArea);
+                parkourTagArea.addSpectator(player);
             }
         }
 

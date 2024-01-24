@@ -203,6 +203,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "battlebox.action-bar-count-down")
     public static String BATTLE_BOX_ACTION_BAR_COUNT_DOWN;
 
+    @ConfigOption(path = "battlebox.show-points")
+    public static String BATTLE_BOX_SHOW_POINTS;
+
     @ConfigOption(path = "battlebox.kits.punch")
     public static String BATTLE_BOX_KITS_PUNCH;
 
@@ -214,4 +217,80 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "battlebox.kits.pull")
     public static String BATTLE_BOX_KITS_PULL;
+    
+    // ParkourTag
+    @ConfigOption(path = "parkourtag.start-preparation")
+    public static String PARKOUR_TAG_START_PREPARATION;
+
+    @ConfigOption(path = "parkourtag.start-preparation-title")
+    public static String PARKOUR_TAG_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "parkourtag.start-preparation-subtitle")
+    public static String PARKOUR_TAG_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "parkourtag.game-start-soon")
+    public static String PARKOUR_TAG_GAME_START_SOON;
+
+    @ConfigOption(path = "parkourtag.game-start-soon-title")
+    public static String PARKOUR_TAG_GAME_START_SOON_TITLE;
+
+    @ConfigOption(path = "parkourtag.game-start-soon-subtitle")
+    public static String PARKOUR_TAG_GAME_START_SOON_SUBTITLE;
+
+    @ConfigOption(path = "parkourtag.count-down")
+    public static String PARKOUR_TAG_COUNT_DOWN;
+
+    @ConfigOption(path = "parkourtag.game-start")
+    public static String PARKOUR_TAG_GAME_START;
+
+    @ConfigOption(path = "parkourtag.game-start-title")
+    public static String PARKOUR_TAG_GAME_START_TITLE;
+
+    @ConfigOption(path = "parkourtag.game-start-subtitle")
+    public static String PARKOUR_TAG_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "parkourtag.game-end")
+    public static String PARKOUR_TAG_GAME_END;
+
+    @ConfigOption(path = "parkourtag.game-end-title")
+    public static String PARKOUR_TAG_GAME_END_TITLE;
+
+    @ConfigOption(path = "parkourtag.game-end-subtitle")
+    public static String PARKOUR_TAG_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "parkourtag.catch-player")
+    public static String PARKOUR_TAG_CATCH_PLAYER;
+
+    @ConfigOption(path = "parkourtag.player-leave")
+    public static String PARKOUR_TAG_PLAYER_LEAVE;
+
+    @ConfigOption(path = "parkourtag.become-chaser")
+    public static String PARKOUR_TAG_BECOME_CHASER;
+
+    @ConfigOption(path = "parkourtag.become-chaser-failed")
+    public static String PARKOUR_TAG_BECOME_CHASER_FAILED;
+
+    @ConfigOption(path = "parkourtag.action-bar-count-down")
+    public static String PARKOUR_TAG_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "parkourtag.show-points")
+    public static String PARKOUR_TAG_SHOW_POINTS;
+
+    @ConfigOption(path = "parkourtag.whole-team-was-killed")
+    public static String PARKOUR_TAG_WHOLE_TEAM_WAS_KILLED;
+
+    @ConfigOption(path = "parkourtag.kits.clock")
+    public static String PARKOUR_TAG_KITS_CLOCK;
+
+    @ConfigOption(path = "parkourtag.kits.feather")
+    public static String PARKOUR_TAG_KITS_FEATHER;
+
+    @ConfigOption(path = "parkourtag.kits.use-clock")
+    public static String PARKOUR_TAG_KITS_USE_CLOCK;
+
+    @ConfigOption(path = "parkourtag.kits.use-clock-failed")
+    public static String PARKOUR_TAG_KITS_USE_CLOCK_FAILED;
+
+    @ConfigOption(path = "parkourtag.kits.use-feather")
+    public static String PARKOUR_TAG_KITS_USE_FEATHER;
 }

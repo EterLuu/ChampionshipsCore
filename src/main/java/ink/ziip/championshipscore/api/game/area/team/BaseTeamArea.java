@@ -2,8 +2,10 @@ package ink.ziip.championshipscore.api.game.area.team;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
+import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import lombok.Getter;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -11,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
+@Getter
 public abstract class BaseTeamArea extends BaseArea {
     protected ChampionshipTeam rightChampionshipTeam;
     protected ChampionshipTeam leftChampionshipTeam;
@@ -19,6 +22,27 @@ public abstract class BaseTeamArea extends BaseArea {
         super(plugin);
     }
 
+    public abstract void startGamePreparation();
+
+    public boolean tryStartGame(ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam) {
+        if (getGameStageEnum() != GameStageEnum.WAITING)
+            return false;
+        setGameStageEnum(GameStageEnum.LOADING);
+
+        this.rightChampionshipTeam = rightChampionshipTeam;
+        this.leftChampionshipTeam = leftChampionshipTeam;
+        startGamePreparation();
+        return true;
+    }
+
+    public int getTeamPoints(ChampionshipTeam championshipTeam) {
+        int points = 0;
+        for (UUID uuid : championshipTeam.getMembers()) {
+            points += playerPoints.getOrDefault(uuid, 0);
+        }
+
+        return points;
+    }
 
     public void sendMessageToAllGamePlayers(String message) {
         rightChampionshipTeam.sendMessageToAll(message);
@@ -71,6 +95,16 @@ public abstract class BaseTeamArea extends BaseArea {
     public void changeGameModelForAllGamePlayers(GameMode gameMode) {
         rightChampionshipTeam.setGameModeForAllPlayers(gameMode);
         leftChampionshipTeam.setGameModeForAllPlayers(gameMode);
+    }
+
+    public void setHealthForAllGamePlayers(double health) {
+        rightChampionshipTeam.setHealthForAllPlayers(health);
+        leftChampionshipTeam.setHealthForAllPlayers(health);
+    }
+
+    public void clearEffectsForAllGamePlayers() {
+        rightChampionshipTeam.clearEffectsForAllPlayers();
+        leftChampionshipTeam.clearEffectsForAllPlayers();
     }
 
     public void cleanInventoryForAllGamePlayers() {

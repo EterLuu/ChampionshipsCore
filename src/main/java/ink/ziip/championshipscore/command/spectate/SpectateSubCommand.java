@@ -20,6 +20,7 @@ public class SpectateSubCommand extends BaseSubCommand {
     private final String[] games = {
             "leave",
             "battlebox",
+            "parkourtag",
     };
 
     public SpectateSubCommand() {
@@ -53,6 +54,13 @@ public class SpectateSubCommand extends BaseSubCommand {
                     baseArea = battleBoxArea;
                 }
             }
+            if (args[0].equals("parkourtag")) {
+                gameTypeEnum = GameTypeEnum.ParkourTag;
+                BaseArea parkourTagArea = plugin.getGameManager().getParkourTagManager().getArea(args[1]);
+                if (parkourTagArea != null) {
+                    baseArea = parkourTagArea;
+                }
+            }
             if (gameTypeEnum != null && baseArea != null) {
                 if (plugin.getGameManager().spectateArea((Player) sender, GameTypeEnum.BattleBox, args[1])) {
                     String message = MessageConfig.SPECTATOR_JOIN_AREA
@@ -77,6 +85,11 @@ public class SpectateSubCommand extends BaseSubCommand {
         if (args.length == 2) {
             if (args[0].equals("battlebox")) {
                 List<String> returnList = plugin.getGameManager().getBattleBoxManager().getAreaNameList();
+                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
+                return returnList;
+            }
+            if (args[0].equals("parkourtag")) {
+                List<String> returnList = plugin.getGameManager().getParkourTagManager().getAreaNameList();
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
                 return returnList;
             }

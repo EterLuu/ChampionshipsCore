@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
@@ -107,6 +108,21 @@ public class ChampionshipTeam {
         return list;
     }
 
+    public List<UUID> getOfflineMembers() {
+        List<UUID> offlineMembers = new ArrayList<>();
+        for (UUID uuid : members) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) {
+                offlineMembers.add(uuid);
+            }
+            if (player != null && !player.isOnline()) {
+                offlineMembers.add(uuid);
+            }
+        }
+
+        return offlineMembers;
+    }
+
     public boolean isTeamMember(@NotNull UUID uuid) {
         return members.contains(uuid);
     }
@@ -175,6 +191,19 @@ public class ChampionshipTeam {
         }
     }
 
+    public void setHealthForAllPlayers(double health) {
+        for (Player player : getOnlinePlayers()) {
+            player.setHealth(health);
+        }
+    }
+
+    public void clearEffectsForAllPlayers() {
+        for (Player player : getOnlinePlayers()) {
+            for (PotionEffect potionEffect : player.getActivePotionEffects())
+                player.removePotionEffect(potionEffect.getType());
+        }
+    }
+
     public void cleanInventoryForAllPlayers() {
         for (Player player : getOnlinePlayers()) {
             player.getInventory().clear();
@@ -220,6 +249,10 @@ public class ChampionshipTeam {
 
     public String getColoredName() {
         return Utils.translateColorCodes(colorCode + name);
+    }
+
+    public String getColoredColor() {
+        return Utils.translateColorCodes(colorCode);
     }
 
     @Override

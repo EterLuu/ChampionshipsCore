@@ -53,4 +53,8 @@ public class CCConfig extends BaseConfigurationFile {
     // Bingo
     @ConfigOption(path = "bingo.spawn")
     public static Location BINGO_SPAWN_LOCATION;
+
+    // ParkourTag
+    @ConfigOption(path = "parkourtag.max-chaser-times")
+    public static Integer PARKOUR_TAG_MAX_CHASER_TIMES;
 }

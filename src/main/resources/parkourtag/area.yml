@@ -1,0 +1,19 @@
+dont-edit-this:
+  version: 1
+name: area
+timer: 60
+area-pos1:
+area-pos2:
+left-pre-spawn-point:
+right-pre-spawn-point:
+left-area:
+  area-pos1:
+  area-pos2:
+  chaser-spawn-point:
+  escapee-spawn-points:
+spectator-spawn-point:
+right-area:
+  area-pos1:
+  area-pos2:
+  chaser-spawn-point:
+  escapee-spawn-points:

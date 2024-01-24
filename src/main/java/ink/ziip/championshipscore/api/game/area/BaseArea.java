@@ -1,8 +1,10 @@
 package ink.ziip.championshipscore.api.game.area;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -15,16 +17,16 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 public abstract class BaseArea {
+    protected final HashSet<UUID> spectators = new HashSet<>();
+    protected final Map<UUID, Integer> playerPoints = new ConcurrentHashMap<>();
     protected final ChampionshipsCore plugin;
     protected final BukkitScheduler scheduler;
     protected final BaseAreaHandler baseAreaHandler;
-    protected final HashSet<UUID> spectators = new HashSet<>();
     protected GameStageEnum gameStageEnum;
 
     public BaseArea(ChampionshipsCore plugin) {
@@ -33,6 +35,24 @@ public abstract class BaseArea {
         this.gameStageEnum = GameStageEnum.END;
         baseAreaHandler = new BaseAreaHandler(plugin, this);
         baseAreaHandler.register();
+    }
+
+    public void addPlayerPoints(UUID uuid, int points) {
+        playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
+        plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
+    }
+
+    public void addPlayerPointsToAllTeamMembers(ChampionshipTeam championshipTeam, int points) {
+        for (UUID uuid : championshipTeam.getMembers()) {
+            playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
+        }
+    }
+
+    public void addPlayerPointsToDatabase(GameTypeEnum gameTypeEnum) {
+        for (Map.Entry<UUID, Integer> playerPointEntry : playerPoints.entrySet()) {
+            plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), gameTypeEnum, getAreaName(), playerPointEntry.getValue());
+        }
     }
 
     public void setGameStageEnum(GameStageEnum gameStageEnum) {

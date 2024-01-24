@@ -14,6 +14,11 @@ public class BingoArea extends BaseTeamArea {
     }
 
     @Override
+    public void startGamePreparation() {
+
+    }
+
+    @Override
     public Location getSpectatorSpawnLocation() {
         return null;
     }

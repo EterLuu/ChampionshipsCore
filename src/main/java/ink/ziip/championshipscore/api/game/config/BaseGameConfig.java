@@ -44,7 +44,7 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
             configuration.save(configurationPath.toFile());
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration option.", exception);
+            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration option. ", exception);
         }
     }
 
@@ -82,10 +82,10 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                             value = Utils.translateColorCodes((String) value);
                         field.set(this, value);
                     } else if (!configOption.nullable()) {
-                        plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file." + configOption.path() + getFileName());
+                        plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file. " + configOption.path() + "/" + getFileName());
                     }
                 } catch (Exception exception) {
-                    plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file.", exception);
+                    plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file. ", exception);
                 }
             }
         }
@@ -108,7 +108,7 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
             // Reload options from the file
             loadFileOptions();
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file.", exception);
+            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file. ", exception);
         }
     }
 

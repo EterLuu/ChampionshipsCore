@@ -78,11 +78,11 @@ public abstract class BaseConfigurationFile {
 
                     Files.write(ret, data);
                 } else {
-                    plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file.", getResourceName());
+                    plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file. ", getResourceName());
                 }
             }
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file.", exception);
+            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file. ", exception);
         }
         return ret;
     }
@@ -104,7 +104,7 @@ public abstract class BaseConfigurationFile {
 
             configuration.save(configurationPath.toFile());
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration option.", exception);
+            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration option. ", exception);
         }
     }
 
@@ -185,10 +185,10 @@ public abstract class BaseConfigurationFile {
                             value = Utils.translateColorCodes((String) value);
                         field.set(null, value);
                     } else if (!configOption.nullable()) {
-                        plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file." + configOption.path() + getFileName());
+                        plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file. " + configOption.path() + "/" + getFileName());
                     }
                 } catch (Exception exception) {
-                    plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file.", exception);
+                    plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file. ", exception);
                 }
             }
         }
@@ -220,9 +220,9 @@ public abstract class BaseConfigurationFile {
                     loadFromOutdatedConfiguration(outdatedConfiguration);
 
                     outdated = false;
-                    plugin.getLogger().info(String.format("Upgrade of file %s completed", getFileName()));
+                    plugin.getLogger().info(String.format("Upgrade of file %s completed ", getFileName()));
                 } catch (Exception exception) {
-                    plugin.getLogger().log(Level.WARNING, "Failed to load configuration", exception);
+                    plugin.getLogger().log(Level.WARNING, "Failed to load configuration ", exception);
                 }
             } else
                 plugin.getLogger().log(Level.WARNING, String.format("Failed to rename the old configuration '%s' to '%s'", getFileName(), outdatedFileName));
@@ -244,7 +244,7 @@ public abstract class BaseConfigurationFile {
             // Reload options from the file
             loadFileOptions();
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file.", exception);
+            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file. ", exception);
         }
     }
 

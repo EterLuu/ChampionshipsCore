@@ -11,5 +11,6 @@ public class GameStartMainCommand extends BaseMainCommand {
         if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
             addSubCommand(new BingoStartSubCommand());
         }
+        addSubCommand(new ParkourTagStartSubCommand());
     }
 }

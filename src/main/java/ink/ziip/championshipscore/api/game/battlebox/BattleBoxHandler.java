@@ -19,6 +19,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.*;
 import org.jetbrains.annotations.Nullable;
@@ -43,29 +44,33 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
+        Block block = event.getClickedBlock();
+
         if (battleBoxArea.getGameStageEnum() != GameStageEnum.PREPARATION) {
+            event.setCancelled(true);
             return;
         }
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
-            Block block = event.getClickedBlock();
             if (block != null) {
                 if (block.getType() == Material.BIRCH_WALL_SIGN) {
                     Sign sign = (Sign) block.getState();
                     String kit = ChatColor.stripColor(sign.getSide(Side.FRONT).getLine(0));
                     BBWeaponKitEnum type = getBbWeaponKitEnum(kit);
                     if (type != null) {
-                        if (plugin.getGameManager().getBattleBoxManager().setPlayerWeaponKit(player, type)) {
+                        if (battleBoxArea.setPlayerWeaponKit(player, type)) {
                             player.sendMessage(MessageConfig.BATTLE_BOX_KIT_CHOOSE.replace("%kit%", type.toString()));
                         } else {
                             player.sendMessage(MessageConfig.BATTLE_BOX_KIT_ALREADY_CHOOSE.replace("%kit%", type.toString()));
                         }
-                        event.setCancelled(true);
                     }
                 }
             }
         }
+
+        if (block != null && block.getType() != Material.BELL)
+            event.setCancelled(true);
     }
 
     @Nullable
@@ -189,6 +194,7 @@ public class BattleBoxHandler extends BaseListener {
 
         Location location = player.getLocation();
         if (battleBoxArea.notInArea(location)) {
+            // TODO Player leave area
             return;
         }
 
@@ -198,10 +204,7 @@ public class BattleBoxHandler extends BaseListener {
 
         if (battleBoxArea.getTimer() >= battleBoxArea.getBattleBoxConfig().getTimer()) {
             event.setCancelled(true);
-            return;
         }
-
-        // TODO Player leave area
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -217,6 +220,52 @@ public class BattleBoxHandler extends BaseListener {
         }
 
         if (battleBoxArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (battleBoxArea.getTimer() >= battleBoxArea.getBattleBoxConfig().getTimer()) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerShootBow(EntityShootBowEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            if (battleBoxArea.notAreaPlayer(player)) {
+                return;
+            }
+
+            Location location = player.getLocation();
+            if (battleBoxArea.notInArea(location)) {
+                return;
+            }
+
+            if (battleBoxArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
+                event.setCancelled(true);
+                return;
+            }
+
+            if (battleBoxArea.getTimer() >= battleBoxArea.getBattleBoxConfig().getTimer()) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerItemConsume(PlayerItemConsumeEvent event) {
+        Player player = event.getPlayer();
+        if (battleBoxArea.notAreaPlayer(player)) {
+            return;
+        }
+
+        Location location = player.getLocation();
+        if (battleBoxArea.notInArea(location)) {
+            return;
+        }
+
+        if (battleBoxArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
+            event.setCancelled(true);
             return;
         }
 
