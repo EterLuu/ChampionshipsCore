@@ -9,10 +9,14 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 public class PlayerListener extends BaseListener {
+    protected PlayerListener(ChampionshipsCore plugin) {
+        super(plugin);
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
         CCPlayerManager CCPlayerManager = ChampionshipsCore.getInstance().getCcPlayerManager();
-        CCPlayerManager.deletePlayer(event.getPlayer().getUniqueId());
+        CCPlayerManager.getPlayer(event.getPlayer()).updatePlayer();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

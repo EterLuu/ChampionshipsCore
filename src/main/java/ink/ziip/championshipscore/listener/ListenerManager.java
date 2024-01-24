@@ -13,8 +13,8 @@ public class ListenerManager extends BaseManager {
 
     @Override
     public void load() {
-        playerListener = new PlayerListener();
-        protectionListener = new ProtectionListener();
+        playerListener = new PlayerListener(plugin);
+        protectionListener = new ProtectionListener(plugin);
         playerListener.register();
         protectionListener.register();
     }

@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.listener;
 
+import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -11,12 +12,17 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 public class ProtectionListener extends BaseListener {
+
+    protected ProtectionListener(ChampionshipsCore plugin) {
+        super(plugin);
+    }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityExplode(EntityExplodeEvent event) {
@@ -65,5 +71,11 @@ public class ProtectionListener extends BaseListener {
         if (event.getSource().getType() == Material.FIRE) {
             event.setCancelled(true);
         }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerChangeSign(SignChangeEvent event) {
+        if (!event.getPlayer().isOp())
+            event.setCancelled(true);
     }
 }

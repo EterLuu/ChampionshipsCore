@@ -6,6 +6,11 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
 public abstract class BaseListener implements Listener {
+    protected final ChampionshipsCore plugin;
+
+    protected BaseListener(ChampionshipsCore plugin) {
+        this.plugin = plugin;
+    }
 
     public void register() {
         Bukkit.getPluginManager().registerEvents(this, ChampionshipsCore.getInstance());
