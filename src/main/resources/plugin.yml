@@ -6,3 +6,7 @@ authors: [ Eter Lu, LettuceIce ]
 depend:
   - ProtocolLib
   - PlaceholderAPI
+commands:
+  cc:
+    description: Core command.
+    usage: /<command>

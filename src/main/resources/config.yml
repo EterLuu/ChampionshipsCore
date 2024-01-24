@@ -1,0 +1,12 @@
+dont-edit-this:
+  version: 1
+mode: "CHAMPIONSHIP"
+database:
+  type: "MARIADB"
+  address: "127.0.0.1"
+  port: 3306
+  name: "wcc"
+  username: "root"
+  password: "password"
+team:
+  max-members: 4

@@ -1,0 +1,18 @@
+dont-edit-this:
+  version: 2
+no-permission: "&c&l[&7!&c]&r &4你没有权限！"
+team:
+  successfully-added: "&b[&3WCC&b]&r &a成功添加队伍 %s"
+  added-failed: "&b[&3WCC&b]&r &c添加队伍 %s 失败（%s）"
+  successfully-deleted: "&b[&3WCC&b]&r &a成功删除队伍 %s"
+  deleted-failed: "&b[&3WCC&b]&r &c删除队伍 %s 失败（%s）"
+member:
+  successfully-added: "&b[&3WCC&b]&r &a成功添加成员 %s 至 %s"
+  added-failed: "&b[&3WCC&b]&r &c添加成员 %s 失败 %s（%s）"
+  successfully-deleted: "&b[&3WCC&b]&r &a成功删除成员 %s 于 %s"
+  deleted-failed: "&b[&3WCC&b]&r &c删除成员 %s 于 %s 失败（%s）"
+reason:
+  team-does-not-exist: "队伍不存在"
+  team-already-exist: "队伍已经存在"
+  member-does-not-exist: "成员不存在"
+  member-already-exist: "成员已存在/队伍满人"
