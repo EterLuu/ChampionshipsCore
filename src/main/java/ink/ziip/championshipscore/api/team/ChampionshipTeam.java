@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -25,25 +26,29 @@ public class ChampionshipTeam {
     private String colorName;
     @Getter
     private String colorCode;
+    @Getter
+    private Team team;
     private TeamDaoImpl teamDao;
 
     private ChampionshipTeam() {
     }
 
-    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode) {
+    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, Team team) {
         this.id = id;
         this.name = name;
         this.colorName = colorName;
         this.colorCode = colorCode;
+        this.team = team;
         this.teamDao = new TeamDaoImpl();
     }
 
-    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members) {
+    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members, Team team) {
         this.id = id;
         this.name = name;
         this.colorName = colorName;
         this.colorCode = colorCode;
         this.addMembers(members);
+        this.team = team;
         this.teamDao = new TeamDaoImpl();
     }
 
