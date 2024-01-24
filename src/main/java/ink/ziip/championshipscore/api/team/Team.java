@@ -1,7 +1,14 @@
 package ink.ziip.championshipscore.api.team;
 
+import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.object.status.TeamStatusEnum;
+import ink.ziip.championshipscore.api.player.CCPlayer;
+import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
+import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +25,8 @@ public class Team {
     private String colorName;
     @Getter
     private String colorCode;
+    private TeamStatusEnum teamStatusEnum;
+    private TeamDaoImpl teamDao;
 
     private Team() {
     }
@@ -27,6 +36,8 @@ public class Team {
         this.name = name;
         this.colorName = colorName;
         this.colorCode = colorCode;
+        this.teamStatusEnum = TeamStatusEnum.NONE;
+        this.teamDao = new TeamDaoImpl();
     }
 
     protected Team(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members) {
@@ -34,7 +45,9 @@ public class Team {
         this.name = name;
         this.colorName = colorName;
         this.colorCode = colorCode;
+        this.teamStatusEnum = TeamStatusEnum.NONE;
         this.addMembers(members);
+        this.teamDao = new TeamDaoImpl();
     }
 
     protected boolean addMember(@NotNull UUID uuid) {
@@ -72,6 +85,7 @@ public class Team {
         return deleteMember(uuid);
     }
 
+    @Deprecated
     protected boolean deleteMember(@NotNull String name) {
         Player player = Bukkit.getPlayer(name);
         if (player == null)
@@ -81,6 +95,14 @@ public class Team {
 
     public Set<UUID> getMembers() {
         return Set.copyOf(members);
+    }
+
+    public List<String> getTeamMemberNameList() {
+        List<String> list = new ArrayList<>();
+        for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(getId())) {
+            list.add(teamMemberEntry.getUsername());
+        }
+        return list;
     }
 
     public boolean isTeamMember(@NotNull UUID uuid) {
@@ -93,5 +115,67 @@ public class Team {
 
     public boolean isTeamMember(@NotNull OfflinePlayer offlinePlayer) {
         return isTeamMember(offlinePlayer.getUniqueId());
+    }
+
+    public List<Player> getOnlinePlayers() {
+        List<Player> list = new ArrayList<>();
+        for (UUID uuid : members) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && player.isOnline()) {
+                list.add(player);
+            }
+        }
+        return list;
+    }
+
+    public List<CCPlayer> getOnlineCCPlayers() {
+        List<CCPlayer> list = new ArrayList<>();
+        for (UUID uuid : members) {
+            CCPlayer ccPlayer = ChampionshipsCore.getInstance().getCcPlayerManager().getPlayer(uuid);
+            list.add(ccPlayer);
+        }
+        return list;
+    }
+
+    public void sendMessageToAll(String message) {
+        for (CCPlayer ccPlayer : getOnlineCCPlayers()) {
+            ccPlayer.sendMessage(message);
+        }
+    }
+
+    public void sendTitleToAll(String title, String subTitle) {
+        for (CCPlayer ccPlayer : getOnlineCCPlayers()) {
+            ccPlayer.sendTitle(title, subTitle);
+        }
+    }
+
+    public void sendActionBarToAll(String message) {
+        for (CCPlayer ccPlayer : getOnlineCCPlayers()) {
+            ccPlayer.sendActionBar(message);
+        }
+    }
+
+    public void teleportAllPlayers(Location location) {
+        for (Player player : getOnlinePlayers()) {
+            player.teleport(location);
+        }
+    }
+
+    public void setGameModeForAllPlayers(GameMode gameMode) {
+        for (Player player : getOnlinePlayers()) {
+            player.setGameMode(gameMode);
+        }
+    }
+
+    public void setTeamStatusEnum(TeamStatusEnum teamStatusEnum) {
+        synchronized (this) {
+            this.teamStatusEnum = teamStatusEnum;
+        }
+    }
+
+    public TeamStatusEnum getTeamStatusEnum() {
+        synchronized (this) {
+            return this.teamStatusEnum;
+        }
     }
 }

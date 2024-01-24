@@ -61,4 +61,20 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "reason.member-already-exist")
     public static String REASON_MEMBER_ALREADY_EXIST;
+
+    @ConfigOption(path = "reason.area-already-exist")
+    public static String REASON_AREA_ALREADY_EXIST;
+
+    // Area
+    @ConfigOption(path = "area.successfully-added")
+    public static String AREA_SUCCESSFULLY_ADDED;
+
+    @ConfigOption(path = "area.added-failed")
+    public static String AREA_ADDED_FAILED;
+
+    @ConfigOption(path = "area.setting-option-succeeded")
+    public static String AREA_SETTING_OPTION_SUCCEEDED;
+
+    @ConfigOption(path = "area.setting-option-failed")
+    public static String AREA_SETTING_OPTION_FAILED;
 }

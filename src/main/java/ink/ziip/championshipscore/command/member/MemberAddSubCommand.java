@@ -22,13 +22,25 @@ public class MemberAddSubCommand extends BaseSubCommand {
         if (args.length == 2) {
             Team team = plugin.getTeamManager().getTeam(args[0]);
             if (team == null) {
-                sender.sendMessage(String.format(MessageConfig.MEMBER_ADDED_FAILED, args[1], args[0], MessageConfig.REASON_TEAM_DOES_NOT_EXIST));
+                String message = MessageConfig.MEMBER_ADDED_FAILED
+                        .replace("%team%", args[0])
+                        .replace("%player%", args[1])
+                        .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
+                sender.sendMessage(message);
                 return true;
             }
-            if (plugin.getTeamManager().addTeamMember(args[1], team))
-                sender.sendMessage(String.format(MessageConfig.MEMBER_SUCCESSFULLY_ADDED, args[1], args[0]));
-            else
-                sender.sendMessage(String.format(MessageConfig.MEMBER_ADDED_FAILED, args[1], args[0], MessageConfig.REASON_MEMBER_ALREADY_EXIST));
+            if (plugin.getTeamManager().addTeamMember(args[1], team)) {
+                String message = MessageConfig.MEMBER_SUCCESSFULLY_ADDED
+                        .replace("%team%", args[0])
+                        .replace("%player%", args[1]);
+                sender.sendMessage(message);
+            } else {
+                String message = MessageConfig.MEMBER_ADDED_FAILED
+                        .replace("%team%", args[0])
+                        .replace("%player%", args[1])
+                        .replace("%reason%", MessageConfig.REASON_MEMBER_ALREADY_EXIST);
+                sender.sendMessage(message);
+            }
         }
         return true;
     }

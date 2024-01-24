@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BaseMainCommand extends MainCommand {
 
-    protected final Map<String, BaseSubCommand> subCommandMap;
+    protected final Map<String, BaseMainCommand> subCommandMap;
     @Getter
     protected final String commandName;
 
@@ -23,7 +23,7 @@ public class BaseMainCommand extends MainCommand {
         this.commandName = command;
     }
 
-    public void addSubCommand(BaseSubCommand subCommand) {
+    public void addSubCommand(BaseMainCommand subCommand) {
         subCommandMap.put(subCommand.getCommandName(), subCommand);
     }
 
@@ -33,7 +33,7 @@ public class BaseMainCommand extends MainCommand {
             return true;
         }
 
-        BaseSubCommand subCommand = subCommandMap.get(args[0]);
+        BaseMainCommand subCommand = subCommandMap.get(args[0]);
         if (subCommand != null) {
             return subCommand.onCommand(sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }

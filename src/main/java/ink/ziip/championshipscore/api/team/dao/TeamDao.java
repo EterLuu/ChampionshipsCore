@@ -19,7 +19,7 @@ public interface TeamDao {
 
     void deleteTeamMembers(int teamId);
 
-    void deleteTeamMember(String username);
+    void deleteTeamMember(UUID uuid);
 
     void addTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username);
 }

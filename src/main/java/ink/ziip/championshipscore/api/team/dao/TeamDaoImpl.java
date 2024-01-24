@@ -134,14 +134,14 @@ public class TeamDaoImpl implements TeamDao {
     }
 
     @Override
-    public void deleteTeamMember(String username) {
+    public void deleteTeamMember(UUID uuid) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
                     DELETE
                     FROM `team_members`
-                    WHERE `username`=?
+                    WHERE `uuid`=?
                     """)) {
-                statement.setString(1, username);
+                statement.setString(1, uuid.toString());
 
                 statement.executeUpdate();
             }

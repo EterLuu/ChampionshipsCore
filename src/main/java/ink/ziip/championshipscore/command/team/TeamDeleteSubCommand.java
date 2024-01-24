@@ -19,10 +19,16 @@ public class TeamDeleteSubCommand extends BaseSubCommand {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
             // TODO add pattern
-            if (plugin.getTeamManager().deleteTeam(args[0]))
-                sender.sendMessage(String.format(MessageConfig.TEAM_SUCCESSFULLY_DELETED, args[0]));
-            else
-                sender.sendMessage(String.format(MessageConfig.TEAM_DELETED_FAILED, args[0], MessageConfig.REASON_TEAM_DOES_NOT_EXIST));
+            if (plugin.getTeamManager().deleteTeam(args[0])) {
+                String message = MessageConfig.TEAM_SUCCESSFULLY_DELETED
+                        .replace("%team%", args[0]);
+                sender.sendMessage(message);
+            } else {
+                String message = MessageConfig.TEAM_DELETED_FAILED
+                        .replace("%team%", args[0])
+                        .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
+                sender.sendMessage(message);
+            }
         }
         return true;
     }

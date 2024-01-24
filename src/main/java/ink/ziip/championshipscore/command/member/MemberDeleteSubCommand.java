@@ -3,7 +3,6 @@ package ink.ziip.championshipscore.command.member;
 import ink.ziip.championshipscore.api.team.Team;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
@@ -22,13 +21,25 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
         if (args.length == 2) {
             Team team = plugin.getTeamManager().getTeam(args[0]);
             if (team == null) {
-                sender.sendMessage(String.format(MessageConfig.MEMBER_DELETED_FAILED, args[1], args[0], MessageConfig.REASON_TEAM_DOES_NOT_EXIST));
+                String message = MessageConfig.MEMBER_DELETED_FAILED
+                        .replace("%team%", args[0])
+                        .replace("%player%", args[1])
+                        .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
+                sender.sendMessage(message);
                 return true;
             }
-            if (plugin.getTeamManager().deleteTeamMember(args[1], args[0]))
-                sender.sendMessage(String.format(MessageConfig.MEMBER_SUCCESSFULLY_DELETED, args[1], args[0]));
-            else
-                sender.sendMessage(String.format(MessageConfig.MEMBER_DELETED_FAILED, args[1], args[0], MessageConfig.REASON_MEMBER_DOES_NOT_EXIST));
+            if (plugin.getTeamManager().deleteTeamMember(args[1], args[0])) {
+                String message = MessageConfig.MEMBER_SUCCESSFULLY_DELETED
+                        .replace("%team%", args[0])
+                        .replace("%player%", args[1]);
+                sender.sendMessage(message);
+            } else {
+                String message = MessageConfig.MEMBER_DELETED_FAILED
+                        .replace("%team%", args[0])
+                        .replace("%player%", args[1])
+                        .replace("%reason%", MessageConfig.REASON_MEMBER_DOES_NOT_EXIST);
+                sender.sendMessage(message);
+            }
         }
         return true;
     }
@@ -45,7 +56,7 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
             Team team = plugin.getTeamManager().getTeam(args[0]);
             if (team == null)
                 return Collections.emptyList();
-            List<String> returnList = Utils.getPlayerNamesByUUIDs(team.getMembers());
+            List<String> returnList = team.getTeamMemberNameList();
             returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
             return returnList;
         }

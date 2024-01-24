@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.team;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.object.status.TeamStatusEnum;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
@@ -73,7 +74,10 @@ public class TeamManager extends BaseManager {
     }
 
     public boolean deleteTeam(@NotNull String name) {
-        Team team = cachedTeams.remove(name);
+        Team team = cachedTeams.get(name);
+        if (team != null && team.getTeamStatusEnum() != TeamStatusEnum.NONE)
+            return false;
+        team = cachedTeams.remove(name);
         if (team == null) return false;
         int id = team.getId();
         teamDaoImpl.deleteTeam(id);
@@ -128,13 +132,21 @@ public class TeamManager extends BaseManager {
         return addTeamMember(username, team.getName());
     }
 
+    private boolean deleteTeamMember(@NotNull UUID uuid, @NotNull Team team) {
+        if (team.deleteMember(uuid)) {
+            teamDaoImpl.deleteTeamMember(uuid);
+            return true;
+        }
+        return false;
+    }
+
     public boolean deleteTeamMember(@NotNull String username, @NotNull String teamName) {
         Team team = getTeam(teamName);
         if (team == null) return false;
-
-        if (team.deleteMember(username)) {
-            teamDaoImpl.deleteTeamMember(username);
-            return true;
+        for (TeamMemberEntry teamMemberEntry : teamDaoImpl.getTeamMembers(team.getId())) {
+            if (teamMemberEntry.getUsername().equals(username)) {
+                return deleteTeamMember(teamMemberEntry.getUuid(), team);
+            }
         }
         return false;
     }

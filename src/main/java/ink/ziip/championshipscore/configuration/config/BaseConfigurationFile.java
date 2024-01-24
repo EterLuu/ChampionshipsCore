@@ -94,11 +94,11 @@ public abstract class BaseConfigurationFile {
         try {
             saveCustomOptions();
 
-            Field[] fs = getClass().getFields();
-            for (Field f : fs) {
-                ConfigOption co = f.getAnnotation(ConfigOption.class);
+            Field[] fields = getClass().getFields();
+            for (Field field : fields) {
+                ConfigOption co = field.getAnnotation(ConfigOption.class);
                 if (co != null) {
-                    configuration.set(co.path(), f.get(null));
+                    configuration.set(co.path(), field.get(null));
                 }
             }
 
