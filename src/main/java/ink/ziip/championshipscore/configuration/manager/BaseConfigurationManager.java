@@ -9,8 +9,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * Modified under https://github.com/AlessioDP/ADP-Core
+ * Author: AlessioDP
+ */
+@Getter
 public abstract class BaseConfigurationManager extends BaseManager {
-    @Getter
     private final List<BaseConfigurationFile> configs = new ArrayList<>();
 
     public BaseConfigurationManager(@NotNull ChampionshipsCore plugin) {

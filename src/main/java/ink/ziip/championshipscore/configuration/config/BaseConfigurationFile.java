@@ -20,6 +20,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.logging.Level;
 
+/*
+ * Modified under https://github.com/AlessioDP/ADP-Core
+ * Author: AlessioDP
+ */
 @RequiredArgsConstructor
 public abstract class BaseConfigurationFile {
     @NotNull
