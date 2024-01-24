@@ -47,7 +47,12 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         teamDeathPlayers.clear();
 
         loadMap(getGameConfig().getAreaName());
-        getGameConfig().initializeConfiguration(plugin.getFolder());
+    }
+
+    @Override
+    public void resetGame() {
+        resetBaseArea();
+        playerPoints.clear();
     }
 
     public SkyWarsTeamArea(ChampionshipsCore plugin, SkyWarsConfig skyWarsConfig, boolean firstTime, String areaName) {
@@ -444,54 +449,83 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     }
 
     public void loadMap(String areaName) {
-        getGameHandler().unRegister();
+        if (!plugin.isLoaded())
+            return;
 
-        String rootWorldFolder = plugin.getServer().getWorldContainer().getAbsolutePath();
-        File rootWorldDirectory = new File(rootWorldFolder);
-        File target = new File(rootWorldDirectory, "skywars_" + areaName);
-        if (target.isDirectory()) {
-            String[] list = target.list();
-            if (list != null && list.length > 0) {
-                plugin.getWorldManager().deleteWorld("skywars_" + areaName, true);
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            scheduler.runTask(plugin, () -> {
+                setGameStageEnum(GameStageEnum.END);
+                getGameHandler().unRegister();
+                plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + areaName + ", start loading world " + getWorldName());
+            });
+
+            File target = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), "skywars_" + areaName);
+
+            // If already has a same world, delete it.
+            if (target.isDirectory()) {
+                String[] list = target.list();
+                if (list != null && list.length > 0) {
+                    plugin.getWorldManager().deleteWorld("skywars_" + areaName, true);
+                }
             }
-        }
 
-        File dataDirectory = plugin.getDataFolder();
-        File maps = new File(dataDirectory, "maps");
-        File source = new File(maps, "skywars_" + areaName);
+            File maps = new File(plugin.getDataFolder(), "maps");
+            File source = new File(maps, "skywars_" + areaName);
 
-        plugin.getWorldManager().copyWorld(source, target);
+            // Copy world files to destination
+            plugin.getWorldManager().copyWorldFiles(source, target);
 
-        plugin.getWorldManager().loadWorld("skywars_" + areaName, World.Environment.NORMAL, false);
+            // Load world
+            plugin.getWorldManager().loadWorld("skywars_" + areaName, World.Environment.NORMAL, false);
 
-        getGameConfig().initializeConfiguration(plugin.getFolder());
-        getGameHandler().register();
+            scheduler.runTask(plugin, () -> {
+                getGameConfig().initializeConfiguration(plugin.getFolder());
+                getGameHandler().register();
+                setGameStageEnum(GameStageEnum.WAITING);
+                plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + areaName + ", world " + getWorldName() + " loaded");
+            });
+        });
     }
 
     public void saveMap() {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return;
 
-        setGameStageEnum(GameStageEnum.END);
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            scheduler.runTask(plugin, () -> {
+                setGameStageEnum(GameStageEnum.END);
+                plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + gameConfig.getAreaName() + ", start saving world " + getWorldName());
+            });
 
-        World editWorld = plugin.getServer().getWorld("skywars_" + getWorldName());
-        if (editWorld != null) {
-            for (Player player : editWorld.getPlayers()) {
-                player.teleport(CCConfig.LOBBY_LOCATION);
+            World editWorld = plugin.getServer().getWorld("skywars_" + getWorldName());
+            if (editWorld != null) {
+                for (Player player : editWorld.getPlayers()) {
+                    player.teleport(CCConfig.LOBBY_LOCATION);
+                }
+
+                // Unload world but not remove files
+                plugin.getWorldManager().unloadWorld("skywars_" + getWorldName(), true);
+
+                File dataDirectory = new File(plugin.getDataFolder(), "maps");
+                File target = new File(dataDirectory, "skywars_" + getWorldName());
+
+                // Delete old world files stored in maps
+                plugin.getWorldManager().deleteWorldFiles(target);
+
+                File source = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), "skywars_" + getWorldName());
+
+                plugin.getWorldManager().copyWorldFiles(source, target);
+                plugin.getWorldManager().deleteWorldFiles(source);
             }
-            plugin.getWorldManager().unloadWorld("skywars_" + getWorldName(), true);
-            File dataDirectory = new File(plugin.getDataFolder(), "maps");
-            File target = new File(dataDirectory, "skywars_" + getWorldName());
-            plugin.getWorldManager().deleteWorld(target);
-            File source = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), "skywars_" + getWorldName());
-            plugin.getWorldManager().copyWorld(source, target);
-            plugin.getWorldManager().deleteWorld(source);
-        }
 
-        loadMap(getGameConfig().getAreaName());
-        getGameConfig().initializeConfiguration(plugin.getFolder());
+            loadMap(getGameConfig().getAreaName());
 
-        setGameStageEnum(GameStageEnum.WAITING);
+            scheduler.runTask(plugin, () -> {
+                getGameConfig().initializeConfiguration(plugin.getFolder());
+                setGameStageEnum(GameStageEnum.WAITING);
+                plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + gameConfig.getAreaName() + ", saving world " + getWorldName() + " done");
+            });
+        });
     }
 
     @Override

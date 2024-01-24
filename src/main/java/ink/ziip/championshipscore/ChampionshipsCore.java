@@ -25,6 +25,8 @@ import java.util.logging.Level;
 public final class ChampionshipsCore extends JavaPlugin {
     @Getter
     private static ChampionshipsCore instance;
+    @Getter
+    private boolean loaded;
     private TeamManager teamManager;
     private PlayerManager playerManager;
     private ListenerManager listenerManager;
@@ -40,6 +42,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        loaded = true;
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) {
             getLogger().warning("Could not find PlaceholderAPI!");
@@ -90,6 +93,8 @@ public final class ChampionshipsCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        loaded = false;
+
         // Plugin shutdown logic
         gameManager.unload();
         rankManager.unload();

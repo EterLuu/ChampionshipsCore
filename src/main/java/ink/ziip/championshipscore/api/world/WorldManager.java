@@ -42,58 +42,39 @@ public class WorldManager extends BaseManager {
         return null;
     }
 
-    public boolean loadWorld(String worldName, World.Environment environment, boolean readOnly) {
+    public void loadWorld(String worldName, World.Environment environment, boolean readOnly) {
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            WorldCreator worldCreator = new WorldCreator(worldName);
+            worldCreator.environment(environment);
+            worldCreator.generateStructures(false);
+            worldCreator.generator(new VoidChunkGenerator());
 
-        WorldCreator worldCreator = new WorldCreator(worldName);
-        worldCreator.environment(environment);
-        worldCreator.generateStructures(false);
-        worldCreator.generator(new VoidChunkGenerator());
+            World world = worldCreator.createWorld();
 
-        World world = worldCreator.createWorld();
+            if (world == null)
+                return;
 
-        if (world == null)
-            return false;
+            world.setDifficulty(org.bukkit.Difficulty.NORMAL);
+            world.setSpawnFlags(true, true);
+            world.setPVP(true);
+            world.setStorm(false);
+            world.setThundering(false);
+            world.setWeatherDuration(Integer.MAX_VALUE);
+            world.setKeepSpawnInMemory(false);
+            world.setTicksPerSpawns(SpawnCategory.ANIMAL, 1);
+            world.setTicksPerSpawns(SpawnCategory.MONSTER, 1);
+            world.setAutoSave(!readOnly);
 
-        world.setDifficulty(org.bukkit.Difficulty.NORMAL);
-        world.setSpawnFlags(true, true);
-        world.setPVP(true);
-        world.setStorm(false);
-        world.setThundering(false);
-        world.setWeatherDuration(Integer.MAX_VALUE);
-        world.setKeepSpawnInMemory(false);
-        world.setTicksPerSpawns(SpawnCategory.ANIMAL, 1);
-        world.setTicksPerSpawns(SpawnCategory.MONSTER, 1);
-        world.setAutoSave(!readOnly);
-
-        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-        world.setGameRule(GameRule.MOB_GRIEFING, true);
-        world.setGameRule(GameRule.DO_FIRE_TICK, true);
-        world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
-        world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-
-        boolean loaded = false;
-        for (World w : plugin.getServer().getWorlds()) {
-            if (w.getName().equals(world.getName())) {
-                loaded = true;
-                break;
-            }
-        }
-        return loaded;
+            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+            world.setGameRule(GameRule.MOB_GRIEFING, true);
+            world.setGameRule(GameRule.DO_FIRE_TICK, true);
+            world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
+            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+        });
     }
 
-    public void unloadWorld(String w, boolean save) {
-        World world = plugin.getServer().getWorld(w);
-
-        if (world != null) {
-            for (Player player : world.getPlayers()) {
-                player.teleport(CCConfig.LOBBY_LOCATION);
-            }
-            plugin.getServer().unloadWorld(world, save);
-        }
-    }
-
-    public void copyWorld(File source, File target) {
+    public void copyWorldFiles(File source, File target) {
         try {
             List<String> ignore = List.of("uid.dat", "session.dat", "session.lock");
             if (!ignore.contains(source.getName())) {
@@ -105,7 +86,7 @@ public class WorldManager extends BaseManager {
                             for (String file : files) {
                                 File srcFile = new File(source, file);
                                 File destFile = new File(target, file);
-                                copyWorld(srcFile, destFile);
+                                copyWorldFiles(srcFile, destFile);
                             }
                         }
                     }
@@ -129,17 +110,33 @@ public class WorldManager extends BaseManager {
 
     public void deleteWorld(String name, boolean removeFile) {
         unloadWorld(name, false);
-        File target = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), name);
-        deleteWorld(target);
+
+        if (removeFile) {
+            File target = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), name);
+            deleteWorldFiles(target);
+        }
     }
 
-    public void deleteWorld(File path) {
+    public void unloadWorld(String worldName, boolean save) {
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            World world = plugin.getServer().getWorld(worldName);
+
+            if (world != null) {
+                for (Player player : world.getPlayers()) {
+                    player.teleport(CCConfig.LOBBY_LOCATION);
+                }
+                plugin.getServer().unloadWorld(world, save);
+            }
+        });
+    }
+
+    public void deleteWorldFiles(File path) {
         if (path.exists()) {
             File[] files = path.listFiles();
             if (files != null) {
                 for (File file : files) {
                     if (file.isDirectory()) {
-                        deleteWorld(file);
+                        deleteWorldFiles(file);
                     } else {
                         file.delete();
                     }
