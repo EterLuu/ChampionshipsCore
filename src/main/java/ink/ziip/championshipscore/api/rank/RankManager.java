@@ -14,6 +14,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -183,12 +184,12 @@ public class RankManager extends BaseManager {
         rankDao.addTeamPoint(teamPointEntry);
     }
 
-    public void addPlayerPoints(Player player, GameTypeEnum gameTypeEnum, String area, int points) {
-        Team team = plugin.getTeamManager().getTeamByPlayer(player);
+    public void addPlayerPoints(OfflinePlayer offlinePlayer, GameTypeEnum gameTypeEnum, String area, int points) {
+        Team team = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
         if (team != null) {
             PlayerPointEntry playerPointEntry = PlayerPointEntry.builder()
-                    .uuid(player.getUniqueId())
-                    .username(player.getUniqueId().toString())
+                    .uuid(offlinePlayer.getUniqueId())
+                    .username(offlinePlayer.getName())
                     .teamId(team.getId())
                     .team(team.getName())
                     .game(gameTypeEnum)
