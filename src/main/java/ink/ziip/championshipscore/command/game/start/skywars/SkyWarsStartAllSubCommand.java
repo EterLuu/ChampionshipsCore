@@ -25,7 +25,7 @@ public class SkyWarsStartAllSubCommand extends BaseSubCommand {
                 message = MessageConfig.GAME_SINGLE_GAME_START_SUCCESSFUL;
 
             message = message
-                    .replace("%game%", GameTypeEnum.TGTTOS.toString())
+                    .replace("%game%", GameTypeEnum.SkyWars.toString())
                     .replace("%area%", args[0]);
 
             sender.sendMessage(message);
@@ -36,7 +36,7 @@ public class SkyWarsStartAllSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            List<String> returnList = plugin.getGameManager().getTgttosManager().getAreaNameList();
+            List<String> returnList = plugin.getGameManager().getSkyWarsManager().getAreaNameList();
             returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
             return returnList;
         }
