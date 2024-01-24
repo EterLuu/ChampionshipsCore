@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore;
 
 import ink.ziip.championshipscore.api.player.CCPlayerManager;
+import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
@@ -35,24 +36,18 @@ public final class ChampionshipsCore extends JavaPlugin {
     private CommandManager commandManager;
     @Getter
     private WorldEditManager worldEditManager;
+    @Getter
+    private RankManager rankManager;
 
     @Override
     public void onEnable() {
         instance = this;
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) {
-            /*
-             * We inform about the fact that PlaceholderAPI isn't installed and then
-             * disable this plugin to prevent issues.
-             */
             getLogger().warning("Could not find PlaceholderAPI!");
             Bukkit.getPluginManager().disablePlugin(this);
         }
         if (Bukkit.getPluginManager().getPlugin("ProtocolLib") == null) {
-            /*
-             * We inform about the fact that ProtocolLib isn't installed and then
-             * disable this plugin to prevent issues.
-             */
             getLogger().warning("Could not find ProtocolLib!");
             Bukkit.getPluginManager().disablePlugin(this);
         }
@@ -68,6 +63,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         commandManager = new CommandManager(this);
         teamManager = new TeamManager(this);
         worldEditManager = new WorldEditManager(this);
+        rankManager = new RankManager(this);
 
         // Plugin startup logic
         configurationManager.load();
@@ -78,6 +74,8 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         teamManager.load();
         commandManager.load();
+
+        rankManager.load();
 
         getLogger().log(Level.INFO, CCConfig.MODE);
     }

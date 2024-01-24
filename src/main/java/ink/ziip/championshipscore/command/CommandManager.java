@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.command.member.MemberMainCommand;
+import ink.ziip.championshipscore.command.rank.RankMainCommand;
 import ink.ziip.championshipscore.command.team.TeamMainCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandMap;
@@ -25,13 +26,16 @@ public class CommandManager extends BaseManager {
 
     @Override
     public void load() {
-        this.mainCommand = new MainCommand();
+        MainCommand mainCommand = new MainCommand();
 
         this.teamMainCommand = new TeamMainCommand();
         this.memberMainCommand = new MemberMainCommand();
 
         this.mainCommand.addSubCommand(teamMainCommand);
         this.mainCommand.addSubCommand(memberMainCommand);
+        mainCommand.addSubCommand(new TeamMainCommand());
+        mainCommand.addSubCommand(new MemberMainCommand());
+        mainCommand.addSubCommand(new RankMainCommand());
 
         if (this.corePluginCommand != null) {
             this.corePluginCommand.setExecutor(this.mainCommand);
