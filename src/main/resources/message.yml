@@ -1,16 +1,16 @@
 dont-edit-this:
   version: 2
-no-permission: "&c&l[&7!&c]&r &4你没有权限！"
+no-permission: "&7&l[&7!&7]&r &4你没有权限！"
 team:
-  successfully-added: "&b[&3WCC&b]&r &a成功添加队伍 %team%"
-  added-failed: "&b[&3WCC&b]&r &c添加队伍 %team% 失败（%reason%）"
-  successfully-deleted: "&b[&3WCC&b]&r &a成功删除队伍 %team%"
-  deleted-failed: "&b[&3WCC&b]&r &c删除队伍 %team% 失败（%reason%）"
+  successfully-added: "&b[&3WCC&b]&r &f成功添加队伍 %team%"
+  added-failed: "&b[&3WCC&b]&r &7添加队伍 %team% 失败（%reason%）"
+  successfully-deleted: "&b[&3WCC&b]&r &f成功删除队伍 %team%"
+  deleted-failed: "&b[&3WCC&b]&r &7删除队伍 %team% 失败（%reason%）"
 member:
-  successfully-added: "&b[&3WCC&b]&r &a成功添加成员 %player% 至 %team%"
-  added-failed: "&b[&3WCC&b]&r &c添加成员 %player% 至 %team% 失败（%reason%）"
-  successfully-deleted: "&b[&3WCC&b]&r &a成功删除成员 %player% 于 %team%"
-  deleted-failed: "&b[&3WCC&b]&r &c删除成员 %player% 于 %team% 失败（%reason%）"
+  successfully-added: "&b[&3WCC&b]&r &f成功添加成员 %player% 至 %team%"
+  added-failed: "&b[&3WCC&b]&r &7添加成员 %player% 至 %team% 失败（%reason%）"
+  successfully-deleted: "&b[&3WCC&b]&r &f成功删除成员 %player% 于 %team%"
+  deleted-failed: "&b[&3WCC&b]&r &7删除成员 %player% 于 %team% 失败（%reason%）"
 reason:
   team-does-not-exist: "队伍不存在"
   team-already-exist: "队伍已经存在"
@@ -18,7 +18,15 @@ reason:
   member-already-exist: "成员已存在/队伍满人"
   area-already-exist: "区域已存在"
 area:
-  successfully-added: "&b[&3WCC&b]&r &a成功添加区域 %area%"
-  added-failed: "&b[&3WCC&b]&r &c添加区域 %area% 失败（%reason%）"
-  setting-option-succeeded: "&b[&3WCC&b]&r &a成功修改区域 %area% 的 %option% 设置"
-  setting-option-failed: "&b[&3WCC&b]&r &c修改区域 %area% 的 %option% 设置失败"
+  successfully-added: "&b[&3WCC&b]&r &f成功添加区域 %area%"
+  added-failed: "&b[&3WCC&b]&r &7添加区域 %area% 失败（%reason%）"
+  setting-option-succeeded: "&b[&3WCC&b]&r &f成功修改区域 %area% 的 %option% 设置"
+  setting-option-failed: "&b[&3WCC&b]&r &7修改区域 %area% 的 %option% 设置失败"
+rank:
+  rank-info: "&b[&3WCC&b] &f个人得分：%player_point%，个人排名：%player_rank%。团队得分：%team_point%，团队排名：%team_rank%。"
+  team-board-bar: "&f====== &3WCC &e团队排名 &7| &cRIA &fx &bTRIALHAMMER &f======"
+  team-board-row: "&r  &f%team_rank%. &b%team%&7（&6%team_point%&7）"
+  player-board-bar: "&f====== &3WCC &e个人排名 &7| &cRIA &fx &bTRIALHAMMER &f======"
+  player-board-row: "&r  &f%player_rank%. &b%player%&7（&6%player_point%&7）"
+  not-player: "&b[&3WCC&b] &7你是黑队的？"
+  no-record: "&b[&3WCC&b] &7暂未查询到相关记录。"

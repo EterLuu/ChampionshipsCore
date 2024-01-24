@@ -77,4 +77,26 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "area.setting-option-failed")
     public static String AREA_SETTING_OPTION_FAILED;
+
+    // Rank
+    @ConfigOption(path = "rank.rank-info")
+    public static String RANK_RANK_INFO;
+
+    @ConfigOption(path = "rank.team-board-bar")
+    public static String RANK_TEAM_BOARD_BAR;
+
+    @ConfigOption(path = "rank.team-board-row")
+    public static String RANK_TEAM_BOARD_ROW;
+
+    @ConfigOption(path = "rank.player-board-bar")
+    public static String RANK_PLAYER_BOARD_BAR;
+
+    @ConfigOption(path = "rank.player-board-row")
+    public static String RANK_PLAYER_BOARD_ROW;
+
+    @ConfigOption(path = "rank.not-player")
+    public static String RANK_NOT_PLAYER;
+
+    @ConfigOption(path = "rank.no-record")
+    public static String RANK_NO_RECORD;
 }
