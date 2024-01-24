@@ -74,6 +74,8 @@ public class BingoManager extends BaseManager {
                     }
                     teamManager.addMemberToTeam(bingoParticipant, championshipTeam.getName().toLowerCase());
                 }
+
+                plugin.getGameManager().addBingoAreaTeamStatus(championshipTeam);
             }
 
             session.startGame();
@@ -117,6 +119,10 @@ public class BingoManager extends BaseManager {
         teamPoints.clear();
         bingoTaskCompleteLists.clear();
         started = false;
+
+        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+            plugin.getGameManager().removeBingoAreaTeamStatus(championshipTeam);
+        }
     }
 
     private void addPointsToTeam(ChampionshipTeam championshipTeam, int points) {

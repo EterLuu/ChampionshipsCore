@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
+import ink.ziip.championshipscore.api.game.bingo.BingoArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
@@ -49,6 +50,14 @@ public class GameManager extends BaseManager {
     @Nullable
     public BaseTeamArea getBaseTeamArea(ChampionshipTeam championshipTeam) {
         return teamStatus.get(championshipTeam);
+    }
+
+    public void addBingoAreaTeamStatus(ChampionshipTeam championshipTeam) {
+        teamStatus.put(championshipTeam, new BingoArea(plugin));
+    }
+
+    public void removeBingoAreaTeamStatus(ChampionshipTeam championshipTeam) {
+        teamStatus.remove(championshipTeam);
     }
 
     @Nullable

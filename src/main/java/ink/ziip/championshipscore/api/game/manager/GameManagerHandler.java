@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
+import ink.ziip.championshipscore.api.game.bingo.BingoArea;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import org.bukkit.GameMode;
@@ -29,15 +30,25 @@ public class GameManagerHandler extends BaseListener {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
         if (championshipTeam != null) {
             BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
+            if (baseTeamArea instanceof BingoArea) {
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        event.getEntity().spigot().respawn();
+                    }
+                }.runTask(plugin);
+                return;
+            }
             if (baseTeamArea != null) {
                 baseTeamArea.handlePlayerDeath(event);
                 return;
             }
         } else {
             BaseArea baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
-            if (baseArea != null)
+            if (baseArea != null) {
                 baseArea.handleSpectatorDeath(event);
-            return;
+                return;
+            }
         }
 
         new BukkitRunnable() {
