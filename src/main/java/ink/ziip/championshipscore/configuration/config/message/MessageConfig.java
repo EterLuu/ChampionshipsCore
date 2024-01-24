@@ -151,6 +151,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.team-game-start-failed")
     public static String GAME_TEAM_GAME_START_FAILED;
 
+    @ConfigOption(path = "game.single-game-start-successful")
+    public static String GAME_SINGLE_GAME_START_SUCCESSFUL;
+
+    @ConfigOption(path = "game.single-game-start-failed")
+    public static String GAME_SINGLE_GAME_START_FAILED;
+
     @ConfigOption(path = "game.board-bar")
     public static String GAME_BOARD_BAR;
 
@@ -375,4 +381,56 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "skywars.deduct-food-level")
     public static String SKY_WARS_DEDUCT_FOOD_LEVEL;
+
+    // TGTTOS
+    @ConfigOption(path = "tgttos.start-preparation")
+    public static String TGTTOS_START_PREPARATION;
+
+    @ConfigOption(path = "tgttos.start-preparation-title")
+    public static String TGTTOS_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "tgttos.start-preparation-subtitle")
+    public static String TGTTOS_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "tgttos.game-start-soon")
+    public static String TGTTOS_GAME_START_SOON;
+
+    @ConfigOption(path = "tgttos.game-start-soon-title")
+    public static String TGTTOS_GAME_START_SOON_TITLE;
+
+    @ConfigOption(path = "tgttos.game-start-soon-subtitle")
+    public static String TGTTOS_GAME_START_SOON_SUBTITLE;
+
+    @ConfigOption(path = "tgttos.count-down")
+    public static String TGTTOS_COUNT_DOWN;
+
+    @ConfigOption(path = "tgttos.game-start")
+    public static String TGTTOS_GAME_START;
+
+    @ConfigOption(path = "tgttos.game-start-title")
+    public static String TGTTOS_GAME_START_TITLE;
+
+    @ConfigOption(path = "tgttos.game-start-subtitle")
+    public static String TGTTOS_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "tgttos.game-end")
+    public static String TGTTOS_GAME_END;
+
+    @ConfigOption(path = "tgttos.game-end-title")
+    public static String TGTTOS_GAME_END_TITLE;
+
+    @ConfigOption(path = "tgttos.game-end-subtitle")
+    public static String TGTTOS_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "tgttos.action-bar-count-down")
+    public static String TGTTOS_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "tgttos.arrived-at-end-point")
+    public static String TGTTOS_ARRIVED_AT_POINT;
+
+    @ConfigOption(path = "tgttos.team-arrived-at-end-point")
+    public static String TGTTOS_TEAM_ARRIVED_AT_POINT;
+
+    @ConfigOption(path = "tgttos.fall-into-void")
+    public static String TGTTOS_FALL_INTO_VOID;
 }

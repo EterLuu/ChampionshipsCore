@@ -12,6 +12,8 @@ import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
+import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
+import ink.ziip.championshipscore.api.game.tgttos.TGTTOSTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
@@ -36,6 +38,8 @@ public class GameManager extends BaseManager {
     private final ParkourTagManager parkourTagManager;
     @Getter
     private final SkyWarsManager skyWarsManager;
+    @Getter
+    private final TGTTOSManager tgttosManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -43,6 +47,7 @@ public class GameManager extends BaseManager {
         battleBoxManager = new BattleBoxManager(plugin);
         parkourTagManager = new ParkourTagManager(plugin);
         skyWarsManager = new SkyWarsManager(plugin);
+        tgttosManager = new TGTTOSManager(plugin);
     }
 
     @Override
@@ -50,6 +55,7 @@ public class GameManager extends BaseManager {
         battleBoxManager.load();
         parkourTagManager.load();
         skyWarsManager.load();
+        tgttosManager.load();
 
         gameManagerHandler.register();
     }
@@ -59,6 +65,7 @@ public class GameManager extends BaseManager {
         battleBoxManager.unload();
         parkourTagManager.unload();
         skyWarsManager.unload();
+        tgttosManager.unload();
 
         gameManagerHandler.unRegister();
     }
@@ -141,10 +148,28 @@ public class GameManager extends BaseManager {
             if (skyWarsArea == null)
                 return false;
 
-            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                teamStatus.put(championshipTeam, skyWarsArea);
+            if (skyWarsArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    teamStatus.put(championshipTeam, skyWarsArea);
+                }
+                return true;
             }
-            return skyWarsArea.tryStartGame(plugin.getTeamManager().getTeamList());
+            return false;
+        }
+
+        if (gameTypeEnum == GameTypeEnum.TGTTOS) {
+            TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(area);
+            if (tgttosTeamArea == null)
+                return false;
+
+            if (tgttosTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    teamStatus.put(championshipTeam, tgttosTeamArea);
+                }
+                return true;
+            }
+
+            return false;
         }
 
         return false;

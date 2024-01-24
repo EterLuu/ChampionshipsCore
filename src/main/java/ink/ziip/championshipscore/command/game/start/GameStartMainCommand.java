@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.game.start;
 
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.command.game.start.skywars.SkyWarsStartMainCommand;
+import ink.ziip.championshipscore.command.game.start.tgttos.TGTTOSStartMainCommand;
 import org.bukkit.Bukkit;
 
 public class GameStartMainCommand extends BaseMainCommand {
@@ -14,5 +15,6 @@ public class GameStartMainCommand extends BaseMainCommand {
         }
         addSubCommand(new ParkourTagStartSubCommand());
         addSubCommand(new SkyWarsStartMainCommand());
+        addSubCommand(new TGTTOSStartMainCommand());
     }
 }

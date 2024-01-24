@@ -1,0 +1,9 @@
+name: "area"
+timer: 90
+area-type:
+spectator-spawn-point:
+area-pos1:
+area-pos2:
+monster-spawn-points: [ ]
+chicken-spawn-points: [ ]
+player-spawn-points: [ ]
