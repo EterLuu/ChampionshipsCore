@@ -222,11 +222,6 @@ public class RankManager extends BaseManager {
         for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
             if (gameOrder == 1 || gameOrder == 2) {
-                for (TeamPointEntry teamPointEntry : teamPointEntries) {
-                    if (teamPointEntry.getGame() == gameTypeEnum) {
-                        points += teamPointEntry.getPoints();
-                    }
-                }
                 for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                     if (playerPointEntry.getGame() == gameTypeEnum) {
                         points += playerPointEntry.getPoints();
@@ -234,11 +229,6 @@ public class RankManager extends BaseManager {
                 }
             }
             if (gameOrder == 3 || gameOrder == 4 || gameOrder == 5) {
-                for (TeamPointEntry teamPointEntry : teamPointEntries) {
-                    if (teamPointEntry.getGame() == gameTypeEnum) {
-                        points += teamPointEntry.getPoints() * 1.5;
-                    }
-                }
                 for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                     if (playerPointEntry.getGame() == gameTypeEnum) {
                         points += playerPointEntry.getPoints() * 1.5;
@@ -246,11 +236,6 @@ public class RankManager extends BaseManager {
                 }
             }
             if (gameOrder == 6) {
-                for (TeamPointEntry teamPointEntry : teamPointEntries) {
-                    if (teamPointEntry.getGame() == gameTypeEnum) {
-                        points += teamPointEntry.getPoints() * 2;
-                    }
-                }
                 for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                     if (playerPointEntry.getGame() == gameTypeEnum) {
                         points += playerPointEntry.getPoints() * 2;
