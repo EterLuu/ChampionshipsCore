@@ -115,13 +115,13 @@ public class BingoManager extends BaseManager {
 
         Bukkit.getLogger().log(Level.INFO, stringBuilder.toString());
 
+        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+            championshipTeam.teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+        }
+
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    championshipTeam.teleportAllPlayers(CCConfig.LOBBY_LOCATION);
-                }
-
                 for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                     championshipTeam.cleanInventoryForAllPlayers();
                 }
@@ -142,19 +142,19 @@ public class BingoManager extends BaseManager {
 
     private int getPoints(int num) {
         if (num == 1) {
-            return 55;
+            return 60;
         }
         if (num == 2) {
-            return 45;
+            return 50;
         }
         if (num == 3) {
-            return 35;
+            return 40;
         }
         if (num == 4) {
-            return 25;
+            return 30;
         }
         if (num == 5) {
-            return 15;
+            return 20;
         }
 
         return 10;
