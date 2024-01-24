@@ -86,4 +86,8 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
     public boolean canBeChaser(UUID uuid) {
         return !(chaserTimes.getOrDefault(uuid, 0) >= CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES);
     }
+
+    public int getChaserTimes(UUID uuid) {
+        return chaserTimes.getOrDefault(uuid, 0);
+    }
 }

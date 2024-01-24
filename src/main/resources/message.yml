@@ -97,7 +97,7 @@ parkourtag:
   game-end-subtitle: "&b[&3WCC&b] &7游戏结束。"
   catch-player: "&b[&3WCC&b] &f%player% &c被 &f%chaser% &c抓住。"
   player-leave: "&b[&3WCC&b] &f%player% &c离开游戏（被抓住）。"
-  become-chaser: "&b[&3WCC&b] &f%player% &f成为了你队的追击者。"
+  become-chaser: "&b[&3WCC&b] &f%player% &f成为了你队的追击者（还剩%times%次）。"
   become-chaser-failed: "&b[&3WCC&b] &c你达到了成为追击者的上限。"
   action-bar-count-down: "&b游戏剩余时间：&c%time%&b。"
   show-points: "&b[&3WCC&b] &f%team% &f得分：%team_points%，&f%rival% &f得分：%rival_points%。"

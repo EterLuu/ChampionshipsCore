@@ -114,11 +114,17 @@ public class ParkourTagArea extends BaseTeamArea {
 
         if (rightAreaChaser == null) {
             rightAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(rightChampionshipTeam);
-            rightChampionshipTeam.sendMessageToAll(message.replace("%player%", rightChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(rightAreaChaser).getName()));
+            rightChampionshipTeam.sendMessageToAll(message
+                    .replace("%player%", rightChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(rightAreaChaser).getName())
+                    .replace("%times%", String.valueOf(plugin.getGameManager().getParkourTagManager().getChaserTimes(rightAreaChaser) + 1))
+            );
         }
         if (leftAreaChaser == null) {
             leftAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(leftChampionshipTeam);
-            leftChampionshipTeam.sendMessageToAll(message.replace("%player%", leftChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(leftAreaChaser).getName()));
+            leftChampionshipTeam.sendMessageToAll(message
+                    .replace("%player%", leftChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(leftAreaChaser).getName())
+                    .replace("%times%", String.valueOf(plugin.getGameManager().getParkourTagManager().getChaserTimes(leftAreaChaser) + 1))
+            );
         }
 
         plugin.getGameManager().getParkourTagManager().addChaserTimes(rightAreaChaser);

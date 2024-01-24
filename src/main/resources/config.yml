@@ -29,4 +29,4 @@ bingo:
     pitch: 0.0
     yaw: 0.0
 parkourtag:
-  max-chaser-times: 3
+  max-chaser-times: 4
