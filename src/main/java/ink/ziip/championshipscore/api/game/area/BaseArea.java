@@ -15,7 +15,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
@@ -142,13 +141,10 @@ public abstract class BaseArea {
         if (isSpectator(player)) {
             event.setDroppedExp(0);
             event.getDrops().clear();
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    event.getEntity().spigot().respawn();
-                    removeSpectator(player);
-                }
-            }.runTask(plugin);
+            scheduler.runTask(plugin, () -> {
+                event.getEntity().spigot().respawn();
+                removeSpectator(player);
+            });
         }
     }
 

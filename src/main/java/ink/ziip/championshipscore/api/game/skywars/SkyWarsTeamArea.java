@@ -20,7 +20,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -183,12 +182,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                     }
 
                     if (Math.hypot(center.getX() - location.getX(), center.getZ() - location.getZ()) >= radius) {
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                player.damage(1);
-                            }
-                        }.runTask(plugin);
+                        scheduler.runTask(plugin, () -> player.damage(1));
                         championshipPlayer.setRedScreen();
                     } else {
                         championshipPlayer.removeRedScreen();
@@ -258,26 +252,20 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         }
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    event.getEntity().spigot().respawn();
-                    event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
-                    event.getEntity().setGameMode(GameMode.SPECTATOR);
-                }
-            }.runTask(plugin);
+            scheduler.runTask(plugin, () -> {
+                event.getEntity().spigot().respawn();
+                event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+                event.getEntity().setGameMode(GameMode.SPECTATOR);
+            });
             player.teleport(getGameConfig().getPreSpawnPoint());
             return;
         }
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                event.getEntity().spigot().respawn();
-                event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
-                event.getEntity().setGameMode(GameMode.SPECTATOR);
-            }
-        }.runTask(plugin);
+        scheduler.runTask(plugin, () -> {
+            event.getEntity().spigot().respawn();
+            event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+            event.getEntity().setGameMode(GameMode.SPECTATOR);
+        });
 
         event.getDrops().clear();
         event.setDroppedExp(0);

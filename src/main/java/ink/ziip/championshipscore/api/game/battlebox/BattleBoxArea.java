@@ -25,7 +25,6 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -260,14 +259,11 @@ public class BattleBoxArea extends BaseTeamArea {
             }
         }
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                event.getEntity().spigot().respawn();
-                event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
-                event.getEntity().setGameMode(GameMode.SPECTATOR);
-            }
-        }.runTask(plugin);
+        scheduler.runTask(plugin, () -> {
+            event.getEntity().spigot().respawn();
+            event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+            event.getEntity().setGameMode(GameMode.SPECTATOR);
+        });
 
         event.getDrops().clear();
         event.setDroppedExp(0);

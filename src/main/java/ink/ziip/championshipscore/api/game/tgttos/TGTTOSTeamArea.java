@@ -18,7 +18,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -233,14 +232,11 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             return;
         }
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                event.getEntity().spigot().respawn();
-                event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
-                event.getEntity().setGameMode(GameMode.SPECTATOR);
-            }
-        }.runTask(plugin);
+        scheduler.runTask(plugin, () -> {
+            event.getEntity().spigot().respawn();
+            event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+            event.getEntity().setGameMode(GameMode.SPECTATOR);
+        });
         player.teleport(getGameConfig().getSpectatorSpawnPoint());
     }
 

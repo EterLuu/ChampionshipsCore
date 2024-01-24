@@ -23,7 +23,6 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -115,18 +114,17 @@ public class BingoManager extends BaseManager {
 
         Bukkit.getLogger().log(Level.INFO, stringBuilder.toString());
 
-        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-            championshipTeam.teleportAllPlayers(CCConfig.LOBBY_LOCATION);
-        }
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    championshipTeam.cleanInventoryForAllPlayers();
-                }
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                championshipTeam.teleportAllPlayers(CCConfig.LOBBY_LOCATION);
             }
-        }.runTaskLater(plugin, 100L);
+        }, 40L);
+
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                championshipTeam.cleanInventoryForAllPlayers();
+            }
+        }, 60L);
 
         teamPoints.clear();
         bingoTaskCompleteLists.clear();

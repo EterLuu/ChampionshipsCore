@@ -16,7 +16,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 public class GameManagerHandler extends BaseListener {
 
@@ -31,12 +30,7 @@ public class GameManagerHandler extends BaseListener {
         if (championshipTeam != null) {
             BaseArea baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
             if (baseArea instanceof BingoTeamArea) {
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        event.getEntity().spigot().respawn();
-                    }
-                }.runTask(plugin);
+                plugin.getServer().getScheduler().runTask(plugin, () -> event.getEntity().spigot().respawn());
                 return;
             }
             if (baseArea != null) {
@@ -51,14 +45,12 @@ public class GameManagerHandler extends BaseListener {
             }
         }
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                event.getEntity().spigot().respawn();
-                player.teleport(CCConfig.LOBBY_LOCATION);
-                player.setGameMode(GameMode.ADVENTURE);
-            }
-        }.runTask(plugin);
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            event.getEntity().spigot().respawn();
+            player.teleport(CCConfig.LOBBY_LOCATION);
+            player.setGameMode(GameMode.ADVENTURE);
+
+        });
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

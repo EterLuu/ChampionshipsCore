@@ -16,7 +16,6 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.*;
@@ -78,84 +77,74 @@ public class RankManager extends BaseManager {
     }
 
     private void updateTeamPoints() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    teamPoints.put(championshipTeam, plugin.getRankManager().getTeamPoints(championshipTeam));
-                }
-                ArrayList<Map.Entry<ChampionshipTeam, Double>> list;
-                list = new ArrayList<>(teamPoints.entrySet());
-                list.sort(Map.Entry.comparingByValue());
-
-                Collections.reverse(list);
-
-                StringBuilder stringBuilder = new StringBuilder();
-
-                stringBuilder.append(MessageConfig.RANK_TEAM_BOARD_BAR).append("\n");
-
-                int i = 1;
-                for (Map.Entry<ChampionshipTeam, Double> entry : list) {
-                    String row = MessageConfig.RANK_TEAM_BOARD_ROW
-                            .replace("%team_rank%", String.valueOf(i))
-                            .replace("%team%", entry.getKey().getColoredName())
-                            .replace("%team_point%", String.valueOf(entry.getValue()));
-
-                    stringBuilder.append(row).append("\n");
-
-                    teamRank.put(entry.getKey(), i);
-                    i++;
-                }
-
-                teamRankString = stringBuilder.toString();
-
-                cancel();
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                teamPoints.put(championshipTeam, plugin.getRankManager().getTeamPoints(championshipTeam));
             }
-        }.runTaskAsynchronously(plugin);
+            ArrayList<Map.Entry<ChampionshipTeam, Double>> list;
+            list = new ArrayList<>(teamPoints.entrySet());
+            list.sort(Map.Entry.comparingByValue());
+
+            Collections.reverse(list);
+
+            StringBuilder stringBuilder = new StringBuilder();
+
+            stringBuilder.append(MessageConfig.RANK_TEAM_BOARD_BAR).append("\n");
+
+            int i = 1;
+            for (Map.Entry<ChampionshipTeam, Double> entry : list) {
+                String row = MessageConfig.RANK_TEAM_BOARD_ROW
+                        .replace("%team_rank%", String.valueOf(i))
+                        .replace("%team%", entry.getKey().getColoredName())
+                        .replace("%team_point%", String.valueOf(entry.getValue()));
+
+                stringBuilder.append(row).append("\n");
+
+                teamRank.put(entry.getKey(), i);
+                i++;
+            }
+
+            teamRankString = stringBuilder.toString();
+        });
     }
 
     private void updatePlayerPoint() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(championshipTeam.getId())) {
-                        UUID uuid = teamMemberEntry.getUuid();
-                        playerPoints.put(uuid, getPlayerPoints(uuid));
-                    }
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(championshipTeam.getId())) {
+                    UUID uuid = teamMemberEntry.getUuid();
+                    playerPoints.put(uuid, getPlayerPoints(uuid));
                 }
-                ArrayList<Map.Entry<UUID, Double>> list;
-                list = new ArrayList<>(playerPoints.entrySet());
-                list.sort(Map.Entry.comparingByValue());
-
-                Collections.reverse(list);
-
-                StringBuilder stringBuilder = new StringBuilder();
-
-                stringBuilder.append(MessageConfig.RANK_PLAYER_BOARD_BAR).append("\n");
-
-                int i = 1;
-                for (Map.Entry<UUID, Double> entry : list) {
-                    // TODO changed method getting name
-                    String username = Bukkit.getOfflinePlayer(entry.getKey()).getName();
-                    if (username != null) {
-                        String row = MessageConfig.RANK_PLAYER_BOARD_ROW
-                                .replace("%player_rank%", String.valueOf(i))
-                                .replace("%player%", username)
-                                .replace("%player_point%", String.valueOf(entry.getValue()));
-
-                        stringBuilder.append(row).append("\n");
-
-                        playerRank.put(entry.getKey(), i);
-                        i++;
-                    }
-                }
-
-                playerRankString = stringBuilder.toString();
-
-                cancel();
             }
-        }.runTaskAsynchronously(plugin);
+            ArrayList<Map.Entry<UUID, Double>> list;
+            list = new ArrayList<>(playerPoints.entrySet());
+            list.sort(Map.Entry.comparingByValue());
+
+            Collections.reverse(list);
+
+            StringBuilder stringBuilder = new StringBuilder();
+
+            stringBuilder.append(MessageConfig.RANK_PLAYER_BOARD_BAR).append("\n");
+
+            int i = 1;
+            for (Map.Entry<UUID, Double> entry : list) {
+                // TODO changed method getting name
+                String username = Bukkit.getOfflinePlayer(entry.getKey()).getName();
+                if (username != null) {
+                    String row = MessageConfig.RANK_PLAYER_BOARD_ROW
+                            .replace("%player_rank%", String.valueOf(i))
+                            .replace("%player%", username)
+                            .replace("%player_point%", String.valueOf(entry.getValue()));
+
+                    stringBuilder.append(row).append("\n");
+
+                    playerRank.put(entry.getKey(), i);
+                    i++;
+                }
+            }
+
+            playerRankString = stringBuilder.toString();
+        });
     }
 
     public void addGameOrder(GameTypeEnum gameTypeEnum, int order) {
