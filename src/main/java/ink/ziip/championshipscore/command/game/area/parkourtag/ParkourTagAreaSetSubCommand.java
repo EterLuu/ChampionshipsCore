@@ -131,7 +131,7 @@ public class ParkourTagAreaSetSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            List<String> returnList = plugin.getGameManager().getBattleBoxManager().getAreaNameList();
+            List<String> returnList = plugin.getGameManager().getParkourTagManager().getAreaNameList();
             returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
             return returnList;
         }
