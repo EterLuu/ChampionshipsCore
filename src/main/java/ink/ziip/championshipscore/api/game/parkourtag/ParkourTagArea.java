@@ -253,8 +253,8 @@ public class ParkourTagArea extends BaseTeamArea {
 
         // More than zero player survived, escapees gain 15 points
         // Caught all escapees, chaser gain 7 points per 10s
-        int rightTeamSurvivor = CCConfig.TEAM_MAX_MEMBERS - 1;
-        int leftTeamSurvivor = CCConfig.TEAM_MAX_MEMBERS - 1;
+        int rightTeamSurvivor = rightChampionshipTeam.getMembers().size() - 1;
+        int leftTeamSurvivor = leftChampionshipTeam.getMembers().size() - 1;
 
         for (UUID uuid : playerSurviveTimes.keySet()) {
             if (getRightTeamEscapees().contains(uuid))
@@ -392,8 +392,8 @@ public class ParkourTagArea extends BaseTeamArea {
     }
 
     public void updateTeamSurviveTimes() {
-        int rightTeamSurvivor = CCConfig.TEAM_MAX_MEMBERS - 1;
-        int leftTeamSurvivor = CCConfig.TEAM_MAX_MEMBERS - 1;
+        int rightTeamSurvivor = rightChampionshipTeam.getMembers().size() - 1;
+        int leftTeamSurvivor = leftChampionshipTeam.getMembers().size() - 1;
 
         for (UUID uuid : playerSurviveTimes.keySet()) {
             if (getRightTeamEscapees().contains(uuid))
@@ -419,22 +419,22 @@ public class ParkourTagArea extends BaseTeamArea {
     }
 
     public void giveItemToAllGamePlayers() {
-        ItemStack chaserItem = new ItemStack(Material.FEATHER);
-        ItemMeta chaserItemMeta = chaserItem.getItemMeta();
-        if (chaserItemMeta != null) {
-            chaserItemMeta.setDisplayName(MessageConfig.PARKOUR_TAG_KITS_FEATHER);
-        }
-        chaserItem.setItemMeta(chaserItemMeta);
-
-        Player left = Bukkit.getPlayer(leftAreaChaser);
-        Player right = Bukkit.getPlayer(rightAreaChaser);
-        if (left != null)
-            left.getInventory().setItem(0, chaserItem.clone());
-        if (right != null)
-            right.getInventory().setItem(0, chaserItem.clone());
+//        ItemStack chaserItem = new ItemStack(Material.FEATHER);
+//        ItemMeta chaserItemMeta = chaserItem.getItemMeta();
+//        if (chaserItemMeta != null) {
+//            chaserItemMeta.setDisplayName(MessageConfig.PARKOUR_TAG_KITS_FEATHER);
+//        }
+//        chaserItem.setItemMeta(chaserItemMeta);
+//
+//        Player left = Bukkit.getPlayer(leftAreaChaser);
+//        Player right = Bukkit.getPlayer(rightAreaChaser);
+//        if (left != null)
+//            left.getInventory().setItem(0, chaserItem.clone());
+//        if (right != null)
+//            right.getInventory().setItem(0, chaserItem.clone());
 
         ItemStack clock = new ItemStack(Material.CLOCK);
-        ItemMeta clockItemMeta = chaserItem.getItemMeta();
+        ItemMeta clockItemMeta = clock.getItemMeta();
         if (clockItemMeta != null) {
             clockItemMeta.setDisplayName(MessageConfig.PARKOUR_TAG_KITS_CLOCK);
         }
