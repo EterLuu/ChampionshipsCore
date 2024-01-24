@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
+import ink.ziip.championshipscore.api.world.WorldManager;
 import ink.ziip.championshipscore.integration.bingo.BingoManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
@@ -34,6 +35,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private GameManager gameManager;
     private RankManager rankManager;
     private BingoManager bingoManager;
+    private WorldManager worldManager;
 
     @Override
     public void onEnable() {
@@ -61,11 +63,13 @@ public final class ChampionshipsCore extends JavaPlugin {
         worldEditManager = new WorldEditManager(this);
         gameManager = new GameManager(this);
         rankManager = new RankManager(this);
+        worldManager = new WorldManager(this);
 
         // Plugin startup logic
         configurationManager.load();
         databaseManager.load();
         listenerManager.load();
+        worldManager.load();
 
         playerManager.load();
         teamManager.load();
@@ -99,6 +103,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         configurationManager.unload();
 
         worldEditManager.unload();
+        worldManager.unload();
 
         if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
             bingoManager.unload();
