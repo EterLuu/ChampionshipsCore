@@ -48,7 +48,15 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
 
     @Override
     public boolean addArea(String name) {
-        ParkourTagArea parkourTagArea = areas.putIfAbsent(name, new ParkourTagArea(plugin, new ParkourTagConfig(plugin, name)));
+        if (areas.containsKey(name))
+            return false;
+
+        ParkourTagConfig parkourTagConfig = new ParkourTagConfig(plugin, name);
+        parkourTagConfig.initializeConfiguration(plugin.getFolder());
+        parkourTagConfig.setAreaName(name);
+        parkourTagConfig.saveOptions();
+
+        ParkourTagArea parkourTagArea = areas.putIfAbsent(name, new ParkourTagArea(plugin, parkourTagConfig));
 
         return parkourTagArea == null;
     }

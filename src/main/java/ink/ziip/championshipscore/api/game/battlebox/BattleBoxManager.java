@@ -41,7 +41,15 @@ public class BattleBoxManager extends BaseAreaManager<BattleBoxArea> {
 
     @Override
     public boolean addArea(String name) {
-        BattleBoxArea battleBoxArea = areas.putIfAbsent(name, new BattleBoxArea(plugin, new BattleBoxConfig(plugin, name)));
+        if (areas.containsKey(name))
+            return false;
+
+        BattleBoxConfig battleBoxConfig = new BattleBoxConfig(plugin, name);
+        battleBoxConfig.initializeConfiguration(plugin.getFolder());
+        battleBoxConfig.setAreaName(name);
+        battleBoxConfig.saveOptions();
+
+        BattleBoxArea battleBoxArea = areas.putIfAbsent(name, new BattleBoxArea(plugin, battleBoxConfig));
 
         return battleBoxArea == null;
     }

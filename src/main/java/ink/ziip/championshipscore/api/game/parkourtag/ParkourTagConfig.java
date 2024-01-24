@@ -18,8 +18,6 @@ public class ParkourTagConfig extends BaseGameConfig {
 
     public ParkourTagConfig(ChampionshipsCore championshipsCore, String areaName) {
         super(championshipsCore, areaName);
-        this.areaName = areaName;
-        this.timer = 60;
     }
 
     @Override

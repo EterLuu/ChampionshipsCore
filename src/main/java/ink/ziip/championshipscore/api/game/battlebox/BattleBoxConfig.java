@@ -18,8 +18,6 @@ public class BattleBoxConfig extends BaseGameConfig {
 
     public BattleBoxConfig(ChampionshipsCore championshipsCore, String areaName) {
         super(championshipsCore, areaName);
-        this.areaName = areaName;
-        this.timer = 60;
     }
 
     @Override
