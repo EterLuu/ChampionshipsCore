@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.player.CCPlayerManager;
 import ink.ziip.championshipscore.api.team.Team;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -12,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
@@ -35,7 +37,7 @@ public class PlayerListener extends BaseListener {
         ccPlayerManager.getPlayer(player).updatePlayer();
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Player assailant && event.getEntity() instanceof Player player) {
             Team assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
@@ -61,8 +63,15 @@ public class PlayerListener extends BaseListener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerHealedBySplashPotion(EntityRegainHealthEvent event) {
         // TODO
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            event.getEntity().spigot().respawn();
+        });
     }
 }
