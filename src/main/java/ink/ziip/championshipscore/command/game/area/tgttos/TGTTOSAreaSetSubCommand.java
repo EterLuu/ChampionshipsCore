@@ -44,7 +44,7 @@ public class TGTTOSAreaSetSubCommand extends BaseSubCommand {
             sender.sendMessage(message);
             return true;
         }
-        TGTTOSConfig tgttosConfig = tgttosTeamArea.getTgttosConfig();
+        TGTTOSConfig tgttosConfig = tgttosTeamArea.getGameConfig();
         if (args.length == 2) {
             if (args[1].equals("spectator-spawn-point")) {
                 tgttosConfig.setSpectatorSpawnPoint(player.getLocation());

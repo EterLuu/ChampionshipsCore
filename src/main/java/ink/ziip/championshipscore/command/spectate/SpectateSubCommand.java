@@ -73,7 +73,7 @@ public class SpectateSubCommand extends BaseSubCommand {
                 if (plugin.getGameManager().spectateArea((Player) sender, GameTypeEnum.BattleBox, args[1])) {
                     String message = MessageConfig.SPECTATOR_JOIN_AREA
                             .replace("%game%", gameTypeEnum.toString())
-                            .replace("%area%", baseArea.getAreaName());
+                            .replace("%area%", baseArea.getGameConfig().getAreaName());
                     sender.sendMessage(message);
                 } else {
                     sender.sendMessage(MessageConfig.SPECTATOR_CANT_JOIN_AREA);

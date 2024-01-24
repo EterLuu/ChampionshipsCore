@@ -132,7 +132,7 @@ public class BingoManager extends BaseManager {
         bingoTaskCompleteLists.clear();
         started = false;
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(new BingoTeamArea(plugin), plugin.getTeamManager().getTeamList()));
+        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(new BingoTeamArea(plugin, null, null), plugin.getTeamManager().getTeamList()));
     }
 
     private void addPointsToTeam(ChampionshipTeam championshipTeam, int points) {

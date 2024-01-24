@@ -26,7 +26,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,32 +35,26 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BattleBoxArea extends BaseTeamArea {
     private final ConcurrentHashMap<UUID, BBWeaponKitEnum> playerWeaponKit = new ConcurrentHashMap<>();
     @Getter
-    private final BattleBoxConfig battleBoxConfig;
-    @Getter
     private int timer;
     private int startGamePreparationTaskId;
     private int startGameProgressTaskId;
     private int woolCheckerTaskId;
 
-    protected void resetGame() {
+    @Override
+    public void resetArea() {
         resetRegionBlocks();
         cleanDroppedItems();
-
-        rightChampionshipTeam = null;
-        leftChampionshipTeam = null;
-
-        playerPoints.clear();
         playerWeaponKit.clear();
-
-        setGameStageEnum(GameStageEnum.WAITING);
     }
 
-    public BattleBoxArea(ChampionshipsCore championshipsCore, BattleBoxConfig battleBoxConfig) {
-        super(championshipsCore);
-        this.battleBoxConfig = battleBoxConfig;
-        battleBoxConfig.initializeConfiguration(plugin.getFolder());
-        BattleBoxHandler battleBoxHandler = new BattleBoxHandler(plugin, this);
-        battleBoxHandler.register();
+    public BattleBoxArea(ChampionshipsCore plugin, BattleBoxConfig battleBoxConfig) {
+        super(plugin, GameTypeEnum.BattleBox, new BattleBoxHandler(plugin), battleBoxConfig);
+
+        getGameConfig().initializeConfiguration(plugin.getFolder());
+        getGameHandler().setBattleBoxArea(this);
+
+        getGameHandler().register();
+
         setGameStageEnum(GameStageEnum.WAITING);
     }
 
@@ -70,8 +63,8 @@ public class BattleBoxArea extends BaseTeamArea {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        rightChampionshipTeam.teleportAllPlayers(battleBoxConfig.getRightPreSpawnPoint());
-        leftChampionshipTeam.teleportAllPlayers(battleBoxConfig.getLeftPreSpawnPoint());
+        rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightPreSpawnPoint());
+        leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftPreSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         setHealthForAllGamePlayers(20);
@@ -101,11 +94,11 @@ public class BattleBoxArea extends BaseTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_START_SOON);
         sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_START_SOON_TITLE, MessageConfig.BATTLE_BOX_GAME_START_SOON_SUBTITLE);
 
-        timer = battleBoxConfig.getTimer() + 5;
+        timer = getGameConfig().getTimer() + 5;
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
-        rightChampionshipTeam.teleportAllPlayers(battleBoxConfig.getRightSpawnPoint());
-        leftChampionshipTeam.teleportAllPlayers(battleBoxConfig.getLeftSpawnPoint());
+        rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
+        leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
         setHealthForAllGamePlayers(20);
@@ -117,14 +110,14 @@ public class BattleBoxArea extends BaseTeamArea {
 
         startGameProgressTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
 
-            if (timer > battleBoxConfig.getTimer()) {
+            if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.BATTLE_BOX_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - battleBoxConfig.getTimer()));
+                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
                 sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_START_SOON_SUBTITLE, countDown);
                 playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0.5F);
             }
 
-            if (timer == battleBoxConfig.getTimer()) {
+            if (timer == getGameConfig().getTimer()) {
                 sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_START);
                 sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_START_TITLE, MessageConfig.BATTLE_BOX_GAME_START_SUBTITLE);
                 playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
@@ -223,7 +216,7 @@ public class BattleBoxArea extends BaseTeamArea {
             message = MessageConfig.BATTLE_BOX_DRAW;
         }
 
-        addPlayerPointsToDatabase(GameTypeEnum.BattleBox);
+        addPlayerPointsToDatabase();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(message);
         sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_END_TITLE, message);
@@ -271,7 +264,7 @@ public class BattleBoxArea extends BaseTeamArea {
             @Override
             public void run() {
                 event.getEntity().spigot().respawn();
-                event.getEntity().teleport(getSpectatorSpawnLocation());
+                event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
                 event.getEntity().setGameMode(GameMode.SPECTATOR);
             }
         }.runTask(plugin);
@@ -315,11 +308,11 @@ public class BattleBoxArea extends BaseTeamArea {
         }
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-            player.teleport(getSpectatorSpawnLocation());
+            player.teleport(getGameConfig().getSpectatorSpawnPoint());
             player.setGameMode(GameMode.SPECTATOR);
         }
 
-        player.teleport(getSpectatorSpawnLocation());
+        player.teleport(getGameConfig().getSpectatorSpawnPoint());
         player.setGameMode(GameMode.SPECTATOR);
     }
 
@@ -327,18 +320,18 @@ public class BattleBoxArea extends BaseTeamArea {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
         if (championshipTeam != null) {
             if (championshipTeam.equals(rightChampionshipTeam)) {
-                player.teleport(battleBoxConfig.getRightPreSpawnPoint());
+                player.teleport(getGameConfig().getRightPreSpawnPoint());
                 player.setGameMode(GameMode.ADVENTURE);
                 return;
             }
             if (championshipTeam.equals(leftChampionshipTeam)) {
-                player.teleport(battleBoxConfig.getLeftPreSpawnPoint());
+                player.teleport(getGameConfig().getLeftPreSpawnPoint());
                 player.setGameMode(GameMode.ADVENTURE);
                 return;
             }
         }
 
-        player.teleport(battleBoxConfig.getSpectatorSpawnPoint());
+        player.teleport(getGameConfig().getSpectatorSpawnPoint());
         player.setGameMode(GameMode.SPECTATOR);
     }
 
@@ -447,7 +440,7 @@ public class BattleBoxArea extends BaseTeamArea {
     }
 
     private void summonPotions() {
-        for (String stringLocation : battleBoxConfig.getPotionSpawnPoints()) {
+        for (String stringLocation : getGameConfig().getPotionSpawnPoints()) {
             Location location = Utils.getLocation(stringLocation);
             World world = location.getWorld();
             ItemStack item = new ItemStack(Material.SPLASH_POTION);
@@ -464,30 +457,10 @@ public class BattleBoxArea extends BaseTeamArea {
         }
     }
 
-    private void cleanDroppedItems() {
-        Vector pos1 = battleBoxConfig.getAreaPos1();
-        Vector pos2 = battleBoxConfig.getAreaPos2();
-        World world = battleBoxConfig.getRightSpawnPoint().getWorld();
-        if (world != null) {
-            world.getNearbyEntities(new BoundingBox(
-                            pos1.getX(),
-                            pos1.getY(),
-                            pos1.getZ(),
-                            pos2.getX(),
-                            pos2.getY(),
-                            pos2.getZ()))
-                    .forEach(entity -> {
-                        if (entity instanceof Item) {
-                            entity.remove();
-                        }
-                    });
-        }
-    }
-
     private HashMap<Material, Integer> countBlocksInRegion() {
-        World world = battleBoxConfig.getLeftPreSpawnPoint().getWorld();
-        Vector pos1 = battleBoxConfig.getWoolPos1();
-        Vector pos2 = battleBoxConfig.getWoolPos2();
+        World world = getGameConfig().getLeftPreSpawnPoint().getWorld();
+        Vector pos1 = getGameConfig().getWoolPos1();
+        Vector pos2 = getGameConfig().getWoolPos2();
 
         int minX = Math.min(pos1.getBlockX(), pos2.getBlockX());
         int minY = Math.min(pos1.getBlockY(), pos2.getBlockY());
@@ -513,9 +486,9 @@ public class BattleBoxArea extends BaseTeamArea {
     }
 
     private void resetRegionBlocks() {
-        World world = battleBoxConfig.getLeftPreSpawnPoint().getWorld();
-        Vector pos1 = battleBoxConfig.getWoolPos1();
-        Vector pos2 = battleBoxConfig.getWoolPos2();
+        World world = getGameConfig().getLeftPreSpawnPoint().getWorld();
+        Vector pos1 = getGameConfig().getWoolPos1();
+        Vector pos2 = getGameConfig().getWoolPos2();
 
         int minX = Math.min(pos1.getBlockX(), pos2.getBlockX());
         int minY = Math.min(pos1.getBlockY(), pos2.getBlockY());
@@ -537,17 +510,13 @@ public class BattleBoxArea extends BaseTeamArea {
         }
     }
 
-    public boolean notInArea(Location location) {
-        return !location.toVector().isInAABB(battleBoxConfig.getAreaPos1(), battleBoxConfig.getAreaPos2());
+    @Override
+    public BattleBoxConfig getGameConfig() {
+        return (BattleBoxConfig) gameConfig;
     }
 
     @Override
-    public Location getSpectatorSpawnLocation() {
-        return getBattleBoxConfig().getSpectatorSpawnPoint();
-    }
-
-    @Override
-    public String getAreaName() {
-        return battleBoxConfig.getAreaName();
+    public BattleBoxHandler getGameHandler() {
+        return (BattleBoxHandler) gameHandler;
     }
 }

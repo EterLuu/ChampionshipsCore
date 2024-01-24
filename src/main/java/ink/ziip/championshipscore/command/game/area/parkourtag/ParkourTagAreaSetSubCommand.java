@@ -48,7 +48,7 @@ public class ParkourTagAreaSetSubCommand extends BaseSubCommand {
             sender.sendMessage(message);
             return true;
         }
-        ParkourTagConfig parkourTagConfig = parkourTagArea.getParkourTagConfig();
+        ParkourTagConfig parkourTagConfig = parkourTagArea.getGameConfig();
         if (args.length == 2) {
             if (args[1].equals("right-pre-spawn-point")) {
                 parkourTagConfig.setRightPreSpawnPoint(player.getLocation());

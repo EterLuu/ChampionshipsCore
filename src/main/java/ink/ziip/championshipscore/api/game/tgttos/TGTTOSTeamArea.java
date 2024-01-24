@@ -33,21 +33,29 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     private final List<UUID> arrivedPlayers = new ArrayList<>();
     private final Map<ChampionshipTeam, Integer> teamArrivedPlayers = new ConcurrentHashMap<>();
     @Getter
-    private final TGTTOSConfig tgttosConfig;
-    @Getter
     private int timer;
     private int startGamePreparationTaskId;
     private int startGameProgressTaskId;
     private int arrivedTeamNumbers = 0;
 
-    protected void resetGame() {
+    public TGTTOSTeamArea(ChampionshipsCore plugin, TGTTOSConfig tgttosConfig) {
+        super(plugin, GameTypeEnum.TGTTOS, new TGTTOSHandler(plugin), tgttosConfig);
+
+        getGameConfig().initializeConfiguration(plugin.getFolder());
+
+        getGameHandler().setTgttosTeamArea(this);
+        getGameHandler().register();
+
+        setGameStageEnum(GameStageEnum.WAITING);
+    }
+
+    @Override
+    public void resetArea() {
         cleanDroppedItems();
 
-        gameTeams.clear();
-        gamePlayers.clear();
-        playerPoints.clear();
         arrivedPlayers.clear();
         teamArrivedPlayers.clear();
+
         arrivedTeamNumbers = 0;
 
         for (BlockState blockState : blockStates) {
@@ -57,9 +65,9 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         blockStates.clear();
 
-        World world = getTgttosConfig().getSpectatorSpawnPoint().getWorld();
-        Vector pos1 = tgttosConfig.getAreaPos1();
-        Vector pos2 = tgttosConfig.getAreaPos2();
+        World world = getGameConfig().getSpectatorSpawnPoint().getWorld();
+        Vector pos1 = getGameConfig().getAreaPos1();
+        Vector pos2 = getGameConfig().getAreaPos2();
         BoundingBox boundingBox = new BoundingBox(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
         if (world != null) {
             for (Entity entity : world.getNearbyEntities(boundingBox)) {
@@ -74,25 +82,13 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
                 }
             }
         }
-
-        setGameStageEnum(GameStageEnum.WAITING);
-    }
-
-    public TGTTOSTeamArea(ChampionshipsCore plugin, TGTTOSConfig tgttosConfig) {
-        super(plugin);
-        this.tgttosConfig = tgttosConfig;
-        tgttosConfig.initializeConfiguration(plugin.getFolder());
-        TGTTOSHandler tgttosHandler = new TGTTOSHandler(plugin, this);
-        tgttosHandler.register();
-
-        setGameStageEnum(GameStageEnum.WAITING);
     }
 
     @Override
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
-        teleportAllPlayers(tgttosConfig.getSpectatorSpawnPoint());
+        teleportAllPlayers(getGameConfig().getSpectatorSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         setHealthForAllGamePlayers(20);
@@ -121,17 +117,17 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TGTTOS_GAME_START_SOON);
         sendTitleToAllGamePlayers(MessageConfig.TGTTOS_GAME_START_SOON_TITLE, MessageConfig.TGTTOS_GAME_START_SOON_SUBTITLE);
 
-        timer = tgttosConfig.getTimer() + 5;
+        timer = getGameConfig().getTimer() + 5;
 
-        if (tgttosConfig.getAreaType().equals("BOAT")) {
+        if (getGameConfig().getAreaType().equals("BOAT")) {
             changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
             giveBoatToAllPlayers();
         }
-        if (tgttosConfig.getAreaType().equals("ROAD")) {
+        if (getGameConfig().getAreaType().equals("ROAD")) {
             changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
             giveRoadToolsToAllPlayers();
         }
-        if (tgttosConfig.getAreaType().equals("NONE")) {
+        if (getGameConfig().getAreaType().equals("NONE")) {
             changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         }
 
@@ -146,14 +142,14 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         startGameProgressTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
 
-            if (timer > tgttosConfig.getTimer()) {
+            if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.TGTTOS_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - tgttosConfig.getTimer()));
+                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
                 sendTitleToAllGamePlayers(MessageConfig.TGTTOS_GAME_START_SOON_SUBTITLE, countDown);
                 playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0.5F);
             }
 
-            if (timer == tgttosConfig.getTimer()) {
+            if (timer == getGameConfig().getTimer()) {
                 sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TGTTOS_GAME_START);
                 sendTitleToAllGamePlayers(MessageConfig.TGTTOS_GAME_START_TITLE, MessageConfig.TGTTOS_GAME_START_SUBTITLE);
                 playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
@@ -190,9 +186,9 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 
-        sendMessageToAllGamePlayers(getPlayerPointsRank(GameTypeEnum.TGTTOS));
-        sendMessageToAllGamePlayers(getTeamPintsRank(GameTypeEnum.TGTTOS));
-        addPlayerPointsToDatabase(GameTypeEnum.TGTTOS);
+        sendMessageToAllGamePlayers(getPlayerPointsRank());
+        sendMessageToAllGamePlayers(getTeamPointsRank());
+        addPlayerPointsToDatabase();
 
         resetGame();
     }
@@ -241,11 +237,11 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             @Override
             public void run() {
                 event.getEntity().spigot().respawn();
-                event.getEntity().teleport(getSpectatorSpawnLocation());
+                event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
                 event.getEntity().setGameMode(GameMode.SPECTATOR);
             }
         }.runTask(plugin);
-        player.teleport(getTgttosConfig().getSpectatorSpawnPoint());
+        player.teleport(getGameConfig().getSpectatorSpawnPoint());
     }
 
     @Override
@@ -260,27 +256,17 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             return;
         }
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            player.teleport(getSpectatorSpawnLocation());
+            player.teleport(getGameConfig().getSpectatorSpawnPoint());
             player.setGameMode(GameMode.ADVENTURE);
         }
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-            player.teleport(getSpectatorSpawnLocation());
-            if (tgttosConfig.getAreaType().equals("ROAD")) {
+            player.teleport(getGameConfig().getSpectatorSpawnPoint());
+            if (getGameConfig().getAreaType().equals("ROAD")) {
                 player.setGameMode(GameMode.SURVIVAL);
             } else {
                 player.setGameMode(GameMode.ADVENTURE);
             }
         }
-    }
-
-    @Override
-    public Location getSpectatorSpawnLocation() {
-        return tgttosConfig.getSpectatorSpawnPoint();
-    }
-
-    @Override
-    public String getAreaName() {
-        return tgttosConfig.getAreaName();
     }
 
     private void giveRoadToolsToAllPlayers() {
@@ -327,17 +313,17 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     }
 
     public void teleportPlayerToSpawnPoint(Player player) {
-        player.teleport(getTgttosConfig().getSpectatorSpawnPoint());
+        player.teleport(getGameConfig().getSpectatorSpawnPoint());
     }
 
     private void teleportAllPlayerToSpawnPoints() {
-        Iterator<String> playerSpawnPointsI = tgttosConfig.getPlayerSpawnPoints().iterator();
+        Iterator<String> playerSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 if (player.isOnline()) {
                     if (!playerSpawnPointsI.hasNext())
-                        playerSpawnPointsI = tgttosConfig.getPlayerSpawnPoints().iterator();
+                        playerSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
                     player.teleport(Utils.getLocation(playerSpawnPointsI.next()));
                 }
             }
@@ -345,50 +331,36 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     }
 
     private void spawnMonsters() {
-        World world = tgttosConfig.getSpectatorSpawnPoint().getWorld();
+        World world = getGameConfig().getSpectatorSpawnPoint().getWorld();
         if (world == null)
             return;
-        for (String stringLocation : tgttosConfig.getMonsterSpawnPoints()) {
+        for (String stringLocation : getGameConfig().getMonsterSpawnPoints()) {
             LivingEntity entity = (LivingEntity) world.spawnEntity(Utils.getLocation(stringLocation), EntityType.STRAY);
             entity.setRemoveWhenFarAway(false);
         }
     }
 
     private void spawnChicken() {
-        World world = tgttosConfig.getSpectatorSpawnPoint().getWorld();
+        World world = getGameConfig().getSpectatorSpawnPoint().getWorld();
         if (world == null)
             return;
 
-        Iterator<String> chickenSpawnPointsI = tgttosConfig.getChickenSpawnPoints().iterator();
+        Iterator<String> chickenSpawnPointsI = getGameConfig().getChickenSpawnPoints().iterator();
         for (UUID uuid : gamePlayers) {
             if (!chickenSpawnPointsI.hasNext())
-                chickenSpawnPointsI = tgttosConfig.getPlayerSpawnPoints().iterator();
+                chickenSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
             LivingEntity entity = (LivingEntity) world.spawnEntity(Utils.getLocation(chickenSpawnPointsI.next()), EntityType.CHICKEN);
             entity.setRemoveWhenFarAway(false);
         }
     }
 
-    private void cleanDroppedItems() {
-        Vector pos1 = tgttosConfig.getAreaPos1();
-        Vector pos2 = tgttosConfig.getAreaPos2();
-        World world = tgttosConfig.getSpectatorSpawnPoint().getWorld();
-        if (world != null) {
-            world.getNearbyEntities(new BoundingBox(
-                            pos1.getX(),
-                            pos1.getY(),
-                            pos1.getZ(),
-                            pos2.getX(),
-                            pos2.getY(),
-                            pos2.getZ()))
-                    .forEach(entity -> {
-                        if (entity instanceof Item) {
-                            entity.remove();
-                        }
-                    });
-        }
+    @Override
+    public TGTTOSConfig getGameConfig() {
+        return (TGTTOSConfig) gameConfig;
     }
 
-    public boolean notInArea(Location location) {
-        return !location.toVector().isInAABB(tgttosConfig.getAreaPos1(), tgttosConfig.getAreaPos2());
+    @Override
+    public TGTTOSHandler getGameHandler() {
+        return (TGTTOSHandler) gameHandler;
     }
 }

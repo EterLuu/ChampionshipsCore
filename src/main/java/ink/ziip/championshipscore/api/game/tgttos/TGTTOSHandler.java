@@ -4,6 +4,8 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Chicken;
@@ -19,12 +21,13 @@ import org.bukkit.event.player.PlayerHarvestBlockEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
+@Getter
+@Setter
 public class TGTTOSHandler extends BaseListener {
-    private final TGTTOSTeamArea tgttosTeamArea;
+    private TGTTOSTeamArea tgttosTeamArea;
 
-    protected TGTTOSHandler(ChampionshipsCore plugin, TGTTOSTeamArea tgttosTeamArea) {
+    protected TGTTOSHandler(ChampionshipsCore plugin) {
         super(plugin);
-        this.tgttosTeamArea = tgttosTeamArea;
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -39,7 +42,7 @@ public class TGTTOSHandler extends BaseListener {
             return;
         }
 
-        if (!tgttosTeamArea.getTgttosConfig().getAreaType().equals("ROAD") || tgttosTeamArea.getTimer() >= tgttosTeamArea.getTgttosConfig().getTimer()) {
+        if (!tgttosTeamArea.getGameConfig().getAreaType().equals("ROAD") || tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
             return;
         }
@@ -60,7 +63,7 @@ public class TGTTOSHandler extends BaseListener {
             return;
         }
 
-        if (!tgttosTeamArea.getBlockStates().contains(event.getBlock().getState()) || tgttosTeamArea.getTimer() >= tgttosTeamArea.getTgttosConfig().getTimer()) {
+        if (!tgttosTeamArea.getBlockStates().contains(event.getBlock().getState()) || tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
             return;
         }
@@ -80,7 +83,7 @@ public class TGTTOSHandler extends BaseListener {
                 return;
             }
 
-            if (tgttosTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS || tgttosTeamArea.getTimer() >= tgttosTeamArea.getTgttosConfig().getTimer()) {
+            if (tgttosTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS || tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
                 event.setCancelled(true);
                 return;
             }
@@ -129,7 +132,7 @@ public class TGTTOSHandler extends BaseListener {
         if (tgttosTeamArea.notInArea(location)) {
             tgttosTeamArea.teleportPlayerToSpawnPoint(player);
             if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                if (tgttosTeamArea.getTgttosConfig().getAreaType().equals("BOAT")) {
+                if (tgttosTeamArea.getGameConfig().getAreaType().equals("BOAT")) {
                     tgttosTeamArea.giveBoatToPlayer(player);
                 }
 
@@ -139,7 +142,7 @@ public class TGTTOSHandler extends BaseListener {
         }
 
         if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (tgttosTeamArea.getTimer() >= tgttosTeamArea.getTgttosConfig().getTimer()) {
+            if (tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
                 event.setCancelled(true);
             }
         }
@@ -163,7 +166,7 @@ public class TGTTOSHandler extends BaseListener {
         }
 
         if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (tgttosTeamArea.getTimer() >= tgttosTeamArea.getTgttosConfig().getTimer()) {
+            if (tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
                 event.setCancelled(true);
             }
         }
@@ -212,6 +215,7 @@ public class TGTTOSHandler extends BaseListener {
             if (tgttosTeamArea.notInArea(location)) {
                 return;
             }
+
             event.setCancelled(true);
         }
     }

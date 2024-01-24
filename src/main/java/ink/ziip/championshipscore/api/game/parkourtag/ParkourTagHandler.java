@@ -5,6 +5,8 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -26,12 +28,13 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.UUID;
 
+@Getter
+@Setter
 public class ParkourTagHandler extends BaseListener {
-    private final ParkourTagArea parkourTagArea;
+    private ParkourTagArea parkourTagArea;
 
-    public ParkourTagHandler(ChampionshipsCore championshipsCore, ParkourTagArea parkourTagArea) {
+    public ParkourTagHandler(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
-        this.parkourTagArea = parkourTagArea;
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -75,12 +78,26 @@ public class ParkourTagHandler extends BaseListener {
                             player.sendMessage(MessageConfig.PARKOUR_TAG_BECOME_CHASER_FAILED);
                         }
                     }
-                    if (block.getType() == Material.BELL)
-                        return;
                 }
             }
         }
-        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (parkourTagArea.notAreaPlayer(player)) {
+            return;
+        }
+
+        Location location = player.getLocation();
+        if (parkourTagArea.notInArea(location)) {
+            return;
+        }
+
+        Block block = event.getClickedBlock();
+        if (block != null && block.getType() != Material.BELL)
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -116,7 +133,7 @@ public class ParkourTagHandler extends BaseListener {
             return;
         }
 
-        if (parkourTagArea.getTimer() >= parkourTagArea.getParkourTagConfig().getTimer()) {
+        if (parkourTagArea.getTimer() >= parkourTagArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
             return;
         }
@@ -182,7 +199,7 @@ public class ParkourTagHandler extends BaseListener {
 //            return;
 //        }
 //
-//        if (parkourTagArea.getTimer() >= parkourTagArea.getParkourTagConfig().getTimer()) {
+//        if (parkourTagArea.getTimer() >= parkourTagArea.getGameConfig().getTimer()) {
 //            event.setCancelled(true);
 //            return;
 //        }
@@ -246,7 +263,7 @@ public class ParkourTagHandler extends BaseListener {
                             .replace("%chaser%", assailantTeam.getColoredColor() + assailant.getName());
 
                     parkourTagArea.sendMessageToPlayerAreaPlayers(assailant, message);
-                    parkourTagArea.getPlayerSurviveTimes().put(player.getUniqueId(), parkourTagArea.getParkourTagConfig().getTimer() - parkourTagArea.getTimer());
+                    parkourTagArea.getPlayerSurviveTimes().put(player.getUniqueId(), parkourTagArea.getGameConfig().getTimer() - parkourTagArea.getTimer());
                     parkourTagArea.updateTeamSurviveTimes();
                     return;
                 }
@@ -334,7 +351,7 @@ public class ParkourTagHandler extends BaseListener {
             return;
         }
 
-        if (parkourTagArea.getTimer() >= parkourTagArea.getParkourTagConfig().getTimer()) {
+        if (parkourTagArea.getTimer() >= parkourTagArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
         }
     }

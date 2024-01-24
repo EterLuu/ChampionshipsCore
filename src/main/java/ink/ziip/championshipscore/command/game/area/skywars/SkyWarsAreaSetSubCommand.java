@@ -42,7 +42,7 @@ public class SkyWarsAreaSetSubCommand extends BaseSubCommand {
             sender.sendMessage(message);
             return true;
         }
-        SkyWarsConfig skyWarsConfig = skyWarsArea.getSkyWarsConfig();
+        SkyWarsConfig skyWarsConfig = skyWarsArea.getGameConfig();
         if (args.length == 2) {
             if (args[1].equals("pre-spawn-point")) {
                 skyWarsConfig.setPreSpawnPoint(player.getLocation());

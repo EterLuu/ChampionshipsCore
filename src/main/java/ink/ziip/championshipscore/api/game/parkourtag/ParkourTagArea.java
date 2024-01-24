@@ -6,13 +6,11 @@ import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.*;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -21,8 +19,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.BoundingBox;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -30,8 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class ParkourTagArea extends BaseTeamArea {
-    @Getter
-    private final ParkourTagConfig parkourTagConfig;
     @Getter
     private final Map<UUID, Integer> playerSurviveTimes = new ConcurrentHashMap<>();
     @Getter
@@ -47,13 +41,9 @@ public class ParkourTagArea extends BaseTeamArea {
     private int rightTeamSurviveTime;
     private int leftTeamSurviveTime;
 
-
-    protected void resetGame() {
+    @Override
+    public void resetArea() {
         cleanDroppedItems();
-        rightChampionshipTeam = null;
-        leftChampionshipTeam = null;
-        playerPoints.clear();
-        playerSurviveTimes.clear();
 
         rightTeamSurviveTime = -1;
         leftTeamSurviveTime = -1;
@@ -61,15 +51,15 @@ public class ParkourTagArea extends BaseTeamArea {
         rightAreaChaser = null;
         leftAreaChaser = null;
 
-        setGameStageEnum(GameStageEnum.WAITING);
+        playerSurviveTimes.clear();
     }
 
-    public ParkourTagArea(ChampionshipsCore championshipsCore, ParkourTagConfig parkourTagConfig) {
-        super(championshipsCore);
-        this.parkourTagConfig = parkourTagConfig;
-        parkourTagConfig.initializeConfiguration(plugin.getFolder());
-        ParkourTagHandler parkourTagHandler = new ParkourTagHandler(plugin, this);
-        parkourTagHandler.register();
+    public ParkourTagArea(ChampionshipsCore plugin, ParkourTagConfig parkourTagConfig) {
+        super(plugin, GameTypeEnum.ParkourTag, new ParkourTagHandler(plugin), parkourTagConfig);
+
+        getGameConfig().initializeConfiguration(plugin.getFolder());
+        getGameHandler().setParkourTagArea(this);
+        getGameHandler().register();
 
         rightTeamSurviveTime = -1;
         leftTeamSurviveTime = -1;
@@ -96,8 +86,8 @@ public class ParkourTagArea extends BaseTeamArea {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        rightChampionshipTeam.teleportAllPlayers(parkourTagConfig.getRightPreSpawnPoint());
-        leftChampionshipTeam.teleportAllPlayers(parkourTagConfig.getLeftPreSpawnPoint());
+        rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightPreSpawnPoint());
+        leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftPreSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         cleanInventoryForAllGamePlayers();
@@ -135,34 +125,24 @@ public class ParkourTagArea extends BaseTeamArea {
         plugin.getGameManager().getParkourTagManager().addChaserTimes(leftAreaChaser);
 
         // Set survive time for those player not online
-        for (UUID uuid : rightChampionshipTeam.getOfflineMembers()) {
-            if (!uuid.equals(rightAreaChaser)) {
-                playerSurviveTimes.put(uuid, 0);
-                plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") not online, set survive time 0.");
-            }
-        }
-        for (UUID uuid : leftChampionshipTeam.getOfflineMembers()) {
-            if (!uuid.equals(leftAreaChaser)) {
-                playerSurviveTimes.put(uuid, 0);
-                plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") not online, set survive time 0.");
-            }
-        }
+        setSurviveTimeToZero(rightChampionshipTeam, rightAreaChaser);
+        setSurviveTimeToZero(leftChampionshipTeam, leftAreaChaser);
 
-        timer = parkourTagConfig.getTimer() + 5;
+        timer = getGameConfig().getTimer() + 5;
 
         // Right area
         {
             Player player = Bukkit.getPlayer(rightAreaChaser);
             if (player != null) {
-                player.teleport(parkourTagConfig.getRightAreaChaserSpawnPoint());
+                player.teleport(getGameConfig().getRightAreaChaserSpawnPoint());
             }
 
-            Iterator<String> escapeeSpawnPointsI = parkourTagConfig.getRightAreaEscapeeSpawnPoints().iterator();
+            Iterator<String> escapeeSpawnPointsI = getGameConfig().getRightAreaEscapeeSpawnPoints().iterator();
             for (Player rightAreaEscapee : getRightAreaEscapees()) {
                 if (escapeeSpawnPointsI.hasNext())
                     rightAreaEscapee.teleport(Utils.getLocation(escapeeSpawnPointsI.next()));
                 else {
-                    escapeeSpawnPointsI = parkourTagConfig.getRightAreaEscapeeSpawnPoints().iterator();
+                    escapeeSpawnPointsI = getGameConfig().getRightAreaEscapeeSpawnPoints().iterator();
                     rightAreaEscapee.teleport(Utils.getLocation(escapeeSpawnPointsI.next()));
                 }
             }
@@ -172,15 +152,15 @@ public class ParkourTagArea extends BaseTeamArea {
         {
             Player player = Bukkit.getPlayer(leftAreaChaser);
             if (player != null) {
-                player.teleport(parkourTagConfig.getLeftAreaChaserSpawnPoint());
+                player.teleport(getGameConfig().getLeftAreaChaserSpawnPoint());
             }
 
-            Iterator<String> escapeeSpawnPointsI = parkourTagConfig.getLeftAreaEscapeeSpawnPoints().iterator();
+            Iterator<String> escapeeSpawnPointsI = getGameConfig().getLeftAreaEscapeeSpawnPoints().iterator();
             for (Player leftAreaEscapee : getLeftAreaEscapees()) {
                 if (escapeeSpawnPointsI.hasNext())
                     leftAreaEscapee.teleport(Utils.getLocation(escapeeSpawnPointsI.next()));
                 else {
-                    escapeeSpawnPointsI = parkourTagConfig.getLeftAreaEscapeeSpawnPoints().iterator();
+                    escapeeSpawnPointsI = getGameConfig().getLeftAreaEscapeeSpawnPoints().iterator();
                     leftAreaEscapee.teleport(Utils.getLocation(escapeeSpawnPointsI.next()));
                 }
             }
@@ -196,14 +176,14 @@ public class ParkourTagArea extends BaseTeamArea {
 
         startGameProgressTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
 
-            if (timer > parkourTagConfig.getTimer()) {
+            if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.PARKOUR_TAG_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - parkourTagConfig.getTimer()));
+                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
                 sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_GAME_START_SOON_SUBTITLE, countDown);
                 playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0.5F);
             }
 
-            if (timer == parkourTagConfig.getTimer()) {
+            if (timer == getGameConfig().getTimer()) {
 
                 updateTeamSurviveTimes();
 
@@ -224,6 +204,15 @@ public class ParkourTagArea extends BaseTeamArea {
 
             timer--;
         }, 0, 20L);
+    }
+
+    private void setSurviveTimeToZero(ChampionshipTeam championshipTeam, UUID areaChaser) {
+        for (UUID uuid : championshipTeam.getOfflineMembers()) {
+            if (!uuid.equals(areaChaser)) {
+                playerSurviveTimes.put(uuid, 0);
+                plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") not online, set survive time 0.");
+            }
+        }
     }
 
     protected void endGame() {
@@ -264,53 +253,53 @@ public class ParkourTagArea extends BaseTeamArea {
         }
 
         if (rightTeamSurviveTime == -1) {
-            rightTeamSurviveTime = parkourTagConfig.getTimer();
+            rightTeamSurviveTime = getGameConfig().getTimer();
         }
         if (leftTeamSurviveTime == -1) {
-            leftTeamSurviveTime = parkourTagConfig.getTimer();
+            leftTeamSurviveTime = getGameConfig().getTimer();
         }
 
         if (rightTeamSurvivor > 0) {
             addPlayerPointsToAllTeamMembers(rightChampionshipTeam, 15);
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Team " + rightChampionshipTeam.getName() + " has survivor(s), added 15 points");
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + rightChampionshipTeam.getName() + " has survivor(s), added 15 points");
         } else {
-            int points = 7 * (getParkourTagConfig().getTimer() - rightTeamSurviveTime) / 10;
+            int points = 7 * (getGameConfig().getTimer() - rightTeamSurviveTime) / 10;
             addPlayerPoints(leftAreaChaser, points);
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Team " + rightChampionshipTeam.getName() + " has no survivor, added " + points + " to " + (getLeftAreaChaserPlayer() == null ? "none" : getLeftAreaChaserPlayer().getName()));
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + rightChampionshipTeam.getName() + " has no survivor, added " + points + " to " + (getLeftAreaChaserPlayer() == null ? "none" : getLeftAreaChaserPlayer().getName()));
         }
         if (leftTeamSurvivor > 0) {
             addPlayerPointsToAllTeamMembers(leftChampionshipTeam, 15);
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Team " + leftChampionshipTeam.getName() + " has survivor(s), added 15 points");
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + leftChampionshipTeam.getName() + " has survivor(s), added 15 points");
         } else {
-            int points = 7 * (getParkourTagConfig().getTimer() - leftTeamSurviveTime) / 10;
+            int points = 7 * (getGameConfig().getTimer() - leftTeamSurviveTime) / 10;
             addPlayerPoints(rightAreaChaser, points);
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Team " + leftChampionshipTeam.getName() + " has no survivor, added " + points + " to " + (getRightAreaChaserPlayer() == null ? "none" : getRightAreaChaserPlayer().getName()));
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + leftChampionshipTeam.getName() + " has no survivor, added " + points + " to " + (getRightAreaChaserPlayer() == null ? "none" : getRightAreaChaserPlayer().getName()));
         }
 
         // Escapees gain 2 per 10s
         for (UUID uuid : getRightTeamEscapees()) {
-            playerSurviveTimes.putIfAbsent(uuid, getParkourTagConfig().getTimer());
+            playerSurviveTimes.putIfAbsent(uuid, getGameConfig().getTimer());
         }
         for (UUID uuid : getLeftTeamEscapees()) {
-            playerSurviveTimes.putIfAbsent(uuid, getParkourTagConfig().getTimer());
+            playerSurviveTimes.putIfAbsent(uuid, getGameConfig().getTimer());
         }
 
         for (Map.Entry<UUID, Integer> surviveEntry : playerSurviveTimes.entrySet()) {
             int points = surviveEntry.getValue() / 10 * 2;
             addPlayerPoints(surviveEntry.getKey(), points);
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Player " + Bukkit.getOfflinePlayer(surviveEntry.getKey()).getName() + " survived " + surviveEntry.getValue() + "s, get points " + points);
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Player " + Bukkit.getOfflinePlayer(surviveEntry.getKey()).getName() + " survived " + surviveEntry.getValue() + "s, get points " + points);
         }
 
         // The team that successfully kills all the survivors faster earns 30 points each
         if (rightTeamSurviveTime > leftTeamSurviveTime) {
             addPlayerPointsToAllTeamMembers(rightChampionshipTeam, 30);
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Team " + rightChampionshipTeam.getName() + " survived longer, get points 30");
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + rightChampionshipTeam.getName() + " survived longer, get points 30");
         } else if (rightTeamSurviveTime < leftTeamSurviveTime) {
             addPlayerPointsToAllTeamMembers(leftChampionshipTeam, 30);
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Team " + leftChampionshipTeam.getName() + " survived longer, get points 30");
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + leftChampionshipTeam.getName() + " survived longer, get points 30");
         }
 
-        addPlayerPointsToDatabase(GameTypeEnum.ParkourTag);
+        addPlayerPointsToDatabase();
 
         String message = MessageConfig.PARKOUR_TAG_SHOW_POINTS
                 .replace("%team%", rightChampionshipTeam.getColoredName())
@@ -344,7 +333,7 @@ public class ParkourTagArea extends BaseTeamArea {
                     .replace("%player%", player.getName());
 
             sendMessageToPlayerAreaPlayers(player, message);
-            getPlayerSurviveTimes().put(player.getUniqueId(), parkourTagConfig.getTimer() - timer);
+            getPlayerSurviveTimes().put(player.getUniqueId(), getGameConfig().getTimer() - timer);
             updateTeamSurviveTimes();
         }
     }
@@ -368,7 +357,7 @@ public class ParkourTagArea extends BaseTeamArea {
             }
         }
 
-        player.teleport(getSpectatorSpawnLocation());
+        player.teleport(getGameConfig().getSpectatorSpawnPoint());
         player.setGameMode(GameMode.SPECTATOR);
     }
 
@@ -376,18 +365,18 @@ public class ParkourTagArea extends BaseTeamArea {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
         if (championshipTeam != null) {
             if (championshipTeam.equals(rightChampionshipTeam)) {
-                player.teleport(parkourTagConfig.getRightPreSpawnPoint());
+                player.teleport(getGameConfig().getRightPreSpawnPoint());
                 player.setGameMode(GameMode.ADVENTURE);
                 return;
             }
             if (championshipTeam.equals(leftChampionshipTeam)) {
-                player.teleport(parkourTagConfig.getLeftPreSpawnPoint());
+                player.teleport(getGameConfig().getLeftPreSpawnPoint());
                 player.setGameMode(GameMode.ADVENTURE);
                 return;
             }
         }
 
-        player.teleport(parkourTagConfig.getSpectatorSpawnPoint());
+        player.teleport(getGameConfig().getSpectatorSpawnPoint());
         player.setGameMode(GameMode.SPECTATOR);
     }
 
@@ -405,15 +394,15 @@ public class ParkourTagArea extends BaseTeamArea {
         String message = MessageConfig.PARKOUR_TAG_WHOLE_TEAM_WAS_KILLED;
 
         if (rightTeamSurvivor == 0 && rightTeamSurviveTime == -1) {
-            rightTeamSurviveTime = parkourTagConfig.getTimer() - timer;
+            rightTeamSurviveTime = getGameConfig().getTimer() - timer;
 
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Team " + rightChampionshipTeam.getName() + " survived time: " + rightTeamSurviveTime);
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + rightChampionshipTeam.getName() + " survived time: " + rightTeamSurviveTime);
             sendMessageToLeftArea(message.replace("%team%", rightChampionshipTeam.getColoredName()));
         }
         if (leftTeamSurvivor == 0 && leftTeamSurviveTime == -1) {
-            leftTeamSurviveTime = parkourTagConfig.getTimer() - timer;
+            leftTeamSurviveTime = getGameConfig().getTimer() - timer;
 
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + ", Team " + leftChampionshipTeam.getName() + " survived time: " + leftTeamSurviveTime);
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + leftChampionshipTeam.getName() + " survived time: " + leftTeamSurviveTime);
             sendMessageToRightArea(message.replace("%team%", leftChampionshipTeam.getColoredName()));
         }
     }
@@ -442,11 +431,11 @@ public class ParkourTagArea extends BaseTeamArea {
 
         for (Player player : getRightAreaEscapees()) {
             player.getInventory().setItem(0, clock.clone());
-            player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, parkourTagConfig.getTimer() * 20 + 100, 0));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, getGameConfig().getTimer() * 20 + 100, 0));
         }
         for (Player player : getLeftAreaEscapees()) {
             player.getInventory().setItem(0, clock.clone());
-            player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, parkourTagConfig.getTimer() * 20 + 100, 0));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, getGameConfig().getTimer() * 20 + 100, 0));
         }
     }
 
@@ -541,37 +530,13 @@ public class ParkourTagArea extends BaseTeamArea {
         sendMessageToAllSpectators(message);
     }
 
-    private void cleanDroppedItems() {
-        Vector pos1 = parkourTagConfig.getAreaPos1();
-        Vector pos2 = parkourTagConfig.getAreaPos2();
-        World world = parkourTagConfig.getLeftAreaChaserSpawnPoint().getWorld();
-        if (world != null) {
-            world.getNearbyEntities(new BoundingBox(
-                            pos1.getX(),
-                            pos1.getY(),
-                            pos1.getZ(),
-                            pos2.getX(),
-                            pos2.getY(),
-                            pos2.getZ()))
-                    .forEach(entity -> {
-                        if (entity instanceof Item) {
-                            entity.remove();
-                        }
-                    });
-        }
-    }
-
-    public boolean notInArea(Location location) {
-        return !location.toVector().isInAABB(parkourTagConfig.getAreaPos1(), parkourTagConfig.getAreaPos2());
+    @Override
+    public ParkourTagConfig getGameConfig() {
+        return (ParkourTagConfig) gameConfig;
     }
 
     @Override
-    public Location getSpectatorSpawnLocation() {
-        return parkourTagConfig.getSpectatorSpawnPoint();
-    }
-
-    @Override
-    public String getAreaName() {
-        return parkourTagConfig.getAreaName();
+    public ParkourTagHandler getGameHandler() {
+        return (ParkourTagHandler) gameHandler;
     }
 }

@@ -46,7 +46,7 @@ public class BattleBoxAreaSetSubCommand extends BaseSubCommand {
             sender.sendMessage(message);
             return true;
         }
-        BattleBoxConfig battleBoxConfig = battleBoxArea.getBattleBoxConfig();
+        BattleBoxConfig battleBoxConfig = battleBoxArea.getGameConfig();
         if (args.length == 2) {
             if (args[1].equals("right-spawn-point")) {
                 battleBoxConfig.setRightSpawnPoint(player.getLocation());

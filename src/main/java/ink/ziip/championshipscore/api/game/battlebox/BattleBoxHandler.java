@@ -5,6 +5,8 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.game.BBWeaponKitEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,12 +26,13 @@ import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.*;
 import org.jetbrains.annotations.Nullable;
 
+@Getter
+@Setter
 public class BattleBoxHandler extends BaseListener {
-    private final BattleBoxArea battleBoxArea;
+    private BattleBoxArea battleBoxArea;
 
-    public BattleBoxHandler(ChampionshipsCore championshipsCore, BattleBoxArea battleBoxArea) {
+    public BattleBoxHandler(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
-        this.battleBoxArea = battleBoxArea;
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -48,7 +51,6 @@ public class BattleBoxHandler extends BaseListener {
 
         if (battleBoxArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
             if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-
                 if (block != null) {
                     if (block.getType() == Material.BIRCH_WALL_SIGN) {
                         Sign sign = (Sign) block.getState();
@@ -64,9 +66,7 @@ public class BattleBoxHandler extends BaseListener {
                     }
                 }
             }
-
-            if (block != null && block.getType() != Material.BELL)
-                event.setCancelled(true);
+            event.setCancelled(true);
         }
     }
 
@@ -116,6 +116,7 @@ public class BattleBoxHandler extends BaseListener {
             if (battleBoxArea.notInArea(location)) {
                 return;
             }
+
             event.setCancelled(true);
         }
     }
@@ -131,6 +132,7 @@ public class BattleBoxHandler extends BaseListener {
             if (battleBoxArea.notInArea(location)) {
                 return;
             }
+
             event.setCancelled(true);
         }
     }
@@ -152,7 +154,7 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (!event.getBlock().getLocation().toVector().isInAABB(battleBoxArea.getBattleBoxConfig().getWoolPos1(), battleBoxArea.getBattleBoxConfig().getWoolPos2())) {
+        if (!event.getBlock().getLocation().toVector().isInAABB(battleBoxArea.getGameConfig().getWoolPos1(), battleBoxArea.getGameConfig().getWoolPos2())) {
             event.setCancelled(true);
         }
 
@@ -176,9 +178,10 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (!event.getBlock().getLocation().toVector().isInAABB(battleBoxArea.getBattleBoxConfig().getWoolPos1(), battleBoxArea.getBattleBoxConfig().getWoolPos2())) {
+        if (!event.getBlock().getLocation().toVector().isInAABB(battleBoxArea.getGameConfig().getWoolPos1(), battleBoxArea.getGameConfig().getWoolPos2())) {
             event.setCancelled(true);
         }
+
         event.setDropItems(false);
     }
 
@@ -195,12 +198,10 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (battleBoxArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
-            return;
-        }
-
-        if (battleBoxArea.getTimer() >= battleBoxArea.getBattleBoxConfig().getTimer()) {
-            event.setCancelled(true);
+        if (battleBoxArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+            if (battleBoxArea.getTimer() >= battleBoxArea.getGameConfig().getTimer()) {
+                event.setCancelled(true);
+            }
         }
     }
 
@@ -221,7 +222,7 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (battleBoxArea.getTimer() >= battleBoxArea.getBattleBoxConfig().getTimer()) {
+        if (battleBoxArea.getTimer() >= battleBoxArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
         }
     }
@@ -243,7 +244,7 @@ public class BattleBoxHandler extends BaseListener {
                 return;
             }
 
-            if (battleBoxArea.getTimer() >= battleBoxArea.getBattleBoxConfig().getTimer()) {
+            if (battleBoxArea.getTimer() >= battleBoxArea.getGameConfig().getTimer()) {
                 event.setCancelled(true);
             }
         }
@@ -266,7 +267,7 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (battleBoxArea.getTimer() >= battleBoxArea.getBattleBoxConfig().getTimer()) {
+        if (battleBoxArea.getTimer() >= battleBoxArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
         }
     }

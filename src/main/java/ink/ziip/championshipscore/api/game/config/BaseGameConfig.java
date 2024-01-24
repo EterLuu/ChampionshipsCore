@@ -5,7 +5,9 @@ import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
+import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
@@ -81,9 +83,10 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                         if (value instanceof String)
                             value = Utils.translateColorCodes((String) value);
                         field.set(this, value);
-                    } else if (!configOption.nullable()) {
-                        plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file. " + configOption.path() + "/" + getFileName());
                     }
+//                    else if (!configOption.nullable()) {
+//                        plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file. " + configOption.path() + "/" + getFileName());
+//                    }
                 } catch (Exception exception) {
                     plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file. ", exception);
                 }
@@ -112,5 +115,13 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         }
     }
 
+    public abstract String getAreaName();
+
     public abstract String getFolderName();
+
+    public abstract Vector getAreaPos1();
+
+    public abstract Vector getAreaPos2();
+
+    public abstract Location getSpectatorSpawnPoint();
 }

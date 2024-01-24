@@ -3,6 +3,8 @@ package ink.ziip.championshipscore.api.game.skywars;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -19,14 +21,14 @@ import org.bukkit.event.player.PlayerHarvestBlockEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
+@Getter
+@Setter
 public class SkyWarsHandler extends BaseListener {
-    private final SkyWarsTeamArea skyWarsArea;
+    private SkyWarsTeamArea skyWarsArea;
 
-    protected SkyWarsHandler(ChampionshipsCore plugin, SkyWarsTeamArea skyWarsArea) {
+    protected SkyWarsHandler(ChampionshipsCore plugin) {
         super(plugin);
-        this.skyWarsArea = skyWarsArea;
     }
-
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteract(PlayerInteractEvent event) {
@@ -45,7 +47,7 @@ public class SkyWarsHandler extends BaseListener {
             return;
         }
 
-        if (skyWarsArea.getTimer() >= skyWarsArea.getSkyWarsConfig().getTimer()) {
+        if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
         }
     }
@@ -121,7 +123,7 @@ public class SkyWarsHandler extends BaseListener {
             return;
         }
 
-        if (skyWarsArea.getTimer() >= skyWarsArea.getSkyWarsConfig().getTimer()) {
+        if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
         }
     }
@@ -143,7 +145,7 @@ public class SkyWarsHandler extends BaseListener {
             return;
         }
 
-        if (skyWarsArea.getTimer() >= skyWarsArea.getSkyWarsConfig().getTimer()) {
+        if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
             return;
         }
@@ -173,7 +175,7 @@ public class SkyWarsHandler extends BaseListener {
             return;
         }
 
-        if (skyWarsArea.getTimer() >= skyWarsArea.getSkyWarsConfig().getTimer()) {
+        if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
             return;
         }
@@ -200,11 +202,11 @@ public class SkyWarsHandler extends BaseListener {
 //                return;
 //            }
 //
-//            if (skyWarsArea.getTimer() >= skyWarsArea.getSkyWarsConfig().getTimer()) {
+//            if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
 //                return;
 //            }
 //
-//            if (skyWarsArea.getTimer() <= skyWarsArea.getSkyWarsConfig().getTimeDisableHealthRegain())
+//            if (skyWarsArea.getTimer() <= skyWarsArea.getGameConfig().getTimeDisableHealthRegain())
 //                event.setCancelled(true);
 //        }
 //    }
@@ -226,7 +228,7 @@ public class SkyWarsHandler extends BaseListener {
             return;
         }
 
-        if (skyWarsArea.getTimer() >= skyWarsArea.getSkyWarsConfig().getTimer()) {
+        if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
         }
     }

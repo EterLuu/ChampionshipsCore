@@ -1,21 +1,24 @@
 package ink.ziip.championshipscore.api.game.area;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
+import org.bukkit.*;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -28,31 +31,48 @@ public abstract class BaseArea {
     protected final ChampionshipsCore plugin;
     protected final BukkitScheduler scheduler;
     protected final BaseAreaHandler baseAreaHandler;
-    protected GameStageEnum gameStageEnum;
 
-    public BaseArea(ChampionshipsCore plugin) {
+    protected BaseListener gameHandler;
+    protected BaseGameConfig gameConfig;
+
+    protected GameStageEnum gameStageEnum;
+    protected GameTypeEnum gameTypeEnum;
+
+    public BaseArea(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum, BaseListener gameHandler, BaseGameConfig gameConfig) {
+        this.gameStageEnum = GameStageEnum.END;
         this.plugin = plugin;
         this.scheduler = plugin.getServer().getScheduler();
-        this.gameStageEnum = GameStageEnum.END;
+        this.gameTypeEnum = gameTypeEnum;
+
+        this.gameHandler = gameHandler;
+        this.gameConfig = gameConfig;
+
         baseAreaHandler = new BaseAreaHandler(plugin, this);
         baseAreaHandler.register();
     }
 
+    public void resetGame() {
+        resetBaseArea();
+        playerPoints.clear();
+
+        setGameStageEnum(GameStageEnum.WAITING);
+    }
+
     public void addPlayerPoints(UUID uuid, int points) {
         playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
-        plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
+        plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
     }
 
     public void addPlayerPointsToAllTeamMembers(ChampionshipTeam championshipTeam, int points) {
         for (UUID uuid : championshipTeam.getMembers()) {
             playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
+            plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
         }
     }
 
-    public void addPlayerPointsToDatabase(GameTypeEnum gameTypeEnum) {
+    public void addPlayerPointsToDatabase() {
         for (Map.Entry<UUID, Integer> playerPointEntry : playerPoints.entrySet()) {
-            plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), gameTypeEnum, getAreaName(), playerPointEntry.getValue());
+            plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
         }
     }
 
@@ -65,7 +85,7 @@ public abstract class BaseArea {
         return points;
     }
 
-    public String getPlayerPointsRank(GameTypeEnum gameTypeEnum) {
+    public String getPlayerPointsRank() {
         ArrayList<Map.Entry<UUID, Integer>> list;
         list = new ArrayList<>(playerPoints.entrySet());
         list.sort(Map.Entry.comparingByValue());
@@ -76,7 +96,7 @@ public abstract class BaseArea {
 
         stringBuilder.append(MessageConfig.GAME_BOARD_BAR
                         .replace("%game%", gameTypeEnum.toString())
-                        .replace("%area%", getAreaName()))
+                        .replace("%area%", gameConfig.getAreaName()))
                 .append("\n");
 
         int i = 1;
@@ -134,7 +154,7 @@ public abstract class BaseArea {
 
     public void addSpectator(@NotNull Player player) {
         spectators.add(player.getUniqueId());
-        player.teleport(getSpectatorSpawnLocation());
+        player.teleport(gameConfig.getSpectatorSpawnPoint());
         player.setGameMode(GameMode.ADVENTURE);
         player.setAllowFlight(true);
         player.setFlying(true);
@@ -199,11 +219,67 @@ public abstract class BaseArea {
         }
     }
 
-    public abstract Location getSpectatorSpawnLocation();
+    public void cleanDroppedItems() {
+        Vector pos1 = getGameConfig().getAreaPos1();
+        Vector pos2 = getGameConfig().getAreaPos2();
+        World world = getGameConfig().getSpectatorSpawnPoint().getWorld();
+        if (world != null) {
+            world.getNearbyEntities(new BoundingBox(
+                            pos1.getX(),
+                            pos1.getY(),
+                            pos1.getZ(),
+                            pos2.getX(),
+                            pos2.getY(),
+                            pos2.getZ()))
+                    .forEach(entity -> {
+                        if (entity instanceof Item) {
+                            entity.remove();
+                        }
+                    });
+        }
+    }
+
+    public boolean notInArea(Location location) {
+        return !location.toVector().isInAABB(getGameConfig().getAreaPos1(), getGameConfig().getAreaPos2());
+    }
+
+    public abstract void resetBaseArea();
+
+    public abstract void resetArea();
+
+    public abstract BaseGameConfig getGameConfig();
+
+    public abstract BaseListener getGameHandler();
+
+    public abstract void startGamePreparation();
+
+    public abstract void sendMessageToAllGamePlayers(String message);
+
+    public abstract void sendActionBarToAllGamePlayers(String message);
+
+    public abstract void sendActionBarToAllGameSpectators(String message);
+
+    public abstract void sendMessageToAllGamePlayersInActionbarAndMessage(String message);
+
+    public abstract void sendTitleToAllGamePlayers(String title, String subTitle);
+
+    public abstract void changeLevelForAllGamePlayers(int level);
+
+    public abstract void changeGameModelForAllGamePlayers(GameMode gameMode);
+
+    public abstract void setHealthForAllGamePlayers(double health);
+
+    public abstract void setFoodLevelForAllGamePlayers(int level);
+
+    public abstract void teleportAllPlayers(Location location);
+
+    public abstract void clearEffectsForAllGamePlayers();
+
+    public abstract void cleanInventoryForAllGamePlayers();
+
+    public abstract void playSoundToAllGamePlayers(Sound sound, float volume, float pitch);
 
     public abstract boolean notAreaPlayer(@NotNull Player player);
-
-    public abstract String getAreaName();
 
     public abstract void handlePlayerDeath(@NotNull PlayerDeathEvent event);
 
