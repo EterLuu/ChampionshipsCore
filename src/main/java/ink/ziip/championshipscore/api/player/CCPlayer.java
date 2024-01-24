@@ -7,7 +7,6 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.reflect.StructureModifier;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import ink.ziip.championshipscore.api.object.status.PlayerStatusEnum;
 import ink.ziip.championshipscore.util.Utils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
@@ -26,7 +25,6 @@ public class CCPlayer {
     private Player player;
     @Nullable
     private OfflinePlayer offlinePlayer;
-    private PlayerStatusEnum playerStatusEnum;
 
     protected CCPlayer(@NotNull UUID uuid) {
         this.playerUUID = uuid;
@@ -36,7 +34,6 @@ public class CCPlayer {
             this.player = player;
 
         this.offlinePlayer = Bukkit.getOfflinePlayer(uuid);
-        this.playerStatusEnum = PlayerStatusEnum.NONE;
     }
 
     public void updatePlayer() {
@@ -45,7 +42,6 @@ public class CCPlayer {
             this.player = player;
 
         this.offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
-        this.playerStatusEnum = PlayerStatusEnum.NONE;
     }
 
     public void sendActionBar(String content) {
@@ -94,17 +90,5 @@ public class CCPlayer {
 
         // Using offlinePlayer to avoid issues
         return Utils.translateColorCodes(PlaceholderAPI.setPlaceholders(offlinePlayer, content));
-    }
-
-    public PlayerStatusEnum getPlayerStatusEnum() {
-        synchronized (this) {
-            return playerStatusEnum;
-        }
-    }
-
-    public void setPlayerStatusEnum(PlayerStatusEnum playerStatusEnum) {
-        synchronized (this) {
-            this.playerStatusEnum = playerStatusEnum;
-        }
     }
 }

@@ -2,7 +2,6 @@ package ink.ziip.championshipscore.api.player;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.object.status.PlayerStatusEnum;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -56,15 +55,6 @@ public class CCPlayerManager extends BaseManager {
         return addPlayer(uuid);
     }
 
-    @Nullable
-    @Deprecated
-    public CCPlayer addPlayer(@NotNull String name) {
-        Player player = Bukkit.getPlayer(name);
-        if (player == null)
-            return null;
-        return addPlayer(player.getUniqueId());
-    }
-
     public CCPlayer getPlayer(@NotNull UUID uuid) {
         CCPlayer ccPlayer = cachedPlayers.get(uuid);
         if (ccPlayer == null)
@@ -85,10 +75,5 @@ public class CCPlayerManager extends BaseManager {
     public CCPlayer getPlayer(@NotNull String name) {
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
         return getPlayer(offlinePlayer.getUniqueId());
-    }
-
-    public void deletePlayer(@NotNull UUID uuid) {
-        if (getPlayer(uuid).getPlayerStatusEnum() == PlayerStatusEnum.NONE)
-            cachedPlayers.remove(uuid);
     }
 }
