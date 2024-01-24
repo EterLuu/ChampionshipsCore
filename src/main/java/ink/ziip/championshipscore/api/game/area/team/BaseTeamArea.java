@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.area.team;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
-import ink.ziip.championshipscore.api.player.CCPlayer;
+import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
@@ -33,19 +33,19 @@ public abstract class BaseTeamArea extends BaseArea {
     }
 
     public void sendActionBarToAllGameSpectators(String message) {
-        for (CCPlayer ccPlayer : rightChampionshipTeam.getOnlineCCPlayers()) {
-            Player player = ccPlayer.getPlayer();
+        for (ChampionshipPlayer championshipPlayer : rightChampionshipTeam.getOnlineCCPlayers()) {
+            Player player = championshipPlayer.getPlayer();
             if (player != null) {
-                if (ccPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                    ccPlayer.sendActionBar(message);
+                if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
+                    championshipPlayer.sendActionBar(message);
                 }
             }
         }
-        for (CCPlayer ccPlayer : leftChampionshipTeam.getOnlineCCPlayers()) {
-            Player player = ccPlayer.getPlayer();
+        for (ChampionshipPlayer championshipPlayer : leftChampionshipTeam.getOnlineCCPlayers()) {
+            Player player = championshipPlayer.getPlayer();
             if (player != null) {
-                if (ccPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                    ccPlayer.sendActionBar(message);
+                if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
+                    championshipPlayer.sendActionBar(message);
                 }
             }
         }

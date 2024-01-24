@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.area;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
-import ink.ziip.championshipscore.api.player.CCPlayer;
+import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -107,12 +107,12 @@ public abstract class BaseArea {
         return list;
     }
 
-    public List<CCPlayer> getOnlineCCSpectators() {
-        List<CCPlayer> list = new ArrayList<>();
+    public List<ChampionshipPlayer> getOnlineCCSpectators() {
+        List<ChampionshipPlayer> list = new ArrayList<>();
         for (UUID uuid : spectators) {
-            CCPlayer ccPlayer = plugin.getCcPlayerManager().getPlayer(uuid);
-            if (ccPlayer != null) {
-                list.add(ccPlayer);
+            ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(uuid);
+            if (championshipPlayer != null) {
+                list.add(championshipPlayer);
             }
         }
 
@@ -126,14 +126,14 @@ public abstract class BaseArea {
     }
 
     public void sendActionBarToAllSpectators(String message) {
-        for (CCPlayer ccPlayer : getOnlineCCSpectators()) {
-            ccPlayer.sendActionBar(message);
+        for (ChampionshipPlayer championshipPlayer : getOnlineCCSpectators()) {
+            championshipPlayer.sendActionBar(message);
         }
     }
 
     public void sendTitleToAllSpectators(String title, String subTitle) {
-        for (CCPlayer ccPlayer : getOnlineCCSpectators()) {
-            ccPlayer.sendTitle(title, subTitle);
+        for (ChampionshipPlayer championshipPlayer : getOnlineCCSpectators()) {
+            championshipPlayer.sendTitle(title, subTitle);
         }
     }
 

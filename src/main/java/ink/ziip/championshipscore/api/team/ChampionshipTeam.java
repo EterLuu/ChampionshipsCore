@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.api.team;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.player.CCPlayer;
+import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.util.Utils;
@@ -125,30 +125,30 @@ public class ChampionshipTeam {
         return list;
     }
 
-    public List<CCPlayer> getOnlineCCPlayers() {
-        List<CCPlayer> list = new ArrayList<>();
+    public List<ChampionshipPlayer> getOnlineCCPlayers() {
+        List<ChampionshipPlayer> list = new ArrayList<>();
         for (UUID uuid : members) {
-            CCPlayer ccPlayer = ChampionshipsCore.getInstance().getCcPlayerManager().getPlayer(uuid);
-            list.add(ccPlayer);
+            ChampionshipPlayer championshipPlayer = ChampionshipsCore.getInstance().getPlayerManager().getPlayer(uuid);
+            list.add(championshipPlayer);
         }
         return list;
     }
 
     public void sendMessageToAll(String message) {
-        for (CCPlayer ccPlayer : getOnlineCCPlayers()) {
-            ccPlayer.sendMessage(message);
+        for (ChampionshipPlayer championshipPlayer : getOnlineCCPlayers()) {
+            championshipPlayer.sendMessage(message);
         }
     }
 
     public void sendTitleToAll(String title, String subTitle) {
-        for (CCPlayer ccPlayer : getOnlineCCPlayers()) {
-            ccPlayer.sendTitle(title, subTitle);
+        for (ChampionshipPlayer championshipPlayer : getOnlineCCPlayers()) {
+            championshipPlayer.sendTitle(title, subTitle);
         }
     }
 
     public void sendActionBarToAll(String message) {
-        for (CCPlayer ccPlayer : getOnlineCCPlayers()) {
-            ccPlayer.sendActionBar(message);
+        for (ChampionshipPlayer championshipPlayer : getOnlineCCPlayers()) {
+            championshipPlayer.sendActionBar(message);
         }
     }
 

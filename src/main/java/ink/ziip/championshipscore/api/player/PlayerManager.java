@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CCPlayerManager extends BaseManager {
-    private static final Map<UUID, CCPlayer> cachedPlayers = new ConcurrentHashMap<>();
+public class PlayerManager extends BaseManager {
+    private static final Map<UUID, ChampionshipPlayer> cachedPlayers = new ConcurrentHashMap<>();
 
-    public CCPlayerManager(ChampionshipsCore championshipsCore) {
+    public PlayerManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
     }
 
@@ -32,47 +32,47 @@ public class CCPlayerManager extends BaseManager {
     }
 
     // TODO check dead lock
-    public CCPlayer addPlayer(@NotNull UUID uuid) {
-        CCPlayer ccPlayer;
+    public ChampionshipPlayer addPlayer(@NotNull UUID uuid) {
+        ChampionshipPlayer championshipPlayer;
         synchronized (this) {
             if (!cachedPlayers.containsKey(uuid)) {
-                ccPlayer = new CCPlayer(uuid);
-                cachedPlayers.putIfAbsent(uuid, ccPlayer);
-                return ccPlayer;
+                championshipPlayer = new ChampionshipPlayer(uuid);
+                cachedPlayers.putIfAbsent(uuid, championshipPlayer);
+                return championshipPlayer;
             }
             return getPlayer(uuid);
         }
     }
 
-    public CCPlayer addPlayer(@NotNull Player player) {
+    public ChampionshipPlayer addPlayer(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         return addPlayer(uuid);
     }
 
     @Nullable
-    public CCPlayer addPlayer(@NotNull OfflinePlayer offlinePlayer) {
+    public ChampionshipPlayer addPlayer(@NotNull OfflinePlayer offlinePlayer) {
         UUID uuid = offlinePlayer.getUniqueId();
         return addPlayer(uuid);
     }
 
-    public CCPlayer getPlayer(@NotNull UUID uuid) {
-        CCPlayer ccPlayer = cachedPlayers.get(uuid);
-        if (ccPlayer == null)
+    public ChampionshipPlayer getPlayer(@NotNull UUID uuid) {
+        ChampionshipPlayer championshipPlayer = cachedPlayers.get(uuid);
+        if (championshipPlayer == null)
             return addPlayer(uuid);
-        return ccPlayer;
+        return championshipPlayer;
     }
 
-    public CCPlayer getPlayer(@NotNull Player player) {
+    public ChampionshipPlayer getPlayer(@NotNull Player player) {
         return getPlayer(player.getUniqueId());
     }
 
     @Nullable
-    public CCPlayer getPlayer(@NotNull OfflinePlayer offlinePlayer) {
+    public ChampionshipPlayer getPlayer(@NotNull OfflinePlayer offlinePlayer) {
         return getPlayer(offlinePlayer.getUniqueId());
     }
 
     @Nullable
-    public CCPlayer getPlayer(@NotNull String name) {
+    public ChampionshipPlayer getPlayer(@NotNull String name) {
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
         return getPlayer(offlinePlayer.getUniqueId());
     }

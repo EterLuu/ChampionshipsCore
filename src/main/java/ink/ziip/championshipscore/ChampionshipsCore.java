@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore;
 
 import ink.ziip.championshipscore.api.game.manager.GameManager;
-import ink.ziip.championshipscore.api.player.CCPlayerManager;
+import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.integration.bingo.BingoManager;
@@ -25,7 +25,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     @Getter
     private static ChampionshipsCore instance;
     private TeamManager teamManager;
-    private CCPlayerManager ccPlayerManager;
+    private PlayerManager playerManager;
     private ListenerManager listenerManager;
     private ConfigurationManager configurationManager;
     private DatabaseManager databaseManager;
@@ -54,7 +54,7 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         configurationManager = new ConfigurationManager(this);
         databaseManager = new DatabaseManager(this);
-        ccPlayerManager = new CCPlayerManager(this);
+        playerManager = new PlayerManager(this);
         listenerManager = new ListenerManager(this);
         commandManager = new CommandManager(this);
         teamManager = new TeamManager(this);
@@ -67,7 +67,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         databaseManager.load();
         listenerManager.load();
 
-        ccPlayerManager.load();
+        playerManager.load();
         teamManager.load();
         rankManager.load();
 
@@ -91,7 +91,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         rankManager.unload();
 
         listenerManager.unload();
-        ccPlayerManager.unload();
+        playerManager.unload();
         teamManager.unload();
         commandManager.unload();
 

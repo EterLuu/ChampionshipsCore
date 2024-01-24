@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-public class CCPlayer {
+public class ChampionshipPlayer {
     @NotNull
     private final UUID playerUUID;
     @Nullable
@@ -28,7 +28,7 @@ public class CCPlayer {
     @Nullable
     private OfflinePlayer offlinePlayer;
 
-    protected CCPlayer(@NotNull UUID uuid) {
+    protected ChampionshipPlayer(@NotNull UUID uuid) {
         this.playerUUID = uuid;
 
         Player player = Bukkit.getPlayer(uuid);

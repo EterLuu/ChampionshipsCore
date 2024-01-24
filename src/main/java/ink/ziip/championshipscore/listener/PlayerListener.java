@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.listener;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.player.CCPlayerManager;
+import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
@@ -24,15 +24,15 @@ public class PlayerListener extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        CCPlayerManager ccPlayerManager = ChampionshipsCore.getInstance().getCcPlayerManager();
-        ccPlayerManager.getPlayer(player).updatePlayer();
+        PlayerManager playerManager = ChampionshipsCore.getInstance().getPlayerManager();
+        playerManager.getPlayer(player).updatePlayer();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        CCPlayerManager ccPlayerManager = ChampionshipsCore.getInstance().getCcPlayerManager();
-        ccPlayerManager.getPlayer(player).updatePlayer();
+        PlayerManager playerManager = ChampionshipsCore.getInstance().getPlayerManager();
+        playerManager.getPlayer(player).updatePlayer();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
