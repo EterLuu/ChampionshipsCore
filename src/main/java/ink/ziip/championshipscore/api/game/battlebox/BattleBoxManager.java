@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
 import ink.ziip.championshipscore.api.object.game.BBWeaponKitEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -63,11 +63,11 @@ public class BattleBoxManager extends BaseAreaManager<BattleBoxArea> {
     }
 
     public boolean setPlayerWeaponKit(@NotNull Player player, @NotNull BBWeaponKitEnum type) {
-        Team team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
 
-        if (team == null)
+        if (championshipTeam == null)
             return false;
-        for (UUID uuid : team.getMembers()) {
+        for (UUID uuid : championshipTeam.getMembers()) {
             if (playerWeaponKit.get(uuid) == type) {
                 return uuid.equals(player.getUniqueId());
             }
@@ -82,11 +82,11 @@ public class BattleBoxManager extends BaseAreaManager<BattleBoxArea> {
             return bbWeaponKitEnum;
         }
 
-        Team team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
 
         List<BBWeaponKitEnum> kits = new ArrayList<>(List.of(BBWeaponKitEnum.values()));
-        if (team != null) {
-            for (UUID uuid : team.getMembers()) {
+        if (championshipTeam != null) {
+            for (UUID uuid : championshipTeam.getMembers()) {
                 BBWeaponKitEnum selected = playerWeaponKit.get(uuid);
                 if (selected != null) {
                     kits.remove(selected);
@@ -105,8 +105,8 @@ public class BattleBoxManager extends BaseAreaManager<BattleBoxArea> {
     }
 
     public void setWeaponKit(@NotNull Player player) {
-        Team team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (team == null)
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        if (championshipTeam == null)
             return;
 
         player.getInventory().clear();
@@ -150,10 +150,10 @@ public class BattleBoxManager extends BaseAreaManager<BattleBoxArea> {
 
         inventory.addItem(new ItemStack(Material.SHEARS));
 
-        inventory.addItem(team.getWool());
+        inventory.addItem(championshipTeam.getWool());
 
-        inventory.setBoots(team.getBoots());
+        inventory.setBoots(championshipTeam.getBoots());
 
-        inventory.setHelmet(team.getHelmet());
+        inventory.setHelmet(championshipTeam.getHelmet());
     }
 }

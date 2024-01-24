@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import org.bukkit.GameMode;
 import org.bukkit.World;
@@ -26,9 +26,9 @@ public class GameManagerHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
-        Team team = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
-        if (team != null) {
-            BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(team);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
+        if (championshipTeam != null) {
+            BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
             if (baseTeamArea != null) {
                 baseTeamArea.handlePlayerDeath(event);
                 return;
@@ -54,9 +54,9 @@ public class GameManagerHandler extends BaseListener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         plugin.getGameManager().updatePlayer(player);
-        Team team = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
-        if (team != null) {
-            BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(team);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
+        if (championshipTeam != null) {
+            BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
             if (baseTeamArea != null) {
                 baseTeamArea.handlePlayerJoin(event);
                 return;
@@ -86,9 +86,9 @@ public class GameManagerHandler extends BaseListener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         plugin.getGameManager().updatePlayer(player);
-        Team team = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
-        if (team != null) {
-            BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(team);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
+        if (championshipTeam != null) {
+            BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
             if (baseTeamArea != null) {
                 baseTeamArea.handlePlayerQuit(event);
                 return;

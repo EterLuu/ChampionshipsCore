@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -44,8 +44,8 @@ public class BattleBoxArea extends BaseTeamArea {
     protected void resetGame() {
         resetRegionBlocks();
         cleanDroppedItems();
-        rightTeam = null;
-        leftTeam = null;
+        rightChampionshipTeam = null;
+        leftChampionshipTeam = null;
         playerPoints.clear();
 
         setGameStageEnum(GameStageEnum.WAITING);
@@ -60,13 +60,13 @@ public class BattleBoxArea extends BaseTeamArea {
         setGameStageEnum(GameStageEnum.WAITING);
     }
 
-    public boolean tryStartGame(Team rightTeam, Team leftTeam) {
+    public boolean tryStartGame(ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return false;
         setGameStageEnum(GameStageEnum.LOADING);
 
-        this.rightTeam = rightTeam;
-        this.leftTeam = leftTeam;
+        this.rightChampionshipTeam = rightChampionshipTeam;
+        this.leftChampionshipTeam = leftChampionshipTeam;
         startGamePreparation();
         return true;
     }
@@ -75,8 +75,8 @@ public class BattleBoxArea extends BaseTeamArea {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        rightTeam.teleportAllPlayers(battleBoxConfig.getRightPreSpawnPoint());
-        leftTeam.teleportAllPlayers(battleBoxConfig.getLeftPreSpawnPoint());
+        rightChampionshipTeam.teleportAllPlayers(battleBoxConfig.getRightPreSpawnPoint());
+        leftChampionshipTeam.teleportAllPlayers(battleBoxConfig.getLeftPreSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         cleanInventoryForAllGamePlayers();
@@ -107,8 +107,8 @@ public class BattleBoxArea extends BaseTeamArea {
         timer = battleBoxConfig.getTimer() + 5;
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
-        rightTeam.teleportAllPlayers(battleBoxConfig.getRightSpawnPoint());
-        leftTeam.teleportAllPlayers(battleBoxConfig.getLeftSpawnPoint());
+        rightChampionshipTeam.teleportAllPlayers(battleBoxConfig.getRightSpawnPoint());
+        leftChampionshipTeam.teleportAllPlayers(battleBoxConfig.getLeftSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
         giveItemToAllGamePlayers();
@@ -149,8 +149,8 @@ public class BattleBoxArea extends BaseTeamArea {
 
             HashMap<Material, Integer> blockCount = countBlocksInRegion();
             if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-                int rightTeamWool = blockCount.getOrDefault(rightTeam.getWool().getType(), 0);
-                int leftTeamWool = blockCount.getOrDefault(leftTeam.getWool().getType(), 0);
+                int rightTeamWool = blockCount.getOrDefault(rightChampionshipTeam.getWool().getType(), 0);
+                int leftTeamWool = blockCount.getOrDefault(leftChampionshipTeam.getWool().getType(), 0);
                 if (rightTeamWool == 9 || leftTeamWool == 9) {
                     endGameInForm();
                 }
@@ -181,30 +181,30 @@ public class BattleBoxArea extends BaseTeamArea {
 
         setGameStageEnum(GameStageEnum.END);
 
-        rightTeam.teleportAllPlayers(getLobbyLocation());
-        leftTeam.teleportAllPlayers(getLobbyLocation());
+        rightChampionshipTeam.teleportAllPlayers(getLobbyLocation());
+        leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(rightTeam, leftTeam, this));
+        Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
 
         resetGame();
     }
 
     protected void calculatePoints() {
         HashMap<Material, Integer> blockCount = countBlocksInRegion();
-        int rightTeamWool = blockCount.getOrDefault(rightTeam.getWool().getType(), 0);
-        int leftTeamWool = blockCount.getOrDefault(leftTeam.getWool().getType(), 0);
+        int rightTeamWool = blockCount.getOrDefault(rightChampionshipTeam.getWool().getType(), 0);
+        int leftTeamWool = blockCount.getOrDefault(leftChampionshipTeam.getWool().getType(), 0);
 
         int rightTeamPoints = 0;
         int leftTeamPoints = 0;
 
         for (Map.Entry<UUID, Integer> playerPointsEntry : playerPoints.entrySet()) {
-            Team team = plugin.getTeamManager().getTeamByPlayer(playerPointsEntry.getKey());
-            if (team != null) {
-                if (team.equals(rightTeam)) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(playerPointsEntry.getKey());
+            if (championshipTeam != null) {
+                if (championshipTeam.equals(rightChampionshipTeam)) {
                     rightTeamPoints += playerPointsEntry.getValue();
                 }
-                if (team.equals(leftTeam)) {
+                if (championshipTeam.equals(leftChampionshipTeam)) {
                     leftTeamPoints += playerPointsEntry.getValue();
                 }
             }
@@ -215,19 +215,19 @@ public class BattleBoxArea extends BaseTeamArea {
         if (rightTeamWool > leftTeamWool) {
             rightTeamPoints += 40 * CCConfig.TEAM_MAX_MEMBERS;
 
-            message = message.replace("%team%", rightTeam.getColoredName())
+            message = message.replace("%team%", rightChampionshipTeam.getColoredName())
                     .replace("%points%", String.valueOf(rightTeamPoints));
 
-            for (UUID uuid : rightTeam.getMembers()) {
+            for (UUID uuid : rightChampionshipTeam.getMembers()) {
                 playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 15);
             }
         } else if (leftTeamWool > rightTeamWool) {
             leftTeamPoints += 40 * CCConfig.TEAM_MAX_MEMBERS;
 
-            message = message.replace("%team%", leftTeam.getColoredName())
+            message = message.replace("%team%", leftChampionshipTeam.getColoredName())
                     .replace("%points%", String.valueOf(leftTeamPoints));
 
-            for (UUID uuid : leftTeam.getMembers()) {
+            for (UUID uuid : leftChampionshipTeam.getMembers()) {
                 playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 15);
             }
         } else {
@@ -237,10 +237,10 @@ public class BattleBoxArea extends BaseTeamArea {
             message = MessageConfig.BATTLE_BOX_DRAW
                     .replace("%points%", String.valueOf(leftTeamPoints));
 
-            for (UUID uuid : rightTeam.getMembers()) {
+            for (UUID uuid : rightChampionshipTeam.getMembers()) {
                 playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 15);
             }
-            for (UUID uuid : leftTeam.getMembers()) {
+            for (UUID uuid : leftChampionshipTeam.getMembers()) {
                 playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 15);
             }
         }
@@ -249,8 +249,8 @@ public class BattleBoxArea extends BaseTeamArea {
             plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointsEntry.getKey()), GameTypeEnum.BattleBox, getAreaName(), playerPointsEntry.getValue());
         }
 
-        plugin.getRankManager().addTeamPoints(rightTeam, leftTeam, GameTypeEnum.BattleBox, getAreaName(), rightTeamPoints);
-        plugin.getRankManager().addTeamPoints(leftTeam, rightTeam, GameTypeEnum.BattleBox, getAreaName(), leftTeamPoints);
+        plugin.getRankManager().addTeamPoints(rightChampionshipTeam, leftChampionshipTeam, GameTypeEnum.BattleBox, getAreaName(), rightTeamPoints);
+        plugin.getRankManager().addTeamPoints(leftChampionshipTeam, rightChampionshipTeam, GameTypeEnum.BattleBox, getAreaName(), leftTeamPoints);
 
         sendMessageToAllGamePlayers(message);
         sendActionBarToAllGamePlayers(message);
@@ -268,15 +268,15 @@ public class BattleBoxArea extends BaseTeamArea {
             return;
         }
 
-        Team playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam playerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
         Player killer = player.getKiller();
-        if (playerTeam != null && killer != null) {
+        if (playerChampionshipTeam != null && killer != null) {
             UUID uuid = killer.getUniqueId();
             playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 15);
             event.setDeathMessage(null);
 
             String message = MessageConfig.BATTLE_BOX_KILL_PLAYER
-                    .replace("%player_team%", playerTeam.getColoredName())
+                    .replace("%player_team%", playerChampionshipTeam.getColoredName())
                     .replace("%player%", player.getName())
                     .replace("%killer%", killer.getName());
 
@@ -305,11 +305,11 @@ public class BattleBoxArea extends BaseTeamArea {
         if (notAreaPlayer(player)) {
             return;
         }
-        Team playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam playerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
 
-        if (playerTeam != null) {
+        if (playerChampionshipTeam != null) {
             String message = MessageConfig.BATTLE_BOX_PLAYER_LEAVE
-                    .replace("%player_team%", playerTeam.getColoredName())
+                    .replace("%player_team%", playerChampionshipTeam.getColoredName())
                     .replace("%player%", player.getName());
 
             sendMessageToAllGamePlayers(message);
@@ -328,10 +328,10 @@ public class BattleBoxArea extends BaseTeamArea {
     }
 
     private void giveItemToAllGamePlayers() {
-        for (Player player : rightTeam.getOnlinePlayers()) {
+        for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
             plugin.getGameManager().getBattleBoxManager().setWeaponKit(player);
         }
-        for (Player player : leftTeam.getOnlinePlayers()) {
+        for (Player player : leftChampionshipTeam.getOnlinePlayers()) {
             plugin.getGameManager().getBattleBoxManager().setWeaponKit(player);
         }
     }

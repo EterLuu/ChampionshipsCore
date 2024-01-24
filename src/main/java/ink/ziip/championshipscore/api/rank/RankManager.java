@@ -7,7 +7,7 @@ import ink.ziip.championshipscore.api.rank.dao.RankDaoImpl;
 import ink.ziip.championshipscore.api.rank.entry.GameStatusEntry;
 import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
 import ink.ziip.championshipscore.api.rank.entry.TeamPointEntry;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -23,9 +23,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RankManager extends BaseManager {
-    private static final Map<Team, Double> teamPoints = new ConcurrentHashMap<>();
+    private static final Map<ChampionshipTeam, Double> teamPoints = new ConcurrentHashMap<>();
     private static final Map<UUID, Double> playerPoints = new ConcurrentHashMap<>();
-    private static final Map<Team, Integer> teamRank = new ConcurrentHashMap<>();
+    private static final Map<ChampionshipTeam, Integer> teamRank = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> playerRank = new ConcurrentHashMap<>();
     private final RankDaoImpl rankDao = new RankDaoImpl();
     private final TeamDaoImpl teamDao = new TeamDaoImpl();
@@ -62,17 +62,17 @@ public class RankManager extends BaseManager {
     }
 
     public int getPlayerTeamRank(Player player) {
-        Team team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (team != null) {
-            return teamRank.getOrDefault(team, Integer.MAX_VALUE);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        if (championshipTeam != null) {
+            return teamRank.getOrDefault(championshipTeam, Integer.MAX_VALUE);
         }
         return -1;
     }
 
     public double getPlayerTeamPoints(Player player) {
-        Team team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (team != null) {
-            return teamPoints.getOrDefault(team, -1D);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        if (championshipTeam != null) {
+            return teamPoints.getOrDefault(championshipTeam, -1D);
         }
         return -1D;
     }
@@ -81,10 +81,10 @@ public class RankManager extends BaseManager {
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (Team team : plugin.getTeamManager().getTeamList()) {
-                    teamPoints.put(team, plugin.getRankManager().getTeamPoints(team));
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    teamPoints.put(championshipTeam, plugin.getRankManager().getTeamPoints(championshipTeam));
                 }
-                ArrayList<Map.Entry<Team, Double>> list;
+                ArrayList<Map.Entry<ChampionshipTeam, Double>> list;
                 list = new ArrayList<>(teamPoints.entrySet());
                 list.sort(Map.Entry.comparingByValue());
 
@@ -95,7 +95,7 @@ public class RankManager extends BaseManager {
                 stringBuilder.append(MessageConfig.RANK_TEAM_BOARD_BAR).append("\n");
 
                 int i = 1;
-                for (Map.Entry<Team, Double> entry : list) {
+                for (Map.Entry<ChampionshipTeam, Double> entry : list) {
                     String row = MessageConfig.RANK_TEAM_BOARD_ROW
                             .replace("%team_rank%", String.valueOf(i))
                             .replace("%team%", entry.getKey().getColoredName())
@@ -118,8 +118,8 @@ public class RankManager extends BaseManager {
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (Team team : plugin.getTeamManager().getTeamList()) {
-                    for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(team.getId())) {
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(championshipTeam.getId())) {
                         UUID uuid = teamMemberEntry.getUuid();
                         playerPoints.put(uuid, getPlayerPoints(uuid));
                     }
@@ -168,11 +168,11 @@ public class RankManager extends BaseManager {
         rankDao.addGameStatus(gameStatusEntry);
     }
 
-    public void addTeamPoints(Team team, Team rival, GameTypeEnum gameTypeEnum, String area, int points) {
+    public void addTeamPoints(ChampionshipTeam championshipTeam, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, int points) {
         TeamPointEntry teamPointEntry = TeamPointEntry.builder()
-                .teamId(team.getId())
+                .teamId(championshipTeam.getId())
                 .rivalId(rival.getId())
-                .team(team.getName())
+                .team(championshipTeam.getName())
                 .rival(rival.getName())
                 .game(gameTypeEnum)
                 .area(area)
@@ -185,13 +185,13 @@ public class RankManager extends BaseManager {
     }
 
     public void addPlayerPoints(OfflinePlayer offlinePlayer, GameTypeEnum gameTypeEnum, String area, int points) {
-        Team team = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
-        if (team != null) {
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+        if (championshipTeam != null) {
             PlayerPointEntry playerPointEntry = PlayerPointEntry.builder()
                     .uuid(offlinePlayer.getUniqueId())
                     .username(offlinePlayer.getName())
-                    .teamId(team.getId())
-                    .team(team.getName())
+                    .teamId(championshipTeam.getId())
+                    .team(championshipTeam.getName())
                     .game(gameTypeEnum)
                     .area(area)
                     .round("wcc")
@@ -214,9 +214,9 @@ public class RankManager extends BaseManager {
         return points;
     }
 
-    private double getTeamPoints(Team team) {
-        List<TeamPointEntry> teamPointEntries = rankDao.getTeamPoints(team.getId());
-        List<PlayerPointEntry> playerPointEntries = rankDao.getTeamPlayerPoints(team.getId());
+    private double getTeamPoints(ChampionshipTeam championshipTeam) {
+        List<TeamPointEntry> teamPointEntries = rankDao.getTeamPoints(championshipTeam.getId());
+        List<PlayerPointEntry> playerPointEntries = rankDao.getTeamPlayerPoints(championshipTeam.getId());
 
         double points = 0;
         for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {

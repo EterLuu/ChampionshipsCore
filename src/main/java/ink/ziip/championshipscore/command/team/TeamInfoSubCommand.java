@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.command.team;
 
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
@@ -19,9 +19,9 @@ public class TeamInfoSubCommand extends BaseSubCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            Team team = plugin.getTeamManager().getTeam(args[0]);
-            if (team != null)
-                sender.sendMessage(plugin.getTeamManager().getTeamInfo(team));
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeam(args[0]);
+            if (championshipTeam != null)
+                sender.sendMessage(plugin.getTeamManager().getTeamInfo(championshipTeam));
             else
                 sender.sendMessage(MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
         }

@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.command.rank;
 
 import ink.ziip.championshipscore.api.rank.RankManager;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
@@ -22,8 +22,8 @@ public class RankMainCommand extends BaseMainCommand {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length < 1) {
             Player player = (Player) sender;
-            Team team = plugin.getTeamManager().getTeamByPlayer(player);
-            if (team != null) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+            if (championshipTeam != null) {
                 RankManager rankManager = plugin.getRankManager();
                 double playerPoints = rankManager.getPlayerPoints(player);
                 int playerRank = rankManager.getPlayerRank(player);

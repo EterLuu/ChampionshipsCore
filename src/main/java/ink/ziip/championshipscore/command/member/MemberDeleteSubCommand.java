@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.command.member;
 
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
@@ -19,8 +19,8 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 2) {
-            Team team = plugin.getTeamManager().getTeam(args[0]);
-            if (team == null) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeam(args[0]);
+            if (championshipTeam == null) {
                 String message = MessageConfig.MEMBER_DELETED_FAILED
                         .replace("%team%", args[0])
                         .replace("%player%", args[1])
@@ -53,10 +53,10 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
         }
 
         if (args.length == 2) {
-            Team team = plugin.getTeamManager().getTeam(args[0]);
-            if (team == null)
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeam(args[0]);
+            if (championshipTeam == null)
                 return Collections.emptyList();
-            List<String> returnList = team.getTeamMemberNameList();
+            List<String> returnList = championshipTeam.getTeamMemberNameList();
             returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
             return returnList;
         }

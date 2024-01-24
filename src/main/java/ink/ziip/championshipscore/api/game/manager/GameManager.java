@@ -8,7 +8,7 @@ import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GameManager extends BaseManager {
     private final Map<UUID, Boolean> playerVisibleOption = new ConcurrentHashMap<>();
     private final Map<UUID, BaseArea> playerSpectatorStatus = new ConcurrentHashMap<>();
-    private final Map<Team, BaseTeamArea> teamStatus = new ConcurrentHashMap<>();
+    private final Map<ChampionshipTeam, BaseTeamArea> teamStatus = new ConcurrentHashMap<>();
     private final Map<UUID, BaseArea> playerStatus = new ConcurrentHashMap<>();
     private final GameManagerHandler gameManagerHandler;
     @Getter
@@ -47,8 +47,8 @@ public class GameManager extends BaseManager {
     }
 
     @Nullable
-    public BaseTeamArea getBaseTeamArea(Team team) {
-        return teamStatus.get(team);
+    public BaseTeamArea getBaseTeamArea(ChampionshipTeam championshipTeam) {
+        return teamStatus.get(championshipTeam);
     }
 
     @Nullable
@@ -56,14 +56,14 @@ public class GameManager extends BaseManager {
         return playerSpectatorStatus.get(uuid);
     }
 
-    public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull Team rightTeam, @NotNull Team leftTeam) {
-        for (UUID uuid : rightTeam.getMembers()) {
+    public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam rightChampionshipTeam, @NotNull ChampionshipTeam leftChampionshipTeam) {
+        for (UUID uuid : rightChampionshipTeam.getMembers()) {
             if (playerStatus.containsKey(uuid))
                 return false;
             if (playerSpectatorStatus.containsKey(uuid))
                 return false;
         }
-        for (UUID uuid : leftTeam.getMembers()) {
+        for (UUID uuid : leftChampionshipTeam.getMembers()) {
             if (playerStatus.containsKey(uuid))
                 return false;
             if (playerSpectatorStatus.containsKey(uuid))
@@ -74,17 +74,17 @@ public class GameManager extends BaseManager {
             BattleBoxArea battleBoxArea = getBattleBoxManager().getArea(area);
             if (battleBoxArea == null)
                 return false;
-            teamStatus.put(rightTeam, battleBoxArea);
-            teamStatus.put(leftTeam, battleBoxArea);
-            return battleBoxArea.tryStartGame(rightTeam, leftTeam);
+            teamStatus.put(rightChampionshipTeam, battleBoxArea);
+            teamStatus.put(leftChampionshipTeam, battleBoxArea);
+            return battleBoxArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam);
         }
 
         return true;
     }
 
     public void teamGameEndHandler(TeamGameEndEvent event) {
-        teamStatus.remove(event.getLeftTeam());
-        teamStatus.remove(event.getRightTeam());
+        teamStatus.remove(event.getLeftChampionshipTeam());
+        teamStatus.remove(event.getRightChampionshipTeam());
     }
 
     public boolean spectateArea(@NotNull Player player, @NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {

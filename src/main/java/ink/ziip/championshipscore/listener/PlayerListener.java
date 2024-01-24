@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.listener;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.player.CCPlayerManager;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -38,9 +38,9 @@ public class PlayerListener extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Player assailant && event.getEntity() instanceof Player player) {
-            Team assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
-            if (assailantTeam != null) {
-                if (assailantTeam.equals(plugin.getTeamManager().getTeamByPlayer(player))) {
+            ChampionshipTeam assailantChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
+            if (assailantChampionshipTeam != null) {
+                if (assailantChampionshipTeam.equals(plugin.getTeamManager().getTeamByPlayer(player))) {
                     event.setCancelled(true);
                 }
             }
@@ -52,9 +52,9 @@ public class PlayerListener extends BaseListener {
             if (!(projectileSource instanceof Player assailant))
                 return;
 
-            Team assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
-            if (assailantTeam != null) {
-                if (assailantTeam.equals(plugin.getTeamManager().getTeamByPlayer((Player) event.getEntity()))) {
+            ChampionshipTeam assailantChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
+            if (assailantChampionshipTeam != null) {
+                if (assailantChampionshipTeam.equals(plugin.getTeamManager().getTeamByPlayer((Player) event.getEntity()))) {
                     event.setCancelled(true);
                 }
             }

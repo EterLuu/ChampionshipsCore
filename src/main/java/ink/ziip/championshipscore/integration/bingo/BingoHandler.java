@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.integration.bingo;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import io.github.steaf23.bingoreloaded.event.BingoCardTaskCompleteEvent;
@@ -47,9 +47,9 @@ public class BingoHandler extends BaseListener {
         if (bingoManager.isStarted()) {
             BingoTask bingoTask = event.getTask();
             if (event.getParticipant().sessionPlayer().isPresent()) {
-                Team team = plugin.getTeamManager().getTeamByPlayer(event.getParticipant().sessionPlayer().get());
-                if (team != null) {
-                    bingoManager.handleTeamCompleteTask(bingoTask, team);
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getParticipant().sessionPlayer().get());
+                if (championshipTeam != null) {
+                    bingoManager.handleTeamCompleteTask(bingoTask, championshipTeam);
                 }
             }
         }

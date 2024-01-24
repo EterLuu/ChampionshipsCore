@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.command.game.start;
 
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
@@ -28,14 +28,14 @@ public class BattleBoxStartSubCommand extends BaseSubCommand {
                     .replace("%area%", args[0]);
 
             BattleBoxArea battleBoxArea = plugin.getGameManager().getBattleBoxManager().getArea(args[0]);
-            Team rightTeam = plugin.getTeamManager().getTeam(args[1]);
-            Team leftTeam = plugin.getTeamManager().getTeam(args[2]);
+            ChampionshipTeam rightChampionshipTeam = plugin.getTeamManager().getTeam(args[1]);
+            ChampionshipTeam leftChampionshipTeam = plugin.getTeamManager().getTeam(args[2]);
 
-            if (battleBoxArea != null && rightTeam != null && leftTeam != null) {
-                if (plugin.getGameManager().joinTeamArea(GameTypeEnum.BattleBox, args[0], rightTeam, leftTeam)) {
+            if (battleBoxArea != null && rightChampionshipTeam != null && leftChampionshipTeam != null) {
+                if (plugin.getGameManager().joinTeamArea(GameTypeEnum.BattleBox, args[0], rightChampionshipTeam, leftChampionshipTeam)) {
                     String successful = MessageConfig.GAME_TEAM_GAME_START_SUCCESSFUL
-                            .replace("%team%", rightTeam.getColoredName())
-                            .replace("%rival%", leftTeam.getColoredName())
+                            .replace("%team%", rightChampionshipTeam.getColoredName())
+                            .replace("%rival%", leftChampionshipTeam.getColoredName())
                             .replace("%game%", GameTypeEnum.BattleBox.toString())
                             .replace("%area%", args[0]);
                     sender.sendMessage(successful);

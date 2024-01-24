@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-public class Team {
+public class ChampionshipTeam {
     private final Set<UUID> members = new HashSet<>();
     @Getter
     private int id;
@@ -27,10 +27,10 @@ public class Team {
     private String colorCode;
     private TeamDaoImpl teamDao;
 
-    private Team() {
+    private ChampionshipTeam() {
     }
 
-    protected Team(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode) {
+    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode) {
         this.id = id;
         this.name = name;
         this.colorName = colorName;
@@ -38,7 +38,7 @@ public class Team {
         this.teamDao = new TeamDaoImpl();
     }
 
-    protected Team(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members) {
+    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members) {
         this.id = id;
         this.name = name;
         this.colorName = colorName;
@@ -221,9 +221,9 @@ public class Team {
     public boolean equals(Object o) {
         if (o == this)
             return true;
-        if (!(o instanceof Team))
+        if (!(o instanceof ChampionshipTeam))
             return false;
-        return this.name.equals(((Team) o).name);
+        return this.name.equals(((ChampionshipTeam) o).name);
     }
 
     @Override

@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.command.spectate;
 
 import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.team.Team;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
@@ -28,8 +28,8 @@ public class SpectateSubCommand extends BaseSubCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        Team team = plugin.getTeamManager().getTeamByPlayer((Player) sender);
-        if (team != null) {
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer((Player) sender);
+        if (championshipTeam != null) {
             sender.sendMessage(MessageConfig.SPECTATOR_IS_PLAYER);
             return true;
         }
