@@ -5,12 +5,13 @@ import ink.ziip.championshipscore.api.object.status.TeamStatusEnum;
 import ink.ziip.championshipscore.api.player.CCPlayer;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -161,9 +162,27 @@ public class Team {
         }
     }
 
+    public void changeLevelForAll(int level) {
+        for (Player player : getOnlinePlayers()) {
+            player.setLevel(level);
+        }
+    }
+
     public void setGameModeForAllPlayers(GameMode gameMode) {
         for (Player player : getOnlinePlayers()) {
             player.setGameMode(gameMode);
+        }
+    }
+
+    public void cleanInventoryForAllPlayers() {
+        for (Player player : getOnlinePlayers()) {
+            player.getInventory().clear();
+        }
+    }
+
+    public void playSoundToAllPlayers(Sound sound, float volume, float pitch) {
+        for (Player player : getOnlinePlayers()) {
+            player.playSound(player.getLocation(), sound, volume, pitch);
         }
     }
 
@@ -177,5 +196,54 @@ public class Team {
         synchronized (this) {
             return this.teamStatusEnum;
         }
+    }
+
+    public ItemStack getWool() {
+        Material woolMaterial = Material.getMaterial(colorName + "_WOOL");
+        if (woolMaterial == null)
+            return null;
+        ItemStack wool = new ItemStack(woolMaterial);
+        wool.setAmount(64);
+        return wool;
+    }
+
+    public ItemStack getBoots() {
+        ItemStack boots = new ItemStack(Material.LEATHER_BOOTS);
+        ItemMeta bootsMeta = boots.hasItemMeta() ? boots.getItemMeta() : Bukkit.getItemFactory().getItemMeta(boots.getType());
+        LeatherArmorMeta bootsArmorMeta = (LeatherArmorMeta) bootsMeta;
+        if (bootsArmorMeta != null) {
+            bootsArmorMeta.setColor(Utils.hex2rgb(colorCode));
+            boots.setItemMeta(bootsArmorMeta);
+        }
+        return boots;
+    }
+
+    public ItemStack getHelmet() {
+        ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
+        ItemMeta helmetMeta = helmet.hasItemMeta() ? helmet.getItemMeta() : Bukkit.getItemFactory().getItemMeta(helmet.getType());
+        LeatherArmorMeta helmetArmorMeta = (LeatherArmorMeta) helmetMeta;
+        if (helmetArmorMeta != null) {
+            helmetArmorMeta.setColor(Utils.hex2rgb(colorCode));
+            helmet.setItemMeta(helmetArmorMeta);
+        }
+        return helmet;
+    }
+
+    public String getColoredName() {
+        return Utils.translateColorCodes(colorCode + name);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (!(o instanceof Team))
+            return false;
+        return this.name.equals(((Team) o).name);
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
     }
 }
