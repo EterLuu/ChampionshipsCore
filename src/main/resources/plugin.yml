@@ -1,0 +1,8 @@
+name: ChampionshipsCore
+version: '${project.version}'
+main: ink.ziip.championshipscore.ChampionshipsCore
+api-version: '1.20'
+authors: [ Eter Lu, LettuceIce ]
+depend:
+  - ProtocolLib
+  - PlaceholderAPI
