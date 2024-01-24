@@ -6,6 +6,9 @@ authors: [ Eter Lu, LettuceIce ]
 depend:
   - ProtocolLib
   - PlaceholderAPI
+  - FastAsyncWorldEdit
+softdepend:
+  - PhantomWorlds
 commands:
   cc:
     description: Core command.

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore;
 
 import ink.ziip.championshipscore.api.player.CCPlayerManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
+import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
 import ink.ziip.championshipscore.command.CommandManager;
 import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
@@ -32,6 +33,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     private DatabaseManager databaseManager;
     @Getter
     private CommandManager commandManager;
+    @Getter
+    private WorldEditManager worldEditManager;
 
     @Override
     public void onEnable() {
@@ -53,6 +56,10 @@ public final class ChampionshipsCore extends JavaPlugin {
             getLogger().warning("Could not find ProtocolLib!");
             Bukkit.getPluginManager().disablePlugin(this);
         }
+        if (Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") == null) {
+            getLogger().warning("Could not find FastAsyncWorldEdit!");
+            Bukkit.getPluginManager().disablePlugin(this);
+        }
 
         configurationManager = new ConfigurationManager(this);
         databaseManager = new DatabaseManager(this);
@@ -60,12 +67,14 @@ public final class ChampionshipsCore extends JavaPlugin {
         listenerManager = new ListenerManager(this);
         commandManager = new CommandManager(this);
         teamManager = new TeamManager(this);
+        worldEditManager = new WorldEditManager(this);
 
         // Plugin startup logic
         configurationManager.load();
         databaseManager.load();
         listenerManager.load();
         ccPlayerManager.load();
+        worldEditManager.load();
 
         teamManager.load();
         commandManager.load();
