@@ -18,9 +18,12 @@ reason:
   member-does-not-exist: "成员不存在"
   member-already-exist: "成员已存在/队伍满人"
   area-already-exist: "区域已存在"
+  area-not-in-waiting-status: "场地正在开展游戏"
 area:
   successfully-added: "&b[&3WCC&b]&r &f成功添加区域 %area%&f。"
   added-failed: "&b[&3WCC&b]&r &7添加区域 %area% 失败（%reason%）&7。"
+  successfully-saved: "&b[&3WCC&b]&r &f成功保存区域 %area%&f。"
+  saved-failed: "&b[&3WCC&b]&r &7保存区域 %area% 失败（%reason%）&7。"
   setting-option-succeeded: "&b[&3WCC&b]&r &f成功修改区域 %area% 的 %option% 设置&f。"
   setting-option-failed: "&b[&3WCC&b]&r &7修改区域 %area% 的 %option% 设置失败&7。"
 rank:

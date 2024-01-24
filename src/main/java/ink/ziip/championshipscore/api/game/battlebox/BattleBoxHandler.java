@@ -46,31 +46,28 @@ public class BattleBoxHandler extends BaseListener {
 
         Block block = event.getClickedBlock();
 
-        if (battleBoxArea.getGameStageEnum() != GameStageEnum.PREPARATION) {
-            event.setCancelled(true);
-            return;
-        }
+        if (battleBoxArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-
-            if (block != null) {
-                if (block.getType() == Material.BIRCH_WALL_SIGN) {
-                    Sign sign = (Sign) block.getState();
-                    String kit = ChatColor.stripColor(sign.getSide(Side.FRONT).getLine(0));
-                    BBWeaponKitEnum type = getBbWeaponKitEnum(kit);
-                    if (type != null) {
-                        if (battleBoxArea.setPlayerWeaponKit(player, type)) {
-                            player.sendMessage(MessageConfig.BATTLE_BOX_KIT_CHOOSE.replace("%kit%", type.toString()));
-                        } else {
-                            player.sendMessage(MessageConfig.BATTLE_BOX_KIT_ALREADY_CHOOSE.replace("%kit%", type.toString()));
+                if (block != null) {
+                    if (block.getType() == Material.BIRCH_WALL_SIGN) {
+                        Sign sign = (Sign) block.getState();
+                        String kit = ChatColor.stripColor(sign.getSide(Side.FRONT).getLine(0));
+                        BBWeaponKitEnum type = getBbWeaponKitEnum(kit);
+                        if (type != null) {
+                            if (battleBoxArea.setPlayerWeaponKit(player, type)) {
+                                player.sendMessage(MessageConfig.BATTLE_BOX_KIT_CHOOSE.replace("%kit%", type.toString()));
+                            } else {
+                                player.sendMessage(MessageConfig.BATTLE_BOX_KIT_ALREADY_CHOOSE.replace("%kit%", type.toString()));
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if (block != null && block.getType() != Material.BELL)
-            event.setCancelled(true);
+            if (block != null && block.getType() != Material.BELL)
+                event.setCancelled(true);
+        }
     }
 
     @Nullable

@@ -101,6 +101,7 @@ public class ParkourTagArea extends BaseTeamArea {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         cleanInventoryForAllGamePlayers();
+        setHealthForAllGamePlayers(20);
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_TAG_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE, MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
@@ -189,6 +190,7 @@ public class ParkourTagArea extends BaseTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_GAME_START_SOON_TITLE, MessageConfig.PARKOUR_TAG_GAME_START_SOON_SUBTITLE);
 
         giveItemToAllGamePlayers();
+        setHealthForAllGamePlayers(20);
 
         setGameStageEnum(GameStageEnum.PROGRESS);
 
@@ -240,6 +242,7 @@ public class ParkourTagArea extends BaseTeamArea {
         rightChampionshipTeam.teleportAllPlayers(getLobbyLocation());
         leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+        clearEffectsForAllGamePlayers();
 
         Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
 
@@ -331,8 +334,11 @@ public class ParkourTagArea extends BaseTeamArea {
             return;
         }
 
+        if (getGameStageEnum() != GameStageEnum.PROGRESS) {
+            return;
+        }
+
         if (!player.getUniqueId().equals(getLeftAreaChaser()) && !player.getUniqueId().equals(getRightAreaChaser())) {
-            player.setGameMode(GameMode.SPECTATOR);
 
             String message = MessageConfig.PARKOUR_TAG_PLAYER_LEAVE
                     .replace("%player%", player.getName());

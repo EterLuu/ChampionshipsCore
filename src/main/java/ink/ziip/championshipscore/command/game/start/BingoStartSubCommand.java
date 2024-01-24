@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.command.game.start;
 
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -16,7 +17,7 @@ public class BingoStartSubCommand extends BaseSubCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        plugin.getBingoManager().startGame();
+        plugin.getGameManager().joinSingleTeamAreaForAllTeams(GameTypeEnum.Bingo, "bingo");
         return true;
     }
 

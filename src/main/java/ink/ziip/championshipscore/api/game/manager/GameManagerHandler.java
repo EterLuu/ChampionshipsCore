@@ -2,10 +2,10 @@ package ink.ziip.championshipscore.api.game.manager;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
-import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
-import ink.ziip.championshipscore.api.game.bingo.BingoArea;
+import ink.ziip.championshipscore.api.game.bingo.BingoTeamArea;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import org.bukkit.GameMode;
@@ -29,8 +29,8 @@ public class GameManagerHandler extends BaseListener {
         Player player = event.getEntity();
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
         if (championshipTeam != null) {
-            BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
-            if (baseTeamArea instanceof BingoArea) {
+            BaseArea baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
+            if (baseArea instanceof BingoTeamArea) {
                 new BukkitRunnable() {
                     @Override
                     public void run() {
@@ -39,8 +39,8 @@ public class GameManagerHandler extends BaseListener {
                 }.runTask(plugin);
                 return;
             }
-            if (baseTeamArea != null) {
-                baseTeamArea.handlePlayerDeath(event);
+            if (baseArea != null) {
+                baseArea.handlePlayerDeath(event);
                 return;
             }
         } else {
@@ -67,9 +67,9 @@ public class GameManagerHandler extends BaseListener {
         plugin.getGameManager().updatePlayer(player);
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
         if (championshipTeam != null) {
-            BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
-            if (baseTeamArea != null) {
-                baseTeamArea.handlePlayerJoin(event);
+            BaseArea baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
+            if (baseArea != null) {
+                baseArea.handlePlayerJoin(event);
                 return;
             }
         } else {
@@ -99,9 +99,9 @@ public class GameManagerHandler extends BaseListener {
         plugin.getGameManager().updatePlayer(player);
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
         if (championshipTeam != null) {
-            BaseTeamArea baseTeamArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
-            if (baseTeamArea != null) {
-                baseTeamArea.handlePlayerQuit(event);
+            BaseArea baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
+            if (baseArea != null) {
+                baseArea.handlePlayerQuit(event);
                 return;
             }
         } else {
@@ -115,5 +115,10 @@ public class GameManagerHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onTeamGameEnd(TeamGameEndEvent event) {
         plugin.getGameManager().teamGameEndHandler(event);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onSingleTeamGameEnd(SingleGameEndEvent event) {
+        plugin.getGameManager().singleTeamGameEndHandler(event);
     }
 }

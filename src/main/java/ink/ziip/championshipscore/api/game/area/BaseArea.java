@@ -55,6 +55,15 @@ public abstract class BaseArea {
         }
     }
 
+    public int getTeamPoints(ChampionshipTeam championshipTeam) {
+        int points = 0;
+        for (UUID uuid : championshipTeam.getMembers()) {
+            points += playerPoints.getOrDefault(uuid, 0);
+        }
+
+        return points;
+    }
+
     public void setGameStageEnum(GameStageEnum gameStageEnum) {
         synchronized (this) {
             this.gameStageEnum = gameStageEnum;

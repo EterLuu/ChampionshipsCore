@@ -65,12 +65,21 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "reason.area-already-exist")
     public static String REASON_AREA_ALREADY_EXIST;
 
+    @ConfigOption(path = "reason.area-not-in-waiting-status")
+    public static String REASON_AREA_NOT_IN_WAITING_STATUS;
+
     // Area
     @ConfigOption(path = "area.successfully-added")
     public static String AREA_SUCCESSFULLY_ADDED;
 
     @ConfigOption(path = "area.added-failed")
     public static String AREA_ADDED_FAILED;
+
+    @ConfigOption(path = "area.successfully-saved")
+    public static String AREA_SUCCESSFULLY_SAVED;
+
+    @ConfigOption(path = "area.saved-failed")
+    public static String AREA_SAVED_FAILED;
 
     @ConfigOption(path = "area.setting-option-succeeded")
     public static String AREA_SETTING_OPTION_SUCCEEDED;

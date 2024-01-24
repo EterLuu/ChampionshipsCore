@@ -1,15 +1,16 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
+import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import org.bukkit.Location;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.jetbrains.annotations.NotNull;
 
-public class BingoArea extends BaseTeamArea {
-    public BingoArea(ChampionshipsCore plugin) {
+public class BingoTeamArea extends BaseSingleTeamArea {
+    public BingoTeamArea(ChampionshipsCore plugin) {
         super(plugin);
     }
 
@@ -20,12 +21,12 @@ public class BingoArea extends BaseTeamArea {
 
     @Override
     public Location getSpectatorSpawnLocation() {
-        return null;
+        return CCConfig.LOBBY_LOCATION;
     }
 
     @Override
     public String getAreaName() {
-        return null;
+        return "bingo";
     }
 
     @Override

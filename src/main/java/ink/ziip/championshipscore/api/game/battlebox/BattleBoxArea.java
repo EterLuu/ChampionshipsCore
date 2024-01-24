@@ -229,9 +229,9 @@ public class BattleBoxArea extends BaseTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_END_TITLE, message);
 
         message = MessageConfig.BATTLE_BOX_SHOW_POINTS
-                .replace("team", rightChampionshipTeam.getColoredName())
+                .replace("%team%", rightChampionshipTeam.getColoredName())
                 .replace("%team_points%", String.valueOf(getTeamPoints(rightChampionshipTeam)))
-                .replace("%rival%", leftChampionshipTeam.getColorName())
+                .replace("%rival%", leftChampionshipTeam.getColoredName())
                 .replace("%rival_points%", String.valueOf(getTeamPoints(leftChampionshipTeam)));
 
         sendMessageToAllGamePlayersInActionbarAndMessage(message);
@@ -247,20 +247,23 @@ public class BattleBoxArea extends BaseTeamArea {
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
 
-            ChampionshipTeam playerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             Player killer = player.getKiller();
-            if (playerChampionshipTeam != null && killer != null) {
-                UUID uuid = killer.getUniqueId();
-                playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 15);
-                event.setDeathMessage(null);
+            if (killer != null) {
+                ChampionshipTeam playerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+                ChampionshipTeam killerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(killer);
+                if (playerChampionshipTeam != null && killerChampionshipTeam != null) {
+                    UUID uuid = killer.getUniqueId();
+                    playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 15);
+                    event.setDeathMessage(null);
 
-                String message = MessageConfig.BATTLE_BOX_KILL_PLAYER
-                        .replace("%player%", playerChampionshipTeam.getColoredColor() + player.getName())
-                        .replace("%killer%", killer.getName());
+                    String message = MessageConfig.BATTLE_BOX_KILL_PLAYER
+                            .replace("%player%", playerChampionshipTeam.getColoredColor() + player.getName())
+                            .replace("%killer%", killerChampionshipTeam.getColoredColor() + killer.getName());
 
-                killer.playSound(killer, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
+                    killer.playSound(killer, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
 
-                sendMessageToAllGamePlayers(message);
+                    sendMessageToAllGamePlayers(message);
+                }
             }
         }
 
@@ -284,6 +287,11 @@ public class BattleBoxArea extends BaseTeamArea {
         if (notAreaPlayer(player)) {
             return;
         }
+
+        if (getGameStageEnum() != GameStageEnum.PROGRESS) {
+            return;
+        }
+
         ChampionshipTeam playerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
 
         if (playerChampionshipTeam != null) {

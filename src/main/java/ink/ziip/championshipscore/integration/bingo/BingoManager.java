@@ -2,6 +2,8 @@ package ink.ziip.championshipscore.integration.bingo;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
+import ink.ziip.championshipscore.api.game.bingo.BingoTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -21,6 +23,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -74,8 +77,6 @@ public class BingoManager extends BaseManager {
                     }
                     teamManager.addMemberToTeam(bingoParticipant, championshipTeam.getName().toLowerCase());
                 }
-
-                plugin.getGameManager().addBingoAreaTeamStatus(championshipTeam);
             }
 
             session.startGame();
@@ -114,13 +115,24 @@ public class BingoManager extends BaseManager {
 
         Bukkit.getLogger().log(Level.INFO, stringBuilder.toString());
 
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    championshipTeam.teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+                }
+
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    championshipTeam.cleanInventoryForAllPlayers();
+                }
+            }
+        }.runTaskLater(plugin, 100L);
+
         teamPoints.clear();
         bingoTaskCompleteLists.clear();
         started = false;
 
-        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-            plugin.getGameManager().removeBingoAreaTeamStatus(championshipTeam);
-        }
+        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(new BingoTeamArea(plugin), plugin.getTeamManager().getTeamList()));
     }
 
     private void addPointsToTeam(ChampionshipTeam championshipTeam, int points) {

@@ -35,15 +35,6 @@ public abstract class BaseTeamArea extends BaseArea {
         return true;
     }
 
-    public int getTeamPoints(ChampionshipTeam championshipTeam) {
-        int points = 0;
-        for (UUID uuid : championshipTeam.getMembers()) {
-            points += playerPoints.getOrDefault(uuid, 0);
-        }
-
-        return points;
-    }
-
     public void sendMessageToAllGamePlayers(String message) {
         rightChampionshipTeam.sendMessageToAll(message);
         leftChampionshipTeam.sendMessageToAll(message);

@@ -2,12 +2,12 @@ package ink.ziip.championshipscore.api.game.manager;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
-import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
-import ink.ziip.championshipscore.api.game.bingo.BingoArea;
+import ink.ziip.championshipscore.api.game.bingo.BingoTeamArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GameManager extends BaseManager {
     private final Map<UUID, Boolean> playerVisibleOption = new ConcurrentHashMap<>();
     private final Map<UUID, BaseArea> playerSpectatorStatus = new ConcurrentHashMap<>();
-    private final Map<ChampionshipTeam, BaseTeamArea> teamStatus = new ConcurrentHashMap<>();
+    private final Map<ChampionshipTeam, BaseArea> teamStatus = new ConcurrentHashMap<>();
     private final Map<UUID, BaseArea> playerStatus = new ConcurrentHashMap<>();
     private final GameManagerHandler gameManagerHandler;
     @Getter
@@ -50,23 +50,14 @@ public class GameManager extends BaseManager {
 
     @Override
     public void unload() {
-        gameManagerHandler.unRegister();
-
         battleBoxManager.unload();
         parkourTagManager.unload();
+        gameManagerHandler.unRegister();
     }
 
     @Nullable
-    public BaseTeamArea getBaseTeamArea(ChampionshipTeam championshipTeam) {
+    public BaseArea getBaseTeamArea(ChampionshipTeam championshipTeam) {
         return teamStatus.get(championshipTeam);
-    }
-
-    public void addBingoAreaTeamStatus(ChampionshipTeam championshipTeam) {
-        teamStatus.put(championshipTeam, new BingoArea(plugin));
-    }
-
-    public void removeBingoAreaTeamStatus(ChampionshipTeam championshipTeam) {
-        teamStatus.remove(championshipTeam);
     }
 
     @Nullable
@@ -87,6 +78,10 @@ public class GameManager extends BaseManager {
             if (playerSpectatorStatus.containsKey(uuid))
                 return false;
         }
+        if (teamStatus.containsKey(rightChampionshipTeam))
+            return false;
+        if (teamStatus.containsKey(leftChampionshipTeam))
+            return false;
 
         if (gameTypeEnum == GameTypeEnum.BattleBox) {
             BattleBoxArea battleBoxArea = getBattleBoxManager().getArea(area);
@@ -115,9 +110,32 @@ public class GameManager extends BaseManager {
         return true;
     }
 
+    public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {
+        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+            if (teamStatus.containsKey(championshipTeam))
+                return false;
+        }
+
+        if (gameTypeEnum == GameTypeEnum.Bingo) {
+            if (plugin.getBingoManager().isStarted())
+                return false;
+
+            plugin.getBingoManager().startGame();
+            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                BingoTeamArea bingoArea = new BingoTeamArea(plugin);
+                teamStatus.put(championshipTeam, bingoArea);
+            }
+            return true;
+        }
+
     public void teamGameEndHandler(TeamGameEndEvent event) {
         teamStatus.remove(event.getLeftChampionshipTeam());
         teamStatus.remove(event.getRightChampionshipTeam());
+    }
+
+    public void singleTeamGameEndHandler(SingleGameEndEvent event) {
+        for (ChampionshipTeam championshipTeam : event.getChampionshipTeams())
+            teamStatus.remove(championshipTeam);
     }
 
     public boolean spectateArea(@NotNull Player player, @NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {

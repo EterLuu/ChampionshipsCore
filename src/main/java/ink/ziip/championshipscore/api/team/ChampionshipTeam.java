@@ -225,6 +225,15 @@ public class ChampionshipTeam {
         return wool;
     }
 
+    public ItemStack getConcrete() {
+        Material concreteMaterial = Material.getMaterial(colorName + "_CONCRETE");
+        if (concreteMaterial == null)
+            return null;
+        ItemStack concrete = new ItemStack(concreteMaterial);
+        concrete.setAmount(64);
+        return concrete;
+    }
+
     public ItemStack getBoots() {
         ItemStack boots = new ItemStack(Material.LEATHER_BOOTS);
         ItemMeta bootsMeta = boots.hasItemMeta() ? boots.getItemMeta() : Bukkit.getItemFactory().getItemMeta(boots.getType());
