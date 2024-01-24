@@ -89,7 +89,7 @@ public class TeamManager extends BaseManager {
     public Team getTeamByPlayer(@NotNull UUID uuid) {
         for (Team team : cachedTeams.values()) {
             for (UUID playerUUID : team.getMembers()) {
-                if (playerUUID == uuid) return team;
+                if (playerUUID.equals(uuid)) return team;
             }
         }
         return null;

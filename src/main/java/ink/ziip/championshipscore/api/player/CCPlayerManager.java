@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.player;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.object.status.PlayerStatusEnum;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -33,12 +34,12 @@ public class CCPlayerManager extends BaseManager {
 
     // TODO check dead lock
     public CCPlayer addPlayer(@NotNull UUID uuid) {
+        CCPlayer ccPlayer;
         synchronized (this) {
-            CCPlayer CCPlayer;
             if (!cachedPlayers.containsKey(uuid)) {
-                CCPlayer = new CCPlayer(uuid);
-                cachedPlayers.putIfAbsent(uuid, CCPlayer);
-                return CCPlayer;
+                ccPlayer = new CCPlayer(uuid);
+                cachedPlayers.putIfAbsent(uuid, ccPlayer);
+                return ccPlayer;
             }
             return getPlayer(uuid);
         }
@@ -56,6 +57,7 @@ public class CCPlayerManager extends BaseManager {
     }
 
     @Nullable
+    @Deprecated
     public CCPlayer addPlayer(@NotNull String name) {
         Player player = Bukkit.getPlayer(name);
         if (player == null)
@@ -64,29 +66,29 @@ public class CCPlayerManager extends BaseManager {
     }
 
     public CCPlayer getPlayer(@NotNull UUID uuid) {
-        return cachedPlayers.getOrDefault(uuid, addPlayer(uuid));
+        CCPlayer ccPlayer = cachedPlayers.get(uuid);
+        if (ccPlayer == null)
+            return addPlayer(uuid);
+        return ccPlayer;
     }
 
     public CCPlayer getPlayer(@NotNull Player player) {
-        UUID uuid = player.getUniqueId();
-        return cachedPlayers.getOrDefault(uuid, addPlayer(player));
+        return getPlayer(player.getUniqueId());
     }
 
     @Nullable
     public CCPlayer getPlayer(@NotNull OfflinePlayer offlinePlayer) {
-        UUID uuid = offlinePlayer.getUniqueId();
-        return cachedPlayers.getOrDefault(uuid, addPlayer(offlinePlayer));
+        return getPlayer(offlinePlayer.getUniqueId());
     }
 
     @Nullable
     public CCPlayer getPlayer(@NotNull String name) {
-        Player player = Bukkit.getPlayer(name);
-        if (player == null)
-            return null;
-        return cachedPlayers.getOrDefault(player.getUniqueId(), null);
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
+        return getPlayer(offlinePlayer.getUniqueId());
     }
 
     public void deletePlayer(@NotNull UUID uuid) {
-        cachedPlayers.remove(uuid);
+        if (getPlayer(uuid).getPlayerStatusEnum() == PlayerStatusEnum.NONE)
+            cachedPlayers.remove(uuid);
     }
 }
