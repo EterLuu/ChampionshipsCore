@@ -105,13 +105,16 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
             if (player == null || !player.isOnline()) {
-                if (championshipTeam != null) {
-                    addTeamDeathPlayer(championshipTeam, false);
-                    plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + getGameConfig().getAreaName() + ", " + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + "), not online, added to death players");
-                }
                 deathPlayer.add(uuid);
+            }
+        }
+
+        for (UUID uuid : deathPlayer) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+            if (championshipTeam != null) {
+                addTeamDeathPlayer(championshipTeam, false);
+                plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + getGameConfig().getAreaName() + ", " + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + "), not online, added to death players");
             }
         }
 
