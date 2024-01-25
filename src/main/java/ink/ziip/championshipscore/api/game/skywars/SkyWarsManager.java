@@ -44,10 +44,7 @@ public class SkyWarsManager extends BaseAreaManager<SkyWarsTeamArea> {
         if (areas.containsKey(name))
             return false;
 
-        World newWorld = plugin.getWorldManager().createEmptyWorld("skywars_" + name, World.Environment.NORMAL);
-        if (newWorld == null) {
-            return false;
-        }
+        plugin.getWorldManager().createEmptyWorld("skywars_" + name, World.Environment.NORMAL);
 
         SkyWarsConfig skyWarsConfig = new SkyWarsConfig(plugin, name);
         skyWarsConfig.initializeConfiguration(plugin.getFolder());

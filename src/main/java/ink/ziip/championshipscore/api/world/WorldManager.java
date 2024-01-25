@@ -34,12 +34,11 @@ public class WorldManager extends BaseManager {
 
     }
 
-    public World createEmptyWorld(String name, World.Environment environment) {
+    public void createEmptyWorld(String name, World.Environment environment) {
         if (org.bukkit.Bukkit.getWorld(name) == null) {
             loadWorld(name, environment, false);
-            return org.bukkit.Bukkit.getWorld(name);
+            Bukkit.getWorld(name);
         }
-        return null;
     }
 
     public void loadWorld(String worldName, World.Environment environment, boolean readOnly) {
