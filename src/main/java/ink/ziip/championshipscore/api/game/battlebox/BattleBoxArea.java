@@ -25,6 +25,7 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,15 +36,19 @@ public class BattleBoxArea extends BaseTeamArea {
     private final ConcurrentHashMap<UUID, BBWeaponKitEnum> playerWeaponKit = new ConcurrentHashMap<>();
     @Getter
     private int timer;
-    private int startGamePreparationTaskId;
-    private int startGameProgressTaskId;
-    private int woolCheckerTaskId;
+    private BukkitTask startGamePreparationTask;
+    private BukkitTask startGameProgressTask;
+    private BukkitTask woolCheckerTask;
 
     @Override
     public void resetArea() {
         resetRegionBlocks();
         cleanDroppedItems();
         playerWeaponKit.clear();
+
+        startGamePreparationTask = null;
+        startGameProgressTask = null;
+        woolCheckerTask = null;
     }
 
     public BattleBoxArea(ChampionshipsCore plugin, BattleBoxConfig battleBoxConfig) {
@@ -74,12 +79,13 @@ public class BattleBoxArea extends BaseTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_START_PREPARATION_TITLE, MessageConfig.BATTLE_BOX_START_PREPARATION_SUBTITLE);
 
         timer = 20;
-        startGamePreparationTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
             changeLevelForAllGamePlayers(timer);
 
             if (timer == 0) {
                 startGameProgress();
-                scheduler.cancelTask(startGamePreparationTaskId);
+                if (startGamePreparationTask != null)
+                    startGamePreparationTask.cancel();
             }
 
             timer--;
@@ -107,7 +113,7 @@ public class BattleBoxArea extends BaseTeamArea {
 
         setGameStageEnum(GameStageEnum.PROGRESS);
 
-        startGameProgressTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
 
             if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.BATTLE_BOX_COUNT_DOWN
@@ -126,17 +132,19 @@ public class BattleBoxArea extends BaseTeamArea {
             sendActionBarToAllGameSpectators(MessageConfig.BATTLE_BOX_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
 
             if (timer == 0) {
-                scheduler.cancelTask(startGameProgressTaskId);
+                if (startGameProgressTask != null)
+                    startGameProgressTask.cancel();
             }
 
             timer--;
         }, 0, 20L);
 
-        woolCheckerTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        woolCheckerTask = scheduler.runTaskTimer(plugin, () -> {
             if (timer == -1) {
                 changeLevelForAllGamePlayers(0);
                 endGame();
-                scheduler.cancelTask(woolCheckerTaskId);
+                if (woolCheckerTask != null)
+                    woolCheckerTask.cancel();
             }
 
             HashMap<Material, Integer> blockCount = countBlocksInRegion();
@@ -160,9 +168,15 @@ public class BattleBoxArea extends BaseTeamArea {
     }
 
     protected void endGame() {
-        scheduler.cancelTask(startGamePreparationTaskId);
-        scheduler.cancelTask(startGameProgressTaskId);
-        scheduler.cancelTask(woolCheckerTaskId);
+        if (getGameStageEnum() == GameStageEnum.WAITING)
+            return;
+
+        if (startGamePreparationTask != null)
+            startGamePreparationTask.cancel();
+        if (startGameProgressTask != null)
+            startGameProgressTask.cancel();
+        if (woolCheckerTask != null)
+            woolCheckerTask.cancel();
 
         calculatePoints();
 

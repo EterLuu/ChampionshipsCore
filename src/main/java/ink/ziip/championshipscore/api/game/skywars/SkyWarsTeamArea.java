@@ -20,6 +20,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -35,9 +36,9 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     private final Map<ChampionshipTeam, Integer> teamDeathPlayers = new ConcurrentHashMap<>();
     @Getter
     private int timer;
-    private int startGamePreparationTaskId;
-    private int startGameProgressTaskId;
-    private int borderCheckTaskId;
+    private BukkitTask startGamePreparationTask;
+    private BukkitTask startGameProgressTask;
+    private BukkitTask borderCheckTask;
     private double radius;
     private double shrink;
 
@@ -45,6 +46,10 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     public void resetArea() {
         blockStates.clear();
         teamDeathPlayers.clear();
+
+        startGamePreparationTask = null;
+        startGameProgressTask = null;
+        borderCheckTask = null;
 
         loadMap(getGameConfig().getAreaName());
     }
@@ -82,12 +87,13 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_START_PREPARATION_TITLE, MessageConfig.SKY_WARS_START_PREPARATION_SUBTITLE);
 
         timer = 20;
-        startGamePreparationTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
             changeLevelForAllGamePlayers(timer);
 
             if (timer == 0) {
                 startGameProgress();
-                scheduler.cancelTask(startGamePreparationTaskId);
+                if (startGamePreparationTask != null)
+                    startGamePreparationTask.cancel();
             }
 
             timer--;
@@ -122,7 +128,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         timer = getGameConfig().getTimer() + 5;
         setGameStageEnum(GameStageEnum.PROGRESS);
 
-        startGameProgressTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
 
             if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.SKY_WARS_COUNT_DOWN
@@ -157,7 +163,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             if (timer == 0) {
                 changeLevelForAllGamePlayers(timer);
                 endGame();
-                scheduler.cancelTask(startGameProgressTaskId);
+                if (startGameProgressTask != null)
+                    startGameProgressTask.cancel();
             }
 
             timer--;
@@ -168,7 +175,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         radius = getGameConfig().getBoundaryRadius();
         shrink = radius / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
 
-        borderCheckTaskId = scheduler.runTaskTimerAsynchronously(plugin, () -> {
+        borderCheckTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
             Location center = getGameConfig().getPreSpawnPoint();
             List<Location> locations = getParticleLocations(center);
 
@@ -198,7 +205,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             if (radius < 0)
                 radius = 0;
 
-        }, 0, 20L).getTaskId();
+        }, 0, 20L);
     }
 
     @NotNull
@@ -220,9 +227,15 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     }
 
     protected void endGame() {
-        scheduler.cancelTask(startGamePreparationTaskId);
-        scheduler.cancelTask(startGameProgressTaskId);
-        scheduler.cancelTask(borderCheckTaskId);
+        if (getGameStageEnum() == GameStageEnum.WAITING)
+            return;
+
+        if (startGamePreparationTask != null)
+            startGamePreparationTask.cancel();
+        if (startGameProgressTask != null)
+            startGameProgressTask.cancel();
+        if (borderCheckTask != null)
+            borderCheckTask.cancel();
 
         calculatePoints();
 

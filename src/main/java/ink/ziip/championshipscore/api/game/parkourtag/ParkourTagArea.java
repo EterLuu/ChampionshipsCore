@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -19,6 +20,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -30,8 +32,8 @@ public class ParkourTagArea extends BaseTeamArea {
     private final Map<UUID, Integer> playerSurviveTimes = new ConcurrentHashMap<>();
     @Getter
     private int timer;
-    private int startGamePreparationTaskId;
-    private int startGameProgressTaskId;
+    private BukkitTask startGamePreparationTask;
+    private BukkitTask startGameProgressTask;
     @Setter
     @Getter
     private UUID rightAreaChaser;
@@ -52,6 +54,9 @@ public class ParkourTagArea extends BaseTeamArea {
         leftAreaChaser = null;
 
         playerSurviveTimes.clear();
+
+        startGamePreparationTask = null;
+        startGameProgressTask = null;
     }
 
     public ParkourTagArea(ChampionshipsCore plugin, ParkourTagConfig parkourTagConfig) {
@@ -97,12 +102,13 @@ public class ParkourTagArea extends BaseTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE, MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
 
         timer = 20;
-        startGamePreparationTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
             changeLevelForAllGamePlayers(timer);
 
             if (timer == 0) {
                 startGameProgress();
-                scheduler.cancelTask(startGamePreparationTaskId);
+                if (startGamePreparationTask != null)
+                    startGamePreparationTask.cancel();
             }
 
             timer--;
@@ -116,14 +122,14 @@ public class ParkourTagArea extends BaseTeamArea {
             rightAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(rightChampionshipTeam);
             rightChampionshipTeam.sendMessageToAll(message
                     .replace("%player%", rightChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(rightAreaChaser).getName())
-                    .replace("%times%", String.valueOf(plugin.getGameManager().getParkourTagManager().getChaserTimes(rightAreaChaser) + 1))
+                    .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(rightAreaChaser) - 1))
             );
         }
         if (leftAreaChaser == null) {
             leftAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(leftChampionshipTeam);
             leftChampionshipTeam.sendMessageToAll(message
                     .replace("%player%", leftChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(leftAreaChaser).getName())
-                    .replace("%times%", String.valueOf(plugin.getGameManager().getParkourTagManager().getChaserTimes(leftAreaChaser) + 1))
+                    .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(leftAreaChaser) - 1))
             );
         }
 
@@ -180,7 +186,7 @@ public class ParkourTagArea extends BaseTeamArea {
 
         setGameStageEnum(GameStageEnum.PROGRESS);
 
-        startGameProgressTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
 
             if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.PARKOUR_TAG_COUNT_DOWN
@@ -205,7 +211,8 @@ public class ParkourTagArea extends BaseTeamArea {
                 changeLevelForAllGamePlayers(timer);
                 updateTeamSurviveTimes();
                 endGame();
-                scheduler.cancelTask(startGameProgressTaskId);
+                if (startGameProgressTask != null)
+                    startGameProgressTask.cancel();
             }
 
             timer--;
@@ -222,8 +229,13 @@ public class ParkourTagArea extends BaseTeamArea {
     }
 
     protected void endGame() {
-        scheduler.cancelTask(startGamePreparationTaskId);
-        scheduler.cancelTask(startGameProgressTaskId);
+        if (getGameStageEnum() == GameStageEnum.WAITING)
+            return;
+
+        if (startGamePreparationTask != null)
+            startGamePreparationTask.cancel();
+        if (startGameProgressTask != null)
+            startGameProgressTask.cancel();
 
         calculatePoints();
 

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import lombok.Setter;
@@ -68,7 +69,7 @@ public class ParkourTagHandler extends BaseListener {
 
                                     rightChampionshipTeam.sendMessageToAll(message
                                             .replace("%player%", player.getName())
-                                            .replace("%times%", String.valueOf(plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid) + 1)));
+                                            .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid) - 1)));
                                 }
                                 if (championshipTeam.equals(leftChampionshipTeam)) {
                                     parkourTagArea.setLeftAreaChaser(uuid);

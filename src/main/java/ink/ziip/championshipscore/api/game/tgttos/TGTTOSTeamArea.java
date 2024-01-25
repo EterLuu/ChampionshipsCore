@@ -18,6 +18,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -33,8 +34,8 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     private final Map<ChampionshipTeam, Integer> teamArrivedPlayers = new ConcurrentHashMap<>();
     @Getter
     private int timer;
-    private int startGamePreparationTaskId;
-    private int startGameProgressTaskId;
+    private BukkitTask startGamePreparationTask;
+    private BukkitTask startGameProgressTask;
     private int arrivedTeamNumbers = 0;
 
     public TGTTOSTeamArea(ChampionshipsCore plugin, TGTTOSConfig tgttosConfig) {
@@ -81,6 +82,9 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
                 }
             }
         }
+
+        startGamePreparationTask = null;
+        startGameProgressTask = null;
     }
 
     @Override
@@ -98,12 +102,13 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.TGTTOS_START_PREPARATION_TITLE, MessageConfig.TGTTOS_START_PREPARATION_SUBTITLE);
 
         timer = 20;
-        startGamePreparationTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
             changeLevelForAllGamePlayers(timer);
 
             if (timer == 0) {
                 startGameProgress();
-                scheduler.cancelTask(startGamePreparationTaskId);
+                if (startGamePreparationTask != null)
+                    startGamePreparationTask.cancel();
             }
 
             timer--;
@@ -139,7 +144,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         setGameStageEnum(GameStageEnum.PROGRESS);
 
-        startGameProgressTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
 
             if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.TGTTOS_COUNT_DOWN
@@ -158,17 +163,24 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             sendActionBarToAllGameSpectators(MessageConfig.TGTTOS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
 
             if (timer == 0) {
-                scheduler.cancelTask(startGameProgressTaskId);
                 endGame();
+                if (startGameProgressTask != null)
+                    startGameProgressTask.cancel();
             }
 
             timer--;
         }, 0, 20L);
     }
 
-    public void endGame() {
-        scheduler.cancelTask(startGamePreparationTaskId);
-        scheduler.cancelTask(startGameProgressTaskId);
+    protected void endGame() {
+        if (getGameStageEnum() == GameStageEnum.WAITING)
+            return;
+
+        if (startGamePreparationTask != null)
+            startGamePreparationTask.cancel();
+
+        if (startGameProgressTask != null)
+            startGameProgressTask.cancel();
 
         cleanInventoryForAllGamePlayers();
 
