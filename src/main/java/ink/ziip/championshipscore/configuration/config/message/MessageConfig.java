@@ -433,4 +433,41 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tgttos.fall-into-void")
     public static String TGTTOS_FALL_INTO_VOID;
+
+    // TNT Run
+    @ConfigOption(path = "tntrun.start-preparation")
+    public static String TNT_RUN_START_PREPARATION;
+
+    @ConfigOption(path = "tntrun.start-preparation-title")
+    public static String TNT_RUN_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "tntrun.start-preparation-subtitle")
+    public static String TNT_RUN_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "tntrun.game-start")
+    public static String TNT_RUN_GAME_START;
+
+    @ConfigOption(path = "tntrun.game-start-title")
+    public static String TNT_RUN_GAME_START_TITLE;
+
+    @ConfigOption(path = "tntrun.game-start-subtitle")
+    public static String TNT_RUN_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "tntrun.count-down")
+    public static String TNT_RUN_COUNT_DOWN;
+
+    @ConfigOption(path = "tntrun.action-bar-count-down")
+    public static String TNT_RUN_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "tntrun.game-end")
+    public static String TNT_RUN_GAME_END;
+
+    @ConfigOption(path = "tntrun.game-end-title")
+    public static String TNT_RUN_GAME_END_TITLE;
+
+    @ConfigOption(path = "tntrun.game-end-subtitle")
+    public static String TNT_RUN_GAME_END_SUBTITLE;
+    
+    @ConfigOption(path = "tntrun.fall-into-void")
+    public static String TNT_RUN_FALL_INTO_VOID;
 }

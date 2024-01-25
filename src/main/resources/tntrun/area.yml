@@ -1,0 +1,6 @@
+name: "area"
+timer: 180
+spectator-spawn-point:
+area-pos1:
+area-pos2:
+player-spawn-points: [ ]

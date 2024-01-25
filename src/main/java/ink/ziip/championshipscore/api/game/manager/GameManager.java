@@ -14,6 +14,8 @@ import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSTeamArea;
+import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
+import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
@@ -40,6 +42,8 @@ public class GameManager extends BaseManager {
     private final SkyWarsManager skyWarsManager;
     @Getter
     private final TGTTOSManager tgttosManager;
+    @Getter
+    private final TNTRunManager tntRunManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -48,6 +52,7 @@ public class GameManager extends BaseManager {
         parkourTagManager = new ParkourTagManager(plugin);
         skyWarsManager = new SkyWarsManager(plugin);
         tgttosManager = new TGTTOSManager(plugin);
+        tntRunManager = new TNTRunManager(plugin);
     }
 
     @Override
@@ -56,6 +61,7 @@ public class GameManager extends BaseManager {
         parkourTagManager.load();
         skyWarsManager.load();
         tgttosManager.load();
+        tntRunManager.load();
 
         gameManagerHandler.register();
     }
@@ -66,18 +72,9 @@ public class GameManager extends BaseManager {
         parkourTagManager.unload();
         skyWarsManager.unload();
         tgttosManager.unload();
+        tntRunManager.unload();
 
         gameManagerHandler.unRegister();
-    }
-
-    @Nullable
-    public BaseArea getBaseTeamArea(ChampionshipTeam championshipTeam) {
-        return teamStatus.get(championshipTeam);
-    }
-
-    @Nullable
-    public BaseArea getPlayerSpectatorStatus(UUID uuid) {
-        return playerSpectatorStatus.get(uuid);
     }
 
     public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam rightChampionshipTeam, @NotNull ChampionshipTeam leftChampionshipTeam) {
@@ -172,6 +169,20 @@ public class GameManager extends BaseManager {
             return false;
         }
 
+        if (gameTypeEnum == GameTypeEnum.TNTRun) {
+            TNTRunTeamArea tntRunArea = tntRunManager.getArea(area);
+            if (tntRunArea == null)
+                return false;
+
+            if (tntRunArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    teamStatus.put(championshipTeam, tntRunArea);
+                }
+                return true;
+            }
+            return false;
+        }
+
         return false;
     }
 
@@ -183,6 +194,16 @@ public class GameManager extends BaseManager {
     public void singleTeamGameEndHandler(SingleGameEndEvent event) {
         for (ChampionshipTeam championshipTeam : event.getChampionshipTeams())
             teamStatus.remove(championshipTeam);
+    }
+
+    @Nullable
+    public BaseArea getBaseTeamArea(ChampionshipTeam championshipTeam) {
+        return teamStatus.get(championshipTeam);
+    }
+
+    @Nullable
+    public BaseArea getPlayerSpectatorStatus(UUID uuid) {
+        return playerSpectatorStatus.get(uuid);
     }
 
     public boolean spectateArea(@NotNull Player player, @NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {

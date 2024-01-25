@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.command.game.area.battlebox.BattleBoxAreaMainC
 import ink.ziip.championshipscore.command.game.area.parkourtag.ParkourTagAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.skywars.SkyWarsAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.tgttos.TGTTOSAreaMainCommand;
+import ink.ziip.championshipscore.command.game.area.tntrun.TNTRunAreaMainCommand;
 
 public class AreaMainCommand extends BaseMainCommand {
     public AreaMainCommand() {
@@ -13,5 +14,6 @@ public class AreaMainCommand extends BaseMainCommand {
         addSubCommand(new ParkourTagAreaMainCommand());
         addSubCommand(new SkyWarsAreaMainCommand());
         addSubCommand(new TGTTOSAreaMainCommand());
+        addSubCommand(new TNTRunAreaMainCommand());
     }
 }
