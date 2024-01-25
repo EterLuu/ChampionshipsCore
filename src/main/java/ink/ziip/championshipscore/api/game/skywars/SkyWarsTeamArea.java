@@ -177,23 +177,21 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         borderCheckTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
             Location center = getGameConfig().getPreSpawnPoint();
-            List<Location> locations = getParticleLocations(center);
 
             for (UUID uuid : gamePlayers) {
                 Player player = Bukkit.getPlayer(uuid);
 
-                if (player != null) {
+                if (player != null && player.isOnline()) {
                     Location location = player.getLocation();
                     ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(player);
 
-                    for (Location particleLocation : locations) {
-                        if (Math.hypot(location.getX() - particleLocation.getX(), location.getZ() - particleLocation.getZ()) < 10) {
-                            if (Math.abs(location.getY() - particleLocation.getY()) < 5)
-                                player.spawnParticle(Particle.REDSTONE, particleLocation, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
-                        }
+                    double distance = Math.hypot(center.getX() - location.getX(), center.getZ() - location.getZ());
+
+                    if (radius - 10 < distance && distance < radius + 10) {
+                        setParticles(player, !(radius <= 20));
                     }
 
-                    if (Math.hypot(center.getX() - location.getX(), center.getZ() - location.getZ()) >= radius) {
+                    if (distance >= radius) {
                         scheduler.runTask(plugin, () -> player.damage(1));
                         championshipPlayer.setRedScreen();
                     } else {
@@ -208,22 +206,42 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         }, 0, 20L);
     }
 
-    @NotNull
-    private List<Location> getParticleLocations(Location center) {
-        World world = center.getWorld();
-        List<Location> locations = new ArrayList<>();
+    private void setParticles(Player player, boolean byAngle) {
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            Location center = getGameConfig().getPreSpawnPoint();
+            Location location = player.getLocation();
+            World world = location.getWorld();
 
-        if (world != null) {
-            for (int h = getGameConfig().getBoundaryLowestHeight(); h < getGameConfig().getBoundaryDefaultHeight(); h++) {
-                for (double d = 0; d <= (int) (2 * radius * Math.PI + 2); d += 1) {
-                    Location particleLoc = new Location(center.getWorld(), center.getX(), h, center.getZ());
-                    particleLoc.setX(center.getX() + Math.cos(d) * radius);
-                    particleLoc.setZ(center.getZ() + Math.sin(d) * radius);
-                    locations.add(particleLoc);
+            double x = center.getX();
+            double z = center.getZ();
+            double x1 = location.getX();
+            double z1 = location.getZ();
+            double y = location.getY();
+
+            if (world != null) {
+
+                double alpha = Math.atan2(z1 - z, x1 - x);
+
+                for (double h = y - 3; h < y + 5; h++) {
+                    double beta, endBeta, increment;
+                    if (byAngle) {
+                        beta = alpha - 0.0872;
+                        endBeta = alpha + 0.0872;
+                        increment = 0.01;
+                    } else {
+                        beta = 0;
+                        endBeta = 20;
+                        increment = 1;
+                    }
+                    for (; beta <= endBeta; beta += increment) {
+                        double x2 = center.getX() + radius * Math.cos(beta);
+                        double z2 = center.getZ() + radius * Math.sin(beta);
+                        Location particleLoc = new Location(center.getWorld(), x2, h, z2);
+                        player.spawnParticle(Particle.REDSTONE, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
+                    }
                 }
             }
-        }
-        return locations;
+        });
     }
 
     protected void endGame() {
