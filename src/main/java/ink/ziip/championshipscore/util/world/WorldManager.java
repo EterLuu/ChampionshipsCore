@@ -14,9 +14,9 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.logging.Level;
 
-/*
- * Modified under https://github.com/lukasvdgaag/SkyWarsReloaded/
- * Author lukasvdgaag
+/**
+ * Modified under <a href="https://github.com/lukasvdgaag/SkyWarsReloaded/">SkyWarsReloaded</a>
+ * @author lukasvdgaag
  */
 public class WorldManager extends BaseManager {
 

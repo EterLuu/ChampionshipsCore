@@ -20,9 +20,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.logging.Level;
 
-/*
- * Modified under https://github.com/AlessioDP/ADP-Core
- * Author: AlessioDP
+/**
+ * Modified under <a href="https://github.com/AlessioDP/ADP-Core">ADP-Core</a>
+ * @author AlessioDP
  */
 @RequiredArgsConstructor
 public abstract class BaseConfigurationFile {

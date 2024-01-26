@@ -9,9 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-/*
- * Modified under https://github.com/AlessioDP/ADP-Core
- * Author: AlessioDP
+/**
+ * Modified under <a href="https://github.com/AlessioDP/ADP-Core">ADP-Core</a>
+ * @author AlessioDP
  */
 @Getter
 public abstract class BaseConfigurationManager extends BaseManager {

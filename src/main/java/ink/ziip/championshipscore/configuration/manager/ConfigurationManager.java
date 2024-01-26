@@ -5,9 +5,9 @@ import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
-/*
- * Modified under https://github.com/AlessioDP/ADP-Core
- * Author: AlessioDP
+/**
+ * Modified under <a href="https://github.com/AlessioDP/ADP-Core">ADP-Core</a>
+ * @author AlessioDP
  */
 public class ConfigurationManager extends BaseConfigurationManager {
 
