@@ -1,4 +1,4 @@
-package ink.ziip.championshipscore.api.world;
+package ink.ziip.championshipscore.util.world;
 
 import org.bukkit.Location;
 import org.bukkit.World;

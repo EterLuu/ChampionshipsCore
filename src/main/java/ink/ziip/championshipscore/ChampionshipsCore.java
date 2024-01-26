@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
-import ink.ziip.championshipscore.api.world.WorldManager;
+import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.integration.bingo.BingoManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
@@ -12,6 +12,8 @@ import ink.ziip.championshipscore.command.CommandManager;
 import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.DatabaseManager;
+import ink.ziip.championshipscore.util.glowing.GlowingBlocks;
+import ink.ziip.championshipscore.util.glowing.GlowingEntities;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,7 +27,6 @@ import java.util.logging.Level;
 public final class ChampionshipsCore extends JavaPlugin {
     @Getter
     private static ChampionshipsCore instance;
-    @Getter
     private boolean loaded;
     private TeamManager teamManager;
     private PlayerManager playerManager;
@@ -38,6 +39,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     private RankManager rankManager;
     private BingoManager bingoManager;
     private WorldManager worldManager;
+    private GlowingEntities glowingEntities;
+    private GlowingBlocks glowingBlocks;
 
     @Override
     public void onEnable() {
@@ -67,6 +70,8 @@ public final class ChampionshipsCore extends JavaPlugin {
         gameManager = new GameManager(this);
         rankManager = new RankManager(this);
         worldManager = new WorldManager(this);
+        glowingEntities = new GlowingEntities(this);
+        glowingBlocks = new GlowingBlocks(this);
 
         // Plugin startup logic
         configurationManager.load();

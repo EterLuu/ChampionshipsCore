@@ -1,4 +1,4 @@
-package ink.ziip.championshipscore.api.world;
+package ink.ziip.championshipscore.util.world;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
