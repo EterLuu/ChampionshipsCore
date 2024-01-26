@@ -382,7 +382,7 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "skywars.deduct-food-level")
     public static String SKY_WARS_DEDUCT_FOOD_LEVEL;
 
-    @ConfigOption(path = "skywars.out-out-border")
+    @ConfigOption(path = "skywars.out-of-border")
     public static String SKY_WARS_OUT_OF_BORDER;
 
     // TGTTOS
@@ -476,4 +476,83 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tntrun.tnt-rain")
     public static String TNT_RUN_TNT_RAIN;
+
+    // Dragon Egg Carnival
+    @ConfigOption(path = "dragoneggcarnival.start-preparation")
+    public static String DRAGON_EGG_CARNIVAL_START_PREPARATION;
+
+    @ConfigOption(path = "dragoneggcarnival.start-preparation-title")
+    public static String DRAGON_EGG_CARNIVAL_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.start-preparation-subtitle")
+    public static String DRAGON_EGG_CARNIVAL_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.game-start-soon")
+    public static String DRAGON_EGG_CARNIVAL_GAME_START_SOON;
+
+    @ConfigOption(path = "dragoneggcarnival.game-start-soon-title")
+    public static String DRAGON_EGG_CARNIVAL_GAME_START_SOON_TITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.game-start-soon-subtitle")
+    public static String DRAGON_EGG_CARNIVAL_GAME_START_SOON_SUBTITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.game-start")
+    public static String DRAGON_EGG_CARNIVAL_GAME_START;
+
+    @ConfigOption(path = "dragoneggcarnival.game-start-title")
+    public static String DRAGON_EGG_CARNIVAL_GAME_START_TITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.game-start-subtitle")
+    public static String DRAGON_EGG_CARNIVAL_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.game-restart")
+    public static String DRAGON_EGG_CARNIVAL_GAME_RESTART;
+
+    @ConfigOption(path = "dragoneggcarnival.game-restart-title")
+    public static String DRAGON_EGG_CARNIVAL_GAME_RESTART_TITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.game-restart-subtitle")
+    public static String DRAGON_EGG_CARNIVAL_GAME_RESTART_SUBTITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.count-down")
+    public static String DRAGON_EGG_CARNIVAL_COUNT_DOWN;
+
+    @ConfigOption(path = "dragoneggcarnival.action-bar-count-down")
+    public static String DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "dragoneggcarnival.game-end")
+    public static String DRAGON_EGG_CARNIVAL_GAME_END;
+
+    @ConfigOption(path = "dragoneggcarnival.game-end-title")
+    public static String DRAGON_EGG_CARNIVAL_GAME_END_TITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.game-end-subtitle")
+    public static String DRAGON_EGG_CARNIVAL_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.kill-player")
+    public static String DRAGON_EGG_CARNIVAL_KILL_PLAYER;
+
+    @ConfigOption(path = "dragoneggcarnival.kill-player-by-void")
+    public static String DRAGON_EGG_CARNIVAL_KILL_PLAYER_BY_VOID;
+
+    @ConfigOption(path = "dragoneggcarnival.player-death")
+    public static String DRAGON_EGG_CARNIVAL_PLAYER_DEATH;
+
+    @ConfigOption(path = "dragoneggcarnival.player-death-by-void")
+    public static String DRAGON_EGG_CARNIVAL_PLAYER_DEATH_BY_VOID;
+
+    @ConfigOption(path = "dragoneggcarnival.player-leave")
+    public static String DRAGON_EGG_CARNIVAL_PLAYER_LEAVE;
+
+    @ConfigOption(path = "dragoneggcarnival.out-of-border")
+    public static String DRAGON_EGG_CARNIVAL_OUT_OF_BORDER;
+
+    @ConfigOption(path = "dragoneggcarnival.player-pick-up-dragon-egg")
+    public static String DRAGON_EGG_CARNIVAL_PLAYER_PICK_UP_EGG;
+
+    @ConfigOption(path = "dragoneggcarnival.re-spawn-dragon-egg")
+    public static String DRAGON_EGG_CARNIVAL_RE_SPAWN_DRAGON_EGG;
+
+    @ConfigOption(path = "dragoneggcarnival.win")
+    public static String DRAGON_EGG_CARNIVAL_WIN;
 }
