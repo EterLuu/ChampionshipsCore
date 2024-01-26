@@ -180,8 +180,6 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
-        calculatePoints();
-
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_SUBTITLE);
 
@@ -194,6 +192,8 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         resetPlayerHealthFoodEffectInventory();
 
+        calculatePoints();
+
         Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
 
         resetGame();
@@ -202,8 +202,10 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     protected void calculatePoints() {
         if (rightTeamPoints >= 3) {
             Utils.sendMessageToAllPlayers(MessageConfig.DRAGON_EGG_CARNIVAL_WIN.replace("%team%", rightChampionshipTeam.getColoredName()));
+            giveGoldenHelmetToTeamPlayers(rightChampionshipTeam);
         } else if (leftTeamPoints >= 3) {
             Utils.sendMessageToAllPlayers(MessageConfig.DRAGON_EGG_CARNIVAL_WIN.replace("%team%", leftChampionshipTeam.getColoredName()));
+            giveGoldenHelmetToTeamPlayers(leftChampionshipTeam);
         }
     }
 
@@ -413,6 +415,15 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     private void giveEffectToPlayer(Player player) {
         PotionEffect potionEffect = new PotionEffect(PotionEffectType.HEAL, PotionEffect.INFINITE_DURATION, 1);
         player.addPotionEffect(potionEffect);
+    }
+
+    private void giveGoldenHelmetToTeamPlayers(ChampionshipTeam championshipTeam) {
+        ItemStack helmet = new ItemStack(Material.GOLDEN_HELMET);
+        helmet.addUnsafeEnchantment(Enchantment.DURABILITY, 3);
+        for (Player player : championshipTeam.getOnlinePlayers()) {
+            PlayerInventory inventory = player.getInventory();
+            inventory.setHelmet(helmet.clone());
+        }
     }
 
     private void giveItemToPlayer(Player player) {
