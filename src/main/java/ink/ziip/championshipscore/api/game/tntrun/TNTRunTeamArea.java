@@ -13,7 +13,9 @@ import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -36,6 +38,8 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     private BukkitTask handlePlayerMoveTask;
+    private int tntTimer;
+    private BukkitTask tntGeneratorTask;
 
     public TNTRunTeamArea(ChampionshipsCore plugin, TNTRunConfig tntRunConfig, boolean firstTime, String areaName) {
         super(plugin, GameTypeEnum.TNTRun, new TNTRunHandler(plugin), tntRunConfig);
@@ -56,6 +60,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         startGamePreparationTask = null;
         startGameProgressTask = null;
         handlePlayerMoveTask = null;
+        tntGeneratorTask = null;
 
         loadMap(getGameConfig().getAreaName());
     }
@@ -156,6 +161,57 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                     startGameProgressTask.cancel();
             }
 
+            if (timer == 120 || timer == 60) {
+                sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
+                sendActionBarToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
+
+                tntTimer = 0;
+                final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
+
+                tntGeneratorTask = scheduler.runTaskTimer(plugin, () -> {
+
+                    Collections.shuffle(gamePlayersCopy);
+
+                    int i = 0;
+                    for (UUID uuid : gamePlayersCopy) {
+                        Player player = Bukkit.getPlayer(uuid);
+                        if (player != null && player.isOnline()) {
+                            Location location = player.getLocation();
+                            location.setY(getPlayerSpawnLocations().get(uuid).getY() + 15);
+                            TNTPrimed tntPrimed = (TNTPrimed) player.getWorld().spawnEntity(location, EntityType.PRIMED_TNT);
+                            tntPrimed.setFuseTicks(Integer.MAX_VALUE);
+
+                            scheduler.runTaskTimerAsynchronously(plugin, (task) -> {
+                                if (!tntPrimed.isValid())
+                                    task.cancel();
+
+                                Location tntLocation = tntPrimed.getLocation();
+                                if (getBlockUnderLocation(tntLocation) != null) {
+                                    tntPrimed.setFuseTicks(0);
+                                    task.cancel();
+                                }
+                                if (notInArea(tntLocation)) {
+                                    tntPrimed.setFuseTicks(0);
+                                    task.cancel();
+                                }
+                            }, 0, 1L);
+                        }
+
+                        if (i >= 8)
+                            break;
+                        i++;
+                    }
+
+                    if (tntTimer == 0) {
+                        if (tntGeneratorTask != null)
+                            tntGeneratorTask.cancel();
+                    }
+
+                    tntTimer--;
+                }, 0, 20L);
+
+            }
+
             timer--;
         }, 0, 20L);
 
@@ -174,7 +230,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         destroyBlock(player.getLocation());
     }
 
-    private Block getBlockUnderPlayer(Location location) {
+    private Block getBlockUnderLocation(Location location) {
         World world = location.getWorld();
         double x = location.getX();
         double y = location.getY();
@@ -188,28 +244,32 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                     NumberConversions.floor(y - i),
                     NumberConversions.floor(z + -0.3)
             );
-            if (block1.getType() != Material.AIR)
+            Material block1Type = block1.getType();
+            if (block1Type != Material.AIR && block1Type != Material.LIGHT)
                 return block1;
             Block block2 = world.getBlockAt(
                     NumberConversions.floor(x + -0.3),
                     NumberConversions.floor(y - i),
                     NumberConversions.floor(z + 0.3)
             );
-            if (block2.getType() != Material.AIR)
+            Material block2Type = block2.getType();
+            if (block2Type != Material.AIR && block2Type != Material.LIGHT)
                 return block2;
             Block block3 = world.getBlockAt(
                     NumberConversions.floor(x + 0.3),
                     NumberConversions.floor(y - i),
                     NumberConversions.floor(z + 0.3)
             );
-            if (block3.getType() != Material.AIR)
+            Material block3Type = block3.getType();
+            if (block3Type != Material.AIR && block3Type != Material.LIGHT)
                 return block3;
             Block block4 = world.getBlockAt(
                     NumberConversions.floor(x + -0.3),
                     NumberConversions.floor(y - i),
                     NumberConversions.floor(z + -0.3)
             );
-            if (block4.getType() != Material.AIR)
+            Material block4Type = block4.getType();
+            if (block4Type != Material.AIR && block4Type != Material.LIGHT)
                 return block4;
         }
 
@@ -221,7 +281,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         if (world == null)
             return;
 
-        Block block = getBlockUnderPlayer(location);
+        Block block = getBlockUnderLocation(location);
 
         if (block != null) {
             final Block destroyBlock = block;
@@ -243,6 +303,8 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
             startGameProgressTask.cancel();
         if (handlePlayerMoveTask != null)
             handlePlayerMoveTask.cancel();
+        if (tntGeneratorTask != null)
+            tntGeneratorTask.cancel();
 
         calculatePoints();
 

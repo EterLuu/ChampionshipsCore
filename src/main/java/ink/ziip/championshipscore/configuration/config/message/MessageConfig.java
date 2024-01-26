@@ -470,4 +470,7 @@ public class MessageConfig extends BaseConfigurationFile {
     
     @ConfigOption(path = "tntrun.fall-into-void")
     public static String TNT_RUN_FALL_INTO_VOID;
+
+    @ConfigOption(path = "tntrun.tnt-rain")
+    public static String TNT_RUN_TNT_RAIN;
 }

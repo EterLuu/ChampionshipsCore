@@ -29,12 +29,17 @@ public class ProtectionListener extends BaseListener {
         World world = event.getLocation().getWorld();
         if (world == null)
             return;
-        event.blockList().clear();
+
+        if (world.getName().equals("world"))
+            event.blockList().clear();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onBlockExplode(BlockExplodeEvent event) {
-        event.blockList().clear();
+        World world = event.getBlock().getWorld();
+
+        if (world.getName().equals("world"))
+            event.blockList().clear();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

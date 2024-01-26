@@ -162,3 +162,4 @@ tntrun:
   game-end-title: "&4[&cTNTRun&4]"
   game-end-subtitle: "&b[&3WCC&b] &7游戏结束。"
   fall-into-void: "&b[&3WCC&b] &7玩家 &7%player% &7跌入了虚空。"
+  tnt-rain: "&b[&3WCC&b] &cTNT 雨&6生成，⚠️⚠️⚠️！"
