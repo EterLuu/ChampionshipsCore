@@ -1,3 +1,5 @@
+dont-edit-this:
+  version: 1
 name: "area"
 timer: 180
 spectator-spawn-point:
