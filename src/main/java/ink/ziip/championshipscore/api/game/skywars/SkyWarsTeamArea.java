@@ -198,6 +198,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                     if (distance >= radius) {
                         scheduler.runTask(plugin, () -> player.damage(1));
                         championshipPlayer.setRedScreen();
+                        championshipPlayer.sendActionBar(MessageConfig.SKY_WARS_OUT_OF_BORDER);
                     } else {
                         championshipPlayer.removeRedScreen();
                     }

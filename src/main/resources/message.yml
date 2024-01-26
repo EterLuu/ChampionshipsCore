@@ -131,6 +131,7 @@ skywars:
   whole-team-was-killed: "&b[&3WCC&b] &f%team% &7全队阵亡。"
   board-shrink: "&b[&3WCC&b] &4边界开始收缩。"
   deduct-food-level: "&b[&3WCC&b] &6开始降低全员饱食度。"
+  out-out-border: "&4你正处于边界外围，速速进入内圈！"
 tgttos:
   start-preparation: "&b[&3WCC&b] &f游戏即将开始。"
   start-preparation-title: "&c[&dTGTTOS&c]"

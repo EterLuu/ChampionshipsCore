@@ -382,6 +382,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "skywars.deduct-food-level")
     public static String SKY_WARS_DEDUCT_FOOD_LEVEL;
 
+    @ConfigOption(path = "skywars.out-out-border")
+    public static String SKY_WARS_OUT_OF_BORDER;
+
     // TGTTOS
     @ConfigOption(path = "tgttos.start-preparation")
     public static String TGTTOS_START_PREPARATION;
