@@ -18,5 +18,6 @@ public class GameStartMainCommand extends BaseMainCommand {
         addSubCommand(new SkyWarsStartMainCommand());
         addSubCommand(new TGTTOSStartMainCommand());
         addSubCommand(new TNTRunStartMainCommand());
+        addSubCommand(new DragonEggCarnivalStartSubCommand());
     }
 }

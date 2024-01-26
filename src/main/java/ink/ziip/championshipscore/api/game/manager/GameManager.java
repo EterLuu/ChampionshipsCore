@@ -8,6 +8,8 @@ import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoTeamArea;
+import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
+import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
@@ -44,6 +46,8 @@ public class GameManager extends BaseManager {
     private final TGTTOSManager tgttosManager;
     @Getter
     private final TNTRunManager tntRunManager;
+    @Getter
+    private final DragonEggCarnivalManager dragonEggCarnivalManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -53,6 +57,7 @@ public class GameManager extends BaseManager {
         skyWarsManager = new SkyWarsManager(plugin);
         tgttosManager = new TGTTOSManager(plugin);
         tntRunManager = new TNTRunManager(plugin);
+        dragonEggCarnivalManager = new DragonEggCarnivalManager(plugin);
     }
 
     @Override
@@ -62,6 +67,7 @@ public class GameManager extends BaseManager {
         skyWarsManager.load();
         tgttosManager.load();
         tntRunManager.load();
+        dragonEggCarnivalManager.load();
 
         gameManagerHandler.register();
     }
@@ -73,6 +79,7 @@ public class GameManager extends BaseManager {
         skyWarsManager.unload();
         tgttosManager.unload();
         tntRunManager.unload();
+        dragonEggCarnivalManager.unload();
 
         gameManagerHandler.unRegister();
     }
@@ -114,6 +121,18 @@ public class GameManager extends BaseManager {
             if (parkourTagArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
                 teamStatus.put(rightChampionshipTeam, parkourTagArea);
                 teamStatus.put(leftChampionshipTeam, parkourTagArea);
+                return true;
+            }
+            return false;
+        }
+
+        if (gameTypeEnum == GameTypeEnum.DragonEggCarnival) {
+            DragonEggCarnivalArea dragonEggCarnivalArea = getDragonEggCarnivalManager().getArea(area);
+            if (dragonEggCarnivalArea == null)
+                return false;
+            if (dragonEggCarnivalArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
+                teamStatus.put(rightChampionshipTeam, dragonEggCarnivalArea);
+                teamStatus.put(leftChampionshipTeam, dragonEggCarnivalArea);
                 return true;
             }
             return false;
