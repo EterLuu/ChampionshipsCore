@@ -57,6 +57,13 @@ public abstract class BaseArea {
         setGameStageEnum(GameStageEnum.WAITING);
     }
 
+    public void resetPlayerHealthFoodEffectInventory(){
+        setHealthForAllGamePlayers(20);
+        setFoodLevelForAllGamePlayers(20);
+        clearEffectsForAllGamePlayers();
+        cleanInventoryForAllGamePlayers();
+    }
+
     public void addPlayerPoints(UUID uuid, int points) {
         playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
         plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);

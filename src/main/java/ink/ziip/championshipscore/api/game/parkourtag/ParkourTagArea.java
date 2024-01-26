@@ -95,8 +95,7 @@ public class ParkourTagArea extends BaseTeamArea {
         leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftPreSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        cleanInventoryForAllGamePlayers();
-        setHealthForAllGamePlayers(20);
+        resetPlayerHealthFoodEffectInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_TAG_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE, MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
@@ -181,8 +180,9 @@ public class ParkourTagArea extends BaseTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_TAG_GAME_START_SOON);
         sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_GAME_START_SOON_TITLE, MessageConfig.PARKOUR_TAG_GAME_START_SOON_SUBTITLE);
 
+        resetPlayerHealthFoodEffectInventory();
+
         giveItemToAllGamePlayers();
-        setHealthForAllGamePlayers(20);
 
         setGameStageEnum(GameStageEnum.PROGRESS);
 
@@ -249,7 +249,8 @@ public class ParkourTagArea extends BaseTeamArea {
         rightChampionshipTeam.teleportAllPlayers(getLobbyLocation());
         leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        clearEffectsForAllGamePlayers();
+
+        resetPlayerHealthFoodEffectInventory();
 
         Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
 

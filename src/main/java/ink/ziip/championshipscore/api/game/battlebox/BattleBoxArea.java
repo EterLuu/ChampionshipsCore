@@ -71,9 +71,7 @@ public class BattleBoxArea extends BaseTeamArea {
         leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftPreSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        setHealthForAllGamePlayers(20);
-
-        cleanInventoryForAllGamePlayers();
+        resetPlayerHealthFoodEffectInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_START_PREPARATION_TITLE, MessageConfig.BATTLE_BOX_START_PREPARATION_SUBTITLE);
@@ -106,8 +104,7 @@ public class BattleBoxArea extends BaseTeamArea {
         leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
-        setHealthForAllGamePlayers(20);
-        clearEffectsForAllGamePlayers();
+        resetPlayerHealthFoodEffectInventory();
 
         giveItemToAllGamePlayers();
 
@@ -190,7 +187,7 @@ public class BattleBoxArea extends BaseTeamArea {
         rightChampionshipTeam.teleportAllPlayers(getLobbyLocation());
         leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
 
-        setHealthForAllGamePlayers(20);
+        resetPlayerHealthFoodEffectInventory();
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 

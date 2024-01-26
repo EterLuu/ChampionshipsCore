@@ -80,8 +80,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         teleportAllPlayers(getGameConfig().getPreSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        cleanInventoryForAllGamePlayers();
-        setHealthForAllGamePlayers(20);
+
+        resetPlayerHealthFoodEffectInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_START_PREPARATION_TITLE, MessageConfig.SKY_WARS_START_PREPARATION_SUBTITLE);
@@ -122,9 +122,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_GAME_START_SOON_TITLE, MessageConfig.SKY_WARS_GAME_START_SOON_SUBTITLE);
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
-        setHealthForAllGamePlayers(20);
-        setFoodLevelForAllGamePlayers(20);
-        cleanInventoryForAllGamePlayers();
+
+        resetPlayerHealthFoodEffectInventory();
 
         giveItemToAllGamePlayers();
 
@@ -269,6 +268,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         teleportAllPlayers(CCConfig.LOBBY_LOCATION);
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+
+        resetPlayerHealthFoodEffectInventory();
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
         resetGame();
