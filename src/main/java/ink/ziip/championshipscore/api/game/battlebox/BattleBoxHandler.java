@@ -91,23 +91,6 @@ public class BattleBoxHandler extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerDropItems(PlayerDropItemEvent event) {
-        Player player = event.getPlayer();
-        if (battleBoxArea.notAreaPlayer(player)) {
-            return;
-        }
-
-        Location location = player.getLocation();
-        if (battleBoxArea.notInArea(location)) {
-            return;
-        }
-
-        if (battleBoxArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
-            event.setCancelled(true);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
     public void onFoodLevelChange(FoodLevelChangeEvent event) {
         if (event.getEntity() instanceof Player player) {
             if (battleBoxArea.notAreaPlayer(player)) {
