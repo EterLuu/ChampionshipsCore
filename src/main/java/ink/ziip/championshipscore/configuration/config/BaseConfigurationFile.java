@@ -184,6 +184,9 @@ public abstract class BaseConfigurationFile {
                     // Otherwise get it normally
                     if (value == null) value = yamlConfiguration.get(configOption.path());
 
+                    if (value == null)
+                        plugin.getLogger().log(Level.SEVERE, "Warning, null value found: " + configOption.path() + "/" + getFileName());
+
                     if (value != null) {
                         if (value instanceof String)
                             value = Utils.translateColorCodes((String) value);
