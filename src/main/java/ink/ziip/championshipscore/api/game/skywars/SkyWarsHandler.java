@@ -308,10 +308,6 @@ public class SkyWarsHandler extends BaseListener {
                             skyWarsArea.sendMessageToAllGamePlayers(message);
                             skyWarsArea.addPlayerPoints(assailant.getUniqueId(), 40);
 
-                            ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(assailant);
-                            if (championshipPlayer != null)
-                                championshipPlayer.sendActionBar(message);
-
                             skyWarsArea.addDeathPlayer(player);
                         } else {
 

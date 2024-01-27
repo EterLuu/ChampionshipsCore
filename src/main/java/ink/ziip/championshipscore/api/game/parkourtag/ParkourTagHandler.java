@@ -270,10 +270,6 @@ public class ParkourTagHandler extends BaseListener {
 
                     parkourTagArea.sendMessageToPlayerAreaPlayers(assailant, message);
 
-                    ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(assailant);
-                    if (championshipPlayer != null)
-                        championshipPlayer.sendActionBar(message);
-
                     parkourTagArea.getPlayerSurviveTimes().put(player.getUniqueId(), parkourTagArea.getGameConfig().getTimer() - parkourTagArea.getTimer());
                     parkourTagArea.updateTeamSurviveTimes();
                     return;

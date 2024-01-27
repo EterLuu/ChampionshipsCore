@@ -417,10 +417,6 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             sendMessageToAllGamePlayers(message);
 
             addPlayerPoints(assailant.getUniqueId(), 40);
-
-            ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(assailant);
-            if (championshipPlayer != null)
-                championshipPlayer.sendActionBar(message);
         } else {
 
             String message = MessageConfig.SKY_WARS_PLAYER_DEATH;

@@ -178,8 +178,6 @@ public class BattleBoxArea extends BaseTeamArea {
 
         calculatePoints();
 
-        cleanInventoryForAllGamePlayers();
-
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_END_TITLE, MessageConfig.BATTLE_BOX_GAME_END_SUBTITLE);
 
@@ -265,10 +263,6 @@ public class BattleBoxArea extends BaseTeamArea {
                             .replace("%killer%", killerChampionshipTeam.getColoredColor() + killer.getName());
 
                     killer.playSound(killer, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
-
-                    ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(killer);
-                    if(championshipPlayer!=null)
-                        championshipPlayer.sendMessage(message);
 
                     sendMessageToAllGamePlayers(message);
                 }
