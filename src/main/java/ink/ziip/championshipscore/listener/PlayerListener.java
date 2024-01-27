@@ -9,7 +9,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
@@ -34,15 +33,6 @@ public class PlayerListener extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onShootSnowBall(ProjectileLaunchEvent event) {
-        if (event.getEntity() instanceof Snowball snowball) {
-           snowball.setGravity(false);
-           snowball.setVelocity(snowball.getVelocity().multiply(2));
-           snowball.setTicksLived(200);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Player assailant && event.getEntity() instanceof Player player) {
             ChampionshipTeam assailantChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
@@ -53,16 +43,18 @@ public class PlayerListener extends BaseListener {
             }
         }
 
-        if (event.getDamager() instanceof Arrow) {
-            Projectile projectile = (Projectile) event.getDamager();
-            ProjectileSource projectileSource = projectile.getShooter();
-            if (!(projectileSource instanceof Player assailant))
-                return;
+        if (event.getEntity() instanceof Player player) {
+            if (event.getDamager() instanceof Arrow) {
+                Projectile projectile = (Projectile) event.getDamager();
+                ProjectileSource projectileSource = projectile.getShooter();
+                if (!(projectileSource instanceof Player assailant))
+                    return;
 
-            ChampionshipTeam assailantChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
-            if (assailantChampionshipTeam != null) {
-                if (assailantChampionshipTeam.equals(plugin.getTeamManager().getTeamByPlayer((Player) event.getEntity()))) {
-                    event.setCancelled(true);
+                ChampionshipTeam assailantChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
+                if (assailantChampionshipTeam != null) {
+                    if (assailantChampionshipTeam.equals(plugin.getTeamManager().getTeamByPlayer(player))) {
+                        event.setCancelled(true);
+                    }
                 }
             }
         }
