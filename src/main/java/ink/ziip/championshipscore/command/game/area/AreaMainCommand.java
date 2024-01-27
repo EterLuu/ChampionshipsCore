@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.command.game.area.battlebox.BattleBoxAreaMainC
 import ink.ziip.championshipscore.command.game.area.decarnival.DragonEggCarnivalAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.parkourtag.ParkourTagAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.skywars.SkyWarsAreaMainCommand;
+import ink.ziip.championshipscore.command.game.area.snowball.SnowBallAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.tgttos.TGTTOSAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.tntrun.TNTRunAreaMainCommand;
 
@@ -17,5 +18,6 @@ public class AreaMainCommand extends BaseMainCommand {
         addSubCommand(new TGTTOSAreaMainCommand());
         addSubCommand(new TNTRunAreaMainCommand());
         addSubCommand(new DragonEggCarnivalAreaMainCommand());
+        addSubCommand(new SnowBallAreaMainCommand());
     }
 }

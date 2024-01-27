@@ -39,7 +39,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private RankManager rankManager;
     private BingoManager bingoManager;
     private WorldManager worldManager;
-//    private GlowingEntities glowingEntities;
+    private GlowingEntities glowingEntities;
 //    private GlowingBlocks glowingBlocks;
 
     @Override
@@ -70,7 +70,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         gameManager = new GameManager(this);
         rankManager = new RankManager(this);
         worldManager = new WorldManager(this);
-//        glowingEntities = new GlowingEntities(this);
+        glowingEntities = new GlowingEntities(this);
 //        glowingBlocks = new GlowingBlocks(this);
 
         // Plugin startup logic

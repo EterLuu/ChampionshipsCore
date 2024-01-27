@@ -561,4 +561,59 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "dragoneggcarnival.win")
     public static String DRAGON_EGG_CARNIVAL_WIN;
+
+    // Snowball
+    @ConfigOption(path = "snowball.start-preparation")
+    public static String SNOWBALL_START_PREPARATION;
+
+    @ConfigOption(path = "snowball.start-preparation-title")
+    public static String SNOWBALL_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "snowball.start-preparation-subtitle")
+    public static String SNOWBALL_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "snowball.game-start-soon")
+    public static String SNOWBALL_GAME_START_SOON;
+
+    @ConfigOption(path = "snowball.game-start-soon-title")
+    public static String SNOWBALL_GAME_START_SOON_TITLE;
+
+    @ConfigOption(path = "snowball.game-start-soon-subtitle")
+    public static String SNOWBALL_GAME_START_SOON_SUBTITLE;
+
+    @ConfigOption(path = "snowball.game-start")
+    public static String SNOWBALL_GAME_START;
+
+    @ConfigOption(path = "snowball.game-start-title")
+    public static String SNOWBALL_GAME_START_TITLE;
+
+    @ConfigOption(path = "snowball.game-start-subtitle")
+    public static String SNOWBALL_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "snowball.game-end")
+    public static String SNOWBALL_GAME_END;
+
+    @ConfigOption(path = "snowball.game-end-title")
+    public static String SNOWBALL_GAME_END_TITLE;
+
+    @ConfigOption(path = "snowball.game-end-subtitle")
+    public static String SNOWBALL_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "snowball.count-down")
+    public static String SNOWBALL_COUNT_DOWN;
+
+    @ConfigOption(path = "snowball.action-bar-count-down")
+    public static String SNOWBALL_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "snowball.kill-player")
+    public static String SNOWBALL_KILL_PLAYER;
+
+    @ConfigOption(path = "snowball.player-death")
+    public static String SNOWBALL_PLAYER_DEATH;
+
+    @ConfigOption(path = "snowball.player-death-by-void")
+    public static String SNOWBALL_PLAYER_DEATH_BY_VOID;
+
+    @ConfigOption(path = "snowball.player-leave")
+    public static String SNOWBALL_PLAYER_LEAVE;
 }

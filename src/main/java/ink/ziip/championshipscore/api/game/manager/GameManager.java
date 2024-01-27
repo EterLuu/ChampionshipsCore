@@ -14,6 +14,8 @@ import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
+import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
+import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSTeamArea;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
@@ -48,6 +50,8 @@ public class GameManager extends BaseManager {
     private final TNTRunManager tntRunManager;
     @Getter
     private final DragonEggCarnivalManager dragonEggCarnivalManager;
+    @Getter
+    private final SnowballShowdownManager snowballShowdownManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -58,6 +62,7 @@ public class GameManager extends BaseManager {
         tgttosManager = new TGTTOSManager(plugin);
         tntRunManager = new TNTRunManager(plugin);
         dragonEggCarnivalManager = new DragonEggCarnivalManager(plugin);
+        snowballShowdownManager = new SnowballShowdownManager(plugin);
     }
 
     @Override
@@ -68,6 +73,7 @@ public class GameManager extends BaseManager {
         tgttosManager.load();
         tntRunManager.load();
         dragonEggCarnivalManager.load();
+        snowballShowdownManager.load();
 
         gameManagerHandler.register();
     }
@@ -80,6 +86,7 @@ public class GameManager extends BaseManager {
         tgttosManager.unload();
         tntRunManager.unload();
         dragonEggCarnivalManager.unload();
+        snowballShowdownManager.unload();
 
         gameManagerHandler.unRegister();
     }
@@ -196,6 +203,20 @@ public class GameManager extends BaseManager {
             if (tntRunArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
                 for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                     teamStatus.put(championshipTeam, tntRunArea);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        if (gameTypeEnum == GameTypeEnum.SnowballFight) {
+            SnowballShowdownTeamArea snowballShowdownTeamArea = snowballShowdownManager.getArea(area);
+            if (snowballShowdownTeamArea == null)
+                return false;
+
+            if (snowballShowdownTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    teamStatus.put(championshipTeam, snowballShowdownTeamArea);
                 }
                 return true;
             }
