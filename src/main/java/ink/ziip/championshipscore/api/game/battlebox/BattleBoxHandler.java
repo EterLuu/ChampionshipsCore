@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.game.BBWeaponKitEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,16 +16,16 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.ThrownPotion;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.entity.EntityShootBowEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
+import org.bukkit.projectiles.ProjectileSource;
 import org.jetbrains.annotations.Nullable;
 
 @Getter
@@ -119,6 +120,32 @@ public class BattleBoxHandler extends BaseListener {
             }
 
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof ThrownPotion) {
+            Projectile projectile = (Projectile) event.getDamager();
+            ProjectileSource projectileSource = projectile.getShooter();
+            if (!(projectileSource instanceof Player assailant))
+                return;
+
+            if (battleBoxArea.notAreaPlayer(assailant)) {
+                return;
+            }
+
+            Location location = assailant.getLocation();
+            if (battleBoxArea.notInArea(location)) {
+                return;
+            }
+
+            ChampionshipTeam assailantChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
+            if (assailantChampionshipTeam != null) {
+                if (assailantChampionshipTeam.equals(plugin.getTeamManager().getTeamByPlayer((Player) event.getEntity()))) {
+                    event.setCancelled(true);
+                }
+            }
         }
     }
 

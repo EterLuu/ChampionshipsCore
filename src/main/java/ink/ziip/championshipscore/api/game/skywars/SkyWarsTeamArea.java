@@ -13,6 +13,7 @@ import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.BlockState;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -41,6 +42,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     private BukkitTask borderCheckTask;
     private double radius;
     private double shrink;
+    private double height;
+    private double heightShrink;
 
     @Override
     public void resetArea() {
@@ -175,7 +178,9 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
     protected void startBorderShrink() {
         radius = getGameConfig().getBoundaryRadius();
+        height = getGameConfig().getBoundaryDefaultHeight();
         shrink = radius / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
+        heightShrink = (double) (getGameConfig().getBoundaryDefaultHeight() - getGameConfig().getBoundaryLowestHeight()) / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
 
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
         borderCheckTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
@@ -194,7 +199,11 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                         setParticles(player, !(radius <= 20));
                     }
 
-                    if (distance >= radius) {
+                    if (location.getY() > height - 10) {
+                        setHeightParticles(player);
+                    }
+
+                    if (distance >= radius || location.getY() > height) {
                         scheduler.runTask(plugin, () -> player.damage(1));
                         championshipPlayer.setRedScreen();
                         championshipPlayer.sendActionBar(MessageConfig.SKY_WARS_OUT_OF_BORDER);
@@ -203,9 +212,12 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                     }
                 }
             }
+            height = height - heightShrink;
             radius = radius - shrink;
             if (radius < 0)
                 radius = 0;
+            if (height < getGameConfig().getBoundaryLowestHeight())
+                height = getGameConfig().getBoundaryLowestHeight();
 
         }, 0, 20L);
     }
@@ -241,6 +253,23 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                         double x2 = center.getX() + radius * Math.cos(beta);
                         double z2 = center.getZ() + radius * Math.sin(beta);
                         Location particleLoc = new Location(center.getWorld(), x2, h, z2);
+                        player.spawnParticle(Particle.REDSTONE, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
+                    }
+                }
+            }
+        });
+    }
+
+    private void setHeightParticles(Player player) {
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            Location location = player.getLocation();
+            World world = location.getWorld();
+            if (world != null) {
+                for (int radius = 1; radius < 5; radius++) {
+                    for (double beta = 0; beta <= 20; beta += 1) {
+                        double x2 = location.getX() + radius * Math.cos(beta);
+                        double z2 = location.getZ() + radius * Math.sin(beta);
+                        Location particleLoc = new Location(location.getWorld(), x2, height, z2);
                         player.spawnParticle(Particle.REDSTONE, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
                     }
                 }
@@ -286,87 +315,6 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         sendMessageToAllGamePlayers(getTeamPointsRank());
     }
 
-    @Override
-    public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        if (notAreaPlayer(player)) {
-            return;
-        }
-
-        if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            scheduler.runTask(plugin, () -> {
-                event.getEntity().spigot().respawn();
-                event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
-                event.getEntity().setGameMode(GameMode.SPECTATOR);
-            });
-            player.teleport(getGameConfig().getPreSpawnPoint());
-            return;
-        }
-
-        scheduler.runTask(plugin, () -> {
-            event.getEntity().spigot().respawn();
-            event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
-            event.getEntity().setGameMode(GameMode.SPECTATOR);
-        });
-
-        event.getDrops().clear();
-        event.setDroppedExp(0);
-
-        if (getGameStageEnum() != GameStageEnum.PROGRESS) {
-            return;
-        }
-
-        Player assailant = player.getKiller();
-        EntityDamageEvent entityDamageEvent = player.getLastDamageCause();
-
-        if (assailant != null) {
-            ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            ChampionshipTeam assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
-
-            if (playerTeam == null || assailantTeam == null)
-                return;
-
-            if (playerTeam.equals(assailantTeam)) {
-                return;
-            }
-
-            deathPlayer.add(player.getUniqueId());
-
-            String message = MessageConfig.SKY_WARS_KILL_PLAYER;
-
-            if (entityDamageEvent != null) {
-                EntityDamageEvent.DamageCause damageCause = entityDamageEvent.getCause();
-                if (damageCause == EntityDamageEvent.DamageCause.VOID) {
-                    message = MessageConfig.SKY_WARS_KILL_PLAYER_BY_VOID;
-                }
-            }
-
-            message = message
-                    .replace("%player%", playerTeam.getColoredColor() + player.getName())
-                    .replace("%killer%", assailantTeam.getColoredColor() + assailant.getName());
-
-            sendMessageToAllGamePlayers(message);
-            addPlayerPoints(assailant.getUniqueId(), 40);
-
-            addDeathPlayer(player);
-        } else {
-
-            String message = MessageConfig.SKY_WARS_PLAYER_DEATH;
-
-            if (entityDamageEvent != null) {
-                EntityDamageEvent.DamageCause damageCause = entityDamageEvent.getCause();
-                if (damageCause == EntityDamageEvent.DamageCause.VOID) {
-                    message = MessageConfig.SKY_WARS_PLAYER_DEATH_BY_VOID;
-                }
-            }
-
-            message = message.replace("%player%", player.getName());
-            sendMessageToAllGamePlayers(message);
-
-            addDeathPlayer(player);
-        }
-    }
-
     private void addTeamDeathPlayer(ChampionshipTeam championshipTeam) {
         teamDeathPlayers.put(championshipTeam, teamDeathPlayers.getOrDefault(championshipTeam, 0) + 1);
         Integer deathPlayer = teamDeathPlayers.get(championshipTeam);
@@ -379,7 +327,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         }
     }
 
-    private void addDeathPlayer(Player player) {
+    protected void addDeathPlayer(Player player) {
         addDeathPlayer(player.getUniqueId());
     }
 
@@ -404,6 +352,92 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     }
 
     @Override
+    public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        if (notAreaPlayer(player)) {
+            return;
+        }
+
+        if (getGameStageEnum() == GameStageEnum.PREPARATION) {
+            scheduler.runTask(plugin, () -> {
+                event.getEntity().spigot().respawn();
+                event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+            });
+            player.teleport(getGameConfig().getPreSpawnPoint());
+            return;
+        }
+
+        scheduler.runTask(plugin, () -> {
+            event.getEntity().spigot().respawn();
+            event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+            event.getEntity().setGameMode(GameMode.SPECTATOR);
+        });
+
+        if (getGameStageEnum() != GameStageEnum.PROGRESS) {
+            return;
+        }
+
+        if (deathPlayer.contains(player.getUniqueId()))
+            return;
+
+        addDeathPlayer(player);
+
+        Player assailant = player.getKiller();
+        EntityDamageEvent entityDamageEvent = player.getLastDamageCause();
+
+        if (assailant != null) {
+            ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
+            ChampionshipTeam assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
+
+            if (playerTeam == null || assailantTeam == null)
+                return;
+
+            String message = MessageConfig.SKY_WARS_KILL_PLAYER;
+
+            if (entityDamageEvent != null) {
+                EntityDamageEvent.DamageCause damageCause = entityDamageEvent.getCause();
+                if (damageCause == EntityDamageEvent.DamageCause.VOID) {
+                    message = MessageConfig.SKY_WARS_KILL_PLAYER_BY_VOID;
+                }
+            }
+
+            if (playerTeam.equals(assailantTeam)) {
+                message = MessageConfig.SKY_WARS_KILL_TEAM_PLAYER;
+                message = message
+                        .replace("%player%", playerTeam.getColoredColor() + player.getName())
+                        .replace("%killer%", assailantTeam.getColoredColor() + assailant.getName());
+                sendMessageToAllGamePlayers(message);
+                return;
+            }
+
+            message = message
+                    .replace("%player%", playerTeam.getColoredColor() + player.getName())
+                    .replace("%killer%", assailantTeam.getColoredColor() + assailant.getName());
+
+            sendMessageToAllGamePlayers(message);
+
+            addPlayerPoints(assailant.getUniqueId(), 40);
+
+            ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(assailant);
+            if (championshipPlayer != null)
+                championshipPlayer.sendActionBar(message);
+        } else {
+
+            String message = MessageConfig.SKY_WARS_PLAYER_DEATH;
+
+            if (entityDamageEvent != null) {
+                EntityDamageEvent.DamageCause damageCause = entityDamageEvent.getCause();
+                if (damageCause == EntityDamageEvent.DamageCause.VOID) {
+                    message = MessageConfig.SKY_WARS_PLAYER_DEATH_BY_VOID;
+                }
+            }
+
+            message = message.replace("%player%", player.getName());
+            sendMessageToAllGamePlayers(message);
+        }
+    }
+
+    @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
@@ -415,7 +449,9 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             return;
         }
 
-        deathPlayer.add(player.getUniqueId());
+        if (deathPlayer.contains(player.getUniqueId()))
+            return;
+
         sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_PLAYER_LEAVE.replace("%player%", player.getName()));
         addDeathPlayer(player);
     }
@@ -468,22 +504,32 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
     private void giveItemToAllGamePlayers() {
         ItemStack bread = new ItemStack(Material.BREAD);
-        bread.setAmount(3);
+        bread.setAmount(8);
 
         ItemStack sword = new ItemStack(Material.IRON_SWORD);
         ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
+        pickaxe.addEnchantment(Enchantment.DIG_SPEED, 3);
+        ItemStack bow = new ItemStack(Material.BOW);
+        ItemStack arrows = new ItemStack(Material.ARROW);
+        arrows.setAmount(2);
+        ItemStack chestPlate = new ItemStack(Material.IRON_CHESTPLATE);
 
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 PlayerInventory inventory = player.getInventory();
-                inventory.setItem(0, sword.clone());
-                inventory.setItem(1, pickaxe.clone());
-                inventory.setItem(2, bread.clone());
+                inventory.addItem(bread.clone());
+                inventory.addItem(sword.clone());
+                inventory.addItem(pickaxe.clone());
+                inventory.addItem(bow.clone());
+                inventory.addItem(arrows.clone());
+                inventory.setChestplate(chestPlate);
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
                 if (championshipTeam != null) {
-                    inventory.setItem(3, championshipTeam.getConcrete());
-                    inventory.setItem(4, championshipTeam.getConcrete());
+                    inventory.addItem(championshipTeam.getConcrete());
+                    inventory.addItem(championshipTeam.getConcrete());
+                    inventory.setLeggings(championshipTeam.getLeggings());
+                    inventory.setBoots(championshipTeam.getBoots());
                 }
             }
         }

@@ -240,26 +240,35 @@ public class ChampionshipTeam {
         return concrete;
     }
 
-    public ItemStack getBoots() {
-        ItemStack boots = new ItemStack(Material.LEATHER_BOOTS);
-        ItemMeta bootsMeta = boots.hasItemMeta() ? boots.getItemMeta() : Bukkit.getItemFactory().getItemMeta(boots.getType());
-        LeatherArmorMeta bootsArmorMeta = (LeatherArmorMeta) bootsMeta;
-        if (bootsArmorMeta != null) {
-            bootsArmorMeta.setColor(Utils.hex2rgb(colorCode));
-            boots.setItemMeta(bootsArmorMeta);
-        }
-        return boots;
+    public ItemStack getHelmet() {
+        ItemStack item = new ItemStack(Material.LEATHER_HELMET);
+        return getItemStack(item);
     }
 
-    public ItemStack getHelmet() {
-        ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
-        ItemMeta helmetMeta = helmet.hasItemMeta() ? helmet.getItemMeta() : Bukkit.getItemFactory().getItemMeta(helmet.getType());
-        LeatherArmorMeta helmetArmorMeta = (LeatherArmorMeta) helmetMeta;
-        if (helmetArmorMeta != null) {
-            helmetArmorMeta.setColor(Utils.hex2rgb(colorCode));
-            helmet.setItemMeta(helmetArmorMeta);
+    @NotNull
+    private ItemStack getItemStack(ItemStack item) {
+        ItemMeta itemMeta = item.hasItemMeta() ? item.getItemMeta() : Bukkit.getItemFactory().getItemMeta(item.getType());
+        LeatherArmorMeta leatherArmorMeta = (LeatherArmorMeta) itemMeta;
+        if (leatherArmorMeta != null) {
+            leatherArmorMeta.setColor(Utils.hex2rgb(colorCode));
+            item.setItemMeta(leatherArmorMeta);
         }
-        return helmet;
+        return item;
+    }
+
+    public ItemStack getLeggings() {
+        ItemStack item = new ItemStack(Material.LEATHER_LEGGINGS);
+        return getItemStack(item);
+    }
+
+    public ItemStack getBoots() {
+        ItemStack item = new ItemStack(Material.LEATHER_BOOTS);
+        return getItemStack(item);
+    }
+
+    public ItemStack getChestPlate() {
+        ItemStack item = new ItemStack(Material.LEATHER_CHESTPLATE);
+        return getItemStack(item);
     }
 
     public String getColoredName() {

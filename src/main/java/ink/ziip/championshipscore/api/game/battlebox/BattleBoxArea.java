@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.object.game.BBWeaponKitEnum;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -264,6 +265,10 @@ public class BattleBoxArea extends BaseTeamArea {
                             .replace("%killer%", killerChampionshipTeam.getColoredColor() + killer.getName());
 
                     killer.playSound(killer, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
+
+                    ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(killer);
+                    if(championshipPlayer!=null)
+                        championshipPlayer.sendMessage(message);
 
                     sendMessageToAllGamePlayers(message);
                 }

@@ -53,7 +53,7 @@ public class PlayerListener extends BaseListener {
             }
         }
 
-        if (event.getDamager() instanceof Arrow || event.getDamager() instanceof ThrownPotion) {
+        if (event.getDamager() instanceof Arrow) {
             Projectile projectile = (Projectile) event.getDamager();
             ProjectileSource projectileSource = projectile.getShooter();
             if (!(projectileSource instanceof Player assailant))

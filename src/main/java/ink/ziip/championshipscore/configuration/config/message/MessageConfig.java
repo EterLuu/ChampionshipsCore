@@ -358,6 +358,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "skywars.kill-player")
     public static String SKY_WARS_KILL_PLAYER;
 
+    @ConfigOption(path = "skywars.kill-player-by-creeper")
+    public static String SKY_WARS_KILL_PLAYER_BY_CREEPER;
+
+    @ConfigOption(path = "skywars.kill-team-player")
+    public static String SKY_WARS_KILL_TEAM_PLAYER;
+
     @ConfigOption(path = "skywars.kill-player-by-void")
     public static String SKY_WARS_KILL_PLAYER_BY_VOID;
 
