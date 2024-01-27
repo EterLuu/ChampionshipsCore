@@ -39,8 +39,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     private RankManager rankManager;
     private BingoManager bingoManager;
     private WorldManager worldManager;
-    private GlowingEntities glowingEntities;
-    private GlowingBlocks glowingBlocks;
+//    private GlowingEntities glowingEntities;
+//    private GlowingBlocks glowingBlocks;
 
     @Override
     public void onEnable() {
@@ -70,8 +70,8 @@ public final class ChampionshipsCore extends JavaPlugin {
         gameManager = new GameManager(this);
         rankManager = new RankManager(this);
         worldManager = new WorldManager(this);
-        glowingEntities = new GlowingEntities(this);
-        glowingBlocks = new GlowingBlocks(this);
+//        glowingEntities = new GlowingEntities(this);
+//        glowingBlocks = new GlowingBlocks(this);
 
         // Plugin startup logic
         configurationManager.load();
