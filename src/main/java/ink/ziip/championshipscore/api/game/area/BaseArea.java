@@ -69,7 +69,7 @@ public abstract class BaseArea {
         plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
         ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(uuid);
         if (championshipPlayer != null)
-            championshipPlayer.sendActionBar("&c[+] &b" + points);
+            championshipPlayer.sendActionBar("&e[+] " + points);
     }
 
     public void addPlayerPointsToAllTeamMembers(ChampionshipTeam championshipTeam, int points) {
