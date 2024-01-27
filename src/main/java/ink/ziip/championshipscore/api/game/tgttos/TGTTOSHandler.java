@@ -140,14 +140,21 @@ public class TGTTOSHandler extends BaseListener {
 
         Location location = player.getLocation();
         if (tgttosTeamArea.notInArea(location)) {
-            tgttosTeamArea.teleportPlayerToSpawnPoint(player);
             if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+                if (player.getGameMode() == GameMode.SPECTATOR) {
+                    if (location.getY() < -64) {
+                        player.teleport(tgttosTeamArea.getGameConfig().getSpectatorSpawnPoint());
+                    }
+                    return;
+                }
+
                 if (tgttosTeamArea.getGameConfig().getAreaType().equals("BOAT")) {
                     tgttosTeamArea.giveBoatToPlayer(player);
                 }
 
                 tgttosTeamArea.sendMessageToAllGamePlayers(MessageConfig.TGTTOS_FALL_INTO_VOID.replace("%player%", player.getName()));
             }
+            tgttosTeamArea.teleportPlayerToSpawnPoint(player);
             return;
         }
 

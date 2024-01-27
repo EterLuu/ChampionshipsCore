@@ -227,7 +227,10 @@ public class BattleBoxHandler extends BaseListener {
             }
             if (battleBoxArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
-                    player.teleport(battleBoxArea.getGameConfig().getSpectatorSpawnPoint());
+                    if (location.getY() < -64) {
+                        player.teleport(battleBoxArea.getGameConfig().getSpectatorSpawnPoint());
+                    }
+                    return;
                 }
             }
             return;

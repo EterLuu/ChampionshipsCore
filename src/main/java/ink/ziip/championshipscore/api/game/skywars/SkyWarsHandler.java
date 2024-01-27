@@ -279,7 +279,10 @@ public class SkyWarsHandler extends BaseListener {
             }
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
-                    player.teleport(skyWarsArea.getGameConfig().getSpectatorSpawnPoint());
+                    if (location.getY() < -64) {
+                        player.teleport(skyWarsArea.getGameConfig().getSpectatorSpawnPoint());
+                    }
+                    return;
                 } else {
                     UUID uuid = player.getUniqueId();
                     if (!skyWarsArea.getDeathPlayer().contains(uuid)) {

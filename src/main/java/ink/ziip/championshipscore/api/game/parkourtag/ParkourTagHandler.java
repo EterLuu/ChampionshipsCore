@@ -359,7 +359,10 @@ public class ParkourTagHandler extends BaseListener {
             }
             if (parkourTagArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
-                    player.teleport(parkourTagArea.getGameConfig().getSpectatorSpawnPoint());
+                    if (location.getY() < -64) {
+                        player.teleport(parkourTagArea.getGameConfig().getSpectatorSpawnPoint());
+                    }
+                    return;
                 }
             }
             return;

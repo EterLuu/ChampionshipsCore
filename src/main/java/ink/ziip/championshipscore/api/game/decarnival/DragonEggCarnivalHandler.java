@@ -88,7 +88,10 @@ public class DragonEggCarnivalHandler extends BaseListener {
             }
             if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
-                    player.teleport(dragonEggCarnivalArea.getGameConfig().getSpectatorSpawnPoint());
+                    if (location.getY() <= -64) {
+                        player.teleport(dragonEggCarnivalArea.getGameConfig().getSpectatorSpawnPoint());
+                    }
+                    return;
                 } else {
                     dragonEggCarnivalArea.teleportPlayerToSpawnLocation(player);
                     ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);

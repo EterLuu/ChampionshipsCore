@@ -38,7 +38,10 @@ public class TNTRunHandler extends BaseListener {
             }
             if (tntRunTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
-                    player.teleport(getTntRunTeamArea().getGameConfig().getSpectatorSpawnPoint());
+                    if (location.getY() < -64) {
+                        player.teleport(getTntRunTeamArea().getGameConfig().getSpectatorSpawnPoint());
+                    }
+                    return;
                 }
 
                 tntRunTeamArea.addDeathPlayer(player);
