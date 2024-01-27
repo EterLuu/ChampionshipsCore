@@ -29,7 +29,7 @@ public class BingoHandler extends BaseListener {
                 Utils.sendMessageToAllPlayers(MessageConfig.BINGO_GAME_START);
                 World world = Bukkit.getWorld("bingo");
                 if (world != null) {
-                    world.setTime(6000);
+                    world.setTime(9000);
                 }
             }
         }
