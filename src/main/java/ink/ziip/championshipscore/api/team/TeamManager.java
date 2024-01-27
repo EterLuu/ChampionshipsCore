@@ -42,7 +42,11 @@ public class TeamManager extends BaseManager {
             }
             team = scoreboard.registerNewTeam(name);
 
-            team.setColor(ChatColor.valueOf(colorName));
+            try {
+                team.setColor(ChatColor.valueOf(colorName));
+            } catch (Exception ignored) {
+            }
+
             for (UUID uuid : members) {
                 OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
                 String playerName = offlinePlayer.getName();
