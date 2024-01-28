@@ -94,7 +94,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         teleportAllPlayers(getGameConfig().getSpectatorSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TGTTOS_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.TGTTOS_START_PREPARATION_TITLE, MessageConfig.TGTTOS_START_PREPARATION_SUBTITLE);
@@ -121,7 +121,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         timer = getGameConfig().getTimer() + 5;
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         if (getGameConfig().getAreaType().equals("BOAT")) {
             changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
@@ -189,7 +189,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 

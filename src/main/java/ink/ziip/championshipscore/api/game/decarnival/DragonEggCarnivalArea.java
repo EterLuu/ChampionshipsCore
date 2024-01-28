@@ -31,7 +31,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import java.util.logging.Level;
 
 public class DragonEggCarnivalArea extends BaseTeamArea {
@@ -77,7 +76,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_SUBTITLE);
@@ -110,7 +109,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         giveItemToAllGamePlayers();
 
@@ -222,7 +221,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         calculatePoints();
 

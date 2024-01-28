@@ -57,11 +57,12 @@ public abstract class BaseArea {
         setGameStageEnum(GameStageEnum.WAITING);
     }
 
-    public void resetPlayerHealthFoodEffectInventory() {
+    public void resetPlayerHealthFoodEffectLevelInventory() {
         setHealthForAllGamePlayers(20);
         setFoodLevelForAllGamePlayers(20);
         clearEffectsForAllGamePlayers();
         cleanInventoryForAllGamePlayers();
+        changeLevelForAllGamePlayers(0);
     }
 
     public void addPlayerPoints(UUID uuid, int points) {

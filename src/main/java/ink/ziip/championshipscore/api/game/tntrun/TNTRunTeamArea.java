@@ -104,7 +104,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_START_PREPARATION_TITLE, MessageConfig.TNT_RUN_START_PREPARATION_SUBTITLE);
@@ -144,7 +144,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         }
         addPointsToAllSurvivePlayers(offlinePlayers);
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_GAME_START);
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_GAME_START_TITLE, MessageConfig.TNT_RUN_GAME_START_SUBTITLE);
@@ -317,7 +317,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         teleportAllPlayers(CCConfig.LOBBY_LOCATION);
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
         resetGame();

@@ -109,7 +109,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SNOWBALL_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_START_PREPARATION_TITLE, MessageConfig.SNOWBALL_START_PREPARATION_SUBTITLE);
@@ -131,7 +131,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         timer = getGameConfig().getTimer() + 5;
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         giveItemToAllGamePlayersAndTeleport();
 
@@ -191,7 +191,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
         teleportAllPlayers(getLobbyLocation());
 
-        resetPlayerHealthFoodEffectInventory();
+        resetPlayerHealthFoodEffectLevelInventory();
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
