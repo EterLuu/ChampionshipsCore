@@ -258,6 +258,17 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             return;
         }
 
+        event.setKeepInventory(true);
+        event.setKeepLevel(true);
+        event.getDrops().clear();
+        event.setDroppedExp(0);
+
+        scheduler.runTask(plugin, () -> {
+            event.getEntity().spigot().respawn();
+            teleportPlayerToSpawnLocation(event.getEntity());
+            event.getEntity().setGameMode(GameMode.SURVIVAL);
+        });
+
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
 
             Player assailant = player.getKiller();
@@ -304,16 +315,6 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
                 sendMessageToAllGamePlayers(message);
             }
         }
-
-        scheduler.runTask(plugin, () -> {
-            event.setKeepInventory(true);
-            event.setKeepLevel(true);
-            event.getDrops().clear();
-            event.setDroppedExp(0);
-            event.getEntity().spigot().respawn();
-            teleportPlayerToSpawnLocation(event.getEntity());
-            event.getEntity().setGameMode(GameMode.ADVENTURE);
-        });
     }
 
     @Override
@@ -454,12 +455,20 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         if (championshipTeam != null) {
             if (championshipTeam.equals(rightChampionshipTeam)) {
                 player.teleport(getGameConfig().getRightSpawnPoint());
-                player.setGameMode(GameMode.ADVENTURE);
+                if (getGameStageEnum() == GameStageEnum.PREPARATION) {
+                    player.setGameMode(GameMode.ADVENTURE);
+                } else {
+                    player.setGameMode(GameMode.SURVIVAL);
+                }
                 return;
             }
             if (championshipTeam.equals(leftChampionshipTeam)) {
                 player.teleport(getGameConfig().getLeftSpawnPoint());
-                player.setGameMode(GameMode.ADVENTURE);
+                if (getGameStageEnum() == GameStageEnum.PREPARATION) {
+                    player.setGameMode(GameMode.ADVENTURE);
+                } else {
+                    player.setGameMode(GameMode.SURVIVAL);
+                }
                 return;
             }
         }
@@ -504,6 +513,10 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     private void giveDragonPhaseItemToPlayer(Player player) {
         ItemStack sword = new ItemStack(Material.NETHERITE_SWORD);
         ItemStack bow = new ItemStack(Material.BOW);
+        ItemStack bucket = new ItemStack(Material.WATER_BUCKET);
+        ItemStack arrow = new ItemStack(Material.ARROW);
+        ItemStack cookedBeef = new ItemStack(Material.COOKED_BEEF);
+        cookedBeef.setAmount(64);
 
         bow.addEnchantment(Enchantment.ARROW_INFINITE, 1);
         bow.addEnchantment(Enchantment.ARROW_DAMAGE, 2);
@@ -511,7 +524,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         PlayerInventory inventory = player.getInventory();
 
         inventory.clear();
-        inventory.addItem(sword, bow);
+        inventory.addItem(sword, bow, bucket, arrow, cookedBeef);
     }
 
     private void giveItemToPlayer(Player player) {
