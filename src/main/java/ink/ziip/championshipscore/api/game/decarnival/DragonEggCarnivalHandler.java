@@ -8,14 +8,10 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Setter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.entity.FallingBlock;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityPickupItemEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -120,9 +116,36 @@ public class DragonEggCarnivalHandler extends BaseListener {
             if (dragonEggCarnivalArea.notAreaPlayer(player)) {
                 return;
             }
+            if (dragonEggCarnivalArea.getTimer() >= 100)
+                return;
+
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam != null) {
                 dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_PICK_UP_EGG.replace("%player%", championshipTeam.getColoredColor() + player.getName()));
+                dragonEggCarnivalArea.endGameInForm(championshipTeam);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerKilledDragonEgg(EntityDeathEvent event) {
+        if (event.getEntity() instanceof EnderDragon dragon) {
+            Player player = dragon.getKiller();
+            if (player == null)
+                return;
+
+            if (dragonEggCarnivalArea.notAreaPlayer(player))
+                return;
+
+            if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS)
+                return;
+
+            if (dragonEggCarnivalArea.getTimer() < 100)
+                return;
+
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+            if (championshipTeam != null) {
+                dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_KILLED_DRAGON.replace("%player%", championshipTeam.getColoredColor() + player.getName()));
                 dragonEggCarnivalArea.endGameInForm(championshipTeam);
             }
         }

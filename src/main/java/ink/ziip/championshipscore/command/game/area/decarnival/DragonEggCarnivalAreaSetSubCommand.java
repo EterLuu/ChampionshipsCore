@@ -24,6 +24,8 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
             "left-spawn-point",
             "right-spawn-point",
             "dragon-egg-spawn-point",
+            "dragon-spawn-point",
+            "kits",
     };
 
     public DragonEggCarnivalAreaSetSubCommand() {
@@ -60,12 +62,34 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
             if (args[1].equals("dragon-egg-spawn-point")) {
                 dragonEggCarnivalConfig.setDragonEggSpawnPoint(player.getLocation());
             }
+            if (args[1].equals("dragon-spawn-point")) {
+                dragonEggCarnivalConfig.setDragonSpawnPoint(player.getLocation());
+            }
             dragonEggCarnivalConfig.saveOptions();
             String message = MessageConfig.AREA_SETTING_OPTION_SUCCEEDED
                     .replace("%area%", args[0])
                     .replace("%option%", args[1]);
             sender.sendMessage(message);
             return true;
+        }
+        if (args.length == 3) {
+            if (args[1].equals("kits")) {
+                if (dragonEggCarnivalConfig.getKits() == null) {
+                    dragonEggCarnivalConfig.setKits(new ArrayList<>());
+                }
+                if (args[2].equals("add")) {
+                    dragonEggCarnivalConfig.getKits().add(player.getInventory().getItemInMainHand());
+                }
+                if (args[2].equals("clean")) {
+                    dragonEggCarnivalConfig.getKits().clear();
+                }
+                dragonEggCarnivalConfig.saveOptions();
+                String message = MessageConfig.AREA_SETTING_OPTION_SUCCEEDED
+                        .replace("%area%", args[0])
+                        .replace("%option%", args[1]);
+                sender.sendMessage(message);
+                return true;
+            }
         }
 
         return true;
@@ -83,6 +107,12 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
             List<String> returnList = new ArrayList<>(Arrays.asList(arguments));
             returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
             return returnList;
+        }
+
+        if (args.length == 3) {
+            if (args[1].contains("kits")) {
+                return Arrays.asList("add", "clean");
+            }
         }
 
         return Collections.emptyList();

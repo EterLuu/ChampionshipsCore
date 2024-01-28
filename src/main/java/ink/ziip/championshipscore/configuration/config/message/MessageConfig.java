@@ -559,6 +559,24 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "dragoneggcarnival.re-spawn-dragon-egg")
     public static String DRAGON_EGG_CARNIVAL_RE_SPAWN_DRAGON_EGG;
 
+    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawn-soon")
+    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON;
+
+    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawn-soon-title")
+    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON_TITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawn-soon-subtitle")
+    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON_SUBTITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawned")
+    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED;
+
+    @ConfigOption(path = "dragoneggcarnival.gain-kit")
+    public static String DRAGON_EGG_CARNIVAL_GAIN_KIT;
+
+    @ConfigOption(path = "dragoneggcarnival.player-killed-dragon")
+    public static String DRAGON_EGG_CARNIVAL_PLAYER_KILLED_DRAGON;
+
     @ConfigOption(path = "dragoneggcarnival.win")
     public static String DRAGON_EGG_CARNIVAL_WIN;
 

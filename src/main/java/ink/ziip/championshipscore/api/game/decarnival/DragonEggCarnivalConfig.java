@@ -6,7 +6,10 @@ import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -41,6 +44,12 @@ public class DragonEggCarnivalConfig extends BaseGameConfig {
     @ConfigOption(path = "spectator-spawn-point")
     private Location spectatorSpawnPoint;
 
+    @ConfigOption(path = "dragon-spawn-point")
+    private Location dragonSpawnPoint;
+
     @ConfigOption(path = "dragon-egg-spawn-point")
     private Location dragonEggSpawnPoint;
+
+    @ConfigOption(path = "kits")
+    private List<ItemStack> kits;
 }
