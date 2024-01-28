@@ -116,6 +116,8 @@ public class GameManager extends BaseManager {
             if (battleBoxArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
                 teamStatus.put(rightChampionshipTeam, battleBoxArea);
                 teamStatus.put(leftChampionshipTeam, battleBoxArea);
+                addPlayerStatusByTeam(rightChampionshipTeam, battleBoxArea);
+                addPlayerStatusByTeam(leftChampionshipTeam, battleBoxArea);
                 return true;
             }
             return false;
@@ -128,6 +130,8 @@ public class GameManager extends BaseManager {
             if (parkourTagArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
                 teamStatus.put(rightChampionshipTeam, parkourTagArea);
                 teamStatus.put(leftChampionshipTeam, parkourTagArea);
+                addPlayerStatusByTeam(rightChampionshipTeam, parkourTagArea);
+                addPlayerStatusByTeam(leftChampionshipTeam, parkourTagArea);
                 return true;
             }
             return false;
@@ -140,6 +144,8 @@ public class GameManager extends BaseManager {
             if (dragonEggCarnivalArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
                 teamStatus.put(rightChampionshipTeam, dragonEggCarnivalArea);
                 teamStatus.put(leftChampionshipTeam, dragonEggCarnivalArea);
+                addPlayerStatusByTeam(rightChampionshipTeam, dragonEggCarnivalArea);
+                addPlayerStatusByTeam(leftChampionshipTeam, dragonEggCarnivalArea);
                 return true;
             }
             return false;
@@ -162,6 +168,7 @@ public class GameManager extends BaseManager {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 BingoTeamArea bingoArea = new BingoTeamArea(plugin, null, null);
                 teamStatus.put(championshipTeam, bingoArea);
+                addPlayerStatusByTeam(championshipTeam, bingoArea);
             }
             return true;
         }
@@ -174,6 +181,7 @@ public class GameManager extends BaseManager {
             if (skyWarsArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
                 for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                     teamStatus.put(championshipTeam, skyWarsArea);
+                    addPlayerStatusByTeam(championshipTeam, skyWarsArea);
                 }
                 return true;
             }
@@ -188,6 +196,7 @@ public class GameManager extends BaseManager {
             if (tgttosTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
                 for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                     teamStatus.put(championshipTeam, tgttosTeamArea);
+                    addPlayerStatusByTeam(championshipTeam, tgttosTeamArea);
                 }
                 return true;
             }
@@ -203,6 +212,7 @@ public class GameManager extends BaseManager {
             if (tntRunArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
                 for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                     teamStatus.put(championshipTeam, tntRunArea);
+                    addPlayerStatusByTeam(championshipTeam, tntRunArea);
                 }
                 return true;
             }
@@ -217,6 +227,7 @@ public class GameManager extends BaseManager {
             if (snowballShowdownTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
                 for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                     teamStatus.put(championshipTeam, snowballShowdownTeamArea);
+                    addPlayerStatusByTeam(championshipTeam, snowballShowdownTeamArea);
                 }
                 return true;
             }
@@ -226,14 +237,47 @@ public class GameManager extends BaseManager {
         return false;
     }
 
+    public String getPlayerCurrentAreaName(UUID uuid) {
+        BaseArea baseArea = playerStatus.get(uuid);
+
+        if (baseArea instanceof BingoTeamArea)
+            return "";
+
+        if (baseArea != null)
+            return baseArea.getGameConfig().getAreaName();
+
+        baseArea = playerSpectatorStatus.get(uuid);
+
+        if (baseArea != null)
+            return baseArea.getGameConfig().getAreaName();
+
+        return "";
+    }
+
+    private void addPlayerStatusByTeam(ChampionshipTeam championshipTeam, BaseArea baseArea) {
+        for (UUID uuid : championshipTeam.getMembers()) {
+            playerStatus.put(uuid, baseArea);
+        }
+    }
+
+    public void removePlayerStatusByTeam(ChampionshipTeam championshipTeam) {
+        for (UUID uuid : championshipTeam.getMembers()) {
+            playerStatus.remove(uuid);
+        }
+    }
+
     public void teamGameEndHandler(TeamGameEndEvent event) {
         teamStatus.remove(event.getLeftChampionshipTeam());
         teamStatus.remove(event.getRightChampionshipTeam());
+        removePlayerStatusByTeam(event.getLeftChampionshipTeam());
+        removePlayerStatusByTeam(event.getRightChampionshipTeam());
     }
 
     public void singleTeamGameEndHandler(SingleGameEndEvent event) {
-        for (ChampionshipTeam championshipTeam : event.getChampionshipTeams())
+        for (ChampionshipTeam championshipTeam : event.getChampionshipTeams()) {
             teamStatus.remove(championshipTeam);
+            removePlayerStatusByTeam(championshipTeam);
+        }
     }
 
     @Nullable

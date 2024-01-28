@@ -202,6 +202,10 @@ public class BingoManager extends BaseManager {
         }
     }
 
+    public int getMaterialPoints(Material material) {
+        return getPoints(bingoTaskCompleteLists.getOrDefault(material, Collections.emptyList()).size());
+    }
+
     private void addCompleteTeams(BingoTask bingoTask, ChampionshipTeam championshipTeam) {
         List<ChampionshipTeam> championshipTeams = getCompleteTeams(bingoTask);
         if (!championshipTeams.contains(championshipTeam))

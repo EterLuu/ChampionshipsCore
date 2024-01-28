@@ -40,7 +40,9 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     private int round;
+    @Getter
     private int rightTeamPoints;
+    @Getter
     private int leftTeamPoints;
     private Block dragonEgg;
 

@@ -468,6 +468,26 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         player.setGameMode(GameMode.SPECTATOR);
     }
 
+    public int getPlayerBoarderDistance(Player player) {
+        Location location = player.getLocation();
+        Location center = getGameConfig().getSpectatorSpawnPoint();
+        double distance = Math.hypot(center.getX() - location.getX(), center.getZ() - location.getZ());
+        return (int) Math.abs(radius - distance);
+    }
+
+    public int getSurvivedPlayerNums() {
+        return gamePlayers.size() - deathPlayer.size();
+    }
+
+    public int getSurvivedTeamNums() {
+        int i = 0;
+        for (ChampionshipTeam championshipTeam : teamDeathPlayers.keySet()) {
+            if (teamDeathPlayers.get(championshipTeam) == championshipTeam.getMembers().size())
+                i++;
+        }
+        return gameTeams.size() - i;
+    }
+
     private void teleportAllTeamPlayersToSpawnPoints() {
         Iterator<String> spawnPointsI = getGameConfig().getTeamSpawnPoints().iterator();
 

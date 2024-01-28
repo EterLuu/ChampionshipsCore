@@ -417,6 +417,10 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         }
     }
 
+    public int getSurvivedPlayerNums() {
+        return gamePlayers.size() - deathPlayer.size();
+    }
+
     public void teleportPlayerToSpawnPoint(Player player) {
         Location location = playerSpawnLocations.get(player.getUniqueId());
 

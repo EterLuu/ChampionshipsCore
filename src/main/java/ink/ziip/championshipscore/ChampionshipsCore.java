@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
+import ink.ziip.championshipscore.integration.papi.PlaceholderManager;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.integration.bingo.BingoManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
@@ -12,7 +13,6 @@ import ink.ziip.championshipscore.command.CommandManager;
 import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.DatabaseManager;
-import ink.ziip.championshipscore.util.glowing.GlowingBlocks;
 import ink.ziip.championshipscore.util.glowing.GlowingEntities;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -40,7 +40,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     private BingoManager bingoManager;
     private WorldManager worldManager;
     private GlowingEntities glowingEntities;
-//    private GlowingBlocks glowingBlocks;
+    //    private GlowingBlocks glowingBlocks;
+    private PlaceholderManager placeholderManager;
 
     @Override
     public void onEnable() {
@@ -72,6 +73,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         worldManager = new WorldManager(this);
         glowingEntities = new GlowingEntities(this);
 //        glowingBlocks = new GlowingBlocks(this);
+        placeholderManager = new PlaceholderManager(this);
 
         // Plugin startup logic
         configurationManager.load();
@@ -92,6 +94,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         }
 
         commandManager.load();
+        placeholderManager.load();
 
         getLogger().log(Level.INFO, CCConfig.MODE);
     }
@@ -118,6 +121,7 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         configurationManager.unload();
         databaseManager.unload();
+        placeholderManager.unload();
     }
 
     public @NotNull Path getFolder() {

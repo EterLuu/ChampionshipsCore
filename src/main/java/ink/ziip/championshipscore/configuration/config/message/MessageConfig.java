@@ -87,6 +87,25 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "area.setting-option-failed")
     public static String AREA_SETTING_OPTION_FAILED;
 
+    // Area status
+    @ConfigOption(path = "area-status.waiting")
+    public static String AREA_STATUS_WAITING;
+
+    @ConfigOption(path = "area-status.loading")
+    public static String AREA_STATUS_LOADING;
+
+    @ConfigOption(path = "area-status.preparation")
+    public static String AREA_STATUS_PREPARATION;
+
+    @ConfigOption(path = "area-status.progress")
+    public static String AREA_STATUS_PROGRESS;
+
+    @ConfigOption(path = "area-status.stopping")
+    public static String AREA_STATUS_STOPPING;
+
+    @ConfigOption(path = "area-status.end")
+    public static String AREA_STATUS_END;
+
     // Rank
     @ConfigOption(path = "rank.rank-info")
     public static String RANK_RANK_INFO;

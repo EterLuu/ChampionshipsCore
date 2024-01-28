@@ -31,6 +31,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     private final Map<UUID, Location> playerSpawnLocation = new ConcurrentHashMap<>();
     private final Map<UUID, Long> playerRespawnTime = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, Integer> teamShootTimes = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> playerIndividualKills = new ConcurrentHashMap<>();
     @Getter
     private int timer;
     private BukkitTask startGamePreparationTask;
@@ -56,6 +57,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         playerSpawnLocation.clear();
         playerRespawnTime.clear();
         teamShootTimes.clear();
+        playerIndividualKills.clear();
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
@@ -319,6 +321,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
         addTeamShootCount(assailantChampionshipTeam);
         addPlayerPoints(assailant.getUniqueId(), 4);
+        addPlayerIndividualKills(player);
         String message = MessageConfig.SNOWBALL_KILL_PLAYER
                 .replace("%player%", playerChampionshipTeam.getColoredColor() + player.getName())
                 .replace("%killer%", assailantChampionshipTeam.getColoredColor() + assailant.getName());
@@ -327,6 +330,35 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         ItemStack snowball = new ItemStack(Material.SNOWBALL);
         snowball.setAmount(6);
         player.getInventory().addItem(snowball.clone());
+    }
+
+    private void addPlayerIndividualKills(Player player) {
+        playerIndividualKills.put(player.getUniqueId(), playerIndividualKills.getOrDefault(player.getUniqueId(), 0) + 1);
+    }
+
+    public int getPlayerIndividualKills(Player player) {
+        return playerIndividualKills.getOrDefault(player.getUniqueId(), 0);
+    }
+
+    public String getCurrentRank() {
+        ArrayList<Map.Entry<ChampionshipTeam, Integer>> list;
+        list = new ArrayList<>(teamShootTimes.entrySet());
+        list.sort(Map.Entry.comparingByValue());
+
+        Collections.reverse(list);
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for (Map.Entry<ChampionshipTeam, Integer> entry : list) {
+            stringBuilder
+                    .append(entry.getKey().getColoredName())
+                    .append("&f：")
+                    .append(entry.getValue());
+
+            stringBuilder.append("\n");
+        }
+
+        return stringBuilder.toString();
     }
 
     private synchronized void addTeamShootCount(ChampionshipTeam championshipTeam) {

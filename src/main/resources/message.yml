@@ -26,6 +26,13 @@ area:
   saved-failed: "&b[&3WCC&b]&r &7保存区域 %area% 失败（%reason%）&7。"
   setting-option-succeeded: "&b[&3WCC&b]&r &f成功修改区域 %area% 的 %option% 设置&f。"
   setting-option-failed: "&b[&3WCC&b]&r &7修改区域 %area% 的 %option% 设置失败&7。"
+area-status:
+  waiting: "等待中"
+  loading: "加载中"
+  preparation: "预备中"
+  progress: "进行中"
+  stopping: "暂停中"
+  end: "已结束"
 rank:
   rank-info: "&b[&3WCC&b] &f个人得分：%player_point%，个人排名：%player_rank%。团队得分：%team_point%，团队排名：%team_rank%。"
   team-board-bar: "&f====== &3WCC &e团队排名 &7| &cRIA &fx &bTRIALHAMMER &f======"

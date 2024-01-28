@@ -302,6 +302,19 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         }
     }
 
+    public int getArrivedPlayerNums() {
+        return arrivedPlayers.size();
+    }
+
+    public int getPlayerTeamNotArrived(Player player) {
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+
+        if (championshipTeam == null)
+            return 0;
+
+        return championshipTeam.getMembers().size() - teamArrivedPlayers.getOrDefault(championshipTeam, 0);
+    }
+
     private void giveBoatToAllPlayers() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);

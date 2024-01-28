@@ -399,6 +399,59 @@ public class ParkourTagArea extends BaseTeamArea {
         player.setGameMode(GameMode.SPECTATOR);
     }
 
+    public int getAreaEscapeesNums(@NotNull Location location) {
+        if (isInLeftArea(location)) {
+            return rightChampionshipTeam.getMembers().size() - 1;
+        }
+        if (isInRightArea(location)) {
+            return leftChampionshipTeam.getMembers().size() - 1;
+        }
+
+        return 0;
+    }
+
+    public int getAreaSurvivedEscapeesNums(@NotNull Location location) {
+        int i = 0;
+        if (isInLeftArea(location)) {
+            i = rightChampionshipTeam.getMembers().size() - 1;
+            for (UUID uuid : getRightTeamEscapees()) {
+                if (playerSurviveTimes.containsKey(uuid)) {
+                    i--;
+                }
+            }
+        }
+        if (isInRightArea(location)) {
+            i = leftChampionshipTeam.getMembers().size() - 1;
+            for (UUID uuid : getLeftTeamEscapees()) {
+                if (playerSurviveTimes.containsKey(uuid)) {
+                    i--;
+                }
+            }
+        }
+
+        return i;
+    }
+
+    public UUID getAreaChaser(@NotNull Location location) {
+        if (isInLeftArea(location))
+            return leftAreaChaser;
+
+        if (isInRightArea(location))
+            return rightAreaChaser;
+
+        return null;
+    }
+
+    public boolean isChaser(Player player) {
+        if (rightAreaChaser != null)
+            if (rightAreaChaser.equals(player.getUniqueId()))
+                return true;
+        if (leftAreaChaser != null)
+            return leftAreaChaser.equals(player.getUniqueId());
+
+        return false;
+    }
+
     public void updateTeamSurviveTimes() {
         int rightTeamSurvivor = rightChampionshipTeam.getMembers().size() - 1;
         int leftTeamSurvivor = leftChampionshipTeam.getMembers().size() - 1;
@@ -555,6 +608,14 @@ public class ParkourTagArea extends BaseTeamArea {
             chaser.sendMessage(message);
 
         sendMessageToAllSpectators(message);
+    }
+
+    public boolean isInRightArea(Location location) {
+        return location.toVector().isInAABB(getGameConfig().getRightAreaAreaPos1(), getGameConfig().getRightAreaAreaPos2());
+    }
+
+    public boolean isInLeftArea(Location location) {
+        return location.toVector().isInAABB(getGameConfig().getLeftAreaAreaPos1(), getGameConfig().getLeftAreaAreaPos2());
     }
 
     @Override
