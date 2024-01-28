@@ -279,7 +279,7 @@ public class ParkourTagArea extends BaseTeamArea {
         }
 
         if (rightTeamSurvivor > 0) {
-            addPlayerPointsToAllTeamMembers(rightChampionshipTeam, 15);
+            addPlayerPointsToTeamEscapees(rightChampionshipTeam, 20);
             plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + rightChampionshipTeam.getName() + " has survivor(s), added 15 points");
         } else {
             int points = 7 * (getGameConfig().getTimer() - rightTeamSurviveTime) / 10;
@@ -287,7 +287,7 @@ public class ParkourTagArea extends BaseTeamArea {
             plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + rightChampionshipTeam.getName() + " has no survivor, added " + points + " to " + (getLeftAreaChaserPlayer() == null ? "none" : getLeftAreaChaserPlayer().getName()));
         }
         if (leftTeamSurvivor > 0) {
-            addPlayerPointsToAllTeamMembers(leftChampionshipTeam, 15);
+            addPlayerPointsToTeamEscapees(leftChampionshipTeam, 20);
             plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Team " + leftChampionshipTeam.getName() + " has survivor(s), added 15 points");
         } else {
             int points = 7 * (getGameConfig().getTimer() - leftTeamSurviveTime) / 10;
@@ -455,6 +455,14 @@ public class ParkourTagArea extends BaseTeamArea {
         for (Player player : getLeftAreaEscapees()) {
             player.getInventory().setItem(0, clock.clone());
             player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, getGameConfig().getTimer() * 20 + 100, 0));
+        }
+    }
+
+    public void addPlayerPointsToTeamEscapees(ChampionshipTeam championshipTeam, int points) {
+        for (UUID uuid : championshipTeam.getMembers()) {
+            if (!uuid.equals(rightAreaChaser) && !uuid.equals(leftAreaChaser))
+                playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
+            plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
         }
     }
 
