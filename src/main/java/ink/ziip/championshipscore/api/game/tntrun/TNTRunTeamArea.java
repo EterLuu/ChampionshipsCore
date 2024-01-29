@@ -176,7 +176,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                     int i = 0;
                     for (UUID uuid : gamePlayersCopy) {
                         Player player = Bukkit.getPlayer(uuid);
-                        if (player != null && player.isOnline()) {
+                        if (player != null && player.isOnline() && !deathPlayer.contains(player.getUniqueId())) {
                             Location location = player.getLocation();
                             location.setY(getPlayerSpawnLocations().get(uuid).getY() + 15);
                             TNTPrimed tntPrimed = (TNTPrimed) player.getWorld().spawnEntity(location, EntityType.PRIMED_TNT);
