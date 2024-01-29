@@ -12,6 +12,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Snowball;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
@@ -53,7 +54,7 @@ public class SnowballShowdownHandler extends BaseListener {
             }
         }
 
-        event.setCancelled(true);
+        event.setUseInteractedBlock(Event.Result.DENY);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -131,11 +132,11 @@ public class SnowballShowdownHandler extends BaseListener {
             return;
         }
 
-        if (snowballShowdownTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (snowballShowdownTeamArea.getTimer() >= snowballShowdownTeamArea.getGameConfig().getTimer()) {
-                event.setCancelled(true);
-            }
-        }
+//        if (snowballShowdownTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+//            if (snowballShowdownTeamArea.getTimer() >= snowballShowdownTeamArea.getGameConfig().getTimer()) {
+//                event.setCancelled(true);
+//            }
+//        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

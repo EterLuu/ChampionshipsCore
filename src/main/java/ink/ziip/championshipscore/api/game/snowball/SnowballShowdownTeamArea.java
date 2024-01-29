@@ -329,9 +329,12 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         if (assailantChampionshipTeam.equals(playerChampionshipTeam))
             return;
 
+        assailant.playSound(assailant, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
+        player.playSound(player, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
+
         addTeamShootCount(assailantChampionshipTeam);
         addPlayerPoints(assailant.getUniqueId(), 4);
-        addPlayerIndividualKills(player);
+        addPlayerIndividualKills(assailant);
         String message = MessageConfig.SNOWBALL_KILL_PLAYER
                 .replace("%player%", playerChampionshipTeam.getColoredColor() + player.getName())
                 .replace("%killer%", assailantChampionshipTeam.getColoredColor() + assailant.getName());
@@ -339,7 +342,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
         ItemStack snowball = new ItemStack(Material.SNOWBALL);
         snowball.setAmount(6);
-        player.getInventory().addItem(snowball.clone());
+        assailant.getInventory().addItem(snowball.clone());
     }
 
     private void addPlayerIndividualKills(Player player) {
@@ -391,6 +394,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     public void respawnPlayer(Player player) {
         playerRespawnTime.put(player.getUniqueId(), System.currentTimeMillis());
         teleportPlayerToSpawnLocation(player);
+        player.setHealth(20);
         givePlayerItem(player);
         for (UUID uuid : gamePlayers) {
             Player gamePlayer = Bukkit.getPlayer(uuid);
