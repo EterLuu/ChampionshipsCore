@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import org.bukkit.Bukkit;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -32,7 +32,7 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
                 parkourTagArea = parkourTagManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (parkourTagArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return parkourTagArea.getGameStageEnum().toString();
         }
@@ -42,9 +42,13 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
                 parkourTagArea = parkourTagManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (parkourTagArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
-            return parkourTagArea.getLeftChampionshipTeam().getColoredName();
+            ChampionshipTeam championshipTeam = parkourTagArea.getLeftChampionshipTeam();
+            if (championshipTeam == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            return championshipTeam.getColoredName();
         }
         if (params.startsWith("area_rival_")) {
             ParkourTagArea parkourTagArea = parkourTagManager.getArea(params.replace("area_rival_", ""));
@@ -52,9 +56,13 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
                 parkourTagArea = parkourTagManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (parkourTagArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
-            return parkourTagArea.getRightChampionshipTeam().getColoredName();
+            ChampionshipTeam championshipTeam = parkourTagArea.getRightChampionshipTeam();
+            if (championshipTeam == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            return championshipTeam.getColoredName();
         }
         if (params.startsWith("area_timer_")) {
             ParkourTagArea parkourTagArea = parkourTagManager.getArea(params.replace("area_timer_", ""));
@@ -62,7 +70,7 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
                 parkourTagArea = parkourTagManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (parkourTagArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(parkourTagArea.getTimer() + 1);
         }
@@ -71,7 +79,7 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
 
         Player player = offlinePlayer.getPlayer();
         if (player == null)
-            return null;
+            return MessageConfig.PLACEHOLDER_NONE;
         Location location = player.getLocation();
 
         if (params.startsWith("area_chaser_")) {
@@ -80,11 +88,11 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
                 parkourTagArea = parkourTagManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (parkourTagArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam == null)
-                return "None";
+                return MessageConfig.PLACEHOLDER_NONE;
 
             return championshipTeam.getColoredColor() + player.getName();
         }
@@ -95,7 +103,7 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
                 parkourTagArea = parkourTagManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (parkourTagArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
 
             return String.valueOf(parkourTagArea.getAreaEscapeesNums(location));
@@ -107,7 +115,7 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
                 parkourTagArea = parkourTagManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (parkourTagArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
 
             return String.valueOf(parkourTagArea.getAreaSurvivedEscapeesNums(location));
@@ -119,15 +127,15 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
                 parkourTagArea = parkourTagManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (parkourTagArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             if (parkourTagArea.notAreaPlayer(player))
-                return "Spectator";
+                return MessageConfig.PLACEHOLDER_PARKOUR_TAG_SPECTATOR;
 
             if (parkourTagArea.isChaser(player))
-                return "Chaser";
+                return MessageConfig.PLACEHOLDER_PARKOUR_TAG_CHASER;
             else
-                return "Escapee";
+                return MessageConfig.PLACEHOLDER_PARKOUR_TAG_ESCAPEE;
         }
 
         // Placeholder is unknown by the Expansion

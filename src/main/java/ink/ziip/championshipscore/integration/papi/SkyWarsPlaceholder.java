@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +31,7 @@ public class SkyWarsPlaceholder extends BasePlaceholder {
                 skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (skyWarsTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return skyWarsTeamArea.getGameStageEnum().toString();
         }
@@ -40,7 +41,7 @@ public class SkyWarsPlaceholder extends BasePlaceholder {
                 skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (skyWarsTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(skyWarsTeamArea.getTimer() + 1);
         }
@@ -50,7 +51,7 @@ public class SkyWarsPlaceholder extends BasePlaceholder {
                 skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (skyWarsTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(skyWarsTeamArea.getSurvivedPlayerNums());
         }
@@ -60,7 +61,7 @@ public class SkyWarsPlaceholder extends BasePlaceholder {
                 skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (skyWarsTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(skyWarsTeamArea.getSurvivedTeamNums());
         }
@@ -69,7 +70,7 @@ public class SkyWarsPlaceholder extends BasePlaceholder {
 
         Player player = offlinePlayer.getPlayer();
         if (player == null)
-            return null;
+            return MessageConfig.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_border_distance_")) {
             SkyWarsTeamArea skyWarsTeamArea = skyWarsManager.getArea(params.replace("player_border_distance_", ""));
@@ -77,7 +78,7 @@ public class SkyWarsPlaceholder extends BasePlaceholder {
                 skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (skyWarsTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             if (skyWarsTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
                 return String.valueOf(0);

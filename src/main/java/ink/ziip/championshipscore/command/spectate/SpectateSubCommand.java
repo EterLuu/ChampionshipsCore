@@ -22,6 +22,10 @@ public class SpectateSubCommand extends BaseSubCommand {
             "battlebox",
             "parkourtag",
             "skywars",
+            "tgttos",
+            "tntrun",
+            "snowball",
+            "dragoneggcarnival",
     };
 
     public SpectateSubCommand() {
@@ -69,8 +73,36 @@ public class SpectateSubCommand extends BaseSubCommand {
                     baseArea = skyWarsArea;
                 }
             }
+            if (args[0].equals("tgttos")) {
+                gameTypeEnum = GameTypeEnum.TGTTOS;
+                BaseArea tgttosArea = plugin.getGameManager().getTgttosManager().getArea(args[1]);
+                if (tgttosArea != null) {
+                    baseArea = tgttosArea;
+                }
+            }
+            if (args[0].equals("tntrun")) {
+                gameTypeEnum = GameTypeEnum.TNTRun;
+                BaseArea tntRunArea = plugin.getGameManager().getTntRunManager().getArea(args[1]);
+                if (tntRunArea != null) {
+                    baseArea = tntRunArea;
+                }
+            }
+            if (args[0].equals("snowball")) {
+                gameTypeEnum = GameTypeEnum.SnowballFight;
+                BaseArea snowballArea = plugin.getGameManager().getSnowballShowdownManager().getArea(args[1]);
+                if (snowballArea != null) {
+                    baseArea = snowballArea;
+                }
+            }
+            if (args[0].equals("dragoneggcarnival")) {
+                gameTypeEnum = GameTypeEnum.DragonEggCarnival;
+                BaseArea dragonEggCarnival = plugin.getGameManager().getDragonEggCarnivalManager().getArea(args[1]);
+                if (dragonEggCarnival != null) {
+                    baseArea = dragonEggCarnival;
+                }
+            }
             if (gameTypeEnum != null && baseArea != null) {
-                if (plugin.getGameManager().spectateArea((Player) sender, GameTypeEnum.BattleBox, args[1])) {
+                if (plugin.getGameManager().spectateArea((Player) sender, baseArea)) {
                     String message = MessageConfig.SPECTATOR_JOIN_AREA
                             .replace("%game%", gameTypeEnum.toString())
                             .replace("%area%", baseArea.getGameConfig().getAreaName());
@@ -103,6 +135,26 @@ public class SpectateSubCommand extends BaseSubCommand {
             }
             if (args[0].equals("skywars")) {
                 List<String> returnList = plugin.getGameManager().getSkyWarsManager().getAreaNameList();
+                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
+                return returnList;
+            }
+            if (args[0].equals("tntrun")) {
+                List<String> returnList = plugin.getGameManager().getTntRunManager().getAreaNameList();
+                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
+                return returnList;
+            }
+            if (args[0].equals("tgttos")) {
+                List<String> returnList = plugin.getGameManager().getTgttosManager().getAreaNameList();
+                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
+                return returnList;
+            }
+            if (args[0].equals("snowball")) {
+                List<String> returnList = plugin.getGameManager().getSkyWarsManager().getAreaNameList();
+                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
+                return returnList;
+            }
+            if (args[0].equals("dragoneggcarnival")) {
+                List<String> returnList = plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList();
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
                 return returnList;
             }

@@ -168,7 +168,8 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         }, 0, 20L);
     }
 
-    protected void endGame() {
+    @Override
+    public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 

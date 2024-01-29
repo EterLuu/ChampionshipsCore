@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,7 +30,7 @@ public class TNTRunPlaceholder extends BasePlaceholder {
                 tntRunTeamArea = tntRunManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (tntRunTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return tntRunTeamArea.getGameStageEnum().toString();
         }
@@ -39,7 +40,7 @@ public class TNTRunPlaceholder extends BasePlaceholder {
                 tntRunTeamArea = tntRunManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (tntRunTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(tntRunTeamArea.getTimer() + 1);
         }
@@ -49,7 +50,7 @@ public class TNTRunPlaceholder extends BasePlaceholder {
                 tntRunTeamArea = tntRunManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (tntRunTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             if (tntRunTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
                 return String.valueOf(0);
@@ -69,7 +70,7 @@ public class TNTRunPlaceholder extends BasePlaceholder {
                 tntRunTeamArea = tntRunManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (tntRunTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(tntRunTeamArea.getSurvivedPlayerNums());
         }

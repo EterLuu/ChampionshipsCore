@@ -3,6 +3,9 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
+import ink.ziip.championshipscore.api.object.game.BBWeaponKitEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +32,7 @@ public class BattleBoxPlaceholder extends BasePlaceholder {
                 battleBoxArea = battleBoxManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (battleBoxArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return battleBoxArea.getGameStageEnum().toString();
         }
@@ -39,9 +42,13 @@ public class BattleBoxPlaceholder extends BasePlaceholder {
                 battleBoxArea = battleBoxManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (battleBoxArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
-            return battleBoxArea.getLeftChampionshipTeam().getColoredName();
+            ChampionshipTeam championshipTeam = battleBoxArea.getLeftChampionshipTeam();
+            if (championshipTeam == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            return championshipTeam.getColoredName();
         }
         if (params.startsWith("area_rival_")) {
             BattleBoxArea battleBoxArea = battleBoxManager.getArea(params.replace("area_rival_", ""));
@@ -49,9 +56,13 @@ public class BattleBoxPlaceholder extends BasePlaceholder {
                 battleBoxArea = battleBoxManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (battleBoxArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
-            return battleBoxArea.getRightChampionshipTeam().getColoredName();
+            ChampionshipTeam championshipTeam = battleBoxArea.getRightChampionshipTeam();
+            if (championshipTeam == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            return championshipTeam.getColoredName();
         }
         if (params.startsWith("area_timer_")) {
             BattleBoxArea battleBoxArea = battleBoxManager.getArea(params.replace("area_timer_", ""));
@@ -59,7 +70,7 @@ public class BattleBoxPlaceholder extends BasePlaceholder {
                 battleBoxArea = battleBoxManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (battleBoxArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(battleBoxArea.getTimer() + 1);
         }
@@ -68,7 +79,7 @@ public class BattleBoxPlaceholder extends BasePlaceholder {
 
         Player player = offlinePlayer.getPlayer();
         if (player == null)
-            return null;
+            return MessageConfig.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_kits_")) {
             BattleBoxArea battleBoxArea = battleBoxManager.getArea(params.replace("player_kits_", ""));
@@ -76,12 +87,12 @@ public class BattleBoxPlaceholder extends BasePlaceholder {
                 battleBoxArea = battleBoxManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (battleBoxArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
-            String kits = battleBoxArea.getPlayerWeaponKit(player).toString();
+            BBWeaponKitEnum kits = battleBoxArea.getPlayerCurrentWeaponKit(player);
             if (kits == null)
-                return "None";
-            return kits;
+                return MessageConfig.PLACEHOLDER_NONE;
+            return kits.toString();
         }
 
         // Placeholder is unknown by the Expansion

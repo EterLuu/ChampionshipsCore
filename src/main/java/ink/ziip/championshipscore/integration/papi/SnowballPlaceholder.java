@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownTeamArea;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +30,7 @@ public class SnowballPlaceholder extends BasePlaceholder {
                 snowballShowdownTeamArea = snowballShowdownManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (snowballShowdownTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return snowballShowdownTeamArea.getGameStageEnum().toString();
         }
@@ -40,7 +41,7 @@ public class SnowballPlaceholder extends BasePlaceholder {
                 snowballShowdownTeamArea = snowballShowdownManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (snowballShowdownTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(snowballShowdownTeamArea.getTimer() + 1);
         }
@@ -51,14 +52,14 @@ public class SnowballPlaceholder extends BasePlaceholder {
                 snowballShowdownTeamArea = snowballShowdownManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (snowballShowdownTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(snowballShowdownTeamArea.getCurrentRank());
         }
 
         Player player = offlinePlayer.getPlayer();
         if (player == null)
-            return null;
+            return MessageConfig.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_individual_kills_")) {
             SnowballShowdownTeamArea snowballShowdownTeamArea = snowballShowdownManager.getArea(params.replace("player_individual_kills_", ""));
@@ -66,7 +67,7 @@ public class SnowballPlaceholder extends BasePlaceholder {
                 snowballShowdownTeamArea = snowballShowdownManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (snowballShowdownTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(snowballShowdownTeamArea.getPlayerIndividualKills(player));
         }

@@ -159,6 +159,24 @@ public abstract class BaseArea {
         }
     }
 
+    public void handleSpectatorJoin(@NotNull PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (isSpectator(player)) {
+            player.teleport(gameConfig.getSpectatorSpawnPoint());
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setAllowFlight(true);
+            player.setFlying(true);
+            plugin.getGameManager().setPlayerVisible(player, false);
+        }
+    }
+
+    public void handleSpectatorQuit(@NotNull PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        if (isSpectator(player)) {
+            removeSpectator(player);
+        }
+    }
+
     public void addSpectator(@NotNull Player player) {
         spectators.add(player.getUniqueId());
         player.teleport(gameConfig.getSpectatorSpawnPoint());
@@ -166,6 +184,17 @@ public abstract class BaseArea {
         player.setAllowFlight(true);
         player.setFlying(true);
         plugin.getGameManager().setPlayerVisible(player, false);
+    }
+
+    public void removeAllSpectator() {
+        for (Player player : getOnlineSpectators()) {
+            removeSpectator(player);
+        }
+    }
+
+    public void endGameFinally() {
+        removeAllSpectator();
+        endGame();
     }
 
     public void removeSpectator(@NotNull Player player) {
@@ -249,6 +278,8 @@ public abstract class BaseArea {
     public boolean notInArea(Location location) {
         return !location.toVector().isInAABB(getGameConfig().getAreaPos1(), getGameConfig().getAreaPos2());
     }
+
+    public abstract void endGame();
 
     public abstract void resetBaseArea();
 

@@ -34,7 +34,7 @@ public class BattleBoxManager extends BaseAreaManager<BattleBoxArea> {
     public void unload() {
         for (BattleBoxArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGame();
+                area.endGameFinally();
             }
         }
     }

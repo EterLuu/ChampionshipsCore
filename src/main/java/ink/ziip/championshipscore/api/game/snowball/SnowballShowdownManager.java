@@ -33,7 +33,7 @@ public class SnowballShowdownManager extends BaseAreaManager<SnowballShowdownTea
     public void unload() {
         for (SnowballShowdownTeamArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGame();
+                area.endGameFinally();
             }
         }
     }

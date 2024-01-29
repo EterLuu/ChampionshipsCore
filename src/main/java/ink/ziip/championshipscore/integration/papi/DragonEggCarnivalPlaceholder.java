@@ -4,6 +4,8 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,7 +31,7 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
                 dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (dragonEggCarnivalArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return dragonEggCarnivalArea.getGameStageEnum().toString();
         }
@@ -39,7 +41,7 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
                 dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (dragonEggCarnivalArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(dragonEggCarnivalArea.getLeftTeamPoints());
         }
@@ -49,9 +51,13 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
                 dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (dragonEggCarnivalArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
-            return dragonEggCarnivalArea.getLeftChampionshipTeam().getColoredName();
+            ChampionshipTeam championshipTeam = dragonEggCarnivalArea.getLeftChampionshipTeam();
+            if (championshipTeam == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            return championshipTeam.getColoredName();
         }
         if (params.startsWith("area_rival_wins_")) {
             DragonEggCarnivalArea dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(params.replace("area_rival_wins_", ""));
@@ -59,7 +65,7 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
                 dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (dragonEggCarnivalArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(dragonEggCarnivalArea.getRightTeamPoints());
         }
@@ -69,9 +75,13 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
                 dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (dragonEggCarnivalArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
-            return dragonEggCarnivalArea.getRightChampionshipTeam().getColoredName();
+            ChampionshipTeam championshipTeam = dragonEggCarnivalArea.getRightChampionshipTeam();
+            if (championshipTeam == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            return championshipTeam.getColoredName();
         }
         if (params.startsWith("area_timer_")) {
             DragonEggCarnivalArea dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(params.replace("area_timer_", ""));
@@ -79,7 +89,7 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
                 dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (dragonEggCarnivalArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
                 return String.valueOf(0);
@@ -93,7 +103,7 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
                 dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (dragonEggCarnivalArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
                 return String.valueOf(0);
@@ -107,7 +117,7 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
                 dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (dragonEggCarnivalArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
                 return String.valueOf(0);

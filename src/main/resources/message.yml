@@ -225,3 +225,8 @@ snowball:
   player-death: "&b[&3WCC&b] &f%player% &c死亡。"
   player-death-by-void: "&b[&3WCC&b] &f%player% &c跌入了虚空。"
   player-leave: "&b[&3WCC&b] &f%player% &c离开游戏。"
+placeholder:
+  none: "无"
+  parkourtag-spectator: "观察者"
+  parkourtag-chaser: "追击者"
+  parkourtag-escapee: "逃脱者"

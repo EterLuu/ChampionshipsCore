@@ -110,7 +110,8 @@ public class TeamManager extends BaseManager {
     public boolean deleteTeam(@NotNull String name) {
         ChampionshipTeam championshipTeam = cachedTeams.get(name);
 
-        // TODO detect playing status
+        if (plugin.getGameManager().getTeamCurrenArea(championshipTeam) != null)
+            return false;
 
         championshipTeam = cachedTeams.remove(name);
         if (championshipTeam == null) return false;

@@ -164,7 +164,8 @@ public class BattleBoxArea extends BaseTeamArea {
         changeGameModelForAllGamePlayers(GameMode.SPECTATOR);
     }
 
-    protected void endGame() {
+    @Override
+    public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 
@@ -361,6 +362,10 @@ public class BattleBoxArea extends BaseTeamArea {
         }
         playerWeaponKit.put(player.getUniqueId(), type);
         return true;
+    }
+
+    public BBWeaponKitEnum getPlayerCurrentWeaponKit(@NotNull Player player) {
+        return playerWeaponKit.get(player.getUniqueId());
     }
 
     public BBWeaponKitEnum getPlayerWeaponKit(@NotNull Player player) {

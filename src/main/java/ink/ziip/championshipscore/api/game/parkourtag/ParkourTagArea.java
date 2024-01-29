@@ -228,7 +228,8 @@ public class ParkourTagArea extends BaseTeamArea {
         }
     }
 
-    protected void endGame() {
+    @Override
+    public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 

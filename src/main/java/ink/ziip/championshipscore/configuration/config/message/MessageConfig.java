@@ -257,7 +257,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "battlebox.kits.pull")
     public static String BATTLE_BOX_KITS_PULL;
-    
+
     // ParkourTag
     @ConfigOption(path = "parkourtag.start-preparation")
     public static String PARKOUR_TAG_START_PREPARATION;
@@ -333,7 +333,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "parkourtag.kits.use-feather")
     public static String PARKOUR_TAG_KITS_USE_FEATHER;
-    
+
     // SkyWars
     @ConfigOption(path = "skywars.start-preparation")
     public static String SKY_WARS_START_PREPARATION;
@@ -391,10 +391,10 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "skywars.player-death-by-void")
     public static String SKY_WARS_PLAYER_DEATH_BY_VOID;
-    
+
     @ConfigOption(path = "skywars.player-leave")
     public static String SKY_WARS_PLAYER_LEAVE;
-    
+
     @ConfigOption(path = "skywars.action-bar-count-down")
     public static String SKY_WARS_ACTION_BAR_COUNT_DOWN;
 
@@ -495,7 +495,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tntrun.game-end-subtitle")
     public static String TNT_RUN_GAME_END_SUBTITLE;
-    
+
     @ConfigOption(path = "tntrun.fall-into-void")
     public static String TNT_RUN_FALL_INTO_VOID;
 
@@ -653,4 +653,17 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "snowball.player-leave")
     public static String SNOWBALL_PLAYER_LEAVE;
+
+    // Placeholder
+    @ConfigOption(path = "placeholder.none")
+    public static String PLACEHOLDER_NONE;
+
+    @ConfigOption(path = "placeholder.parkourtag-spectator")
+    public static String PLACEHOLDER_PARKOUR_TAG_SPECTATOR;
+
+    @ConfigOption(path = "placeholder.parkourtag-chaser")
+    public static String PLACEHOLDER_PARKOUR_TAG_CHASER;
+
+    @ConfigOption(path = "placeholder.parkourtag-escapee")
+    public static String PLACEHOLDER_PARKOUR_TAG_ESCAPEE;
 }

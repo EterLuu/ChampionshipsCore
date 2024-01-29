@@ -7,11 +7,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 
 public class BaseAreaHandler extends BaseListener {
@@ -55,7 +54,7 @@ public class BaseAreaHandler extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerWDamageByBlock(EntityDamageByBlockEvent event) {
+    public void onPlayerDamageByBlock(EntityDamageByBlockEvent event) {
         if (event.getEntity() instanceof Player player) {
             if (baseArea.isSpectator(player)) {
                 event.setCancelled(true);
@@ -73,6 +72,25 @@ public class BaseAreaHandler extends BaseListener {
         if (event.getDamager() instanceof Player player) {
             if (baseArea.isSpectator(player)) {
                 event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerDamaged(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            if (baseArea.isSpectator(player)) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        if (baseArea.isSpectator(player)) {
+            if (baseArea.notInArea(player.getLocation())) {
+                player.teleport(baseArea.getGameConfig().getSpectatorSpawnPoint());
             }
         }
     }

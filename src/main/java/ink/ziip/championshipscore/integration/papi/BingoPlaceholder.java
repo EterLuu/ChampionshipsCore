@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.integration.bingo.BingoManager;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -25,7 +26,7 @@ public class BingoPlaceholder extends BasePlaceholder {
         if (params.startsWith("bingo_team_points_")) {
             Material material = Material.getMaterial(params.replace("bingo_team_points_", ""));
             if (material == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
 
             return String.valueOf(bingoManager.getMaterialPoints(material));

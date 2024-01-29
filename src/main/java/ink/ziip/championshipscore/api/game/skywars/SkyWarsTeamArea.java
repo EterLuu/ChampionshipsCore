@@ -277,7 +277,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         });
     }
 
-    protected void endGame() {
+    @Override
+    public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 

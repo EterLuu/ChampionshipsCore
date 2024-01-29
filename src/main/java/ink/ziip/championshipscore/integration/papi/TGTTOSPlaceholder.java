@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSTeamArea;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +30,7 @@ public class TGTTOSPlaceholder extends BasePlaceholder {
                 tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (tgttosTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return tgttosTeamArea.getGameStageEnum().toString();
         }
@@ -39,7 +40,7 @@ public class TGTTOSPlaceholder extends BasePlaceholder {
                 tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (tgttosTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(tgttosTeamArea.getTimer() + 1);
         }
@@ -49,7 +50,7 @@ public class TGTTOSPlaceholder extends BasePlaceholder {
                 tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (tgttosTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
 
             return String.valueOf(tgttosTeamArea.getArrivedPlayerNums());
@@ -59,7 +60,7 @@ public class TGTTOSPlaceholder extends BasePlaceholder {
 
         Player player = offlinePlayer.getPlayer();
         if (player == null)
-            return null;
+            return MessageConfig.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_team_not_arrived_")) {
             TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(params.replace("player_team_not_arrived_", ""));
@@ -67,7 +68,7 @@ public class TGTTOSPlaceholder extends BasePlaceholder {
                 tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (tgttosTeamArea == null) {
-                return null;
+                return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(tgttosTeamArea.getPlayerTeamNotArrived(player));
         }

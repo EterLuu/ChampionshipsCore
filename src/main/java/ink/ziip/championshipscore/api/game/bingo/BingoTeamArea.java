@@ -17,6 +17,11 @@ public class BingoTeamArea extends BaseSingleTeamArea {
     }
 
     @Override
+    public void endGame() {
+
+    }
+
+    @Override
     public void resetArea() {
 
     }

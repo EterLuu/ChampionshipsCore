@@ -41,7 +41,7 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
     public void unload() {
         for (ParkourTagArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGame();
+                area.endGameFinally();
             }
         }
     }

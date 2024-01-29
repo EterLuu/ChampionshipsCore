@@ -254,6 +254,10 @@ public class GameManager extends BaseManager {
         return "";
     }
 
+    public BaseArea getTeamCurrenArea(ChampionshipTeam championshipTeam) {
+        return teamStatus.get(championshipTeam);
+    }
+
     private void addPlayerStatusByTeam(ChampionshipTeam championshipTeam, BaseArea baseArea) {
         for (UUID uuid : championshipTeam.getMembers()) {
             playerStatus.put(uuid, baseArea);
@@ -290,40 +294,15 @@ public class GameManager extends BaseManager {
         return playerSpectatorStatus.get(uuid);
     }
 
-    public boolean spectateArea(@NotNull Player player, @NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {
+    public synchronized boolean spectateArea(@NotNull Player player, @NotNull BaseArea baseArea) {
         UUID uuid = player.getUniqueId();
-        if (gameTypeEnum == GameTypeEnum.BattleBox) {
-            BattleBoxArea battleBoxArea = getBattleBoxManager().getArea(area);
-            if (battleBoxArea != null) {
-                if (playerSpectatorStatus.containsKey(uuid)) {
-                    return false;
-                }
-                playerSpectatorStatus.put(uuid, battleBoxArea);
-                battleBoxArea.addSpectator(player);
-            }
-        }
-        if (gameTypeEnum == GameTypeEnum.ParkourTag) {
-            ParkourTagArea parkourTagArea = getParkourTagManager().getArea(area);
-            if (parkourTagArea != null) {
-                if (playerSpectatorStatus.containsKey(uuid)) {
-                    return false;
-                }
-                playerSpectatorStatus.put(uuid, parkourTagArea);
-                parkourTagArea.addSpectator(player);
-            }
-        }
-        if (gameTypeEnum == GameTypeEnum.SkyWars) {
-            SkyWarsTeamArea skyWarsArea = getSkyWarsManager().getArea(area);
-            if (skyWarsArea != null) {
-                if (playerSpectatorStatus.containsKey(uuid)) {
-                    return false;
-                }
-                playerSpectatorStatus.put(uuid, skyWarsArea);
-                skyWarsArea.addSpectator(player);
-            }
+        if (playerSpectatorStatus.containsKey(uuid)) {
+            return false;
         }
 
-        return false;
+        playerSpectatorStatus.put(uuid, baseArea);
+        baseArea.addSpectator(player);
+        return true;
     }
 
     public boolean leaveSpectating(@NotNull Player player) {

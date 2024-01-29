@@ -35,7 +35,7 @@ public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
     public void unload() {
         for (TNTRunTeamArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGame();
+                area.endGameFinally();
             }
         }
     }

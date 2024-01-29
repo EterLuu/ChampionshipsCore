@@ -67,22 +67,16 @@ public class GameManagerHandler extends BaseListener {
         } else {
             BaseArea baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
             if (baseArea != null) {
-                // TODO spectator join
-                return;
-            } else {
-                if (player.isOp())
-                    return;
-                World world = player.getWorld();
-                if (!world.equals(CCConfig.LOBBY_LOCATION)) {
-                    player.teleport(CCConfig.LOBBY_LOCATION);
-                    player.setGameMode(GameMode.ADVENTURE);
-                }
+                baseArea.handleSpectatorJoin(event);
                 return;
             }
         }
 
-        player.teleport(CCConfig.LOBBY_LOCATION);
-        player.setGameMode(GameMode.ADVENTURE);
+        World world = player.getWorld();
+        if (!world.equals(CCConfig.LOBBY_LOCATION)) {
+            player.teleport(CCConfig.LOBBY_LOCATION);
+            player.setGameMode(GameMode.ADVENTURE);
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -94,13 +88,13 @@ public class GameManagerHandler extends BaseListener {
             BaseArea baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
             if (baseArea != null) {
                 baseArea.handlePlayerQuit(event);
-                return;
             }
         } else {
             BaseArea baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
-            if (baseArea != null)
-                // TODO spectator quit
-                return;
+            if (baseArea != null) {
+                baseArea.handleSpectatorQuit(event);
+                plugin.getGameManager().leaveSpectating(player);
+            }
         }
     }
 
