@@ -54,7 +54,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         startGameProgressTask = null;
         borderCheckTask = null;
 
-        loadMap();
+        loadMap(World.Environment.NORMAL);
     }
 
     @Override
@@ -75,7 +75,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         skyWarsConfig.setAreaName(areaName);
 
         if (!firstTime) {
-            loadMap();
+            loadMap(World.Environment.NORMAL);
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
         }

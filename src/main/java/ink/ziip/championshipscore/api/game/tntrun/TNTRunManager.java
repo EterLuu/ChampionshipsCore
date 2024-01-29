@@ -67,7 +67,7 @@ public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
             return false;
         }
 
-        tntRunArea.saveMap();
+        tntRunArea.saveMap(World.Environment.NORMAL);
         return true;
     }
 }

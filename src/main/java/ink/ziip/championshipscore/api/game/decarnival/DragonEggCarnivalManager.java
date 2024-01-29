@@ -67,7 +67,7 @@ public class DragonEggCarnivalManager extends BaseAreaManager<DragonEggCarnivalA
             return false;
         }
 
-        dragonEggCarnivalArea.saveMap();
+        dragonEggCarnivalArea.saveMap(World.Environment.THE_END);
         return true;
     }
 }

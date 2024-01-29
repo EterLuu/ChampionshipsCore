@@ -47,7 +47,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         tntRunConfig.setAreaName(areaName);
 
         if (!firstTime) {
-            loadMap();
+            loadMap(World.Environment.NORMAL);
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
         }
@@ -63,7 +63,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         handlePlayerMoveTask = null;
         tntGeneratorTask = null;
 
-        loadMap();
+        loadMap(World.Environment.NORMAL);
     }
 
     @Override

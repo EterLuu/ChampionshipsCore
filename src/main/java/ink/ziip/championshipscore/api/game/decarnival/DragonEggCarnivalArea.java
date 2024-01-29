@@ -49,7 +49,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         dragonEggCarnivalConfig.setAreaName(areaName);
 
         if (!firstTime) {
-            loadMap();
+            loadMap(World.Environment.THE_END);
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
         }
@@ -65,7 +65,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         startGamePreparationTask = null;
         startGameProgressTask = null;
 
-        loadMap();
+        loadMap(World.Environment.THE_END);
     }
 
     @Override
@@ -102,7 +102,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON);
         sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON_SUBTITLE);
 
-        timer = -4;
+        timer = -3;
 
         dragonEgg = getGameConfig().getDragonEggSpawnPoint().getBlock();
         dragonEgg.setType(Material.DRAGON_EGG, true);
@@ -169,7 +169,12 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         }, 0, 20L);
     }
 
-    protected void endGameInForm(ChampionshipTeam championshipTeam) {
+    protected synchronized void endGameInForm(ChampionshipTeam championshipTeam) {
+        if (gameStageEnum == GameStageEnum.STOPPING)
+            return;
+
+        teleportAllPlayers(getLobbyLocation());
+
         setGameStageEnum(GameStageEnum.STOPPING);
 
         cleanInventoryForAllGamePlayers();
@@ -189,7 +194,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         if (rightTeamPoints == 3 || leftTeamPoints == 3) {
             endGame();
         } else {
-            loadMap();
+            loadMap(World.Environment.THE_END);
             sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART);
             sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_SUBTITLE);
 

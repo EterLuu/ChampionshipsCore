@@ -66,7 +66,7 @@ public class SkyWarsManager extends BaseAreaManager<SkyWarsTeamArea> {
             return false;
         }
 
-        skyWarsArea.saveMap();
+        skyWarsArea.saveMap(World.Environment.NORMAL);
         return true;
     }
 }

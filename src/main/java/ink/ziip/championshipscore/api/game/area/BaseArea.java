@@ -140,53 +140,44 @@ public abstract class BaseArea {
         }
     }
 
-    public void loadMap() {
+    public void loadMap(World.Environment environment) {
         if (!plugin.isLoaded())
             return;
 
         teleportAllSpectators(getLobbyLocation());
 
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            scheduler.runTask(plugin, () -> {
-                setGameStageEnum(GameStageEnum.END);
-                getGameHandler().unRegister();
-                plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", start loading world " + getWorldName());
-            });
+        setGameStageEnum(GameStageEnum.END);
+        getGameHandler().unRegister();
+        plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", start loading world " + getWorldName());
 
-            File target = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), getWorldName());
+        File target = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), getWorldName());
 
-            // If already has a same world, delete it.
-            if (target.isDirectory()) {
-                String[] list = target.list();
-                if (list != null && list.length > 0) {
-                    plugin.getWorldManager().deleteWorld(getWorldName(), true);
-                }
+        // If already has a same world, delete it.
+        if (target.isDirectory()) {
+            String[] list = target.list();
+            if (list != null && list.length > 0) {
+                plugin.getWorldManager().deleteWorld(getWorldName(), true);
             }
+        }
 
-            File maps = new File(plugin.getDataFolder(), "maps");
-            File source = new File(maps, getWorldName());
+        File maps = new File(plugin.getDataFolder(), "maps");
+        File source = new File(maps, getWorldName());
 
-            // Copy world files to destination
-            plugin.getWorldManager().copyWorldFiles(source, target);
+        // Copy world files to destination
+        plugin.getWorldManager().copyWorldFiles(source, target);
 
-            // Load world
-            plugin.getWorldManager().loadWorld(getWorldName(), World.Environment.NORMAL, false);
+        // Load world
+        plugin.getWorldManager().loadWorld(getWorldName(), environment, false);
 
-            while (plugin.getServer().getWorld(getWorldName()) == null) {
-                // Spin lock ? hhh
-            }
-            scheduler.runTask(plugin, () -> {
-                getGameConfig().initializeConfiguration(plugin.getFolder());
-                getGameHandler().register();
-                setGameStageEnum(GameStageEnum.WAITING);
-                plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", world " + getWorldName() + " loaded");
+        getGameConfig().initializeConfiguration(plugin.getFolder());
+        getGameHandler().register();
+        setGameStageEnum(GameStageEnum.WAITING);
+        plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", world " + getWorldName() + " loaded");
 
-                teleportAllSpectators(getSpectatorSpawnLocation());
-            });
-        });
+        teleportAllSpectators(getSpectatorSpawnLocation());
     }
 
-    public void saveMap() {
+    public void saveMap(World.Environment environment) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return;
 
@@ -203,26 +194,18 @@ public abstract class BaseArea {
             // Unload world but not remove files
             plugin.getWorldManager().unloadWorld(getWorldName(), true);
 
-            scheduler.runTaskAsynchronously(plugin, () -> {
-                while (plugin.getServer().getWorld(getWorldName()) != null) {
-                    // Spin lock ? hhh
-                }
+            File dataDirectory = new File(plugin.getDataFolder(), "maps");
+            File target = new File(dataDirectory, getWorldName());
 
-                File dataDirectory = new File(plugin.getDataFolder(), "maps");
-                File target = new File(dataDirectory, getWorldName());
+            // Delete old world files stored in maps
+            plugin.getWorldManager().deleteWorldFiles(target);
 
-                // Delete old world files stored in maps
-                plugin.getWorldManager().deleteWorldFiles(target);
+            File source = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), getWorldName());
 
-                File source = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), getWorldName());
+            plugin.getWorldManager().copyWorldFiles(source, target);
+            plugin.getWorldManager().deleteWorldFiles(source);
 
-                plugin.getWorldManager().copyWorldFiles(source, target);
-                plugin.getWorldManager().deleteWorldFiles(source);
-
-                loadMap();
-
-                plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", saving world " + getWorldName() + " done");
-            });
+            loadMap(environment);
         }
     }
 

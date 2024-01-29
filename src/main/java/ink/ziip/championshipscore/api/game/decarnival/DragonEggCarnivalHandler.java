@@ -118,6 +118,8 @@ public class DragonEggCarnivalHandler extends BaseListener {
             }
             if (dragonEggCarnivalArea.getTimer() >= 100)
                 return;
+            if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS)
+                return;
 
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam != null) {
