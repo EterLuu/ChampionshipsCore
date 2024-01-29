@@ -492,6 +492,9 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         ItemStack cookedBeef = new ItemStack(Material.COOKED_BEEF);
         cookedBeef.setAmount(64);
 
+        ItemStack stick = new ItemStack(Material.STICK);
+        stick.addUnsafeEnchantment(Enchantment.KNOCKBACK, 5);
+
         PlayerInventory inventory = player.getInventory();
         inventory.setHelmet(helmet.clone());
         inventory.setChestplate(elytra.clone());
@@ -502,6 +505,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         inventory.addItem(torch.clone());
         inventory.addItem(cobweb.clone());
         inventory.addItem(cookedBeef.clone());
+        inventory.addItem(stick.clone());
     }
 
     public String getWorldName() {
