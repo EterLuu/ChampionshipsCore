@@ -46,7 +46,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         super(plugin, GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalHandler(plugin), dragonEggCarnivalConfig);
 
         getGameHandler().setDragonEggCarnivalArea(this);
-        dragonEggCarnivalConfig.initializeConfiguration(plugin.getFolder());
+        dragonEggCarnivalConfig.setAreaName(areaName);
 
         if (!firstTime) {
             loadMap();

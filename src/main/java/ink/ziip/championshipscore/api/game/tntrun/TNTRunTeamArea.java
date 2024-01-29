@@ -44,7 +44,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         super(plugin, GameTypeEnum.TNTRun, new TNTRunHandler(plugin), tntRunConfig);
 
         getGameHandler().setTntRunTeamArea(this);
-        tntRunConfig.initializeConfiguration(plugin.getFolder());
+        tntRunConfig.setAreaName(areaName);
 
         if (!firstTime) {
             loadMap();

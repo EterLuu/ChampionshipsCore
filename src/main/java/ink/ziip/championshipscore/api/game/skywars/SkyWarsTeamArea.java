@@ -71,7 +71,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         super(plugin, GameTypeEnum.SkyWars, new SkyWarsHandler(plugin), skyWarsConfig);
 
         getGameHandler().setSkyWarsArea(this);
-        skyWarsConfig.initializeConfiguration(plugin.getFolder());
+        skyWarsConfig.setAreaName(areaName);
 
         if (!firstTime) {
             loadMap();
