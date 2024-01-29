@@ -112,7 +112,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         timer = 20;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
 
-            if (timer <= 5) {
+            if (timer < 5) {
                 playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0.5F);
             }
 
@@ -142,7 +142,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                 plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") not online");
             }
         }
-        addPointsToAllSurvivePlayers(offlinePlayers);
+        addPointsToAllSurvivePlayers(offlinePlayers * 4);
 
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -167,39 +167,45 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                 sendActionBarToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
 
                 tntTimer = 0;
-                final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
 
-                tntGeneratorTask = scheduler.runTaskTimer(plugin, () -> {
-
-                    Collections.shuffle(gamePlayersCopy);
+                tntGeneratorTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
 
                     int i = 0;
-                    for (UUID uuid : gamePlayersCopy) {
-                        Player player = Bukkit.getPlayer(uuid);
-                        if (player != null && player.isOnline() && !deathPlayer.contains(player.getUniqueId())) {
-                            Location location = player.getLocation();
-                            location.setY(getPlayerSpawnLocations().get(uuid).getY() + 15);
-                            TNTPrimed tntPrimed = (TNTPrimed) player.getWorld().spawnEntity(location, EntityType.PRIMED_TNT);
-                            tntPrimed.setFuseTicks(Integer.MAX_VALUE);
+                    Random random = new Random();
+                    Iterator<String> locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
+                    while (i < 8) {
+                        if (!locationIterator.hasNext())
+                            locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
+
+                        Location location = Utils.getLocation(locationIterator.next());
+                        Location tntLocation = location.clone();
+                        tntLocation.add(random.nextInt(-30, 30), 15, random.nextInt(-30, 30));
+
+                        while (notInArea(tntLocation)) {
+                            tntLocation = location.clone();
+                            tntLocation.add(random.nextInt(-30, 30), 15, random.nextInt(-30, 30));
+                        }
+
+                        final Location finalTNTLocation = tntLocation;
+                        scheduler.runTask(plugin, () -> {
+                            TNTPrimed tntPrimed = (TNTPrimed) finalTNTLocation.getWorld().spawnEntity(finalTNTLocation, EntityType.PRIMED_TNT);
+                            tntPrimed.setFuseTicks(Integer.MAX_VALUE);
                             scheduler.runTaskTimerAsynchronously(plugin, (task) -> {
                                 if (!tntPrimed.isValid())
                                     task.cancel();
 
-                                Location tntLocation = tntPrimed.getLocation();
-                                if (getBlockUnderLocation(tntLocation) != null) {
+                                Location tntTraceLocation = tntPrimed.getLocation();
+                                if (getBlockUnderLocation(tntTraceLocation, 0.8) != null) {
                                     tntPrimed.setFuseTicks(0);
                                     task.cancel();
                                 }
-                                if (notInArea(tntLocation)) {
+                                if (notInArea(tntTraceLocation)) {
                                     tntPrimed.setFuseTicks(0);
                                     task.cancel();
                                 }
                             }, 0, 1L);
-                        }
-
-                        if (i >= 8)
-                            break;
+                        });
                         i++;
                     }
 
@@ -229,7 +235,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         destroyBlock(player.getLocation());
     }
 
-    private Block getBlockUnderLocation(Location location) {
+    public Block getBlockUnderLocation(Location location, double bias) {
         World world = location.getWorld();
         double x = location.getX();
         double y = location.getY();
@@ -239,33 +245,33 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         for (int i = 0; i <= 1; i++) {
             Block block1 = world.getBlockAt(
-                    NumberConversions.floor(x + 0.3),
+                    NumberConversions.floor(x + bias),
                     NumberConversions.floor(y - i),
-                    NumberConversions.floor(z - 0.3)
+                    NumberConversions.floor(z - bias)
             );
             Material block1Type = block1.getType();
             if (block1Type != Material.AIR && block1Type != Material.LIGHT)
                 return block1;
             Block block2 = world.getBlockAt(
-                    NumberConversions.floor(x - 0.3),
+                    NumberConversions.floor(x - bias),
                     NumberConversions.floor(y - i),
-                    NumberConversions.floor(z + 0.3)
+                    NumberConversions.floor(z + bias)
             );
             Material block2Type = block2.getType();
             if (block2Type != Material.AIR && block2Type != Material.LIGHT)
                 return block2;
             Block block3 = world.getBlockAt(
-                    NumberConversions.floor(x + 0.3),
+                    NumberConversions.floor(x + bias),
                     NumberConversions.floor(y - i),
-                    NumberConversions.floor(z + 0.3)
+                    NumberConversions.floor(z + bias)
             );
             Material block3Type = block3.getType();
             if (block3Type != Material.AIR && block3Type != Material.LIGHT)
                 return block3;
             Block block4 = world.getBlockAt(
-                    NumberConversions.floor(x - 0.3),
+                    NumberConversions.floor(x - bias),
                     NumberConversions.floor(y - i),
-                    NumberConversions.floor(z - 0.3)
+                    NumberConversions.floor(z - bias)
             );
             Material block4Type = block4.getType();
             if (block4Type != Material.AIR && block4Type != Material.LIGHT)
@@ -280,7 +286,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         if (world == null)
             return;
 
-        Block block = getBlockUnderLocation(location);
+        Block block = getBlockUnderLocation(location, 0.3);
 
         if (block != null) {
             final Block destroyBlock = block;

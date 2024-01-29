@@ -7,10 +7,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -78,6 +83,38 @@ public class TNTRunHandler extends BaseListener {
             }
 
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        World world = event.getLocation().getWorld();
+        if (world == null)
+            return;
+
+        if (!world.getName().equals(tntRunTeamArea.getWorldName()))
+            return;
+
+        for (Block block : event.blockList()) {
+            if (block.getType() != Material.AIR && tntRunTeamArea.getBlockUnderLocation(block.getLocation().add(0, -1, 0), 0.3) != null) {
+                event.setCancelled(true);
+            }
+            block.getDrops().clear();
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onBlockExplode(BlockExplodeEvent event) {
+        World world = event.getBlock().getWorld();
+
+        if (!world.getName().equals(tntRunTeamArea.getWorldName()))
+            return;
+
+        for (Block block : event.blockList()) {
+            if (block.getType() != Material.AIR && tntRunTeamArea.getBlockUnderLocation(block.getLocation().add(0, -1, 0), 0.3) != null) {
+                event.setCancelled(true);
+            }
+            block.getDrops().clear();
         }
     }
 
