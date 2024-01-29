@@ -37,8 +37,8 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     private BukkitTask handlePlayerMoveTask;
-    private int tntTimer;
     private BukkitTask tntGeneratorTask;
+    private int tntTimer;
 
     public TNTRunTeamArea(ChampionshipsCore plugin, TNTRunConfig tntRunConfig, boolean firstTime, String areaName) {
         super(plugin, GameTypeEnum.TNTRun, new TNTRunHandler(plugin), tntRunConfig);
@@ -55,6 +55,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
     @Override
     public void resetArea() {
+        playerSpawnLocations.clear();
         deathPlayer.clear();
 
         startGamePreparationTask = null;

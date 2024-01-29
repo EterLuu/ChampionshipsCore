@@ -47,6 +47,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     @Override
     public void resetArea() {
         blockStates.clear();
+        deathPlayer.clear();
         teamDeathPlayers.clear();
 
         startGamePreparationTask = null;

@@ -60,6 +60,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         round = 0;
         rightTeamPoints = 0;
         leftTeamPoints = 0;
+        dragonEgg = null;
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
