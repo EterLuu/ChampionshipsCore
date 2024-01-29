@@ -24,7 +24,7 @@ public class ParkourTagStartSubCommand extends BaseSubCommand {
             String failed = MessageConfig.GAME_TEAM_GAME_START_FAILED
                     .replace("%team%", args[1])
                     .replace("%rival%", args[2])
-                    .replace("%game%", GameTypeEnum.BattleBox.toString())
+                    .replace("%game%", GameTypeEnum.ParkourTag.toString())
                     .replace("%area%", args[0]);
 
             ParkourTagArea parkourTagArea = plugin.getGameManager().getParkourTagManager().getArea(args[0]);

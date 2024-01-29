@@ -24,7 +24,7 @@ public class DragonEggCarnivalStartSubCommand extends BaseSubCommand {
             String failed = MessageConfig.GAME_TEAM_GAME_START_FAILED
                     .replace("%team%", args[1])
                     .replace("%rival%", args[2])
-                    .replace("%game%", GameTypeEnum.BattleBox.toString())
+                    .replace("%game%", GameTypeEnum.DragonEggCarnival.toString())
                     .replace("%area%", args[0]);
 
             DragonEggCarnivalArea dragonEggCarnivalArea = plugin.getGameManager().getDragonEggCarnivalManager().getArea(args[0]);
