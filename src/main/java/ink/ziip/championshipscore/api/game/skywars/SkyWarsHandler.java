@@ -274,12 +274,12 @@ public class SkyWarsHandler extends BaseListener {
         Location location = player.getLocation();
         if (skyWarsArea.notInArea(location)) {
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(skyWarsArea.getGameConfig().getSpectatorSpawnPoint());
+                player.teleport(skyWarsArea.getSpectatorSpawnLocation());
             }
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() < -64) {
-                        player.teleport(skyWarsArea.getGameConfig().getSpectatorSpawnPoint());
+                        player.teleport(skyWarsArea.getSpectatorSpawnLocation());
                     }
                     return;
                 } else {

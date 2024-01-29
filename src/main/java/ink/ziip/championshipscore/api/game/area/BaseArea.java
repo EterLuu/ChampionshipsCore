@@ -144,6 +144,8 @@ public abstract class BaseArea {
         if (!plugin.isLoaded())
             return;
 
+        teleportAllSpectators(getLobbyLocation());
+
         scheduler.runTaskAsynchronously(plugin, () -> {
             scheduler.runTask(plugin, () -> {
                 setGameStageEnum(GameStageEnum.END);
@@ -178,6 +180,8 @@ public abstract class BaseArea {
                 getGameHandler().register();
                 setGameStageEnum(GameStageEnum.WAITING);
                 plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", world " + getWorldName() + " loaded");
+
+                teleportAllSpectators(getSpectatorSpawnLocation());
             });
         });
     }
@@ -188,6 +192,7 @@ public abstract class BaseArea {
 
         setGameStageEnum(GameStageEnum.END);
         plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", start saving world " + getWorldName());
+        teleportAllSpectators(getLobbyLocation());
 
         World editWorld = plugin.getServer().getWorld(getWorldName());
         if (editWorld != null) {
@@ -249,6 +254,12 @@ public abstract class BaseArea {
             player.setAllowFlight(true);
             player.setFlying(true);
             plugin.getGameManager().setPlayerVisible(player, false);
+        }
+    }
+
+    public void teleportAllSpectators(@NotNull Location location) {
+        for (Player player : getOnlineSpectators()) {
+            player.teleport(location);
         }
     }
 
@@ -340,7 +351,7 @@ public abstract class BaseArea {
     public void cleanDroppedItems() {
         Vector pos1 = getGameConfig().getAreaPos1();
         Vector pos2 = getGameConfig().getAreaPos2();
-        World world = getGameConfig().getSpectatorSpawnPoint().getWorld();
+        World world = getSpectatorSpawnLocation().getWorld();
         if (world != null) {
             world.getNearbyEntities(new BoundingBox(
                             pos1.getX(),
@@ -360,6 +371,8 @@ public abstract class BaseArea {
     public boolean notInArea(Location location) {
         return !location.toVector().isInAABB(getGameConfig().getAreaPos1(), getGameConfig().getAreaPos2());
     }
+
+    public abstract Location getSpectatorSpawnLocation();
 
     public abstract void endGame();
 

@@ -5,6 +5,8 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
+import org.bukkit.Location;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -14,6 +16,11 @@ public class BingoTeamArea extends BaseSingleTeamArea {
 
     public BingoTeamArea(ChampionshipsCore plugin, BaseListener gameHandler, BaseGameConfig gameConfig) {
         super(plugin, GameTypeEnum.Bingo, gameHandler, gameConfig);
+    }
+
+    @Override
+    public Location getSpectatorSpawnLocation() {
+        return CCConfig.BINGO_SPAWN_LOCATION;
     }
 
     @Override

@@ -62,6 +62,11 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         playerPoints.clear();
     }
 
+    @Override
+    public Location getSpectatorSpawnLocation() {
+        return gameConfig.getSpectatorSpawnPoint();
+    }
+
     public SkyWarsTeamArea(ChampionshipsCore plugin, SkyWarsConfig skyWarsConfig, boolean firstTime, String areaName) {
         super(plugin, GameTypeEnum.SkyWars, new SkyWarsHandler(plugin), skyWarsConfig);
 
@@ -362,7 +367,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
             scheduler.runTask(plugin, () -> {
                 event.getEntity().spigot().respawn();
-                event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+                event.getEntity().teleport(getSpectatorSpawnLocation());
             });
             player.teleport(getGameConfig().getPreSpawnPoint());
             return;
@@ -370,7 +375,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         scheduler.runTask(plugin, () -> {
             event.getEntity().spigot().respawn();
-            event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+            event.getEntity().teleport(getSpectatorSpawnLocation());
             event.getEntity().setGameMode(GameMode.SPECTATOR);
         });
 
@@ -465,13 +470,13 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             return;
         }
 
-        player.teleport(getGameConfig().getSpectatorSpawnPoint());
+        player.teleport(getSpectatorSpawnLocation());
         player.setGameMode(GameMode.SPECTATOR);
     }
 
     public int getPlayerBoarderDistance(Player player) {
         Location location = player.getLocation();
-        Location center = getGameConfig().getSpectatorSpawnPoint();
+        Location center = getSpectatorSpawnLocation();
         double distance = Math.hypot(center.getX() - location.getX(), center.getZ() - location.getZ());
         return (int) Math.abs(radius - distance);
     }

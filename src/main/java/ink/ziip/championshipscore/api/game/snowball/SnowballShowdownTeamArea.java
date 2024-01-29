@@ -173,6 +173,16 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         }, 0, 20L);
     }
 
+    @Override
+    public Location getSpectatorSpawnLocation() {
+        try {
+            List<Location> locations = areaLocations.get((new Random()).nextInt(0, areaLocations.size()));
+            return locations.get((new Random()).nextInt(0, locations.size()));
+        } catch (Exception ignored) {
+            return gameConfig.getSpectatorSpawnPoint();
+        }
+    }
+
     public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;

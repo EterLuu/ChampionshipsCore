@@ -90,7 +90,7 @@ public class BaseAreaHandler extends BaseListener {
         Player player = event.getPlayer();
         if (baseArea.isSpectator(player)) {
             if (baseArea.notInArea(player.getLocation())) {
-                player.teleport(baseArea.getGameConfig().getSpectatorSpawnPoint());
+                player.teleport(baseArea.getSpectatorSpawnLocation());
             }
         }
     }

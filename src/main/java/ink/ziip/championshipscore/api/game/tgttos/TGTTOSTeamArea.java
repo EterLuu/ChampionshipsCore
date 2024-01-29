@@ -65,7 +65,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         blockStates.clear();
 
-        World world = getGameConfig().getSpectatorSpawnPoint().getWorld();
+        World world = getSpectatorSpawnLocation().getWorld();
         Vector pos1 = getGameConfig().getAreaPos1();
         Vector pos2 = getGameConfig().getAreaPos2();
         BoundingBox boundingBox = new BoundingBox(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
@@ -91,7 +91,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
-        teleportAllPlayers(getGameConfig().getSpectatorSpawnPoint());
+        teleportAllPlayers(getSpectatorSpawnLocation());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -169,6 +169,11 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     }
 
     @Override
+    public Location getSpectatorSpawnLocation() {
+        return gameConfig.getSpectatorSpawnPoint();
+    }
+
+    @Override
     public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
@@ -243,10 +248,10 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         scheduler.runTask(plugin, () -> {
             event.getEntity().spigot().respawn();
-            event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+            event.getEntity().teleport(getSpectatorSpawnLocation());
             event.getEntity().setGameMode(GameMode.SPECTATOR);
         });
-        player.teleport(getGameConfig().getSpectatorSpawnPoint());
+        player.teleport(getSpectatorSpawnLocation());
     }
 
     @Override
@@ -261,11 +266,11 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             return;
         }
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            player.teleport(getGameConfig().getSpectatorSpawnPoint());
+            player.teleport(getSpectatorSpawnLocation());
             player.setGameMode(GameMode.ADVENTURE);
         }
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-            player.teleport(getGameConfig().getSpectatorSpawnPoint());
+            player.teleport(getSpectatorSpawnLocation());
             if (getGameConfig().getAreaType().equals("ROAD")) {
                 player.setGameMode(GameMode.SURVIVAL);
             } else {
@@ -331,7 +336,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     }
 
     public void teleportPlayerToSpawnPoint(Player player) {
-        player.teleport(getGameConfig().getSpectatorSpawnPoint());
+        player.teleport(getSpectatorSpawnLocation());
     }
 
     private void teleportAllPlayerToSpawnPoints() {
@@ -349,7 +354,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     }
 
     private void spawnMonsters() {
-        World world = getGameConfig().getSpectatorSpawnPoint().getWorld();
+        World world = getSpectatorSpawnLocation().getWorld();
         if (world == null)
             return;
         for (String stringLocation : getGameConfig().getMonsterSpawnPoints()) {
@@ -359,7 +364,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     }
 
     private void spawnChicken() {
-        World world = getGameConfig().getSpectatorSpawnPoint().getWorld();
+        World world = getSpectatorSpawnLocation().getWorld();
         if (world == null)
             return;
 

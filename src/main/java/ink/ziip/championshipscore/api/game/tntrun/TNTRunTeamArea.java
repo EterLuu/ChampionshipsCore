@@ -72,6 +72,15 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     }
 
     @Override
+    public Location getSpectatorSpawnLocation() {
+        try {
+            return Utils.getLocation(getGameConfig().getPlayerSpawnPoints().get((new Random()).nextInt(0, getGameConfig().getPlayerSpawnPoints().size())));
+        } catch (Exception ignored) {
+            return gameConfig.getSpectatorSpawnPoint();
+        }
+    }
+
+    @Override
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 

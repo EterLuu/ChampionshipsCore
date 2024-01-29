@@ -143,7 +143,7 @@ public class TGTTOSHandler extends BaseListener {
             if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() < -64) {
-                        player.teleport(tgttosTeamArea.getGameConfig().getSpectatorSpawnPoint());
+                        player.teleport(tgttosTeamArea.getSpectatorSpawnLocation());
                     }
                     return;
                 }

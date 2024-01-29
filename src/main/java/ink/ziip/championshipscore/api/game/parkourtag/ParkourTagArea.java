@@ -233,6 +233,11 @@ public class ParkourTagArea extends BaseTeamArea {
     }
 
     @Override
+    public Location getSpectatorSpawnLocation() {
+        return gameConfig.getSpectatorSpawnPoint();
+    }
+
+    @Override
     public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
@@ -385,7 +390,7 @@ public class ParkourTagArea extends BaseTeamArea {
             }
         }
 
-        player.teleport(getGameConfig().getSpectatorSpawnPoint());
+        player.teleport(getSpectatorSpawnLocation());
         player.setGameMode(GameMode.SPECTATOR);
     }
 
@@ -404,7 +409,7 @@ public class ParkourTagArea extends BaseTeamArea {
             }
         }
 
-        player.teleport(getGameConfig().getSpectatorSpawnPoint());
+        player.teleport(getSpectatorSpawnLocation());
         player.setGameMode(GameMode.SPECTATOR);
     }
 

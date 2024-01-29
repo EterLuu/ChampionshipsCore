@@ -169,6 +169,11 @@ public class BattleBoxArea extends BaseTeamArea {
     }
 
     @Override
+    public Location getSpectatorSpawnLocation() {
+        return gameConfig.getSpectatorSpawnPoint();
+    }
+
+    @Override
     public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
@@ -278,7 +283,7 @@ public class BattleBoxArea extends BaseTeamArea {
 
         scheduler.runTask(plugin, () -> {
             event.getEntity().spigot().respawn();
-            event.getEntity().teleport(getGameConfig().getSpectatorSpawnPoint());
+            event.getEntity().teleport(getSpectatorSpawnLocation());
             event.getEntity().setGameMode(GameMode.SPECTATOR);
         });
 
@@ -321,11 +326,11 @@ public class BattleBoxArea extends BaseTeamArea {
         }
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-            player.teleport(getGameConfig().getSpectatorSpawnPoint());
+            player.teleport(getSpectatorSpawnLocation());
             player.setGameMode(GameMode.SPECTATOR);
         }
 
-        player.teleport(getGameConfig().getSpectatorSpawnPoint());
+        player.teleport(getSpectatorSpawnLocation());
         player.setGameMode(GameMode.SPECTATOR);
     }
 
@@ -344,7 +349,7 @@ public class BattleBoxArea extends BaseTeamArea {
             }
         }
 
-        player.teleport(getGameConfig().getSpectatorSpawnPoint());
+        player.teleport(getSpectatorSpawnLocation());
         player.setGameMode(GameMode.SPECTATOR);
     }
 

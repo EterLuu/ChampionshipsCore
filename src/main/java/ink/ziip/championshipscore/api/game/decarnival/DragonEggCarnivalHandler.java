@@ -80,12 +80,12 @@ public class DragonEggCarnivalHandler extends BaseListener {
         Location location = player.getLocation();
         if (dragonEggCarnivalArea.notInArea(location)) {
             if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(dragonEggCarnivalArea.getGameConfig().getSpectatorSpawnPoint());
+                player.teleport(dragonEggCarnivalArea.getSpectatorSpawnLocation());
             }
             if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() <= -64) {
-                        player.teleport(dragonEggCarnivalArea.getGameConfig().getSpectatorSpawnPoint());
+                        player.teleport(dragonEggCarnivalArea.getSpectatorSpawnLocation());
                     }
                     return;
                 } else {
