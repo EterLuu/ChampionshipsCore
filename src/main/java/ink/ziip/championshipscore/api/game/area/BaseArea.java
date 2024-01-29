@@ -260,6 +260,9 @@ public abstract class BaseArea {
     public void teleportAllSpectators(@NotNull Location location) {
         for (Player player : getOnlineSpectators()) {
             player.teleport(location);
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setAllowFlight(true);
+            player.setFlying(true);
         }
     }
 
