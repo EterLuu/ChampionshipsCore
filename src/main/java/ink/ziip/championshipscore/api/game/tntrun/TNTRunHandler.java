@@ -99,8 +99,8 @@ public class TNTRunHandler extends BaseListener {
             if (block.getType() != Material.AIR && tntRunTeamArea.getBlockUnderLocation(block.getLocation().add(0, -1, 0), 0.3) != null) {
                 event.setCancelled(true);
             }
-            block.getDrops().clear();
         }
+        event.setYield(0);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -114,8 +114,8 @@ public class TNTRunHandler extends BaseListener {
             if (block.getType() != Material.AIR && tntRunTeamArea.getBlockUnderLocation(block.getLocation().add(0, -1, 0), 0.3) != null) {
                 event.setCancelled(true);
             }
-            block.getDrops().clear();
         }
+        event.setYield(0);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

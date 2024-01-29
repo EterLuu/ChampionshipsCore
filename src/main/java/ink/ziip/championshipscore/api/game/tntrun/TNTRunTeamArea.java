@@ -184,7 +184,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                     Random random = new Random();
                     Iterator<String> locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
-                    while (i < 8) {
+                    while (i < 64) {
                         if (!locationIterator.hasNext())
                             locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
