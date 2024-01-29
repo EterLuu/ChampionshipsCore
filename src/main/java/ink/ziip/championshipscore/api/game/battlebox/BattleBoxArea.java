@@ -262,7 +262,7 @@ public class BattleBoxArea extends BaseTeamArea {
                 ChampionshipTeam killerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(killer);
                 if (playerChampionshipTeam != null && killerChampionshipTeam != null) {
                     UUID uuid = killer.getUniqueId();
-                    playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 15);
+                    addPlayerPoints(uuid, 15);
                     event.setDeathMessage(null);
 
                     String message = MessageConfig.BATTLE_BOX_KILL_PLAYER

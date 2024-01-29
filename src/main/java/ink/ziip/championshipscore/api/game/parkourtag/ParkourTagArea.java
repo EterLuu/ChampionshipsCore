@@ -531,7 +531,7 @@ public class ParkourTagArea extends BaseTeamArea {
     public void addPlayerPointsToTeamEscapees(ChampionshipTeam championshipTeam, int points) {
         for (UUID uuid : championshipTeam.getMembers()) {
             if (!uuid.equals(rightAreaChaser) && !uuid.equals(leftAreaChaser))
-                playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
+                addPlayerPoints(uuid, points);
             plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
         }
     }
