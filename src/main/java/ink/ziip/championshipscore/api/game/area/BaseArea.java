@@ -284,6 +284,7 @@ public abstract class BaseArea {
             player.setGameMode(GameMode.ADVENTURE);
             player.setAllowFlight(false);
             player.setFlying(false);
+            player.setLevel(0);
             plugin.getGameManager().setPlayerVisible(player, true);
         }
     }
@@ -325,6 +326,12 @@ public abstract class BaseArea {
     public void sendActionBarToAllSpectators(String message) {
         for (ChampionshipPlayer championshipPlayer : getOnlineCCSpectators()) {
             championshipPlayer.sendActionBar(message);
+        }
+    }
+
+    public void changeLevelToAllSpectators(int level) {
+        for (Player player : getOnlineSpectators()) {
+            player.setLevel(Math.abs(level));
         }
     }
 

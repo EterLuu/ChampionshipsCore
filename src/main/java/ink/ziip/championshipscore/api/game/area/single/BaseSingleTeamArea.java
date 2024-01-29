@@ -128,6 +128,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
     public void changeLevelForAllGamePlayers(int level) {
         for (ChampionshipTeam championshipTeam : gameTeams)
             championshipTeam.changeLevelForAll(Math.abs(level));
+        changeLevelToAllSpectators(level);
     }
 
     @Override

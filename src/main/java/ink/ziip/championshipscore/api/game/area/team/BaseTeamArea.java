@@ -109,6 +109,7 @@ public abstract class BaseTeamArea extends BaseArea {
             rightChampionshipTeam.changeLevelForAll(Math.abs(level));
         if (leftChampionshipTeam != null)
             leftChampionshipTeam.changeLevelForAll(Math.abs(level));
+        changeLevelToAllSpectators(level);
     }
 
     @Override
