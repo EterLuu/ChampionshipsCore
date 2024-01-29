@@ -73,7 +73,7 @@ public class GameManagerHandler extends BaseListener {
         }
 
         World world = player.getWorld();
-        if (!world.equals(CCConfig.LOBBY_LOCATION)) {
+        if (!world.equals(CCConfig.LOBBY_LOCATION.getWorld())) {
             player.teleport(CCConfig.LOBBY_LOCATION);
             player.setGameMode(GameMode.ADVENTURE);
         }

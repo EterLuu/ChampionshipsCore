@@ -47,7 +47,6 @@ public class Utils {
 
     public static Location getLocation(String content) {
         String[] str = content.split(":", 6);
-        ;
         return new Location(Bukkit.getWorld(str[0]),
                 Double.parseDouble(str[1]),
                 Double.parseDouble(str[2]),

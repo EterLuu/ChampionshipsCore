@@ -84,9 +84,7 @@ public class BingoManager extends BaseManager {
                 }
             }, 100);
 
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                session.startGame();
-            }, 200);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> session.startGame(), 200);
 
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);

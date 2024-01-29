@@ -217,14 +217,12 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         }, 0, 20L);
 
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
-        handlePlayerMoveTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
-            gamePlayersCopy.forEach(uuid -> {
-                Player player = Bukkit.getPlayer(uuid);
-                if (player != null && player.isOnline() && !deathPlayer.contains(uuid)) {
-                    handlePlayerMove(player);
-                }
-            });
-        }, 0, 1L);
+        handlePlayerMoveTask = scheduler.runTaskTimerAsynchronously(plugin, () -> gamePlayersCopy.forEach(uuid -> {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && player.isOnline() && !deathPlayer.contains(uuid)) {
+                handlePlayerMove(player);
+            }
+        }), 0, 1L);
     }
 
     private void handlePlayerMove(@NotNull Player player) {
@@ -243,13 +241,13 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
             Block block1 = world.getBlockAt(
                     NumberConversions.floor(x + 0.3),
                     NumberConversions.floor(y - i),
-                    NumberConversions.floor(z + -0.3)
+                    NumberConversions.floor(z - 0.3)
             );
             Material block1Type = block1.getType();
             if (block1Type != Material.AIR && block1Type != Material.LIGHT)
                 return block1;
             Block block2 = world.getBlockAt(
-                    NumberConversions.floor(x + -0.3),
+                    NumberConversions.floor(x - 0.3),
                     NumberConversions.floor(y - i),
                     NumberConversions.floor(z + 0.3)
             );
@@ -265,9 +263,9 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
             if (block3Type != Material.AIR && block3Type != Material.LIGHT)
                 return block3;
             Block block4 = world.getBlockAt(
-                    NumberConversions.floor(x + -0.3),
+                    NumberConversions.floor(x - 0.3),
                     NumberConversions.floor(y - i),
-                    NumberConversions.floor(z + -0.3)
+                    NumberConversions.floor(z - 0.3)
             );
             Material block4Type = block4.getType();
             if (block4Type != Material.AIR && block4Type != Material.LIGHT)

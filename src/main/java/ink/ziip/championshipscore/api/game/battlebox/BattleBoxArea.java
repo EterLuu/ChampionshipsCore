@@ -67,8 +67,10 @@ public class BattleBoxArea extends BaseTeamArea {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightPreSpawnPoint());
-        leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftPreSpawnPoint());
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightPreSpawnPoint());
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftPreSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -100,8 +102,10 @@ public class BattleBoxArea extends BaseTeamArea {
         timer = getGameConfig().getTimer() + 5;
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
-        rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
-        leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -183,8 +187,7 @@ public class BattleBoxArea extends BaseTeamArea {
 
         setGameStageEnum(GameStageEnum.END);
 
-        rightChampionshipTeam.teleportAllPlayers(getLobbyLocation());
-        leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
+        teleportAllPlayers(getLobbyLocation());
 
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -197,8 +200,12 @@ public class BattleBoxArea extends BaseTeamArea {
 
     protected void calculatePoints() {
         HashMap<Material, Integer> blockCount = countBlocksInRegion();
-        int rightTeamWool = blockCount.getOrDefault(rightChampionshipTeam.getWool().getType(), 0);
-        int leftTeamWool = blockCount.getOrDefault(leftChampionshipTeam.getWool().getType(), 0);
+        int rightTeamWool = 0;
+        int leftTeamWool = 0;
+        if (rightChampionshipTeam != null)
+            rightTeamWool = blockCount.getOrDefault(rightChampionshipTeam.getWool().getType(), 0);
+        if (leftChampionshipTeam != null)
+            leftTeamWool = blockCount.getOrDefault(leftChampionshipTeam.getWool().getType(), 0);
 
         String message = MessageConfig.BATTLE_BOX_WIN;
 
@@ -342,12 +349,14 @@ public class BattleBoxArea extends BaseTeamArea {
     }
 
     private void giveItemToAllGamePlayers() {
-        for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
-            setWeaponKit(player);
-        }
-        for (Player player : leftChampionshipTeam.getOnlinePlayers()) {
-            setWeaponKit(player);
-        }
+        if (rightChampionshipTeam != null)
+            for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
+                setWeaponKit(player);
+            }
+        if (leftChampionshipTeam != null)
+            for (Player player : leftChampionshipTeam.getOnlinePlayers()) {
+                setWeaponKit(player);
+            }
     }
 
     public boolean setPlayerWeaponKit(@NotNull Player player, @NotNull BBWeaponKitEnum type) {
@@ -481,6 +490,9 @@ public class BattleBoxArea extends BaseTeamArea {
 
         HashMap<Material, Integer> blockCount = new HashMap<>();
 
+        if (world == null)
+            return blockCount;
+
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
@@ -506,6 +518,9 @@ public class BattleBoxArea extends BaseTeamArea {
         int maxX = Math.max(pos1.getBlockX(), pos2.getBlockX());
         int maxY = Math.max(pos1.getBlockY(), pos2.getBlockY());
         int maxZ = Math.max(pos1.getBlockZ(), pos2.getBlockZ());
+
+        if (world == null)
+            return;
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {

@@ -72,8 +72,10 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
-        leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -105,8 +107,10 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         dragonEgg.setType(Material.DRAGON_EGG, true);
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
-        rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
-        leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -217,8 +221,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         setGameStageEnum(GameStageEnum.END);
 
-        rightChampionshipTeam.teleportAllPlayers(getLobbyLocation());
-        leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
+        teleportAllPlayers(getLobbyLocation());
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
@@ -233,11 +236,15 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
     protected void calculatePoints() {
         if (rightTeamPoints >= 3) {
-            Utils.sendMessageToAllPlayers(MessageConfig.DRAGON_EGG_CARNIVAL_WIN.replace("%team%", rightChampionshipTeam.getColoredName()));
-            giveGoldenHelmetToTeamPlayers(rightChampionshipTeam);
+            if (rightChampionshipTeam != null) {
+                Utils.sendMessageToAllPlayers(MessageConfig.DRAGON_EGG_CARNIVAL_WIN.replace("%team%", rightChampionshipTeam.getColoredName()));
+                giveGoldenHelmetToTeamPlayers(rightChampionshipTeam);
+            }
         } else if (leftTeamPoints >= 3) {
-            Utils.sendMessageToAllPlayers(MessageConfig.DRAGON_EGG_CARNIVAL_WIN.replace("%team%", leftChampionshipTeam.getColoredName()));
-            giveGoldenHelmetToTeamPlayers(leftChampionshipTeam);
+            if (leftChampionshipTeam != null) {
+                Utils.sendMessageToAllPlayers(MessageConfig.DRAGON_EGG_CARNIVAL_WIN.replace("%team%", leftChampionshipTeam.getColoredName()));
+                giveGoldenHelmetToTeamPlayers(leftChampionshipTeam);
+            }
         }
     }
 
@@ -403,9 +410,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
                 }
 
                 // Unload world but not remove files
-                scheduler.runTask(plugin, () -> {
-                    plugin.getWorldManager().unloadWorld("decarnival_" + getWorldName(), true);
-                });
+                scheduler.runTask(plugin, () -> plugin.getWorldManager().unloadWorld("decarnival_" + getWorldName(), true));
 
                 File dataDirectory = new File(plugin.getDataFolder(), "maps");
                 File target = new File(dataDirectory, "decarnival_" + getWorldName());
@@ -430,23 +435,27 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     }
 
     private void giveItemToAllGamePlayers() {
-        for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
-            giveItemToPlayer(player);
-            giveEffectToPlayer(player);
-        }
-        for (Player player : leftChampionshipTeam.getOnlinePlayers()) {
-            giveItemToPlayer(player);
-            giveEffectToPlayer(player);
-        }
+        if (rightChampionshipTeam != null)
+            for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
+                giveItemToPlayer(player);
+                giveEffectToPlayer(player);
+            }
+        if (leftChampionshipTeam != null)
+            for (Player player : leftChampionshipTeam.getOnlinePlayers()) {
+                giveItemToPlayer(player);
+                giveEffectToPlayer(player);
+            }
     }
 
     private void giveDragonItemToAllGamePlayers() {
-        for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
-            giveDragonPhaseItemToPlayer(player);
-        }
-        for (Player player : leftChampionshipTeam.getOnlinePlayers()) {
-            giveDragonPhaseItemToPlayer(player);
-        }
+        if (rightChampionshipTeam != null)
+            for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
+                giveDragonPhaseItemToPlayer(player);
+            }
+        if (leftChampionshipTeam != null)
+            for (Player player : leftChampionshipTeam.getOnlinePlayers()) {
+                giveDragonPhaseItemToPlayer(player);
+            }
         clearEffectsForAllGamePlayers();
     }
 

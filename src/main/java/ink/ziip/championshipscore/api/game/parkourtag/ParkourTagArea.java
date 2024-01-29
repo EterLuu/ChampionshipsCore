@@ -91,8 +91,10 @@ public class ParkourTagArea extends BaseTeamArea {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightPreSpawnPoint());
-        leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftPreSpawnPoint());
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightPreSpawnPoint());
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftPreSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -117,20 +119,22 @@ public class ParkourTagArea extends BaseTeamArea {
     protected void startGameProgress() {
         String message = MessageConfig.PARKOUR_TAG_BECOME_CHASER;
 
-        if (rightAreaChaser == null) {
-            rightAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(rightChampionshipTeam);
-            rightChampionshipTeam.sendMessageToAll(message
-                    .replace("%player%", rightChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(rightAreaChaser).getName())
-                    .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(rightAreaChaser) - 1))
-            );
-        }
-        if (leftAreaChaser == null) {
-            leftAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(leftChampionshipTeam);
-            leftChampionshipTeam.sendMessageToAll(message
-                    .replace("%player%", leftChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(leftAreaChaser).getName())
-                    .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(leftAreaChaser) - 1))
-            );
-        }
+        if (rightChampionshipTeam != null)
+            if (rightAreaChaser == null) {
+                rightAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(rightChampionshipTeam);
+                rightChampionshipTeam.sendMessageToAll(message
+                        .replace("%player%", rightChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(rightAreaChaser).getName())
+                        .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(rightAreaChaser) - 1))
+                );
+            }
+        if (leftChampionshipTeam != null)
+            if (leftAreaChaser == null) {
+                leftAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(leftChampionshipTeam);
+                leftChampionshipTeam.sendMessageToAll(message
+                        .replace("%player%", leftChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(leftAreaChaser).getName())
+                        .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(leftAreaChaser) - 1))
+                );
+            }
 
         plugin.getGameManager().getParkourTagManager().addChaserTimes(rightAreaChaser);
         plugin.getGameManager().getParkourTagManager().addChaserTimes(leftAreaChaser);
@@ -247,8 +251,8 @@ public class ParkourTagArea extends BaseTeamArea {
 
         setGameStageEnum(GameStageEnum.END);
 
-        rightChampionshipTeam.teleportAllPlayers(getLobbyLocation());
-        leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
+        teleportAllPlayers(getLobbyLocation());
+
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -262,8 +266,12 @@ public class ParkourTagArea extends BaseTeamArea {
 
         // More than zero player survived, escapees gain 15 points
         // Caught all escapees, chaser gain 7 points per 10s
-        int rightTeamSurvivor = rightChampionshipTeam.getMembers().size() - 1;
-        int leftTeamSurvivor = leftChampionshipTeam.getMembers().size() - 1;
+        int rightTeamSurvivor = 0;
+        int leftTeamSurvivor = 0;
+        if (rightChampionshipTeam != null)
+            rightTeamSurvivor = rightChampionshipTeam.getMembers().size() - 1;
+        if (leftChampionshipTeam != null)
+            leftTeamSurvivor = leftChampionshipTeam.getMembers().size() - 1;
 
         for (UUID uuid : playerSurviveTimes.keySet()) {
             if (getRightTeamEscapees().contains(uuid))
@@ -401,34 +409,38 @@ public class ParkourTagArea extends BaseTeamArea {
     }
 
     public int getAreaEscapeesNums(@NotNull Location location) {
-        if (isInLeftArea(location)) {
-            return rightChampionshipTeam.getMembers().size() - 1;
-        }
-        if (isInRightArea(location)) {
-            return leftChampionshipTeam.getMembers().size() - 1;
-        }
+        if (rightChampionshipTeam != null)
+            if (isInLeftArea(location)) {
+                return rightChampionshipTeam.getMembers().size() - 1;
+            }
+        if (leftChampionshipTeam != null)
+            if (isInRightArea(location)) {
+                return leftChampionshipTeam.getMembers().size() - 1;
+            }
 
         return 0;
     }
 
     public int getAreaSurvivedEscapeesNums(@NotNull Location location) {
         int i = 0;
-        if (isInLeftArea(location)) {
-            i = rightChampionshipTeam.getMembers().size() - 1;
-            for (UUID uuid : getRightTeamEscapees()) {
-                if (playerSurviveTimes.containsKey(uuid)) {
-                    i--;
+        if (rightChampionshipTeam != null)
+            if (isInLeftArea(location)) {
+                i = rightChampionshipTeam.getMembers().size() - 1;
+                for (UUID uuid : getRightTeamEscapees()) {
+                    if (playerSurviveTimes.containsKey(uuid)) {
+                        i--;
+                    }
                 }
             }
-        }
-        if (isInRightArea(location)) {
-            i = leftChampionshipTeam.getMembers().size() - 1;
-            for (UUID uuid : getLeftTeamEscapees()) {
-                if (playerSurviveTimes.containsKey(uuid)) {
-                    i--;
+        if (leftChampionshipTeam != null)
+            if (isInRightArea(location)) {
+                i = leftChampionshipTeam.getMembers().size() - 1;
+                for (UUID uuid : getLeftTeamEscapees()) {
+                    if (playerSurviveTimes.containsKey(uuid)) {
+                        i--;
+                    }
                 }
             }
-        }
 
         return i;
     }
@@ -454,8 +466,12 @@ public class ParkourTagArea extends BaseTeamArea {
     }
 
     public void updateTeamSurviveTimes() {
-        int rightTeamSurvivor = rightChampionshipTeam.getMembers().size() - 1;
-        int leftTeamSurvivor = leftChampionshipTeam.getMembers().size() - 1;
+        int rightTeamSurvivor = 0;
+        int leftTeamSurvivor = 0;
+        if (rightChampionshipTeam != null)
+            rightTeamSurvivor = rightChampionshipTeam.getMembers().size() - 1;
+        if (leftChampionshipTeam != null)
+            leftTeamSurvivor = leftChampionshipTeam.getMembers().size() - 1;
 
         for (UUID uuid : playerSurviveTimes.keySet()) {
             if (getRightTeamEscapees().contains(uuid))
@@ -542,40 +558,44 @@ public class ParkourTagArea extends BaseTeamArea {
 
     public List<UUID> getRightTeamEscapees() {
         List<UUID> escapees = new ArrayList<>();
-        for (UUID uuid : rightChampionshipTeam.getMembers()) {
-            if (!uuid.equals(rightAreaChaser))
-                escapees.add(uuid);
-        }
+        if (rightChampionshipTeam != null)
+            for (UUID uuid : rightChampionshipTeam.getMembers()) {
+                if (!uuid.equals(rightAreaChaser))
+                    escapees.add(uuid);
+            }
 
         return escapees;
     }
 
     public List<UUID> getLeftTeamEscapees() {
         List<UUID> escapees = new ArrayList<>();
-        for (UUID uuid : leftChampionshipTeam.getMembers()) {
-            if (!uuid.equals(leftAreaChaser))
-                escapees.add(uuid);
-        }
+        if (leftChampionshipTeam != null)
+            for (UUID uuid : leftChampionshipTeam.getMembers()) {
+                if (!uuid.equals(leftAreaChaser))
+                    escapees.add(uuid);
+            }
 
         return escapees;
     }
 
     public List<Player> getRightAreaEscapees() {
         List<Player> escapees = new ArrayList<>();
-        for (Player leftPlayer : leftChampionshipTeam.getOnlinePlayers()) {
-            if (!leftPlayer.getUniqueId().equals(leftAreaChaser))
-                escapees.add(leftPlayer);
-        }
+        if (leftChampionshipTeam != null)
+            for (Player leftPlayer : leftChampionshipTeam.getOnlinePlayers()) {
+                if (!leftPlayer.getUniqueId().equals(leftAreaChaser))
+                    escapees.add(leftPlayer);
+            }
 
         return escapees;
     }
 
     public List<Player> getLeftAreaEscapees() {
         List<Player> escapees = new ArrayList<>();
-        for (Player rightPlayer : rightChampionshipTeam.getOnlinePlayers()) {
-            if (!rightPlayer.getUniqueId().equals(rightAreaChaser))
-                escapees.add(rightPlayer);
-        }
+        if (rightChampionshipTeam != null)
+            for (Player rightPlayer : rightChampionshipTeam.getOnlinePlayers()) {
+                if (!rightPlayer.getUniqueId().equals(rightAreaChaser))
+                    escapees.add(rightPlayer);
+            }
 
         return escapees;
     }

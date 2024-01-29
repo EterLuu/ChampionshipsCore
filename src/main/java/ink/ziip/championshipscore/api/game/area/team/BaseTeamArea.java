@@ -14,12 +14,15 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 @Getter
 public abstract class BaseTeamArea extends BaseArea {
+    @Nullable
     protected ChampionshipTeam rightChampionshipTeam;
+    @Nullable
     protected ChampionshipTeam leftChampionshipTeam;
 
     public BaseTeamArea(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum, BaseListener gameHandler, BaseGameConfig gameConfig) {
@@ -46,36 +49,42 @@ public abstract class BaseTeamArea extends BaseArea {
 
     @Override
     public void sendMessageToAllGamePlayers(String message) {
-        rightChampionshipTeam.sendMessageToAll(message);
-        leftChampionshipTeam.sendMessageToAll(message);
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.sendMessageToAll(message);
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.sendMessageToAll(message);
         sendMessageToAllSpectators(message);
     }
 
     @Override
     public void sendActionBarToAllGamePlayers(String message) {
-        rightChampionshipTeam.sendActionBarToAll(message);
-        leftChampionshipTeam.sendActionBarToAll(message);
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.sendActionBarToAll(message);
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.sendActionBarToAll(message);
         sendActionBarToAllSpectators(message);
     }
 
     @Override
     public void sendActionBarToAllGameSpectators(String message) {
-        for (ChampionshipPlayer championshipPlayer : rightChampionshipTeam.getOnlineCCPlayers()) {
-            Player player = championshipPlayer.getPlayer();
-            if (player != null) {
-                if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                    championshipPlayer.sendActionBar(message);
+        if (rightChampionshipTeam != null)
+            for (ChampionshipPlayer championshipPlayer : rightChampionshipTeam.getOnlineCCPlayers()) {
+                Player player = championshipPlayer.getPlayer();
+                if (player != null) {
+                    if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
+                        championshipPlayer.sendActionBar(message);
+                    }
                 }
             }
-        }
-        for (ChampionshipPlayer championshipPlayer : leftChampionshipTeam.getOnlineCCPlayers()) {
-            Player player = championshipPlayer.getPlayer();
-            if (player != null) {
-                if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                    championshipPlayer.sendActionBar(message);
+        if (leftChampionshipTeam != null)
+            for (ChampionshipPlayer championshipPlayer : leftChampionshipTeam.getOnlineCCPlayers()) {
+                Player player = championshipPlayer.getPlayer();
+                if (player != null) {
+                    if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
+                        championshipPlayer.sendActionBar(message);
+                    }
                 }
             }
-        }
         sendActionBarToAllSpectators(message);
     }
 
@@ -87,57 +96,75 @@ public abstract class BaseTeamArea extends BaseArea {
 
     @Override
     public void sendTitleToAllGamePlayers(String title, String subTitle) {
-        rightChampionshipTeam.sendTitleToAll(title, subTitle);
-        leftChampionshipTeam.sendTitleToAll(title, subTitle);
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.sendTitleToAll(title, subTitle);
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.sendTitleToAll(title, subTitle);
         sendTitleToAllSpectators(title, subTitle);
     }
 
     @Override
     public void changeLevelForAllGamePlayers(int level) {
-        rightChampionshipTeam.changeLevelForAll(Math.abs(level));
-        leftChampionshipTeam.changeLevelForAll(Math.abs(level));
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.changeLevelForAll(Math.abs(level));
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.changeLevelForAll(Math.abs(level));
     }
 
     @Override
     public void changeGameModelForAllGamePlayers(GameMode gameMode) {
-        rightChampionshipTeam.setGameModeForAllPlayers(gameMode);
-        leftChampionshipTeam.setGameModeForAllPlayers(gameMode);
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.setGameModeForAllPlayers(gameMode);
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.setGameModeForAllPlayers(gameMode);
     }
 
     @Override
     public void setHealthForAllGamePlayers(double health) {
-        rightChampionshipTeam.setHealthForAllPlayers(health);
-        leftChampionshipTeam.setHealthForAllPlayers(health);
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.setHealthForAllPlayers(health);
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.setHealthForAllPlayers(health);
     }
 
     @Override
     public void setFoodLevelForAllGamePlayers(int level) {
-        rightChampionshipTeam.setFoodLevelForAllPlayers(level);
-        leftChampionshipTeam.setFoodLevelForAllPlayers(level);
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.setFoodLevelForAllPlayers(level);
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.setFoodLevelForAllPlayers(level);
     }
 
     @Override
     public void teleportAllPlayers(Location location) {
-        rightChampionshipTeam.teleportAllPlayers(location);
-        leftChampionshipTeam.teleportAllPlayers(location);
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.teleportAllPlayers(location);
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.teleportAllPlayers(location);
     }
 
     @Override
     public void clearEffectsForAllGamePlayers() {
-        rightChampionshipTeam.clearEffectsForAllPlayers();
-        leftChampionshipTeam.clearEffectsForAllPlayers();
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.clearEffectsForAllPlayers();
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.clearEffectsForAllPlayers();
     }
 
     @Override
     public void cleanInventoryForAllGamePlayers() {
-        rightChampionshipTeam.cleanInventoryForAllPlayers();
-        leftChampionshipTeam.cleanInventoryForAllPlayers();
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.cleanInventoryForAllPlayers();
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.cleanInventoryForAllPlayers();
     }
 
     @Override
     public void playSoundToAllGamePlayers(Sound sound, float volume, float pitch) {
-        rightChampionshipTeam.playSoundToAllPlayers(sound, volume, pitch);
-        leftChampionshipTeam.playSoundToAllPlayers(sound, volume, pitch);
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.playSoundToAllPlayers(sound, volume, pitch);
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.playSoundToAllPlayers(sound, volume, pitch);
     }
 
     @Override
