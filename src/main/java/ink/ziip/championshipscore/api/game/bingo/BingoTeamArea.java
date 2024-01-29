@@ -37,6 +37,11 @@ public class BingoTeamArea extends BaseSingleTeamArea {
     }
 
     @Override
+    public String getWorldName() {
+        return "bingo";
+    }
+
+    @Override
     public void startGamePreparation() {
 
     }

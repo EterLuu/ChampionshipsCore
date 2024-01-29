@@ -381,4 +381,9 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     public TGTTOSHandler getGameHandler() {
         return (TGTTOSHandler) gameHandler;
     }
+
+    @Override
+    public String getWorldName() {
+        return "tgttos";
+    }
 }

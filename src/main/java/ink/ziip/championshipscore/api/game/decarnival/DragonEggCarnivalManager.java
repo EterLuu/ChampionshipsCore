@@ -59,15 +59,15 @@ public class DragonEggCarnivalManager extends BaseAreaManager<DragonEggCarnivalA
     }
 
     public boolean saveArea(String name) {
-        DragonEggCarnivalArea tntRunArea = areas.get(name);
-        if (tntRunArea == null)
+        DragonEggCarnivalArea dragonEggCarnivalArea = areas.get(name);
+        if (dragonEggCarnivalArea == null)
             return false;
 
-        if (tntRunArea.getGameStageEnum() != GameStageEnum.WAITING) {
+        if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.WAITING) {
             return false;
         }
 
-        tntRunArea.saveMap();
+        dragonEggCarnivalArea.saveMap();
         return true;
     }
 }

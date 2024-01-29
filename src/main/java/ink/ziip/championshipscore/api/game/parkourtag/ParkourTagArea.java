@@ -648,4 +648,9 @@ public class ParkourTagArea extends BaseTeamArea {
     public ParkourTagHandler getGameHandler() {
         return (ParkourTagHandler) gameHandler;
     }
+
+    @Override
+    public String getWorldName() {
+        return "parkourtag";
+    }
 }

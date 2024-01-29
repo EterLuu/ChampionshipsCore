@@ -6,7 +6,6 @@ import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -27,11 +26,9 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Level;
 
 public class DragonEggCarnivalArea extends BaseTeamArea {
     @Getter
@@ -49,9 +46,10 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         super(plugin, GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalHandler(plugin), dragonEggCarnivalConfig);
 
         getGameHandler().setDragonEggCarnivalArea(this);
+        dragonEggCarnivalConfig.initializeConfiguration(plugin.getFolder());
 
         if (!firstTime) {
-            loadMap(areaName);
+            loadMap();
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
         }
@@ -65,6 +63,8 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
+
+        loadMap();
     }
 
     @Override
@@ -188,7 +188,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         if (rightTeamPoints == 3 || leftTeamPoints == 3) {
             endGame();
         } else {
-            loadMap(getGameConfig().getAreaName());
+            loadMap();
             sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART);
             sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_SUBTITLE);
 
@@ -354,86 +354,6 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         player.setGameMode(GameMode.SPECTATOR);
     }
 
-    public void loadMap(String areaName) {
-        if (!plugin.isLoaded())
-            return;
-
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            scheduler.runTask(plugin, () -> {
-                setGameStageEnum(GameStageEnum.END);
-                getGameHandler().unRegister();
-                plugin.getLogger().log(Level.INFO, GameTypeEnum.DragonEggCarnival + ", " + areaName + ", start loading world " + getWorldName());
-            });
-
-            File target = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), "decarnival_" + areaName);
-
-            // If already has a same world, delete it.
-            if (target.isDirectory()) {
-                String[] list = target.list();
-                if (list != null && list.length > 0) {
-                    plugin.getWorldManager().deleteWorld("decarnival_" + areaName, true);
-                }
-            }
-
-            File maps = new File(plugin.getDataFolder(), "maps");
-            File source = new File(maps, "decarnival_" + areaName);
-
-            // Copy world files to destination
-            plugin.getWorldManager().copyWorldFiles(source, target);
-
-            // Load world
-            plugin.getWorldManager().loadWorld("decarnival_" + areaName, World.Environment.THE_END, false);
-
-            scheduler.runTask(plugin, () -> {
-                getGameConfig().initializeConfiguration(plugin.getFolder());
-                getGameHandler().register();
-                setGameStageEnum(GameStageEnum.WAITING);
-                plugin.getLogger().log(Level.INFO, GameTypeEnum.DragonEggCarnival + ", " + areaName + ", world " + getWorldName() + " loaded");
-            });
-        });
-    }
-
-    public void saveMap() {
-        if (getGameStageEnum() != GameStageEnum.WAITING)
-            return;
-
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            scheduler.runTask(plugin, () -> {
-                setGameStageEnum(GameStageEnum.END);
-                plugin.getLogger().log(Level.INFO, GameTypeEnum.DragonEggCarnival + ", " + gameConfig.getAreaName() + ", start saving world " + getWorldName());
-            });
-
-            World editWorld = plugin.getServer().getWorld("decarnival_" + getWorldName());
-            if (editWorld != null) {
-                for (Player player : editWorld.getPlayers()) {
-                    player.teleport(CCConfig.LOBBY_LOCATION);
-                }
-
-                // Unload world but not remove files
-                scheduler.runTask(plugin, () -> plugin.getWorldManager().unloadWorld("decarnival_" + getWorldName(), true));
-
-                File dataDirectory = new File(plugin.getDataFolder(), "maps");
-                File target = new File(dataDirectory, "decarnival_" + getWorldName());
-
-                // Delete old world files stored in maps
-                plugin.getWorldManager().deleteWorldFiles(target);
-
-                File source = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), "decarnival_" + getWorldName());
-
-                plugin.getWorldManager().copyWorldFiles(source, target);
-                plugin.getWorldManager().deleteWorldFiles(source);
-            }
-
-            loadMap(getGameConfig().getAreaName());
-
-            scheduler.runTask(plugin, () -> {
-                getGameConfig().initializeConfiguration(plugin.getFolder());
-                setGameStageEnum(GameStageEnum.WAITING);
-                plugin.getLogger().log(Level.INFO, GameTypeEnum.DragonEggCarnival + ", " + gameConfig.getAreaName() + ", saving world " + getWorldName() + " done");
-            });
-        });
-    }
-
     private void giveItemToAllGamePlayers() {
         if (rightChampionshipTeam != null)
             for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
@@ -580,7 +500,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     }
 
     public String getWorldName() {
-        return "decarnival_" + getGameConfig().getAreaName();
+        return "decarnival_" + gameConfig.getAreaName();
     }
 
     @Override

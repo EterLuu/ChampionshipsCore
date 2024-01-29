@@ -544,4 +544,9 @@ public class BattleBoxArea extends BaseTeamArea {
     public BattleBoxHandler getGameHandler() {
         return (BattleBoxHandler) gameHandler;
     }
+
+    @Override
+    public String getWorldName() {
+        return "battlebox";
+    }
 }

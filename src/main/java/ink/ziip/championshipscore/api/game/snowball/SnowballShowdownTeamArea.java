@@ -475,4 +475,9 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     public SnowballShowdownHandler getGameHandler() {
         return (SnowballShowdownHandler) gameHandler;
     }
+
+    @Override
+    public String getWorldName() {
+        return "snowball";
+    }
 }

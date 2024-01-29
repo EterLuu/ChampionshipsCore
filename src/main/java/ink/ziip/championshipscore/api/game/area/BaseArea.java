@@ -20,6 +20,7 @@ import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -136,6 +137,87 @@ public abstract class BaseArea {
     public GameStageEnum getGameStageEnum() {
         synchronized (this) {
             return this.gameStageEnum;
+        }
+    }
+
+    public void loadMap() {
+        if (!plugin.isLoaded())
+            return;
+
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            scheduler.runTask(plugin, () -> {
+                setGameStageEnum(GameStageEnum.END);
+                getGameHandler().unRegister();
+                plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", start loading world " + getWorldName());
+            });
+
+            File target = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), getWorldName());
+
+            // If already has a same world, delete it.
+            if (target.isDirectory()) {
+                String[] list = target.list();
+                if (list != null && list.length > 0) {
+                    plugin.getWorldManager().deleteWorld(getWorldName(), true);
+                }
+            }
+
+            File maps = new File(plugin.getDataFolder(), "maps");
+            File source = new File(maps, getWorldName());
+
+            // Copy world files to destination
+            plugin.getWorldManager().copyWorldFiles(source, target);
+
+            // Load world
+            plugin.getWorldManager().loadWorld(getWorldName(), World.Environment.NORMAL, false);
+
+            while (plugin.getServer().getWorld(getWorldName()) == null) {
+                // Spin lock ? hhh
+            }
+            scheduler.runTask(plugin, () -> {
+                getGameConfig().initializeConfiguration(plugin.getFolder());
+                getGameHandler().register();
+                setGameStageEnum(GameStageEnum.WAITING);
+                plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", world " + getWorldName() + " loaded");
+            });
+        });
+    }
+
+    public void saveMap() {
+        if (getGameStageEnum() != GameStageEnum.WAITING)
+            return;
+
+        setGameStageEnum(GameStageEnum.END);
+        plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", start saving world " + getWorldName());
+
+        World editWorld = plugin.getServer().getWorld(getWorldName());
+        if (editWorld != null) {
+            for (Player player : editWorld.getPlayers()) {
+                player.teleport(CCConfig.LOBBY_LOCATION);
+            }
+
+            // Unload world but not remove files
+            plugin.getWorldManager().unloadWorld(getWorldName(), true);
+
+            scheduler.runTaskAsynchronously(plugin, () -> {
+                while (plugin.getServer().getWorld(getWorldName()) != null) {
+                    // Spin lock ? hhh
+                }
+
+                File dataDirectory = new File(plugin.getDataFolder(), "maps");
+                File target = new File(dataDirectory, getWorldName());
+
+                // Delete old world files stored in maps
+                plugin.getWorldManager().deleteWorldFiles(target);
+
+                File source = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), getWorldName());
+
+                plugin.getWorldManager().copyWorldFiles(source, target);
+                plugin.getWorldManager().deleteWorldFiles(source);
+
+                loadMap();
+
+                plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", saving world " + getWorldName() + " done");
+            });
         }
     }
 
@@ -288,6 +370,8 @@ public abstract class BaseArea {
     public abstract BaseGameConfig getGameConfig();
 
     public abstract BaseListener getGameHandler();
+
+    public abstract String getWorldName();
 
     public abstract void startGamePreparation();
 
