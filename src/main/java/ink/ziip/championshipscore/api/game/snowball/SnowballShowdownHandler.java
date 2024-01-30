@@ -80,6 +80,27 @@ public class SnowballShowdownHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {
+            if (snowballShowdownTeamArea.notAreaPlayer(player)) {
+                return;
+            }
+
+            Location location = player.getLocation();
+            if (snowballShowdownTeamArea.notInArea(location)) {
+                return;
+            }
+
+            if (snowballShowdownTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
+                event.setCancelled(true);
+                return;
+            }
+
+            if (snowballShowdownTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+                if (snowballShowdownTeamArea.getTimer() >= snowballShowdownTeamArea.getGameConfig().getTimer()) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+
             if (event.getDamager() instanceof Snowball) {
                 Projectile projectile = (Projectile) event.getDamager();
                 ProjectileSource projectileSource = projectile.getShooter();
@@ -129,14 +150,7 @@ public class SnowballShowdownHandler extends BaseListener {
                 }
                 snowballShowdownTeamArea.respawnPlayer(player);
             }
-            return;
         }
-
-//        if (snowballShowdownTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-//            if (snowballShowdownTeamArea.getTimer() >= snowballShowdownTeamArea.getGameConfig().getTimer()) {
-//                event.setCancelled(true);
-//            }
-//        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
