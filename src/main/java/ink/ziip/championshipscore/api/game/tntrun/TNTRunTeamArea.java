@@ -122,7 +122,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         timer = 20;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
 
-            if (timer < 5) {
+            if (timer < 5 && timer > 0) {
                 playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0.5F);
             }
 
@@ -176,7 +176,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                 sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
                 sendActionBarToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
 
-                tntTimer = 0;
+                tntTimer = 9;
 
                 tntGeneratorTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
 
@@ -184,7 +184,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                     Random random = new Random();
                     Iterator<String> locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
-                    while (i < 64) {
+                    while (i < 16) {
                         if (!locationIterator.hasNext())
                             locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
@@ -198,7 +198,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                         }
 
                         final Location finalTNTLocation = tntLocation;
-                        scheduler.runTask(plugin, () -> {
+                        scheduler.runTaskLater(plugin, () -> {
                             TNTPrimed tntPrimed = (TNTPrimed) finalTNTLocation.getWorld().spawnEntity(finalTNTLocation, EntityType.PRIMED_TNT);
                             tntPrimed.setFuseTicks(Integer.MAX_VALUE);
                             scheduler.runTaskTimerAsynchronously(plugin, (task) -> {
@@ -215,7 +215,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                                     task.cancel();
                                 }
                             }, 0, 1L);
-                        });
+                        }, 0L);
                         i++;
                     }
 
@@ -225,7 +225,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                     }
 
                     tntTimer--;
-                }, 0, 20L);
+                }, 0, 10L);
 
             }
 
