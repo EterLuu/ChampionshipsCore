@@ -1,5 +1,13 @@
 package ink.ziip.championshipscore.api.game.skywars;
 
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
+import com.sk89q.worldedit.world.block.BaseBlock;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
@@ -149,6 +157,15 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             }
 
             if (timer == getGameConfig().getTimer()) {
+
+                scheduler.runTaskAsynchronously(plugin, () -> {
+                    for (ChampionshipTeam championshipTeam : gameTeams) {
+                        for (Player player : championshipTeam.getOnlinePlayers()) {
+                            clearGlassCages(player);
+                            break;
+                        }
+                    }
+                });
 
                 sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_GAME_START);
                 sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_GAME_START_TITLE, MessageConfig.SKY_WARS_GAME_START_SUBTITLE);
@@ -523,6 +540,23 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                     player.setFoodLevel(Math.max(level, 0));
                 }
             }
+        }
+    }
+
+    private void clearGlassCages(Player player) {
+        com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(player.getWorld());
+
+        try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
+            Location playerLocation = player.getLocation();
+            int radius = 5;
+            BlockVector3 pos1 = BukkitAdapter.asBlockVector(playerLocation.clone().add(-radius, -radius, -radius));
+            BlockVector3 pos2 = BukkitAdapter.asBlockVector(playerLocation.clone().add(radius, radius, radius));
+
+            Region region = new CuboidRegion(pos1, pos2);
+            Set<BaseBlock> baseBlocks = new HashSet<>();
+            baseBlocks.add(new BaseBlock(BukkitAdapter.asBlockState(new ItemStack(Material.GLASS))));
+            editSession.replaceBlocks(region, baseBlocks, BlockTypes.AIR);
+        } catch (Exception ignored) {
         }
     }
 
