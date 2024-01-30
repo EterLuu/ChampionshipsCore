@@ -33,6 +33,7 @@ public class BingoManager extends BaseManager {
     private final BingoReloaded bingoReloaded;
     private final Map<Material, List<ChampionshipTeam>> bingoTaskCompleteLists = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, Integer> teamPoints = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> playerPoints = new ConcurrentHashMap<>();
     @Getter
     @Setter
     private boolean started = false;
@@ -79,7 +80,7 @@ public class BingoManager extends BaseManager {
                         if (bingoParticipant == null) {
                             bingoParticipant = new BingoPlayer(player, teamManager.getSession());
                         }
-                        teamManager.addMemberToTeam(bingoParticipant, championshipTeam.getName().toLowerCase());
+                        teamManager.addMemberToTeam(bingoParticipant, championshipTeam.getColorName().toLowerCase());
                     }
                 }
             }, 100);
@@ -111,7 +112,8 @@ public class BingoManager extends BaseManager {
             stringBuilder.append(row).append("\n");
 
             for (UUID uuid : entry.getKey().getMembers()) {
-                plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(uuid), null, GameTypeEnum.Bingo, "bingo", entry.getValue());
+                int points = playerPoints.getOrDefault(uuid, 0) + entry.getValue();
+                plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(uuid), null, GameTypeEnum.Bingo, "bingo", points);
             }
 
             i++;
@@ -134,6 +136,7 @@ public class BingoManager extends BaseManager {
         }, 60L);
 
         teamPoints.clear();
+        playerPoints.clear();
         bingoTaskCompleteLists.clear();
         started = false;
 
@@ -165,14 +168,17 @@ public class BingoManager extends BaseManager {
         return 10;
     }
 
-    public void handleTeamCompleteTask(BingoTask bingoTask, ChampionshipTeam championshipTeam) {
+    public void handleTeamCompleteTask(BingoTask bingoTask, ChampionshipTeam championshipTeam, Player player) {
         List<ChampionshipTeam> completeChampionshipTeams = getCompleteTeams(bingoTask);
         int num = completeChampionshipTeams.size();
         if (championshipTeam != null) {
             if (!completeChampionshipTeams.contains(championshipTeam)) {
                 int points = getPoints(num + 1);
                 addCompleteTeams(bingoTask, championshipTeam);
-                addPointsToTeam(championshipTeam, points);
+                addPointsToTeam(championshipTeam, points + 20);
+
+                if (player != null)
+                    playerPoints.put(player.getUniqueId(), playerPoints.getOrDefault(player.getUniqueId(), 0) + 20);
 
                 String[] messages = MessageConfig.BINGO_TASK_COMPLETE.split("%team%");
                 messages[1] = messages[1]
@@ -181,7 +187,7 @@ public class BingoManager extends BaseManager {
                 String[] finalMessages = messages[1].split("%task%");
                 TextComponent textComponent = new TextComponent(messages[0]);
                 TextComponent teamComponent = new TextComponent(championshipTeam.getName());
-                textComponent.setColor(ChatColor.of(championshipTeam.getName()));
+                textComponent.setColor(ChatColor.of(championshipTeam.getColorName()));
                 textComponent.addExtra(teamComponent);
                 textComponent.addExtra(new TextComponent(finalMessages[0]));
                 textComponent.addExtra(bingoTask.data.getItemDisplayName().asComponent());

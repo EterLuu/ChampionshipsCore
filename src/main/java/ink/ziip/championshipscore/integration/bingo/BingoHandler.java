@@ -49,7 +49,7 @@ public class BingoHandler extends BaseListener {
             if (event.getParticipant().sessionPlayer().isPresent()) {
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getParticipant().sessionPlayer().get());
                 if (championshipTeam != null) {
-                    bingoManager.handleTeamCompleteTask(bingoTask, championshipTeam);
+                    bingoManager.handleTeamCompleteTask(bingoTask, championshipTeam, event.getParticipant().sessionPlayer().get());
                 }
             }
         }
