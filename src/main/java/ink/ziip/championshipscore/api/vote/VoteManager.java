@@ -102,6 +102,15 @@ public class VoteManager extends BaseManager {
         return playerVotes.getOrDefault(player.getUniqueId(), null);
     }
 
+    public int getVoteNums(GameTypeEnum gameTypeEnum) {
+        int i = 0;
+        for (GameTypeEnum voted : playerVotes.values()) {
+            if (gameTypeEnum == voted)
+                i++;
+        }
+        return i;
+    }
+
     public void vote(Player player, GameTypeEnum gameTypeEnum) {
         if (!vote) {
             player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_TIME);

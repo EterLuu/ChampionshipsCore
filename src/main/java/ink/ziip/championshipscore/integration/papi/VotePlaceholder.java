@@ -37,6 +37,19 @@ public class VotePlaceholder extends BasePlaceholder {
             }
             return "false";
         }
+        if (params.startsWith("vote_nums_")) {
+            GameTypeEnum gameTypeEnum = null;
+            try {
+                gameTypeEnum = GameTypeEnum.valueOf(params.replace("vote_nums_", ""));
+            } catch (Exception ignored) {
+                return null;
+            }
+
+            int num = voteManager.getVoteNums(gameTypeEnum);
+            if (num == 0)
+                num = 1;
+            return String.valueOf(num);
+        }
 
         /* Player required placeholders */
 
