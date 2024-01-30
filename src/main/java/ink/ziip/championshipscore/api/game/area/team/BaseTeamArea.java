@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -16,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -45,6 +47,21 @@ public abstract class BaseTeamArea extends BaseArea {
         this.leftChampionshipTeam = leftChampionshipTeam;
         startGamePreparation();
         return true;
+    }
+
+    @Override
+    public void addPlayerPointsToDatabase() {
+        for (Map.Entry<UUID, Integer> playerPointEntry : playerPoints.entrySet()) {
+            if (playerPointEntry.getValue() != 0) {
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(playerPointEntry.getKey());
+                if (championshipTeam != null) {
+                    if (championshipTeam.equals(rightChampionshipTeam))
+                        plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), leftChampionshipTeam, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+                    if (championshipTeam.equals(leftChampionshipTeam))
+                        plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), rightChampionshipTeam, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+                }
+            }
+        }
     }
 
     @Override

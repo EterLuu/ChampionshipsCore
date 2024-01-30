@@ -6,7 +6,6 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.dao.RankDaoImpl;
 import ink.ziip.championshipscore.api.rank.entry.GameStatusEntry;
 import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
-import ink.ziip.championshipscore.api.rank.entry.TeamPointEntry;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
@@ -157,30 +156,19 @@ public class RankManager extends BaseManager {
         rankDao.addGameStatus(gameStatusEntry);
     }
 
-    public void addTeamPoints(ChampionshipTeam championshipTeam, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, int points) {
-        TeamPointEntry teamPointEntry = TeamPointEntry.builder()
-                .teamId(championshipTeam.getId())
-                .rivalId(rival.getId())
-                .team(championshipTeam.getName())
-                .rival(rival.getName())
-                .game(gameTypeEnum)
-                .area(area)
-                .round("wcc")
-                .points(points)
-                .time(Utils.getCurrentTimeString())
-                .build();
-
-        rankDao.addTeamPoint(teamPointEntry);
-    }
-
-    public void addPlayerPoints(OfflinePlayer offlinePlayer, GameTypeEnum gameTypeEnum, String area, int points) {
+    public void addPlayerPoints(OfflinePlayer offlinePlayer, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, int points) {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+        if (rival == null) {
+            rival = championshipTeam;
+        }
         if (championshipTeam != null) {
             PlayerPointEntry playerPointEntry = PlayerPointEntry.builder()
                     .uuid(offlinePlayer.getUniqueId())
                     .username(offlinePlayer.getName())
                     .teamId(championshipTeam.getId())
                     .team(championshipTeam.getName())
+                    .rivalId(rival.getId())
+                    .rival(rival.getName())
                     .game(gameTypeEnum)
                     .area(area)
                     .round("wcc")
@@ -204,7 +192,6 @@ public class RankManager extends BaseManager {
     }
 
     private double getTeamPoints(ChampionshipTeam championshipTeam) {
-        List<TeamPointEntry> teamPointEntries = rankDao.getTeamPoints(championshipTeam.getId());
         List<PlayerPointEntry> playerPointEntries = rankDao.getTeamPlayerPoints(championshipTeam.getId());
 
         double points = 0;

@@ -16,6 +16,8 @@ public class PlayerPointEntry {
     private String username;
     private int teamId;
     private String team;
+    private int rivalId;
+    private String rival;
     private GameTypeEnum game;
     private String area;
     private String round;

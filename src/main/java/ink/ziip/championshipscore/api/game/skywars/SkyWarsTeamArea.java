@@ -320,6 +320,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         sendMessageToAllGamePlayers(getPlayerPointsRank());
         sendMessageToAllGamePlayers(getTeamPointsRank());
+        addPlayerPointsToDatabase();
     }
 
     private void addTeamDeathPlayer(ChampionshipTeam championshipTeam) {

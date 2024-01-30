@@ -34,28 +34,11 @@ CREATE TABLE IF NOT EXISTS `team_members`
 CREATE TABLE IF NOT EXISTS `player_points`
 (
     `id`       INTEGER      NOT NULL AUTO_INCREMENT,
-    `uuid`     VARCHAR(255)  NOT NULL,
+    `uuid`     VARCHAR(255) NOT NULL,
     `username` VARCHAR(255) NOT NULL,
     `teamId`   INTEGER      NOT NULL,
     `team`     VARCHAR(255) NOT NULL,
-    `game`     VARCHAR(255) NOT NULL,
-    `area`     VARCHAR(255) NOT NULL,
-    `round`    VARCHAR(255) NOT NULL,
-    `points`   INTEGER      NOT NULL,
-    `time`     VARCHAR(255) NOT NULL,
-
-    PRIMARY KEY (`id`)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci;
-
--- Create the team status table if it does not exist
-CREATE TABLE IF NOT EXISTS `team_points`
-(
-    `id`       INTEGER      NOT NULL AUTO_INCREMENT,
-    `teamId`   INTEGER      NOT NULL,
     `rivalId`  INTEGER      NOT NULL,
-    `team`     VARCHAR(255) NOT NULL,
     `rival`    VARCHAR(255) NOT NULL,
     `game`     VARCHAR(255) NOT NULL,
     `area`     VARCHAR(255) NOT NULL,

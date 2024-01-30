@@ -83,7 +83,8 @@ public abstract class BaseArea {
 
     public void addPlayerPointsToDatabase() {
         for (Map.Entry<UUID, Integer> playerPointEntry : playerPoints.entrySet()) {
-            plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+            if (playerPointEntry.getValue() != 0)
+                plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
         }
     }
 
