@@ -17,6 +17,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
@@ -332,7 +333,9 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
     public void giveBoatToPlayer(Player player) {
         ItemStack itemStack = new ItemStack(Material.OAK_BOAT);
-        player.getInventory().addItem(itemStack);
+        PlayerInventory playerInventory = player.getInventory();
+        playerInventory.clear();
+        playerInventory.addItem(itemStack);
     }
 
     public void teleportPlayerToSpawnPoint(Player player) {
@@ -369,6 +372,12 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             return;
 
         Iterator<String> chickenSpawnPointsI = getGameConfig().getChickenSpawnPoints().iterator();
+        for (UUID uuid : gamePlayers) {
+            if (!chickenSpawnPointsI.hasNext())
+                chickenSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
+            LivingEntity entity = (LivingEntity) world.spawnEntity(Utils.getLocation(chickenSpawnPointsI.next()), EntityType.CHICKEN);
+            entity.setRemoveWhenFarAway(false);
+        }
         for (UUID uuid : gamePlayers) {
             if (!chickenSpawnPointsI.hasNext())
                 chickenSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
