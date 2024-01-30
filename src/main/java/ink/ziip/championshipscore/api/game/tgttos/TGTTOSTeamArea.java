@@ -374,13 +374,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         Iterator<String> chickenSpawnPointsI = getGameConfig().getChickenSpawnPoints().iterator();
         for (UUID uuid : gamePlayers) {
             if (!chickenSpawnPointsI.hasNext())
-                chickenSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
-            LivingEntity entity = (LivingEntity) world.spawnEntity(Utils.getLocation(chickenSpawnPointsI.next()), EntityType.CHICKEN);
-            entity.setRemoveWhenFarAway(false);
-        }
-        for (UUID uuid : gamePlayers) {
-            if (!chickenSpawnPointsI.hasNext())
-                chickenSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
+                chickenSpawnPointsI = getGameConfig().getChickenSpawnPoints().iterator();
             LivingEntity entity = (LivingEntity) world.spawnEntity(Utils.getLocation(chickenSpawnPointsI.next()), EntityType.CHICKEN);
             entity.setRemoveWhenFarAway(false);
         }
