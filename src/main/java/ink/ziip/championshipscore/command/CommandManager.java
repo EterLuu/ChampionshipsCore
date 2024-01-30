@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.command.admin.AdminMainCommand;
 import ink.ziip.championshipscore.command.game.GameMainCommand;
 import ink.ziip.championshipscore.command.member.MemberMainCommand;
 import ink.ziip.championshipscore.command.rank.RankMainCommand;
@@ -32,6 +33,8 @@ public class CommandManager extends BaseManager {
         mainCommand.addSubCommand(new GameMainCommand());
         mainCommand.addSubCommand(new SpectateSubCommand());
         mainCommand.addSubCommand(new RankMainCommand());
+        mainCommand.addSubCommand(new AdminMainCommand());
+        mainCommand.addSubCommand(new VoteSubCommand());
 
         if (this.corePluginCommand != null) {
             this.corePluginCommand.setExecutor(mainCommand);

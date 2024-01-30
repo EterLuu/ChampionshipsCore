@@ -666,4 +666,32 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "placeholder.parkourtag-escapee")
     public static String PLACEHOLDER_PARKOUR_TAG_ESCAPEE;
+
+    // Vote
+    @ConfigOption(path = "vote.start-vote")
+    public static String VOTE_START_VOTE;
+
+    @ConfigOption(path = "vote.end-vote")
+    public static String VOTE_END_VOTE;
+
+    @ConfigOption(path = "vote.player-vote")
+    public static String VOTE_PLAYER_VOTE;
+
+    @ConfigOption(path = "vote.vote-failed-not-time")
+    public static String VOTE_VOTE_FAILED_NOT_TIME;
+
+    @ConfigOption(path = "vote.vote-failed-not-game")
+    public static String VOTE_VOTE_FAILED_NOT_GAME;
+
+    @ConfigOption(path = "vote.vote-failed-already-played")
+    public static String VOTE_VOTE_FAILED_ALREADY_PLAYED;
+
+    @ConfigOption(path = "vote.vote-failed-not-player")
+    public static String VOTE_VOTE_FAILED_NOT_PLAYER;
+
+    @ConfigOption(path = "vote.vote-board-bar")
+    public static String VOTE_VOTE_BOARD_BAR;
+
+    @ConfigOption(path = "vote.vote-board-row")
+    public static String VOTE_VOTE_BOARD_ROW;
 }

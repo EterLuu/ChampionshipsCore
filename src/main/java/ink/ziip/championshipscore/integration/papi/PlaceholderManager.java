@@ -13,6 +13,7 @@ public class PlaceholderManager extends BaseManager {
     private TNTRunPlaceholder tntRunPlaceholder;
     private BingoPlaceholder bingoPlaceholder;
     private ChampionshipPlaceholder championshipPlaceholder;
+    private VotePlaceholder votePlaceholder;
 
     public PlaceholderManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -29,6 +30,7 @@ public class PlaceholderManager extends BaseManager {
         tntRunPlaceholder = new TNTRunPlaceholder(plugin);
         bingoPlaceholder = new BingoPlaceholder(plugin);
         championshipPlaceholder = new ChampionshipPlaceholder(plugin);
+        votePlaceholder = new VotePlaceholder(plugin);
 
         battleBoxPlaceholder.register();
         parkourTagPlaceholder.register();
@@ -39,6 +41,7 @@ public class PlaceholderManager extends BaseManager {
         tntRunPlaceholder.register();
         bingoPlaceholder.register();
         championshipPlaceholder.register();
+        votePlaceholder.register();
     }
 
     @Override
@@ -52,5 +55,6 @@ public class PlaceholderManager extends BaseManager {
         tntRunPlaceholder.unregister();
         bingoPlaceholder.unregister();
         championshipPlaceholder.unregister();
+        votePlaceholder.unregister();
     }
 }

@@ -94,6 +94,12 @@ public class Utils {
         }
     }
 
+    public static void changeLevelForAllPlayers(int level) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.setLevel(Math.abs(level));
+        }
+    }
+
     public static void sendMessageToAllSpigotPlayers(BaseComponent message) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.spigot().sendMessage(message);

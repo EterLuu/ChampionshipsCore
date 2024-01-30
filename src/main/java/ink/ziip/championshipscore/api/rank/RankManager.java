@@ -156,6 +156,10 @@ public class RankManager extends BaseManager {
         rankDao.addGameStatus(gameStatusEntry);
     }
 
+    public int getGameOrder(GameTypeEnum gameTypeEnum) {
+        return rankDao.getGameStatusOrder(gameTypeEnum);
+    }
+
     public void addPlayerPoints(OfflinePlayer offlinePlayer, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, int points) {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
         if (rival == null) {
