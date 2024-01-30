@@ -38,7 +38,7 @@ public class SkyWarsHandler extends BaseListener {
         super(plugin);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         if (skyWarsArea.notAreaPlayer(player)) {
@@ -65,7 +65,10 @@ public class SkyWarsHandler extends BaseListener {
             if (item != null && block != null) {
                 if (event.getItem().getType() == Material.CREEPER_SPAWN_EGG) {
                     event.setCancelled(true);
-                    item.setAmount(0);
+                    int amount = item.getAmount() - 1;
+                    if (amount <= 0)
+                        amount = 0;
+                    item.setAmount(amount);
                     Creeper creeper = (Creeper) block.getWorld().spawnEntity(block.getLocation().add(0, 1, 0), EntityType.CREEPER);
                     creeper.setAI(true);
                     creeper.setCustomName(player.getName());
@@ -96,7 +99,7 @@ public class SkyWarsHandler extends BaseListener {
                     return;
                 if (skyWarsArea.notAreaPlayer(spawner))
                     return;
-                if (player.getHealth() <= event.getDamage()) {
+                if (player.getHealth() <= event.getDamage() && !skyWarsArea.getDeathPlayer().contains(player.getUniqueId())) {
                     skyWarsArea.addDeathPlayer(player);
                     String message = MessageConfig.SKY_WARS_KILL_PLAYER_BY_CREEPER;
                     ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
