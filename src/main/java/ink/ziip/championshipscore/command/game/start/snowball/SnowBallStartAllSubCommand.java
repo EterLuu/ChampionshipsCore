@@ -21,11 +21,11 @@ public class SnowBallStartAllSubCommand extends BaseSubCommand {
         if (args.length == 1) {
             String message = MessageConfig.GAME_SINGLE_GAME_START_FAILED;
 
-            if (plugin.getGameManager().joinSingleTeamAreaForAllTeams(GameTypeEnum.SnowballFight, args[0]))
+            if (plugin.getGameManager().joinSingleTeamAreaForAllTeams(GameTypeEnum.SnowballShowdown, args[0]))
                 message = MessageConfig.GAME_SINGLE_GAME_START_SUCCESSFUL;
 
             message = message
-                    .replace("%game%", GameTypeEnum.SnowballFight.toString())
+                    .replace("%game%", GameTypeEnum.SnowballShowdown.toString())
                     .replace("%area%", args[0]);
 
             sender.sendMessage(message);

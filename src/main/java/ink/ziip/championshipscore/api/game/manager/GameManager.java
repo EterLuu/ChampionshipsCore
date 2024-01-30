@@ -219,7 +219,7 @@ public class GameManager extends BaseManager {
             return false;
         }
 
-        if (gameTypeEnum == GameTypeEnum.SnowballFight) {
+        if (gameTypeEnum == GameTypeEnum.SnowballShowdown) {
             SnowballShowdownTeamArea snowballShowdownTeamArea = snowballShowdownManager.getArea(area);
             if (snowballShowdownTeamArea == null)
                 return false;

@@ -38,7 +38,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     private BukkitTask startGameProgressTask;
 
     public SnowballShowdownTeamArea(ChampionshipsCore plugin, SnowballShowdownConfig snowballShowdownConfig) {
-        super(plugin, GameTypeEnum.SnowballFight, new SnowballShowdownHandler(plugin), snowballShowdownConfig);
+        super(plugin, GameTypeEnum.SnowballShowdown, new SnowballShowdownHandler(plugin), snowballShowdownConfig);
 
         getGameConfig().initializeConfiguration(plugin.getFolder());
         getGameHandler().setSnowballShowdownTeamArea(this);

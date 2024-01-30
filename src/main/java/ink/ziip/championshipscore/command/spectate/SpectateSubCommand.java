@@ -88,7 +88,7 @@ public class SpectateSubCommand extends BaseSubCommand {
                 }
             }
             if (args[0].equals("snowball")) {
-                gameTypeEnum = GameTypeEnum.SnowballFight;
+                gameTypeEnum = GameTypeEnum.SnowballShowdown;
                 BaseArea snowballArea = plugin.getGameManager().getSnowballShowdownManager().getArea(args[1]);
                 if (snowballArea != null) {
                     baseArea = snowballArea;

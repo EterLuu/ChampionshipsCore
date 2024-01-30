@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.api.object.game;
 
 public enum GameTypeEnum {
-    Bingo, ParkourTag, BattleBox, TNTRun, SnowballFight, SkyWars, TGTTOS, DragonEggCarnival;
+    Bingo, ParkourTag, BattleBox, TNTRun, SnowballShowdown, SkyWars, TGTTOS, DragonEggCarnival;
 
     @Override
     public String toString() {
@@ -13,8 +13,8 @@ public enum GameTypeEnum {
             return "斗战方框";
         if (this == TNTRun)
             return "TNT快跑";
-        if (this == SnowballFight)
-            return "雪球大战";
+        if (this == SnowballShowdown)
+            return "雪球乱斗";
         if (this == SkyWars)
             return "空岛战争";
         if (this == TGTTOS)
