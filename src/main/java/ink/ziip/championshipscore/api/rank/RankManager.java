@@ -160,6 +160,12 @@ public class RankManager extends BaseManager {
         return rankDao.getGameStatusOrder(gameTypeEnum);
     }
 
+    public void resetGameOrder() {
+        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+            rankDao.deleteGameStatus(gameTypeEnum);
+        }
+    }
+
     public void addPlayerPoints(OfflinePlayer offlinePlayer, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, int points) {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
         if (rival == null) {
@@ -201,29 +207,72 @@ public class RankManager extends BaseManager {
         double points = 0;
         for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
-            if (gameOrder == 1 || gameOrder == 2) {
-                for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-                    if (playerPointEntry.getGame() == gameTypeEnum) {
-                        points += playerPointEntry.getPoints();
-                    }
+            for (PlayerPointEntry playerPointEntry : playerPointEntries) {
+                if (playerPointEntry.getGame() == gameTypeEnum) {
+                    points += playerPointEntry.getPoints() * getPointMultiple(gameOrder);
                 }
             }
-            if (gameOrder == 3 || gameOrder == 4 || gameOrder == 5) {
-                for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-                    if (playerPointEntry.getGame() == gameTypeEnum) {
-                        points += playerPointEntry.getPoints() * 1.5;
-                    }
-                }
-            }
-            if (gameOrder == 6) {
-                for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-                    if (playerPointEntry.getGame() == gameTypeEnum) {
-                        points += playerPointEntry.getPoints() * 2;
-                    }
-                }
-            }
+
         }
 
         return points;
+    }
+
+    public double getPointMultiple(int round) {
+        if (round == 1 || round == 2) {
+            return 1;
+        }
+        if (round == 3 || round == 4 || round == 5) {
+            return 1.5;
+        }
+        if (round == 6) {
+            return 2;
+        }
+        return 0;
+    }
+
+    private double getTeamPoints(ChampionshipTeam championshipTeam, GameTypeEnum gameTypeEnum) {
+        List<PlayerPointEntry> playerPointEntries = rankDao.getTeamPlayerPoints(championshipTeam.getId());
+
+        double points = 0;
+        for (PlayerPointEntry playerPointEntry : playerPointEntries) {
+            if (playerPointEntry.getGame() == gameTypeEnum) {
+                points += playerPointEntry.getPoints();
+            }
+        }
+        return points;
+    }
+
+    public String getGameTeamPoints(GameTypeEnum gameTypeEnum) {
+        Map<ChampionshipTeam, Double> teamGamePoints = new ConcurrentHashMap<>();
+
+        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+            teamGamePoints.put(championshipTeam, getTeamPoints(championshipTeam, gameTypeEnum));
+        }
+
+        ArrayList<Map.Entry<ChampionshipTeam, Double>> list;
+        list = new ArrayList<>(teamGamePoints.entrySet());
+        list.sort(Map.Entry.comparingByValue());
+
+        Collections.reverse(list);
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(MessageConfig.RANK_GAME_TEAM_BOARD_BAR.replace("%game%", gameTypeEnum.toString())).append("\n");
+
+        int i = 1;
+        for (Map.Entry<ChampionshipTeam, Double> entry : list) {
+            String row = MessageConfig.RANK_TEAM_BOARD_ROW
+                    .replace("%team_rank%", String.valueOf(i))
+                    .replace("%team%", entry.getKey().getColoredName())
+                    .replace("%team_point%", String.valueOf(entry.getValue()));
+
+            stringBuilder.append(row).append("\n");
+
+            teamRank.put(entry.getKey(), i);
+            i++;
+        }
+
+        return stringBuilder.toString();
     }
 }

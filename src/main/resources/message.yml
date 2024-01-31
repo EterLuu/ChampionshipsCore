@@ -36,6 +36,7 @@ area-status:
 rank:
   rank-info: "&b[&3WCC&b] &f个人得分：%player_point%，个人排名：%player_rank%。团队得分：%team_point%，团队排名：%team_rank%。"
   team-board-bar: "&f====== &3WCC &e团队排名 &7| &cRIA &fx &bTRIALHAMMER &f======"
+  game-team-board-bar: "&f====== &3%game% &e团队排名 &7| &cRIA &fx &bTRIALHAMMER &f======"
   team-board-row: "&r  &f%team_rank%. &b%team%&7（&6%team_point%&7）"
   player-board-bar: "&f====== &3WCC &e个人排名 &7| &cRIA &fx &bTRIALHAMMER &f======"
   player-board-row: "&r  &f%player_rank%. &b%player%&7（&6%player_point%&7）"

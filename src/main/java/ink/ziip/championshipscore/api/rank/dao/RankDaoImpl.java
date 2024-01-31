@@ -213,14 +213,14 @@ public class RankDaoImpl implements RankDao {
     }
 
     @Override
-    public void deleteGameStatus(int id) {
+    public void deleteGameStatus(GameTypeEnum gameTypeEnum) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
                     DELETE
                     FROM `game_status`
-                    WHERE `id`=?
+                    WHERE `game`=?
                     """)) {
-                statement.setInt(1, id);
+                statement.setString(1, gameTypeEnum.name());
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {

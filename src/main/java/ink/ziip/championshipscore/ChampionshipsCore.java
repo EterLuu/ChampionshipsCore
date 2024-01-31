@@ -3,6 +3,7 @@ package ink.ziip.championshipscore;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
+import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.api.vote.VoteManager;
 import ink.ziip.championshipscore.integration.papi.PlaceholderManager;
@@ -44,6 +45,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     //    private GlowingBlocks glowingBlocks;
     private PlaceholderManager placeholderManager;
     private VoteManager voteManager;
+    private ScheduleManager scheduleManager;
 
     @Override
     public void onEnable() {
@@ -77,6 +79,7 @@ public final class ChampionshipsCore extends JavaPlugin {
 //        glowingBlocks = new GlowingBlocks(this);
         placeholderManager = new PlaceholderManager(this);
         voteManager = new VoteManager(this);
+        scheduleManager = new ScheduleManager(this);
 
         // Plugin startup logic
         configurationManager.load();
@@ -99,6 +102,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         commandManager.load();
         placeholderManager.load();
         voteManager.load();
+        scheduleManager.load();
 
         getLogger().log(Level.INFO, CCConfig.MODE);
     }
@@ -127,6 +131,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         databaseManager.unload();
         placeholderManager.unload();
         voteManager.unload();
+        scheduleManager.unload();
     }
 
     public @NotNull Path getFolder() {

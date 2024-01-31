@@ -21,5 +21,5 @@ public interface RankDao {
 
     void addGameStatus(GameStatusEntry gameStatusEntry);
 
-    void deleteGameStatus(int id);
+    void deleteGameStatus(GameTypeEnum gameTypeEnum);
 }

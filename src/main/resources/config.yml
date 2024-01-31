@@ -30,3 +30,42 @@ bingo:
     yaw: 0.0
 parkourtag:
   max-chaser-times: 4
+  rounds:
+    1:
+      - "cc game start parkourtag area1 红队 白队"
+    2:
+      - "cc game start parkourtag area1 红队 白队"
+    3:
+      - "cc game start parkourtag area1 红队 白队"
+    4:
+      - "cc game start parkourtag area1 红队 白队"
+    5:
+      - "cc game start parkourtag area1 红队 白队"
+    6:
+      - "cc game start parkourtag area1 红队 白队"
+    7:
+      - "cc game start parkourtag area1 红队 白队"
+    8:
+      - "cc game start parkourtag area1 红队 白队"
+    9:
+      - "cc game start parkourtag area1 红队 白队"
+battlebox:
+  rounds:
+    1:
+      - "cc game start battlebox area1 红队 白队"
+    2:
+      - "cc game start battlebox area1 红队 白队"
+    3:
+      - "cc game start battlebox area1 红队 白队"
+    4:
+      - "cc game start battlebox area1 红队 白队"
+    5:
+      - "cc game start battlebox area1 红队 白队"
+    6:
+      - "cc game start battlebox area1 红队 白队"
+    7:
+      - "cc game start battlebox area1 红队 白队"
+    8:
+      - "cc game start battlebox area1 红队 白队"
+    9:
+      - "cc game start battlebox area1 红队 白队"

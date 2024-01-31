@@ -1,10 +1,7 @@
 package ink.ziip.championshipscore.util;
 
 import net.md_5.bungee.api.chat.BaseComponent;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Color;
-import org.bukkit.Location;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 
 import java.time.LocalDateTime;
@@ -86,6 +83,22 @@ public class Utils {
         LocalDateTime currentTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
         return currentTime.format(formatter);
+    }
+
+    public static String getMessage(List<String> messages) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for (String message : messages) {
+            stringBuilder.append(translateColorCodes(message)).append('\n');
+        }
+
+        return stringBuilder.toString();
+    }
+
+    public static void playSoundToAllPlayers(Sound sound, float volume, float pitch) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.playSound(player.getLocation(), sound, volume, pitch);
+        }
     }
 
     public static void sendMessageToAllPlayers(String message) {

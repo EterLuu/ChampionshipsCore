@@ -113,6 +113,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "rank.team-board-bar")
     public static String RANK_TEAM_BOARD_BAR;
 
+    @ConfigOption(path = "rank.game-team-board-bar")
+    public static String RANK_GAME_TEAM_BOARD_BAR;
+
     @ConfigOption(path = "rank.team-board-row")
     public static String RANK_TEAM_BOARD_ROW;
 

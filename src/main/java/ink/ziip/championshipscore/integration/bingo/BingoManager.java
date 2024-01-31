@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import io.github.steaf23.bingoreloaded.BingoReloaded;
 import io.github.steaf23.bingoreloaded.gameloop.BingoSession;
@@ -22,6 +23,7 @@ import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Field;
@@ -39,6 +41,7 @@ public class BingoManager extends BaseManager {
     private boolean started = false;
     private BingoHandler bingoHandler;
     private BingoSession session;
+    private int timer;
 
     public BingoManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -73,20 +76,43 @@ public class BingoManager extends BaseManager {
                 championshipTeam.teleportAllPlayers(CCConfig.BINGO_SPAWN_LOCATION);
             }
 
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    for (Player player : championshipTeam.getOnlinePlayers()) {
-                        BingoParticipant bingoParticipant = teamManager.getPlayerAsParticipant(player);
-                        if (bingoParticipant == null) {
-                            bingoParticipant = new BingoPlayer(player, teamManager.getSession());
+            timer = 20;
+            plugin.getServer().getScheduler().runTaskTimer(plugin, (task) -> {
+                if (timer == 15) {
+                    for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                        for (Player player : championshipTeam.getOnlinePlayers()) {
+                            BingoParticipant bingoParticipant = teamManager.getPlayerAsParticipant(player);
+                            if (bingoParticipant == null) {
+                                bingoParticipant = new BingoPlayer(player, teamManager.getSession());
+                            }
+                            teamManager.addMemberToTeam(bingoParticipant, championshipTeam.getColorName().toLowerCase());
                         }
-                        teamManager.addMemberToTeam(bingoParticipant, championshipTeam.getColorName().toLowerCase());
                     }
+
+                    Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.BINGO));
                 }
-            }, 100);
 
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> session.startGame(), 200);
+                if (timer == 10) {
+                    Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.BINGO_POINTS));
+                }
 
+                Utils.changeLevelForAllPlayers(timer);
+
+                if (timer < 5 && timer > 1) {
+                    Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
+                }
+                if (timer == 1) {
+                    Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
+                }
+
+                if (timer == 0) {
+                    Utils.changeLevelForAllPlayers(0);
+                    session.startGame();
+                    task.cancel();
+                }
+
+                timer--;
+            }, 0, 20L);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -133,6 +159,8 @@ public class BingoManager extends BaseManager {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 championshipTeam.cleanInventoryForAllPlayers();
             }
+
+            Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
         }, 60L);
 
         teamPoints.clear();

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
 
 @Getter
 public class CCConfig extends BaseConfigurationFile {
@@ -57,4 +58,11 @@ public class CCConfig extends BaseConfigurationFile {
     // ParkourTag
     @ConfigOption(path = "parkourtag.max-chaser-times")
     public static Integer PARKOUR_TAG_MAX_CHASER_TIMES;
+
+    @ConfigOption(path = "parkourtag.rounds")
+    public static ConfigurationSection PARKOUR_TAG_ROUNDS;
+
+    // BattleBox
+    @ConfigOption(path = "battlebox.rounds")
+    public static ConfigurationSection BATTLE_BOX_ROUNDS;
 }
