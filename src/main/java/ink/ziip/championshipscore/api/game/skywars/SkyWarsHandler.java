@@ -10,10 +10,7 @@ import lombok.Setter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.entity.Creeper;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
@@ -23,6 +20,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.UUID;
 
@@ -230,6 +228,33 @@ public class SkyWarsHandler extends BaseListener {
 
         if (event.getCaught() instanceof Player caught) {
             caught.damage(0.00001, player);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            if (skyWarsArea.notAreaPlayer(player)) {
+                return;
+            }
+
+            Location location = player.getLocation();
+            if (skyWarsArea.notInArea(location)) {
+                return;
+            }
+
+            if (skyWarsArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
+                return;
+            }
+
+            if (event.getDamager() instanceof Snowball) {
+                Projectile projectile = (Projectile) event.getDamager();
+                ProjectileSource projectileSource = projectile.getShooter();
+                if (!(projectileSource instanceof Player))
+                    return;
+
+                event.setDamage(0.0001);
+            }
         }
     }
 
