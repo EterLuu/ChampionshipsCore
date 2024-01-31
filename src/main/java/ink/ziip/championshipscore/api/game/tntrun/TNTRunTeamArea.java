@@ -119,17 +119,17 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_START_PREPARATION_TITLE, MessageConfig.TNT_RUN_START_PREPARATION_SUBTITLE);
 
-        timer = 20;
+        timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
 
             if (timer < 5 && timer > 0) {
-                playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0.5F);
+                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
             }
 
             changeLevelForAllGamePlayers(timer);
 
             if (timer == 0) {
-                playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
+                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
                 startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
@@ -158,7 +158,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_GAME_START);
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_GAME_START_TITLE, MessageConfig.TNT_RUN_GAME_START_SUBTITLE);
-        playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
+        playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
 
         startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
 

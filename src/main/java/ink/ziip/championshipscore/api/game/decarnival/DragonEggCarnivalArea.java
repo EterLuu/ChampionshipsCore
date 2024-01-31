@@ -84,7 +84,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_SUBTITLE);
 
-        timer = 20;
+        timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
             changeLevelForAllGamePlayers(timer);
 
@@ -130,7 +130,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
                 String countDown = MessageConfig.DRAGON_EGG_CARNIVAL_COUNT_DOWN
                         .replace("%time%", String.valueOf(-timer));
                 sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0.5F);
+                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
                 changeLevelForAllGamePlayers(-timer);
             } else {
                 changeLevelForAllGamePlayers(timer);
@@ -139,7 +139,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             if (timer == 0) {
                 sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START);
                 sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
+                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
             }
 
             if (timer % 20 == 0) {

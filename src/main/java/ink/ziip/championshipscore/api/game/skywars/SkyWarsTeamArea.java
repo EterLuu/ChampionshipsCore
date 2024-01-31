@@ -103,7 +103,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_START_PREPARATION_TITLE, MessageConfig.SKY_WARS_START_PREPARATION_SUBTITLE);
 
-        timer = 20;
+        timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
             changeLevelForAllGamePlayers(timer);
 
@@ -153,7 +153,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                 String countDown = MessageConfig.SKY_WARS_COUNT_DOWN
                         .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
                 sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0.5F);
+                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
             }
 
             if (timer == getGameConfig().getTimer()) {
@@ -169,7 +169,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
                 sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_GAME_START);
                 sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_GAME_START_TITLE, MessageConfig.SKY_WARS_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
+                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
             }
 
             changeLevelForAllGamePlayers(timer);

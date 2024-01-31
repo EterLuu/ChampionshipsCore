@@ -114,7 +114,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SNOWBALL_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_START_PREPARATION_TITLE, MessageConfig.SNOWBALL_START_PREPARATION_SUBTITLE);
 
-        timer = 20;
+        timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
             changeLevelForAllGamePlayers(timer);
 
@@ -143,13 +143,13 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
                 String countDown = MessageConfig.SNOWBALL_COUNT_DOWN
                         .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
                 sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 0.5F);
+                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
             }
 
             if (timer == getGameConfig().getTimer()) {
                 sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SNOWBALL_GAME_START);
                 sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_GAME_START_TITLE, MessageConfig.SNOWBALL_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
+                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
 
                 for (UUID uuid : gamePlayers) {
                     playerRespawnTime.put(uuid, System.currentTimeMillis());
