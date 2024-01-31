@@ -78,7 +78,7 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
                     dragonEggCarnivalConfig.setKits(new ArrayList<>());
                 }
                 if (args[2].equals("add")) {
-                    dragonEggCarnivalConfig.getKits().add(player.getInventory().getItemInMainHand());
+                    dragonEggCarnivalConfig.getKits().add(player.getInventory().getItemInMainHand().clone());
                 }
                 if (args[2].equals("clean")) {
                     dragonEggCarnivalConfig.getKits().clear();

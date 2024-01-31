@@ -108,10 +108,14 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         dragonEgg.setType(Material.DRAGON_EGG, true);
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
-        if (rightChampionshipTeam != null)
+        if (rightChampionshipTeam != null) {
             rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
-        if (leftChampionshipTeam != null)
+            addFinalTagToGamePlayers(rightChampionshipTeam);
+        }
+        if (leftChampionshipTeam != null) {
             leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
+            addFinalTagToGamePlayers(leftChampionshipTeam);
+        }
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -173,6 +177,13 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         if (gameStageEnum == GameStageEnum.STOPPING)
             return;
 
+        if (rightChampionshipTeam != null) {
+            removeFinalTagToGamePlayers(rightChampionshipTeam);
+        }
+        if (leftChampionshipTeam != null) {
+            removeFinalTagToGamePlayers(leftChampionshipTeam);
+        }
+
         teleportAllPlayers(getLobbyLocation());
 
         setGameStageEnum(GameStageEnum.STOPPING);
@@ -226,6 +237,13 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
+
+        if (rightChampionshipTeam != null) {
+            removeFinalTagToGamePlayers(rightChampionshipTeam);
+        }
+        if (leftChampionshipTeam != null) {
+            removeFinalTagToGamePlayers(leftChampionshipTeam);
+        }
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_SUBTITLE);
@@ -358,6 +376,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         }
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
+            teleportPlayerToSpawnLocation(player);
             return;
         }
 
@@ -432,10 +451,8 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     }
 
     private void giveRandomKitToTeamMembers(ChampionshipTeam championshipTeam) {
-        List<Player> players = championshipTeam.getOnlinePlayers();
-        try {
-            giveRandomKitToPlayer(players.get((new Random()).nextInt(players.size())));
-        } catch (IllegalArgumentException ignored) {
+        for (Player player : championshipTeam.getOnlinePlayers()) {
+            giveRandomKitToPlayer(player);
         }
     }
 
@@ -465,6 +482,22 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         inventory.clear();
         inventory.addItem(sword, bow, bucket, arrow, cookedBeef);
+    }
+
+    private void addFinalTagToGamePlayers(ChampionshipTeam championshipTeam) {
+        if (championshipTeam != null) {
+            for (Player player : championshipTeam.getOnlinePlayers()) {
+                player.addScoreboardTag("final");
+            }
+        }
+    }
+
+    private void removeFinalTagToGamePlayers(ChampionshipTeam championshipTeam) {
+        if (championshipTeam != null) {
+            for (Player player : championshipTeam.getOnlinePlayers()) {
+                player.removeScoreboardTag("final");
+            }
+        }
     }
 
     private void giveItemToPlayer(Player player) {
@@ -506,9 +539,9 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         inventory.setChestplate(elytra.clone());
         inventory.setLeggings(leggings.clone());
         inventory.setBoots(boots.clone());
-        inventory.addItem(bucket.clone());
         inventory.addItem(pickaxe.clone());
         inventory.addItem(torch.clone());
+        inventory.addItem(bucket.clone());
         inventory.addItem(cobweb.clone());
         inventory.addItem(cookedBeef.clone());
         inventory.addItem(stick.clone());

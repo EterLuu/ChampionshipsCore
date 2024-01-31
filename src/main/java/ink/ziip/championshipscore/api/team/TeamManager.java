@@ -36,11 +36,11 @@ public class TeamManager extends BaseManager {
         synchronized (cachedTeams) {
             if (cachedTeams.containsKey(name)) return;
 
-            Team team = scoreboard.getTeam(name);
+            Team team = scoreboard.getTeam(colorName);
             if (team != null) {
                 team.unregister();
             }
-            team = scoreboard.registerNewTeam(name);
+            team = scoreboard.registerNewTeam(colorName);
 
             try {
                 team.setColor(ChatColor.valueOf(colorName));
@@ -65,11 +65,11 @@ public class TeamManager extends BaseManager {
             if (cachedTeams.containsKey(name)) return false;
             int id = teamDaoImpl.addTeam(name, colorName, colorCode);
 
-            Team team = scoreboard.getTeam(name);
+            Team team = scoreboard.getTeam(colorName);
             if (team != null) {
                 team.unregister();
             }
-            team = scoreboard.registerNewTeam(name);
+            team = scoreboard.registerNewTeam(colorName);
 
             ChampionshipTeam championshipTeam = new ChampionshipTeam(id, name, colorName, colorCode, team);
             cachedTeams.put(name, championshipTeam);
@@ -79,6 +79,9 @@ public class TeamManager extends BaseManager {
 
     @Override
     public void load() {
+        for (Team team : scoreboard.getTeams()) {
+            team.unregister();
+        }
         for (TeamEntry teamEntry : teamDaoImpl.getTeamList()) {
             int teamId = teamEntry.getId();
             Set<UUID> uuids = new HashSet<>();
