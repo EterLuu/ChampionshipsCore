@@ -671,6 +671,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "vote.start-vote")
     public static String VOTE_START_VOTE;
 
+    @ConfigOption(path = "vote.start-vote-title")
+    public static String VOTE_START_VOTE_TITLE;
+
+    @ConfigOption(path = "vote.start-vote-subtitle")
+    public static String VOTE_START_VOTE_SUBTITLE;
+
     @ConfigOption(path = "vote.end-vote")
     public static String VOTE_END_VOTE;
 

@@ -100,6 +100,12 @@ public class Utils {
         }
     }
 
+    public static void sendTitleToAllPlayers(String title, String subtitle) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.sendTitle(title, subtitle, 0, 1, 0);
+        }
+    }
+
     public static void sendMessageToAllSpigotPlayers(BaseComponent message) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.spigot().sendMessage(message);

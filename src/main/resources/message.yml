@@ -236,6 +236,8 @@ placeholder:
   game-end: "比赛已结束"
 vote:
   start-vote: "&b[&3WCC&b] &f投票开始，请使用命令&e“/vote”&f投票。&6（2分钟后投票结束）"
+  start-vote-title: "&b[&3⚠投票开始⚠&b]"
+  start-vote-subtitle: "&f使用命令&e“/vote”&f投票"
   end-vote: "&b[&3WCC&b] &f投票结束。"
   player-vote: "&b[&3WCC&b] &f你投票了游戏：&e%game%&f。"
   vote-failed-not-time: "&b[&3WCC&b] &f投票失败，非投票时间段。"

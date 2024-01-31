@@ -40,6 +40,7 @@ public class VoteManager extends BaseManager {
         timer = 120;
 
         Utils.sendMessageToAllPlayers(MessageConfig.VOTE_START_VOTE);
+        Utils.sendTitleToAllPlayers(MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
 
         voteTask = scheduler.runTaskTimer(plugin, () -> {
 
