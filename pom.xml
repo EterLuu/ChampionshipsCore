@@ -63,6 +63,10 @@
                             <pattern>org.mariadb.jdbc</pattern>
                             <shadedPattern>ink.ziip.championshipscore.libs.org.mariadb.jdbc</shadedPattern>
                         </relocation>
+                        <relocation>
+                            <pattern>com.mysql.jdbc</pattern>
+                            <shadedPattern>ink.ziip.championshipscore.libs.com.mysql.jdbc</shadedPattern>
+                        </relocation>
                     </relocations>
                     <filters>
                         <filter>
@@ -79,6 +83,12 @@
                         </filter>
                         <filter>
                             <artifact>org.mariadb.jdbc:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/MANIFEST.MF</exclude>
+                            </excludes>
+                        </filter>
+                        <filter>
+                            <artifact>>com.mysql.jdbc:*</artifact>
                             <excludes>
                                 <exclude>META-INF/MANIFEST.MF</exclude>
                             </excludes>
@@ -191,6 +201,11 @@
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <version>3.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.33</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>

@@ -14,16 +14,19 @@ import java.util.*;
 
 public class DatabaseManager extends BaseManager {
     private static final String DATA_POOL_NAME = "ChampionshipsCoreHikariPool";
-    private final String driverClass;
+    private String driverClass;
     private HikariDataSource dataSource;
 
     public DatabaseManager(@NotNull ChampionshipsCore championshipsCore) {
         super(championshipsCore);
-        this.driverClass = "org.mariadb.jdbc.Driver";
     }
 
     @Override
     public void load() {
+        if (CCConfig.DATABASE_TYPE.equals("MARIADB"))
+            this.driverClass = "org.mariadb.jdbc.Driver";
+        else
+            this.driverClass = "com.mysql.jdbc.Driver";
         initialize();
     }
 
@@ -42,7 +45,10 @@ public class DatabaseManager extends BaseManager {
         dataSource.setPoolName(DATA_POOL_NAME);
         dataSource.setDriverClassName(driverClass);
 
-        dataSource.setJdbcUrl("jdbc:mariadb://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
+        if (CCConfig.DATABASE_TYPE.equals("MARIADB"))
+            dataSource.setJdbcUrl("jdbc:mariadb://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
+        else
+            dataSource.setJdbcUrl("jdbc:mysql://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
         dataSource.setUsername(CCConfig.DATABASE_USERNAME);
         dataSource.setPassword(CCConfig.DATABASE_PASSWORD);
 
