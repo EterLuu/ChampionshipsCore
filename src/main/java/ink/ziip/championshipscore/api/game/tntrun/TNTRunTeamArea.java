@@ -75,9 +75,9 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     @Override
     public Location getSpectatorSpawnLocation() {
         try {
-            return Utils.getLocation(getGameConfig().getPlayerSpawnPoints().get((new Random()).nextInt(0, getGameConfig().getPlayerSpawnPoints().size())));
+            return Utils.getLocation(getGameConfig().getPlayerSpawnPoints().get((new Random()).nextInt(0, getGameConfig().getPlayerSpawnPoints().size() - 1)));
         } catch (Exception ignored) {
-            return gameConfig.getSpectatorSpawnPoint();
+            return getSpectatorSpawnLocation();
         }
     }
 

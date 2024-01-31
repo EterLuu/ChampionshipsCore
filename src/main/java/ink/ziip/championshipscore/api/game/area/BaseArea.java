@@ -233,7 +233,7 @@ public abstract class BaseArea {
     public void handleSpectatorJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (isSpectator(player)) {
-            player.teleport(gameConfig.getSpectatorSpawnPoint());
+            player.teleport(getSpectatorSpawnLocation());
             player.setGameMode(GameMode.ADVENTURE);
             player.setAllowFlight(true);
             player.setFlying(true);
@@ -259,7 +259,7 @@ public abstract class BaseArea {
 
     public void addSpectator(@NotNull Player player) {
         spectators.add(player.getUniqueId());
-        player.teleport(gameConfig.getSpectatorSpawnPoint());
+        player.teleport(getSpectatorSpawnLocation());
         player.setGameMode(GameMode.ADVENTURE);
         player.setAllowFlight(true);
         player.setFlying(true);

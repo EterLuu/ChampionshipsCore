@@ -234,7 +234,11 @@ public class ParkourTagArea extends BaseTeamArea {
 
     @Override
     public Location getSpectatorSpawnLocation() {
-        return gameConfig.getSpectatorSpawnPoint();
+        Random random = new Random();
+        if (random.nextInt(0, 2) == 0)
+            return getGameConfig().getLeftAreaChaserSpawnPoint();
+        else
+            return getGameConfig().getRightAreaChaserSpawnPoint();
     }
 
     @Override

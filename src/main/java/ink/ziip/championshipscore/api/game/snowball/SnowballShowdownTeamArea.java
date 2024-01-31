@@ -176,7 +176,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     @Override
     public Location getSpectatorSpawnLocation() {
         try {
-            List<Location> locations = areaLocations.get((new Random()).nextInt(0, areaLocations.size()));
+            List<Location> locations = areaLocations.get((new Random()).nextInt(0, areaLocations.size() - 1));
             return locations.get((new Random()).nextInt(0, locations.size()));
         } catch (Exception ignored) {
             return gameConfig.getSpectatorSpawnPoint();
