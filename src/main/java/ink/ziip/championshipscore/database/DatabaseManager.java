@@ -26,7 +26,7 @@ public class DatabaseManager extends BaseManager {
         if (CCConfig.DATABASE_TYPE.equals("MARIADB"))
             this.driverClass = "org.mariadb.jdbc.Driver";
         else
-            this.driverClass = "com.mysql.jdbc.Driver";
+            this.driverClass = "com.mysql.cj.jdbc.Driver";
         initialize();
     }
 
