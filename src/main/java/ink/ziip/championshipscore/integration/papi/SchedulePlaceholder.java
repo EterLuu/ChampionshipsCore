@@ -22,7 +22,7 @@ public class SchedulePlaceholder extends BasePlaceholder {
         /* Non-Player required placeholders */
 
         if (params.startsWith("round_total")) {
-            return String.valueOf(scheduleManager.getRound());
+            return String.valueOf(plugin.getRankManager().getRound());
         }
         if (params.startsWith("round_snowball")) {
             return String.valueOf(scheduleManager.getSnowballScheduleManager().getSubRound());
@@ -43,7 +43,7 @@ public class SchedulePlaceholder extends BasePlaceholder {
             return String.valueOf(scheduleManager.getParkourTagScheduleManager().getSubRound());
         }
         if (params.startsWith("round_points")) {
-            return String.valueOf(plugin.getRankManager().getPointMultiple(scheduleManager.getRound() + 1));
+            return String.valueOf(plugin.getRankManager().getPointMultiple(plugin.getRankManager().getRound() + 1));
         }
 
         // Placeholder is unknown by the Expansion

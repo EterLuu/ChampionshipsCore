@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
@@ -23,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TeamManager extends BaseManager {
     private static final ConcurrentHashMap<String, ChampionshipTeam> cachedTeams = new ConcurrentHashMap<>();
     private static final TeamDaoImpl teamDaoImpl = new TeamDaoImpl();
+    private final BukkitScheduler scheduler;
     private static Scoreboard scoreboard = null;
 
     public TeamManager(ChampionshipsCore championshipsCore) {
@@ -30,6 +32,7 @@ public class TeamManager extends BaseManager {
         ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
         if (scoreboardManager != null)
             scoreboard = scoreboardManager.getMainScoreboard();
+        scheduler = championshipsCore.getServer().getScheduler();
     }
 
     private void addTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members) {
@@ -79,17 +82,20 @@ public class TeamManager extends BaseManager {
 
     @Override
     public void load() {
-        for (Team team : scoreboard.getTeams()) {
-            team.unregister();
-        }
-        for (TeamEntry teamEntry : teamDaoImpl.getTeamList()) {
-            int teamId = teamEntry.getId();
-            Set<UUID> uuids = new HashSet<>();
-            for (TeamMemberEntry teamMemberEntry : teamDaoImpl.getTeamMembers(teamId)) {
-                uuids.add(teamMemberEntry.getUuid());
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            for (Team team : scoreboard.getTeams()) {
+                team.unregister();
             }
-            addTeam(teamId, teamEntry.getName(), teamEntry.getColorName(), teamEntry.getColorCode(), uuids);
-        }
+
+            for (TeamEntry teamEntry : teamDaoImpl.getTeamList()) {
+                int teamId = teamEntry.getId();
+                Set<UUID> uuids = new HashSet<>();
+                for (TeamMemberEntry teamMemberEntry : teamDaoImpl.getTeamMembers(teamId)) {
+                    uuids.add(teamMemberEntry.getUuid());
+                }
+                addTeam(teamId, teamEntry.getName(), teamEntry.getColorName(), teamEntry.getColorCode(), uuids);
+            }
+        });
     }
 
     @Override
@@ -120,8 +126,11 @@ public class TeamManager extends BaseManager {
         if (championshipTeam == null) return false;
         championshipTeam.getTeam().unregister();
         int id = championshipTeam.getId();
-        teamDaoImpl.deleteTeam(id);
-        teamDaoImpl.deleteTeamMembers(id);
+
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            teamDaoImpl.deleteTeam(id);
+            teamDaoImpl.deleteTeamMembers(id);
+        });
         return true;
     }
 
@@ -160,7 +169,9 @@ public class TeamManager extends BaseManager {
 
         championshipTeam.getTeam().addEntry(username);
         championshipTeam.addMember(uuid);
-        teamDaoImpl.addTeamMember(championshipTeam.getId(), uuid, username);
+
+        scheduler.runTaskAsynchronously(plugin, () -> teamDaoImpl.addTeamMember(championshipTeam.getId(), uuid, username));
+
         Player player = Bukkit.getPlayer(uuid);
         if (player != null)
             plugin.getGameManager().leaveSpectating(player);
@@ -184,7 +195,8 @@ public class TeamManager extends BaseManager {
             String username = offlinePlayer.getName();
             if (username != null)
                 championshipTeam.getTeam().removeEntry(username);
-            teamDaoImpl.deleteTeamMember(uuid);
+
+            scheduler.runTaskAsynchronously(plugin, () -> teamDaoImpl.deleteTeamMember(uuid));
             return true;
         }
         return false;

@@ -30,8 +30,6 @@ public class ScheduleManager extends BaseManager {
     private final BattleBoxScheduleManager battleBoxScheduleManager;
     @Getter
     private final ParkourTagScheduleManager parkourTagScheduleManager;
-    @Getter
-    private int round;
     private int timer;
 
     public ScheduleManager(ChampionshipsCore championshipsCore) {
@@ -44,8 +42,6 @@ public class ScheduleManager extends BaseManager {
         tgttosScheduleManager = new TGTTOSScheduleManager(plugin);
         battleBoxScheduleManager = new BattleBoxScheduleManager(plugin);
         parkourTagScheduleManager = new ParkourTagScheduleManager(plugin);
-
-        round = 0;
     }
 
     @Override
@@ -69,13 +65,11 @@ public class ScheduleManager extends BaseManager {
     }
 
     public void addRound(GameTypeEnum gameTypeEnum) {
-        round++;
-        plugin.getRankManager().addGameOrder(gameTypeEnum, round);
+        plugin.getRankManager().addGameOrder(gameTypeEnum, plugin.getRankManager().getRound() + 1);
     }
 
     public void resetRound() {
         plugin.getRankManager().resetGameOrder();
-        round = 0;
     }
 
     public void startDragonEggCarnival(ChampionshipTeam team, ChampionshipTeam rival) {

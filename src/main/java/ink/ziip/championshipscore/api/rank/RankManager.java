@@ -16,6 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,6 +26,7 @@ public class RankManager extends BaseManager {
     private static final Map<UUID, Double> playerPoints = new ConcurrentHashMap<>();
     private static final Map<ChampionshipTeam, Integer> teamRank = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> playerRank = new ConcurrentHashMap<>();
+    private static final Map<GameTypeEnum, Integer> gameOrder = new ConcurrentHashMap<>();
     private final RankDaoImpl rankDao = new RankDaoImpl();
     private final TeamDaoImpl teamDao = new TeamDaoImpl();
     private final BukkitScheduler scheduler = Bukkit.getScheduler();
@@ -36,7 +38,7 @@ public class RankManager extends BaseManager {
     private String teamRankString;
     @Getter
     private String playerRankString;
-    private int updateTaskId;
+    private BukkitTask updateTask;
 
     public RankManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -44,15 +46,17 @@ public class RankManager extends BaseManager {
 
     @Override
     public void load() {
-        updateTaskId = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
+        updateTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
             updatePlayerPoint();
             updateTeamPoints();
+            updateGameOrder();
         }, 0, 100L);
     }
 
     @Override
     public void unload() {
-        scheduler.cancelTask(updateTaskId);
+        if (updateTask != null)
+            updateTask.cancel();
     }
 
     public int getPlayerRank(Player player) {
@@ -69,6 +73,10 @@ public class RankManager extends BaseManager {
             return teamRank.getOrDefault(championshipTeam, Integer.MAX_VALUE);
         }
         return 0;
+    }
+
+    public int getRound() {
+        return gameOrder.keySet().size();
     }
 
     public double getPlayerTeamPoints(Player player) {
@@ -152,24 +160,41 @@ public class RankManager extends BaseManager {
         });
     }
 
-    public void addGameOrder(GameTypeEnum gameTypeEnum, int order) {
-        GameStatusEntry gameStatusEntry = GameStatusEntry.builder()
-                .game(gameTypeEnum)
-                .order(order)
-                .time(Utils.getCurrentTimeString())
-                .build();
+    private void updateGameOrder() {
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            for (GameStatusEntry gameStatusEntry : rankDao.getGameStatusList()) {
+                gameOrder.put(gameStatusEntry.getGame(), gameStatusEntry.getOrder());
+            }
+        });
+    }
 
-        rankDao.addGameStatus(gameStatusEntry);
+    public void addGameOrder(GameTypeEnum gameTypeEnum, int order) {
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            if (rankDao.getGameStatusOrder(gameTypeEnum) != -1)
+                return;
+
+            GameStatusEntry gameStatusEntry = GameStatusEntry.builder()
+                    .game(gameTypeEnum)
+                    .order(order)
+                    .time(Utils.getCurrentTimeString())
+                    .build();
+            rankDao.addGameStatus(gameStatusEntry);
+        });
     }
 
     public int getGameOrder(GameTypeEnum gameTypeEnum) {
-        return rankDao.getGameStatusOrder(gameTypeEnum);
+        Integer order = gameOrder.get(gameTypeEnum);
+        if (order == null)
+            return -1;
+        return order;
     }
 
     public void resetGameOrder() {
-        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
-            rankDao.deleteGameStatus(gameTypeEnum);
-        }
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+                rankDao.deleteGameStatus(gameTypeEnum);
+            }
+        });
     }
 
     public void addPlayerPoints(OfflinePlayer offlinePlayer, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, int points) {
@@ -192,7 +217,7 @@ public class RankManager extends BaseManager {
                     .time(Utils.getCurrentTimeString())
                     .build();
 
-            rankDao.addPlayerPoint(playerPointEntry);
+            scheduler.runTaskAsynchronously(plugin, () -> rankDao.addPlayerPoint(playerPointEntry));
         }
     }
 
