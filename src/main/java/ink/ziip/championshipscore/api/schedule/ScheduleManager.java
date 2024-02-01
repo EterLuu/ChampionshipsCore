@@ -73,6 +73,7 @@ public class ScheduleManager extends BaseManager {
     }
 
     public void startDragonEggCarnival(ChampionshipTeam team, ChampionshipTeam rival) {
+        plugin.getScheduleManager().addRound(GameTypeEnum.DragonEggCarnival);
         timer = 10;
         scheduler.runTaskTimer(plugin, (task) -> {
 

@@ -299,6 +299,9 @@ public class GameManager extends BaseManager {
         if (playerSpectatorStatus.containsKey(uuid)) {
             return false;
         }
+        if (playerStatus.containsKey(uuid)) {
+            return false;
+        }
 
         playerSpectatorStatus.put(uuid, baseArea);
         baseArea.addSpectator(player);

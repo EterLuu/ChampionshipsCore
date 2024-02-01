@@ -72,6 +72,8 @@ public class BingoManager extends BaseManager {
             session = singularGameManager.getSession();
             TeamManager teamManager = singularGameManager.getSession().teamManager;
 
+            plugin.getScheduleManager().addRound(GameTypeEnum.Bingo);
+
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 championshipTeam.teleportAllPlayers(CCConfig.BINGO_SPAWN_LOCATION);
             }
