@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class ChampionshipPlaceholder extends BasePlaceholder {
@@ -31,6 +32,29 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
                 return MessageConfig.PLACEHOLDER_NONE;
 
             return championshipTeam.getColorName();
+        }
+
+        /* Player required placeholders */
+
+        Player player = offlinePlayer.getPlayer();
+        if (player == null)
+            return MessageConfig.PLACEHOLDER_NONE;
+
+        if (params.startsWith("player_points")) {
+
+            return String.valueOf(plugin.getRankManager().getPlayerPoints(player));
+        }
+        if (params.startsWith("player_team_points")) {
+
+            return String.valueOf(plugin.getRankManager().getPlayerTeamPoints(player));
+        }
+        if (params.startsWith("player_rank")) {
+
+            return String.valueOf(plugin.getRankManager().getPlayerRank(player));
+        }
+        if (params.startsWith("player_team_rank")) {
+
+            return String.valueOf(plugin.getRankManager().getPlayerTeamRank(player));
         }
 
         // Placeholder is unknown by the Expansion

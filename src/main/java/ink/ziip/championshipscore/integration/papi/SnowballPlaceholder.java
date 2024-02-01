@@ -45,16 +45,35 @@ public class SnowballPlaceholder extends BasePlaceholder {
             }
             return String.valueOf(snowballShowdownTeamArea.getTimer() + 1);
         }
-        if (params.startsWith("area_rank_")) {
+        if (params.startsWith("area_rank_1_")) {
             SnowballShowdownTeamArea
-                    snowballShowdownTeamArea = snowballShowdownManager.getArea(params.replace("area_rank_", ""));
+                    snowballShowdownTeamArea = snowballShowdownManager.getArea(params.replace("area_rank_1_", ""));
             if (snowballShowdownTeamArea == null) {
                 snowballShowdownTeamArea = snowballShowdownManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
             }
             if (snowballShowdownTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return String.valueOf(snowballShowdownTeamArea.getCurrentRank());
+            try {
+                return snowballShowdownTeamArea.getCurrentRank().get(0) + " | " + snowballShowdownTeamArea.getCurrentRank().get(1);
+            } catch (Exception ignored) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+        }
+        if (params.startsWith("area_rank_2_")) {
+            SnowballShowdownTeamArea
+                    snowballShowdownTeamArea = snowballShowdownManager.getArea(params.replace("area_rank_2_", ""));
+            if (snowballShowdownTeamArea == null) {
+                snowballShowdownTeamArea = snowballShowdownManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
+            }
+            if (snowballShowdownTeamArea == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            try {
+                return snowballShowdownTeamArea.getCurrentRank().get(2) + " | " + snowballShowdownTeamArea.getCurrentRank().get(3);
+            } catch (Exception ignored) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
         }
 
         Player player = offlinePlayer.getPlayer();

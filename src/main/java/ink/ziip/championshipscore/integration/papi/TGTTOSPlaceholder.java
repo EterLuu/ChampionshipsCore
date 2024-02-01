@@ -24,6 +24,16 @@ public class TGTTOSPlaceholder extends BasePlaceholder {
 
         /* Non-Player required placeholders */
 
+        if (params.startsWith("area_name_")) {
+            TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(params.replace("area_name_", ""));
+            if (tgttosTeamArea == null) {
+                tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
+            }
+            if (tgttosTeamArea == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            return tgttosTeamArea.getGameConfig().getAreaName();
+        }
         if (params.startsWith("area_status_")) {
             TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(params.replace("area_status_", ""));
             if (tgttosTeamArea == null) {

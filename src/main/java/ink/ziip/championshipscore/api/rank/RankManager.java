@@ -29,6 +29,10 @@ public class RankManager extends BaseManager {
     private final TeamDaoImpl teamDao = new TeamDaoImpl();
     private final BukkitScheduler scheduler = Bukkit.getScheduler();
     @Getter
+    private List<Map.Entry<ChampionshipTeam, Double>> teamLeaderboard = new ArrayList<>();
+    @Getter
+    private List<Map.Entry<UUID, Double>> playerLeaderboard = new ArrayList<>();
+    @Getter
     private String teamRankString;
     @Getter
     private String playerRankString;
@@ -52,11 +56,11 @@ public class RankManager extends BaseManager {
     }
 
     public int getPlayerRank(Player player) {
-        return playerRank.getOrDefault(player.getUniqueId(), Integer.MAX_VALUE);
+        return playerRank.getOrDefault(player.getUniqueId(), 0);
     }
 
     public double getPlayerPoints(Player player) {
-        return playerPoints.getOrDefault(player.getUniqueId(), -1D);
+        return playerPoints.getOrDefault(player.getUniqueId(), 0D);
     }
 
     public int getPlayerTeamRank(Player player) {
@@ -64,7 +68,7 @@ public class RankManager extends BaseManager {
         if (championshipTeam != null) {
             return teamRank.getOrDefault(championshipTeam, Integer.MAX_VALUE);
         }
-        return -1;
+        return 0;
     }
 
     public double getPlayerTeamPoints(Player player) {
@@ -72,7 +76,7 @@ public class RankManager extends BaseManager {
         if (championshipTeam != null) {
             return teamPoints.getOrDefault(championshipTeam, -1D);
         }
-        return -1D;
+        return 0D;
     }
 
     private void updateTeamPoints() {
@@ -103,6 +107,7 @@ public class RankManager extends BaseManager {
                 i++;
             }
 
+            teamLeaderboard = list;
             teamRankString = stringBuilder.toString();
         });
     }
@@ -142,6 +147,7 @@ public class RankManager extends BaseManager {
                 }
             }
 
+            playerLeaderboard = list;
             playerRankString = stringBuilder.toString();
         });
     }

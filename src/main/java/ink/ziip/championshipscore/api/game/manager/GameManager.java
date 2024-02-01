@@ -244,12 +244,12 @@ public class GameManager extends BaseManager {
             return "";
 
         if (baseArea != null)
-            return baseArea.getGameConfig().getAreaName();
+            return baseArea.getGameConfig().getConfigName();
 
         baseArea = playerSpectatorStatus.get(uuid);
 
         if (baseArea != null)
-            return baseArea.getGameConfig().getAreaName();
+            return baseArea.getGameConfig().getConfigName();
 
         return "";
     }

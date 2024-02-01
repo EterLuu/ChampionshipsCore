@@ -32,6 +32,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     private final Map<UUID, Long> playerRespawnTime = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, Integer> teamShootTimes = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> playerIndividualKills = new ConcurrentHashMap<>();
+    private List<String> teamRank = new ArrayList<>();
     @Getter
     private int timer;
     private BukkitTask startGamePreparationTask;
@@ -58,6 +59,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         playerRespawnTime.clear();
         teamShootTimes.clear();
         playerIndividualKills.clear();
+        teamRank.clear();
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
@@ -162,6 +164,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
             changeLevelForAllGamePlayers(timer);
             sendActionBarToAllGameSpectators(MessageConfig.SNOWBALL_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
+            calculateCurrentRank();
 
             if (timer == 0) {
                 endGame();
@@ -353,25 +356,28 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         return playerIndividualKills.getOrDefault(player.getUniqueId(), 0);
     }
 
-    public String getCurrentRank() {
+    public List<String> getCurrentRank() {
+        return teamRank;
+    }
+
+    private void calculateCurrentRank() {
+        List<String> rank = new ArrayList<>();
+
         ArrayList<Map.Entry<ChampionshipTeam, Integer>> list;
         list = new ArrayList<>(teamShootTimes.entrySet());
         list.sort(Map.Entry.comparingByValue());
 
         Collections.reverse(list);
 
-        StringBuilder stringBuilder = new StringBuilder();
-
         for (Map.Entry<ChampionshipTeam, Integer> entry : list) {
-            stringBuilder
-                    .append(entry.getKey().getColoredName())
-                    .append("&f：")
-                    .append(entry.getValue());
+            String content = entry.getKey().getColoredName() +
+                    "&f：" +
+                    entry.getValue();
 
-            stringBuilder.append("\n");
+            rank.add(content);
         }
 
-        return stringBuilder.toString();
+        teamRank = rank;
     }
 
     private synchronized void addTeamShootCount(ChampionshipTeam championshipTeam) {
