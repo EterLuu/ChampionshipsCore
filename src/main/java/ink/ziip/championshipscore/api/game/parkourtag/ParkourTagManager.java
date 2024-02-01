@@ -67,7 +67,7 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
 
     public UUID getTeamChaser(ChampionshipTeam team) {
         for (UUID uuid : team.getMembers()) {
-            if (chaserTimes.getOrDefault(uuid, 0) < 3) {
+            if (chaserTimes.getOrDefault(uuid, 0) < CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES) {
                 return uuid;
             }
         }
@@ -84,7 +84,7 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
     }
 
     public boolean canBeChaser(UUID uuid) {
-        return !(chaserTimes.getOrDefault(uuid, 0) >= CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES);
+        return chaserTimes.getOrDefault(uuid, 0) < CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES;
     }
 
     public int getChaserTimes(UUID uuid) {
