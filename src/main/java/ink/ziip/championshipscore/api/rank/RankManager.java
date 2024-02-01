@@ -194,6 +194,7 @@ public class RankManager extends BaseManager {
             for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
                 rankDao.deleteGameStatus(gameTypeEnum);
             }
+            gameOrder.clear();
         });
     }
 
