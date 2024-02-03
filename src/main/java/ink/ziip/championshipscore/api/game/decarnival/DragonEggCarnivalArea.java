@@ -30,7 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class DragonEggCarnivalArea extends BaseTeamArea {
     @Getter
@@ -486,7 +486,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         List<ItemStack> kits = new ArrayList<>(getGameConfig().getKits());
 
         try {
-            player.getInventory().addItem(kits.get((new Random()).nextInt(kits.size())).clone());
+            player.getInventory().addItem(kits.get(ThreadLocalRandom.current().nextInt(kits.size())).clone());
 
             player.sendMessage(MessageConfig.DRAGON_EGG_CARNIVAL_GAIN_KIT);
         } catch (IllegalArgumentException ignored) {

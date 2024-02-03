@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     private final List<List<Location>> areaLocations = new ArrayList<>();
@@ -192,8 +193,8 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     @Override
     public Location getSpectatorSpawnLocation() {
         try {
-            List<Location> locations = areaLocations.get((new Random()).nextInt(0, areaLocations.size() - 1));
-            return locations.get((new Random()).nextInt(0, locations.size()));
+            List<Location> locations = areaLocations.get(ThreadLocalRandom.current().nextInt(areaLocations.size()));
+            return locations.get(ThreadLocalRandom.current().nextInt(locations.size()));
         } catch (Exception ignored) {
             return gameConfig.getSpectatorSpawnPoint();
         }
@@ -447,10 +448,10 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     public void teleportPlayerToSpawnLocation(Player player) {
         List<Location> locations = playerRespawnLocations.get(player.getUniqueId());
         if (locations != null) {
-            player.teleport(locations.get((new Random()).nextInt(locations.size())));
+            player.teleport(locations.get(ThreadLocalRandom.current().nextInt(locations.size())));
         } else {
-            List<Location> randomLocations = areaLocations.get((new Random()).nextInt(areaLocations.size()));
-            player.teleport(randomLocations.get((new Random()).nextInt(randomLocations.size())));
+            List<Location> randomLocations = areaLocations.get(ThreadLocalRandom.current().nextInt(areaLocations.size()));
+            player.teleport(randomLocations.get(ThreadLocalRandom.current().nextInt(randomLocations.size())));
         }
     }
 

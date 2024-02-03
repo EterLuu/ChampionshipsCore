@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 public class TNTRunTeamArea extends BaseSingleTeamArea {
@@ -75,7 +76,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     @Override
     public Location getSpectatorSpawnLocation() {
         try {
-            return Utils.getLocation(getGameConfig().getPlayerSpawnPoints().get((new Random()).nextInt(0, getGameConfig().getPlayerSpawnPoints().size() - 1)));
+            return Utils.getLocation(getGameConfig().getPlayerSpawnPoints().get(ThreadLocalRandom.current().nextInt(getGameConfig().getPlayerSpawnPoints().size())));
         } catch (Exception ignored) {
             return getSpectatorSpawnLocation();
         }
@@ -181,7 +182,6 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                 tntGeneratorTask = scheduler.runTaskTimer(plugin, () -> {
 
                     int i = 0;
-                    Random random = new Random();
                     Iterator<String> locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
                     while (i < 10) {
@@ -190,11 +190,11 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
                         Location location = Utils.getLocation(locationIterator.next());
                         Location tntLocation = location.clone();
-                        tntLocation.add(random.nextInt(-30, 30), 15, random.nextInt(-30, 30));
+                        tntLocation.add(ThreadLocalRandom.current().nextInt(-30, 30), 15, ThreadLocalRandom.current().nextInt(-30, 30));
 
                         while (notInArea(tntLocation)) {
                             tntLocation = location.clone();
-                            tntLocation.add(random.nextInt(-30, 30), 15, random.nextInt(-30, 30));
+                            tntLocation.add(ThreadLocalRandom.current().nextInt(-30, 30), 15, ThreadLocalRandom.current().nextInt(-30, 30));
                         }
 
                         final Location finalTNTLocation = tntLocation;

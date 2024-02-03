@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 public class ParkourTagArea extends BaseTeamArea {
@@ -234,8 +235,7 @@ public class ParkourTagArea extends BaseTeamArea {
 
     @Override
     public Location getSpectatorSpawnLocation() {
-        Random random = new Random();
-        if (random.nextInt(0, 2) == 0)
+        if (ThreadLocalRandom.current().nextInt(2) == 0)
             return getGameConfig().getLeftAreaChaserSpawnPoint();
         else
             return getGameConfig().getRightAreaChaserSpawnPoint();

@@ -2,14 +2,13 @@ package ink.ziip.championshipscore.api.object.game;
 
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public enum BBWeaponKitEnum {
     PUNCH, KNOCK_BACK, JUMP, PULL;
 
     public static BBWeaponKitEnum getRandomEnum() {
-        Random random = new Random();
-        return values()[random.nextInt(values().length)];
+        return values()[ThreadLocalRandom.current().nextInt(values().length)];
     }
 
     @Override
