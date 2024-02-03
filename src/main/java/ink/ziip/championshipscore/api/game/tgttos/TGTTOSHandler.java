@@ -151,6 +151,9 @@ public class TGTTOSHandler extends BaseListener {
                 if (tgttosTeamArea.getGameConfig().getAreaType().equals("BOAT")) {
                     tgttosTeamArea.giveBoatToPlayer(player);
                 }
+                if (tgttosTeamArea.getGameConfig().getAreaType().equals("ROAD")) {
+                    tgttosTeamArea.giveRoadToolToPlayer(player);
+                }
 
                 tgttosTeamArea.sendMessageToAllGamePlayers(MessageConfig.TGTTOS_FALL_INTO_VOID.replace("%player%", player.getName()));
             }

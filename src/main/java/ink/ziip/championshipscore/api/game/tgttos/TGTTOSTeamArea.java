@@ -283,29 +283,34 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     private void giveRoadToolsToAllPlayers() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                if (player.isOnline()) {
-                    ItemStack itemStack = new ItemStack(Material.DIAMOND_PICKAXE);
-                    ItemMeta itemMeta = itemStack.getItemMeta();
-                    if (itemMeta != null)
-                        itemMeta.setUnbreakable(true);
-                    itemStack.setItemMeta(itemMeta);
-                    player.getInventory().addItem(itemStack);
+            giveRoadToolToPlayer(player);
+        }
+    }
 
-                    ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
-                    if (championshipTeam != null) {
-                        itemStack = championshipTeam.getConcrete();
-                    } else {
-                        itemStack = new ItemStack(Material.COBBLESTONE);
-                    }
-                    itemStack.setAmount(64);
-                    itemMeta = itemStack.getItemMeta();
-                    if (itemMeta != null)
-                        itemMeta.setUnbreakable(true);
-                    itemStack.setItemMeta(itemMeta);
-                    player.getInventory().addItem(itemStack);
-                }
+    public void giveRoadToolToPlayer(Player player) {
+        if (player != null) {
+            PlayerInventory inventory = player.getInventory();
+            inventory.clear();
+
+            ItemStack itemStack = new ItemStack(Material.DIAMOND_PICKAXE);
+            ItemMeta itemMeta = itemStack.getItemMeta();
+            if (itemMeta != null)
+                itemMeta.setUnbreakable(true);
+            itemStack.setItemMeta(itemMeta);
+            inventory.addItem(itemStack);
+
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+            if (championshipTeam != null) {
+                itemStack = championshipTeam.getConcrete();
+            } else {
+                itemStack = new ItemStack(Material.COBBLESTONE);
             }
+            itemStack.setAmount(64);
+            itemMeta = itemStack.getItemMeta();
+            if (itemMeta != null)
+                itemMeta.setUnbreakable(true);
+            itemStack.setItemMeta(itemMeta);
+            inventory.addItem(itemStack);
         }
     }
 
