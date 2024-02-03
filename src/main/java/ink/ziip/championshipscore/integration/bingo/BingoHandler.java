@@ -11,6 +11,7 @@ import io.github.steaf23.bingoreloaded.event.BingoStartedEvent;
 import io.github.steaf23.bingoreloaded.tasks.BingoTask;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 
 public class BingoHandler extends BaseListener {
@@ -30,6 +31,19 @@ public class BingoHandler extends BaseListener {
                 World world = Bukkit.getWorld("bingo");
                 if (world != null) {
                     world.setTime(9000);
+                }
+
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    for (Player player : championshipTeam.getOnlinePlayers()) {
+                        for (Player member : championshipTeam.getOnlinePlayers()) {
+                            if (!player.equals(member)) {
+                                try {
+                                    plugin.getGlowingEntities().setGlowing(member, player, Utils.toChatColor(championshipTeam.getColorName()));
+                                } catch (Exception ignored) {
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

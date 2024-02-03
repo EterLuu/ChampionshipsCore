@@ -121,6 +121,19 @@ public class BingoManager extends BaseManager {
     }
 
     protected void endGame() {
+        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+            for (Player player : championshipTeam.getOnlinePlayers()) {
+                for (Player member : championshipTeam.getOnlinePlayers()) {
+                    if (!player.equals(member)) {
+                        try {
+                            plugin.getGlowingEntities().unsetGlowing(member, player);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+        }
+
         Utils.sendMessageToAllPlayers(MessageConfig.BINGO_GAME_END);
 
         ArrayList<Map.Entry<ChampionshipTeam, Integer>> list = new ArrayList<>(teamPoints.entrySet());
@@ -205,7 +218,7 @@ public class BingoManager extends BaseManager {
             if (!completeChampionshipTeams.contains(championshipTeam)) {
                 int points = getPoints(num + 1);
                 addCompleteTeams(bingoTask, championshipTeam);
-                addPointsToTeam(championshipTeam, points + 20);
+                addPointsToTeam(championshipTeam, points);
 
                 if (player != null)
                     playerPoints.put(player.getUniqueId(), playerPoints.getOrDefault(player.getUniqueId(), 0) + 20);

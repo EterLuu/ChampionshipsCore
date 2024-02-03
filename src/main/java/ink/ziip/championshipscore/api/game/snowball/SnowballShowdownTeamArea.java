@@ -408,7 +408,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
                 if (championshipTeam != null) {
                     try {
-                        plugin.getGlowingEntities().setGlowing(gamePlayer, player, ChatColor.valueOf(championshipTeam.getColorName()));
+                        plugin.getGlowingEntities().setGlowing(gamePlayer, player, Utils.toChatColor(championshipTeam.getColorName()));
                     } catch (Exception ignored) {
                     }
                 }

@@ -137,6 +137,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         placeholderManager.unload();
         voteManager.unload();
         scheduleManager.unload();
+        glowingEntities.disable();
     }
 
     public @NotNull Path getFolder() {
