@@ -3,13 +3,17 @@ package ink.ziip.championshipscore.util;
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
     private Utils() {
@@ -77,6 +81,60 @@ public class Utils {
         } catch (Exception ignored) {
             return Color.fromBGR(0, 0, 0);
         }
+    }
+
+    public static ChatColor toChatColor(@NotNull String color) {
+        if (color.equalsIgnoreCase("green"))
+            return ChatColor.DARK_GREEN;
+        if (color.equalsIgnoreCase("brown"))
+            return ChatColor.DARK_RED;
+        if (color.equalsIgnoreCase("lime"))
+            return ChatColor.DARK_AQUA;
+        if (color.equalsIgnoreCase("pink"))
+            return ChatColor.LIGHT_PURPLE;
+        if (color.equalsIgnoreCase("light_blue"))
+            return ChatColor.AQUA;
+        if (color.equalsIgnoreCase("cyan"))
+            return ChatColor.GREEN;
+        if (color.equalsIgnoreCase("purple"))
+            return ChatColor.DARK_PURPLE;
+        if (color.equalsIgnoreCase("orange"))
+            return ChatColor.GOLD;
+
+        try {
+            return ChatColor.valueOf(color);
+        } catch (Exception exception) {
+            return ChatColor.WHITE;
+        }
+    }
+
+    public static net.md_5.bungee.api.ChatColor toBungeeChatColor(@NotNull String color) {
+        if (color.equalsIgnoreCase("green"))
+            return net.md_5.bungee.api.ChatColor.DARK_GREEN;
+        if (color.equalsIgnoreCase("brown"))
+            return net.md_5.bungee.api.ChatColor.DARK_RED;
+        if (color.equalsIgnoreCase("lime"))
+            return net.md_5.bungee.api.ChatColor.DARK_AQUA;
+        if (color.equalsIgnoreCase("pink"))
+            return net.md_5.bungee.api.ChatColor.LIGHT_PURPLE;
+        if (color.equalsIgnoreCase("light_blue"))
+            return net.md_5.bungee.api.ChatColor.AQUA;
+        if (color.equalsIgnoreCase("cyan"))
+            return net.md_5.bungee.api.ChatColor.GREEN;
+        if (color.equalsIgnoreCase("purple"))
+            return net.md_5.bungee.api.ChatColor.DARK_PURPLE;
+        if (color.equalsIgnoreCase("orange"))
+            return net.md_5.bungee.api.ChatColor.GOLD;
+
+        try {
+            return net.md_5.bungee.api.ChatColor.of(color);
+        } catch (Exception exception) {
+            return net.md_5.bungee.api.ChatColor.WHITE;
+        }
+    }
+
+    public static UUID getPlayerUUID(String name) {
+        return UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(UTF_8));
     }
 
     public static String getCurrentTimeString() {

@@ -54,7 +54,7 @@ public class ChampionshipTeam {
     }
 
     protected boolean addMember(@NotNull UUID uuid) {
-        synchronized (this) {
+        synchronized (members) {
             if (members.contains(uuid)) {
                 return false;
             }

@@ -217,7 +217,7 @@ public class BingoManager extends BaseManager {
                 String[] finalMessages = messages[1].split("%task%");
                 TextComponent textComponent = new TextComponent(messages[0]);
                 TextComponent teamComponent = new TextComponent(championshipTeam.getName());
-                textComponent.setColor(ChatColor.of(championshipTeam.getColorName()));
+                textComponent.setColor(Utils.toBungeeChatColor(championshipTeam.getColorName()));
                 textComponent.addExtra(teamComponent);
                 textComponent.addExtra(new TextComponent(finalMessages[0]));
                 textComponent.addExtra(bingoTask.data.getItemDisplayName().asComponent());

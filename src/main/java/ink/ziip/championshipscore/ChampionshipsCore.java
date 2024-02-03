@@ -18,6 +18,7 @@ import ink.ziip.championshipscore.database.DatabaseManager;
 import ink.ziip.championshipscore.util.glowing.GlowingEntities;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -105,6 +106,10 @@ public final class ChampionshipsCore extends JavaPlugin {
         scheduleManager.load();
 
         getLogger().log(Level.INFO, CCConfig.MODE);
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            gameManager.setPlayerVisible(player, true);
+        }
     }
 
     @Override

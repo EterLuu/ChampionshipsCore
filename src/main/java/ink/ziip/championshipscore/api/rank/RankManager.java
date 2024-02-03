@@ -92,6 +92,11 @@ public class RankManager extends BaseManager {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 teamPoints.put(championshipTeam, plugin.getRankManager().getTeamPoints(championshipTeam));
             }
+            for (ChampionshipTeam championshipTeam : teamPoints.keySet()) {
+                if (!plugin.getTeamManager().getTeamList().contains(championshipTeam))
+                    teamPoints.remove(championshipTeam);
+            }
+
             ArrayList<Map.Entry<ChampionshipTeam, Double>> list;
             list = new ArrayList<>(teamPoints.entrySet());
             list.sort(Map.Entry.comparingByValue());
@@ -128,6 +133,12 @@ public class RankManager extends BaseManager {
                     playerPoints.put(uuid, getPlayerPoints(uuid));
                 }
             }
+            for (UUID uuid : playerPoints.keySet()) {
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+                if (championshipTeam == null)
+                    playerPoints.remove(uuid);
+            }
+
             ArrayList<Map.Entry<UUID, Double>> list;
             list = new ArrayList<>(playerPoints.entrySet());
             list.sort(Map.Entry.comparingByValue());
@@ -153,6 +164,8 @@ public class RankManager extends BaseManager {
                     playerRank.put(entry.getKey(), i);
                     i++;
                 }
+                if (i == 10)
+                    break;
             }
 
             playerLeaderboard = list;

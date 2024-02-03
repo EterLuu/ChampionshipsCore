@@ -1,6 +1,7 @@
 dont-edit-this:
   version: 1
 mode: "CHAMPIONSHIP"
+max-players: 100
 database:
   type: "MARIADB"
   address: "127.0.0.1"

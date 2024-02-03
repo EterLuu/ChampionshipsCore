@@ -22,7 +22,7 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
         if (params.startsWith("player_team_name")) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
             if (championshipTeam == null)
-                return MessageConfig.PLACEHOLDER_NONE;
+                return MessageConfig.PLACEHOLDER_SPECTATOR;
 
             return championshipTeam.getColoredName();
         }

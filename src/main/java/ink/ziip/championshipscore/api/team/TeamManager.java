@@ -46,7 +46,7 @@ public class TeamManager extends BaseManager {
             team = scoreboard.registerNewTeam(colorName);
 
             try {
-                team.setColor(ChatColor.valueOf(colorName));
+                team.setColor(Utils.toChatColor(colorName));
             } catch (Exception ignored) {
             }
 
@@ -181,8 +181,7 @@ public class TeamManager extends BaseManager {
     }
 
     public boolean addTeamMember(@NotNull String username, @NotNull String teamName) {
-        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(username);
-        return addTeamMember(offlinePlayer.getUniqueId(), username, teamName);
+        return addTeamMember(Utils.getPlayerUUID(username), username, teamName);
     }
 
     public boolean addTeamMember(@NotNull String username, @NotNull ChampionshipTeam championshipTeam) {

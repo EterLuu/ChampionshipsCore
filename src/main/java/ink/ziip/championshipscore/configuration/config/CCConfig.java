@@ -24,6 +24,10 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "mode")
     public static String MODE;
 
+    // Players
+    @ConfigOption(path = "max-players")
+    public static int MAX_PLAYERS;
+
     // Database
     @ConfigOption(path = "database.type")
     public static String DATABASE_TYPE;

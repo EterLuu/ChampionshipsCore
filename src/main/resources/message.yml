@@ -228,6 +228,7 @@ snowball:
   player-leave: "&b[&3WCC&b] &f%player% &c离开游戏。"
 placeholder:
   none: "无"
+  spectator: "&7旁观"
   parkourtag-spectator: "观察者"
   parkourtag-chaser: "追击者"
   parkourtag-escapee: "逃脱者"

@@ -661,6 +661,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "placeholder.none")
     public static String PLACEHOLDER_NONE;
 
+    @ConfigOption(path = "placeholder.spectator")
+    public static String PLACEHOLDER_SPECTATOR;
+
     @ConfigOption(path = "placeholder.parkourtag-spectator")
     public static String PLACEHOLDER_PARKOUR_TAG_SPECTATOR;
 

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.listener;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -80,6 +81,12 @@ public class ProtectionListener extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerChangeSign(SignChangeEvent event) {
+        World world = CCConfig.LOBBY_LOCATION.getWorld();
+        if (world != null) {
+            if (event.getPlayer().getWorld().getName().equals(world.getName()))
+                return;
+        }
+
         if (!event.getPlayer().isOp())
             event.setCancelled(true);
     }

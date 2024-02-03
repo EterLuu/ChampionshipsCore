@@ -36,7 +36,7 @@ public class SpectateSubCommand extends BaseSubCommand {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer((Player) sender);
         if (plugin.getRankManager().getRound() != 7) {
-            if (championshipTeam != null) {
+            if (championshipTeam != null && !sender.hasPermission("cc.refuge")) {
                 sender.sendMessage(MessageConfig.SPECTATOR_IS_PLAYER);
                 return true;
             }

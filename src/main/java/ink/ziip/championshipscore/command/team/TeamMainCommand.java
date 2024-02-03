@@ -8,5 +8,6 @@ public class TeamMainCommand extends BaseMainCommand {
         addSubCommand(new TeamAddSubCommand());
         addSubCommand(new TeamDeleteSubCommand());
         addSubCommand(new TeamInfoSubCommand());
+        addSubCommand(new TeamTeleportationSubCommand());
     }
 }
