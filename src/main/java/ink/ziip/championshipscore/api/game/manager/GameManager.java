@@ -169,8 +169,8 @@ public class GameManager extends BaseManager {
                 return false;
 
             plugin.getBingoManager().startGame();
+            BingoTeamArea bingoArea = new BingoTeamArea(plugin, null, null);
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                BingoTeamArea bingoArea = new BingoTeamArea(plugin, null, null);
                 teamStatus.put(championshipTeam, bingoArea);
                 addPlayerStatusByTeam(championshipTeam, bingoArea);
             }

@@ -6,7 +6,9 @@ import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -65,6 +67,12 @@ public class BingoTeamArea extends BaseSingleTeamArea {
 
     @Override
     public void handlePlayerJoin(@NotNull PlayerJoinEvent event) {
-
+        Player player = event.getPlayer();
+        if (plugin.getBingoManager().isStarted()) {
+            player.setGameMode(GameMode.SURVIVAL);
+        } else {
+            player.teleport(CCConfig.BINGO_SPAWN_LOCATION);
+            player.setGameMode(GameMode.SPECTATOR);
+        }
     }
 }

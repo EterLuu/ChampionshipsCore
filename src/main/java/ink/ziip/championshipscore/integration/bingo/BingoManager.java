@@ -19,9 +19,9 @@ import io.github.steaf23.bingoreloaded.player.team.TeamManager;
 import io.github.steaf23.bingoreloaded.tasks.BingoTask;
 import lombok.Getter;
 import lombok.Setter;
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -76,6 +76,7 @@ public class BingoManager extends BaseManager {
 
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 championshipTeam.teleportAllPlayers(CCConfig.BINGO_SPAWN_LOCATION);
+                championshipTeam.setGameModeForAllPlayers(GameMode.SPECTATOR);
             }
 
             timer = 20;
@@ -109,6 +110,9 @@ public class BingoManager extends BaseManager {
 
                 if (timer == 0) {
                     Utils.changeLevelForAllPlayers(0);
+                    for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                        championshipTeam.setGameModeForAllPlayers(GameMode.SURVIVAL);
+                    }
                     session.startGame();
                     task.cancel();
                 }
@@ -168,15 +172,16 @@ public class BingoManager extends BaseManager {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 championshipTeam.teleportAllPlayers(CCConfig.LOBBY_LOCATION);
             }
-        }, 40L);
+        }, 50L);
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                championshipTeam.setGameModeForAllPlayers(GameMode.ADVENTURE);
                 championshipTeam.cleanInventoryForAllPlayers();
             }
 
             Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
-        }, 60L);
+        }, 70L);
 
         teamPoints.clear();
         playerPoints.clear();
