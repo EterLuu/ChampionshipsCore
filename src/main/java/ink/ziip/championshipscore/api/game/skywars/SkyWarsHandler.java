@@ -72,6 +72,40 @@ public class SkyWarsHandler extends BaseListener {
         }
     }
 
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onCreeperTargetPlayer(EntityTargetEvent event) {
+        if (event.getEntity() instanceof Creeper creeper) {
+            if (event.getTarget() instanceof Player target) {
+                if (skyWarsArea.notAreaPlayer(target)) {
+                    return;
+                }
+
+                Location location = target.getLocation();
+                if (skyWarsArea.notInArea(location)) {
+                    return;
+                }
+
+                if (skyWarsArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
+                    event.setCancelled(true);
+                    return;
+                }
+
+                Player spawner = Bukkit.getPlayer(creeper.getName());
+                if (spawner == null)
+                    return;
+
+                ChampionshipTeam spawnerTeam = plugin.getTeamManager().getTeamByPlayer(spawner);
+                ChampionshipTeam targetTeam = plugin.getTeamManager().getTeamByPlayer(target);
+
+                if (spawnerTeam != null && targetTeam != null) {
+                    if (spawnerTeam.equals(targetTeam)) {
+                        event.setCancelled(true);
+                    }
+                }
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamagedByPlayer(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {
