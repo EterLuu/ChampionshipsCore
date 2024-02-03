@@ -11,7 +11,7 @@ import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -20,6 +20,8 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -47,29 +49,6 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         getGameHandler().register();
 
         setGameStageEnum(GameStageEnum.WAITING);
-    }
-
-    @Override
-    public void resetArea() {
-        cleanDroppedItems();
-
-        areaLocations.clear();
-        playerRespawnLocations.clear();
-        playerSpawnLocation.clear();
-        playerRespawnTime.clear();
-        teamShootTimes.clear();
-        playerIndividualKills.clear();
-        teamRank.clear();
-
-        startGamePreparationTask = null;
-        startGameProgressTask = null;
-    }
-
-    @Override
-    public void startGamePreparation() {
-        setGameStageEnum(GameStageEnum.PREPARATION);
-
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         ConfigurationSection configurationSection = getGameConfig().getPlayerSpawnPoints();
         for (String areaName : configurationSection.getKeys(false)) {
@@ -80,6 +59,40 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
             areaLocations.add(locations);
         }
+    }
+
+    @Override
+    public void resetArea() {
+        cleanDroppedItems();
+
+        playerRespawnLocations.clear();
+        playerSpawnLocation.clear();
+        playerRespawnTime.clear();
+        teamShootTimes.clear();
+        playerIndividualKills.clear();
+        teamRank.clear();
+
+        startGamePreparationTask = null;
+        startGameProgressTask = null;
+
+        World world = getSpectatorSpawnLocation().getWorld();
+        Vector pos1 = getGameConfig().getAreaPos1();
+        Vector pos2 = getGameConfig().getAreaPos2();
+        BoundingBox boundingBox = new BoundingBox(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
+        if (world != null) {
+            for (Entity entity : world.getNearbyEntities(boundingBox)) {
+                if (entity instanceof Snowball) {
+                    entity.remove();
+                }
+            }
+        }
+    }
+
+    @Override
+    public void startGamePreparation() {
+        setGameStageEnum(GameStageEnum.PREPARATION);
+
+        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         for (ChampionshipTeam championshipTeam : gameTeams) {
             Collections.shuffle(areaLocations);
