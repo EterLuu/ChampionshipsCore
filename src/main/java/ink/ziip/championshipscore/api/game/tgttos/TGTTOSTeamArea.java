@@ -352,11 +352,9 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                if (player.isOnline()) {
-                    if (!playerSpawnPointsI.hasNext())
-                        playerSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
-                    player.teleport(Utils.getLocation(playerSpawnPointsI.next()));
-                }
+                if (!playerSpawnPointsI.hasNext())
+                    playerSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
+                player.teleport(Utils.getLocation(playerSpawnPointsI.next()));
             }
         }
     }

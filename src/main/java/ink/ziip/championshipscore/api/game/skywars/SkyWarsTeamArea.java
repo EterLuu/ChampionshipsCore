@@ -122,7 +122,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player == null || !player.isOnline()) {
+            if (player == null) {
                 deathPlayer.add(uuid);
             }
         }
@@ -212,7 +212,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             for (UUID uuid : gamePlayersCopy) {
                 Player player = Bukkit.getPlayer(uuid);
 
-                if (player != null && player.isOnline()) {
+                if (player != null) {
                     Location location = player.getLocation();
                     ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(player);
 

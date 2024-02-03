@@ -107,7 +107,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         for (UUID uuid : playerSpawnLocations.keySet()) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline()) {
+            if (player != null) {
                 player.teleport(playerSpawnLocations.get(uuid));
             }
         }
@@ -146,7 +146,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         int offlinePlayers = 0;
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player == null || !player.isOnline()) {
+            if (player == null) {
                 deathPlayer.add(uuid);
                 offlinePlayers++;
                 plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + playerManager.getPlayerName(uuid) + " (" + uuid + ") not online");
@@ -239,7 +239,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
         handlePlayerMoveTask = scheduler.runTaskTimer(plugin, () -> gamePlayersCopy.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline() && !deathPlayer.contains(uuid)) {
+            if (player != null && !deathPlayer.contains(uuid)) {
                 handlePlayerMove(player);
             }
         }), 0, 1L);

@@ -457,7 +457,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     private void teleportPlayersToSpawnLocation() {
         for (UUID uuid : playerSpawnLocation.keySet()) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline()) {
+            if (player != null) {
                 player.teleport(playerSpawnLocation.get(uuid));
             }
         }
@@ -466,7 +466,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     private void giveItemToAllGamePlayersAndTeleport() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline()) {
+            if (player != null) {
                 givePlayerItem(player);
             }
         }

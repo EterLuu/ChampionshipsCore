@@ -114,7 +114,7 @@ public class ChampionshipTeam {
             if (player == null) {
                 offlineMembers.add(uuid);
             }
-            if (player != null && !player.isOnline()) {
+            if (player != null) {
                 offlineMembers.add(uuid);
             }
         }
@@ -138,7 +138,7 @@ public class ChampionshipTeam {
         List<Player> list = new ArrayList<>();
         for (UUID uuid : members) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline()) {
+            if (player != null) {
                 list.add(player);
             }
         }
