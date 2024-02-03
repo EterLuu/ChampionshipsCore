@@ -173,7 +173,7 @@ public class Utils {
 
     public static void sendTitleToAllPlayers(String title, String subtitle) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendTitle(title, subtitle, 0, 1, 0);
+            player.sendTitle(title, subtitle, 0, 20, 0);
         }
     }
 

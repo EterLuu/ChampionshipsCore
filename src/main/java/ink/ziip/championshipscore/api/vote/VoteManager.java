@@ -45,6 +45,7 @@ public class VoteManager extends BaseManager {
         voteTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
+            Utils.sendTitleToAllPlayers(MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
 
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(timer);
