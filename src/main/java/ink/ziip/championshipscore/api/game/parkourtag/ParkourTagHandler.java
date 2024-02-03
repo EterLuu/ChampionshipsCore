@@ -76,7 +76,7 @@ public class ParkourTagHandler extends BaseListener {
 
                                     leftChampionshipTeam.sendMessageToAll(message
                                             .replace("%player%", player.getName())
-                                            .replace("%times%", String.valueOf(plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid) + 1)));
+                                            .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid) - 1)));
                                 }
                             }
                         } else {
