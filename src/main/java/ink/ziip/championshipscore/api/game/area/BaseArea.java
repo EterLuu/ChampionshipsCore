@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
+import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -31,6 +32,7 @@ public abstract class BaseArea {
     protected final ChampionshipsCore plugin;
     protected final BukkitScheduler scheduler;
     protected final BaseAreaHandler baseAreaHandler;
+    protected final PlayerManager playerManager;
 
     protected BaseListener gameHandler;
     protected BaseGameConfig gameConfig;
@@ -39,6 +41,8 @@ public abstract class BaseArea {
     protected GameTypeEnum gameTypeEnum;
 
     public BaseArea(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum, BaseListener gameHandler, BaseGameConfig gameConfig) {
+        this.playerManager = plugin.getPlayerManager();
+
         this.gameStageEnum = GameStageEnum.END;
         this.plugin = plugin;
         this.scheduler = plugin.getServer().getScheduler();
@@ -68,7 +72,7 @@ public abstract class BaseArea {
 
     public void addPlayerPoints(UUID uuid, int points) {
         playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
-        plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
+        plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + plugin.getPlayerManager().getPlayerName(uuid) + " (" + uuid + ") get points " + points);
         ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(uuid);
         if (championshipPlayer != null)
             championshipPlayer.sendActionBar("&e[+] " + points);
@@ -77,14 +81,14 @@ public abstract class BaseArea {
     public void addPlayerPointsToAllTeamMembers(ChampionshipTeam championshipTeam, int points) {
         for (UUID uuid : championshipTeam.getMembers()) {
             playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
-            plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
+            plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + plugin.getPlayerManager().getPlayerName(uuid) + " (" + uuid + ") get points " + points);
         }
     }
 
     public void addPlayerPointsToDatabase() {
         for (Map.Entry<UUID, Integer> playerPointEntry : playerPoints.entrySet()) {
             if (playerPointEntry.getValue() != 0)
-                plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+                plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
         }
     }
 
@@ -113,8 +117,7 @@ public abstract class BaseArea {
 
         int i = 1;
         for (Map.Entry<UUID, Integer> entry : list) {
-            // TODO changed method getting name
-            String username = Bukkit.getOfflinePlayer(entry.getKey()).getName();
+            String username = plugin.getPlayerManager().getPlayerName(entry.getKey());
             if (username != null) {
                 String row = MessageConfig.RANK_PLAYER_BOARD_ROW
                         .replace("%player_rank%", String.valueOf(i))

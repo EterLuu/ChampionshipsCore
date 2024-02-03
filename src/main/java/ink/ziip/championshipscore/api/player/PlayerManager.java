@@ -2,6 +2,10 @@ package ink.ziip.championshipscore.api.player;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.player.dao.PlayerDao;
+import ink.ziip.championshipscore.api.player.dao.PlayerDaoImpl;
+import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -14,9 +18,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerManager extends BaseManager {
     private static final Map<UUID, ChampionshipPlayer> cachedPlayers = new ConcurrentHashMap<>();
+    private static final Map<String, UUID> cachedPlayerUUID = new ConcurrentHashMap<>();
+    private static final Map<UUID, String> cachedPlayerName = new ConcurrentHashMap<>();
+    private final PlayerDao playerDao;
 
     public PlayerManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
+        playerDao = new PlayerDaoImpl();
     }
 
     @Override
@@ -44,15 +52,71 @@ public class PlayerManager extends BaseManager {
         }
     }
 
-    public ChampionshipPlayer addPlayer(@NotNull Player player) {
+    public void addPlayer(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
-        return addPlayer(uuid);
+        addPlayer(uuid);
     }
 
-    @Nullable
-    public ChampionshipPlayer addPlayer(@NotNull OfflinePlayer offlinePlayer) {
-        UUID uuid = offlinePlayer.getUniqueId();
-        return addPlayer(uuid);
+    public void updatePlayer(@NotNull Player player) {
+        setPlayerUUID(player);
+    }
+
+    public void setPlayerUUID(@NotNull Player player) {
+        if (cachedPlayerUUID.containsKey(player.getName()))
+            return;
+
+        String username = player.getName();
+        UUID uuid = player.getUniqueId();
+
+        cachedPlayerUUID.put(username, uuid);
+        cachedPlayerName.put(uuid, username);
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            PlayerEntry playerEntry = playerDao.getPlayer(username);
+            if (playerEntry == null) {
+                playerDao.addPlayer(username, uuid);
+            }
+        });
+    }
+
+    public UUID getPlayerUUID(@NotNull String name) {
+        if (cachedPlayerUUID.containsKey(name))
+            return cachedPlayerUUID.get(name);
+
+        UUID uuid = null;
+
+        PlayerEntry playerEntry = playerDao.getPlayer(name);
+        if (playerEntry == null) {
+            uuid = Utils.getPlayerUUID(name);
+            playerDao.addPlayer(name, uuid);
+        } else {
+            uuid = playerEntry.getUuid();
+        }
+
+        cachedPlayerUUID.put(name, uuid);
+        cachedPlayerName.put(uuid, name);
+
+        return uuid;
+    }
+
+    public String getPlayerName(@NotNull UUID uuid) {
+        if (cachedPlayerName.containsKey(uuid))
+            return cachedPlayerName.get(uuid);
+
+        String name = null;
+
+        PlayerEntry playerEntry = playerDao.getPlayer(uuid);
+        if (playerEntry != null) {
+            name = playerEntry.getName();
+        }
+
+        if (name == null) {
+            return "unknown";
+        }
+
+        cachedPlayerName.put(uuid, name);
+
+        return name;
     }
 
     public ChampionshipPlayer getPlayer(@NotNull UUID uuid) {
@@ -73,7 +137,6 @@ public class PlayerManager extends BaseManager {
 
     @Nullable
     public ChampionshipPlayer getPlayer(@NotNull String name) {
-        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
-        return getPlayer(offlinePlayer.getUniqueId());
+        return getPlayer(getPlayerUUID(name));
     }
 }

@@ -141,7 +141,7 @@ public class BingoManager extends BaseManager {
 
             for (UUID uuid : entry.getKey().getMembers()) {
                 int points = playerPoints.getOrDefault(uuid, 0) + entry.getValue();
-                plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(uuid), null, GameTypeEnum.Bingo, "bingo", points);
+                plugin.getRankManager().addPlayerPoints(uuid, null, GameTypeEnum.Bingo, "bingo", points);
             }
 
             i++;

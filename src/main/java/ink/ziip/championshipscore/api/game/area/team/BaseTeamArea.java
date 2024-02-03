@@ -56,9 +56,9 @@ public abstract class BaseTeamArea extends BaseArea {
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(playerPointEntry.getKey());
                 if (championshipTeam != null) {
                     if (championshipTeam.equals(rightChampionshipTeam))
-                        plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), leftChampionshipTeam, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+                        plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), leftChampionshipTeam, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
                     if (championshipTeam.equals(leftChampionshipTeam))
-                        plugin.getRankManager().addPlayerPoints(Bukkit.getOfflinePlayer(playerPointEntry.getKey()), rightChampionshipTeam, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+                        plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), rightChampionshipTeam, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
                 }
             }
         }

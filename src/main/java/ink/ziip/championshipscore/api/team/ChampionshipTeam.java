@@ -69,8 +69,7 @@ public class ChampionshipTeam {
     }
 
     protected boolean addMember(@NotNull String name) {
-        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
-        return addMember(offlinePlayer.getUniqueId());
+        return addMember(ChampionshipsCore.getInstance().getPlayerManager().getPlayerUUID(name));
     }
 
     protected void addMembers(@NotNull Set<UUID> members) {

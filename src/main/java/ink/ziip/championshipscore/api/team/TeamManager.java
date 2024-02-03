@@ -8,7 +8,6 @@ import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -51,8 +50,7 @@ public class TeamManager extends BaseManager {
             }
 
             for (UUID uuid : members) {
-                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
-                String playerName = offlinePlayer.getName();
+                String playerName = plugin.getPlayerManager().getPlayerName(uuid);
                 if (playerName != null) {
                     team.addEntry(playerName);
                 }
@@ -73,6 +71,11 @@ public class TeamManager extends BaseManager {
                 team.unregister();
             }
             team = scoreboard.registerNewTeam(colorName);
+
+            try {
+                team.setColor(Utils.toChatColor(colorName));
+            } catch (Exception ignored) {
+            }
 
             ChampionshipTeam championshipTeam = new ChampionshipTeam(id, name, colorName, colorCode, team);
             cachedTeams.put(name, championshipTeam);
@@ -181,7 +184,7 @@ public class TeamManager extends BaseManager {
     }
 
     public boolean addTeamMember(@NotNull String username, @NotNull String teamName) {
-        return addTeamMember(Utils.getPlayerUUID(username), username, teamName);
+        return addTeamMember(plugin.getPlayerManager().getPlayerUUID(username), username, teamName);
     }
 
     public boolean addTeamMember(@NotNull String username, @NotNull ChampionshipTeam championshipTeam) {
@@ -190,8 +193,7 @@ public class TeamManager extends BaseManager {
 
     private boolean deleteTeamMember(@NotNull UUID uuid, @NotNull ChampionshipTeam championshipTeam) {
         if (championshipTeam.deleteMember(uuid)) {
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
-            String username = offlinePlayer.getName();
+            String username = plugin.getPlayerManager().getPlayerName(uuid);
             if (username != null)
                 championshipTeam.getTeam().removeEntry(username);
 

@@ -123,7 +123,7 @@ public class ParkourTagArea extends BaseTeamArea {
             if (rightAreaChaser == null) {
                 rightAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(rightChampionshipTeam);
                 rightChampionshipTeam.sendMessageToAll(message
-                        .replace("%player%", rightChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(rightAreaChaser).getName())
+                        .replace("%player%", rightChampionshipTeam.getColoredColor() + playerManager.getPlayerName(rightAreaChaser))
                         .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(rightAreaChaser) - 1))
                 );
             }
@@ -131,7 +131,7 @@ public class ParkourTagArea extends BaseTeamArea {
             if (leftAreaChaser == null) {
                 leftAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(leftChampionshipTeam);
                 leftChampionshipTeam.sendMessageToAll(message
-                        .replace("%player%", leftChampionshipTeam.getColoredColor() + Bukkit.getOfflinePlayer(leftAreaChaser).getName())
+                        .replace("%player%", leftChampionshipTeam.getColoredColor() + playerManager.getPlayerName(leftAreaChaser))
                         .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(leftAreaChaser) - 1))
                 );
             }
@@ -227,7 +227,7 @@ public class ParkourTagArea extends BaseTeamArea {
         for (UUID uuid : championshipTeam.getOfflineMembers()) {
             if (!uuid.equals(areaChaser)) {
                 playerSurviveTimes.put(uuid, 0);
-                plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") not online, set survive time 0.");
+                plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Player " + playerManager.getPlayerName(uuid) + " (" + uuid + ") not online, set survive time 0.");
             }
         }
     }
@@ -324,7 +324,7 @@ public class ParkourTagArea extends BaseTeamArea {
         for (Map.Entry<UUID, Integer> surviveEntry : playerSurviveTimes.entrySet()) {
             int points = surviveEntry.getValue() / 10 * 2;
             addPlayerPoints(surviveEntry.getKey(), points);
-            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Player " + Bukkit.getOfflinePlayer(surviveEntry.getKey()).getName() + " survived " + surviveEntry.getValue() + "s, get points " + points);
+            plugin.getLogger().log(Level.INFO, GameTypeEnum.ParkourTag + ", " + getGameConfig().getAreaName() + ", Player " + playerManager.getPlayerName(surviveEntry.getKey()) + " survived " + surviveEntry.getValue() + "s, get points " + points);
         }
 
         // The team that successfully kills all the survivors faster earns 30 points each
@@ -541,7 +541,7 @@ public class ParkourTagArea extends BaseTeamArea {
         for (UUID uuid : championshipTeam.getMembers()) {
             if (!uuid.equals(rightAreaChaser) && !uuid.equals(leftAreaChaser))
                 addPlayerPoints(uuid, points);
-            plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") get points " + points);
+            plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + playerManager.getPlayerName(uuid) + " (" + uuid + ") get points " + points);
         }
     }
 

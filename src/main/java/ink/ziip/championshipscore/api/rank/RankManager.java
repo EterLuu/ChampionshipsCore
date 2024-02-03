@@ -3,6 +3,8 @@ package ink.ziip.championshipscore.api.rank;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.player.dao.PlayerDaoImpl;
+import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.rank.dao.RankDaoImpl;
 import ink.ziip.championshipscore.api.rank.entry.GameStatusEntry;
 import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
@@ -13,7 +15,6 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
@@ -29,6 +30,7 @@ public class RankManager extends BaseManager {
     private static final Map<GameTypeEnum, Integer> gameOrder = new ConcurrentHashMap<>();
     private final RankDaoImpl rankDao = new RankDaoImpl();
     private final TeamDaoImpl teamDao = new TeamDaoImpl();
+    private final PlayerDaoImpl playerDao = new PlayerDaoImpl();
     private final BukkitScheduler scheduler = Bukkit.getScheduler();
     @Getter
     private List<Map.Entry<ChampionshipTeam, Double>> teamLeaderboard = new ArrayList<>();
@@ -151,8 +153,7 @@ public class RankManager extends BaseManager {
 
             int i = 1;
             for (Map.Entry<UUID, Double> entry : list) {
-                // TODO changed method getting name
-                String username = Bukkit.getOfflinePlayer(entry.getKey()).getName();
+                String username = plugin.getPlayerManager().getPlayerName(entry.getKey());
                 if (username != null) {
                     String row = MessageConfig.RANK_PLAYER_BOARD_ROW
                             .replace("%player_rank%", String.valueOf(i))
@@ -211,15 +212,18 @@ public class RankManager extends BaseManager {
         });
     }
 
-    public void addPlayerPoints(OfflinePlayer offlinePlayer, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, int points) {
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+    public void addPlayerPoints(UUID uuid, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, int points) {
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (rival == null) {
             rival = championshipTeam;
         }
+        PlayerEntry playerEntry = playerDao.getPlayer(uuid);
+        if (playerEntry == null)
+            return;
         if (championshipTeam != null) {
             PlayerPointEntry playerPointEntry = PlayerPointEntry.builder()
-                    .uuid(offlinePlayer.getUniqueId())
-                    .username(offlinePlayer.getName())
+                    .uuid(playerEntry.getUuid())
+                    .username(playerEntry.getName())
                     .teamId(championshipTeam.getId())
                     .team(championshipTeam.getName())
                     .rivalId(rival.getId())

@@ -60,6 +60,7 @@ public class PlayerListener extends BaseListener {
         Player player = event.getPlayer();
         PlayerManager playerManager = ChampionshipsCore.getInstance().getPlayerManager();
         playerManager.getPlayer(player).updatePlayer();
+        playerManager.updatePlayer(player);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

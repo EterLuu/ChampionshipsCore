@@ -63,3 +63,15 @@ CREATE TABLE IF NOT EXISTS `game_status`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
+
+-- Create the players if it does not exist
+CREATE TABLE IF NOT EXISTS `players`
+(
+    `id`       INTEGER      NOT NULL AUTO_INCREMENT,
+    `uuid`     VARCHAR(255) NOT NULL,
+    `username` VARCHAR(255) NOT NULL,
+
+    PRIMARY KEY (`id`)
+    ) ENGINE = InnoDB
+    DEFAULT CHARSET = utf8mb4
+    COLLATE = utf8mb4_unicode_ci;

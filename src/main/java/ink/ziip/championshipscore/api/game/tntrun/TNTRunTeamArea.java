@@ -149,7 +149,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
             if (player == null || !player.isOnline()) {
                 deathPlayer.add(uuid);
                 offlinePlayers++;
-                plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + Bukkit.getOfflinePlayer(uuid).getName() + " (" + uuid + ") not online");
+                plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + playerManager.getPlayerName(uuid) + " (" + uuid + ") not online");
             }
         }
         addPointsToAllSurvivePlayers(offlinePlayers * 4);
