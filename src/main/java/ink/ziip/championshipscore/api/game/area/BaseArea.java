@@ -86,9 +86,11 @@ public abstract class BaseArea {
     }
 
     public void addPlayerPointsToDatabase() {
-        for (Map.Entry<UUID, Integer> playerPointEntry : playerPoints.entrySet()) {
-            if (playerPointEntry.getValue() != 0)
-                plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+        if (plugin.isLoaded()) {
+            for (Map.Entry<UUID, Integer> playerPointEntry : playerPoints.entrySet()) {
+                if (playerPointEntry.getValue() != 0)
+                    plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+            }
         }
     }
 
@@ -237,19 +239,14 @@ public abstract class BaseArea {
         Player player = event.getPlayer();
         if (isSpectator(player)) {
             player.teleport(getSpectatorSpawnLocation());
-            player.setGameMode(GameMode.ADVENTURE);
-            player.setAllowFlight(true);
-            player.setFlying(true);
-            plugin.getGameManager().setPlayerVisible(player, false);
+            player.setGameMode(GameMode.SPECTATOR);
         }
     }
 
     public void teleportAllSpectators(@NotNull Location location) {
         for (Player player : getOnlineSpectators()) {
             player.teleport(location);
-            player.setGameMode(GameMode.ADVENTURE);
-            player.setAllowFlight(true);
-            player.setFlying(true);
+            player.setGameMode(GameMode.SPECTATOR);
         }
     }
 
@@ -257,27 +254,38 @@ public abstract class BaseArea {
         Player player = event.getPlayer();
         if (isSpectator(player)) {
             removeSpectator(player);
+            onlyRemoveSpectatorFromList(player.getUniqueId());
         }
     }
 
     public void addSpectator(@NotNull Player player) {
         spectators.add(player.getUniqueId());
         player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.ADVENTURE);
-        player.setAllowFlight(true);
-        player.setFlying(true);
-        plugin.getGameManager().setPlayerVisible(player, false);
+        player.setGameMode(GameMode.SPECTATOR);
     }
 
     public void removeAllSpectator() {
         for (Player player : getOnlineSpectators()) {
             removeSpectator(player);
         }
+        spectators.clear();
     }
 
     public void endGameFinally() {
         removeAllSpectator();
+        removeAllPlayers();
         endGame();
+    }
+
+    public void removeSpectator(@NotNull UUID uuid) {
+        if (spectators.contains(uuid)) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                removeSpectator(player);
+            } else {
+                onlyRemoveSpectatorFromList(uuid);
+            }
+        }
     }
 
     public void removeSpectator(@NotNull Player player) {
@@ -286,10 +294,7 @@ public abstract class BaseArea {
             spectators.remove(player.getUniqueId());
             player.teleport(getLobbyLocation());
             player.setGameMode(GameMode.ADVENTURE);
-            player.setAllowFlight(false);
-            player.setFlying(false);
             player.setLevel(0);
-            plugin.getGameManager().setPlayerVisible(player, true);
         }
     }
 
@@ -382,6 +387,8 @@ public abstract class BaseArea {
     public abstract BaseListener getGameHandler();
 
     public abstract String getWorldName();
+
+    public abstract void removeAllPlayers();
 
     public abstract void startGamePreparation();
 

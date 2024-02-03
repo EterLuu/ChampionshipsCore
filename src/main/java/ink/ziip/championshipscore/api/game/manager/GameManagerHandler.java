@@ -56,20 +56,19 @@ public class GameManagerHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        plugin.getGameManager().updatePlayer(player);
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
+        BaseArea baseArea = null;
         if (championshipTeam != null) {
-            BaseArea baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
+            baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
             if (baseArea != null) {
                 baseArea.handlePlayerJoin(event);
                 return;
             }
-        } else {
-            BaseArea baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
-            if (baseArea != null) {
-                baseArea.handleSpectatorJoin(event);
-                return;
-            }
+        }
+        baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
+        if (baseArea != null) {
+            baseArea.handleSpectatorJoin(event);
+            return;
         }
 
         World world = player.getWorld();
@@ -82,19 +81,18 @@ public class GameManagerHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        plugin.getGameManager().updatePlayer(player);
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
+        BaseArea baseArea = null;
         if (championshipTeam != null) {
-            BaseArea baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
+            baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
             if (baseArea != null) {
                 baseArea.handlePlayerQuit(event);
             }
-        } else {
-            BaseArea baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
-            if (baseArea != null) {
-                baseArea.handleSpectatorQuit(event);
-                plugin.getGameManager().leaveSpectating(player);
-            }
+        }
+        baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
+        if (baseArea != null) {
+
+            plugin.getGameManager().leaveSpectating(player);
         }
     }
 

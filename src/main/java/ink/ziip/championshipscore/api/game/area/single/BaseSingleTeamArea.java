@@ -10,6 +10,7 @@ import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -181,5 +182,16 @@ public abstract class BaseSingleTeamArea extends BaseArea {
     public boolean notAreaPlayer(@NotNull Player player) {
         UUID playerUUID = player.getUniqueId();
         return !gamePlayers.contains(playerUUID);
+    }
+
+    @Override
+    public void removeAllPlayers() {
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                player.teleport(getLobbyLocation());
+                player.setGameMode(GameMode.ADVENTURE);
+            }
+        }
     }
 }

@@ -23,7 +23,6 @@ import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GameManager extends BaseManager {
-    private final Map<UUID, Boolean> playerVisibleOption = new ConcurrentHashMap<>();
     private final Map<UUID, BaseArea> playerSpectatorStatus = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, BaseArea> teamStatus = new ConcurrentHashMap<>();
     private final Map<UUID, BaseArea> playerStatus = new ConcurrentHashMap<>();
@@ -96,13 +94,13 @@ public class GameManager extends BaseManager {
             if (playerStatus.containsKey(uuid))
                 return false;
             if (playerSpectatorStatus.containsKey(uuid))
-                return false;
+                removeSpectator(uuid);
         }
         for (UUID uuid : leftChampionshipTeam.getMembers()) {
             if (playerStatus.containsKey(uuid))
                 return false;
             if (playerSpectatorStatus.containsKey(uuid))
-                return false;
+                removeSpectator(uuid);
         }
         if (teamStatus.containsKey(rightChampionshipTeam))
             return false;
@@ -158,6 +156,12 @@ public class GameManager extends BaseManager {
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
             if (teamStatus.containsKey(championshipTeam))
                 return false;
+        }
+
+        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+            for (UUID uuid : championshipTeam.getMembers()) {
+                removeSpectator(uuid);
+            }
         }
 
         if (gameTypeEnum == GameTypeEnum.Bingo) {
@@ -320,44 +324,19 @@ public class GameManager extends BaseManager {
         return false;
     }
 
-    public boolean removeSpectatingPlayerFromList(@NotNull UUID uuid) {
+    public void removeSpectator(@NotNull UUID uuid) {
+        if (playerSpectatorStatus.containsKey(uuid)) {
+            BaseArea baseArea = playerSpectatorStatus.get(uuid);
+            baseArea.removeSpectator(uuid);
+            playerSpectatorStatus.remove(uuid);
+        }
+    }
+
+    public void removeSpectatingPlayerFromList(@NotNull UUID uuid) {
         if (playerSpectatorStatus.containsKey(uuid)) {
             BaseArea baseArea = playerSpectatorStatus.get(uuid);
             baseArea.onlyRemoveSpectatorFromList(uuid);
             playerSpectatorStatus.remove(uuid);
-            return true;
-        }
-
-        return false;
-    }
-
-    public void updatePlayer(@NotNull Player player) {
-        setPlayerVisible(player, getPlayerVisible(player));
-    }
-
-    public boolean getPlayerVisible(@NotNull Player player) {
-        return playerVisibleOption.getOrDefault(player.getUniqueId(), true);
-    }
-
-    public void setPlayerVisible(@NotNull Player player, boolean visible) {
-        UUID uuid = player.getUniqueId();
-        playerVisibleOption.put(uuid, visible);
-        if (visible) {
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                onlinePlayer.showPlayer(plugin, player);
-            }
-        } else {
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                onlinePlayer.hidePlayer(plugin, player);
-            }
-            for (Map.Entry<UUID, Boolean> playerVisibleOptionEntry : playerVisibleOption.entrySet()) {
-                Player playerEntry = Bukkit.getPlayer(playerVisibleOptionEntry.getKey());
-                if (playerEntry != null) {
-                    if (!playerVisibleOptionEntry.getValue()) {
-                        playerEntry.showPlayer(plugin, player);
-                    }
-                }
-            }
         }
     }
 }

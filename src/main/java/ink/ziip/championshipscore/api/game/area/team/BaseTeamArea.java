@@ -202,4 +202,16 @@ public abstract class BaseTeamArea extends BaseArea {
         }
         return true;
     }
+
+    @Override
+    public void removeAllPlayers() {
+        if (rightChampionshipTeam != null) {
+            rightChampionshipTeam.teleportAllPlayers(getLobbyLocation());
+            rightChampionshipTeam.setGameModeForAllPlayers(GameMode.ADVENTURE);
+        }
+        if (leftChampionshipTeam != null) {
+            leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
+            leftChampionshipTeam.setGameModeForAllPlayers(GameMode.ADVENTURE);
+        }
+    }
 }

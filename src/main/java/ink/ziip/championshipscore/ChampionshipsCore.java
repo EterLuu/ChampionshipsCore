@@ -18,7 +18,6 @@ import ink.ziip.championshipscore.database.DatabaseManager;
 import ink.ziip.championshipscore.util.glowing.GlowingEntities;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -43,7 +42,6 @@ public final class ChampionshipsCore extends JavaPlugin {
     private BingoManager bingoManager;
     private WorldManager worldManager;
     private GlowingEntities glowingEntities;
-    //    private GlowingBlocks glowingBlocks;
     private PlaceholderManager placeholderManager;
     private VoteManager voteManager;
     private ScheduleManager scheduleManager;
@@ -77,7 +75,6 @@ public final class ChampionshipsCore extends JavaPlugin {
         rankManager = new RankManager(this);
         worldManager = new WorldManager(this);
         glowingEntities = new GlowingEntities(this);
-//        glowingBlocks = new GlowingBlocks(this);
         placeholderManager = new PlaceholderManager(this);
         voteManager = new VoteManager(this);
         scheduleManager = new ScheduleManager(this);
@@ -106,10 +103,6 @@ public final class ChampionshipsCore extends JavaPlugin {
         scheduleManager.load();
 
         getLogger().log(Level.INFO, CCConfig.MODE);
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            gameManager.setPlayerVisible(player, true);
-        }
     }
 
     @Override
