@@ -5,9 +5,13 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.battlebox.BattleBoxScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourtag.ParkourTagScheduleManager;
+import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleManager;
+import ink.ziip.championshipscore.api.schedule.snowball.SnowballScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.snowball.SnowballScheduleManager;
+import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleManager;
+import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
@@ -19,33 +23,33 @@ import org.bukkit.scheduler.BukkitScheduler;
 public class ScheduleManager extends BaseManager {
     private final BukkitScheduler scheduler;
     @Getter
-    private final SnowballScheduleManager snowballScheduleManager;
+    private SnowballScheduleManager snowballScheduleManager;
     @Getter
-    private final SkyWarsScheduleManager skyWarsScheduleManager;
+    private SkyWarsScheduleManager skyWarsScheduleManager;
     @Getter
-    private final TNTRunScheduleManager tntRunScheduleManager;
+    private TNTRunScheduleManager tntRunScheduleManager;
     @Getter
-    private final TGTTOSScheduleManager tgttosScheduleManager;
+    private TGTTOSScheduleManager tgttosScheduleManager;
     @Getter
-    private final BattleBoxScheduleManager battleBoxScheduleManager;
+    private BattleBoxScheduleManager battleBoxScheduleManager;
     @Getter
-    private final ParkourTagScheduleManager parkourTagScheduleManager;
+    private ParkourTagScheduleManager parkourTagScheduleManager;
     private int timer;
 
     public ScheduleManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
         scheduler = championshipsCore.getServer().getScheduler();
-
-        snowballScheduleManager = new SnowballScheduleManager(plugin);
-        skyWarsScheduleManager = new SkyWarsScheduleManager(plugin);
-        tntRunScheduleManager = new TNTRunScheduleManager(plugin);
-        tgttosScheduleManager = new TGTTOSScheduleManager(plugin);
-        battleBoxScheduleManager = new BattleBoxScheduleManager(plugin);
-        parkourTagScheduleManager = new ParkourTagScheduleManager(plugin);
     }
 
     @Override
     public void load() {
+        snowballScheduleManager = new SnowballScheduleManager(plugin, new SnowballScheduleHandler(plugin));
+        skyWarsScheduleManager = new SkyWarsScheduleManager(plugin, new SkyWarsScheduleHandler(plugin));
+        tntRunScheduleManager = new TNTRunScheduleManager(plugin, new TNTRunScheduleHandler(plugin));
+        tgttosScheduleManager = new TGTTOSScheduleManager(plugin, new TGTTOSScheduleHandler(plugin));
+        battleBoxScheduleManager = new BattleBoxScheduleManager(plugin);
+        parkourTagScheduleManager = new ParkourTagScheduleManager(plugin);
+
         snowballScheduleManager.load();
         skyWarsScheduleManager.load();
         tntRunScheduleManager.load();
@@ -102,5 +106,31 @@ public class ScheduleManager extends BaseManager {
             }
             timer--;
         }, 0, 20L);
+    }
+
+    public String getScheduleStrings(GameTypeEnum gameTypeEnum) {
+        if (gameTypeEnum == GameTypeEnum.TNTRun)
+            return Utils.getMessage(ScheduleMessageConfig.TNT_RUN);
+        if (gameTypeEnum == GameTypeEnum.TGTTOS)
+            return Utils.getMessage(ScheduleMessageConfig.TGTTOS);
+        if (gameTypeEnum == GameTypeEnum.SnowballShowdown)
+            return Utils.getMessage(ScheduleMessageConfig.SNOWBALL);
+        if (gameTypeEnum == GameTypeEnum.SkyWars)
+            return Utils.getMessage(ScheduleMessageConfig.SKY_WARS);
+
+        return "";
+    }
+
+    public String getSchedulePointsStrings(GameTypeEnum gameTypeEnum) {
+        if (gameTypeEnum == GameTypeEnum.TNTRun)
+            return Utils.getMessage(ScheduleMessageConfig.TNT_RUN_POINTS);
+        if (gameTypeEnum == GameTypeEnum.TGTTOS)
+            return Utils.getMessage(ScheduleMessageConfig.TGTTOS_POINTS);
+        if (gameTypeEnum == GameTypeEnum.SnowballShowdown)
+            return Utils.getMessage(ScheduleMessageConfig.SNOWBALL_POINTS);
+        if (gameTypeEnum == GameTypeEnum.SkyWars)
+            return Utils.getMessage(ScheduleMessageConfig.SKY_WARS_POINTS);
+
+        return "";
     }
 }

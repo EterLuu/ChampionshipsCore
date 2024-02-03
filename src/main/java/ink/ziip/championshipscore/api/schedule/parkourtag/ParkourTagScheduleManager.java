@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,8 @@ public class ParkourTagScheduleManager extends BaseManager {
     @Getter
     private boolean enabled;
     private int completedAreaNum;
+    private BukkitTask firstStartTask;
+    private BukkitTask startTask;
 
     public ParkourTagScheduleManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -44,19 +47,23 @@ public class ParkourTagScheduleManager extends BaseManager {
 
     @Override
     public void unload() {
-
+        if (enabled) {
+            endSchedule();
+        }
     }
 
     public void startParkourTag() {
-        if (enabled)
+        if (enabled) {
+            endSchedule();
             return;
+        }
 
         plugin.getScheduleManager().addRound(GameTypeEnum.ParkourTag);
         enabled = true;
         timer = 10;
         subRound = 0;
         completedAreaNum = 0;
-        scheduler.runTaskTimer(plugin, (task) -> {
+        firstStartTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
 
@@ -79,7 +86,8 @@ public class ParkourTagScheduleManager extends BaseManager {
                 Utils.changeLevelForAllPlayers(0);
                 subRound = 0;
                 startParkourTagRound();
-                task.cancel();
+                if (firstStartTask != null)
+                    firstStartTask.cancel();
             }
             timer--;
         }, 0, 20L);
@@ -101,6 +109,23 @@ public class ParkourTagScheduleManager extends BaseManager {
         }
     }
 
+    public void endSchedule() {
+        if (firstStartTask != null)
+            firstStartTask.cancel();
+        if (startTask != null)
+            startTask.cancel();
+
+        enabled = false;
+
+        Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
+        Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
+        if (plugin.isLoaded())
+            scheduler.runTaskAsynchronously(plugin, task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(GameTypeEnum.ParkourTag)));
+        Utils.sendMessageToAllPlayers(plugin.getRankManager().getTeamRankString());
+        handler.unRegister();
+        Utils.changeLevelForAllPlayers(0);
+    }
+
     public void nextParkourTagRound() {
         if (!enabled)
             return;
@@ -108,21 +133,17 @@ public class ParkourTagScheduleManager extends BaseManager {
         completedAreaNum = 0;
         subRound++;
         if (subRound > parkourTagRounds.size()) {
-            Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
-            Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
-            scheduler.runTaskAsynchronously(plugin, task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(GameTypeEnum.ParkourTag)));
-            Utils.sendMessageToAllPlayers(plugin.getRankManager().getTeamRankString());
-            handler.unRegister();
+            endSchedule();
             return;
         }
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
-        timer = 10;
-        scheduler.runTaskTimer(plugin, (task) -> {
+        timer = 30;
+        startTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
 
-            if (timer == 10) {
+            if (timer == 30) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.NEXT_ROUND_SOON));
             }
 
@@ -138,7 +159,8 @@ public class ParkourTagScheduleManager extends BaseManager {
                 for (String command : parkourTagRounds.get(subRound - 1)) {
                     Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
                 }
-                task.cancel();
+                if (startTask != null)
+                    startTask.cancel();
             }
             timer--;
         }, 0, 20L);

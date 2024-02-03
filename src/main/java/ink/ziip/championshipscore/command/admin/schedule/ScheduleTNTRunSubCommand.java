@@ -16,7 +16,7 @@ public class ScheduleTNTRunSubCommand extends BaseSubCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        plugin.getScheduleManager().getTntRunScheduleManager().startTNTRun();
+        plugin.getScheduleManager().getTntRunScheduleManager().startGame();
 
         return true;
     }

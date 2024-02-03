@@ -1,48 +1,41 @@
-package ink.ziip.championshipscore.api.schedule.battlebox;
+package ink.ziip.championshipscore.api.schedule;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.Sound;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class BattleBoxScheduleManager extends BaseManager {
-    private final List<List<String>> battleBoxRounds = new ArrayList<>();
-    private final BukkitScheduler scheduler;
-    private final BattleBoxScheduleHandler handler;
+public abstract class BaseSingleGameSchedule extends BaseManager {
+    protected final BukkitScheduler scheduler;
+    protected final BaseListener handler;
+    protected final GameTypeEnum gameTypeEnum;
+    protected final ScheduleManager scheduleManager;
     @Getter
-    private int subRound;
-    private int timer;
+    protected int subRound;
+    protected int timer;
     @Getter
-    private boolean enabled;
-    private int completedAreaNum;
-    private BukkitTask firstStartTask;
-    private BukkitTask startTask;
+    protected boolean enabled;
+    protected BukkitTask firstStartTask;
+    protected BukkitTask startTask;
 
-    public BattleBoxScheduleManager(ChampionshipsCore championshipsCore) {
+    public BaseSingleGameSchedule(ChampionshipsCore championshipsCore, BaseListener handler, GameTypeEnum gameTypeEnum) {
         super(championshipsCore);
-        handler = new BattleBoxScheduleHandler(championshipsCore, this);
-        scheduler = championshipsCore.getServer().getScheduler();
-        subRound = 0;
-        completedAreaNum = 0;
+        scheduleManager = plugin.getScheduleManager();
+        scheduler = plugin.getServer().getScheduler();
+        this.handler = handler;
+        this.gameTypeEnum = gameTypeEnum;
+        this.subRound = 0;
     }
 
     @Override
     public void load() {
-        ConfigurationSection configurationSection = CCConfig.BATTLE_BOX_ROUNDS;
-        for (String key : configurationSection.getKeys(false)) {
-            battleBoxRounds.add(new ArrayList<>(configurationSection.getStringList(key)));
-        }
+
     }
 
     @Override
@@ -52,27 +45,26 @@ public class BattleBoxScheduleManager extends BaseManager {
         }
     }
 
-    public void startBattleBox() {
+    public void startGame() {
         if (enabled) {
             endSchedule();
             return;
         }
 
-        plugin.getScheduleManager().addRound(GameTypeEnum.BattleBox);
+        plugin.getScheduleManager().addRound(gameTypeEnum);
         enabled = true;
         timer = 10;
         subRound = 0;
-        completedAreaNum = 0;
         firstStartTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
 
             if (timer == 10) {
-                Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.BATTLE_BOX));
+                Utils.sendMessageToAllPlayers(scheduleManager.getScheduleStrings(gameTypeEnum));
             }
 
             if (timer == 5) {
-                Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.BATTLE_BOX_POINTS));
+                Utils.sendMessageToAllPlayers(scheduleManager.getSchedulePointsStrings(gameTypeEnum));
             }
 
             if (timer < 5 && timer > 1) {
@@ -85,7 +77,7 @@ public class BattleBoxScheduleManager extends BaseManager {
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(0);
                 subRound = 0;
-                startBattleBoxRound();
+                startRound();
                 if (firstStartTask != null)
                     firstStartTask.cancel();
             }
@@ -93,20 +85,17 @@ public class BattleBoxScheduleManager extends BaseManager {
         }, 0, 20L);
     }
 
-    public void startBattleBoxRound() {
+    public void startRound() {
         if (!enabled)
             return;
 
         subRound++;
-        if (subRound > battleBoxRounds.size()) {
+        if (subRound > getTotalRounds()) {
             return;
         }
 
         handler.register();
-
-        for (String command : battleBoxRounds.get(subRound - 1)) {
-            Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
-        }
+        plugin.getGameManager().joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea());
     }
 
     public void endSchedule() {
@@ -120,19 +109,18 @@ public class BattleBoxScheduleManager extends BaseManager {
         Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
         Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
         if (plugin.isLoaded())
-            scheduler.runTaskAsynchronously(plugin, task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(GameTypeEnum.BattleBox)));
+            scheduler.runTaskAsynchronously(plugin, task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(gameTypeEnum)));
         Utils.sendMessageToAllPlayers(plugin.getRankManager().getTeamRankString());
         handler.unRegister();
         Utils.changeLevelForAllPlayers(0);
     }
 
-    public void nextBattleBoxRound() {
+    public void nextRound() {
         if (!enabled)
             return;
 
-        completedAreaNum = 0;
         subRound++;
-        if (subRound > battleBoxRounds.size()) {
+        if (subRound > getTotalRounds()) {
             endSchedule();
             return;
         }
@@ -156,9 +144,7 @@ public class BattleBoxScheduleManager extends BaseManager {
 
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(0);
-                for (String command : battleBoxRounds.get(subRound - 1)) {
-                    Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
-                }
+                plugin.getGameManager().joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea());
                 if (startTask != null)
                     startTask.cancel();
             }
@@ -166,11 +152,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         }, 0, 20L);
     }
 
-    public synchronized void addCompletedAreaNum() {
-        completedAreaNum++;
+    public abstract String getArea();
 
-        if (completedAreaNum == plugin.getGameManager().getBattleBoxManager().getAreaNameList().size()) {
-            nextBattleBoxRound();
-        }
-    }
+    public abstract int getTotalRounds();
 }

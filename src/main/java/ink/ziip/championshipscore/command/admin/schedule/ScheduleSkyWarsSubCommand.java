@@ -16,7 +16,7 @@ public class ScheduleSkyWarsSubCommand extends BaseSubCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        plugin.getScheduleManager().getSkyWarsScheduleManager().startSkyWars();
+        plugin.getScheduleManager().getSkyWarsScheduleManager().startGame();
 
         return true;
     }

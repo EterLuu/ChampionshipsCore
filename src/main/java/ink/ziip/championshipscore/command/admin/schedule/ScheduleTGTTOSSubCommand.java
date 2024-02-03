@@ -16,7 +16,7 @@ public class ScheduleTGTTOSSubCommand extends BaseSubCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        plugin.getScheduleManager().getTgttosScheduleManager().startTGTTOS();
+        plugin.getScheduleManager().getTgttosScheduleManager().startGame();
 
         return true;
     }
