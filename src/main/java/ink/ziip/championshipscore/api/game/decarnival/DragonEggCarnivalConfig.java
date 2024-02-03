@@ -35,11 +35,11 @@ public class DragonEggCarnivalConfig extends BaseGameConfig {
     @ConfigOption(path = "area-pos2")
     private Vector areaPos2;
 
-    @ConfigOption(path = "right-spawn-point")
-    private Location rightSpawnPoint;
+    @ConfigOption(path = "right-spawn-points")
+    private List<String> rightSpawnPoints;
 
-    @ConfigOption(path = "left-spawn-point")
-    private Location leftSpawnPoint;
+    @ConfigOption(path = "left-spawn-points")
+    private List<String> leftSpawnPoints;
 
     @ConfigOption(path = "spectator-spawn-point")
     private Location spectatorSpawnPoint;

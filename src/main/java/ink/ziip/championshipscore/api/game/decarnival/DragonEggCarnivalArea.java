@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -27,6 +28,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -74,9 +76,9 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         if (rightChampionshipTeam != null)
-            rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
+            teleportPlayersToRightSpawnPoints(rightChampionshipTeam);
         if (leftChampionshipTeam != null)
-            leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
+            teleportPlayersToLeftSpawnPoints(leftChampionshipTeam);
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -109,11 +111,11 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
         if (rightChampionshipTeam != null) {
-            rightChampionshipTeam.teleportAllPlayers(getGameConfig().getRightSpawnPoint());
+            teleportPlayersToRightSpawnPoints(rightChampionshipTeam);
             addFinalTagToGamePlayers(rightChampionshipTeam);
         }
         if (leftChampionshipTeam != null) {
-            leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftSpawnPoint());
+            teleportPlayersToLeftSpawnPoints(leftChampionshipTeam);
             addFinalTagToGamePlayers(leftChampionshipTeam);
         }
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
@@ -375,13 +377,37 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             return;
         }
 
-        if (getGameStageEnum() == GameStageEnum.PREPARATION) {
+        if (getGameStageEnum() == GameStageEnum.PREPARATION || getGameStageEnum() == GameStageEnum.PROGRESS) {
             teleportPlayerToSpawnLocation(player);
+            return;
+        }
+        if (getGameStageEnum() == GameStageEnum.STOPPING || getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END) {
+            player.getInventory().clear();
+            player.teleport(CCConfig.LOBBY_LOCATION);
+            player.setGameMode(GameMode.ADVENTURE);
             return;
         }
 
         player.teleport(getSpectatorSpawnLocation());
         player.setGameMode(GameMode.SPECTATOR);
+    }
+
+    private void teleportPlayersToRightSpawnPoints(ChampionshipTeam championshipTeam) {
+        Iterator<String> stringIterator = getGameConfig().getRightSpawnPoints().iterator();
+        for (Player player : championshipTeam.getOnlinePlayers()) {
+            if (!stringIterator.hasNext())
+                stringIterator = getGameConfig().getRightSpawnPoints().iterator();
+            player.teleport(Utils.getLocation(stringIterator.next()));
+        }
+    }
+
+    private void teleportPlayersToLeftSpawnPoints(ChampionshipTeam championshipTeam) {
+        Iterator<String> stringIterator = getGameConfig().getLeftSpawnPoints().iterator();
+        for (Player player : championshipTeam.getOnlinePlayers()) {
+            if (!stringIterator.hasNext())
+                stringIterator = getGameConfig().getLeftSpawnPoints().iterator();
+            player.teleport(Utils.getLocation(stringIterator.next()));
+        }
     }
 
     private void giveItemToAllGamePlayers() {
@@ -413,7 +439,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
         if (championshipTeam != null) {
             if (championshipTeam.equals(rightChampionshipTeam)) {
-                player.teleport(getGameConfig().getRightSpawnPoint());
+                player.teleport(Utils.getLocation(getGameConfig().getRightSpawnPoints().get(0)));
                 if (getGameStageEnum() == GameStageEnum.PREPARATION) {
                     player.setGameMode(GameMode.ADVENTURE);
                 } else {
@@ -422,7 +448,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
                 return;
             }
             if (championshipTeam.equals(leftChampionshipTeam)) {
-                player.teleport(getGameConfig().getLeftSpawnPoint());
+                player.teleport(Utils.getLocation(getGameConfig().getLeftSpawnPoints().get(0)));
                 if (getGameStageEnum() == GameStageEnum.PREPARATION) {
                     player.setGameMode(GameMode.ADVENTURE);
                 } else {

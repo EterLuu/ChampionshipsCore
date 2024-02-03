@@ -6,6 +6,6 @@ area-pos2:
 dragon-spawn-point:
 dragon-egg-spawn-point:
 spectator-spawn-point:
-left-spawn-point:
-right-spawn-point:
+left-spawn-points: [ ]
+right-spawn-points: [ ]
 kits: [ ]

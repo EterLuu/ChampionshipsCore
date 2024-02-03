@@ -132,6 +132,7 @@ public class DragonEggCarnivalHandler extends BaseListener {
 
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam != null) {
+                player.getInventory().clear();
                 dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_PICK_UP_EGG.replace("%player%", championshipTeam.getColoredColor() + player.getName()));
                 dragonEggCarnivalArea.endGameInForm(championshipTeam);
             }

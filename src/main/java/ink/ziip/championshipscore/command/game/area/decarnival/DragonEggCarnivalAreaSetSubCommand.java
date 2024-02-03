@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalConfig;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -21,8 +22,8 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
             "name",
             "area-pos",
             "spectator-spawn-point",
-            "left-spawn-point",
-            "right-spawn-point",
+            "left-spawn-points",
+            "right-spawn-points",
             "dragon-egg-spawn-point",
             "dragon-spawn-point",
             "kits",
@@ -52,12 +53,6 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
                 Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
                 dragonEggCarnivalConfig.setAreaPos1(vectors[0]);
                 dragonEggCarnivalConfig.setAreaPos2(vectors[1]);
-            }
-            if (args[1].equals("right-spawn-point")) {
-                dragonEggCarnivalConfig.setRightSpawnPoint(player.getLocation());
-            }
-            if (args[1].equals("left-spawn-point")) {
-                dragonEggCarnivalConfig.setLeftSpawnPoint(player.getLocation());
             }
             if (args[1].equals("dragon-egg-spawn-point")) {
                 dragonEggCarnivalConfig.setDragonEggSpawnPoint(player.getLocation());
@@ -90,6 +85,40 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
                 sender.sendMessage(message);
                 return true;
             }
+            if (args[1].equals("left-spawn-points")) {
+                if (dragonEggCarnivalConfig.getLeftSpawnPoints() == null) {
+                    dragonEggCarnivalConfig.setLeftSpawnPoints(new ArrayList<>());
+                }
+                if (args[2].equals("add")) {
+                    dragonEggCarnivalConfig.getLeftSpawnPoints().add(Utils.getLocationConfigString(player.getLocation()));
+                }
+                if (args[2].equals("clean")) {
+                    dragonEggCarnivalConfig.getLeftSpawnPoints().clear();
+                }
+                dragonEggCarnivalConfig.saveOptions();
+                String message = MessageConfig.AREA_SETTING_OPTION_SUCCEEDED
+                        .replace("%area%", args[0])
+                        .replace("%option%", args[1]);
+                sender.sendMessage(message);
+                return true;
+            }
+            if (args[1].equals("right-spawn-points")) {
+                if (dragonEggCarnivalConfig.getRightSpawnPoints() == null) {
+                    dragonEggCarnivalConfig.setRightSpawnPoints(new ArrayList<>());
+                }
+                if (args[2].equals("add")) {
+                    dragonEggCarnivalConfig.getRightSpawnPoints().add(Utils.getLocationConfigString(player.getLocation()));
+                }
+                if (args[2].equals("clean")) {
+                    dragonEggCarnivalConfig.getRightSpawnPoints().clear();
+                }
+                dragonEggCarnivalConfig.saveOptions();
+                String message = MessageConfig.AREA_SETTING_OPTION_SUCCEEDED
+                        .replace("%area%", args[0])
+                        .replace("%option%", args[1]);
+                sender.sendMessage(message);
+                return true;
+            }
         }
 
         return true;
@@ -110,7 +139,7 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
         }
 
         if (args.length == 3) {
-            if (args[1].contains("kits")) {
+            if (args[1].contains("kits") || args[1].contains("spawn-points")) {
                 return Arrays.asList("add", "clean");
             }
         }
