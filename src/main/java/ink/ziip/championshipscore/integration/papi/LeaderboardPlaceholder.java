@@ -32,7 +32,7 @@ public class LeaderboardPlaceholder extends BasePlaceholder {
                 int num = Integer.parseInt(params.replace("player_", ""));
 
                 Map.Entry<UUID, Double> playerEntry = rankManager.getPlayerLeaderboard().get(num - 1);
-                String name = Bukkit.getOfflinePlayer(playerEntry.getKey()).getName();
+                String name = plugin.getPlayerManager().getPlayerName(playerEntry.getKey());
                 if (name == null)
                     return MessageConfig.PLACEHOLDER_NONE;
 
