@@ -178,13 +178,13 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
                 tntTimer = 9;
 
-                tntGeneratorTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
+                tntGeneratorTask = scheduler.runTaskTimer(plugin, () -> {
 
                     int i = 0;
                     Random random = new Random();
                     Iterator<String> locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
-                    while (i < 16) {
+                    while (i < 10) {
                         if (!locationIterator.hasNext())
                             locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
@@ -200,19 +200,23 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                         final Location finalTNTLocation = tntLocation;
                         scheduler.runTaskLater(plugin, () -> {
                             TNTPrimed tntPrimed = (TNTPrimed) finalTNTLocation.getWorld().spawnEntity(finalTNTLocation, EntityType.PRIMED_TNT);
-                            tntPrimed.setFuseTicks(Integer.MAX_VALUE);
-                            scheduler.runTaskTimerAsynchronously(plugin, (task) -> {
-                                if (!tntPrimed.isValid())
+                            tntPrimed.setFuseTicks(200);
+                            scheduler.runTaskTimer(plugin, (task) -> {
+                                if (!tntPrimed.isValid()) {
                                     task.cancel();
+                                    return;
+                                }
+                                if (tntPrimed.getFuseTicks() <= 0) {
+                                    task.cancel();
+                                    return;
+                                }
 
                                 Location tntTraceLocation = tntPrimed.getLocation();
                                 if (getBlockUnderLocation(tntTraceLocation, 0.8) != null) {
                                     tntPrimed.setFuseTicks(0);
-                                    task.cancel();
                                 }
                                 if (notInArea(tntTraceLocation)) {
                                     tntPrimed.setFuseTicks(0);
-                                    task.cancel();
                                 }
                             }, 0, 1L);
                         }, 0L);
@@ -225,7 +229,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                     }
 
                     tntTimer--;
-                }, 0, 10L);
+                }, 0, 20L);
 
             }
 
@@ -233,7 +237,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         }, 0, 20L);
 
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
-        handlePlayerMoveTask = scheduler.runTaskTimerAsynchronously(plugin, () -> gamePlayersCopy.forEach(uuid -> {
+        handlePlayerMoveTask = scheduler.runTaskTimer(plugin, () -> gamePlayersCopy.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline() && !deathPlayer.contains(uuid)) {
                 handlePlayerMove(player);
