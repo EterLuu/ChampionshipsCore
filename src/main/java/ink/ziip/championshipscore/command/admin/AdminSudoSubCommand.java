@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.admin;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -20,22 +21,20 @@ public class AdminSudoSubCommand extends BaseSubCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length >= 2) {
+            String[] split = Arrays.copyOfRange(args, 1, args.length);
+            String commands = String.join(" ", split);
 
-            if (args[1].equalsIgnoreCase("all")) {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    for (Player player : championshipTeam.getOnlinePlayers()) {
-                        player.performCommand(args[0]);
-                    }
+            if (args[0].equalsIgnoreCase("all")) {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    player.performCommand(commands);
                 }
                 return true;
             }
 
-            for (String content : Arrays.copyOfRange(args, 1, args.length)) {
-                ChampionshipTeam team = plugin.getTeamManager().getTeam(content);
-                if (team != null) {
-                    for (Player teamPlayer : team.getOnlinePlayers()) {
-                        teamPlayer.performCommand(args[0]);
-                    }
+            ChampionshipTeam team = plugin.getTeamManager().getTeam(args[0]);
+            if (team != null) {
+                for (Player teamPlayer : team.getOnlinePlayers()) {
+                    teamPlayer.performCommand(commands);
                 }
             }
         }
@@ -46,7 +45,7 @@ public class AdminSudoSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1)
-            return Collections.emptyList();
-        return plugin.getTeamManager().getTeamNameList();
+            return plugin.getTeamManager().getTeamNameList();
+        return Collections.emptyList();
     }
 }
