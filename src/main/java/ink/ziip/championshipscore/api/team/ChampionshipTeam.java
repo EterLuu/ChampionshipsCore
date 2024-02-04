@@ -114,9 +114,6 @@ public class ChampionshipTeam {
             if (player == null) {
                 offlineMembers.add(uuid);
             }
-            if (player != null) {
-                offlineMembers.add(uuid);
-            }
         }
 
         return offlineMembers;
