@@ -6,6 +6,8 @@ import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.util.List;
+
 @Getter
 public class CCConfig extends BaseConfigurationFile {
     private final String fileName = "config.yml";
@@ -27,6 +29,9 @@ public class CCConfig extends BaseConfigurationFile {
     // Players
     @ConfigOption(path = "max-players")
     public static int MAX_PLAYERS;
+
+    @ConfigOption(path = "whitelist")
+    public static List<String> WHITELIST;
 
     // Database
     @ConfigOption(path = "database.type")

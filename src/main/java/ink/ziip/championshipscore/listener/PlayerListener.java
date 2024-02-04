@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.*;
@@ -48,8 +49,12 @@ public class PlayerListener extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent event) {
         if (Bukkit.getOnlinePlayers().size() >= CCConfig.MAX_PLAYERS) {
+            if (CCConfig.WHITELIST.contains(event.getName()))
+                return;
+
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getUniqueId());
             if (championshipTeam == null) {
+                event.setKickMessage(MessageConfig.SERVER_FULL);
                 event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_FULL);
             }
         }

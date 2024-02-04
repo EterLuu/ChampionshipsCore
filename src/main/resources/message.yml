@@ -2,6 +2,7 @@ dont-edit-this:
   version: 2
 no-permission: "&7&l[&7!&7]&r &4你没有权限！"
 prefix: "&b[&3WCC&b]&r"
+server-full: "服务器已经满人！"
 team:
   successfully-added: "&b[&3WCC&b]&r &f成功添加队伍 %team%&f。"
   added-failed: "&b[&3WCC&b]&r &7添加队伍 %team% 失败（%reason%）&7。"

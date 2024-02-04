@@ -19,6 +19,10 @@ public class MessageConfig extends BaseConfigurationFile {
         return 2;
     }
 
+    // Player
+    @ConfigOption(path = "server-full")
+    public static String SERVER_FULL;
+
     // Permission
     @ConfigOption(path = "no-permission")
     public static String NO_PERMISSION;
