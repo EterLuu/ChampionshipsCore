@@ -64,13 +64,15 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         handlePlayerMoveTask = null;
         tntGeneratorTask = null;
 
-        loadMap(World.Environment.NORMAL);
+        scheduler.runTaskLater(plugin, () -> {
+            loadMap(World.Environment.NORMAL);
+        }, 100L);
     }
 
     @Override
     public void resetGame() {
-        resetBaseArea();
         playerPoints.clear();
+        resetBaseArea();
     }
 
     @Override
@@ -173,18 +175,18 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                     startGameProgressTask.cancel();
             }
 
-            if (timer == 120 || timer == 60) {
+            if (timer == 120 || timer == 60 || timer == 20) {
                 sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
                 sendActionBarToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
 
                 tntTimer = 9;
 
-                tntGeneratorTask = scheduler.runTaskTimer(plugin, () -> {
+                tntGeneratorTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
 
                     int i = 0;
                     Iterator<String> locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
-                    while (i < 10) {
+                    while (i < 12) {
                         if (!locationIterator.hasNext())
                             locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
 
@@ -237,7 +239,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         }, 0, 20L);
 
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
-        handlePlayerMoveTask = scheduler.runTaskTimer(plugin, () -> gamePlayersCopy.forEach(uuid -> {
+        handlePlayerMoveTask = scheduler.runTaskTimerAsynchronously(plugin, () -> gamePlayersCopy.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && !deathPlayer.contains(uuid)) {
                 handlePlayerMove(player);

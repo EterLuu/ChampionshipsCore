@@ -61,6 +61,8 @@ public class TNTRunPlaceholder extends BasePlaceholder {
                 return String.valueOf(timer - 120 + 1);
             if (timer >= 60)
                 return String.valueOf(timer - 60 + 1);
+            if (timer >= 20)
+                return String.valueOf(timer - 20 + 1);
 
             return String.valueOf(0);
         }
