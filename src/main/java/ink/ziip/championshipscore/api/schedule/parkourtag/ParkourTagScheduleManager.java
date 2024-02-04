@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.schedule.parkourtag;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -10,6 +11,7 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -57,6 +59,8 @@ public class ParkourTagScheduleManager extends BaseManager {
             endSchedule();
             return;
         }
+
+        addAllSpectatorsToArea();
 
         plugin.getScheduleManager().addRound(GameTypeEnum.ParkourTag);
         enabled = true;
@@ -134,6 +138,7 @@ public class ParkourTagScheduleManager extends BaseManager {
         subRound++;
         if (subRound > parkourTagRounds.size()) {
             endSchedule();
+            removeAllSpectatorsFromArea();
             return;
         }
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
@@ -171,6 +176,24 @@ public class ParkourTagScheduleManager extends BaseManager {
 
         if (completedAreaNum == plugin.getGameManager().getParkourTagManager().getAreaNameList().size()) {
             nextParkourTagRound();
+        }
+    }
+
+    public void addAllSpectatorsToArea() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+            if (championshipTeam == null) {
+                player.performCommand("spec");
+            }
+        }
+    }
+
+    public void removeAllSpectatorsFromArea() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+            if (championshipTeam == null) {
+                player.performCommand("cc spectate leave");
+            }
         }
     }
 }

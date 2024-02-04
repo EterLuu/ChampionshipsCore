@@ -4,10 +4,13 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.Sound;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -95,6 +98,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         }
 
         handler.register();
+        addAllSpectatorsToArea();
         plugin.getGameManager().joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea());
     }
 
@@ -122,6 +126,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         subRound++;
         if (subRound > getTotalRounds()) {
             endSchedule();
+            removeAllSpectatorsFromArea();
             return;
         }
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
@@ -152,7 +157,28 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         }, 0, 20L);
     }
 
+    public void addAllSpectatorsToArea() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+            if (championshipTeam == null) {
+                player.performCommand("cc spectate leave");
+                player.performCommand(getSpecCommand());
+            }
+        }
+    }
+
+    public void removeAllSpectatorsFromArea() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+            if (championshipTeam == null) {
+                player.performCommand("cc spectate leave");
+            }
+        }
+    }
+
     public abstract String getArea();
 
     public abstract int getTotalRounds();
+
+    public abstract String getSpecCommand();
 }

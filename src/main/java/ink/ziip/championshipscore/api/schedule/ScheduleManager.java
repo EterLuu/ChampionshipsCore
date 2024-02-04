@@ -17,7 +17,9 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.Sound;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 
 public class ScheduleManager extends BaseManager {
@@ -79,6 +81,7 @@ public class ScheduleManager extends BaseManager {
     public void startDragonEggCarnival(ChampionshipTeam team, ChampionshipTeam rival) {
         plugin.getScheduleManager().addRound(GameTypeEnum.DragonEggCarnival);
         timer = 10;
+        addAllSpectatorsToArea();
         scheduler.runTaskTimer(plugin, (task) -> {
 
             Utils.changeLevelForAllPlayers(timer);
@@ -106,6 +109,16 @@ public class ScheduleManager extends BaseManager {
             }
             timer--;
         }, 0, 20L);
+    }
+
+    public void addAllSpectatorsToArea() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+            if (championshipTeam == null) {
+                player.performCommand("cc spectate leave");
+                player.performCommand("cc spectate dragoneggcarnival area1");
+            }
+        }
     }
 
     public String getScheduleStrings(GameTypeEnum gameTypeEnum) {

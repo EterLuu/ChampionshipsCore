@@ -20,4 +20,9 @@ public class SkyWarsScheduleManager extends BaseSingleGameSchedule {
     public int getTotalRounds() {
         return 3;
     }
+
+    @Override
+    public String getSpecCommand() {
+        return "cc spectate skywars " + getArea();
+    }
 }
