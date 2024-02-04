@@ -569,7 +569,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         pickaxe.addEnchantment(Enchantment.DIG_SPEED, 3);
         ItemStack bow = new ItemStack(Material.BOW);
         ItemStack arrows = new ItemStack(Material.ARROW);
-        arrows.setAmount(2);
+        arrows.setAmount(4);
         ItemStack chestPlate = new ItemStack(Material.IRON_CHESTPLATE);
 
         for (UUID uuid : gamePlayers) {
