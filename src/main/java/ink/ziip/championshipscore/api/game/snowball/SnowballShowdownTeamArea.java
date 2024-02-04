@@ -33,6 +33,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     private final Map<UUID, List<Location>> playerRespawnLocations = new ConcurrentHashMap<>();
     private final Map<UUID, Location> playerSpawnLocation = new ConcurrentHashMap<>();
     private final Map<UUID, Long> playerRespawnTime = new ConcurrentHashMap<>();
+    private final Map<List<Location>, Iterator<Location>> locationIterators = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, Integer> teamShootTimes = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> playerIndividualKills = new ConcurrentHashMap<>();
     private List<String> teamRank = new ArrayList<>();
@@ -72,6 +73,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         teamShootTimes.clear();
         playerIndividualKills.clear();
         teamRank.clear();
+        locationIterators.clear();
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
@@ -94,6 +96,11 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+
+        for (List<Location> locations : areaLocations) {
+            Collections.shuffle(locations, ThreadLocalRandom.current());
+            locationIterators.put(locations, locations.iterator());
+        }
 
         for (ChampionshipTeam championshipTeam : gameTeams) {
             Collections.shuffle(areaLocations);
@@ -445,10 +452,19 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         }, 60L);
     }
 
-    public void teleportPlayerToSpawnLocation(Player player) {
+    public synchronized void teleportPlayerToSpawnLocation(Player player) {
         List<Location> locations = playerRespawnLocations.get(player.getUniqueId());
         if (locations != null) {
-            player.teleport(locations.get(ThreadLocalRandom.current().nextInt(locations.size())));
+            Iterator<Location> locationIterator = locationIterators.get(locations);
+            if (locationIterator != null) {
+                if (!locationIterator.hasNext()) {
+                    locationIterator = locations.iterator();
+                    locationIterators.put(locations, locationIterator);
+                }
+                player.teleport(locationIterator.next());
+            } else {
+                player.teleport(locations.get(ThreadLocalRandom.current().nextInt(locations.size())));
+            }
         } else {
             List<Location> randomLocations = areaLocations.get(ThreadLocalRandom.current().nextInt(areaLocations.size()));
             player.teleport(randomLocations.get(ThreadLocalRandom.current().nextInt(randomLocations.size())));
