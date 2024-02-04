@@ -64,6 +64,7 @@ public class WorldManager extends BaseManager {
         world.setTicksPerSpawns(SpawnCategory.MONSTER, 1);
         world.setAutoSave(!readOnly);
 
+        world.setGameRule(GameRule.SEND_COMMAND_FEEDBACK, false);
         world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
         world.setGameRule(GameRule.MOB_GRIEFING, true);
         world.setGameRule(GameRule.DO_FIRE_TICK, true);
