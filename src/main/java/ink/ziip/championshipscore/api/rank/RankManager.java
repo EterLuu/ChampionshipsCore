@@ -165,12 +165,11 @@ public class RankManager extends BaseManager {
                     playerRank.put(entry.getKey(), i);
                     i++;
                 }
-                if (i == 10)
-                    break;
+                if (i == 11)
+                    playerRankString = stringBuilder.toString();
             }
 
             playerLeaderboard = list;
-            playerRankString = stringBuilder.toString();
         });
     }
 
