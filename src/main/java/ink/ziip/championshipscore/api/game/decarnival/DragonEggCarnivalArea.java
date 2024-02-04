@@ -144,7 +144,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
                 playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
             }
 
-            if (timer % 20 == 0) {
+            if (timer % 10 == 0) {
                 giveRandomKitToTeamMembers(rightChampionshipTeam);
                 giveRandomKitToTeamMembers(leftChampionshipTeam);
             }
