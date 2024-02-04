@@ -27,6 +27,13 @@ public class TeamTeleportationSubCommand extends BaseSubCommand {
         if (player != null) {
             Location location = player.getLocation();
 
+            if (args[0].equalsIgnoreCase("all")) {
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    championshipTeam.teleportAllPlayers(location);
+                }
+                return true;
+            }
+
             for (String content : Arrays.copyOfRange(args, 0, args.length)) {
                 ChampionshipTeam team = plugin.getTeamManager().getTeam(content);
                 if (team != null) {
