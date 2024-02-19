@@ -257,13 +257,22 @@ public class RankManager extends BaseManager {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
             for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                 if (playerPointEntry.getGame() == gameTypeEnum) {
-                    points += playerPointEntry.getPoints() * getPointMultiple(gameOrder);
+                    points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * isWeightedGame(gameTypeEnum);
                 }
             }
 
         }
 
         return points;
+    }
+
+    public double isWeightedGame(GameTypeEnum gameTypeEnum) {
+        if (gameTypeEnum == GameTypeEnum.Bingo)
+            return 0.75;
+        if (gameTypeEnum == GameTypeEnum.SnowballShowdown)
+            return 0.75;
+
+        return 1;
     }
 
     public double getPointMultiple(int round) {
