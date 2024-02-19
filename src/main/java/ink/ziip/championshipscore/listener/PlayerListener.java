@@ -30,12 +30,12 @@ public class PlayerListener extends BaseListener {
 
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
         if (player.hasPermission("cc.refuge")) {
-            event.setFormat(Utils.translateColorCodes("&7[&c&l裁判组&7] &f%s&7:&f %s"));
+            event.setFormat(Utils.translateColorCodes(CCConfig.CHAT_REFUGEE));
             event.setMessage(Utils.translateColorCodes("&f" + event.getMessage()));
         } else if (championshipTeam == null) {
-            event.setFormat(Utils.translateColorCodes("&8[&7旁观&8] &7%s&7:&7 %s"));
+            event.setFormat(Utils.translateColorCodes(CCConfig.CHAT_SPECTATOR));
         } else {
-            event.setFormat(Utils.translateColorCodes("&8[" + championshipTeam.getColoredName() + "&8] &f%s&7:&f %s"));
+            event.setFormat(Utils.translateColorCodes(CCConfig.CHAT_PLAYER.replace("%team%", championshipTeam.getColoredName())));
         }
     }
 

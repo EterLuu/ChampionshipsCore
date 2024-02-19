@@ -33,6 +33,16 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "whitelist")
     public static List<String> WHITELIST;
 
+    // Chat
+    @ConfigOption(path = "chat.refugee")
+    public static String CHAT_REFUGEE;
+
+    @ConfigOption(path = "chat.player")
+    public static String CHAT_PLAYER;
+
+    @ConfigOption(path = "chat.spectator")
+    public static String CHAT_SPECTATOR;
+
     // Database
     @ConfigOption(path = "database.type")
     public static String DATABASE_TYPE;

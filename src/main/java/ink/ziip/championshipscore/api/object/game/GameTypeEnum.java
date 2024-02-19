@@ -1,26 +1,28 @@
 package ink.ziip.championshipscore.api.object.game;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 public enum GameTypeEnum {
     Bingo, ParkourTag, BattleBox, TNTRun, SnowballShowdown, SkyWars, TGTTOS, DragonEggCarnival;
 
     @Override
     public String toString() {
         if (this == Bingo)
-            return "宾果时速";
+            return MessageConfig.GAME_BINGO;
         if (this == ParkourTag)
-            return "跑酷追击";
+            return MessageConfig.GAME_PARKOUR_TAG;
         if (this == BattleBox)
-            return "斗战方框";
+            return MessageConfig.GAME_BATTLE_BOX;
         if (this == TNTRun)
-            return "TNT快跑";
+            return MessageConfig.GAME_TNT_RUN;
         if (this == SnowballShowdown)
-            return "雪球乱斗";
+            return MessageConfig.GAME_SNOWBALL_SNOW_DOWN;
         if (this == SkyWars)
-            return "空岛战争";
+            return MessageConfig.GAME_SKY_WARS;
         if (this == TGTTOS)
-            return "去到另一边";
+            return MessageConfig.GAME_TGTTOS;
         if (this == DragonEggCarnival)
-            return "龙蛋狂欢";
+            return MessageConfig.GAME_DRAGON_EGG_CARNIVAL;
         return "Unknown";
     }
 }

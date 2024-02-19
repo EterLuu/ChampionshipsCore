@@ -189,6 +189,30 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.board-row")
     public static String GAME_BOARD_RWO;
 
+    @ConfigOption(path = "game.bingo")
+    public static String GAME_BINGO;
+
+    @ConfigOption(path = "game.parkourtag")
+    public static String GAME_PARKOUR_TAG;
+
+    @ConfigOption(path = "game.battlebox")
+    public static String GAME_BATTLE_BOX;
+
+    @ConfigOption(path = "game.tntrun")
+    public static String GAME_TNT_RUN;
+
+    @ConfigOption(path = "game.snowballsnowdown")
+    public static String GAME_SNOWBALL_SNOW_DOWN;
+
+    @ConfigOption(path = "game.skywars")
+    public static String GAME_SKY_WARS;
+
+    @ConfigOption(path = "game.tgttos")
+    public static String GAME_TGTTOS;
+
+    @ConfigOption(path = "game.dragoneggcarnival")
+    public static String GAME_DRAGON_EGG_CARNIVAL;
+
     // BattleBox
     @ConfigOption(path = "battlebox.start-preparation")
     public static String BATTLE_BOX_START_PREPARATION;

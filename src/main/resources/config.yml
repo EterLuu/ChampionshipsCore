@@ -3,6 +3,10 @@ dont-edit-this:
 mode: "CHAMPIONSHIP"
 max-players: 100
 whitelist: []
+chat:
+  refugee: "&7[&c&l裁判组&7] &f%s&7:&f %s"
+  player: "&8[%team%&8] &f%s&7:&f %s"
+  spectator: "&8[&7旁观&8] &7%s&7:&7 %s"
 database:
   type: "MARIADB"
   address: "127.0.0.1"
