@@ -235,7 +235,7 @@ public class SkyWarsHandler extends BaseListener {
 
         if (block.getType() == Material.TNT) {
             block.setType(Material.AIR, true);
-            TNTPrimed tntPrimed = (TNTPrimed) block.getWorld().spawnEntity(block.getLocation(), EntityType.PRIMED_TNT);
+            TNTPrimed tntPrimed = (TNTPrimed) block.getWorld().spawnEntity(block.getLocation(), EntityType.TNT);
             tntPrimed.setSource(player);
             return;
         }

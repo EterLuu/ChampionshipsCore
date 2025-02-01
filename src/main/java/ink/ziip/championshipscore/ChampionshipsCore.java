@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore;
 
+import fr.skytasul.glowingentities.GlowingEntities;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
@@ -15,7 +16,6 @@ import ink.ziip.championshipscore.command.CommandManager;
 import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.DatabaseManager;
-import ink.ziip.championshipscore.util.glowing.GlowingEntities;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;

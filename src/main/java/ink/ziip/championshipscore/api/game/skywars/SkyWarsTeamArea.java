@@ -276,7 +276,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                         double x2 = center.getX() + radius * Math.cos(beta);
                         double z2 = center.getZ() + radius * Math.sin(beta);
                         Location particleLoc = new Location(center.getWorld(), x2, h, z2);
-                        player.spawnParticle(Particle.REDSTONE, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
+                        player.spawnParticle(Particle.DUST, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
                     }
                 }
             }
@@ -293,7 +293,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                         double x2 = location.getX() + radius * Math.cos(beta);
                         double z2 = location.getZ() + radius * Math.sin(beta);
                         Location particleLoc = new Location(location.getWorld(), x2, height, z2);
-                        player.spawnParticle(Particle.REDSTONE, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
+                        player.spawnParticle(Particle.DUST, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
                     }
                 }
             }
@@ -566,7 +566,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         ItemStack sword = new ItemStack(Material.IRON_SWORD);
         ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
-        pickaxe.addEnchantment(Enchantment.DIG_SPEED, 3);
+        pickaxe.addEnchantment(Enchantment.EFFICIENCY, 3);
         ItemStack bow = new ItemStack(Material.BOW);
         ItemStack arrows = new ItemStack(Material.ARROW);
         arrows.setAmount(4);

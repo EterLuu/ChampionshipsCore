@@ -463,13 +463,13 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     }
 
     private void giveEffectToPlayer(Player player) {
-        PotionEffect potionEffect = new PotionEffect(PotionEffectType.HEAL, PotionEffect.INFINITE_DURATION, 1);
+        PotionEffect potionEffect = new PotionEffect(PotionEffectType.HEALTH_BOOST, PotionEffect.INFINITE_DURATION, 1);
         player.addPotionEffect(potionEffect);
     }
 
     private void giveGoldenHelmetToTeamPlayers(ChampionshipTeam championshipTeam) {
         ItemStack helmet = new ItemStack(Material.GOLDEN_HELMET);
-        helmet.addUnsafeEnchantment(Enchantment.DURABILITY, 3);
+        helmet.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
         for (Player player : championshipTeam.getOnlinePlayers()) {
             PlayerInventory inventory = player.getInventory();
             inventory.setHelmet(helmet.clone());
@@ -501,8 +501,8 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         ItemStack cookedBeef = new ItemStack(Material.COOKED_BEEF);
         cookedBeef.setAmount(64);
 
-        bow.addEnchantment(Enchantment.ARROW_INFINITE, 1);
-        bow.addEnchantment(Enchantment.ARROW_DAMAGE, 2);
+        bow.addEnchantment(Enchantment.INFINITY, 1);
+        bow.addEnchantment(Enchantment.POWER, 2);
 
         PlayerInventory inventory = player.getInventory();
 
@@ -528,25 +528,25 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
     private void giveItemToPlayer(Player player) {
         ItemStack helmet = new ItemStack(Material.NETHERITE_HELMET);
-        helmet.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 5);
-        helmet.addUnsafeEnchantment(Enchantment.DURABILITY, 3);
+        helmet.addUnsafeEnchantment(Enchantment.PROTECTION, 5);
+        helmet.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
 
         ItemStack elytra = new ItemStack(Material.ELYTRA);
-        elytra.addUnsafeEnchantment(Enchantment.DURABILITY, 3);
+        elytra.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
 
         ItemStack leggings = new ItemStack(Material.NETHERITE_LEGGINGS);
-        leggings.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 5);
-        leggings.addUnsafeEnchantment(Enchantment.DURABILITY, 3);
+        leggings.addUnsafeEnchantment(Enchantment.PROTECTION, 5);
+        leggings.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
 
         ItemStack boots = new ItemStack(Material.NETHERITE_BOOTS);
-        boots.addUnsafeEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 5);
-        boots.addUnsafeEnchantment(Enchantment.DURABILITY, 3);
+        boots.addUnsafeEnchantment(Enchantment.PROTECTION, 5);
+        boots.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
 
         ItemStack bucket = new ItemStack(Material.WATER_BUCKET);
 
         ItemStack pickaxe = new ItemStack(Material.NETHERITE_PICKAXE);
-        pickaxe.addUnsafeEnchantment(Enchantment.DIG_SPEED, 3);
-        pickaxe.addUnsafeEnchantment(Enchantment.DURABILITY, 3);
+        pickaxe.addUnsafeEnchantment(Enchantment.EFFICIENCY, 3);
+        pickaxe.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
 
         ItemStack torch = new ItemStack(Material.TORCH);
         torch.setAmount(64);

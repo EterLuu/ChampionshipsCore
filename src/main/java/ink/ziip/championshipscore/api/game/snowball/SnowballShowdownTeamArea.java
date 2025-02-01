@@ -510,7 +510,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
             playerInventory.setBoots(championshipTeam.getBoots());
         }
 
-        PotionEffect jumpPotionEffect = new PotionEffect(PotionEffectType.JUMP, PotionEffect.INFINITE_DURATION, 0);
+        PotionEffect jumpPotionEffect = new PotionEffect(PotionEffectType.JUMP_BOOST, PotionEffect.INFINITE_DURATION, 0);
         PotionEffect speedPotionEffect = new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION, 0);
         player.addPotionEffect(jumpPotionEffect);
         player.addPotionEffect(speedPotionEffect);

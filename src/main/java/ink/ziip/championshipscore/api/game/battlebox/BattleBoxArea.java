@@ -442,7 +442,7 @@ public class BattleBoxArea extends BaseTeamArea {
             ItemStack potion = new ItemStack(Material.POTION);
             PotionMeta potionMeta = (PotionMeta) potion.getItemMeta();
             if (potionMeta != null) {
-                PotionEffect potionEffect = new PotionEffect(PotionEffectType.JUMP, 600, 1);
+                PotionEffect potionEffect = new PotionEffect(PotionEffectType.JUMP_BOOST, 600, 1);
                 potionMeta.addCustomEffect(potionEffect, true);
                 potion.setItemMeta(potionMeta);
             }

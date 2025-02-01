@@ -201,26 +201,29 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
                         final Location finalTNTLocation = tntLocation;
                         scheduler.runTaskLater(plugin, () -> {
-                            TNTPrimed tntPrimed = (TNTPrimed) finalTNTLocation.getWorld().spawnEntity(finalTNTLocation, EntityType.PRIMED_TNT);
-                            tntPrimed.setFuseTicks(200);
-                            scheduler.runTaskTimer(plugin, (task) -> {
-                                if (!tntPrimed.isValid()) {
-                                    task.cancel();
-                                    return;
-                                }
-                                if (tntPrimed.getFuseTicks() <= 0) {
-                                    task.cancel();
-                                    return;
-                                }
+                            World world = finalTNTLocation.getWorld();
+                            if (world != null) {
+                                TNTPrimed tntPrimed = (TNTPrimed) world.spawnEntity(finalTNTLocation, EntityType.TNT);
+                                tntPrimed.setFuseTicks(200);
+                                scheduler.runTaskTimer(plugin, (task) -> {
+                                    if (!tntPrimed.isValid()) {
+                                        task.cancel();
+                                        return;
+                                    }
+                                    if (tntPrimed.getFuseTicks() <= 0) {
+                                        task.cancel();
+                                        return;
+                                    }
 
-                                Location tntTraceLocation = tntPrimed.getLocation();
-                                if (getBlockUnderLocation(tntTraceLocation, 0.8) != null) {
-                                    tntPrimed.setFuseTicks(0);
-                                }
-                                if (notInArea(tntTraceLocation)) {
-                                    tntPrimed.setFuseTicks(0);
-                                }
-                            }, 0, 1L);
+                                    Location tntTraceLocation = tntPrimed.getLocation();
+                                    if (getBlockUnderLocation(tntTraceLocation, 0.8) != null) {
+                                        tntPrimed.setFuseTicks(0);
+                                    }
+                                    if (notInArea(tntTraceLocation)) {
+                                        tntPrimed.setFuseTicks(0);
+                                    }
+                                }, 0, 1L);
+                            }
                         }, 0L);
                         i++;
                     }
