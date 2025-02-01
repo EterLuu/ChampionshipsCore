@@ -29,7 +29,10 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BattleBoxArea extends BaseTeamArea {
@@ -327,11 +330,17 @@ public class BattleBoxArea extends BaseTeamArea {
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
             player.teleport(getSpectatorSpawnLocation());
-            player.setGameMode(GameMode.SPECTATOR);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+            });
         }
 
         player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            player.setGameMode(GameMode.SPECTATOR);
+        });
     }
 
     private void teleportPlayerToPreSpawnLocation(Player player) {
@@ -339,18 +348,27 @@ public class BattleBoxArea extends BaseTeamArea {
         if (championshipTeam != null) {
             if (championshipTeam.equals(rightChampionshipTeam)) {
                 player.teleport(getGameConfig().getRightPreSpawnPoint());
-                player.setGameMode(GameMode.ADVENTURE);
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.ADVENTURE);
+                });
                 return;
             }
             if (championshipTeam.equals(leftChampionshipTeam)) {
                 player.teleport(getGameConfig().getLeftPreSpawnPoint());
-                player.setGameMode(GameMode.ADVENTURE);
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.ADVENTURE);
+                });
                 return;
             }
         }
 
         player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            player.setGameMode(GameMode.SPECTATOR);
+        });
     }
 
     private void giveItemToAllGamePlayers() {

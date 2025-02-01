@@ -183,7 +183,10 @@ public class ChampionshipTeam {
 
     public void setGameModeForAllPlayers(GameMode gameMode) {
         for (Player player : getOnlinePlayers()) {
-            player.setGameMode(gameMode);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(gameMode);
+            });
         }
     }
 

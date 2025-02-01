@@ -134,15 +134,15 @@ public abstract class BaseArea {
         return stringBuilder.toString();
     }
 
-    public void setGameStageEnum(GameStageEnum gameStageEnum) {
-        synchronized (this) {
-            this.gameStageEnum = gameStageEnum;
-        }
-    }
-
     public GameStageEnum getGameStageEnum() {
         synchronized (this) {
             return this.gameStageEnum;
+        }
+    }
+
+    public void setGameStageEnum(GameStageEnum gameStageEnum) {
+        synchronized (this) {
+            this.gameStageEnum = gameStageEnum;
         }
     }
 
@@ -239,14 +239,20 @@ public abstract class BaseArea {
         Player player = event.getPlayer();
         if (isSpectator(player)) {
             player.teleport(getSpectatorSpawnLocation());
-            player.setGameMode(GameMode.SPECTATOR);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+            });
         }
     }
 
     public void teleportAllSpectators(@NotNull Location location) {
         for (Player player : getOnlineSpectators()) {
             player.teleport(location);
-            player.setGameMode(GameMode.SPECTATOR);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+            });
         }
     }
 
@@ -261,7 +267,10 @@ public abstract class BaseArea {
     public void addSpectator(@NotNull Player player) {
         spectators.add(player.getUniqueId());
         player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            player.setGameMode(GameMode.SPECTATOR);
+        });
     }
 
     public void removeAllSpectator() {
@@ -293,7 +302,10 @@ public abstract class BaseArea {
         if (spectators.contains(uuid)) {
             spectators.remove(player.getUniqueId());
             player.teleport(getLobbyLocation());
-            player.setGameMode(GameMode.ADVENTURE);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.ADVENTURE);
+            });
             player.setLevel(0);
         }
     }

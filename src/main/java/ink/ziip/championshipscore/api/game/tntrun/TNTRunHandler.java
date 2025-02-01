@@ -50,7 +50,10 @@ public class TNTRunHandler extends BaseListener {
                 }
 
                 tntRunTeamArea.addDeathPlayer(player);
-                player.setGameMode(GameMode.SPECTATOR);
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.SPECTATOR);
+                });
             }
         }
     }

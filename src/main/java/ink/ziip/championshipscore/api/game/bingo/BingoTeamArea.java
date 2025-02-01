@@ -69,10 +69,16 @@ public class BingoTeamArea extends BaseSingleTeamArea {
     public void handlePlayerJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (plugin.getBingoManager().isStarted()) {
-            player.setGameMode(GameMode.SURVIVAL);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.SURVIVAL);
+            });
         } else {
             player.teleport(CCConfig.BINGO_SPAWN_LOCATION);
-            player.setGameMode(GameMode.SPECTATOR);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+            });
         }
     }
 }

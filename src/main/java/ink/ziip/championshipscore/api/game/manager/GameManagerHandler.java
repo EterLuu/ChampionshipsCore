@@ -48,7 +48,10 @@ public class GameManagerHandler extends BaseListener {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             event.getEntity().spigot().respawn();
             player.teleport(CCConfig.LOBBY_LOCATION);
-            player.setGameMode(GameMode.ADVENTURE);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.ADVENTURE);
+            });
 
         });
     }
@@ -74,7 +77,10 @@ public class GameManagerHandler extends BaseListener {
         World world = player.getWorld();
         if (!world.equals(CCConfig.LOBBY_LOCATION.getWorld())) {
             player.teleport(CCConfig.LOBBY_LOCATION);
-            player.setGameMode(GameMode.ADVENTURE);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.ADVENTURE);
+            });
         }
     }
 

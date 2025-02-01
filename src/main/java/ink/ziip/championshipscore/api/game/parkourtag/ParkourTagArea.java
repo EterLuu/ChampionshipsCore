@@ -44,22 +44,6 @@ public class ParkourTagArea extends BaseTeamArea {
     private int rightTeamSurviveTime;
     private int leftTeamSurviveTime;
 
-    @Override
-    public void resetArea() {
-        cleanDroppedItems();
-
-        rightTeamSurviveTime = -1;
-        leftTeamSurviveTime = -1;
-
-        rightAreaChaser = null;
-        leftAreaChaser = null;
-
-        playerSurviveTimes.clear();
-
-        startGamePreparationTask = null;
-        startGameProgressTask = null;
-    }
-
     public ParkourTagArea(ChampionshipsCore plugin, ParkourTagConfig parkourTagConfig) {
         super(plugin, GameTypeEnum.ParkourTag, new ParkourTagHandler(plugin), parkourTagConfig);
 
@@ -74,6 +58,22 @@ public class ParkourTagArea extends BaseTeamArea {
         leftAreaChaser = null;
 
         setGameStageEnum(GameStageEnum.WAITING);
+    }
+
+    @Override
+    public void resetArea() {
+        cleanDroppedItems();
+
+        rightTeamSurviveTime = -1;
+        leftTeamSurviveTime = -1;
+
+        rightAreaChaser = null;
+        leftAreaChaser = null;
+
+        playerSurviveTimes.clear();
+
+        startGamePreparationTask = null;
+        startGameProgressTask = null;
     }
 
     public boolean tryStartGame(ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam) {
@@ -389,13 +389,19 @@ public class ParkourTagArea extends BaseTeamArea {
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
             if (player.getUniqueId().equals(leftAreaChaser) || player.getUniqueId().equals(rightAreaChaser)) {
-                player.setGameMode(GameMode.ADVENTURE);
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.ADVENTURE);
+                });
                 return;
             }
         }
 
         player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            player.setGameMode(GameMode.SPECTATOR);
+        });
     }
 
     private void teleportPlayerToPreSpawnLocation(Player player) {
@@ -403,18 +409,27 @@ public class ParkourTagArea extends BaseTeamArea {
         if (championshipTeam != null) {
             if (championshipTeam.equals(rightChampionshipTeam)) {
                 player.teleport(getGameConfig().getRightPreSpawnPoint());
-                player.setGameMode(GameMode.ADVENTURE);
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.ADVENTURE);
+                });
                 return;
             }
             if (championshipTeam.equals(leftChampionshipTeam)) {
                 player.teleport(getGameConfig().getLeftPreSpawnPoint());
-                player.setGameMode(GameMode.ADVENTURE);
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.ADVENTURE);
+                });
                 return;
             }
         }
 
         player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            player.setGameMode(GameMode.SPECTATOR);
+        });
     }
 
     public int getAreaEscapeesNums(@NotNull Location location) {

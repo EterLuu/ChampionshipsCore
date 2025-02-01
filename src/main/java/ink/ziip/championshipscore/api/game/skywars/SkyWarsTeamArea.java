@@ -490,7 +490,10 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         }
 
         player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            player.setGameMode(GameMode.SPECTATOR);
+        });
     }
 
     public int getPlayerBoarderDistance(Player player) {

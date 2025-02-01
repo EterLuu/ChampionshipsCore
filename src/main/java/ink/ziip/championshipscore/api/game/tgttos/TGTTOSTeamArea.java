@@ -268,14 +268,23 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         }
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
             player.teleport(getSpectatorSpawnLocation());
-            player.setGameMode(GameMode.ADVENTURE);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.ADVENTURE);
+            });
         }
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
             player.teleport(getSpectatorSpawnLocation());
             if (getGameConfig().getAreaType().equals("ROAD")) {
-                player.setGameMode(GameMode.SURVIVAL);
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.SURVIVAL);
+                });
             } else {
-                player.setGameMode(GameMode.ADVENTURE);
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.ADVENTURE);
+                });
             }
         }
     }

@@ -190,7 +190,10 @@ public abstract class BaseSingleTeamArea extends BaseArea {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 player.teleport(getLobbyLocation());
-                player.setGameMode(GameMode.ADVENTURE);
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.ADVENTURE);
+                });
             }
         }
     }

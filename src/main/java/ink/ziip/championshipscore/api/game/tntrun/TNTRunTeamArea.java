@@ -424,7 +424,10 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
             sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_FALL_INTO_VOID.replace("%player%", player.getName()));
             addDeathPlayer(player);
-            player.setGameMode(GameMode.SPECTATOR);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+            });
         }
     }
 
@@ -437,7 +440,10 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
             addDeathPlayer(player);
-            player.setGameMode(GameMode.SPECTATOR);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.SPECTATOR);
+            });
         }
     }
 

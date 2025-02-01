@@ -384,12 +384,18 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         if (getGameStageEnum() == GameStageEnum.STOPPING || getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END) {
             player.getInventory().clear();
             player.teleport(CCConfig.LOBBY_LOCATION);
-            player.setGameMode(GameMode.ADVENTURE);
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                player.setGameMode(GameMode.ADVENTURE);
+            });
             return;
         }
 
         player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            player.setGameMode(GameMode.SPECTATOR);
+        });
     }
 
     private void teleportPlayersToRightSpawnPoints(ChampionshipTeam championshipTeam) {
@@ -441,25 +447,40 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             if (championshipTeam.equals(rightChampionshipTeam)) {
                 player.teleport(Utils.getLocation(getGameConfig().getRightSpawnPoints().get(0)));
                 if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-                    player.setGameMode(GameMode.ADVENTURE);
+                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                        player.setGameMode(GameMode.ADVENTURE);
+                    });
                 } else {
-                    player.setGameMode(GameMode.SURVIVAL);
+                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                        player.setGameMode(GameMode.SURVIVAL);
+                    });
                 }
                 return;
             }
             if (championshipTeam.equals(leftChampionshipTeam)) {
                 player.teleport(Utils.getLocation(getGameConfig().getLeftSpawnPoints().get(0)));
                 if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-                    player.setGameMode(GameMode.ADVENTURE);
+                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                        player.setGameMode(GameMode.ADVENTURE);
+                    });
                 } else {
-                    player.setGameMode(GameMode.SURVIVAL);
+                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                        player.setGameMode(GameMode.SURVIVAL);
+                    });
                 }
                 return;
             }
         }
 
         player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            player.setGameMode(GameMode.SPECTATOR);
+        });
     }
 
     private void giveEffectToPlayer(Player player) {

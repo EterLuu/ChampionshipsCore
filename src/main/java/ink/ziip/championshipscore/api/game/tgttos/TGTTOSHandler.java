@@ -125,7 +125,10 @@ public class TGTTOSHandler extends BaseListener {
                 if (!tgttosTeamArea.getArrivedPlayers().contains(player.getUniqueId())) {
                     event.getEntity().remove();
                     tgttosTeamArea.playerArrivedAtEndPoint(player);
-                    player.setGameMode(GameMode.SPECTATOR);
+                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                        player.setGameMode(GameMode.SPECTATOR);
+                    });
                 }
             }
         }

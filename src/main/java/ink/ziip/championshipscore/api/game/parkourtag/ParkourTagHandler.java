@@ -8,7 +8,10 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.*;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -257,7 +260,10 @@ public class ParkourTagHandler extends BaseListener {
                 }
 
                 if (assailant.getUniqueId().equals(parkourTagArea.getLeftAreaChaser()) || assailant.getUniqueId().equals(parkourTagArea.getRightAreaChaser())) {
-                    player.setGameMode(GameMode.SPECTATOR);
+                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                        player.setGameMode(GameMode.SPECTATOR);
+                    });
                     assailant.playSound(assailant, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
 
                     // Add 6 points to chaser

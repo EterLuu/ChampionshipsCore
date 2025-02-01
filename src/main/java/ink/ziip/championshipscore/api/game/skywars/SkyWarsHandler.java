@@ -281,8 +281,7 @@ public class SkyWarsHandler extends BaseListener {
                 return;
             }
 
-            if (event.getDamager() instanceof Snowball) {
-                Projectile projectile = (Projectile) event.getDamager();
+            if (event.getDamager() instanceof Snowball projectile) {
                 ProjectileSource projectileSource = projectile.getShooter();
                 if (!(projectileSource instanceof Player))
                     return;
@@ -397,7 +396,10 @@ public class SkyWarsHandler extends BaseListener {
                             skyWarsArea.addDeathPlayer(player);
                         }
                     }
-                    player.setGameMode(GameMode.SPECTATOR);
+                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                        player.setGameMode(GameMode.SPECTATOR);
+                    });
                 }
             }
         }
