@@ -213,6 +213,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.dragoneggcarnival")
     public static String GAME_DRAGON_EGG_CARNIVAL;
 
+    @ConfigOption(path = "game.game-weight")
+    public static String GAME_GAME_WEIGHT;
+
+    @ConfigOption(path = "game.game-weight-info")
+    public static String GAME_GAME_WEIGHT_INFO;
+
     // BattleBox
     @ConfigOption(path = "battlebox.start-preparation")
     public static String BATTLE_BOX_START_PREPARATION;

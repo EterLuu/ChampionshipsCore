@@ -16,6 +16,7 @@ public class RankMainCommand extends BaseMainCommand {
         super("rank");
         addSubCommand(new PlayerBoardSubCommand());
         addSubCommand(new TeamBoardSubCommand());
+        addSubCommand(new GameWeightInfoSubCommand());
     }
 
     @Override

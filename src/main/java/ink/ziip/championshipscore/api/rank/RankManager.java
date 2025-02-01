@@ -19,6 +19,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,6 +30,8 @@ public class RankManager extends BaseManager {
     private static final Map<ChampionshipTeam, Integer> teamRank = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> playerRank = new ConcurrentHashMap<>();
     private static final Map<GameTypeEnum, Integer> gameOrder = new ConcurrentHashMap<>();
+    private static final Map<GameTypeEnum, BigDecimal> gameWeight = new ConcurrentHashMap<>();
+    private static final Map<GameTypeEnum, Double> gameTotalPoints = new ConcurrentHashMap<>();
     private final RankDaoImpl rankDao = new RankDaoImpl();
     private final TeamDaoImpl teamDao = new TeamDaoImpl();
     private final PlayerDaoImpl playerDao = new PlayerDaoImpl();
@@ -129,6 +133,10 @@ public class RankManager extends BaseManager {
 
     private void updatePlayerPoint() {
         scheduler.runTaskAsynchronously(plugin, () -> {
+            for(GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+                gameTotalPoints.put(gameTypeEnum, 0D);
+            }
+
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(championshipTeam.getId())) {
                     UUID uuid = teamMemberEntry.getUuid();
@@ -170,6 +178,22 @@ public class RankManager extends BaseManager {
             }
 
             playerLeaderboard = list;
+
+            for(GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+                try {
+                    BigDecimal totalNum = BigDecimal.valueOf(15000D).setScale(4, RoundingMode.HALF_UP);
+                    BigDecimal weight = totalNum.divide(BigDecimal.valueOf(gameTotalPoints.get(gameTypeEnum)), RoundingMode.HALF_UP);
+
+                    if(weight.compareTo(BigDecimal.ZERO) != 0)
+                        gameWeight.put(gameTypeEnum, weight);
+                    else
+                        gameWeight.put(gameTypeEnum, BigDecimal.ONE);
+                }
+                catch (Exception ignored) {
+                    gameWeight.put(gameTypeEnum, BigDecimal.ONE);
+                }
+
+            }
         });
     }
 
@@ -243,10 +267,17 @@ public class RankManager extends BaseManager {
 
         int points = 0;
         for (PlayerPointEntry playerPointEntry : playerPointEntries) {
+            addTeamTotalPoints(playerPointEntry.getGame(), playerPointEntry.getPoints());
+
             points = points + playerPointEntry.getPoints();
         }
 
         return points;
+    }
+
+    private synchronized void addTeamTotalPoints(GameTypeEnum gameTypeEnum, double points) {
+        double prevPoints = gameTotalPoints.getOrDefault(gameTypeEnum, 0D);
+        gameTotalPoints.put(gameTypeEnum, prevPoints + points);
     }
 
     private double getTeamPoints(ChampionshipTeam championshipTeam) {
@@ -257,22 +288,16 @@ public class RankManager extends BaseManager {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
             for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                 if (playerPointEntry.getGame() == gameTypeEnum) {
-                    points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * isWeightedGame(gameTypeEnum);
+                    points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * getGameWeight(gameTypeEnum);
                 }
             }
 
         }
 
-        return points;
-    }
+        BigDecimal finalPoints = BigDecimal.valueOf(points).setScale(4, RoundingMode.HALF_UP);
+        finalPoints = finalPoints.setScale(4, RoundingMode.HALF_UP);
 
-    public double isWeightedGame(GameTypeEnum gameTypeEnum) {
-        if (gameTypeEnum == GameTypeEnum.Bingo)
-            return 0.75;
-        if (gameTypeEnum == GameTypeEnum.SnowballShowdown)
-            return 0.75;
-
-        return 1;
+        return finalPoints.doubleValue();
     }
 
     public double getPointMultiple(int round) {
@@ -328,6 +353,28 @@ public class RankManager extends BaseManager {
 
             teamRank.put(entry.getKey(), i);
             i++;
+        }
+
+        return stringBuilder.toString();
+    }
+
+    public double getGameWeight(GameTypeEnum gameTypeEnum) {
+        BigDecimal weight = gameWeight.getOrDefault(gameTypeEnum, BigDecimal.ONE).setScale(4, RoundingMode.HALF_UP);
+        return weight.doubleValue();
+    }
+
+    public String getGameWeightInfo(){
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(MessageConfig.GAME_GAME_WEIGHT).append("\n");
+
+        for(GameTypeEnum gameTypeEnum : GameTypeEnum.values()){
+            String row = MessageConfig.GAME_GAME_WEIGHT_INFO
+                    .replace("%game%", gameTypeEnum.toString())
+                    .replace("%weight%", String.valueOf(getGameWeight(gameTypeEnum)))
+                    .replace("%total_point%", String.valueOf(gameTotalPoints.getOrDefault(gameTypeEnum, 0D)));
+
+            stringBuilder.append(row).append("\n");
         }
 
         return stringBuilder.toString();

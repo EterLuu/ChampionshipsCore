@@ -71,6 +71,8 @@ game:
   skywars: "空岛战争"
   tgttos: "去到另一边"
   dragoneggcarnival: "龙蛋狂欢"
+  game-weight: "&f====== &3WCC &e游戏权值 &7| &cRIA &fx &bTRIALHAMMER &f======"
+  game-weight-info: "&r  &f%game%. &b%weight%&7（&6%total_point%&7）"
 battlebox:
   start-preparation: "&b[&3WCC&b] &f请双方队伍选择装备。"
   start-preparation-title: "&6[&c斗战方框]"
