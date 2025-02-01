@@ -12,18 +12,16 @@ import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageCo
 import ink.ziip.championshipscore.util.Utils;
 import io.github.steaf23.bingoreloaded.BingoReloaded;
 import io.github.steaf23.bingoreloaded.gameloop.BingoSession;
-import io.github.steaf23.bingoreloaded.gameloop.singular.SingularGameManager;
+import io.github.steaf23.bingoreloaded.gameloop.SingularGameManager;
 import io.github.steaf23.bingoreloaded.player.BingoParticipant;
 import io.github.steaf23.bingoreloaded.player.BingoPlayer;
 import io.github.steaf23.bingoreloaded.player.team.TeamManager;
-import io.github.steaf23.bingoreloaded.tasks.BingoTask;
+import io.github.steaf23.bingoreloaded.tasks.GameTask;
 import lombok.Getter;
 import lombok.Setter;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.Sound;
+import net.md_5.bungee.api.chat.TranslatableComponent;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Field;
@@ -67,10 +65,18 @@ public class BingoManager extends BaseManager {
             Field gameManagerField = bingoReloaded.getClass().getDeclaredField("gameManager");
             gameManagerField.setAccessible(true);
 
-            SingularGameManager singularGameManager = (SingularGameManager) gameManagerField.get(bingoReloaded);
+            SingularGameManager gameManager = (SingularGameManager) gameManagerField.get(bingoReloaded);
 
-            session = singularGameManager.getSession();
-            TeamManager teamManager = singularGameManager.getSession().teamManager;
+            World world = Bukkit.getWorld("bingo");
+            if (world == null)
+                return;
+
+            BingoSession session = gameManager.getSessionFromWorld(world);
+
+            if (session == null)
+                return;
+
+            TeamManager teamManager = session.teamManager;
 
             plugin.getScheduleManager().addRound(GameTypeEnum.Bingo);
 
@@ -86,7 +92,7 @@ public class BingoManager extends BaseManager {
                         for (Player player : championshipTeam.getOnlinePlayers()) {
                             BingoParticipant bingoParticipant = teamManager.getPlayerAsParticipant(player);
                             if (bingoParticipant == null) {
-                                bingoParticipant = new BingoPlayer(player, teamManager.getSession());
+                                bingoParticipant = new BingoPlayer(player, session);
                             }
                             teamManager.addMemberToTeam(bingoParticipant, championshipTeam.getColorName().toLowerCase());
                         }
@@ -216,13 +222,13 @@ public class BingoManager extends BaseManager {
         return 10;
     }
 
-    public void handleTeamCompleteTask(BingoTask bingoTask, ChampionshipTeam championshipTeam, Player player) {
-        List<ChampionshipTeam> completeChampionshipTeams = getCompleteTeams(bingoTask);
+    public void handleTeamCompleteTask(GameTask gameTask, ChampionshipTeam championshipTeam, Player player) {
+        List<ChampionshipTeam> completeChampionshipTeams = getCompleteTeams(gameTask);
         int num = completeChampionshipTeams.size();
         if (championshipTeam != null) {
             if (!completeChampionshipTeams.contains(championshipTeam)) {
                 int points = getPoints(num + 1);
-                addCompleteTeams(bingoTask, championshipTeam);
+                addCompleteTeams(gameTask, championshipTeam);
                 addPointsToTeam(championshipTeam, points);
 
                 if (player != null)
@@ -238,7 +244,7 @@ public class BingoManager extends BaseManager {
                 textComponent.setColor(Utils.toBungeeChatColor(championshipTeam.getColorName()));
                 textComponent.addExtra(teamComponent);
                 textComponent.addExtra(new TextComponent(finalMessages[0]));
-                textComponent.addExtra(bingoTask.data.getItemDisplayName().asComponent());
+                textComponent.addExtra(new TranslatableComponent(gameTask.material.getItemTranslationKey()));
                 textComponent.addExtra(finalMessages[1]);
 
                 Utils.sendMessageToAllSpigotPlayers(textComponent);
@@ -246,7 +252,7 @@ public class BingoManager extends BaseManager {
             if (num == 4) {
                 String[] messages = MessageConfig.BINGO_TASK_EXPIRED.split("%task%");
                 TextComponent textComponent = new TextComponent(messages[0]);
-                textComponent.addExtra(bingoTask.data.getItemDisplayName().asComponent());
+                textComponent.addExtra(new TranslatableComponent(gameTask.material.getItemTranslationKey()));
                 textComponent.addExtra(messages[1]);
 
                 Utils.sendMessageToAllSpigotPlayers(textComponent);
@@ -258,16 +264,16 @@ public class BingoManager extends BaseManager {
         return getPoints(bingoTaskCompleteLists.getOrDefault(material, Collections.emptyList()).size());
     }
 
-    private void addCompleteTeams(BingoTask bingoTask, ChampionshipTeam championshipTeam) {
-        List<ChampionshipTeam> championshipTeams = getCompleteTeams(bingoTask);
+    private void addCompleteTeams(GameTask gameTask, ChampionshipTeam championshipTeam) {
+        List<ChampionshipTeam> championshipTeams = getCompleteTeams(gameTask);
         if (!championshipTeams.contains(championshipTeam))
             championshipTeams.add(championshipTeam);
     }
 
-    private List<ChampionshipTeam> getCompleteTeams(BingoTask bingoTask) {
-        if (!bingoTaskCompleteLists.containsKey(bingoTask.material)) {
-            bingoTaskCompleteLists.put(bingoTask.material, new ArrayList<>());
+    private List<ChampionshipTeam> getCompleteTeams(GameTask gameTask) {
+        if (!bingoTaskCompleteLists.containsKey(gameTask.material)) {
+            bingoTaskCompleteLists.put(gameTask.material, new ArrayList<>());
         }
-        return bingoTaskCompleteLists.get(bingoTask.material);
+        return bingoTaskCompleteLists.get(gameTask.material);
     }
 }

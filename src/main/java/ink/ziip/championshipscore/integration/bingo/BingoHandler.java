@@ -5,10 +5,11 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
-import io.github.steaf23.bingoreloaded.event.BingoCardTaskCompleteEvent;
 import io.github.steaf23.bingoreloaded.event.BingoEndedEvent;
 import io.github.steaf23.bingoreloaded.event.BingoStartedEvent;
-import io.github.steaf23.bingoreloaded.tasks.BingoTask;
+import io.github.steaf23.bingoreloaded.event.BingoTaskProgressCompletedEvent;
+import io.github.steaf23.bingoreloaded.player.BingoParticipant;
+import io.github.steaf23.bingoreloaded.tasks.GameTask;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -57,13 +58,16 @@ public class BingoHandler extends BaseListener {
     }
 
     @EventHandler
-    public void onBingoTaskCompleted(BingoCardTaskCompleteEvent event) {
+    public void onBingoTaskCompleted(BingoTaskProgressCompletedEvent event) {
+        if(event.getTask().getCompletedBy().isEmpty())
+            return;
+        BingoParticipant participant = event.getTask().getCompletedBy().get();
+        GameTask gameTask = event.getTask();
         if (bingoManager.isStarted()) {
-            BingoTask bingoTask = event.getTask();
-            if (event.getParticipant().sessionPlayer().isPresent()) {
-                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getParticipant().sessionPlayer().get());
+            if (participant.sessionPlayer().isPresent()) {
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(participant.sessionPlayer().get());
                 if (championshipTeam != null) {
-                    bingoManager.handleTeamCompleteTask(bingoTask, championshipTeam, event.getParticipant().sessionPlayer().get());
+                    bingoManager.handleTeamCompleteTask(gameTask, championshipTeam, participant.sessionPlayer().get());
                 }
             }
         }
