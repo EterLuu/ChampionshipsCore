@@ -57,7 +57,7 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getColoredName();
+            return championshipTeam.getName();
         }
         if (params.startsWith("area_rival_wins_")) {
             DragonEggCarnivalArea dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(params.replace("area_rival_wins_", ""));
@@ -81,7 +81,7 @@ public class DragonEggCarnivalPlaceholder extends BasePlaceholder {
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getColoredName();
+            return championshipTeam.getName();
         }
         if (params.startsWith("area_timer_")) {
             DragonEggCarnivalArea dragonEggCarnivalArea = dragonEggCarnivalManager.getArea(params.replace("area_timer_", ""));

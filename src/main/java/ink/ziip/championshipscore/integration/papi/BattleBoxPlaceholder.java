@@ -48,7 +48,7 @@ public class BattleBoxPlaceholder extends BasePlaceholder {
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getColoredName();
+            return championshipTeam.getName();
         }
         if (params.startsWith("area_rival_")) {
             BattleBoxArea battleBoxArea = battleBoxManager.getArea(params.replace("area_rival_", ""));
@@ -62,7 +62,7 @@ public class BattleBoxPlaceholder extends BasePlaceholder {
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getColoredName();
+            return championshipTeam.getName();
         }
         if (params.startsWith("area_timer_")) {
             BattleBoxArea battleBoxArea = battleBoxManager.getArea(params.replace("area_timer_", ""));

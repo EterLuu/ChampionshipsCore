@@ -48,7 +48,7 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getColoredName();
+            return championshipTeam.getName();
         }
         if (params.startsWith("area_rival_")) {
             ParkourTagArea parkourTagArea = parkourTagManager.getArea(params.replace("area_rival_", ""));
@@ -62,7 +62,7 @@ public class ParkourTagPlaceholder extends BasePlaceholder {
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getColoredName();
+            return championshipTeam.getName();
         }
         if (params.startsWith("area_timer_")) {
             ParkourTagArea parkourTagArea = parkourTagManager.getArea(params.replace("area_timer_", ""));

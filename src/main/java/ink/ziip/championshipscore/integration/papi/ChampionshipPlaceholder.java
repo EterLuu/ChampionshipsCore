@@ -26,12 +26,26 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
 
             return championshipTeam.getColoredName();
         }
+        if (params.startsWith("player_team_name_no_color")) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+            if (championshipTeam == null)
+                return MessageConfig.PLACEHOLDER_SPECTATOR;
+
+            return championshipTeam.getName();
+        }
         if (params.startsWith("player_team_color")) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
             if (championshipTeam == null)
                 return MessageConfig.PLACEHOLDER_NONE;
 
             return championshipTeam.getColorName();
+        }
+        if (params.startsWith("player_team_color_code")) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+            if (championshipTeam == null)
+                return MessageConfig.PLACEHOLDER_NONE;
+
+            return championshipTeam.getColorCode();
         }
 
         /* Player required placeholders */
