@@ -174,7 +174,7 @@ public class ParkourTagScheduleManager extends BaseManager {
     public synchronized void addCompletedAreaNum() {
         completedAreaNum++;
 
-        if (completedAreaNum == plugin.getGameManager().getParkourTagManager().getAreaNameList().size()) {
+        if (completedAreaNum == parkourTagRounds.getFirst().size()) {
             nextParkourTagRound();
         }
     }

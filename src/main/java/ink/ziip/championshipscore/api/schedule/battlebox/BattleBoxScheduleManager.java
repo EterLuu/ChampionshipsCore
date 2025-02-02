@@ -174,7 +174,7 @@ public class BattleBoxScheduleManager extends BaseManager {
     public synchronized void addCompletedAreaNum() {
         completedAreaNum++;
 
-        if (completedAreaNum == plugin.getGameManager().getBattleBoxManager().getAreaNameList().size()) {
+        if (completedAreaNum == battleBoxRounds.getFirst().size()) {
             nextBattleBoxRound();
         }
     }
