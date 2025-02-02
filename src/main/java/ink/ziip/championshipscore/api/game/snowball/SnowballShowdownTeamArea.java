@@ -391,9 +391,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         Collections.reverse(list);
 
         for (Map.Entry<ChampionshipTeam, Integer> entry : list) {
-            String content = entry.getKey().getColoredName() +
-                    "&f：" +
-                    entry.getValue();
+            String content = entry.getKey().getName() + ": " + entry.getValue();
 
             rank.add(content);
         }

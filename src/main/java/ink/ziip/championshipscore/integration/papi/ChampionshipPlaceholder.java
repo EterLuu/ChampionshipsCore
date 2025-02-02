@@ -19,13 +19,6 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
 
     @Override
     public String onRequest(OfflinePlayer offlinePlayer, String params) {
-        if (params.startsWith("player_team_name")) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
-            if (championshipTeam == null)
-                return MessageConfig.PLACEHOLDER_SPECTATOR;
-
-            return championshipTeam.getColoredName();
-        }
         if (params.startsWith("player_team_name_no_color")) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
             if (championshipTeam == null)
@@ -33,12 +26,12 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
 
             return championshipTeam.getName();
         }
-        if (params.startsWith("player_team_color")) {
+        if (params.startsWith("player_team_name")) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
             if (championshipTeam == null)
-                return MessageConfig.PLACEHOLDER_NONE;
+                return MessageConfig.PLACEHOLDER_SPECTATOR;
 
-            return championshipTeam.getColorName();
+            return championshipTeam.getColoredName();
         }
         if (params.startsWith("player_team_color_code")) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
@@ -46,6 +39,13 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
                 return MessageConfig.PLACEHOLDER_NONE;
 
             return championshipTeam.getColorCode();
+        }
+        if (params.startsWith("player_team_color")) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+            if (championshipTeam == null)
+                return MessageConfig.PLACEHOLDER_NONE;
+
+            return championshipTeam.getColorName();
         }
 
         /* Player required placeholders */
