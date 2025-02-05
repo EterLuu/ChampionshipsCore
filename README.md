@@ -7,14 +7,16 @@ The core plugin of the Summer/Winter Collab Championship.
 
 ### Player
 
-| **Placeholder**           | **Description**                                 |
-|---------------------------|-------------------------------------------------|
-| `%cc_player_points%`      | Show the current points of the player.          |
-| `%cc_player_rank%`        | Show the current rank of the player.            |
-| `%cc_player_team_name%`   | Show the current team name of the player.       |
-| `%cc_player_team_color%`  | Show the current team color name of the player. |
-| `%cc_player_team_points%` | Show the current team points of the player.     |
-| `%cc_player_team_rank%`   | Show the current team rank of the player.       |
+| **Placeholder**                 | **Description**                                                 |
+|---------------------------------|-----------------------------------------------------------------|
+| `%cc_player_points%`            | Show the current points of the player.                          |
+| `%cc_player_rank%`              | Show the current rank of the player.                            |
+| `%cc_player_team_name_no_color%`| Show the current team name (without color) of the player.       |
+| `%cc_player_team_color_code%`   | Show the current team color code.                               |
+| `%cc_player_team_name%`         | Show the current team name of the player.                       |
+| `%cc_player_team_color%`        | Show the current team color name of the player.                 |
+| `%cc_player_team_points%`       | Show the current team points of the player.                     |
+| `%cc_player_team_rank%`         | Show the current team rank of the player.                       |
 
 ### Leaderboard
 
