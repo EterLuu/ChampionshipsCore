@@ -4,6 +4,8 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
+import ink.ziip.championshipscore.api.game.advancementcc.AdvancementCCArea;
+import ink.ziip.championshipscore.api.game.advancementcc.AdvancementCCManager;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
@@ -27,6 +29,8 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,6 +54,8 @@ public class GameManager extends BaseManager {
     private final DragonEggCarnivalManager dragonEggCarnivalManager;
     @Getter
     private final SnowballShowdownManager snowballShowdownManager;
+    @Getter
+    private final AdvancementCCManager advancementCCManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -61,6 +67,7 @@ public class GameManager extends BaseManager {
         tntRunManager = new TNTRunManager(plugin);
         dragonEggCarnivalManager = new DragonEggCarnivalManager(plugin);
         snowballShowdownManager = new SnowballShowdownManager(plugin);
+        advancementCCManager = new AdvancementCCManager(plugin);
     }
 
     @Override
@@ -72,6 +79,7 @@ public class GameManager extends BaseManager {
         tntRunManager.load();
         dragonEggCarnivalManager.load();
         snowballShowdownManager.load();
+        advancementCCManager.load();
 
         gameManagerHandler.register();
     }
@@ -85,8 +93,37 @@ public class GameManager extends BaseManager {
         tntRunManager.unload();
         dragonEggCarnivalManager.unload();
         snowballShowdownManager.unload();
+        advancementCCManager.unload();
 
         gameManagerHandler.unRegister();
+    }
+
+    public boolean joinSingleTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam team) {
+        for (UUID uuid : team.getMembers()) {
+            if (playerStatus.containsKey(uuid))
+                return false;
+            if (playerSpectatorStatus.containsKey(uuid))
+                removeSpectator(uuid);
+        }
+        if (teamStatus.containsKey(team))
+            return false;
+
+        if (gameTypeEnum == GameTypeEnum.AdvancementCC) {
+            AdvancementCCArea advancementCCArea = getAdvancementCCManager().getArea(area);
+            if (advancementCCArea == null)
+                return false;
+            List<ChampionshipTeam> list = new ArrayList<>();
+            list.add(team);
+            plugin.getRankManager().deleteTeamGamePoints(team, GameTypeEnum.AdvancementCC);
+            if (advancementCCArea.tryStartGame(list)) {
+                teamStatus.put(team, advancementCCArea);
+                addPlayerStatusByTeam(team, advancementCCArea);
+                return true;
+            }
+            return false;
+        }
+
+        return false;
     }
 
     public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam rightChampionshipTeam, @NotNull ChampionshipTeam leftChampionshipTeam) {

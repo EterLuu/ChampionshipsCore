@@ -21,5 +21,6 @@ public class GameStartMainCommand extends BaseMainCommand {
         addSubCommand(new TNTRunStartMainCommand());
         addSubCommand(new DragonEggCarnivalStartSubCommand());
         addSubCommand(new SnowBallStartMainCommand());
+        addSubCommand(new AdvancementCCStartSubCommand());
     }
 }

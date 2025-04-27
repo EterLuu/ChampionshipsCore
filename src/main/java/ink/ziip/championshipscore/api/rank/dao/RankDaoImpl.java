@@ -227,4 +227,21 @@ public class RankDaoImpl implements RankDao {
             plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
         }
     }
+
+    @Override
+    public void deletePlayerPoints(UUID uuid, GameTypeEnum gameTypeEnum) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    DELETE
+                    FROM `player_points`
+                    WHERE `uuid`=? and `game`=?
+                    """)) {
+                statement.setString(1, uuid.toString());
+                statement.setString(2, gameTypeEnum.name());
+                statement.executeUpdate();
+            }
+        } catch (SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+        }
+    }
 }

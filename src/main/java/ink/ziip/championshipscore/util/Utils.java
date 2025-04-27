@@ -2,12 +2,15 @@ package ink.ziip.championshipscore.util;
 
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.*;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -17,6 +20,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
     private Utils() {
+    }
+
+    public static void revokeAllAdvancements(Player player) {
+        Iterator<Advancement> advancements = Bukkit.getServer().advancementIterator();
+        while (advancements.hasNext()) {
+            AdvancementProgress progress = player.getAdvancementProgress(advancements.next());
+            for (String s : progress.getAwardedCriteria())
+                progress.revokeCriteria(s);
+        }
     }
 
     public static String translateColorCodes(String message) {

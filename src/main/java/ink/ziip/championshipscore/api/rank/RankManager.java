@@ -18,6 +18,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -93,6 +94,12 @@ public class RankManager extends BaseManager {
         return 0D;
     }
 
+    public void deleteTeamGamePoints(@NotNull ChampionshipTeam championshipTeam, GameTypeEnum gameType) {
+        for (UUID uuid : championshipTeam.getMembers()) {
+            rankDao.deletePlayerPoints(uuid, gameType);
+        }
+    }
+
     private void updateTeamPoints() {
         scheduler.runTaskAsynchronously(plugin, () -> {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
@@ -133,7 +140,7 @@ public class RankManager extends BaseManager {
 
     private void updatePlayerPoint() {
         scheduler.runTaskAsynchronously(plugin, () -> {
-            for(GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
                 gameTotalPoints.put(gameTypeEnum, 0D);
             }
 
@@ -179,17 +186,16 @@ public class RankManager extends BaseManager {
 
             playerLeaderboard = list;
 
-            for(GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
                 try {
                     BigDecimal totalNum = BigDecimal.valueOf(15000D).setScale(4, RoundingMode.HALF_UP);
                     BigDecimal weight = totalNum.divide(BigDecimal.valueOf(gameTotalPoints.get(gameTypeEnum)), RoundingMode.HALF_UP);
 
-                    if(weight.compareTo(BigDecimal.ZERO) != 0)
+                    if (weight.compareTo(BigDecimal.ZERO) != 0)
                         gameWeight.put(gameTypeEnum, weight);
                     else
                         gameWeight.put(gameTypeEnum, BigDecimal.ONE);
-                }
-                catch (Exception ignored) {
+                } catch (Exception ignored) {
                     gameWeight.put(gameTypeEnum, BigDecimal.ONE);
                 }
 
@@ -363,12 +369,12 @@ public class RankManager extends BaseManager {
         return weight.doubleValue();
     }
 
-    public String getGameWeightInfo(){
+    public String getGameWeightInfo() {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(MessageConfig.GAME_GAME_WEIGHT).append("\n");
 
-        for(GameTypeEnum gameTypeEnum : GameTypeEnum.values()){
+        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
             String row = MessageConfig.GAME_GAME_WEIGHT_INFO
                     .replace("%game%", gameTypeEnum.toString())
                     .replace("%weight%", String.valueOf(getGameWeight(gameTypeEnum)))

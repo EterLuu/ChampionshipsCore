@@ -420,6 +420,8 @@ public abstract class BaseArea {
 
     public abstract void setHealthForAllGamePlayers(double health);
 
+    public abstract void revokeAllGamePlayersAdvancements();
+
     public abstract void setFoodLevelForAllGamePlayers(int level);
 
     public abstract void teleportAllPlayers(Location location);
