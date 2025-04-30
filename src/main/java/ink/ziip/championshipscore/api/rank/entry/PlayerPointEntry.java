@@ -23,4 +23,5 @@ public class PlayerPointEntry {
     private String round;
     private int points;
     private String time;
+    private int valid;
 }

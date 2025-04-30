@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 2
+  version: 3
 no-permission: "&7&l[&7!&7]&r &4你没有权限！"
 prefix: "&b[&3W²CC&b]&r"
 server-full: "服务器已经满人！"
@@ -256,6 +256,7 @@ advancementcc:
   count-down: "&c倒计时：&6%time%"
   action-bar-count-down: "&b游戏剩余时间：&c%time%&b。"
   player-leave: "&b[&aspS²CC&b] &f%player% &c离开游戏。"
+  final-count-message: "&b[&aspS²CC&b] &c任务：%task%，目标：%goal%，挑战：%challenge%！"
 placeholder:
   none: "无"
   spectator: "旁观"

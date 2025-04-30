@@ -19,7 +19,7 @@ public class RankDaoImpl implements RankDao {
     public List<PlayerPointEntry> getPlayerPoints(UUID uuid) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT `id`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`
+                    SELECT `id`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`, `valid`
                     FROM `player_points`
                     WHERE `uuid`=?
                     """)) {
@@ -43,6 +43,7 @@ public class RankDaoImpl implements RankDao {
                             .round(resultSet.getString("round"))
                             .points(resultSet.getInt("points"))
                             .time(resultSet.getString("time"))
+                            .valid(resultSet.getInt("valid"))
                             .build();
                     playerPointEntries.add(playerPointEntry);
                 }
@@ -58,7 +59,7 @@ public class RankDaoImpl implements RankDao {
     public List<PlayerPointEntry> getTeamPlayerPoints(int teamId) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT `id`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`
+                    SELECT `id`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`, `valid`
                     FROM `player_points`
                     WHERE `teamId`=?
                     """)) {
@@ -82,6 +83,7 @@ public class RankDaoImpl implements RankDao {
                             .round(resultSet.getString("round"))
                             .points(resultSet.getInt("points"))
                             .time(resultSet.getString("time"))
+                            .valid(resultSet.getInt("valid"))
                             .build();
                     playerPointEntries.add(playerPointEntry);
                 }
@@ -232,8 +234,8 @@ public class RankDaoImpl implements RankDao {
     public void deletePlayerPoints(UUID uuid, GameTypeEnum gameTypeEnum) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
-                    DELETE
-                    FROM `player_points`
+                    UPDATE `player_points`
+                    SET `valid`=0
                     WHERE `uuid`=? and `game`=?
                     """)) {
                 statement.setString(1, uuid.toString());

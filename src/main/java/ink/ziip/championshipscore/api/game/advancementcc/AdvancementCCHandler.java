@@ -34,6 +34,6 @@ public class AdvancementCCHandler extends BaseListener {
             return;
         }
 
-        advancementCCArea.handlePlayerAdvancementDone(event.getAdvancement());
+        advancementCCArea.handlePlayerAdvancementDone(player.getUniqueId(), event.getAdvancement());
     }
 }

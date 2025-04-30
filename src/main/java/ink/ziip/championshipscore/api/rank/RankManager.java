@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -273,9 +274,11 @@ public class RankManager extends BaseManager {
 
         int points = 0;
         for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-            addTeamTotalPoints(playerPointEntry.getGame(), playerPointEntry.getPoints());
+            if (playerPointEntry.getValid() == 1) {
+                addTeamTotalPoints(playerPointEntry.getGame(), playerPointEntry.getPoints());
 
-            points = points + playerPointEntry.getPoints();
+                points = points + playerPointEntry.getPoints();
+            }
         }
 
         return points;
@@ -293,8 +296,11 @@ public class RankManager extends BaseManager {
         for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
             for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-                if (playerPointEntry.getGame() == gameTypeEnum) {
-                    points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * getGameWeight(gameTypeEnum);
+                if (playerPointEntry.getValid() == 1 && playerPointEntry.getGame() == gameTypeEnum) {
+                    if (CCConfig.WEIGHTED_SCORE)
+                        points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * getGameWeight(gameTypeEnum);
+                    else
+                        points += playerPointEntry.getPoints();
                 }
             }
 

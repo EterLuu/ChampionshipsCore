@@ -9,6 +9,8 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementDisplay;
+import org.bukkit.advancement.AdvancementDisplayType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -23,6 +25,9 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
     private final Set<String> advanceentSet = new ConcurrentSkipListSet<>();
     @Getter
     private int timer;
+    private int goal;
+    private int task;
+    private int challenge;
     private BukkitTask startGameProgressTask;
 
     public AdvancementCCArea(ChampionshipsCore plugin, AdvancementCCConfig advancementCCConfig) {
@@ -38,6 +43,9 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
     @Override
     public void startGamePreparation() {
+        goal = 0;
+        task = 0;
+        challenge = 0;
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -143,16 +151,22 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 
+        task = 0;
+        goal = 0;
+        challenge = 0;
+
         resetGame();
     }
 
     protected void calculatePoints() {
-        int point = advanceentSet.size();
-        for (UUID uuid : getGamePlayers()) {
-            addPlayerPoints(uuid, point);
-        }
-
+        sendMessageToAllGamePlayers(getPlayerPointsRank());
         sendMessageToAllGamePlayers(getTeamPointsRank());
+
+        String message = MessageConfig.ACC_FINAL_COUNT_MESSAGE.replace("%task%", String.valueOf(task))
+                .replace("%goal%", String.valueOf(goal))
+                .replace("%challenge%", String.valueOf(challenge));
+
+        sendMessageToAllGamePlayers(message);
 
         addPlayerPointsToDatabase();
     }
@@ -163,9 +177,26 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
         startGameProgressTask = null;
     }
 
-    protected void handlePlayerAdvancementDone(Advancement advancement) {
+    protected synchronized void handlePlayerAdvancementDone(UUID uuid, Advancement advancement) {
         String name = advancement.getKey().toString();
 
+        if (!advanceentSet.contains(name)) {
+            AdvancementDisplay advancementDisplay = advancement.getDisplay();
+            if (advancementDisplay != null) {
+                if (advancementDisplay.getType() == AdvancementDisplayType.TASK) {
+                    addPlayerPoints(uuid, 1);
+                    task++;
+                }
+                if (advancementDisplay.getType() == AdvancementDisplayType.GOAL) {
+                    addPlayerPoints(uuid, 3);
+                    goal++;
+                }
+                if (advancementDisplay.getType() == AdvancementDisplayType.CHALLENGE) {
+                    addPlayerPoints(uuid, 5);
+                    challenge++;
+                }
+            }
+        }
         advanceentSet.add(name);
     }
 

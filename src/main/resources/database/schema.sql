@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS `player_points`
     `round`    VARCHAR(255) NOT NULL,
     `points`   INTEGER      NOT NULL,
     `time`     VARCHAR(255) NOT NULL,
+    `valid`    INTEGER      NOT NULL DEFAULT 1,
 
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB

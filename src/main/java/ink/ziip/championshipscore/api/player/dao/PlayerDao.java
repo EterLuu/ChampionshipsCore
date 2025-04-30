@@ -14,4 +14,6 @@ public interface PlayerDao {
 
     @Nullable
     PlayerEntry getPlayer(String name);
+
+    void deletePlayer(UUID uuid);
 }

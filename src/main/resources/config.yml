@@ -1,8 +1,9 @@
 dont-edit-this:
-  version: 1
+  version: 3
 mode: "CHAMPIONSHIP"
 max-players: 100
 whitelist: []
+weighted-score: false
 chat:
   refugee: "&7[&c&l裁判组&7] &f%s&7:&f %s"
   player: "&8[%team%&8] &f%s&7:&f %s"

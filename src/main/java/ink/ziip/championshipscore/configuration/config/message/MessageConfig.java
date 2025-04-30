@@ -16,7 +16,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 2;
+        return 3;
     }
 
     // Player
@@ -745,6 +745,9 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "advancementcc.player-leave")
     public static String ACC_PLAYER_LEAVE;
+
+    @ConfigOption(path = "advancementcc.final-count-message")
+    public static String ACC_FINAL_COUNT_MESSAGE;
 
     // Placeholder
     @ConfigOption(path = "placeholder.none")

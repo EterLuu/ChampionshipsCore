@@ -26,6 +26,7 @@ public class SpectateSubCommand extends BaseSubCommand {
             "tntrun",
             "snowball",
             "dragoneggcarnival",
+            "acc"
     };
 
     public SpectateSubCommand() {
@@ -103,6 +104,13 @@ public class SpectateSubCommand extends BaseSubCommand {
                     baseArea = dragonEggCarnival;
                 }
             }
+            if (args[0].equals("acc")) {
+                gameTypeEnum = GameTypeEnum.AdvancementCC;
+                BaseArea advancementCCArea = plugin.getGameManager().getAdvancementCCManager().getArea(args[1]);
+                if (advancementCCArea != null) {
+                    baseArea = advancementCCArea;
+                }
+            }
             if (gameTypeEnum != null && baseArea != null) {
                 if (plugin.getGameManager().spectateArea((Player) sender, baseArea)) {
                     String message = MessageConfig.SPECTATOR_JOIN_AREA
@@ -157,6 +165,11 @@ public class SpectateSubCommand extends BaseSubCommand {
             }
             if (args[0].equals("dragoneggcarnival")) {
                 List<String> returnList = plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList();
+                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
+                return returnList;
+            }
+            if (args[0].equals("acc")) {
+                List<String> returnList = plugin.getGameManager().getAdvancementCCManager().getAreaNameList();
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
                 return returnList;
             }
