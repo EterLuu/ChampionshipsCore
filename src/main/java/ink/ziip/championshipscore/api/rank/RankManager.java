@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -18,6 +19,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -93,6 +95,12 @@ public class RankManager extends BaseManager {
         return 0D;
     }
 
+    public void deleteTeamGamePoints(@NotNull ChampionshipTeam championshipTeam, GameTypeEnum gameType) {
+        for (UUID uuid : championshipTeam.getMembers()) {
+            rankDao.deletePlayerPoints(uuid, gameType);
+        }
+    }
+
     private void updateTeamPoints() {
         scheduler.runTaskAsynchronously(plugin, () -> {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
@@ -133,7 +141,7 @@ public class RankManager extends BaseManager {
 
     private void updatePlayerPoint() {
         scheduler.runTaskAsynchronously(plugin, () -> {
-            for(GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
                 gameTotalPoints.put(gameTypeEnum, 0D);
             }
 
@@ -179,17 +187,16 @@ public class RankManager extends BaseManager {
 
             playerLeaderboard = list;
 
-            for(GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
                 try {
                     BigDecimal totalNum = BigDecimal.valueOf(15000D).setScale(4, RoundingMode.HALF_UP);
                     BigDecimal weight = totalNum.divide(BigDecimal.valueOf(gameTotalPoints.get(gameTypeEnum)), RoundingMode.HALF_UP);
 
-                    if(weight.compareTo(BigDecimal.ZERO) != 0)
+                    if (weight.compareTo(BigDecimal.ZERO) != 0)
                         gameWeight.put(gameTypeEnum, weight);
                     else
                         gameWeight.put(gameTypeEnum, BigDecimal.ONE);
-                }
-                catch (Exception ignored) {
+                } catch (Exception ignored) {
                     gameWeight.put(gameTypeEnum, BigDecimal.ONE);
                 }
 
@@ -267,9 +274,11 @@ public class RankManager extends BaseManager {
 
         int points = 0;
         for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-            addTeamTotalPoints(playerPointEntry.getGame(), playerPointEntry.getPoints());
+            if (playerPointEntry.getValid() == 1) {
+                addTeamTotalPoints(playerPointEntry.getGame(), playerPointEntry.getPoints());
 
-            points = points + playerPointEntry.getPoints();
+                points = points + playerPointEntry.getPoints();
+            }
         }
 
         return points;
@@ -287,8 +296,11 @@ public class RankManager extends BaseManager {
         for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
             for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-                if (playerPointEntry.getGame() == gameTypeEnum) {
-                    points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * getGameWeight(gameTypeEnum);
+                if (playerPointEntry.getValid() == 1 && playerPointEntry.getGame() == gameTypeEnum) {
+                    if (CCConfig.WEIGHTED_SCORE)
+                        points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * getGameWeight(gameTypeEnum);
+                    else
+                        points += playerPointEntry.getPoints();
                 }
             }
 
@@ -363,12 +375,12 @@ public class RankManager extends BaseManager {
         return weight.doubleValue();
     }
 
-    public String getGameWeightInfo(){
+    public String getGameWeightInfo() {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(MessageConfig.GAME_GAME_WEIGHT).append("\n");
 
-        for(GameTypeEnum gameTypeEnum : GameTypeEnum.values()){
+        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
             String row = MessageConfig.GAME_GAME_WEIGHT_INFO
                     .replace("%game%", gameTypeEnum.toString())
                     .replace("%weight%", String.valueOf(getGameWeight(gameTypeEnum)))

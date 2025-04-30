@@ -19,7 +19,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 1;
+        return 3;
     }
 
     // Mode
@@ -32,6 +32,10 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "whitelist")
     public static List<String> WHITELIST;
+
+    // Score
+    @ConfigOption(path = "weighted-score")
+    public static Boolean WEIGHTED_SCORE;
 
     // Chat
     @ConfigOption(path = "chat.refugee")

@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -173,6 +174,14 @@ public abstract class BaseSingleTeamArea extends BaseArea {
     public void playSoundToAllGamePlayers(Sound sound, float volume, float pitch) {
         for (ChampionshipTeam championshipTeam : gameTeams)
             championshipTeam.playSoundToAllPlayers(sound, volume, pitch);
+    }
+
+    @Override
+    public void revokeAllGamePlayersAdvancements() {
+        for (ChampionshipTeam championshipTeam : gameTeams)
+            for (Player player : championshipTeam.getOnlinePlayers()) {
+                Utils.revokeAllAdvancements(player);
+            }
     }
 
     @Override

@@ -16,7 +16,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 2;
+        return 3;
     }
 
     // Player
@@ -177,6 +177,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.team-game-start-failed")
     public static String GAME_TEAM_GAME_START_FAILED;
 
+    @ConfigOption(path = "game.single-team-game-start-successful")
+    public static String GAME_SINGLE_TEAM_GAME_START_SUCCESSFUL;
+
+    @ConfigOption(path = "game.single-team-game-start-failed")
+    public static String GAME_SINGLE_TEAM_GAME_START_FAILED;
+
     @ConfigOption(path = "game.single-game-start-successful")
     public static String GAME_SINGLE_GAME_START_SUCCESSFUL;
 
@@ -212,6 +218,9 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "game.dragoneggcarnival")
     public static String GAME_DRAGON_EGG_CARNIVAL;
+
+    @ConfigOption(path = "game.advancementcc")
+    public static String GAME_ADVANCEMENT_CC;
 
     @ConfigOption(path = "game.game-weight")
     public static String GAME_GAME_WEIGHT;
@@ -690,6 +699,55 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "snowball.player-leave")
     public static String SNOWBALL_PLAYER_LEAVE;
+
+    // Advancement CC
+    @ConfigOption(path = "advancementcc.start-preparation")
+    public static String ACC_START_PREPARATION;
+
+    @ConfigOption(path = "advancementcc.start-preparation-title")
+    public static String ACC_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "advancementcc.start-preparation-subtitle")
+    public static String ACC_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "advancementcc.game-start-soon")
+    public static String ACC_GAME_START_SOON;
+
+    @ConfigOption(path = "advancementcc.game-start-soon-title")
+    public static String ACC_GAME_START_SOON_TITLE;
+
+    @ConfigOption(path = "advancementcc.game-start-soon-subtitle")
+    public static String ACC_GAME_START_SOON_SUBTITLE;
+
+    @ConfigOption(path = "advancementcc.game-start")
+    public static String ACC_GAME_START;
+
+    @ConfigOption(path = "advancementcc.game-start-title")
+    public static String ACC_GAME_START_TITLE;
+
+    @ConfigOption(path = "advancementcc.game-start-subtitle")
+    public static String ACC_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "advancementcc.game-end")
+    public static String ACC_GAME_END;
+
+    @ConfigOption(path = "advancementcc.game-end-title")
+    public static String ACC_GAME_END_TITLE;
+
+    @ConfigOption(path = "advancementcc.game-end-subtitle")
+    public static String ACC_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "advancementcc.count-down")
+    public static String ACC_COUNT_DOWN;
+
+    @ConfigOption(path = "advancementcc.action-bar-count-down")
+    public static String ACC_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "advancementcc.player-leave")
+    public static String ACC_PLAYER_LEAVE;
+
+    @ConfigOption(path = "advancementcc.final-count-message")
+    public static String ACC_FINAL_COUNT_MESSAGE;
 
     // Placeholder
     @ConfigOption(path = "placeholder.none")

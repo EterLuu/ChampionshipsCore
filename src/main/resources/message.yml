@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 2
+  version: 3
 no-permission: "&7&l[&7!&7]&r &4你没有权限！"
 prefix: "&b[&3W²CC&b]&r"
 server-full: "服务器已经满人！"
@@ -59,6 +59,8 @@ spectator:
 game:
   team-game-start-successful: "&b[&3W²CC&b] %team% &fvs %rival% &f启动成功（游戏：%game%，场地：%area%）。"
   team-game-start-failed: "&b[&3W²CC&b] %team% &fvs %rival% &c启动失败（游戏：%game%，场地：%area%）。"
+  single-team-game-start-successful: "&b[&3W²CC&b] 游戏启动成功（游戏：%game%，场地：%area%）。"
+  single-team-game-start-failed: "&b[&3W²CC&b] 游戏启动失败（游戏：%game%，场地：%area%）。"
   single-game-start-successful: "&b[&3W²CC&b] 游戏启动成功（游戏：%game%，场地：%area%）。"
   single-game-start-failed: "&b[&3W²CC&b] 游戏启动失败（游戏：%game%，场地：%area%）。"
   board-bar: "&f====== &3游戏：&f%game% &7| &c场地：&f%area% &f======"
@@ -71,6 +73,7 @@ game:
   skywars: "空岛战争"
   tgttos: "去到另一边"
   dragoneggcarnival: "龙蛋狂欢"
+  advancementcc: "斐然成就"
   game-weight: "&f====== &3W²CC &e游戏权值 &7| &cRIA &fx &bTRIALHAMMER &f======"
   game-weight-info: "&r  &f%game%. &b%weight%&7（&6%total_point%&7）"
 battlebox:
@@ -237,6 +240,23 @@ snowball:
   player-death: "&b[&3W²CC&b] &f%player% &c死亡。"
   player-death-by-void: "&b[&3W²CC&b] &f%player% &c跌入了虚空。"
   player-leave: "&b[&3W²CC&b] &f%player% &c离开游戏。"
+advancementcc:
+  start-preparation: "&b[&aspS²CC&b] &f游戏即将开始。"
+  start-preparation-title: "&c[&a斐然成就&c]"
+  start-preparation-subtitle: "&f游戏即将开始"
+  game-start-soon: "&b[&aspS²CC&b] &f游戏即将开始。"
+  game-start-soon-title: "&c[&a斐然成就&c]"
+  game-start-soon-subtitle: "&b游戏即将开始"
+  game-start: "&b[&aspS²CC&b] &c游戏开始！"
+  game-start-title: "&c[&a斐然成就&c]"
+  game-start-subtitle: "&6游戏开始！"
+  game-end: "&b[&aspS²CC&b] &7游戏结束。"
+  game-end-title: "&c[&a斐然成就&c]"
+  game-end-subtitle: "&b[&aspS²CC&b] &7游戏结束。"
+  count-down: "&c倒计时：&6%time%"
+  action-bar-count-down: "&b游戏剩余时间：&c%time%&b。"
+  player-leave: "&b[&aspS²CC&b] &f%player% &c离开游戏。"
+  final-count-message: "&b[&aspS²CC&b] &c任务：%task%，目标：%goal%，挑战：%challenge%！"
 placeholder:
   none: "无"
   spectator: "旁观"

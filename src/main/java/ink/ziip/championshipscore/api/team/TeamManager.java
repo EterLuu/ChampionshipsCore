@@ -208,7 +208,11 @@ public class TeamManager extends BaseManager {
         if (championshipTeam == null) return false;
         for (TeamMemberEntry teamMemberEntry : teamDaoImpl.getTeamMembers(championshipTeam.getId())) {
             if (teamMemberEntry.getUsername().equals(username)) {
-                return deleteTeamMember(teamMemberEntry.getUuid(), championshipTeam);
+                if (deleteTeamMember(teamMemberEntry.getUuid(), championshipTeam)) {
+                    plugin.getPlayerManager().deletePlayer(teamMemberEntry.getUuid());
+                    return true;
+                }
+                return false;
             }
         }
         return false;

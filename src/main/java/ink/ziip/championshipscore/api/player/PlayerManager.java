@@ -57,6 +57,10 @@ public class PlayerManager extends BaseManager {
         addPlayer(uuid);
     }
 
+    public void deletePlayer(@NotNull UUID uuid) {
+        playerDao.deletePlayer(uuid);
+    }
+
     public void updatePlayer(@NotNull Player player) {
         setPlayerUUID(player);
     }
@@ -128,11 +132,6 @@ public class PlayerManager extends BaseManager {
 
     public ChampionshipPlayer getPlayer(@NotNull Player player) {
         return getPlayer(player.getUniqueId());
-    }
-
-    @Nullable
-    public ChampionshipPlayer getPlayer(@NotNull OfflinePlayer offlinePlayer) {
-        return getPlayer(offlinePlayer.getUniqueId());
     }
 
     @Nullable

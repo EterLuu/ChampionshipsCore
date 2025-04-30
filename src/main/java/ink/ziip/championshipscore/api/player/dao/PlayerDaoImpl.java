@@ -82,4 +82,20 @@ public class PlayerDaoImpl implements PlayerDao {
             return null;
         }
     }
+
+    @Override
+    public void deletePlayer(UUID uuid) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    DELETE
+                    FROM `players`
+                    WHERE `uuid`=?
+                    """)) {
+                statement.setString(1, uuid.toString());
+                statement.executeUpdate();
+            }
+        } catch (SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+        }
+    }
 }
