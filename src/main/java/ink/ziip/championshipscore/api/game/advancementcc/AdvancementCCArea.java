@@ -11,6 +11,7 @@ import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementDisplay;
 import org.bukkit.advancement.AdvancementDisplayType;
+import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -195,6 +196,15 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
                     addPlayerPoints(uuid, 5);
                     challenge++;
                 }
+            }
+        }
+
+        for (UUID gamePlayer : getGamePlayers()) {
+            Player player = Bukkit.getPlayer(gamePlayer);
+            if (player != null) {
+                AdvancementProgress advancementProgress = player.getAdvancementProgress(advancement);
+                for (String criteria : advancementProgress.getRemainingCriteria())
+                    advancementProgress.awardCriteria(criteria);
             }
         }
         advanceentSet.add(name);
