@@ -19,7 +19,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 3;
+        return 4;
     }
 
     // Mode
@@ -36,6 +36,10 @@ public class CCConfig extends BaseConfigurationFile {
     // Score
     @ConfigOption(path = "weighted-score")
     public static Boolean WEIGHTED_SCORE;
+
+    //Spectator
+    @ConfigOption(path = "strict-spectator-rule")
+    public static Boolean STRICT_SPECTATOR_RULE;
 
     // Chat
     @ConfigOption(path = "chat.refugee")

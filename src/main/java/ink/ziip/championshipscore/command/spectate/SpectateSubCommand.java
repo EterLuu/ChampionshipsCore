@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -35,11 +36,13 @@ public class SpectateSubCommand extends BaseSubCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer((Player) sender);
-        if (plugin.getRankManager().getRound() != 7) {
-            if (championshipTeam != null && !sender.hasPermission("cc.refuge")) {
-                sender.sendMessage(MessageConfig.SPECTATOR_IS_PLAYER);
-                return true;
+        if (CCConfig.STRICT_SPECTATOR_RULE) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer((Player) sender);
+            if (plugin.getRankManager().getRound() != 7) {
+                if (championshipTeam != null && !sender.hasPermission("cc.refuge")) {
+                    sender.sendMessage(MessageConfig.SPECTATOR_IS_PLAYER);
+                    return true;
+                }
             }
         }
 
@@ -159,7 +162,7 @@ public class SpectateSubCommand extends BaseSubCommand {
                 return returnList;
             }
             if (args[0].equals("snowball")) {
-                List<String> returnList = plugin.getGameManager().getSkyWarsManager().getAreaNameList();
+                List<String> returnList = plugin.getGameManager().getSnowballShowdownManager().getAreaNameList();
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
                 return returnList;
             }
