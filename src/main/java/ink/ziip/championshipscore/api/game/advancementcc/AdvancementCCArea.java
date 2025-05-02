@@ -47,6 +47,18 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
         goal = 0;
         task = 0;
         challenge = 0;
+
+        World world = getWorld();
+        world.setGameRule(GameRule.KEEP_INVENTORY, true);
+        World nether = Bukkit.getWorld(getWorldName() + "_nether");
+        if (nether != null) {
+            nether.setGameRule(GameRule.KEEP_INVENTORY, true);
+        }
+        World end = Bukkit.getWorld(getWorldName() + "_the_end");
+        if (end != null) {
+            end.setGameRule(GameRule.KEEP_INVENTORY, true);
+        }
+
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -67,6 +79,8 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
     private void startGameProgress() {
         timer = getGameConfig().getTimer() + 5;
+
+        getWorld().setTime(0);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
@@ -115,7 +129,6 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
         scheduler.runTask(plugin, () -> {
             event.getEntity().spigot().respawn();
-            player.teleport(getWorld().getSpawnLocation());
         });
     }
 
@@ -207,6 +220,7 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
                     advancementProgress.awardCriteria(criteria);
             }
         }
+
         advanceentSet.add(name);
     }
 
@@ -214,11 +228,16 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
     public boolean notInArea(Location location) {
         World world = location.getWorld();
         if (world == null)
-            return false;
+            return true;
 
         String name = world.getName();
+        if (name.startsWith(getWorldName()))
+            return false;
 
-        return !name.endsWith(getWorldName());
+        if (name.startsWith(getWorldName() + "_nether"))
+            return false;
+
+        return !name.startsWith(getWorldName() + "_the_end");
     }
 
     @Override
