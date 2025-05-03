@@ -78,16 +78,4 @@ public class ProtectionListener extends BaseListener {
             event.setCancelled(true);
         }
     }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerChangeSign(SignChangeEvent event) {
-        World world = CCConfig.LOBBY_LOCATION.getWorld();
-        if (world != null) {
-            if (event.getPlayer().getWorld().getName().equals(world.getName()))
-                return;
-        }
-
-        if (!event.getPlayer().isOp())
-            event.setCancelled(true);
-    }
 }

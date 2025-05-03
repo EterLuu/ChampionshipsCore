@@ -19,6 +19,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -385,6 +386,20 @@ public class ParkourTagHandler extends BaseListener {
             return;
         }
 
+        Location location = player.getLocation();
+        if (parkourTagArea.notInArea(location)) {
+            return;
+        }
+
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerChangeSign(SignChangeEvent event) {
+        Player player = event.getPlayer();
+        if (parkourTagArea.notAreaPlayer(player)) {
+            return;
+        }
         Location location = player.getLocation();
         if (parkourTagArea.notInArea(location)) {
             return;

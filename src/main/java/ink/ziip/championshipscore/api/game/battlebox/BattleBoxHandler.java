@@ -5,13 +5,11 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.game.BBWeaponKitEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
@@ -23,6 +21,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.bukkit.projectiles.ProjectileSource;
@@ -323,5 +322,19 @@ public class BattleBoxHandler extends BaseListener {
             if (event.getCause() == EntityDamageEvent.DamageCause.FALL)
                 event.setCancelled(true);
         }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerChangeSign(SignChangeEvent event) {
+        Player player = event.getPlayer();
+        if (battleBoxArea.notAreaPlayer(player)) {
+            return;
+        }
+        Location location = player.getLocation();
+        if (battleBoxArea.notInArea(location)) {
+            return;
+        }
+
+        event.setCancelled(true);
     }
 }
