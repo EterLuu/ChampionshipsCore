@@ -23,6 +23,7 @@ import ink.ziip.championshipscore.api.game.tgttos.TGTTOSTeamArea;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
 import org.bukkit.entity.Player;
@@ -341,6 +342,9 @@ public class GameManager extends BaseManager {
             return false;
         }
         if (playerStatus.containsKey(uuid)) {
+            return false;
+        }
+        if (baseArea.getGameStageEnum() == GameStageEnum.WAITING) {
             return false;
         }
 

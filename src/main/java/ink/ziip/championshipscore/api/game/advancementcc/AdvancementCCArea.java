@@ -195,6 +195,8 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
         String name = advancement.getKey().toString();
 
         if (!advanceentSet.contains(name)) {
+            advanceentSet.add(name);
+
             AdvancementDisplay advancementDisplay = advancement.getDisplay();
             if (advancementDisplay != null) {
                 if (advancementDisplay.getType() == AdvancementDisplayType.TASK) {
@@ -209,19 +211,17 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
                     addPlayerPoints(uuid, 5);
                     challenge++;
                 }
+
+                for (UUID gamePlayer : getGamePlayers()) {
+                    Player player = Bukkit.getPlayer(gamePlayer);
+                    if (player != null) {
+                        AdvancementProgress advancementProgress = player.getAdvancementProgress(advancement);
+                        for (String criteria : advancementProgress.getRemainingCriteria())
+                            advancementProgress.awardCriteria(criteria);
+                    }
+                }
             }
         }
-
-        for (UUID gamePlayer : getGamePlayers()) {
-            Player player = Bukkit.getPlayer(gamePlayer);
-            if (player != null) {
-                AdvancementProgress advancementProgress = player.getAdvancementProgress(advancement);
-                for (String criteria : advancementProgress.getRemainingCriteria())
-                    advancementProgress.awardCriteria(criteria);
-            }
-        }
-
-        advanceentSet.add(name);
     }
 
     @Override
