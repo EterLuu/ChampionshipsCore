@@ -58,6 +58,12 @@ public class PlayerManager extends BaseManager {
     }
 
     public void deletePlayer(@NotNull UUID uuid) {
+        if (!cachedPlayers.containsKey(uuid))
+            return;
+        String name = cachedPlayerName.get(uuid);
+        cachedPlayerUUID.remove(name);
+        cachedPlayers.remove(uuid);
+        cachedPlayerName.remove(uuid);
         playerDao.deletePlayer(uuid);
     }
 
