@@ -181,7 +181,7 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
                 .replace("%challenge%", String.valueOf(challenge));
 
         sendMessageToAllGamePlayers(message);
-        sendMessageToAllSpectators(message);
+        sendMessageToConsole(message);
 
         addPlayerPointsToDatabase();
     }

@@ -81,8 +81,12 @@ public abstract class BaseArea {
     public void addPlayerPointsToAllTeamMembers(ChampionshipTeam championshipTeam, int points) {
         for (UUID uuid : championshipTeam.getMembers()) {
             playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
-            plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + plugin.getPlayerManager().getPlayerName(uuid) + " (" + uuid + ") get points " + points);
+            plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", " + "Player " + plugin.getPlayerManager().getPlayerName(uuid) + " (" + uuid + ") get points " + points);
         }
+    }
+
+    public void sendMessageToConsole(String message) {
+        plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", " + message);
     }
 
     public void addPlayerPointsToDatabase() {
