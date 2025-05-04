@@ -127,9 +127,7 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
             return;
         }
 
-        scheduler.runTask(plugin, () -> {
-            event.getEntity().spigot().respawn();
-        });
+        scheduler.runTask(plugin, () -> event.getEntity().spigot().respawn());
     }
 
     @Override
