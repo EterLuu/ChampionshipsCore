@@ -24,4 +24,6 @@ public interface RankDao {
     void deleteGameStatus(GameTypeEnum gameTypeEnum);
 
     void deletePlayerPoints(UUID uuid, GameTypeEnum gameTypeEnum);
+
+    void deleteTeamPoints(int teamId, GameTypeEnum gameTypeEnum);
 }

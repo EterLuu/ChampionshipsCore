@@ -96,9 +96,7 @@ public class RankManager extends BaseManager {
     }
 
     public void deleteTeamGamePoints(@NotNull ChampionshipTeam championshipTeam, GameTypeEnum gameType) {
-        for (UUID uuid : championshipTeam.getMembers()) {
-            rankDao.deletePlayerPoints(uuid, gameType);
-        }
+        rankDao.deleteTeamPoints(championshipTeam.getId(), gameType);
     }
 
     private void updateTeamPoints() {
