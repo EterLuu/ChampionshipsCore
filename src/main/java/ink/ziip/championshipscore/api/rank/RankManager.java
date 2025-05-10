@@ -273,8 +273,6 @@ public class RankManager extends BaseManager {
         int points = 0;
         for (PlayerPointEntry playerPointEntry : playerPointEntries) {
             if (playerPointEntry.getValid() == 1) {
-                addTeamTotalPoints(playerPointEntry.getGame(), playerPointEntry.getPoints());
-
                 points = points + playerPointEntry.getPoints();
             }
         }
@@ -295,9 +293,10 @@ public class RankManager extends BaseManager {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
             for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                 if (playerPointEntry.getValid() == 1 && playerPointEntry.getGame() == gameTypeEnum) {
-                    if (CCConfig.WEIGHTED_SCORE)
+                    if (CCConfig.WEIGHTED_SCORE) {
+                        addTeamTotalPoints(playerPointEntry.getGame(), playerPointEntry.getPoints());
                         points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * getGameWeight(gameTypeEnum);
-                    else
+                    } else
                         points += playerPointEntry.getPoints();
                 }
             }
