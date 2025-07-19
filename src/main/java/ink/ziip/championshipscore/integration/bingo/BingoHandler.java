@@ -59,9 +59,9 @@ public class BingoHandler extends BaseListener {
 
     @EventHandler
     public void onBingoTaskCompleted(BingoTaskProgressCompletedEvent event) {
-        if(event.getTask().getCompletedBy().isEmpty())
+        if(event.getTask().getCompletedByPlayer().isEmpty())
             return;
-        BingoParticipant participant = event.getTask().getCompletedBy().get();
+        BingoParticipant participant = event.getTask().getCompletedByPlayer().get();
         GameTask gameTask = event.getTask();
         if (bingoManager.isStarted()) {
             if (participant.sessionPlayer().isPresent()) {

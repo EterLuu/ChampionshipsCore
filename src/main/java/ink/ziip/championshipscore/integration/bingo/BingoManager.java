@@ -244,7 +244,7 @@ public class BingoManager extends BaseManager {
                 textComponent.setColor(Utils.toBungeeChatColor(championshipTeam.getColorName()));
                 textComponent.addExtra(teamComponent);
                 textComponent.addExtra(new TextComponent(finalMessages[0]));
-                textComponent.addExtra(new TranslatableComponent(gameTask.material.getItemTranslationKey()));
+                textComponent.addExtra(new TranslatableComponent(gameTask.material().getItemTranslationKey()));
                 textComponent.addExtra(finalMessages[1]);
 
                 Utils.sendMessageToAllSpigotPlayers(textComponent);
@@ -252,7 +252,7 @@ public class BingoManager extends BaseManager {
             if (num == 4) {
                 String[] messages = MessageConfig.BINGO_TASK_EXPIRED.split("%task%");
                 TextComponent textComponent = new TextComponent(messages[0]);
-                textComponent.addExtra(new TranslatableComponent(gameTask.material.getItemTranslationKey()));
+                textComponent.addExtra(new TranslatableComponent(gameTask.material().getItemTranslationKey()));
                 textComponent.addExtra(messages[1]);
 
                 Utils.sendMessageToAllSpigotPlayers(textComponent);
@@ -271,9 +271,9 @@ public class BingoManager extends BaseManager {
     }
 
     private List<ChampionshipTeam> getCompleteTeams(GameTask gameTask) {
-        if (!bingoTaskCompleteLists.containsKey(gameTask.material)) {
-            bingoTaskCompleteLists.put(gameTask.material, new ArrayList<>());
+        if (!bingoTaskCompleteLists.containsKey(gameTask.material())) {
+            bingoTaskCompleteLists.put(gameTask.material(), new ArrayList<>());
         }
-        return bingoTaskCompleteLists.get(gameTask.material);
+        return bingoTaskCompleteLists.get(gameTask.material());
     }
 }
