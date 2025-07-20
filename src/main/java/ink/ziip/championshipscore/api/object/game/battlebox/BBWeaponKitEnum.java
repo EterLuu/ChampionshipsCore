@@ -1,4 +1,4 @@
-package ink.ziip.championshipscore.api.object.game;
+package ink.ziip.championshipscore.api.object.game.battlebox;
 
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
