@@ -17,6 +17,7 @@ import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
@@ -130,6 +131,17 @@ public class TNTRunHandler extends BaseListener {
 
             Location location = player.getLocation();
             if (tntRunTeamArea.notInArea(location)) {
+                return;
+            }
+
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerInventoryMove(InventoryInteractEvent event){
+        if (event.getWhoClicked() instanceof Player player) {
+            if (tntRunTeamArea.notAreaPlayer(player)) {
                 return;
             }
 

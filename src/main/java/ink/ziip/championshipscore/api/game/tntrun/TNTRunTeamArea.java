@@ -13,12 +13,14 @@ import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.NumberConversions;
 import org.jetbrains.annotations.NotNull;
@@ -118,6 +120,8 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
+
+        giveElytraToAllPlayers();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_START_PREPARATION_TITLE, MessageConfig.TNT_RUN_START_PREPARATION_SUBTITLE);
@@ -252,6 +256,17 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
     private void handlePlayerMove(@NotNull Player player) {
         destroyBlock(player.getLocation());
+    }
+
+    private void giveElytraToAllPlayers(){
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && !deathPlayer.contains(uuid)) {
+                ItemStack elytra = new ItemStack(Material.ELYTRA);
+                elytra.addEnchantment(Enchantment.UNBREAKING, 1);
+                player.getInventory().setChestplate(elytra);
+            }
+        }
     }
 
     public Block getBlockUnderLocation(Location location, double bias) {
