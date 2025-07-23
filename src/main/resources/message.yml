@@ -279,6 +279,8 @@ parkourwarrior:
   arrived-at-end-point: "&d[&aS&c²&6CC&d]&r &f玩家&f%player%&f到达了终点。"
   team-arrived-at-end-point: "&d[&aS&c²&6CC&d]&r &f队伍&f%team%&f全队到达了终点。"
   fall-into-void: "&d[&aS&c²&6CC&d]&r &7玩家&7%player%&7跌入了虚空。"
+  kits:
+    back-tool: "&d右键返回支线选择点"
 placeholder:
   none: "无"
   spectator: "旁观"

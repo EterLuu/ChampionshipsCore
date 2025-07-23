@@ -813,6 +813,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourwarrior.fall-into-void")
     public static String PARKOUR_WARRIOR_FALL_INTO_VOID;
 
+    @ConfigOption(path = "parkourwarrior.kits.back-tool")
+    public static String PARKOUR_WARRIOR_KITS_BACK_TOOL_NAME;
+
     // Placeholder
     @ConfigOption(path = "placeholder.none")
     public static String PLACEHOLDER_NONE;

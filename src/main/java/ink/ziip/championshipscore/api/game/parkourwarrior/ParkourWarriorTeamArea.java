@@ -14,15 +14,14 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -144,6 +143,11 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 playerSpawnLocations.put(uuid, checkpoint.getSpawn());
                 playerLastSubCheckpoint.put(uuid, -1);
                 playerLastCheckpoint.put(uuid, checkpoint);
+
+                if (checkpoint.getType() == PKWCheckPointTypeEnum.sub) {
+                    giveBackToolToPlayer(player);
+                }
+
                 return;
             }
         }
@@ -231,6 +235,27 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         }
 
         return count;
+    }
+
+    public void backToMainSpawnPoint(Player player) {
+        UUID uuid = player.getUniqueId();
+        PKWCheckpoint pkwCheckpoint = playerLastCheckpoint.get(uuid);
+
+        Location location = pkwCheckpoint.getSpawn();
+        playerSpawnLocations.put(uuid, location);
+        playerLastSubCheckpoint.put(uuid, -1);
+        playerLastCheckpoint.put(uuid, null);
+
+        player.getInventory().remove(Material.BARRIER);
+    }
+
+    public void giveBackToolToPlayer(Player player) {
+        ItemStack barrier = new ItemStack(Material.BARRIER);
+        ItemMeta meta = barrier.getItemMeta();
+        if (meta != null)
+            meta.setDisplayName(MessageConfig.PARKOUR_WARRIOR_KITS_BACK_TOOL_NAME);
+
+        player.getInventory().setItem(8, barrier);
     }
 
     public void calculatePoints() {

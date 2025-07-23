@@ -6,9 +6,11 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.InventoryInteractEvent;
@@ -77,6 +79,18 @@ public class ParkourWarriorHandler extends BaseListener {
         Location location = player.getLocation();
         if (parkourWarriorTeamArea.notInArea(location)) {
             return;
+        }
+
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            if (parkourWarriorTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+                if (parkourWarriorTeamArea.getTimer() <= parkourWarriorTeamArea.getGameConfig().getTimer()) {
+                    if (event.getItem() != null) {
+                        if (event.getItem().getType() == Material.BARRIER) {
+                            parkourWarriorTeamArea.backToMainSpawnPoint(player);
+                        }
+                    }
+                }
+            }
         }
 
         event.setCancelled(true);
