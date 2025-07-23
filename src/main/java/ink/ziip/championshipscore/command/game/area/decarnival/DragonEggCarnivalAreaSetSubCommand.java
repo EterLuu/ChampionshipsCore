@@ -50,7 +50,7 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
                 dragonEggCarnivalConfig.setSpectatorSpawnPoint(player.getLocation());
             }
             if (args[1].equals("area-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 dragonEggCarnivalConfig.setAreaPos1(vectors[0]);
                 dragonEggCarnivalConfig.setAreaPos2(vectors[1]);
             }

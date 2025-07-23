@@ -1,0 +1,20 @@
+dont-edit-this:
+  version: 1
+name: area
+timer: 600
+sudden-death: 30
+area-pos1:
+area-pos2:
+spectator-spawn-point:
+player-spawn-point:
+points:
+  2star: 2
+  3star: 5
+  4star: 10
+  5star: 15
+  gradient: 5
+final-points:
+  easy: 0.15
+  normal: 0.35
+  hard: 0.8
+checkpoints: {}

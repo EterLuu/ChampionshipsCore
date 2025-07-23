@@ -33,19 +33,19 @@ CREATE TABLE IF NOT EXISTS `team_members`
 -- Create the player status table if it does not exist
 CREATE TABLE IF NOT EXISTS `player_points`
 (
-    `id`       INTEGER      NOT NULL AUTO_INCREMENT,
-    `uuid`     VARCHAR(255) NOT NULL,
-    `username` VARCHAR(255) NOT NULL,
-    `teamId`   INTEGER      NOT NULL,
-    `team`     VARCHAR(255) NOT NULL,
-    `rivalId`  INTEGER      NOT NULL,
-    `rival`    VARCHAR(255) NOT NULL,
-    `game`     VARCHAR(255) NOT NULL,
-    `area`     VARCHAR(255) NOT NULL,
-    `round`    VARCHAR(255) NOT NULL,
-    `points`   INTEGER      NOT NULL,
-    `time`     VARCHAR(255) NOT NULL,
-    `valid`    INTEGER      NOT NULL DEFAULT 1,
+    `id`       INTEGER            NOT NULL AUTO_INCREMENT,
+    `uuid`     VARCHAR(255)       NOT NULL,
+    `username` VARCHAR(255)       NOT NULL,
+    `teamId`   INTEGER            NOT NULL,
+    `team`     VARCHAR(255)       NOT NULL,
+    `rivalId`  INTEGER            NOT NULL,
+    `rival`    VARCHAR(255)       NOT NULL,
+    `game`     VARCHAR(255)       NOT NULL,
+    `area`     VARCHAR(255)       NOT NULL,
+    `round`    VARCHAR(255)       NOT NULL,
+    `points`   DOUBLE             NOT NULL,
+    `time`     VARCHAR(255)       NOT NULL,
+    `valid`    INTEGER            NOT NULL DEFAULT 1,
 
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB

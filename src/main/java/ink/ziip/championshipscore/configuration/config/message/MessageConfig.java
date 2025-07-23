@@ -222,6 +222,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.advancementcc")
     public static String GAME_ADVANCEMENT_CC;
 
+    @ConfigOption(path = "game.parkourwarrior")
+    public static String PARKOUR_WARRIOR;
+
     @ConfigOption(path = "game.game-weight")
     public static String GAME_GAME_WEIGHT;
 
@@ -748,6 +751,67 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "advancementcc.final-count-message")
     public static String ACC_FINAL_COUNT_MESSAGE;
+
+    // Parkour Warrior
+    @ConfigOption(path = "parkourwarrior.start-preparation")
+    public static String PARKOUR_WARRIOR_START_PREPARATION;
+
+    @ConfigOption(path = "parkourwarrior.start-preparation-title")
+    public static String PARKOUR_WARRIOR_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "parkourwarrior.start-preparation-subtitle")
+    public static String PARKOUR_WARRIOR_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "parkourwarrior.game-start-soon")
+    public static String PARKOUR_WARRIOR_GAME_START_SOON;
+
+    @ConfigOption(path = "parkourwarrior.game-start-soon-title")
+    public static String PARKOUR_WARRIOR_GAME_START_SOON_TITLE;
+
+    @ConfigOption(path = "parkourwarrior.game-start-soon-subtitle")
+    public static String PARKOUR_WARRIOR_GAME_START_SOON_SUBTITLE;
+
+    @ConfigOption(path = "parkourwarrior.count-down")
+    public static String PARKOUR_WARRIOR_COUNT_DOWN;
+
+    @ConfigOption(path = "parkourwarrior.game-start")
+    public static String PARKOUR_WARRIOR_GAME_START;
+
+    @ConfigOption(path = "parkourwarrior.game-start-title")
+    public static String PARKOUR_WARRIOR_GAME_START_TITLE;
+
+    @ConfigOption(path = "parkourwarrior.game-start-subtitle")
+    public static String PARKOUR_WARRIOR_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "parkourwarrior.game-end")
+    public static String PARKOUR_WARRIOR_GAME_END;
+
+    @ConfigOption(path = "parkourwarrior.game-end-title")
+    public static String PARKOUR_WARRIOR_GAME_END_TITLE;
+
+    @ConfigOption(path = "parkourwarrior.game-end-subtitle")
+    public static String PARKOUR_WARRIOR_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "parkourwarrior.action-bar-count-down")
+    public static String PARKOUR_WARRIOR_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "parkourwarrior.arrived-at-checkpoint")
+    public static String PARKOUR_WARRIOR_SUB_CHECKPOINT_ENTERED;
+
+    @ConfigOption(path = "parkourwarrior.arrived-at-sub-checkpoint")
+    public static String PARKOUR_WARRIOR_SUB_CHECKPOINT_ARRIVED;
+
+    @ConfigOption(path = "parkourwarrior.complete-sub-checkpoint")
+    public static String PARKOUR_WARRIOR_SUB_CHECKPOINT_COMPLETED;
+
+    @ConfigOption(path = "parkourwarrior.arrived-at-end-point")
+    public static String PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED;
+
+    @ConfigOption(path = "parkourwarrior.team-arrived-at-end-point")
+    public static String PARKOUR_WARRIOR_TEAM_ARRIVED_AT_POINT;
+
+    @ConfigOption(path = "parkourwarrior.fall-into-void")
+    public static String PARKOUR_WARRIOR_FALL_INTO_VOID;
 
     // Placeholder
     @ConfigOption(path = "placeholder.none")

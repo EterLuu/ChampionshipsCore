@@ -64,12 +64,12 @@ public class BattleBoxAreaSetSubCommand extends BaseSubCommand {
                 battleBoxConfig.setSpectatorSpawnPoint(player.getLocation());
             }
             if (args[1].equals("wool-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 battleBoxConfig.setWoolPos1(vectors[0]);
                 battleBoxConfig.setWoolPos2(vectors[1]);
             }
             if (args[1].equals("area-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 battleBoxConfig.setAreaPos1(vectors[0]);
                 battleBoxConfig.setAreaPos2(vectors[1]);
             }

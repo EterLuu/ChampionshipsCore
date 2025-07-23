@@ -60,17 +60,17 @@ public class ParkourTagAreaSetSubCommand extends BaseSubCommand {
                 parkourTagConfig.setSpectatorSpawnPoint(player.getLocation());
             }
             if (args[1].equals("area-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 parkourTagConfig.setAreaPos1(vectors[0]);
                 parkourTagConfig.setAreaPos2(vectors[1]);
             }
             if (args[1].equals("right-area-area-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 parkourTagConfig.setRightAreaAreaPos1(vectors[0]);
                 parkourTagConfig.setRightAreaAreaPos2(vectors[1]);
             }
             if (args[1].equals("left-area-area-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 parkourTagConfig.setLeftAreaAreaPos1(vectors[0]);
                 parkourTagConfig.setLeftAreaAreaPos2(vectors[1]);
             }

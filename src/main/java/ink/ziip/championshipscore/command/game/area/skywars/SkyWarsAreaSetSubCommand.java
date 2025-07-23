@@ -51,7 +51,7 @@ public class SkyWarsAreaSetSubCommand extends BaseSubCommand {
                 skyWarsConfig.setSpectatorSpawnPoint(player.getLocation());
             }
             if (args[1].equals("area-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 skyWarsConfig.setAreaPos1(vectors[0]);
                 skyWarsConfig.setAreaPos2(vectors[1]);
             }

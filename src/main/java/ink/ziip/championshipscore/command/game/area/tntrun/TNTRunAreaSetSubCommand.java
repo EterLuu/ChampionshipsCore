@@ -47,7 +47,7 @@ public class TNTRunAreaSetSubCommand extends BaseSubCommand {
                 tntRunConfig.setSpectatorSpawnPoint(player.getLocation());
             }
             if (args[1].equals("area-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 tntRunConfig.setAreaPos1(vectors[0]);
                 tntRunConfig.setAreaPos2(vectors[1]);
             }

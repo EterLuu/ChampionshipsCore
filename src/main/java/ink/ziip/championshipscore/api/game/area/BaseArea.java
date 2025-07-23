@@ -28,7 +28,7 @@ import java.util.logging.Level;
 
 public abstract class BaseArea {
     protected final HashSet<UUID> spectators = new HashSet<>();
-    protected final Map<UUID, Integer> playerPoints = new ConcurrentHashMap<>();
+    protected final Map<UUID, Double> playerPoints = new ConcurrentHashMap<>();
     protected final ChampionshipsCore plugin;
     protected final BukkitScheduler scheduler;
     protected final BaseAreaHandler baseAreaHandler;
@@ -70,8 +70,8 @@ public abstract class BaseArea {
         changeLevelForAllGamePlayers(0);
     }
 
-    public void addPlayerPoints(UUID uuid, int points) {
-        playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
+    public void addPlayerPoints(UUID uuid, double points) {
+        playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0d) + points);
         plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + plugin.getPlayerManager().getPlayerName(uuid) + " (" + uuid + ") get points " + points);
         ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(uuid);
         if (championshipPlayer != null)
@@ -80,7 +80,7 @@ public abstract class BaseArea {
 
     public void addPlayerPointsToAllTeamMembers(ChampionshipTeam championshipTeam, int points) {
         for (UUID uuid : championshipTeam.getMembers()) {
-            playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + points);
+            playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0d) + points);
             plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", " + "Player " + plugin.getPlayerManager().getPlayerName(uuid) + " (" + uuid + ") get points " + points);
         }
     }
@@ -91,7 +91,7 @@ public abstract class BaseArea {
 
     public void addPlayerPointsToDatabase() {
         if (plugin.isLoaded()) {
-            for (Map.Entry<UUID, Integer> playerPointEntry : playerPoints.entrySet()) {
+            for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
                 if (playerPointEntry.getValue() != 0)
                     plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
             }
@@ -101,14 +101,14 @@ public abstract class BaseArea {
     public int getTeamPoints(ChampionshipTeam championshipTeam) {
         int points = 0;
         for (UUID uuid : championshipTeam.getMembers()) {
-            points += playerPoints.getOrDefault(uuid, 0);
+            points += playerPoints.getOrDefault(uuid, 0d);
         }
 
         return points;
     }
 
     public String getPlayerPointsRank() {
-        ArrayList<Map.Entry<UUID, Integer>> list;
+        ArrayList<Map.Entry<UUID, Double>> list;
         list = new ArrayList<>(playerPoints.entrySet());
         list.sort(Map.Entry.comparingByValue());
 
@@ -122,7 +122,7 @@ public abstract class BaseArea {
                 .append("\n");
 
         int i = 1;
-        for (Map.Entry<UUID, Integer> entry : list) {
+        for (Map.Entry<UUID, Double> entry : list) {
             String username = plugin.getPlayerManager().getPlayerName(entry.getKey());
             if (username != null) {
                 String row = MessageConfig.RANK_PLAYER_BOARD_ROW
@@ -330,6 +330,7 @@ public abstract class BaseArea {
         for (Player player : getOnlineSpectators()) {
             player.sendMessage(message);
         }
+        Bukkit.getServer().getLogger().log(Level.INFO, message);
     }
 
     public void sendActionBarToAllSpectators(String message) {

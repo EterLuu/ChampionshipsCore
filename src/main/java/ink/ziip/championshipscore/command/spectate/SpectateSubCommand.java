@@ -27,7 +27,8 @@ public class SpectateSubCommand extends BaseSubCommand {
             "tntrun",
             "snowball",
             "dragoneggcarnival",
-            "acc"
+            "acc",
+            "parkourwarrior"
     };
 
     public SpectateSubCommand() {
@@ -114,6 +115,13 @@ public class SpectateSubCommand extends BaseSubCommand {
                     baseArea = advancementCCArea;
                 }
             }
+            if (args[0].equals("parkourwarrior")) {
+                gameTypeEnum = GameTypeEnum.ParkourWarrior;
+                BaseArea parkourWarriorArea = plugin.getGameManager().getParkourWarriorManager().getArea(args[1]);
+                if (parkourWarriorArea != null) {
+                    baseArea = parkourWarriorArea;
+                }
+            }
             if (gameTypeEnum != null && baseArea != null) {
                 if (plugin.getGameManager().spectateArea((Player) sender, baseArea)) {
                     String message = MessageConfig.SPECTATOR_JOIN_AREA
@@ -173,6 +181,11 @@ public class SpectateSubCommand extends BaseSubCommand {
             }
             if (args[0].equals("acc")) {
                 List<String> returnList = plugin.getGameManager().getAdvancementCCManager().getAreaNameList();
+                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
+                return returnList;
+            }
+            if (args[0].equals("parkourwarrior")) {
+                List<String> returnList = plugin.getGameManager().getParkourWarriorManager().getAreaNameList();
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
                 return returnList;
             }

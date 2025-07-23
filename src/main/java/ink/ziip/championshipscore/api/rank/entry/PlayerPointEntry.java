@@ -21,7 +21,7 @@ public class PlayerPointEntry {
     private GameTypeEnum game;
     private String area;
     private String round;
-    private int points;
+    private double points;
     private String time;
     private int valid;
 }

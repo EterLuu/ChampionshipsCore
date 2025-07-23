@@ -14,6 +14,8 @@ import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
+import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
+import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorTeamArea;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
@@ -57,6 +59,8 @@ public class GameManager extends BaseManager {
     private final SnowballShowdownManager snowballShowdownManager;
     @Getter
     private final AdvancementCCManager advancementCCManager;
+    @Getter
+    private final ParkourWarriorManager parkourWarriorManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -69,6 +73,7 @@ public class GameManager extends BaseManager {
         dragonEggCarnivalManager = new DragonEggCarnivalManager(plugin);
         snowballShowdownManager = new SnowballShowdownManager(plugin);
         advancementCCManager = new AdvancementCCManager(plugin);
+        parkourWarriorManager = new ParkourWarriorManager(plugin);
     }
 
     @Override
@@ -81,6 +86,7 @@ public class GameManager extends BaseManager {
         dragonEggCarnivalManager.load();
         snowballShowdownManager.load();
         advancementCCManager.load();
+        parkourWarriorManager.load();
 
         gameManagerHandler.register();
     }
@@ -95,6 +101,7 @@ public class GameManager extends BaseManager {
         dragonEggCarnivalManager.unload();
         snowballShowdownManager.unload();
         advancementCCManager.unload();
+        parkourWarriorManager.unload();
 
         gameManagerHandler.unRegister();
     }
@@ -273,6 +280,22 @@ public class GameManager extends BaseManager {
                 }
                 return true;
             }
+            return false;
+        }
+
+        if (gameTypeEnum == GameTypeEnum.ParkourWarrior) {
+            ParkourWarriorTeamArea parkourWarriorTeamArea = parkourWarriorManager.getArea(area);
+            if (parkourWarriorTeamArea == null)
+                return false;
+
+            if (parkourWarriorTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    teamStatus.put(championshipTeam, parkourWarriorTeamArea);
+                    addPlayerStatusByTeam(championshipTeam, parkourWarriorTeamArea);
+                }
+                return true;
+            }
+
             return false;
         }
 

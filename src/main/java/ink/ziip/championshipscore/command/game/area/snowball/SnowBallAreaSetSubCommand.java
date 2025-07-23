@@ -48,7 +48,7 @@ public class SnowBallAreaSetSubCommand extends BaseSubCommand {
                 snowballShowdownConfig.setSpectatorSpawnPoint(player.getLocation());
             }
             if (args[1].equals("area-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 snowballShowdownConfig.setAreaPos1(vectors[0]);
                 snowballShowdownConfig.setAreaPos2(vectors[1]);
             }

@@ -29,14 +29,19 @@ public class WorldEditManager extends BaseManager {
 
     }
 
-    public Vector[] getPlayerSelection(@NotNull Player player) {
+    public Vector[] getPlayerSelection(@NotNull Player player, boolean blockVector) {
         Vector[] vectors = new Vector[2];
         BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
         RegionSelector selector = worldEdit.getSessionManager().get(bukkitPlayer).getRegionSelector(bukkitPlayer.getWorld());
         BlockVector3 v1 = selector.getRegion().getMinimumPoint();
         BlockVector3 v2 = selector.getRegion().getMaximumPoint();
-        vectors[0] = new Vector(v1.getX(), v1.getY(), v1.getZ());
-        vectors[1] = new Vector(v2.getX(), v2.getY(), v2.getZ());
+        if (blockVector) {
+            vectors[0] = new Vector(v1.x(), v1.y(), v1.z());
+            vectors[1] = new Vector(v2.x(), v2.y(), v2.z());
+        } else {
+            vectors[0] = new Vector(v1.x() + 1, v1.y(), v1.z() + 1);
+            vectors[1] = new Vector(v2.x(), v2.y(), v2.z());
+        }
         return vectors;
     }
 }

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.game.start;
 
 import ink.ziip.championshipscore.command.BaseMainCommand;
+import ink.ziip.championshipscore.command.game.start.parkourwarrior.ParkourWarriorStartMainCommand;
 import ink.ziip.championshipscore.command.game.start.skywars.SkyWarsStartMainCommand;
 import ink.ziip.championshipscore.command.game.start.snowball.SnowBallStartMainCommand;
 import ink.ziip.championshipscore.command.game.start.tgttos.TGTTOSStartMainCommand;
@@ -22,5 +23,6 @@ public class GameStartMainCommand extends BaseMainCommand {
         addSubCommand(new DragonEggCarnivalStartSubCommand());
         addSubCommand(new SnowBallStartMainCommand());
         addSubCommand(new AdvancementCCStartSubCommand());
+        addSubCommand(new ParkourWarriorStartMainCommand());
     }
 }

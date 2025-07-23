@@ -7,6 +7,8 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.reflect.StructureModifier;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
+import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -113,5 +115,12 @@ public class ChampionshipPlayer {
 
         // Using offlinePlayer to avoid issues
         return Utils.translateColorCodes(PlaceholderAPI.setPlaceholders(offlinePlayer, content));
+    }
+
+    @Nullable
+    public ChampionshipTeam getChampionshipTeam() {
+        if (player == null)
+            return null;
+        return ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
     }
 }

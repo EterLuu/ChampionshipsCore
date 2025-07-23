@@ -50,7 +50,7 @@ public class TGTTOSAreaSetSubCommand extends BaseSubCommand {
                 tgttosConfig.setSpectatorSpawnPoint(player.getLocation());
             }
             if (args[1].equals("area-pos")) {
-                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player);
+                Vector[] vectors = plugin.getWorldEditManager().getPlayerSelection(player, true);
                 tgttosConfig.setAreaPos1(vectors[0]);
                 tgttosConfig.setAreaPos2(vectors[1]);
             }

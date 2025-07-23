@@ -240,7 +240,7 @@ public class RankManager extends BaseManager {
         });
     }
 
-    public void addPlayerPoints(UUID uuid, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, int points) {
+    public void addPlayerPoints(UUID uuid, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, double points) {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (rival == null) {
             rival = championshipTeam;
@@ -270,7 +270,7 @@ public class RankManager extends BaseManager {
     private double getPlayerPoints(UUID uuid) {
         List<PlayerPointEntry> playerPointEntries = rankDao.getPlayerPoints(uuid);
 
-        int points = 0;
+        double points = 0d;
         for (PlayerPointEntry playerPointEntry : playerPointEntries) {
             if (playerPointEntry.getValid() == 1) {
                 points = points + playerPointEntry.getPoints();

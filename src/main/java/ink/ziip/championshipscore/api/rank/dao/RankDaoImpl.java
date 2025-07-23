@@ -41,7 +41,7 @@ public class RankDaoImpl implements RankDao {
                             .game(GameTypeEnum.valueOf(resultSet.getString("game")))
                             .area(resultSet.getString("area"))
                             .round(resultSet.getString("round"))
-                            .points(resultSet.getInt("points"))
+                            .points(resultSet.getDouble("points"))
                             .time(resultSet.getString("time"))
                             .valid(resultSet.getInt("valid"))
                             .build();
@@ -81,7 +81,7 @@ public class RankDaoImpl implements RankDao {
                             .game(GameTypeEnum.valueOf(resultSet.getString("game")))
                             .area(resultSet.getString("area"))
                             .round(resultSet.getString("round"))
-                            .points(resultSet.getInt("points"))
+                            .points(resultSet.getDouble("points"))
                             .time(resultSet.getString("time"))
                             .valid(resultSet.getInt("valid"))
                             .build();
@@ -109,7 +109,7 @@ public class RankDaoImpl implements RankDao {
                 String rivalName = playerPointEntry.getRival();
                 String gameName = playerPointEntry.getGame().name();
                 String areaName = playerPointEntry.getArea();
-                int points = playerPointEntry.getPoints();
+                double points = playerPointEntry.getPoints();
                 statement.setString(1, playerPointEntry.getUuid().toString());
                 statement.setString(2, username);
                 statement.setInt(3, teamId);
@@ -119,7 +119,7 @@ public class RankDaoImpl implements RankDao {
                 statement.setString(7, gameName);
                 statement.setString(8, areaName);
                 statement.setString(9, playerPointEntry.getRound());
-                statement.setInt(10, points);
+                statement.setDouble(10, points);
                 statement.setString(11, playerPointEntry.getTime());
 
                 int affectedRows = statement.executeUpdate();

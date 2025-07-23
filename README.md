@@ -7,16 +7,16 @@ The core plugin of the Summer/Winter Collab Championship.
 
 ### Player
 
-| **Placeholder**                 | **Description**                                                 |
-|---------------------------------|-----------------------------------------------------------------|
-| `%cc_player_points%`            | Show the current points of the player.                          |
-| `%cc_player_rank%`              | Show the current rank of the player.                            |
-| `%cc_player_team_name_no_color%`| Show the current team name (without color) of the player.       |
-| `%cc_player_team_color_code%`   | Show the current team color code.                               |
-| `%cc_player_team_name%`         | Show the current team name of the player.                       |
-| `%cc_player_team_color%`        | Show the current team color name of the player.                 |
-| `%cc_player_team_points%`       | Show the current team points of the player.                     |
-| `%cc_player_team_rank%`         | Show the current team rank of the player.                       |
+| **Placeholder**                  | **Description**                                           |
+|----------------------------------|-----------------------------------------------------------|
+| `%cc_player_points%`             | Show the current points of the player.                    |
+| `%cc_player_rank%`               | Show the current rank of the player.                      |
+| `%cc_player_team_name_no_color%` | Show the current team name (without color) of the player. |
+| `%cc_player_team_color_code%`    | Show the current team color code.                         |
+| `%cc_player_team_name%`          | Show the current team name of the player.                 |
+| `%cc_player_team_color%`         | Show the current team color name of the player.           |
+| `%cc_player_team_points%`        | Show the current team points of the player.               |
+| `%cc_player_team_rank%`          | Show the current team rank of the player.                 |
 
 ### Leaderboard
 
@@ -120,3 +120,25 @@ The core plugin of the Summer/Winter Collab Championship.
 | **Placeholder**                  | **Description**                                     |
 |----------------------------------|-----------------------------------------------------|
 | `%bingo_team_points_[material]%` | Show current points that the item material can get. |
+
+### Advancement CC
+
+| **Placeholder**                | **Description**                       |
+|--------------------------------|---------------------------------------|
+| `%acc_area_status_[areaName]%` | Show current status of the area.      |
+| `%acc_area_timer_[areaName]%`  | Show current timer of the area.       |
+| `%acc_area_team_[areaName]%`   | Show current team of the area.        |
+| `%acc_area_scores_[areaName]%` | Show current team scores of the area. |
+
+### Parkour Warrior
+
+| **Placeholder**                                       | **Description**                                             |
+|-------------------------------------------------------|-------------------------------------------------------------|
+| `%parkourwarrior_area_name_[areaName]%`               | Show current name of the area.                              |
+| `%parkourwarrior_area_status_[areaName]%`             | Show current status of the area.                            |
+| `%parkourwarrior_area_timer_[areaName]%`              | Show current timer of the area.                             |
+| `%parkourwarrior_area_player_arrived_[areaName]%`     | Show the current number of arrived players in the area.     |
+| `%parkourwarrior_player_main_checkpoints_[areaName]%` | Show the current number of main checkpoints player arrived. |
+| `%parkourwarrior_player_3rd_checkpoints_[areaName]%`  | Show the current number of 3rd checkpoints player arrived.  |
+| `%parkourwarrior_player_4th_checkpoints_[areaName]%`  | Show the current number of 4th checkpoints player arrived.  |
+| `%parkourwarrior_player_5th_checkpoints_[areaName]%`  | Show the current number of 5th checkpoints player arrived.  |

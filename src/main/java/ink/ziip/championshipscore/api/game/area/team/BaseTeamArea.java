@@ -51,7 +51,7 @@ public abstract class BaseTeamArea extends BaseArea {
 
     @Override
     public void addPlayerPointsToDatabase() {
-        for (Map.Entry<UUID, Integer> playerPointEntry : playerPoints.entrySet()) {
+        for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
             if (playerPointEntry.getValue() != 0) {
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(playerPointEntry.getKey());
                 if (championshipTeam != null) {

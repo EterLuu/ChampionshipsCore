@@ -17,6 +17,7 @@ public class PlaceholderManager extends BaseManager {
     private SchedulePlaceholder schedulePlaceholder;
     private LeaderboardPlaceholder leaderboardPlaceholder;
     private AdvancementCCPlaceholder advancementCCPlaceholder;
+    private ParkourWarriorPlaceholder parkourWarriorPlaceholder;
 
     public PlaceholderManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -37,6 +38,7 @@ public class PlaceholderManager extends BaseManager {
         schedulePlaceholder = new SchedulePlaceholder(plugin);
         leaderboardPlaceholder = new LeaderboardPlaceholder(plugin);
         advancementCCPlaceholder = new AdvancementCCPlaceholder(plugin);
+        parkourWarriorPlaceholder = new ParkourWarriorPlaceholder(plugin);
 
         battleBoxPlaceholder.register();
         parkourTagPlaceholder.register();
@@ -51,6 +53,7 @@ public class PlaceholderManager extends BaseManager {
         schedulePlaceholder.register();
         leaderboardPlaceholder.register();
         advancementCCPlaceholder.register();
+        parkourWarriorPlaceholder.register();
     }
 
     @Override
@@ -68,5 +71,6 @@ public class PlaceholderManager extends BaseManager {
         schedulePlaceholder.unregister();
         leaderboardPlaceholder.unregister();
         advancementCCPlaceholder.unregister();
+        parkourWarriorPlaceholder.unregister();
     }
 }
