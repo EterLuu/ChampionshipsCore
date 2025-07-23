@@ -9,6 +9,7 @@ spectator-spawn-point:
 team-spawn-points: [ ]
 boundary:
   default-height: 150
+  middle-height: 100
   lowest-height: 60
   radius: 50
 time:

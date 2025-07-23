@@ -51,6 +51,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     private double shrink;
     private double height;
     private double heightShrink;
+    private double low;
+    private double lowShrink;
 
     @Override
     public void resetArea() {
@@ -201,9 +203,13 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
     protected void startBorderShrink() {
         radius = getGameConfig().getBoundaryRadius();
-        height = getGameConfig().getBoundaryDefaultHeight();
         shrink = radius / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
-        heightShrink = (double) (getGameConfig().getBoundaryDefaultHeight() - getGameConfig().getBoundaryLowestHeight()) / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
+
+        height = getGameConfig().getBoundaryDefaultHeight();
+        low = getGameConfig().getBoundaryLowestHeight();
+
+        heightShrink = (double) (getGameConfig().getBoundaryDefaultHeight() - getGameConfig().getBoundaryMiddleHeight()) / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
+        lowShrink = (double) (getGameConfig().getBoundaryMiddleHeight() - getGameConfig().getBoundaryLowestHeight()) / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
 
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
         borderCheckTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
@@ -222,11 +228,11 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                         setParticles(player, !(radius <= 20));
                     }
 
-                    if (location.getY() > height - 10) {
+                    if (location.getY() > height - 10 || location.getY() < low + 10) {
                         setHeightParticles(player);
                     }
 
-                    if (distance >= radius || location.getY() > height) {
+                    if (distance >= radius || location.getY() > height || location.getY() < low) {
                         scheduler.runTask(plugin, () -> player.damage(1));
                         championshipPlayer.setRedScreen();
                         championshipPlayer.sendActionBar(MessageConfig.SKY_WARS_OUT_OF_BORDER);
@@ -236,11 +242,14 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                 }
             }
             height = height - heightShrink;
+            low = low + lowShrink;
             radius = radius - shrink;
             if (radius < 0)
                 radius = 0;
-            if (height < getGameConfig().getBoundaryLowestHeight())
-                height = getGameConfig().getBoundaryLowestHeight();
+            if (height < getGameConfig().getBoundaryMiddleHeight())
+                height = getGameConfig().getBoundaryMiddleHeight();
+            if (low > getGameConfig().getBoundaryLowestHeight())
+                low = getGameConfig().getBoundaryLowestHeight();
 
         }, 0, 20L);
     }

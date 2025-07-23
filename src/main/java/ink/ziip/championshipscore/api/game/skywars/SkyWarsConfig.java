@@ -50,6 +50,9 @@ public class SkyWarsConfig extends BaseGameConfig {
     @ConfigOption(path = "boundary.default-height")
     private Integer boundaryDefaultHeight;
 
+    @ConfigOption(path = "boundary.middle-height")
+    private Integer boundaryMiddleHeight;
+
     @ConfigOption(path = "boundary.lowest-height")
     private Integer boundaryLowestHeight;
 
