@@ -264,10 +264,11 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
 
         for (UUID uuid : getGamePlayers()) {
             int finalPoints;
+            int ascend = getGameConfig().getPointsGradient();
             finalPoints = player2Stars.getOrDefault(uuid, 0) * getGameConfig().getPoints2() +
-                    player3Stars.getOrDefault(uuid, 0) * getGameConfig().getPoints3() +
-                    player4Stars.getOrDefault(uuid, 0) * getGameConfig().getPoints4() +
-                    player5Stars.getOrDefault(uuid, 0) * getGameConfig().getPoints5();
+                    player3Stars.getOrDefault(uuid, 0) * ascend + getGameConfig().getPoints3() +
+                    player4Stars.getOrDefault(uuid, 0) * ascend + getGameConfig().getPoints4() +
+                    player5Stars.getOrDefault(uuid, 0) * ascend + getGameConfig().getPoints5();
 
             ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(uuid);
             if (championshipTeam != null) {
