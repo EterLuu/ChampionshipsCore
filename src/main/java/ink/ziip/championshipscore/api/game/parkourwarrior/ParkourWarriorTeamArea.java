@@ -140,12 +140,17 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_ENTERED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName()));
                 player.sendMessage(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_ENTERED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName()));
 
-                playerSpawnLocations.put(uuid, checkpoint.getSpawn());
+                float yaw = 0f;
+                if (checkpoint.getType() == PKWCheckPointTypeEnum.sub)
+                    yaw = 90f;
+                playerSpawnLocations.put(uuid, checkpoint.getEnter().getLocation(yaw));
                 playerLastSubCheckpoint.put(uuid, -1);
                 playerLastCheckpoint.put(uuid, checkpoint);
 
-                if (checkpoint.getType() == PKWCheckPointTypeEnum.sub) {
+                if (checkpoint.getType() == PKWCheckPointTypeEnum.sub || checkpoint.getType() == PKWCheckPointTypeEnum.fin) {
                     giveBackToolToPlayer(player);
+                } else {
+                    player.getInventory().remove(Material.BARRIER);
                 }
 
                 return;
@@ -175,8 +180,13 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                         continue;
                     }
 
+
                     checkpointProgress.put(checkpoint, index);
-                    playerSpawnLocations.put(uuid, subCheckpoint.getLocation());
+
+                    float yaw = 0f;
+                    if (checkpoint.getType() == PKWCheckPointTypeEnum.sub)
+                        yaw = 90f;
+                    playerSpawnLocations.put(uuid, subCheckpoint.getLocation(yaw));
                     playerLastSubCheckpoint.put(uuid, index);
                     playerLastCheckpoint.put(uuid, checkpoint);
 
@@ -211,11 +221,32 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                         }
                         sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_COMPLETED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName()));
                         player.sendMessage(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_COMPLETED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName()));
+
+                        player.getInventory().remove(Material.BARRIER);
                     }
                     return;
                 }
             }
         }
+    }
+
+    public int getPlayerCheckpoints(UUID uuid, PKWCheckPointTypeEnum type, String checkpointName) {
+        int count = 0;
+
+        Map<PKWCheckpoint, Integer> singlePlayerCheckpointProgress = playerCheckpointProgress.get(uuid);
+        for (Map.Entry<PKWCheckpoint, Integer> entry : singlePlayerCheckpointProgress.entrySet()) {
+            PKWCheckPointTypeEnum checkpointType = entry.getKey().getType();
+            if (checkpointType == PKWCheckPointTypeEnum.main && type == PKWCheckPointTypeEnum.main) {
+                int subCheckpointIndex = entry.getValue();
+                if (subCheckpointIndex == entry.getKey().getSubCheckpoints().size() - 1) {
+                    count++;
+                }
+            } else if (checkpointType == PKWCheckPointTypeEnum.sub && type == PKWCheckPointTypeEnum.sub && entry.getKey().getName().equals(checkpointName)) {
+                return entry.getValue() + 1;
+            }
+        }
+
+        return count;
     }
 
     public int getPlayerSubCheckpoints(UUID uuid, PKWCheckPointTypeEnum type, int startIndex) {
@@ -225,11 +256,12 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         for (Map.Entry<PKWCheckpoint, Integer> entry : singlePlayerCheckpointProgress.entrySet()) {
             PKWCheckPointTypeEnum checkpointType = entry.getKey().getType();
             if (checkpointType == PKWCheckPointTypeEnum.main && type == PKWCheckPointTypeEnum.main) {
-                count++;
+                int subCheckpointIndex = entry.getValue();
+                count += subCheckpointIndex + 1;
             } else if (checkpointType == PKWCheckPointTypeEnum.sub && type == PKWCheckPointTypeEnum.sub) {
                 int subCheckpointIndex = entry.getValue();
-                if (subCheckpointIndex == startIndex) {
-                    count += startIndex + 1;
+                if (subCheckpointIndex >= startIndex) {
+                    count++;
                 }
             }
         }
@@ -247,6 +279,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         playerLastCheckpoint.put(uuid, null);
 
         player.getInventory().remove(Material.BARRIER);
+        player.teleport(location);
     }
 
     public void giveBackToolToPlayer(Player player) {
@@ -254,6 +287,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         ItemMeta meta = barrier.getItemMeta();
         if (meta != null)
             meta.setDisplayName(MessageConfig.PARKOUR_WARRIOR_KITS_BACK_TOOL_NAME);
+        barrier.setItemMeta(meta);
 
         player.getInventory().setItem(8, barrier);
     }
@@ -269,18 +303,18 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
             for (Map.Entry<PKWCheckpoint, Integer> entry : singlePlayerCheckpointProgress.entrySet()) {
                 PKWCheckPointTypeEnum checkpointType = entry.getKey().getType();
                 if (checkpointType == PKWCheckPointTypeEnum.main) {
-                    player2Stars.put(uuid, player2Stars.getOrDefault(uuid, 0) + entry.getValue() + 1);
+                    player2Stars.put(uuid, player2Stars.getOrDefault(uuid, -1) + entry.getValue() + 1);
                 } else if (checkpointType == PKWCheckPointTypeEnum.sub) {
                     int subCheckpointIndex = entry.getValue();
                     switch (subCheckpointIndex) {
                         case 0: {
-                            player3Stars.put(uuid, player3Stars.getOrDefault(uuid, 0) + entry.getValue() + 1);
+                            player3Stars.put(uuid, player3Stars.getOrDefault(uuid, -1) + entry.getValue() + 1);
                         }
                         case 1: {
-                            player4Stars.put(uuid, player4Stars.getOrDefault(uuid, 0) + entry.getValue() + 1);
+                            player4Stars.put(uuid, player4Stars.getOrDefault(uuid, -1) + entry.getValue() + 1);
                         }
                         case 2: {
-                            player5Stars.put(uuid, player5Stars.getOrDefault(uuid, 0) + entry.getValue() + 1);
+                            player5Stars.put(uuid, player5Stars.getOrDefault(uuid, -1) + entry.getValue() + 1);
                         }
                     }
                 }
@@ -411,7 +445,11 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 ChampionshipTeam playerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
                 ChampionshipTeam onlinePlayerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(onlinePlayer);
 
-                if (!(playerTeam != null && playerTeam.equals(onlinePlayerTeam))) {
+                if (playerTeam != null) {
+                    if (!playerTeam.equals(onlinePlayerTeam)) {
+                        player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                    }
+                } else {
                     player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
                 }
             }
@@ -435,7 +473,11 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 ChampionshipTeam playerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
                 ChampionshipTeam onlinePlayerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(onlinePlayer);
 
-                if (!(playerTeam != null && playerTeam.equals(onlinePlayerTeam))) {
+                if (playerTeam != null) {
+                    if (!playerTeam.equals(onlinePlayerTeam)) {
+                        player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                    }
+                } else {
                     player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
                 }
             }
@@ -451,7 +493,11 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 ChampionshipTeam playerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
                 ChampionshipTeam onlinePlayerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(onlinePlayer);
 
-                if (!(playerTeam != null && playerTeam.equals(onlinePlayerTeam))) {
+                if (playerTeam != null) {
+                    if (!playerTeam.equals(onlinePlayerTeam)) {
+                        player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                    }
+                } else {
                     onlinePlayer.hidePlayer(ChampionshipsCore.getInstance(), player);
                 }
             } else {

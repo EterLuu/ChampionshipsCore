@@ -39,8 +39,14 @@ public class WorldEditManager extends BaseManager {
             vectors[0] = new Vector(v1.x(), v1.y(), v1.z());
             vectors[1] = new Vector(v2.x(), v2.y(), v2.z());
         } else {
-            vectors[0] = new Vector(v1.x() + 1, v1.y(), v1.z() + 1);
-            vectors[1] = new Vector(v2.x(), v2.y(), v2.z());
+            int x1 = Math.max(v1.x(), v2.x()) + 1;
+            int x2 = Math.min(v1.x(), v2.x());
+            int y1 = Math.max(v1.y(), v2.y()) + 1;
+            int y2 = Math.min(v1.y(), v2.y());
+            int z1 = Math.max(v1.z(), v2.z()) + 1;
+            int z2 = Math.min(v1.z(), v2.z());
+            vectors[0] = new Vector(x1, y1, z1);
+            vectors[1] = new Vector(x2, y2, z2);
         }
         return vectors;
     }

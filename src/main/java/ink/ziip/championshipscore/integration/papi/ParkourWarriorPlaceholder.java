@@ -103,6 +103,28 @@ public class ParkourWarriorPlaceholder extends BasePlaceholder {
             }
             return String.valueOf(parkourWarriorTeamArea.getPlayerSubCheckpoints(offlinePlayer.getUniqueId(), PKWCheckPointTypeEnum.sub, 2));
         }
+        if (params.startsWith("player_total_main_checkpoints_")) {
+            ParkourWarriorTeamArea parkourWarriorTeamArea = parkourWarriorManager.getArea(params.replace("player_total_main_checkpoints_", ""));
+            if (parkourWarriorTeamArea == null) {
+                parkourWarriorTeamArea = parkourWarriorManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
+            }
+            if (parkourWarriorTeamArea == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            return String.valueOf(parkourWarriorTeamArea.getPlayerCheckpoints(offlinePlayer.getUniqueId(), PKWCheckPointTypeEnum.main, null));
+        }
+        if (params.startsWith("player_progress_sub_checkpoint_")) {
+            String[] splitParams = params.split("_");
+            String subCheckpoint = splitParams[splitParams.length - 1];
+            ParkourWarriorTeamArea parkourWarriorTeamArea = parkourWarriorManager.getArea(params.replace("_" + subCheckpoint, "").replace("player_progress_sub_checkpoint_", ""));
+            if (parkourWarriorTeamArea == null) {
+                parkourWarriorTeamArea = parkourWarriorManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
+            }
+            if (parkourWarriorTeamArea == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            return String.valueOf(parkourWarriorTeamArea.getPlayerCheckpoints(offlinePlayer.getUniqueId(), PKWCheckPointTypeEnum.sub, subCheckpoint));
+        }
 
         // Placeholder is unknown by the Expansion
         return null;

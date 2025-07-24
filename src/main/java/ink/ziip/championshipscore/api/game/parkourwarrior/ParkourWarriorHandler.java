@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -48,7 +49,9 @@ public class ParkourWarriorHandler extends BaseListener {
 
         if (parkourWarriorTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
             if (parkourWarriorTeamArea.getTimer() <= parkourWarriorTeamArea.getGameConfig().getTimer()) {
-                parkourWarriorTeamArea.handlePlayerMove(player);
+                if (player.getGameMode() == GameMode.ADVENTURE || player.getGameMode() == GameMode.CREATIVE) {
+                    parkourWarriorTeamArea.handlePlayerMove(player);
+                }
             }
         }
     }
