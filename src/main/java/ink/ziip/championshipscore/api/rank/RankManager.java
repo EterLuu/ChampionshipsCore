@@ -45,7 +45,7 @@ public class RankManager extends BaseManager {
     @Getter
     private String teamRankString;
     @Getter
-    private String playerRankString;
+    private String playerRankString = "";
     private BukkitTask updateTask;
 
     public RankManager(ChampionshipsCore championshipsCore) {
@@ -258,7 +258,7 @@ public class RankManager extends BaseManager {
                     .rival(rival.getName())
                     .game(gameTypeEnum)
                     .area(area)
-                    .round("wcc")
+                    .round("scc")
                     .points(points)
                     .time(Utils.getCurrentTimeString())
                     .build();
@@ -311,15 +311,15 @@ public class RankManager extends BaseManager {
 
     public double getPointMultiple(int round) {
         if (round == 1 || round == 2) {
-            return 1;
+            return 1d;
         }
         if (round == 3 || round == 4 || round == 5) {
-            return 1.5;
+            return 1.5d;
         }
         if (round == 6) {
-            return 2;
+            return 2d;
         }
-        return 0;
+        return 0d;
     }
 
     private double getTeamPoints(ChampionshipTeam championshipTeam, GameTypeEnum gameTypeEnum) {
