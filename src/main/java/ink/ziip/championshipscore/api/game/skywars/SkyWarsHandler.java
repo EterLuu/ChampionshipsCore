@@ -8,18 +8,14 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.*;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
+import org.bukkit.damage.DamageType;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.UUID;
@@ -52,57 +48,6 @@ public class SkyWarsHandler extends BaseListener {
 
         if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
-        }
-
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            Block block = event.getClickedBlock();
-            ItemStack item = event.getItem();
-            if (item != null && block != null) {
-                if (event.getItem().getType() == Material.CREEPER_SPAWN_EGG) {
-                    event.setCancelled(true);
-                    int amount = item.getAmount() - 1;
-                    if (amount <= 0)
-                        amount = 0;
-                    item.setAmount(amount);
-                    Creeper creeper = (Creeper) block.getWorld().spawnEntity(block.getLocation().add(0, 1, 0), EntityType.CREEPER);
-                    creeper.setAI(true);
-                    creeper.setCustomName(player.getName());
-                }
-            }
-        }
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onCreeperTargetPlayer(EntityTargetEvent event) {
-        if (event.getEntity() instanceof Creeper creeper) {
-            if (event.getTarget() instanceof Player target) {
-                if (skyWarsArea.notAreaPlayer(target)) {
-                    return;
-                }
-
-                Location location = target.getLocation();
-                if (skyWarsArea.notInArea(location)) {
-                    return;
-                }
-
-                if (skyWarsArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
-                    event.setCancelled(true);
-                    return;
-                }
-
-                Player spawner = Bukkit.getPlayer(creeper.getName());
-                if (spawner == null)
-                    return;
-
-                ChampionshipTeam spawnerTeam = plugin.getTeamManager().getTeamByPlayer(spawner);
-                ChampionshipTeam targetTeam = plugin.getTeamManager().getTeamByPlayer(target);
-
-                if (spawnerTeam != null && targetTeam != null) {
-                    if (spawnerTeam.equals(targetTeam)) {
-                        event.setCancelled(true);
-                    }
-                }
-            }
         }
     }
 
@@ -225,22 +170,7 @@ public class SkyWarsHandler extends BaseListener {
 
         if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
-            return;
         }
-
-        Block block = event.getBlockPlaced();
-        if (block.getType().toString().endsWith("_CONCRETE")) {
-            event.getItemInHand().setAmount(64);
-        }
-
-        if (block.getType() == Material.TNT) {
-            block.setType(Material.AIR, true);
-            TNTPrimed tntPrimed = (TNTPrimed) block.getWorld().spawnEntity(block.getLocation(), EntityType.TNT);
-            tntPrimed.setSource(player);
-            return;
-        }
-
-        skyWarsArea.getBlockStates().add(event.getBlockPlaced().getState());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -288,6 +218,24 @@ public class SkyWarsHandler extends BaseListener {
 
                 event.setDamage(0.0001);
             }
+
+            if (event.getDamager() instanceof Player damager) {
+                Material material = damager.getInventory().getItemInMainHand().getType();
+                String name = material.toString();
+                if (name.contains("AXE")) {
+                    if (event.getDamage() > 7) {
+                        event.setDamage(7);
+                    }
+                }
+                if (event.getDamageSource().getDamageType() == DamageType.TRIDENT) {
+                    event.setDamage(7);
+                }
+                if (event.getDamageSource().getDamageType() == DamageType.ARROW) {
+                    if (event.getDamage() > 7) {
+                        event.setDamage(7);
+                    }
+                }
+            }
         }
     }
 
@@ -310,39 +258,8 @@ public class SkyWarsHandler extends BaseListener {
 
         if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
             event.setCancelled(true);
-            return;
         }
-
-        BlockState blockState = event.getBlock().getState();
-        if (!skyWarsArea.getBlockStates().contains(blockState)) {
-            event.setCancelled(true);
-            return;
-        }
-
-        skyWarsArea.getBlockStates().remove(blockState);
-        event.getBlock().getDrops().clear();
     }
-
-//    @EventHandler(priority = EventPriority.LOWEST)
-//    public void onPlayerRegainHealth(EntityRegainHealthEvent event) {
-//        if (event.getEntity() instanceof Player player) {
-//            if (skyWarsArea.notAreaPlayer(player)) {
-//                return;
-//            }
-//
-//            Location location = player.getLocation();
-//            if (skyWarsArea.notInArea(location)) {
-//                return;
-//            }
-//
-//            if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
-//                return;
-//            }
-//
-//            if (skyWarsArea.getTimer() <= skyWarsArea.getGameConfig().getTimeDisableHealthRegain())
-//                event.setCancelled(true);
-//        }
-//    }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerMove(PlayerMoveEvent event) {
@@ -403,24 +320,6 @@ public class SkyWarsHandler extends BaseListener {
                 }
             }
         }
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onEntityExplode(EntityExplodeEvent event) {
-        World world = event.getLocation().getWorld();
-        if (world == null)
-            return;
-
-        if (world.getName().equals(skyWarsArea.getWorldName()))
-            event.blockList().clear();
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onBlockExplode(BlockExplodeEvent event) {
-        World world = event.getBlock().getWorld();
-
-        if (world.getName().equals(skyWarsArea.getWorldName()))
-            event.blockList().clear();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

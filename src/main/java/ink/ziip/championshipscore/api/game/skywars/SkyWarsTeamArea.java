@@ -20,7 +20,6 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
-import org.bukkit.block.BlockState;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -38,8 +37,6 @@ import java.util.logging.Level;
 
 public class SkyWarsTeamArea extends BaseSingleTeamArea {
     @Getter
-    private final List<BlockState> blockStates = new ArrayList<>();
-    @Getter
     private final List<UUID> deathPlayer = new ArrayList<>();
     private final Map<ChampionshipTeam, Integer> teamDeathPlayers = new ConcurrentHashMap<>();
     @Getter
@@ -56,7 +53,6 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
     @Override
     public void resetArea() {
-        blockStates.clear();
         deathPlayer.clear();
         teamDeathPlayers.clear();
 
@@ -144,7 +140,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        giveItemToAllGamePlayers();
+        // giveItemToAllGamePlayers();
 
         timer = getGameConfig().getTimer() + 5;
         setGameStageEnum(GameStageEnum.PROGRESS);
