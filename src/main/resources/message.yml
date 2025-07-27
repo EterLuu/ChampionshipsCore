@@ -279,6 +279,7 @@ parkourwarrior:
   arrived-at-end-point: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6玩家#ffe0d6%player%#ffe0d6到达了终点。"
   team-arrived-at-end-point: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6队伍#ffe0d6%team%#ffe0d6全队到达了终点。"
   fall-into-void: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969玩家#696969%player%#696969跌入了虚空。"
+  start-sudden-death: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969进入突然死亡模式，跌入虚空后将无法复活！"
   kits:
     back-tool: "&d右键返回支线选择点"
 placeholder:

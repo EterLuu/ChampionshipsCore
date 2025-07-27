@@ -414,6 +414,11 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
             }
 
+            if (timer == getGameConfig().getSuddenDeath()) {
+                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_WARRIOR_START_SUDDEN_DEATH);
+                playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1, 12F);
+            }
+
             changeLevelForAllGamePlayers(timer);
             sendActionBarToAllGameSpectators(MessageConfig.PARKOUR_WARRIOR_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
 

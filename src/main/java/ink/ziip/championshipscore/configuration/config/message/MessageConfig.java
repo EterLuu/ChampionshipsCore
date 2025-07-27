@@ -816,6 +816,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourwarrior.kits.back-tool")
     public static String PARKOUR_WARRIOR_KITS_BACK_TOOL_NAME;
 
+    @ConfigOption(path = "parkourwarrior.start-sudden-death")
+    public static String PARKOUR_WARRIOR_START_SUDDEN_DEATH;
+
     // Placeholder
     @ConfigOption(path = "placeholder.none")
     public static String PLACEHOLDER_NONE;

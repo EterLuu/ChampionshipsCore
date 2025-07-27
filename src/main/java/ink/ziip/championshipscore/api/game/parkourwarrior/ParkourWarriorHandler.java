@@ -43,7 +43,11 @@ public class ParkourWarriorHandler extends BaseListener {
 
         Location location = player.getLocation();
         if (parkourWarriorTeamArea.notInArea(location)) {
-            parkourWarriorTeamArea.teleportPlayerToSpawnPoint(player, true);
+            if (parkourWarriorTeamArea.getTimer() >= 30)
+                parkourWarriorTeamArea.teleportPlayerToSpawnPoint(player, true);
+            else {
+                player.setGameMode(GameMode.SPECTATOR);
+            }
             return;
         }
 
