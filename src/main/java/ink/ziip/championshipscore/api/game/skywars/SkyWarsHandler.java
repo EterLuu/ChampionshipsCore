@@ -16,6 +16,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
+import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.UUID;
@@ -332,6 +333,22 @@ public class SkyWarsHandler extends BaseListener {
         Location location = player.getLocation();
         if (skyWarsArea.notInArea(location)) {
             return;
+        }
+
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPortalCreate(PortalCreateEvent event) {
+        if (skyWarsArea.notInArea(event.getBlocks().getFirst().getLocation())) {
+            return;
+        }
+        if (event.getEntity() != null && event.getEntity() instanceof Player player) {
+            if (!skyWarsArea.notAreaPlayer(player)) {
+                if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+                    skyWarsArea.sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_PLAYER_CREATE_PORTAL.replace("%player%", player.getName()));
+                }
+            }
         }
 
         event.setCancelled(true);

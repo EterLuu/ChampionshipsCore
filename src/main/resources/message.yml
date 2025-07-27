@@ -151,10 +151,12 @@ skywars:
   kill-player-by-void: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6%player%#ff6b26因#ffe0d6%killer%#ff6b26跌入了虚空。"
   player-death: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6%player%#ff6b26死亡。"
   player-death-by-void: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6%player%#ff6b26跌入了虚空。"
+  player-create-portal: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6%player%#ff6b26试图创建传送门，但是被鱼头阻止了！"
   player-leave: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6%player%#ff6b26离开游戏。"
   action-bar-count-down: "#24abff游戏剩余时间：#ff6b26%time%#24abff。"
   whole-team-was-killed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6%team%#696969全队阵亡。"
   board-shrink: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r &4边界开始收缩。"
+  stop-board-shrink: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r &6边界停止收缩。"
   deduct-food-level: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r &6开始降低全员饱食度。"
   out-of-border: "&4你正处于边界外围，速速进入内圈！"
 tgttos:

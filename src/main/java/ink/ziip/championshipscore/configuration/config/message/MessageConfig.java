@@ -441,6 +441,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "skywars.player-death-by-void")
     public static String SKY_WARS_PLAYER_DEATH_BY_VOID;
 
+    @ConfigOption(path = "skywars.player-create-portal")
+    public static String SKY_WARS_PLAYER_CREATE_PORTAL;
+
     @ConfigOption(path = "skywars.player-leave")
     public static String SKY_WARS_PLAYER_LEAVE;
 
@@ -452,6 +455,9 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "skywars.board-shrink")
     public static String SKY_WARS_BOARD_SHRINK;
+
+    @ConfigOption(path = "skywars.stop-board-shrink")
+    public static String SKY_WARS_STOP_BOARD_SHRINK;
 
     @ConfigOption(path = "skywars.deduct-food-level")
     public static String SKY_WARS_DEDUCT_FOOD_LEVEL;

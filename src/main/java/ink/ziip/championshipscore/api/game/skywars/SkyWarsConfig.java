@@ -23,7 +23,7 @@ public class SkyWarsConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 1;
+        return 2;
     }
 
     @ConfigOption(path = "name")
@@ -47,6 +47,9 @@ public class SkyWarsConfig extends BaseGameConfig {
     @ConfigOption(path = "team-spawn-points")
     private List<String> teamSpawnPoints;
 
+    @ConfigOption(path = "glass-cage")
+    private boolean glassCage;
+
     @ConfigOption(path = "boundary.default-height")
     private Integer boundaryDefaultHeight;
 
@@ -58,6 +61,9 @@ public class SkyWarsConfig extends BaseGameConfig {
 
     @ConfigOption(path = "boundary.radius")
     private Integer boundaryRadius;
+
+    @ConfigOption(path = "shrink-time")
+    private List<String> shrinkTime;
 
     @ConfigOption(path = "time.enable-boundary-shrink")
     private Integer timeEnableBoundaryShrink;

@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 1
+  version: 2
 name: area
 timer: 240
 area-pos1:
@@ -7,11 +7,13 @@ area-pos2:
 pre-spawn-point:
 spectator-spawn-point:
 team-spawn-points: [ ]
+glass-cage: true
 boundary:
-  default-height: 150
-  middle-height: 100
-  lowest-height: 60
-  radius: 50
+  default-height: 120
+  middle-height: 70
+  lowest-height: 20
+  radius: 240
+shrink-time: []
 time:
   enable-boundary-shrink: 210
   disable-health-regain: 20

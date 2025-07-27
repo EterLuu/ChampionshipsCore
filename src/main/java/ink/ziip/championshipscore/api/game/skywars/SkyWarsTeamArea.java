@@ -12,6 +12,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.object.game.skywars.SkyWarsShrink;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -20,6 +21,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
+import org.bukkit.block.Chest;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -39,6 +41,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     @Getter
     private final List<UUID> deathPlayer = new ArrayList<>();
     private final Map<ChampionshipTeam, Integer> teamDeathPlayers = new ConcurrentHashMap<>();
+    private final List<SkyWarsShrink> shrinkTimes = new ArrayList<>();
     @Getter
     private int timer;
     private BukkitTask startGamePreparationTask;
@@ -85,6 +88,25 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
         }
+
+        if (!getGameConfig().getShrinkTime().isEmpty()) {
+            for (String key : getGameConfig().getShrinkTime()) {
+                String[] shrinkTimeSetting = key.split(":");
+                if (shrinkTimeSetting.length == 4) {
+                    try {
+                        int start = Integer.parseInt(shrinkTimeSetting[0]);
+                        int end = Integer.parseInt(shrinkTimeSetting[1]);
+                        int toRadius = Integer.parseInt(shrinkTimeSetting[2]);
+                        int toHeight = Integer.parseInt(shrinkTimeSetting[3]);
+                        shrinkTimes.add(new SkyWarsShrink(start, end, toRadius, toHeight));
+                    } catch (NumberFormatException e) {
+                        plugin.getLogger().log(Level.WARNING, "Invalid shrink time format: " + key);
+                    }
+                } else {
+                    plugin.getLogger().log(Level.WARNING, "Invalid shrink time format: " + key);
+                }
+            }
+        }
     }
 
     @Override
@@ -101,9 +123,19 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_START_PREPARATION_TITLE, MessageConfig.SKY_WARS_START_PREPARATION_SUBTITLE);
 
+        setBorderShrinkTask(getGameConfig().getTimeEnableBoundaryShrink(),
+                0,
+                getGameConfig().getBoundaryRadius(),
+                getGameConfig().getBoundaryDefaultHeight(),
+                getGameConfig().getBoundaryLowestHeight(),
+                getGameConfig().getBoundaryRadius(),
+                getGameConfig().getBoundaryMiddleHeight()
+        );
+
         timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            changeLevelForAllGamePlayers(timer);
+            // changeLevelForAllGamePlayers(timer);
+            sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
 
             if (timer == 0) {
                 startGameProgress();
@@ -156,26 +188,49 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
             if (timer == getGameConfig().getTimer()) {
 
-                scheduler.runTaskAsynchronously(plugin, () -> {
-                    for (ChampionshipTeam championshipTeam : gameTeams) {
-                        for (Player player : championshipTeam.getOnlinePlayers()) {
-                            clearGlassCages(player);
-                            break;
+                if (getGameConfig().isGlassCage()) {
+                    scheduler.runTaskAsynchronously(plugin, () -> {
+                        for (ChampionshipTeam championshipTeam : gameTeams) {
+                            for (Player player : championshipTeam.getOnlinePlayers()) {
+                                clearGlassCages(player);
+                                break;
+                            }
                         }
-                    }
-                });
+                    });
+                }
 
                 sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_GAME_START);
                 sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_GAME_START_TITLE, MessageConfig.SKY_WARS_GAME_START_SUBTITLE);
                 playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
             }
 
-            changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGameSpectators(MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
+            // changeLevelForAllGamePlayers(timer);
+            sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
 
             if (timer == getGameConfig().getTimeEnableBoundaryShrink()) {
                 startBorderShrink();
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_BOARD_SHRINK);
+            }
+
+            for (SkyWarsShrink skyWarsShrink : shrinkTimes) {
+                if (timer == skyWarsShrink.getStartTime()) {
+                    setBorderShrinkTask(skyWarsShrink.getStartTime(),
+                            skyWarsShrink.getEndTime(),
+                            radius,
+                            height,
+                            low,
+                            skyWarsShrink.getToRadius(),
+                            skyWarsShrink.getToHeight()
+                    );
+                    sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_BOARD_SHRINK);
+                    playSoundToAllGamePlayers(Sound.BLOCK_ANVIL_USE, 1, 12F);
+                }
+                if (timer == skyWarsShrink.getEndTime()) {
+                    lowShrink = 0;
+                    heightShrink = 0;
+                    shrink = 0;
+                    sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_STOP_BOARD_SHRINK);
+                    playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1, 12F);
+                }
             }
 
             if (timer == getGameConfig().getTimeDisableHealthRegain()) {
@@ -187,7 +242,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             }
 
             if (timer == 0) {
-                changeLevelForAllGamePlayers(timer);
+                // changeLevelForAllGamePlayers(timer);
+                sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
                 endGame();
                 if (startGameProgressTask != null)
                     startGameProgressTask.cancel();
@@ -197,16 +253,18 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         }, 0, 20L);
     }
 
+    private void setBorderShrinkTask(int start, int end, double startRadius, double startHeight, double startLow, int toRadius, int toHeight) {
+        radius = startRadius;
+        shrink = (radius - toRadius) / (start - end);
+
+        height = startHeight;
+        low = startLow;
+
+        heightShrink = (height - toHeight) / (start - end);
+        lowShrink = heightShrink;
+    }
+
     protected void startBorderShrink() {
-        radius = getGameConfig().getBoundaryRadius();
-        shrink = radius / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
-
-        height = getGameConfig().getBoundaryDefaultHeight();
-        low = getGameConfig().getBoundaryLowestHeight();
-
-        heightShrink = (double) (getGameConfig().getBoundaryDefaultHeight() - getGameConfig().getBoundaryMiddleHeight()) / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
-        lowShrink = (double) (getGameConfig().getBoundaryMiddleHeight() - getGameConfig().getBoundaryLowestHeight()) / (getGameConfig().getTimeEnableBoundaryShrink() - 5);
-
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
         borderCheckTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
             Location center = getGameConfig().getPreSpawnPoint();
@@ -225,7 +283,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                     }
 
                     if (location.getY() > height - 10 || location.getY() < low + 10) {
-                        setHeightParticles(player);
+                        setHeightParticles(player, height);
+                        setHeightParticles(player, low);
                     }
 
                     if (distance >= radius || location.getY() > height || location.getY() < low) {
@@ -244,8 +303,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                 radius = 0;
             if (height < getGameConfig().getBoundaryMiddleHeight())
                 height = getGameConfig().getBoundaryMiddleHeight();
-            if (low > getGameConfig().getBoundaryLowestHeight())
-                low = getGameConfig().getBoundaryLowestHeight();
+            if (low > getGameConfig().getBoundaryMiddleHeight())
+                low = getGameConfig().getBoundaryMiddleHeight();
 
         }, 0, 20L);
     }
@@ -288,7 +347,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         });
     }
 
-    private void setHeightParticles(Player player) {
+    private void setHeightParticles(Player player, double y) {
         scheduler.runTaskAsynchronously(plugin, () -> {
             Location location = player.getLocation();
             World world = location.getWorld();
@@ -297,7 +356,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                     for (double beta = 0; beta <= 20; beta += 1) {
                         double x2 = location.getX() + radius * Math.cos(beta);
                         double z2 = location.getZ() + radius * Math.sin(beta);
-                        Location particleLoc = new Location(location.getWorld(), x2, height, z2);
+                        Location particleLoc = new Location(location.getWorld(), x2, y, z2);
                         player.spawnParticle(Particle.DUST, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
                     }
                 }
@@ -410,6 +469,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         if (deathPlayer.contains(player.getUniqueId()))
             return;
 
+        spawnTomb(player, event.getDrops());
+
         addDeathPlayer(player);
 
         Player assailant = player.getKiller();
@@ -508,6 +569,43 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         return (int) Math.abs(radius - distance);
     }
 
+    public void spawnTomb(Player player, List<ItemStack> items) {
+        if (player == null || !gamePlayers.contains(player.getUniqueId())) {
+            return;
+        }
+
+        Location location = player.getLocation();
+        World world = location.getWorld();
+
+        if (world != null) {
+            if (world.getBlockAt(location).getType() != Material.AIR) {
+                for (int i = 1; i <= 5; i++) {
+                    Location belowLocation = location.clone().add(0, i, 0);
+                    if (world.getBlockAt(belowLocation).getType() == Material.AIR) {
+                        location = belowLocation;
+                        break;
+                    }
+                }
+            }
+
+            if (world.getBlockAt(location).getType() != Material.AIR) {
+                return;
+            }
+
+            world.getBlockAt(location).setType(Material.CHEST);
+            world.spawnParticle(Particle.DUST, location.clone().add(0.5, 0.5, 0.5), 100, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
+
+            Chest chest = (Chest) world.getBlockAt(location).getState();
+            for (ItemStack item : items) {
+                if (item != null && item.getType() != Material.AIR) {
+                    chest.getInventory().addItem(item);
+                }
+            }
+
+            items.clear();
+        }
+    }
+
     public int getSurvivedPlayerNums() {
         return gamePlayers.size() - deathPlayer.size();
     }
@@ -527,9 +625,18 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         Collections.shuffle(gameTeams);
 
         for (ChampionshipTeam championshipTeam : gameTeams) {
-            if (spawnPointsI.hasNext())
-                championshipTeam.teleportAllPlayers(Utils.getLocation(spawnPointsI.next()));
-            else {
+            if (spawnPointsI.hasNext()) {
+                Location location = Utils.getLocation(spawnPointsI.next());
+                for (int i = 0; i < championshipTeam.getOnlinePlayers().size(); i++) {
+                    Player player = championshipTeam.getOnlinePlayers().get(i);
+                    if (player != null) {
+                        Location spawnLocation = location.clone();
+                        spawnLocation.setX(spawnLocation.getX() + (i % 2 == 0 ? -1 : 1));
+                        spawnLocation.setZ(spawnLocation.getZ() + (i < 2 ? -1 : 1));
+                        player.teleport(spawnLocation);
+                    }
+                }
+            } else {
                 spawnPointsI = getGameConfig().getTeamSpawnPoints().iterator();
                 championshipTeam.teleportAllPlayers(Utils.getLocation(spawnPointsI.next()));
             }
