@@ -234,6 +234,8 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         int count = 0;
 
         Map<PKWCheckpoint, Integer> singlePlayerCheckpointProgress = playerCheckpointProgress.get(uuid);
+        if (singlePlayerCheckpointProgress == null)
+            return 0;
         for (Map.Entry<PKWCheckpoint, Integer> entry : singlePlayerCheckpointProgress.entrySet()) {
             PKWCheckPointTypeEnum checkpointType = entry.getKey().getType();
             if (checkpointType == PKWCheckPointTypeEnum.main && type == PKWCheckPointTypeEnum.main) {
@@ -253,6 +255,8 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         int count = 0;
 
         Map<PKWCheckpoint, Integer> singlePlayerCheckpointProgress = playerCheckpointProgress.get(uuid);
+        if (singlePlayerCheckpointProgress == null)
+            return 0;
         for (Map.Entry<PKWCheckpoint, Integer> entry : singlePlayerCheckpointProgress.entrySet()) {
             PKWCheckPointTypeEnum checkpointType = entry.getKey().getType();
             if (checkpointType == PKWCheckPointTypeEnum.main && type == PKWCheckPointTypeEnum.main) {
@@ -303,19 +307,18 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
             for (Map.Entry<PKWCheckpoint, Integer> entry : singlePlayerCheckpointProgress.entrySet()) {
                 PKWCheckPointTypeEnum checkpointType = entry.getKey().getType();
                 if (checkpointType == PKWCheckPointTypeEnum.main) {
-                    player2Stars.put(uuid, player2Stars.getOrDefault(uuid, -1) + entry.getValue() + 1);
+                    player2Stars.put(uuid, player2Stars.getOrDefault(uuid, 0) + entry.getValue() + 1);
                 } else if (checkpointType == PKWCheckPointTypeEnum.sub) {
                     int subCheckpointIndex = entry.getValue();
-                    switch (subCheckpointIndex) {
-                        case 0: {
-                            player3Stars.put(uuid, player3Stars.getOrDefault(uuid, -1) + entry.getValue() + 1);
-                        }
-                        case 1: {
-                            player4Stars.put(uuid, player4Stars.getOrDefault(uuid, -1) + entry.getValue() + 1);
-                        }
-                        case 2: {
-                            player5Stars.put(uuid, player5Stars.getOrDefault(uuid, -1) + entry.getValue() + 1);
-                        }
+                    if (subCheckpointIndex == 0) {
+                        player3Stars.put(uuid, player3Stars.getOrDefault(uuid, 0) + 1);
+                    } else if (subCheckpointIndex == 1) {
+                        player3Stars.put(uuid, player3Stars.getOrDefault(uuid, 0) + 1);
+                        player4Stars.put(uuid, player4Stars.getOrDefault(uuid, 0) + 1);
+                    } else if (subCheckpointIndex == 2) {
+                        player3Stars.put(uuid, player3Stars.getOrDefault(uuid, 0) + 1);
+                        player4Stars.put(uuid, player4Stars.getOrDefault(uuid, 0) + 1);
+                        player5Stars.put(uuid, player5Stars.getOrDefault(uuid, 0) + 1);
                     }
                 }
             }
@@ -329,9 +332,9 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
             int points4 = player4Stars.getOrDefault(uuid, 0);
             int points5 = player5Stars.getOrDefault(uuid, 0);
             finalPoints = points2 * getGameConfig().getPoints2() +
-                    points3 * ascend + (points3 == 0 ? 0 : getGameConfig().getPoints3()) +
-                    points4 * ascend + (points4 == 0 ? 0 : getGameConfig().getPoints4()) +
-                    points5 * ascend + (points5 == 0 ? 0 : getGameConfig().getPoints5());
+                    ascend * acc(points3 == 0 ? 0 : (points3 - 1)) + (points3 == 0 ? 0 : getGameConfig().getPoints3()) * points3 +
+                    ascend * acc(points4 == 0 ? 0 : (points4 - 1)) + (points4 == 0 ? 0 : getGameConfig().getPoints4()) * points4 +
+                    10 * acc(points5 == 0 ? 0 : (points5 - 1)) + (points5 == 0 ? 0 : getGameConfig().getPoints5()) * points5;
 
             ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(uuid);
             if (championshipTeam != null) {
@@ -340,6 +343,14 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 addPlayerPoints(uuid, finalPoints * multiplier);
             }
         }
+    }
+
+    private int acc(int num) {
+        int sum = 0;
+        for (int i = 1; i <= num; i++) {
+            sum += i;
+        }
+        return sum;
     }
 
     @Override
@@ -398,6 +409,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         timer = getGameConfig().getTimer() + 5;
 
         resetPlayerHealthFoodEffectLevelInventory();
+        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         giveBootToAllPlayers();
 

@@ -43,7 +43,7 @@ public class ParkourWarriorHandler extends BaseListener {
 
         Location location = player.getLocation();
         if (parkourWarriorTeamArea.notInArea(location)) {
-            if (parkourWarriorTeamArea.getTimer() >= 30)
+            if (parkourWarriorTeamArea.getTimer() >= 30 && parkourWarriorTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS)
                 parkourWarriorTeamArea.teleportPlayerToSpawnPoint(player, true);
             else {
                 player.setGameMode(GameMode.SPECTATOR);
