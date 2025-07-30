@@ -209,7 +209,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
                     startGameProgressTask.cancel();
             }
 
-            if (timer % 2 == 0) {
+            if (timer % 2 == 0 && codyHolder != null) {
                 Player player = Bukkit.getPlayer(codyHolder);
                 if (player != null) {
                     player.damage(2);
