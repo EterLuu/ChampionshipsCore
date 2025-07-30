@@ -142,3 +142,13 @@ The core plugin of the Summer/Winter Collab Championship.
 | `%parkourwarrior_player_3rd_checkpoints_[areaName]%`  | Show the current number of 3rd checkpoints player arrived.  |
 | `%parkourwarrior_player_4th_checkpoints_[areaName]%`  | Show the current number of 4th checkpoints player arrived.  |
 | `%parkourwarrior_player_5th_checkpoints_[areaName]%`  | Show the current number of 5th checkpoints player arrived.  |
+
+### Hoty Cody Dusky
+
+| **Placeholder**                                    | **Description**                                                  |
+|----------------------------------------------------|------------------------------------------------------------------|
+| `%hotycodydusky_area_status_[areaName]%`           | Show current status of the area.                                 |
+| `%hotycodydusky_area_timer_[areaName]%`            | Show current timer of the area.                                  |
+| `%hotycodydusky_area_survived_players_[areaName]%` | Show current number of survived players.                         |
+| `%hotycodydusky_area_survived_teams_[areaName]%`   | Show current number of survived teams.                           |
+| `%hotycodydusky_area_cody_holder_[areaName]%`      | Show the distance between the player and the border in the area. |

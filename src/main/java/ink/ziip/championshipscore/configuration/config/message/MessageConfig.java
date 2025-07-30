@@ -225,6 +225,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.parkourwarrior")
     public static String PARKOUR_WARRIOR;
 
+    @ConfigOption(path = "game.hotycodydusky")
+    public static String GAME_HOTY_CODY_DUSKY;
+
     @ConfigOption(path = "game.game-weight")
     public static String GAME_GAME_WEIGHT;
 
@@ -824,6 +827,66 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "parkourwarrior.start-sudden-death")
     public static String PARKOUR_WARRIOR_START_SUDDEN_DEATH;
+
+
+    // Hoty Cody Dusky
+    @ConfigOption(path = "hotycodydusky.start-preparation")
+    public static String HOTY_CODY_DUSKY_START_PREPARATION;
+
+    @ConfigOption(path = "hotycodydusky.start-preparation-title")
+    public static String HOTY_CODY_DUSKY_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "hotycodydusky.start-preparation-subtitle")
+    public static String HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "hotycodydusky.game-start-soon")
+    public static String HOTY_CODY_DUSKY_GAME_START_SOON;
+
+    @ConfigOption(path = "hotycodydusky.game-start-soon-title")
+    public static String HOTY_CODY_DUSKY_GAME_START_SOON_TITLE;
+
+    @ConfigOption(path = "hotycodydusky.game-start-soon-subtitle")
+    public static String HOTY_CODY_DUSKY_GAME_START_SOON_SUBTITLE;
+
+    @ConfigOption(path = "hotycodydusky.game-start")
+    public static String HOTY_CODY_DUSKY_GAME_START;
+
+    @ConfigOption(path = "hotycodydusky.game-start-title")
+    public static String HOTY_CODY_DUSKY_GAME_START_TITLE;
+
+    @ConfigOption(path = "hotycodydusky.game-start-subtitle")
+    public static String HOTY_CODY_DUSKY_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "hotycodydusky.game-end")
+    public static String HOTY_CODY_DUSKY_GAME_END;
+
+    @ConfigOption(path = "hotycodydusky.game-end-title")
+    public static String HOTY_CODY_DUSKY_GAME_END_TITLE;
+
+    @ConfigOption(path = "hotycodydusky.game-end-subtitle")
+    public static String HOTY_CODY_DUSKY_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "hotycodydusky.count-down")
+    public static String HOTY_CODY_DUSKY_COUNT_DOWN;
+
+    @ConfigOption(path = "hotycodydusky.action-bar-count-down")
+    public static String HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "hotycodydusky.give-cody-to-player")
+    public static String HOTY_CODY_DUSKY_GIVE_CODY_TO_PLAYER;
+
+    @ConfigOption(path = "hotycodydusky.player-death")
+    public static String HOTY_CODY_DUSKY_PLAYER_DEATH;
+
+    @ConfigOption(path = "hotycodydusky.player-received-cody")
+    public static String HOTY_CODY_DUSKY_PLAYER_RECEIVED_CODY;
+
+    @ConfigOption(path = "hotycodydusky.player-leave")
+    public static String HOTY_CODY_DUSKY_PLAYER_LEAVE;
+
+    @ConfigOption(path = "hotycodydusky.whole-team-was-killed")
+    public static String HOTY_CODY_DUSKY_WHOLE_TEAM_WAS_KILLED;
+
 
     // Placeholder
     @ConfigOption(path = "placeholder.none")

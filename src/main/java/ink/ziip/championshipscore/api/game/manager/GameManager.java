@@ -12,6 +12,8 @@ import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoTeamArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
+import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
+import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyTeamArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
@@ -61,6 +63,8 @@ public class GameManager extends BaseManager {
     private final AdvancementCCManager advancementCCManager;
     @Getter
     private final ParkourWarriorManager parkourWarriorManager;
+    @Getter
+    private final HotyCodyDuskyManager hotyCodyDuskyManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -74,6 +78,7 @@ public class GameManager extends BaseManager {
         snowballShowdownManager = new SnowballShowdownManager(plugin);
         advancementCCManager = new AdvancementCCManager(plugin);
         parkourWarriorManager = new ParkourWarriorManager(plugin);
+        hotyCodyDuskyManager = new HotyCodyDuskyManager(plugin);
     }
 
     @Override
@@ -87,6 +92,7 @@ public class GameManager extends BaseManager {
         snowballShowdownManager.load();
         advancementCCManager.load();
         parkourWarriorManager.load();
+        hotyCodyDuskyManager.load();
 
         gameManagerHandler.register();
     }
@@ -102,6 +108,7 @@ public class GameManager extends BaseManager {
         snowballShowdownManager.unload();
         advancementCCManager.unload();
         parkourWarriorManager.unload();
+        hotyCodyDuskyManager.unload();
 
         gameManagerHandler.unRegister();
     }
@@ -195,6 +202,37 @@ public class GameManager extends BaseManager {
         }
 
         return true;
+    }
+
+    public synchronized boolean joinSingleTeamAreaForTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam... championshipTeams) {
+        for (ChampionshipTeam championshipTeam : championshipTeams) {
+            if (teamStatus.containsKey(championshipTeam))
+                return false;
+        }
+
+        for (ChampionshipTeam championshipTeam : championshipTeams) {
+            for (UUID uuid : championshipTeam.getMembers()) {
+                removeSpectator(uuid);
+            }
+        }
+
+        if (gameTypeEnum == GameTypeEnum.HotyCodyDusky) {
+            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = hotyCodyDuskyManager.getArea(area);
+            if (hotyCodyDuskyTeamArea == null)
+                return false;
+
+            if (hotyCodyDuskyTeamArea.tryStartGame(List.of(championshipTeams))) {
+                for (ChampionshipTeam championshipTeam : championshipTeams) {
+                    teamStatus.put(championshipTeam, hotyCodyDuskyTeamArea);
+                    addPlayerStatusByTeam(championshipTeam, hotyCodyDuskyTeamArea);
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        return false;
     }
 
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {
@@ -292,6 +330,22 @@ public class GameManager extends BaseManager {
                 for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                     teamStatus.put(championshipTeam, parkourWarriorTeamArea);
                     addPlayerStatusByTeam(championshipTeam, parkourWarriorTeamArea);
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        if (gameTypeEnum == GameTypeEnum.HotyCodyDusky) {
+            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = hotyCodyDuskyManager.getArea(area);
+            if (hotyCodyDuskyTeamArea == null)
+                return false;
+
+            if (hotyCodyDuskyTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
+                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                    teamStatus.put(championshipTeam, hotyCodyDuskyTeamArea);
+                    addPlayerStatusByTeam(championshipTeam, hotyCodyDuskyTeamArea);
                 }
                 return true;
             }

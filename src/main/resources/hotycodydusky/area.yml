@@ -1,0 +1,8 @@
+dont-edit-this:
+  version: 1
+name: area
+timer: 240
+area-pos1:
+area-pos2:
+spectator-spawn-point:
+player-spawn-point:

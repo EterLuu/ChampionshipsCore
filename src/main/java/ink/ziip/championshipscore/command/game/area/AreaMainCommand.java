@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.game.area;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.command.game.area.battlebox.BattleBoxAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.decarnival.DragonEggCarnivalAreaMainCommand;
+import ink.ziip.championshipscore.command.game.area.hotycodydusky.HotyCodyDuskyAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.parkourtag.ParkourTagAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.parkourwarrior.ParkourWarriorAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.skywars.SkyWarsAreaMainCommand;
@@ -21,5 +22,6 @@ public class AreaMainCommand extends BaseMainCommand {
         addSubCommand(new DragonEggCarnivalAreaMainCommand());
         addSubCommand(new SnowBallAreaMainCommand());
         addSubCommand(new ParkourWarriorAreaMainCommand());
+        addSubCommand(new HotyCodyDuskyAreaMainCommand());
     }
 }

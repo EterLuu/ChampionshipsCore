@@ -24,5 +24,6 @@ public class GameStartMainCommand extends BaseMainCommand {
         addSubCommand(new SnowBallStartMainCommand());
         addSubCommand(new AdvancementCCStartSubCommand());
         addSubCommand(new ParkourWarriorStartMainCommand());
+        addSubCommand(new HotyCodyDuskyStartSubCommand());
     }
 }
