@@ -126,7 +126,7 @@ public class HotyCodyDuskyHandler extends BaseListener {
                 if (hotyCodyDuskyArea.getCodyHolder() != damagerUUID) {
                     event.setDamage(0);
                 } else {
-                    if (!hotyCodyDuskyArea.changeCodyHolder(playerUUID)) {
+                    if (!hotyCodyDuskyArea.changeCodyHolder("change", playerUUID)) {
                         event.setDamage(0);
                     }
                 }

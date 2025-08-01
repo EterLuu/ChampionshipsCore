@@ -233,7 +233,19 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         return gameTeams.size() - i;
     }
 
-    protected void selectCodyHolder() {
+    protected synchronized boolean changeCodyHolder(String type, UUID holder) {
+        if (type.equals("select")) {
+            codyHolder = null;
+            selectCodyHolder();
+        }
+        if (type.equals("change")) {
+            return changeCodyHolder(holder);
+        }
+
+        return false;
+    }
+
+    private void selectCodyHolder() {
         if (gamePlayers.isEmpty()) {
             return;
         }
@@ -252,7 +264,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         addPlayerPoints(holder, 10);
     }
 
-    protected boolean changeCodyHolder(UUID to) {
+    private boolean changeCodyHolder(UUID to) {
         long lastChangeTime = playerCodyChangeTimes.getOrDefault(to, 0L);
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastChangeTime < 1500) {
@@ -308,7 +320,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         playerCodyChangeTimes.put(uuid, System.currentTimeMillis());
     }
 
-    protected void addDeathPlayer(Player player) {
+    private void addDeathPlayer(Player player) {
         UUID uuid = player.getUniqueId();
         addDeathPlayer(uuid);
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
@@ -325,8 +337,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         playerDeadTimes.put(uuid, System.currentTimeMillis());
 
         if (uuid == codyHolder) {
-            codyHolder = null;
-            selectCodyHolder();
+            changeCodyHolder("select", null);
         }
         addPointsToAllSurvivePlayers();
     }
