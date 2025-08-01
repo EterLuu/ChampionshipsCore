@@ -234,45 +234,41 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
     }
 
     protected void selectCodyHolder() {
-        synchronized (this) {
-            if (gamePlayers.isEmpty()) {
-                return;
-            }
-
-            List<UUID> alivePlayers = new ArrayList<>(gamePlayers);
-            alivePlayers.removeAll(deathPlayer);
-
-            if (alivePlayers.isEmpty()) {
-                return;
-            }
-
-            UUID holder = alivePlayers.get(new Random().nextInt(alivePlayers.size()));
-            while (!changeCodyHolder(holder)) {
-                holder = alivePlayers.get(new Random().nextInt(alivePlayers.size()));
-            }
-            addPlayerPoints(holder, 10);
+        if (gamePlayers.isEmpty()) {
+            return;
         }
+
+        List<UUID> alivePlayers = new ArrayList<>(gamePlayers);
+        alivePlayers.removeAll(deathPlayer);
+
+        if (alivePlayers.isEmpty()) {
+            return;
+        }
+
+        UUID holder = alivePlayers.get(new Random().nextInt(alivePlayers.size()));
+        while (!changeCodyHolder(holder)) {
+            holder = alivePlayers.get(new Random().nextInt(alivePlayers.size()));
+        }
+        addPlayerPoints(holder, 10);
     }
 
     protected boolean changeCodyHolder(UUID to) {
-        synchronized (this) {
-            long lastChangeTime = playerCodyChangeTimes.getOrDefault(to, 0L);
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - lastChangeTime < 1500) {
+        long lastChangeTime = playerCodyChangeTimes.getOrDefault(to, 0L);
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastChangeTime < 1500) {
+            return false;
+        }
+        if (codyHolder != null) {
+            if (codyHolder.equals(to)) {
                 return false;
             }
-            if (codyHolder != null) {
-                if (codyHolder.equals(to)) {
-                    return false;
-                }
-            }
-            if (codyHolder == null)
-                sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_PLAYER_RECEIVED_CODY.replace("%player%", playerManager.getPlayerName(to)));
-            else
-                sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GIVE_CODY_TO_PLAYER.replace("%to%", playerManager.getPlayerName(to)).replace("%from%", playerManager.getPlayerName(codyHolder)));
-            setCodyPlayer(to);
-            return true;
         }
+        if (codyHolder == null)
+            sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_PLAYER_RECEIVED_CODY.replace("%player%", playerManager.getPlayerName(to)));
+        else
+            sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GIVE_CODY_TO_PLAYER.replace("%to%", playerManager.getPlayerName(to)).replace("%from%", playerManager.getPlayerName(codyHolder)));
+        setCodyPlayer(to);
+        return true;
     }
 
     private void setCodyPlayer(UUID uuid) {

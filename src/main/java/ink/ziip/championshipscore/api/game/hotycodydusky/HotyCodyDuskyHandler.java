@@ -104,7 +104,7 @@ public class HotyCodyDuskyHandler extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
+    public synchronized void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {
             if (hotyCodyDuskyArea.notAreaPlayer(player)) {
                 return;
