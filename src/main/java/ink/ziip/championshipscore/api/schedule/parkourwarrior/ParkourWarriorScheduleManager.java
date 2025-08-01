@@ -1,19 +1,19 @@
-package ink.ziip.championshipscore.api.schedule.skywars;
+package ink.ziip.championshipscore.api.schedule.parkourwarrior;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.BaseSingleGameSchedule;
 
-public class SkyWarsScheduleManager extends BaseSingleGameSchedule {
+public class ParkourWarriorScheduleManager extends BaseSingleGameSchedule {
 
-    public SkyWarsScheduleManager(ChampionshipsCore championshipsCore, SkyWarsScheduleHandler handler) {
-        super(championshipsCore, handler, GameTypeEnum.SkyWars);
+    public ParkourWarriorScheduleManager(ChampionshipsCore championshipsCore, ParkourWarriorScheduleHandler handler) {
+        super(championshipsCore, handler, GameTypeEnum.ParkourWarrior);
         handler.setScheduleManager(this);
     }
 
     @Override
     public String getArea() {
-        return "area2";
+        return "area1";
     }
 
     @Override
@@ -23,6 +23,6 @@ public class SkyWarsScheduleManager extends BaseSingleGameSchedule {
 
     @Override
     public String getSpecCommand() {
-        return "cc spectate skywars " + getArea();
+        return "cc spectate parkourwarrior " + getArea();
     }
 }

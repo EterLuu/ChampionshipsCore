@@ -34,10 +34,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GameManager extends BaseManager {
@@ -225,6 +222,43 @@ public class GameManager extends BaseManager {
                 for (ChampionshipTeam championshipTeam : championshipTeams) {
                     teamStatus.put(championshipTeam, hotyCodyDuskyTeamArea);
                     addPlayerStatusByTeam(championshipTeam, hotyCodyDuskyTeamArea);
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        return false;
+    }
+
+    public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, List<UUID> players) {
+        for (UUID playerUUID : players) {
+            if (playerStatus.containsKey(playerUUID))
+                return false;
+        }
+
+        Set<ChampionshipTeam> championshipTeams = new HashSet<>();
+        for (UUID playerUUID : players) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(playerUUID);
+            if (championshipTeam == null)
+                return false;
+
+            championshipTeams.add(championshipTeam);
+        }
+
+        HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = hotyCodyDuskyManager.getArea(area);
+        if (hotyCodyDuskyTeamArea == null)
+            return false;
+
+        for (UUID playerUUID : players) {
+            removeSpectator(playerUUID);
+        }
+
+        if (gameTypeEnum == GameTypeEnum.HotyCodyDusky) {
+            if (hotyCodyDuskyTeamArea.tryStartGame(championshipTeams.stream().toList(), players)) {
+                for (UUID playerUUID : players) {
+                    playerStatus.put(playerUUID, hotyCodyDuskyTeamArea);
                 }
                 return true;
             }

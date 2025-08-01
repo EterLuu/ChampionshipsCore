@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
+import org.bukkit.Keyed;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -66,6 +67,12 @@ public class PlayerListener extends BaseListener {
         PlayerManager playerManager = ChampionshipsCore.getInstance().getPlayerManager();
         playerManager.getPlayer(player).updatePlayer();
         playerManager.updatePlayer(player);
+
+        plugin.getServer().recipeIterator().forEachRemaining(recipe -> {
+            if (recipe instanceof Keyed keyedRecipe) {
+                player.discoverRecipe(keyedRecipe.getKey());
+            }
+        });
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

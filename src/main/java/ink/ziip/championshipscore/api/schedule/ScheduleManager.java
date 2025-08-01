@@ -4,7 +4,10 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.battlebox.BattleBoxScheduleManager;
+import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskyScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourtag.ParkourTagScheduleManager;
+import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleManager;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleManager;
 import ink.ziip.championshipscore.api.schedule.snowball.SnowballScheduleHandler;
@@ -36,6 +39,10 @@ public class ScheduleManager extends BaseManager {
     private BattleBoxScheduleManager battleBoxScheduleManager;
     @Getter
     private ParkourTagScheduleManager parkourTagScheduleManager;
+    @Getter
+    private ParkourWarriorScheduleManager parkourWarriorScheduleManager;
+    @Getter
+    private HotyCodyDuskyScheduleManager hotyCodyDuskyScheduleManager;
     private int timer;
 
     public ScheduleManager(ChampionshipsCore championshipsCore) {
@@ -51,6 +58,8 @@ public class ScheduleManager extends BaseManager {
         tgttosScheduleManager = new TGTTOSScheduleManager(plugin, new TGTTOSScheduleHandler(plugin));
         battleBoxScheduleManager = new BattleBoxScheduleManager(plugin);
         parkourTagScheduleManager = new ParkourTagScheduleManager(plugin);
+        parkourWarriorScheduleManager = new ParkourWarriorScheduleManager(plugin, new ParkourWarriorScheduleHandler(plugin));
+        hotyCodyDuskyScheduleManager = new HotyCodyDuskyScheduleManager(plugin);
 
         snowballScheduleManager.load();
         skyWarsScheduleManager.load();
@@ -58,6 +67,8 @@ public class ScheduleManager extends BaseManager {
         tgttosScheduleManager.load();
         battleBoxScheduleManager.load();
         parkourTagScheduleManager.load();
+        parkourWarriorScheduleManager.load();
+        hotyCodyDuskyScheduleManager.load();
     }
 
     @Override
@@ -68,6 +79,8 @@ public class ScheduleManager extends BaseManager {
         tgttosScheduleManager.unload();
         battleBoxScheduleManager.unload();
         parkourTagScheduleManager.unload();
+        parkourWarriorScheduleManager.unload();
+        hotyCodyDuskyScheduleManager.unload();
     }
 
     public void addRound(GameTypeEnum gameTypeEnum) {
@@ -130,6 +143,8 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.SNOWBALL);
         if (gameTypeEnum == GameTypeEnum.SkyWars)
             return Utils.getMessage(ScheduleMessageConfig.SKY_WARS);
+        if (gameTypeEnum == GameTypeEnum.ParkourWarrior)
+            return Utils.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR);
 
         return "";
     }
@@ -143,6 +158,8 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.SNOWBALL_POINTS);
         if (gameTypeEnum == GameTypeEnum.SkyWars)
             return Utils.getMessage(ScheduleMessageConfig.SKY_WARS_POINTS);
+        if (gameTypeEnum == GameTypeEnum.ParkourWarrior)
+            return Utils.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR_POINTS);
 
         return "";
     }

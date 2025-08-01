@@ -69,6 +69,18 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "dragon-egg-carnival-points")
     public static List<String> DRAGON_EGG_CARNIVAL_POINTS;
 
+    @ConfigOption(path = "parkour-warrior")
+    public static List<String> PARKOUR_WARRIOR;
+
+    @ConfigOption(path = "parkour-warrior-points")
+    public static List<String> PARKOUR_WARRIOR_POINTS;
+
+    @ConfigOption(path = "hot-cody-dusky")
+    public static List<String> HOTY_CODY_DUSKY;
+
+    @ConfigOption(path = "hot-cody-dusky-points")
+    public static List<String> HOTY_CODY_DUSKY_POINTS;
+
     @ConfigOption(path = "next-round-soon")
     public static List<String> NEXT_ROUND_SOON;
 

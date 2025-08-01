@@ -11,11 +11,9 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -47,6 +45,19 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (ChampionshipTeam championshipTeam : championshipTeams) {
             gamePlayers.addAll(championshipTeam.getMembers());
         }
+
+        startGamePreparation();
+        return true;
+    }
+
+    public boolean tryStartGame(List<ChampionshipTeam> championshipTeams, List<UUID> players) {
+        if (getGameStageEnum() != GameStageEnum.WAITING)
+            return false;
+        setGameStageEnum(GameStageEnum.LOADING);
+
+        gameTeams.addAll(championshipTeams);
+
+        gamePlayers.addAll(players);
 
         startGamePreparation();
         return true;
@@ -87,29 +98,30 @@ public abstract class BaseSingleTeamArea extends BaseArea {
 
     @Override
     public void sendMessageToAllGamePlayers(String message) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.sendMessageToAll(message);
+        for (UUID uuid : gamePlayers) {
+            ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
+            championshipPlayer.sendMessage(message);
+        }
         sendMessageToAllSpectators(message);
     }
 
     @Override
     public void sendActionBarToAllGamePlayers(String message) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.sendActionBarToAll(message);
+        for (UUID uuid : gamePlayers) {
+            ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
+            championshipPlayer.sendActionBar(message);
+        }
         sendActionBarToAllSpectators(message);
     }
 
     @Override
     public void sendActionBarToAllGameSpectators(String message) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            for (ChampionshipPlayer championshipPlayer : championshipTeam.getOnlineCCPlayers()) {
-                Player player = championshipPlayer.getPlayer();
-                if (player != null) {
-                    if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                        championshipPlayer.sendActionBar(message);
-                    }
-                }
+        for (UUID uuid : gamePlayers) {
+            ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
+            if (championshipPlayer.getPlayer() != null && championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
+                championshipPlayer.sendActionBar(message);
             }
+        }
         sendActionBarToAllSpectators(message);
     }
 
@@ -121,67 +133,98 @@ public abstract class BaseSingleTeamArea extends BaseArea {
 
     @Override
     public void sendTitleToAllGamePlayers(String title, String subTitle) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.sendTitleToAll(title, subTitle);
+        for (UUID uuid : gamePlayers) {
+            ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
+            championshipPlayer.sendTitle(title, subTitle);
+        }
         sendTitleToAllSpectators(title, subTitle);
     }
 
     @Override
     public void changeLevelForAllGamePlayers(int level) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.changeLevelForAll(Math.abs(level));
+        for (UUID uuid : gamePlayers) {
+            ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
+            championshipPlayer.setLevel(Math.abs(level));
+        }
         changeLevelToAllSpectators(level);
     }
 
     @Override
     public void changeGameModelForAllGamePlayers(GameMode gameMode) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.setGameModeForAllPlayers(gameMode);
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(gameMode);
+                });
+            }
+        }
     }
 
     @Override
     public void setHealthForAllGamePlayers(double health) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.setHealthForAllPlayers(health);
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
+                player.setHealth(health);
+        }
     }
 
     @Override
     public void setFoodLevelForAllGamePlayers(int level) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.setFoodLevelForAllPlayers(level);
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
+                player.setFoodLevel(level);
+        }
     }
 
 
     @Override
     public void teleportAllPlayers(Location location) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.teleportAllPlayers(location);
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
+                player.teleport(location);
+        }
     }
 
     @Override
     public void clearEffectsForAllGamePlayers() {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.clearEffectsForAllPlayers();
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
+                for (PotionEffect potionEffect : player.getActivePotionEffects())
+                    player.removePotionEffect(potionEffect.getType());
+        }
     }
 
     @Override
     public void cleanInventoryForAllGamePlayers() {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.cleanInventoryForAllPlayers();
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
+                player.getInventory().clear();
+        }
     }
 
     @Override
     public void playSoundToAllGamePlayers(Sound sound, float volume, float pitch) {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            championshipTeam.playSoundToAllPlayers(sound, volume, pitch);
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
+                player.playSound(player.getLocation(), sound, volume, pitch);
+        }
     }
 
     @Override
     public void revokeAllGamePlayersAdvancements() {
-        for (ChampionshipTeam championshipTeam : gameTeams)
-            for (Player player : championshipTeam.getOnlinePlayers()) {
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
                 Utils.revokeAllAdvancements(player);
-            }
+        }
     }
 
     @Override

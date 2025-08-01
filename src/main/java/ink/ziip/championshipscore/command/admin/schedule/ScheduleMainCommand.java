@@ -13,5 +13,7 @@ public class ScheduleMainCommand extends BaseMainCommand {
         addSubCommand(new ScheduleBattleBoxSubCommand());
         addSubCommand(new ScheduleParkourTagSubCommand());
         addSubCommand(new ScheduleResetSubCommand());
+        addSubCommand(new ScheduleParkourWarriorSubCommand());
+        addSubCommand(new ScheduleHotyCodyDuskySubCommand());
     }
 }
