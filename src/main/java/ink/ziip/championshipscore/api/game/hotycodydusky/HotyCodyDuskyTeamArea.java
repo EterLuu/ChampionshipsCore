@@ -233,12 +233,12 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         return gameTeams.size() - i;
     }
 
-    protected synchronized boolean changeCodyHolder(String type, UUID holder) {
-        if (type.equals("select")) {
+    protected synchronized boolean changeCodyHolder(int type, UUID holder) {
+        if (type == 1) {
             codyHolder = null;
             selectCodyHolder();
         }
-        if (type.equals("change")) {
+        if (type == 2) {
             return changeCodyHolder(holder);
         }
 
@@ -254,6 +254,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         alivePlayers.removeAll(deathPlayer);
 
         if (alivePlayers.isEmpty()) {
+            codyHolder = null;
             return;
         }
 
@@ -313,7 +314,10 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         }
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             try {
-                ChampionshipsCore.getInstance().getGlowingEntities().setGlowing(player, onlinePlayer);
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+                if (championshipTeam != null) {
+                    ChampionshipsCore.getInstance().getGlowingEntities().setGlowing(player, onlinePlayer, championshipTeam.getTeam().getColor());
+                }
             } catch (ReflectiveOperationException ignored) {
             }
         }
@@ -337,7 +341,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         playerDeadTimes.put(uuid, System.currentTimeMillis());
 
         if (uuid == codyHolder) {
-            changeCodyHolder("select", null);
+            changeCodyHolder(1, null);
         }
         addPointsToAllSurvivePlayers();
     }
