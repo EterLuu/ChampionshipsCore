@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
+import jdk.jshell.execution.Util;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -45,7 +46,7 @@ public class BattleBoxArea extends BaseTeamArea {
 
     @Override
     public void resetArea() {
-        resetRegionBlocks();
+        resetRegionBlocks(Material.WHITE_WOOL);
         cleanDroppedItems();
         playerWeaponKit.clear();
 
@@ -76,6 +77,8 @@ public class BattleBoxArea extends BaseTeamArea {
             leftChampionshipTeam.teleportAllPlayers(getGameConfig().getLeftPreSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
+        changeCenterWool();
+
         resetPlayerHealthFoodEffectLevelInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_START_PREPARATION);
@@ -95,8 +98,25 @@ public class BattleBoxArea extends BaseTeamArea {
         }, 0, 20L);
     }
 
+    private void changeCenterWool() {
+        Material material = Material.WHITE_WOOL;
+        if (leftChampionshipTeam != null && rightChampionshipTeam != null && leftChampionshipTeam.getWool().getType() != material && rightChampionshipTeam.getWool().getType() != material) {
+            resetRegionBlocks(material);
+            return;
+        }
+
+        for (String color : Utils.getColorNames()) {
+            if (leftChampionshipTeam != null && rightChampionshipTeam != null && !color.equalsIgnoreCase(rightChampionshipTeam.getColorName()) && !color.equalsIgnoreCase(leftChampionshipTeam.getColorName())) {
+                material = Material.getMaterial(color.toUpperCase() + "_WOOL");
+                if (material != null) {
+                    break;
+                }
+            }
+        }
+        resetRegionBlocks(material);
+    }
+
     protected void startGameProgress() {
-        resetRegionBlocks();
         summonPotions();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_START_SOON);
@@ -530,7 +550,7 @@ public class BattleBoxArea extends BaseTeamArea {
         return blockCount;
     }
 
-    private void resetRegionBlocks() {
+    private void resetRegionBlocks(Material material) {
         World world = getGameConfig().getLeftPreSpawnPoint().getWorld();
         Vector pos1 = getGameConfig().getWoolPos1();
         Vector pos2 = getGameConfig().getWoolPos2();
@@ -549,9 +569,9 @@ public class BattleBoxArea extends BaseTeamArea {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
                     Block block = world.getBlockAt(x, y, z);
-                    block.setType(Material.BLACK_WOOL);
+                    block.setType(material);
                     BlockState blockState = block.getState();
-                    blockState.setType(Material.BLACK_WOOL);
+                    blockState.setType(material);
                     blockState.update();
                 }
             }
