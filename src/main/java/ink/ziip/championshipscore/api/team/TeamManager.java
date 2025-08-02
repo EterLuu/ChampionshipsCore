@@ -64,6 +64,9 @@ public class TeamManager extends BaseManager {
     public boolean addTeam(@NotNull String name, @NotNull String colorName, @NotNull String colorCode) {
         synchronized (cachedTeams) {
             if (cachedTeams.containsKey(name)) return false;
+
+            if (Arrays.stream(Utils.getColorNames()).noneMatch(colorName::equalsIgnoreCase)) return false;
+
             int id = teamDaoImpl.addTeam(name, colorName, colorCode);
 
             Team team = scoreboard.getTeam(colorName);
@@ -227,5 +230,15 @@ public class TeamManager extends BaseManager {
         }
 
         return Utils.translateColorCodes(stringBuilder.toString());
+    }
+
+    public void setCollision(boolean collision) {
+        for (Team team : scoreboard.getTeams()) {
+            if (collision) {
+                team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.ALWAYS);
+            } else {
+                team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+            }
+        }
     }
 }

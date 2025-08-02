@@ -383,6 +383,8 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
             }
         }
 
+        plugin.getTeamManager().setCollision(false);
+
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_WARRIOR_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.PARKOUR_WARRIOR_START_PREPARATION_TITLE, MessageConfig.PARKOUR_WARRIOR_START_PREPARATION_SUBTITLE);
 
@@ -541,6 +543,8 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         calculatePoints();
 
         cleanInventoryForAllGamePlayers();
+
+        plugin.getTeamManager().setCollision(true);
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_WARRIOR_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.PARKOUR_WARRIOR_GAME_END_TITLE, MessageConfig.PARKOUR_WARRIOR_GAME_END_SUBTITLE);
