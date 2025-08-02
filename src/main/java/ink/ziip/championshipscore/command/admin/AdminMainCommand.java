@@ -11,5 +11,6 @@ public class AdminMainCommand extends BaseMainCommand {
         addSubCommand(new ScheduleMainCommand());
         addSubCommand(new AdminSetMaxPlayerSubCommand());
         addSubCommand(new AdminSudoSubCommand());
+        addSubCommand(new AdminVoteMainCommand());
     }
 }
