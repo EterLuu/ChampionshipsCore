@@ -233,19 +233,25 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         return gameTeams.size() - i;
     }
 
-    protected synchronized boolean changeCodyHolder(int type, UUID holder) {
-        if (type == 1) {
-            codyHolder = null;
-            selectCodyHolder();
-        }
-        if (type == 2) {
-            return changeCodyHolder(holder);
-        }
+    protected boolean changeCodyHolder(int type, UUID holder) {
+        synchronized (this) {
+            if (type == 1) {
+                codyHolder = null;
+                selectCodyHolder();
+            }
+            if (type == 2) {
+                return changeCodyHolder(holder);
+            }
 
-        return false;
+            return false;
+        }
     }
 
     private void selectCodyHolder() {
+        if (gameStageEnum != GameStageEnum.PROGRESS) {
+            return;
+        }
+
         if (gamePlayers.isEmpty()) {
             return;
         }
@@ -275,6 +281,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             if (codyHolder.equals(to)) {
                 return false;
             }
+            playerCodyChangeTimes.put(codyHolder, System.currentTimeMillis());
         }
         if (codyHolder == null)
             sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_PLAYER_RECEIVED_CODY.replace("%player%", playerManager.getPlayerName(to)));
@@ -289,12 +296,8 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             Player codyHolderPlayer = Bukkit.getPlayer(codyHolder);
             if (codyHolderPlayer != null) {
                 codyHolderPlayer.getInventory().clear();
-            }
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                try {
-                    ChampionshipsCore.getInstance().getGlowingEntities().unsetGlowing(codyHolderPlayer, player);
-                } catch (ReflectiveOperationException ignored) {
-                }
+                for (PotionEffect potionEffect : codyHolderPlayer.getActivePotionEffects())
+                    codyHolderPlayer.removePotionEffect(potionEffect.getType());
             }
         }
         codyHolder = uuid;
@@ -309,19 +312,12 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             inventory.setItemInMainHand(cody.clone());
             inventory.setItemInOffHand(cody.clone());
 
-            PotionEffect potionEffect = new PotionEffect(PotionEffectType.BLINDNESS, 30, 0, false, false);
-            player.addPotionEffect(potionEffect);
+            PotionEffect potionEffectBlindness = new PotionEffect(PotionEffectType.BLINDNESS, 30, 0, false, false);
+            PotionEffect potionEffectGlowing = new PotionEffect(PotionEffectType.GLOWING, getTimer() * 20, 0, false, false);
+            player.addPotionEffect(potionEffectBlindness);
+            player.addPotionEffect(potionEffectGlowing);
         }
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            try {
-                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
-                if (championshipTeam != null) {
-                    ChampionshipsCore.getInstance().getGlowingEntities().setGlowing(player, onlinePlayer, championshipTeam.getTeam().getColor());
-                }
-            } catch (ReflectiveOperationException ignored) {
-            }
-        }
-        playerCodyChangeTimes.put(uuid, System.currentTimeMillis());
+
     }
 
     private void addDeathPlayer(Player player) {
@@ -340,7 +336,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         deathPlayer.add(uuid);
         playerDeadTimes.put(uuid, System.currentTimeMillis());
 
-        if (uuid == codyHolder) {
+        if (uuid.equals(codyHolder)) {
             changeCodyHolder(1, null);
         }
         addPointsToAllSurvivePlayers();
