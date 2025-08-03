@@ -23,6 +23,9 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.TranslatableComponent;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -40,6 +43,9 @@ public class BingoManager extends BaseManager {
     private BingoHandler bingoHandler;
     private BingoSession session;
     private int timer;
+    private BukkitTask pvpTask;
+    @Getter
+    private boolean allowPvP = false;
 
     public BingoManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -85,6 +91,8 @@ public class BingoManager extends BaseManager {
                 championshipTeam.setGameModeForAllPlayers(GameMode.SPECTATOR);
             }
 
+            allowPvP = false;
+
             timer = 20;
             plugin.getServer().getScheduler().runTaskTimer(plugin, (task) -> {
                 if (timer == 15) {
@@ -118,8 +126,21 @@ public class BingoManager extends BaseManager {
                     Utils.changeLevelForAllPlayers(0);
                     for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                         championshipTeam.setGameModeForAllPlayers(GameMode.SURVIVAL);
+
+                        for (UUID uuid : championshipTeam.getMembers()) {
+                            Player player = Bukkit.getPlayer(uuid);
+                            if (player != null) {
+                                PotionEffect potionEffectGlowing = new PotionEffect(PotionEffectType.GLOWING, 606 * 20, 0, false, false);
+                                player.addPotionEffect(potionEffectGlowing);
+                            }
+                        }
                     }
                     session.startGame();
+
+                    pvpTask = plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                        allowPvP = true;
+                        Utils.sendMessageToAllPlayers(MessageConfig.BINGO_PVP_START);
+                    }, 3720L);
                     task.cancel();
                 }
 
@@ -133,16 +154,14 @@ public class BingoManager extends BaseManager {
     protected void endGame() {
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
             for (Player player : championshipTeam.getOnlinePlayers()) {
-                for (Player member : championshipTeam.getOnlinePlayers()) {
-                    if (!player.equals(member)) {
-                        try {
-                            plugin.getGlowingEntities().unsetGlowing(member, player);
-                        } catch (Exception ignored) {
-                        }
-                    }
-                }
+                for (PotionEffect potionEffect : player.getActivePotionEffects())
+                    player.removePotionEffect(potionEffect.getType());
             }
         }
+        if (pvpTask != null)
+            pvpTask.cancel();
+
+        allowPvP = false;
 
         Utils.sendMessageToAllPlayers(MessageConfig.BINGO_GAME_END);
 
@@ -254,6 +273,7 @@ public class BingoManager extends BaseManager {
                 TextComponent textComponent = new TextComponent(messages[0]);
                 textComponent.addExtra(new TranslatableComponent(gameTask.material().getItemTranslationKey()));
                 textComponent.addExtra(messages[1]);
+                gameTask.setVoided(true);
 
                 Utils.sendMessageToAllSpigotPlayers(textComponent);
             }

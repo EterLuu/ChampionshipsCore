@@ -340,14 +340,19 @@ public class SkyWarsHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPortalCreate(PortalCreateEvent event) {
+        if (event.getReason() != PortalCreateEvent.CreateReason.FIRE) {
+            return;
+        }
         if (skyWarsArea.notInArea(event.getBlocks().getFirst().getLocation())) {
             return;
         }
         if (event.getEntity() != null && event.getEntity() instanceof Player player) {
-            if (!skyWarsArea.notAreaPlayer(player)) {
-                if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                    skyWarsArea.sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_PLAYER_CREATE_PORTAL.replace("%player%", player.getName()));
-                }
+            if (skyWarsArea.notAreaPlayer(player)) {
+                return;
+            }
+
+            if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+                skyWarsArea.sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_PLAYER_CREATE_PORTAL.replace("%player%", player.getName()));
             }
         }
 

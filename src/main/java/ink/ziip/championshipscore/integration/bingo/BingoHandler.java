@@ -11,9 +11,14 @@ import io.github.steaf23.bingoreloaded.event.BingoTaskProgressCompletedEvent;
 import io.github.steaf23.bingoreloaded.player.BingoParticipant;
 import io.github.steaf23.bingoreloaded.tasks.GameTask;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 
 public class BingoHandler extends BaseListener {
     private final BingoManager bingoManager;
@@ -33,19 +38,6 @@ public class BingoHandler extends BaseListener {
                 if (world != null) {
                     world.setTime(9000);
                 }
-
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    for (Player player : championshipTeam.getOnlinePlayers()) {
-                        for (Player member : championshipTeam.getOnlinePlayers()) {
-                            if (!player.equals(member)) {
-                                try {
-                                    plugin.getGlowingEntities().setGlowing(member, player, Utils.toChatColor(championshipTeam.getColorName()));
-                                } catch (Exception ignored) {
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     }
@@ -59,7 +51,7 @@ public class BingoHandler extends BaseListener {
 
     @EventHandler
     public void onBingoTaskCompleted(BingoTaskProgressCompletedEvent event) {
-        if(event.getTask().getCompletedByPlayer().isEmpty())
+        if (event.getTask().getCompletedByPlayer().isEmpty())
             return;
         BingoParticipant participant = event.getTask().getCompletedByPlayer().get();
         GameTask gameTask = event.getTask();
@@ -71,5 +63,46 @@ public class BingoHandler extends BaseListener {
                 }
             }
         }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerInteraction(PlayerInteractEvent event) {
+        if (!bingoManager.isStarted())
+            return;
+
+        Player player = event.getPlayer();
+        if (!player.getWorld().getName().startsWith("bingo")) {
+            return;
+        }
+
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            if (event.getItem() != null && event.getItem().getType() == Material.COMPASS) {
+                ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+                if (team == null) {
+                    return;
+                }
+                BingoTeleportationMenu.openBingoTeleportationMenu(player, team.getMembers().stream().toList());
+            }
+
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerDamagedByPlayer(EntityDamageByEntityEvent event) {
+        if (!bingoManager.isStarted())
+            return;
+
+        if (!(event.getDamager() instanceof Player damager))
+            return;
+
+        if (!damager.getWorld().getName().startsWith("bingo")) {
+            return;
+        }
+
+        if (!(event.getEntity() instanceof Player player))
+            return;
+
+        if (!bingoManager.isAllowPvP())
+            event.setCancelled(true);
     }
 }

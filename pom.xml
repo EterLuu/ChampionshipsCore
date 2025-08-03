@@ -53,6 +53,7 @@
                             <include>org.mariadb.jdbc:*</include>
                             <include>com.zaxxer:*</include>
                             <include>fr.skytasul:*</include>
+                            <include>com.github.stefvanschie.inventoryframework:*</include>
                         </includes>
                     </artifactSet>
                     <relocations>
@@ -71,6 +72,10 @@
                         <relocation>
                             <pattern>fr.skytasul</pattern>
                             <shadedPattern>ink.ziip.championshipscore.libs.fr.skytasul</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.github.stefvanschie.inventoryframework</pattern>
+                            <shadedPattern>ink.ziip.championshipscore.libs.inventoryframework</shadedPattern>
                         </relocation>
                     </relocations>
                     <filters>
@@ -213,21 +218,30 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>6.3.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <version>3.3.2</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>9.3.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>fr.skytasul</groupId>
             <artifactId>glowingentities</artifactId>
             <version>1.4.6</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.stefvanschie.inventoryframework</groupId>
+            <artifactId>IF</artifactId>
+            <version>0.11.3</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

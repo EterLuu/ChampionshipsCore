@@ -154,6 +154,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "bingo.rank-board-info")
     public static String BINGO_RANK_BOARD_INFO;
 
+    @ConfigOption(path = "bingo.teleportation-menu")
+    public static String BINGO_TELEPORTATION_MENU;
+
+    @ConfigOption(path = "bingo.pvp-start")
+    public static String BINGO_PVP_START;
+
     // Spectator
     @ConfigOption(path = "spectator.is-player")
     public static String SPECTATOR_IS_PLAYER;

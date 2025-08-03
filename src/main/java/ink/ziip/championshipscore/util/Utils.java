@@ -120,6 +120,14 @@ public class Utils {
         }
     }
 
+    public static String[] getColorNames() {
+        return new String[]{
+                "white", "orange", "magenta", "light_blue", "yellow", "lime",
+                "pink", "gray", "light_gray", "cyan", "purple", "blue",
+                "brown", "green", "red", "black"
+        };
+    }
+
     public static net.md_5.bungee.api.ChatColor toBungeeChatColor(@NotNull String color) {
         if (color.equalsIgnoreCase("green"))
             return net.md_5.bungee.api.ChatColor.DARK_GREEN;
