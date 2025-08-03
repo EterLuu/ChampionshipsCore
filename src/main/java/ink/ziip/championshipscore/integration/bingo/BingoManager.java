@@ -154,6 +154,7 @@ public class BingoManager extends BaseManager {
     protected void endGame() {
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
             for (Player player : championshipTeam.getOnlinePlayers()) {
+                player.setHealth(20);
                 for (PotionEffect potionEffect : player.getActivePotionEffects())
                     player.removePotionEffect(potionEffect.getType());
             }
@@ -196,6 +197,11 @@ public class BingoManager extends BaseManager {
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 championshipTeam.teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+                championshipTeam.setGameModeForAllPlayers(GameMode.ADVENTURE);
+            }
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.teleport(CCConfig.LOBBY_LOCATION);
+                player.setGameMode(GameMode.ADVENTURE);
             }
         }, 50L);
 

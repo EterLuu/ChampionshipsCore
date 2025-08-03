@@ -75,7 +75,8 @@ public class BingoHandler extends BaseListener {
             return;
         }
 
-        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+        if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK
+                || event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
             if (event.getItem() != null && event.getItem().getType() == Material.COMPASS) {
                 ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
                 if (team == null) {
