@@ -9,7 +9,6 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
-import jdk.jshell.execution.Util;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -458,7 +457,7 @@ public class BattleBoxArea extends BaseTeamArea {
         ItemStack sword = new ItemStack(Material.STONE_SWORD);
         ItemStack bow = new ItemStack(Material.BOW);
         ItemStack arrows = new ItemStack(Material.ARROW);
-        arrows.setAmount(10);
+        arrows.setAmount(8);
 
         inventory.addItem(sword);
         inventory.addItem(bow);
@@ -466,24 +465,29 @@ public class BattleBoxArea extends BaseTeamArea {
 
         BBWeaponKitEnum type = getPlayerWeaponKit(player);
 
-        if (type == BBWeaponKitEnum.PUNCH) {
-            ItemStack crossbow = new ItemStack(Material.CROSSBOW);
-            crossbow.addEnchantment(Enchantment.QUICK_CHARGE, 1);
-            inventory.addItem(crossbow);
+        if (type == BBWeaponKitEnum.ARMOR) {
+            ItemStack item = new ItemStack(Material.GOLDEN_LEGGINGS);
+            inventory.addItem(item);
         }
-        if (type == BBWeaponKitEnum.KNOCK_BACK) {
-            ItemStack axe = new ItemStack(Material.WOODEN_AXE);
-            axe.addUnsafeEnchantment(Enchantment.KNOCKBACK, 1);
-            inventory.addItem(axe);
-        }
-        if (type == BBWeaponKitEnum.JUMP) {
+        if (type == BBWeaponKitEnum.SPEED) {
             ItemStack potion = new ItemStack(Material.POTION);
             PotionMeta potionMeta = (PotionMeta) potion.getItemMeta();
             if (potionMeta != null) {
-                PotionEffect potionEffect = new PotionEffect(PotionEffectType.JUMP_BOOST, 600, 1);
+                PotionEffect potionEffect = new PotionEffect(PotionEffectType.SPEED, 600, 1);
                 potionMeta.addCustomEffect(potionEffect, true);
                 potion.setItemMeta(potionMeta);
             }
+            inventory.addItem(potion);
+        }
+        if (type == BBWeaponKitEnum.HEAL) {
+            ItemStack potion = new ItemStack(Material.SPLASH_POTION);
+            PotionMeta potionMeta = (PotionMeta) potion.getItemMeta();
+            if (potionMeta != null) {
+                PotionEffect potionEffect = new PotionEffect(PotionEffectType.INSTANT_HEALTH, 600, 2);
+                potionMeta.addCustomEffect(potionEffect, true);
+                potion.setItemMeta(potionMeta);
+            }
+            potion.setAmount(2);
             inventory.addItem(potion);
         }
         if (type == BBWeaponKitEnum.PULL) {

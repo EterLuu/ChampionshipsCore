@@ -103,9 +103,9 @@ battlebox:
   action-bar-count-down: "#24abff游戏剩余时间：#ff6b26%time%#24abff。"
   show-points: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6%team%#ffe0d6得分：%team_points%，#ffe0d6%rival% #ffe0d6得分：%rival_points%。"
   kits:
-    punch: "弩击！"
-    knock-back: "击退！"
-    jump: "跳跃！"
+    armor: "武装！"
+    speed: "加速！"
+    heal: "治愈！"
     pull: "拉扯！"
 parkourtag:
   start-preparation: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #24abff请#ff6b26&l双方队伍#24abff选择#8a70ff&l追击者#24abff。"

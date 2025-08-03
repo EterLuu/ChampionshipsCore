@@ -304,14 +304,14 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "battlebox.show-points")
     public static String BATTLE_BOX_SHOW_POINTS;
 
-    @ConfigOption(path = "battlebox.kits.punch")
-    public static String BATTLE_BOX_KITS_PUNCH;
+    @ConfigOption(path = "battlebox.kits.armor")
+    public static String BATTLE_BOX_KITS_ARMOR;
 
-    @ConfigOption(path = "battlebox.kits.knock-back")
-    public static String BATTLE_BOX_KITS_KNOCK_BACK;
+    @ConfigOption(path = "battlebox.kits.speed")
+    public static String BATTLE_BOX_KITS_SPEED;
 
-    @ConfigOption(path = "battlebox.kits.jump")
-    public static String BATTLE_BOX_KITS_JUMP;
+    @ConfigOption(path = "battlebox.kits.heal")
+    public static String BATTLE_BOX_KITS_HEAL;
 
     @ConfigOption(path = "battlebox.kits.pull")
     public static String BATTLE_BOX_KITS_PULL;

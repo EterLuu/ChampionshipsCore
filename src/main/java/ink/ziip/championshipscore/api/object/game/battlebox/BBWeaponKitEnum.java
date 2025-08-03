@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import java.util.concurrent.ThreadLocalRandom;
 
 public enum BBWeaponKitEnum {
-    PUNCH, KNOCK_BACK, JUMP, PULL;
+    ARMOR, SPEED, HEAL, PULL;
 
     public static BBWeaponKitEnum getRandomEnum() {
         return values()[ThreadLocalRandom.current().nextInt(values().length)];
@@ -13,12 +13,12 @@ public enum BBWeaponKitEnum {
 
     @Override
     public String toString() {
-        if (this == PUNCH)
-            return MessageConfig.BATTLE_BOX_KITS_PUNCH;
-        if (this == KNOCK_BACK)
-            return MessageConfig.BATTLE_BOX_KITS_KNOCK_BACK;
-        if (this == JUMP)
-            return MessageConfig.BATTLE_BOX_KITS_JUMP;
+        if (this == ARMOR)
+            return MessageConfig.BATTLE_BOX_KITS_ARMOR;
+        if (this == SPEED)
+            return MessageConfig.BATTLE_BOX_KITS_SPEED;
+        if (this == HEAL)
+            return MessageConfig.BATTLE_BOX_KITS_HEAL;
         if (this == PULL)
             return MessageConfig.BATTLE_BOX_KITS_PULL;
         return "Unknown";

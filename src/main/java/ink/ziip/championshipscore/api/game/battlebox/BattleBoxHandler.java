@@ -73,14 +73,14 @@ public class BattleBoxHandler extends BaseListener {
     @Nullable
     private static BBWeaponKitEnum getBbWeaponKitEnum(String kit) {
         BBWeaponKitEnum type = null;
-        if (kit.contains(BBWeaponKitEnum.PUNCH.toString())) {
-            type = BBWeaponKitEnum.PUNCH;
+        if (kit.contains(BBWeaponKitEnum.ARMOR.toString())) {
+            type = BBWeaponKitEnum.ARMOR;
         }
-        if (kit.contains(BBWeaponKitEnum.KNOCK_BACK.toString())) {
-            type = BBWeaponKitEnum.KNOCK_BACK;
+        if (kit.contains(BBWeaponKitEnum.SPEED.toString())) {
+            type = BBWeaponKitEnum.SPEED;
         }
-        if (kit.contains(BBWeaponKitEnum.JUMP.toString())) {
-            type = BBWeaponKitEnum.JUMP;
+        if (kit.contains(BBWeaponKitEnum.HEAL.toString())) {
+            type = BBWeaponKitEnum.HEAL;
         }
         if (kit.contains(BBWeaponKitEnum.PULL.toString())) {
             type = BBWeaponKitEnum.PULL;
