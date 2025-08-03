@@ -82,6 +82,12 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
 
     protected void calculatePoints() {
         List<Map.Entry<UUID, Long>> sortedEntries = new ArrayList<>(playerDeadTimes.entrySet());
+        Long time = System.currentTimeMillis();
+        List<UUID> alivePlayers = new ArrayList<>(gamePlayers);
+        alivePlayers.removeAll(deathPlayer);
+        for (UUID uuid : alivePlayers) {
+            playerDeadTimes.put(uuid, time);
+        }
         sortedEntries.sort((entry1, entry2) -> Long.compare(entry2.getValue(), entry1.getValue()));
         int rank = 0;
         long curTime = System.currentTimeMillis();
