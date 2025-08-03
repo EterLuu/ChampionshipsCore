@@ -256,6 +256,13 @@ public abstract class BaseArea {
         }
     }
 
+    public void changeGameModeForAllSpectators(@NotNull GameMode gameMode) {
+        for (Player player : getOnlineSpectators()) {
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> player.setGameMode(gameMode));
+        }
+    }
+
     public void addSpectator(@NotNull Player player) {
         spectators.add(player.getUniqueId());
         player.teleport(getSpectatorSpawnLocation());

@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -31,6 +32,9 @@ public abstract class BaseSingleTeamArea extends BaseArea {
     @Override
     public void resetBaseArea() {
         resetArea();
+        teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+        teleportAllSpectators(CCConfig.LOBBY_LOCATION);
+        changeGameModeForAllSpectators(GameMode.ADVENTURE);
         gameTeams.clear();
         gamePlayers.clear();
     }
