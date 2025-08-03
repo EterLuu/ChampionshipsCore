@@ -28,7 +28,8 @@ public class SpectateSubCommand extends BaseSubCommand {
             "snowball",
             "dragoneggcarnival",
             "acc",
-            "parkourwarrior"
+            "parkourwarrior",
+            "hotycodydusky"
     };
 
     public SpectateSubCommand() {
@@ -122,6 +123,13 @@ public class SpectateSubCommand extends BaseSubCommand {
                     baseArea = parkourWarriorArea;
                 }
             }
+            if (args[0].equals("hotycodydusky")) {
+                gameTypeEnum = GameTypeEnum.HotyCodyDusky;
+                BaseArea hotyCodyDuskyTeamArea = plugin.getGameManager().getHotyCodyDuskyManager().getArea(args[1]);
+                if (hotyCodyDuskyTeamArea != null) {
+                    baseArea = hotyCodyDuskyTeamArea;
+                }
+            }
             if (gameTypeEnum != null && baseArea != null) {
                 if (plugin.getGameManager().spectateArea((Player) sender, baseArea)) {
                     String message = MessageConfig.SPECTATOR_JOIN_AREA
@@ -186,6 +194,11 @@ public class SpectateSubCommand extends BaseSubCommand {
             }
             if (args[0].equals("parkourwarrior")) {
                 List<String> returnList = plugin.getGameManager().getParkourWarriorManager().getAreaNameList();
+                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
+                return returnList;
+            }
+            if (args[0].equals("hotycodydusky")) {
+                List<String> returnList = plugin.getGameManager().getHotyCodyDuskyManager().getAreaNameList();
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
                 return returnList;
             }

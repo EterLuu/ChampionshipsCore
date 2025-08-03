@@ -27,7 +27,7 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
             }
             if (args[0].equalsIgnoreCase("spectators")) {
                 for (Player online : Bukkit.getOnlinePlayers()) {
-                    if (plugin.getTeamManager().getTeamByPlayer(player.getUniqueId()) == null) {
+                    if (plugin.getTeamManager().getTeamByPlayer(online.getUniqueId()) == null) {
                         online.teleport(player.getLocation());
                     }
                 }
