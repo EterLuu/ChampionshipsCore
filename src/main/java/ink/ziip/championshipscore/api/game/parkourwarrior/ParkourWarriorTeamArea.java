@@ -153,6 +153,8 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                     player.getInventory().remove(Material.BARRIER);
                 }
 
+                player.playSound(player, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 0);
+
                 return;
             }
         }
@@ -190,6 +192,8 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                     playerLastSubCheckpoint.put(uuid, index);
                     playerLastCheckpoint.put(uuid, checkpoint);
 
+                    player.playSound(player, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 0);
+
                     sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_ARRIVED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName())
                             .replace("%sub-checkpoint%", String.valueOf(i)));
                     player.sendMessage(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_ARRIVED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName())
@@ -217,10 +221,14 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                             sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED.replace("%player%", player.getName()));
                             player.sendMessage(MessageConfig.PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED.replace("%player%", player.getName()));
 
+                            player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 1, 0);
+
                             return;
                         }
                         sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_COMPLETED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName()));
                         player.sendMessage(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_COMPLETED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName()));
+
+                        player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
 
                         player.getInventory().remove(Material.BARRIER);
                     }

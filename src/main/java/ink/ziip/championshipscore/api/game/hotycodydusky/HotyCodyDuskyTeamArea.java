@@ -302,6 +302,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             Player codyHolderPlayer = Bukkit.getPlayer(codyHolder);
             if (codyHolderPlayer != null) {
                 codyHolderPlayer.getInventory().clear();
+                codyHolderPlayer.playSound(codyHolderPlayer, Sound.ENTITY_ENDER_PEARL_THROW, 1, 0);
                 for (PotionEffect potionEffect : codyHolderPlayer.getActivePotionEffects())
                     codyHolderPlayer.removePotionEffect(potionEffect.getType());
             }
@@ -322,6 +323,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             PotionEffect potionEffectGlowing = new PotionEffect(PotionEffectType.GLOWING, getTimer() * 20, 0, false, false);
             player.addPotionEffect(potionEffectBlindness);
             player.addPotionEffect(potionEffectGlowing);
+            player.playSound(player, Sound.ENTITY_ENDERMAN_HURT, 1, 0);
         }
 
     }
