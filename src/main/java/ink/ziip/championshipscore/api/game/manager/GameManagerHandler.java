@@ -17,6 +17,8 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.UUID;
+
 public class GameManagerHandler extends BaseListener {
 
     protected GameManagerHandler(ChampionshipsCore plugin) {
@@ -26,9 +28,10 @@ public class GameManagerHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
+        UUID uuid = player.getUniqueId();
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
         if (championshipTeam != null) {
-            BaseArea baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
+            BaseArea baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
             if (baseArea instanceof BingoTeamArea) {
                 plugin.getServer().getScheduler().runTask(plugin, () -> event.getEntity().spigot().respawn());
                 return;
@@ -59,10 +62,11 @@ public class GameManagerHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
         BaseArea baseArea = null;
         if (championshipTeam != null) {
-            baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
+            baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
             if (baseArea != null) {
                 baseArea.handlePlayerJoin(event);
                 return;
@@ -87,10 +91,11 @@ public class GameManagerHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
         BaseArea baseArea = null;
         if (championshipTeam != null) {
-            baseArea = plugin.getGameManager().getBaseTeamArea(championshipTeam);
+            baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
             if (baseArea != null) {
                 baseArea.handlePlayerQuit(event);
             }

@@ -438,8 +438,8 @@ public class GameManager extends BaseManager {
     }
 
     @Nullable
-    public BaseArea getBaseTeamArea(ChampionshipTeam championshipTeam) {
-        return teamStatus.get(championshipTeam);
+    public BaseArea getBasePlayerArea(UUID uuid) {
+        return playerStatus.get(uuid);
     }
 
     @Nullable
