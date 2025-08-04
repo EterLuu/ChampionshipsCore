@@ -75,10 +75,10 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkour-warrior-points")
     public static List<String> PARKOUR_WARRIOR_POINTS;
 
-    @ConfigOption(path = "hot-cody-dusky")
+    @ConfigOption(path = "hoty-cody-dusky")
     public static List<String> HOTY_CODY_DUSKY;
 
-    @ConfigOption(path = "hot-cody-dusky-points")
+    @ConfigOption(path = "hoty-cody-dusky-points")
     public static List<String> HOTY_CODY_DUSKY_POINTS;
 
     @ConfigOption(path = "next-round-soon")
