@@ -229,22 +229,22 @@ public class BingoManager extends BaseManager {
 
     private int getPoints(int num) {
         if (num == 1) {
-            return 60;
-        }
-        if (num == 2) {
             return 50;
         }
-        if (num == 3) {
+        if (num == 2) {
             return 40;
         }
-        if (num == 4) {
+        if (num == 3) {
             return 30;
         }
-        if (num == 5) {
+        if (num == 4) {
             return 20;
         }
+        if (num == 5) {
+            return 10;
+        }
 
-        return 10;
+        return 5;
     }
 
     public void handleTeamCompleteTask(GameTask gameTask, ChampionshipTeam championshipTeam, Player player) {
@@ -274,15 +274,14 @@ public class BingoManager extends BaseManager {
 
                 Utils.sendMessageToAllSpigotPlayers(textComponent);
             }
-            if (num == 4) {
-                String[] messages = MessageConfig.BINGO_TASK_EXPIRED.split("%task%");
-                TextComponent textComponent = new TextComponent(messages[0]);
-                textComponent.addExtra(new TranslatableComponent(gameTask.material().getItemTranslationKey()));
-                textComponent.addExtra(messages[1]);
-                gameTask.setVoided(true);
-
-                Utils.sendMessageToAllSpigotPlayers(textComponent);
-            }
+//            if (num == 4) {
+//                String[] messages = MessageConfig.BINGO_TASK_EXPIRED.split("%task%");
+//                TextComponent textComponent = new TextComponent(messages[0]);
+//                textComponent.addExtra(new TranslatableComponent(gameTask.material().getItemTranslationKey()));
+//                textComponent.addExtra(messages[1]);
+//
+//                Utils.sendMessageToAllSpigotPlayers(textComponent);
+//            }
         }
     }
 
