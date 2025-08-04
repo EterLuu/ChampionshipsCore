@@ -150,17 +150,20 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     protected void startGameProgress() {
         teleportAllTeamPlayersToSpawnPoints();
 
+        int offlinePlayers = 0;
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) {
                 deathPlayer.add(uuid);
+                offlinePlayers++;
             }
         }
+        addPointsToAllSurvivePlayers(offlinePlayers * 10);
 
         for (UUID uuid : deathPlayer) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
             if (championshipTeam != null) {
-                addTeamDeathPlayer(championshipTeam);
+                addTeamDeathPlayer(championshipTeam, false);
                 plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + getGameConfig().getAreaName() + ", " + "Player " + playerManager.getPlayerName(uuid) + " (" + uuid + "), not online, added to death players");
             }
         }
@@ -404,14 +407,15 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         addPlayerPointsToDatabase();
     }
 
-    private void addTeamDeathPlayer(ChampionshipTeam championshipTeam) {
+    private void addTeamDeathPlayer(ChampionshipTeam championshipTeam, boolean addedPoints) {
         teamDeathPlayers.put(championshipTeam, teamDeathPlayers.getOrDefault(championshipTeam, 0) + 1);
         Integer deathPlayer = teamDeathPlayers.get(championshipTeam);
         plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + getGameConfig().getAreaName() + ", " + "Added team " + championshipTeam.getName() + " death player, now: " + deathPlayer);
         if (deathPlayer != null) {
             if (deathPlayer == championshipTeam.getMembers().size()) {
                 sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_WHOLE_TEAM_WAS_KILLED.replace("%team%", championshipTeam.getColoredName()));
-                addPointsToAllSurvivePlayers();
+                if (addedPoints)
+                    addPointsToAllSurvivePlayers(2);
             }
         }
     }
@@ -427,15 +431,15 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         deathPlayer.add(uuid);
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (championshipTeam != null) {
-            addTeamDeathPlayer(championshipTeam);
+            addTeamDeathPlayer(championshipTeam, true);
         }
-        addPointsToAllSurvivePlayers();
+        addPointsToAllSurvivePlayers(10);
     }
 
-    private void addPointsToAllSurvivePlayers() {
+    private void addPointsToAllSurvivePlayers(int points) {
         for (UUID uuid : gamePlayers) {
             if (!deathPlayer.contains(uuid)) {
-                addPlayerPoints(uuid, 2);
+                addPlayerPoints(uuid, points);
             }
         }
     }
