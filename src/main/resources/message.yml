@@ -47,6 +47,7 @@ bingo:
   game-start: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6游戏开始！积分系统启动。"
   game-end: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6游戏结束！积分结算中。"
   task-complete: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6队伍%team%#ffe0d6完成了#fff566%task%#ffe0d6，获得积分#24abff%points%。"
+  line-complete: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ffe0d6队伍%team%#ffe0d6完成了#fff566连线#ffe0d6，获得积分#24abff%points%。"
   task-expired: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ff6b26&l警告&6%task%#ff6b26&l将不再得到额外积分（只积10分）。"
   rank-board-bar: "#ffe0d6========== #fff566Bingo #ffe0d6=========="
   rank-board-info: "&r  #ffe0d6%team_rank%. #24abff%team%#696969（&6%team_point%#696969）"

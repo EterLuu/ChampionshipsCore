@@ -26,6 +26,11 @@ public class BingoTeamArea extends BaseSingleTeamArea {
     }
 
     @Override
+    public boolean notInArea(Location location) {
+        return false;
+    }
+
+    @Override
     public void endGame() {
 
     }
@@ -37,7 +42,7 @@ public class BingoTeamArea extends BaseSingleTeamArea {
 
     @Override
     public BaseGameConfig getGameConfig() {
-        return null;
+        return gameConfig;
     }
 
     @Override

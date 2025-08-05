@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.game.advancementcc.AdvancementCCManager;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
+import ink.ziip.championshipscore.api.game.bingo.BingoSpectatorAreaManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoTeamArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
@@ -62,6 +63,8 @@ public class GameManager extends BaseManager {
     private final ParkourWarriorManager parkourWarriorManager;
     @Getter
     private final HotyCodyDuskyManager hotyCodyDuskyManager;
+    @Getter
+    private final BingoSpectatorAreaManager bingoSpectatorManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -76,6 +79,7 @@ public class GameManager extends BaseManager {
         advancementCCManager = new AdvancementCCManager(plugin);
         parkourWarriorManager = new ParkourWarriorManager(plugin);
         hotyCodyDuskyManager = new HotyCodyDuskyManager(plugin);
+        bingoSpectatorManager = new BingoSpectatorAreaManager(plugin);
     }
 
     @Override
@@ -90,6 +94,7 @@ public class GameManager extends BaseManager {
         advancementCCManager.load();
         parkourWarriorManager.load();
         hotyCodyDuskyManager.load();
+        bingoSpectatorManager.load();
 
         gameManagerHandler.register();
     }
@@ -106,6 +111,7 @@ public class GameManager extends BaseManager {
         advancementCCManager.unload();
         parkourWarriorManager.unload();
         hotyCodyDuskyManager.unload();
+        bingoSpectatorManager.unload();
 
         gameManagerHandler.unRegister();
     }

@@ -37,6 +37,7 @@ public class BingoManager extends BaseManager {
     private final Map<Material, List<ChampionshipTeam>> bingoTaskCompleteLists = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, Integer> teamPoints = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> playerPoints = new ConcurrentHashMap<>();
+    private final HashMap<ChampionshipTeam, Set<Integer>> teamCompleteLines = new HashMap<>();
     @Getter
     @Setter
     private boolean started = false;
@@ -216,6 +217,7 @@ public class BingoManager extends BaseManager {
 
         teamPoints.clear();
         playerPoints.clear();
+        teamCompleteLines.clear();
         bingoTaskCompleteLists.clear();
         started = false;
 
@@ -247,7 +249,34 @@ public class BingoManager extends BaseManager {
         return 5;
     }
 
-    public void handleTeamCompleteTask(GameTask gameTask, ChampionshipTeam championshipTeam, Player player) {
+    public synchronized void handleTeamCompleteLine(ChampionshipTeam championshipTeam, Set<Integer> completedLines) {
+        Set<Integer> alreadyCompletedLines = teamCompleteLines.getOrDefault(championshipTeam, new HashSet<>());
+        for (int completedNum : completedLines) {
+            if (!alreadyCompletedLines.contains(completedNum)) {
+                String message = MessageConfig.BINGO_LINE_COMPLETE.replace("%team%", championshipTeam.getColoredName());
+
+                int number = alreadyCompletedLines.size();
+                if (number <= 3) {
+                    for (UUID uuid : championshipTeam.getMembers()) {
+                        playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 50);
+                        addPointsToTeam(championshipTeam, 200);
+                    }
+                    message = message.replace("%points%", "200");
+                } else {
+                    for (UUID uuid : championshipTeam.getMembers()) {
+                        playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 25);
+                        addPointsToTeam(championshipTeam, 100);
+                    }
+                    message = message.replace("%points%", "100");
+                }
+                alreadyCompletedLines.add(completedNum);
+                teamCompleteLines.putIfAbsent(championshipTeam, alreadyCompletedLines);
+                Utils.sendMessageToAllPlayers(message);
+            }
+        }
+    }
+
+    public synchronized void handleTeamCompleteTask(GameTask gameTask, ChampionshipTeam championshipTeam, Player player) {
         List<ChampionshipTeam> completeChampionshipTeams = getCompleteTeams(gameTask);
         int num = completeChampionshipTeams.size();
         if (championshipTeam != null) {

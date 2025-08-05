@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
+import io.github.steaf23.bingoreloaded.event.BingoCardCompleteLineEvent;
 import io.github.steaf23.bingoreloaded.event.BingoEndedEvent;
 import io.github.steaf23.bingoreloaded.event.BingoStartedEvent;
 import io.github.steaf23.bingoreloaded.event.BingoTaskProgressCompletedEvent;
@@ -86,6 +87,23 @@ public class BingoHandler extends BaseListener {
             }
 
         }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onCompleteCardLine(BingoCardCompleteLineEvent event) {
+        if (!bingoManager.isStarted())
+            return;
+
+        BingoParticipant participant = event.getTeam().getMembers().stream().toList().getFirst();
+        if (participant.sessionPlayer().isEmpty())
+            return;
+
+        Player player = participant.sessionPlayer().get();
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        if (championshipTeam == null)
+            return;
+
+        bingoManager.handleTeamCompleteLine(championshipTeam, event.getCompletedLines());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

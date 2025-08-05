@@ -145,6 +145,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "bingo.task-complete")
     public static String BINGO_TASK_COMPLETE;
 
+    @ConfigOption(path = "bingo.line-complete")
+    public static String BINGO_LINE_COMPLETE;
+
     @ConfigOption(path = "bingo.task-expired")
     public static String BINGO_TASK_EXPIRED;
 

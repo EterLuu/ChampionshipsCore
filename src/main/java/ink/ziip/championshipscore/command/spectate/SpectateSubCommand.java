@@ -29,7 +29,8 @@ public class SpectateSubCommand extends BaseSubCommand {
             "dragoneggcarnival",
             "acc",
             "parkourwarrior",
-            "hotycodydusky"
+            "hotycodydusky",
+            "bingo"
     };
 
     public SpectateSubCommand() {
@@ -130,6 +131,13 @@ public class SpectateSubCommand extends BaseSubCommand {
                     baseArea = hotyCodyDuskyTeamArea;
                 }
             }
+            if (args[0].equals("bingo")) {
+                gameTypeEnum = GameTypeEnum.Bingo;
+                BaseArea bingoTeamArea = plugin.getGameManager().getBingoSpectatorManager().getArea(args[1]);
+                if (bingoTeamArea != null) {
+                    baseArea = bingoTeamArea;
+                }
+            }
             if (gameTypeEnum != null && baseArea != null) {
                 if (plugin.getGameManager().spectateArea((Player) sender, baseArea)) {
                     String message = MessageConfig.SPECTATOR_JOIN_AREA
@@ -199,6 +207,11 @@ public class SpectateSubCommand extends BaseSubCommand {
             }
             if (args[0].equals("hotycodydusky")) {
                 List<String> returnList = plugin.getGameManager().getHotyCodyDuskyManager().getAreaNameList();
+                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
+                return returnList;
+            }
+            if (args[0].equals("bingo")) {
+                List<String> returnList = plugin.getGameManager().getBingoSpectatorManager().getAreaNameList();
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
                 return returnList;
             }
