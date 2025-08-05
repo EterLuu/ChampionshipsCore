@@ -13,11 +13,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 
 @Getter
 @Setter
@@ -140,4 +142,24 @@ public class ParkourWarriorHandler extends BaseListener {
             parkourWarriorTeamArea.hideAndShowPlayer(player);
         }
     }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEntityEnterNetherPortal(EntityPortalEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            if (parkourWarriorTeamArea.notInArea(player.getLocation())) {
+                return;
+            }
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerEnterNetherPortal(PlayerPortalEvent event) {
+        Player player = event.getPlayer();
+        if (parkourWarriorTeamArea.notInArea(player.getLocation())) {
+            return;
+        }
+        event.setCancelled(true);
+    }
+
 }

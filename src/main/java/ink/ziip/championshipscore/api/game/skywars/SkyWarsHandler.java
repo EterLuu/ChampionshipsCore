@@ -358,4 +358,23 @@ public class SkyWarsHandler extends BaseListener {
 
         event.setCancelled(true);
     }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEntityEnterNetherPortal(EntityPortalEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            if (skyWarsArea.notInArea(player.getLocation())) {
+                return;
+            }
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerEnterNetherPortal(PlayerPortalEvent event) {
+        Player player = event.getPlayer();
+        if (skyWarsArea.notInArea(player.getLocation())) {
+            return;
+        }
+        event.setCancelled(true);
+    }
 }
