@@ -18,6 +18,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -521,19 +522,23 @@ public class ParkourTagArea extends BaseTeamArea {
     }
 
     public void giveItemToAllGamePlayers() {
-//        ItemStack chaserItem = new ItemStack(Material.FEATHER);
-//        ItemMeta chaserItemMeta = chaserItem.getItemMeta();
-//        if (chaserItemMeta != null) {
-//            chaserItemMeta.setDisplayName(MessageConfig.PARKOUR_TAG_KITS_FEATHER);
-//        }
-//        chaserItem.setItemMeta(chaserItemMeta);
-//
-//        Player left = Bukkit.getPlayer(leftAreaChaser);
-//        Player right = Bukkit.getPlayer(rightAreaChaser);
-//        if (left != null)
-//            left.getInventory().setItem(0, chaserItem.clone());
-//        if (right != null)
-//            right.getInventory().setItem(0, chaserItem.clone());
+        ItemStack chaserItem = new ItemStack(Material.POTION);
+        PotionMeta chaserItemMeta = (PotionMeta) chaserItem.getItemMeta();
+        if (chaserItemMeta != null) {
+            PotionEffect potionEffect = new PotionEffect(PotionEffectType.SPEED, 600, 2);
+            chaserItemMeta.addCustomEffect(potionEffect, true);
+            chaserItemMeta.setDisplayName(MessageConfig.PARKOUR_TAG_KITS_FEATHER);
+            chaserItem.setItemMeta(chaserItemMeta);
+        }
+
+        chaserItem.setItemMeta(chaserItemMeta);
+
+        Player left = Bukkit.getPlayer(leftAreaChaser);
+        Player right = Bukkit.getPlayer(rightAreaChaser);
+        if (left != null)
+            left.getInventory().setItem(0, chaserItem.clone());
+        if (right != null)
+            right.getInventory().setItem(0, chaserItem.clone());
 
         ItemStack clock = new ItemStack(Material.CLOCK);
         ItemMeta clockItemMeta = clock.getItemMeta();

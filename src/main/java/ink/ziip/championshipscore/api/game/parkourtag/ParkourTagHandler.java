@@ -192,40 +192,40 @@ public class ParkourTagHandler extends BaseListener {
         event.setCancelled(true);
     }
 
-//    @EventHandler(priority = EventPriority.LOWEST)
-//    public void onPlayerUseFeather(PlayerInteractEvent event) {
-//        Player player = event.getPlayer();
-//        if (parkourTagArea.notAreaPlayer(player)) {
-//            return;
-//        }
-//
-//        Location location = player.getLocation();
-//        if (parkourTagArea.notInArea(location)) {
-//            return;
-//        }
-//
-//        if (parkourTagArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
-//            return;
-//        }
-//
-//        if (parkourTagArea.getTimer() >= parkourTagArea.getGameConfig().getTimer()) {
-//            event.setCancelled(true);
-//            return;
-//        }
-//
-//        if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
-//            ItemStack mainHandItem = player.getInventory().getItemInMainHand();
-//            ItemStack offHandItem = player.getInventory().getItemInOffHand();
-//            if (mainHandItem.getType() == Material.FEATHER || offHandItem.getType() == Material.FEATHER) {
-//                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 2));
-//                player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_FEATHER);
-//                mainHandItem.setAmount(0);
-//                offHandItem.setAmount(0);
-//            }
-//        }
-//
-//        event.setCancelled(true);
-//    }
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerUseFeather(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (parkourTagArea.notAreaPlayer(player)) {
+            return;
+        }
+
+        Location location = player.getLocation();
+        if (parkourTagArea.notInArea(location)) {
+            return;
+        }
+
+        if (parkourTagArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
+            return;
+        }
+
+        if (parkourTagArea.getTimer() >= parkourTagArea.getGameConfig().getTimer()) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
+            ItemStack mainHandItem = player.getInventory().getItemInMainHand();
+            ItemStack offHandItem = player.getInventory().getItemInOffHand();
+            if (mainHandItem.getType() == Material.POTION || offHandItem.getType() == Material.POTION) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 2));
+                player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_FEATHER);
+                mainHandItem.setAmount(0);
+                offHandItem.setAmount(0);
+            }
+        }
+
+        event.setCancelled(true);
+    }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamagedByPlayer(EntityDamageByEntityEvent event) {
