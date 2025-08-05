@@ -142,6 +142,10 @@ public class BattleBoxHandler extends BaseListener {
                 return;
             }
 
+            if (event.getRegainReason() == EntityRegainHealthEvent.RegainReason.MAGIC_REGEN || event.getRegainReason() == EntityRegainHealthEvent.RegainReason.MAGIC) {
+                return;
+            }
+
             event.setCancelled(true);
         }
     }
