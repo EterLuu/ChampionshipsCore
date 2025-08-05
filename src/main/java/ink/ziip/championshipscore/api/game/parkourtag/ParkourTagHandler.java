@@ -217,7 +217,7 @@ public class ParkourTagHandler extends BaseListener {
             ItemStack mainHandItem = player.getInventory().getItemInMainHand();
             ItemStack offHandItem = player.getInventory().getItemInOffHand();
             if (mainHandItem.getType() == Material.POTION || offHandItem.getType() == Material.POTION) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 2));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 120, 1));
                 player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_FEATHER);
                 mainHandItem.setAmount(0);
                 offHandItem.setAmount(0);
