@@ -121,6 +121,8 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
+        giveElytraToAllPlayers();
+
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_START_PREPARATION_TITLE, MessageConfig.TNT_RUN_START_PREPARATION_SUBTITLE);
 
@@ -159,9 +161,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         }
         addPointsToAllSurvivePlayers(offlinePlayers * 4);
 
-        resetPlayerHealthFoodEffectLevelInventory();
-
-        giveElytraToAllPlayers();
+//        resetPlayerHealthFoodEffectLevelInventory();
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_GAME_START);
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_GAME_START_TITLE, MessageConfig.TNT_RUN_GAME_START_SUBTITLE);
@@ -264,7 +264,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
             if (player != null && !deathPlayer.contains(uuid)) {
                 ItemStack elytra = new ItemStack(Material.ELYTRA);
                 elytra.addEnchantment(Enchantment.UNBREAKING, 1);
-                player.getInventory().setChestplate(elytra);
+                player.getInventory().addItem(elytra);
             }
         }
     }
