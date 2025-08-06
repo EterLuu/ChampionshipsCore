@@ -134,7 +134,7 @@ parkourtag:
     escaper: "#ededed你是逃脱者：逃离追击者！"
   kits:
     clock: "#24abff显示追击者轮廓三秒。"
-    feather: "#8a70ff获得5秒的速度III效果。"
+    feather: "#8a70ff获得6秒的速度II效果。"
     use-clock: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed显示追击者轮廓三秒。"
     use-clock-failed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ff6b26未到使用时间。"
     use-feather: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed获得5秒的速度III效果。"
