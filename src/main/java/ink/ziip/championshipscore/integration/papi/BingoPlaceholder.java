@@ -31,6 +31,20 @@ public class BingoPlaceholder extends BasePlaceholder {
 
             return String.valueOf(bingoManager.getMaterialPoints(material));
         }
+        if (params.startsWith("area_rank_1_")) {
+            try {
+                return plugin.getBingoManager().getCurrentRank().getFirst() + " | " + plugin.getBingoManager().getCurrentRank().get(1);
+            } catch (Exception ignored) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+        }
+        if (params.startsWith("area_rank_2_")) {
+            try {
+                return plugin.getBingoManager().getCurrentRank().get(2) + " | " + plugin.getBingoManager().getCurrentRank().get(3);
+            } catch (Exception ignored) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+        }
 
         // Placeholder is unknown by the Expansion
         return null;

@@ -38,6 +38,7 @@ public class BingoManager extends BaseManager {
     private final Map<ChampionshipTeam, Integer> teamPoints = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> playerPoints = new ConcurrentHashMap<>();
     private final HashMap<ChampionshipTeam, Set<Integer>> teamCompleteLines = new HashMap<>();
+    private List<String> teamRank = new ArrayList<>();
     @Getter
     @Setter
     private boolean started = false;
@@ -152,6 +153,29 @@ public class BingoManager extends BaseManager {
         }
     }
 
+    public List<String> getCurrentRank() {
+        calculateCurrentRank();
+        return teamRank;
+    }
+
+    private void calculateCurrentRank() {
+        List<String> rank = new ArrayList<>();
+
+        ArrayList<Map.Entry<ChampionshipTeam, Integer>> list;
+        list = new ArrayList<>(teamPoints.entrySet());
+        list.sort(Map.Entry.comparingByValue());
+
+        Collections.reverse(list);
+
+        for (Map.Entry<ChampionshipTeam, Integer> entry : list) {
+            String content = entry.getKey().getName() + ": " + entry.getValue();
+
+            rank.add(content);
+        }
+
+        teamRank = rank;
+    }
+
     protected void endGame() {
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
             for (Player player : championshipTeam.getOnlinePlayers()) {
@@ -215,6 +239,7 @@ public class BingoManager extends BaseManager {
             Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
         }, 70L);
 
+        teamRank.clear();
         teamPoints.clear();
         playerPoints.clear();
         teamCompleteLines.clear();
