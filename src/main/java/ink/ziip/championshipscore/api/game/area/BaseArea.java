@@ -372,7 +372,11 @@ public abstract class BaseArea {
     }
 
     public boolean notInArea(Location location) {
-        return !location.toVector().isInAABB(getGameConfig().getAreaPos1(), getGameConfig().getAreaPos2());
+        if (location.getWorld() != null && getSpectatorSpawnLocation().getWorld() != null && location.getWorld().getName().equals(getSpectatorSpawnLocation().getWorld().getName())) {
+            return !location.toVector().isInAABB(getGameConfig().getAreaPos1(), getGameConfig().getAreaPos2());
+        }
+
+        return false;
     }
 
     public abstract Location getSpectatorSpawnLocation();

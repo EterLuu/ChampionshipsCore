@@ -8,10 +8,12 @@ import lombok.Setter;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -113,6 +115,30 @@ public class ParkourWarriorHandler extends BaseListener {
             }
 
             Location location = player.getLocation();
+            if (parkourWarriorTeamArea.notInArea(location)) {
+                return;
+            }
+
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerDamageCrystalEvent(EntityDamageEvent event) {
+        if (event.getEntity() instanceof EnderCrystal enderCrystal) {
+            Location location = enderCrystal.getLocation();
+            if (parkourWarriorTeamArea.notInArea(location)) {
+                return;
+            }
+
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerDamageCrystalEvent2(EntityDamageByEntityEvent event) {
+        if (event.getEntity() instanceof EnderCrystal enderCrystal) {
+            Location location = enderCrystal.getLocation();
             if (parkourWarriorTeamArea.notInArea(location)) {
                 return;
             }
