@@ -12,5 +12,6 @@ public class AdminMainCommand extends BaseMainCommand {
         addSubCommand(new AdminSetMaxPlayerSubCommand());
         addSubCommand(new AdminSudoSubCommand());
         addSubCommand(new AdminTeleportationSubCommand());
+        addSubCommand(new AdminReloadSubCommand());
     }
 }

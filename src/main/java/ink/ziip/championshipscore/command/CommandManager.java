@@ -35,6 +35,7 @@ public class CommandManager extends BaseManager {
         mainCommand.addSubCommand(new RankMainCommand());
         mainCommand.addSubCommand(new AdminMainCommand());
         mainCommand.addSubCommand(new VoteSubCommand());
+        mainCommand.addSubCommand(new SpawnSubCommand());
 
         if (this.corePluginCommand != null) {
             this.corePluginCommand.setExecutor(mainCommand);
