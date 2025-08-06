@@ -180,8 +180,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
                     addTeamDeathPlayer(championshipTeam);
                     plugin.getLogger().log(Level.INFO, GameTypeEnum.HotyCodyDusky + ", " + getGameConfig().getAreaName() + ", " + "Player " + playerManager.getPlayerName(uuid) + " (" + uuid + "), not online, added to death players");
                 }
-            }
-            else {
+            } else {
                 addBossBarPlayer("escaper", player);
             }
         }
@@ -339,6 +338,8 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             player.addPotionEffect(potionEffectGlowing);
             player.addPotionEffect(potionEffectSpeed);
             player.addPotionEffect(potionEffectHaste);
+            player.setMaxHealth(24);
+            player.setHealth(player.getHealth() + 4);
             player.playSound(player, Sound.ENTITY_ENDERMAN_HURT, 1, 1);
             removeBossBarPlayer("escaper", player);
             addBossBarPlayer("chaser", player);
@@ -347,6 +348,9 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
     }
 
     private void addDeathPlayer(Player player) {
+        removeBossBarPlayer("chaser", player);
+        removeBossBarPlayer("escaper", player);
+
         UUID uuid = player.getUniqueId();
         addDeathPlayer(uuid);
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
