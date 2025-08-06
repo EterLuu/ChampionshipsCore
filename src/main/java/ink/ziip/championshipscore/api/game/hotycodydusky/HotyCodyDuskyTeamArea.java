@@ -10,6 +10,8 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import org.bukkit.*;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -147,6 +149,9 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
+        createBossBar("chaser", MessageConfig.HOTY_CODY_DUSKY_BOSS_BAR_CHASER, BarColor.RED, BarStyle.SOLID);
+        createBossBar("escaper", MessageConfig.HOTY_CODY_DUSKY_BOSS_BAR_ESCAPER, BarColor.WHITE, BarStyle.SOLID);
+
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_TITLE, MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE);
 
@@ -175,6 +180,9 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
                     addTeamDeathPlayer(championshipTeam);
                     plugin.getLogger().log(Level.INFO, GameTypeEnum.HotyCodyDusky + ", " + getGameConfig().getAreaName() + ", " + "Player " + playerManager.getPlayerName(uuid) + " (" + uuid + "), not online, added to death players");
                 }
+            }
+            else {
+                addBossBarPlayer("escaper", player);
             }
         }
 
@@ -306,6 +314,9 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
                 codyHolderPlayer.playSound(codyHolderPlayer, Sound.ENTITY_ENDER_PEARL_THROW, 1, 0);
                 for (PotionEffect potionEffect : codyHolderPlayer.getActivePotionEffects())
                     codyHolderPlayer.removePotionEffect(potionEffect.getType());
+
+                removeBossBarPlayer("chaser", codyHolderPlayer);
+                addBossBarPlayer("escaper", codyHolderPlayer);
             }
         }
         codyHolder = uuid;
@@ -329,6 +340,8 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             player.addPotionEffect(potionEffectSpeed);
             player.addPotionEffect(potionEffectHaste);
             player.playSound(player, Sound.ENTITY_ENDERMAN_HURT, 1, 1);
+            removeBossBarPlayer("escaper", player);
+            addBossBarPlayer("chaser", player);
         }
 
     }

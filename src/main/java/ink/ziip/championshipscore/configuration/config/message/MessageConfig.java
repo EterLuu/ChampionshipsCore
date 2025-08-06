@@ -395,6 +395,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourtag.kits.use-feather")
     public static String PARKOUR_TAG_KITS_USE_FEATHER;
 
+    @ConfigOption(path = "parkourtag.boss-bar.chaser")
+    public static String PARKOUR_TAG_BOSS_BAR_CHASER;
+
+    @ConfigOption(path = "parkourtag.boss-bar.escaper")
+    public static String PARKOUR_TAG_BOSS_BAR_ESCAPER;
+
     // SkyWars
     @ConfigOption(path = "skywars.start-preparation")
     public static String SKY_WARS_START_PREPARATION;
@@ -895,6 +901,12 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "hotycodydusky.whole-team-was-killed")
     public static String HOTY_CODY_DUSKY_WHOLE_TEAM_WAS_KILLED;
+
+    @ConfigOption(path = "hotycodydusky.boss-bar.chaser")
+    public static String HOTY_CODY_DUSKY_BOSS_BAR_CHASER;
+
+    @ConfigOption(path = "hotycodydusky.boss-bar.escaper")
+    public static String HOTY_CODY_DUSKY_BOSS_BAR_ESCAPER;
 
 
     // Placeholder

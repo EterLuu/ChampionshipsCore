@@ -129,6 +129,9 @@ parkourtag:
   action-bar-count-down: "#24abff游戏剩余时间：#ff6b26%time%#24abff。"
   show-points: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%team%#ededed得分：%team_points%，#ededed%rival% #ededed得分：%rival_points%。"
   whole-team-was-killed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%team%#696969全队阵亡。"
+  boss-bar:
+    chaser: "#ededed你是追击者：追击逃脱者！"
+    escaper: "#ededed你是逃脱者：逃离追击者！"
   kits:
     clock: "#24abff显示追击者轮廓三秒。"
     feather: "#8a70ff获得5秒的速度III效果。"
@@ -308,6 +311,9 @@ hotycodydusky:
   player-received-cody: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%player%#ff6b26收到了鳕鱼。"
   player-leave: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%player%#ff6b26离开游戏。"
   whole-team-was-killed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%team%#696969全队阵亡。"
+  boss-bar:
+    chaser: "#ededed速速转移鳕鱼！"
+    escaper: "#ededed避免收到鳕鱼！"
 placeholder:
   none: "无"
   spectator: "旁观"

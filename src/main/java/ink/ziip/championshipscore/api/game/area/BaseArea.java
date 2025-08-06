@@ -10,7 +10,11 @@ import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.*;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -33,6 +37,7 @@ public abstract class BaseArea {
     protected final BukkitScheduler scheduler;
     protected final BaseAreaHandler baseAreaHandler;
     protected final PlayerManager playerManager;
+    protected final Map<String, BossBar> bossBars = new ConcurrentHashMap<>();
 
     protected BaseListener gameHandler;
     protected BaseGameConfig gameConfig;
@@ -58,6 +63,8 @@ public abstract class BaseArea {
     public void resetGame() {
         resetBaseArea();
         playerPoints.clear();
+        new HashSet<>(bossBars.keySet()).forEach(name -> bossBars.get(name).removeAll());
+        bossBars.clear();
 
         setGameStageEnum(GameStageEnum.WAITING);
     }
@@ -216,6 +223,65 @@ public abstract class BaseArea {
             plugin.getWorldManager().deleteWorldFiles(source);
 
             loadMap(environment);
+        }
+    }
+
+    private BossBar createBossBar(String title, BarColor color, BarStyle style) {
+        return Bukkit.createBossBar(Utils.translateColorCodes(title), color, style);
+    }
+
+    public BossBar createBossBar(String name, String title, BarColor color, BarStyle style) {
+        BossBar bossBar = createBossBar(title, color, style);
+        if (bossBars.containsKey(name))
+            removeBossBar(name);
+
+        bossBars.put(name, bossBar);
+        return bossBar;
+    }
+
+    public void removeBossBar(String name) {
+        BossBar bossBar = bossBars.remove(name);
+        if (bossBar != null) {
+            bossBar.removeAll();
+        }
+    }
+
+    public void setBossBar(String name, String title) {
+        BossBar bossBar = bossBars.get(name);
+        if (bossBar != null) {
+            bossBar.setTitle(Utils.translateColorCodes(title));
+        } else {
+            plugin.getLogger().log(Level.WARNING, "BossBar with name " + name + " does not exist.");
+        }
+    }
+
+    public void addBossBarPlayer(String name, Player player) {
+        if (player == null)
+            return;
+
+        BossBar bossBar = bossBars.get(name);
+        if (bossBar != null) {
+            bossBar.addPlayer(player);
+        } else {
+            plugin.getLogger().log(Level.WARNING, "BossBar with name " + name + " does not exist.");
+        }
+    }
+
+    public void removeBossBarPlayer(String name, Player player) {
+        BossBar bossBar = bossBars.get(name);
+        if (bossBar != null) {
+            bossBar.removePlayer(player);
+        } else {
+            plugin.getLogger().log(Level.WARNING, "BossBar with name " + name + " does not exist.");
+        }
+    }
+
+    public void setBossBarProgress(String name, double progress) {
+        BossBar bossBar = bossBars.get(name);
+        if (bossBar != null) {
+            bossBar.setProgress(progress);
+        } else {
+            plugin.getLogger().log(Level.WARNING, "BossBar with name " + name + " does not exist.");
         }
     }
 

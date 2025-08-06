@@ -12,6 +12,8 @@ import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.*;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -101,6 +103,9 @@ public class ParkourTagArea extends BaseTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
+        createBossBar("chaser", MessageConfig.PARKOUR_TAG_BOSS_BAR_CHASER, BarColor.RED, BarStyle.SOLID);
+        createBossBar("escaper", MessageConfig.PARKOUR_TAG_BOSS_BAR_ESCAPER, BarColor.WHITE, BarStyle.SOLID);
+
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_TAG_START_PREPARATION);
         sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE, MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
 
@@ -124,6 +129,9 @@ public class ParkourTagArea extends BaseTeamArea {
         if (rightChampionshipTeam != null)
             if (rightAreaChaser == null) {
                 rightAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(rightChampionshipTeam);
+
+                addBossBarPlayer("chaser", Bukkit.getPlayer(rightAreaChaser));
+
                 rightChampionshipTeam.sendMessageToAll(message
                         .replace("%player%", rightChampionshipTeam.getColoredColor() + playerManager.getPlayerName(rightAreaChaser))
                         .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(rightAreaChaser) - 1))
@@ -132,6 +140,9 @@ public class ParkourTagArea extends BaseTeamArea {
         if (leftChampionshipTeam != null)
             if (leftAreaChaser == null) {
                 leftAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(leftChampionshipTeam);
+
+                addBossBarPlayer("chaser", Bukkit.getPlayer(rightAreaChaser));
+
                 leftChampionshipTeam.sendMessageToAll(message
                         .replace("%player%", leftChampionshipTeam.getColoredColor() + playerManager.getPlayerName(leftAreaChaser))
                         .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(leftAreaChaser) - 1))
@@ -156,6 +167,9 @@ public class ParkourTagArea extends BaseTeamArea {
 
             Iterator<String> escapeeSpawnPointsI = getGameConfig().getRightAreaEscapeeSpawnPoints().iterator();
             for (Player rightAreaEscapee : getRightAreaEscapees()) {
+
+                addBossBarPlayer("escaper", rightAreaEscapee);
+
                 if (escapeeSpawnPointsI.hasNext())
                     rightAreaEscapee.teleport(Utils.getLocation(escapeeSpawnPointsI.next()));
                 else {
@@ -174,6 +188,9 @@ public class ParkourTagArea extends BaseTeamArea {
 
             Iterator<String> escapeeSpawnPointsI = getGameConfig().getLeftAreaEscapeeSpawnPoints().iterator();
             for (Player leftAreaEscapee : getLeftAreaEscapees()) {
+
+                addBossBarPlayer("escaper", leftAreaEscapee);
+
                 if (escapeeSpawnPointsI.hasNext())
                     leftAreaEscapee.teleport(Utils.getLocation(escapeeSpawnPointsI.next()));
                 else {
