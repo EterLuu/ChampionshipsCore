@@ -321,6 +321,12 @@ public class SkyWarsHandler extends BaseListener {
                 }
             }
         }
+
+        if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+            if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
+                event.setCancelled(true);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

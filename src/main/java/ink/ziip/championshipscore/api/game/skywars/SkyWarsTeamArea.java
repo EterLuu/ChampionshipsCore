@@ -175,7 +175,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        // giveItemToAllGamePlayers();
+        giveItemToAllGamePlayers();
 
         timer = getGameConfig().getTimer() + 5;
         setGameStageEnum(GameStageEnum.PROGRESS);
@@ -686,32 +686,32 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     }
 
     private void giveItemToAllGamePlayers() {
-        ItemStack bread = new ItemStack(Material.BREAD);
-        bread.setAmount(8);
-
-        ItemStack sword = new ItemStack(Material.IRON_SWORD);
-        ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
-        pickaxe.addEnchantment(Enchantment.EFFICIENCY, 3);
-        ItemStack bow = new ItemStack(Material.BOW);
-        ItemStack arrows = new ItemStack(Material.ARROW);
-        arrows.setAmount(4);
-        ItemStack chestPlate = new ItemStack(Material.IRON_CHESTPLATE);
+//        ItemStack bread = new ItemStack(Material.BREAD);
+//        bread.setAmount(8);
+//
+//        ItemStack sword = new ItemStack(Material.IRON_SWORD);
+//        ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
+//        pickaxe.addEnchantment(Enchantment.EFFICIENCY, 3);
+//        ItemStack bow = new ItemStack(Material.BOW);
+//        ItemStack arrows = new ItemStack(Material.ARROW);
+//        arrows.setAmount(4);
+//        ItemStack chestPlate = new ItemStack(Material.IRON_CHESTPLATE);
 
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 PlayerInventory inventory = player.getInventory();
-                inventory.addItem(bread.clone());
-                inventory.addItem(sword.clone());
-                inventory.addItem(pickaxe.clone());
-                inventory.addItem(bow.clone());
-                inventory.addItem(arrows.clone());
-                inventory.setChestplate(chestPlate);
+//                inventory.addItem(bread.clone());
+//                inventory.addItem(sword.clone());
+//                inventory.addItem(pickaxe.clone());
+//                inventory.addItem(bow.clone());
+//                inventory.addItem(arrows.clone());
+//                inventory.setChestplate(chestPlate);
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
                 if (championshipTeam != null) {
-                    inventory.addItem(championshipTeam.getConcrete());
-                    inventory.addItem(championshipTeam.getConcrete());
-                    inventory.setLeggings(championshipTeam.getLeggings());
+//                    inventory.addItem(championshipTeam.getConcrete());
+//                    inventory.addItem(championshipTeam.getConcrete());
+//                    inventory.setLeggings(championshipTeam.getLeggings());
                     inventory.setBoots(championshipTeam.getBoots());
                 }
             }
