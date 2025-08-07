@@ -3,6 +3,7 @@ dont-edit-this:
 no-permission: "#696969&l[#696969!#696969]&r &4你没有权限！"
 prefix: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r"
 server-full: "服务器已经满人！"
+player-not-verified: "(!)你的客户端没有通过验证，请使用专用客户端！"
 team:
   successfully-added: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed成功添加队伍%team%#ededed。"
   added-failed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969添加队伍%team%失败（%reason%）#696969。"

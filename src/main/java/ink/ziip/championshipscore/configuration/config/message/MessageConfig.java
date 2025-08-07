@@ -23,6 +23,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "server-full")
     public static String SERVER_FULL;
 
+    @ConfigOption(path = "player-not-verified")
+    public static String PLAYER_NOT_VERIFIED;
+
     // Permission
     @ConfigOption(path = "no-permission")
     public static String NO_PERMISSION;

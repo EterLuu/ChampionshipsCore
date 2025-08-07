@@ -3,26 +3,29 @@ package ink.ziip.championshipscore.api;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.dto.*;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 public class GameApiClient extends BaseManager {
     private final Gson gson;
-    private String baseUrl;
+    private final String baseUrl;
 
     public GameApiClient(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
         this.gson = new Gson();
-        this.baseUrl = "http://localhost:8080";
+        this.baseUrl = CCConfig.LIVE_API;
     }
 
     @Override
@@ -33,10 +36,6 @@ public class GameApiClient extends BaseManager {
     @Override
     public void unload() {
         plugin.getLogger().info("GameApiClient unloaded");
-    }
-
-    public void setBaseUrl(String baseUrl) {
-        this.baseUrl = baseUrl;
     }
 
     public CompletableFuture<Boolean> sendGameEvent(String gameId, GameEventRequest request) {
@@ -107,7 +106,7 @@ public class GameApiClient extends BaseManager {
     private boolean sendPostRequest(String urlString, String jsonInputString) throws IOException {
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        
+
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Accept", "application/json");
@@ -120,7 +119,46 @@ public class GameApiClient extends BaseManager {
 
         int responseCode = connection.getResponseCode();
         connection.disconnect();
-        
+
         return responseCode >= 200 && responseCode < 300;
+    }
+
+    public CompletableFuture<Boolean> getPlayerClientVerifyStatus(String playerId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                String url = CCConfig.CLIENT_VERIFY_API + "/api/v1/race-safe/client/user/" + playerId + "/status";
+                HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("Accept", "application/json");
+
+                int responseCode = connection.getResponseCode();
+                if (responseCode != 200) {
+                    plugin.getLogger().warning("Failed to verify player client status for playerId: " + playerId + ", response code: " + responseCode);
+                    connection.disconnect();
+                    return false;
+                }
+
+                String msg = "";
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    msg += line + "\n";
+                }
+                reader.close();
+
+                PlayerClientVerifyResponse playerClientVerifyResponse = gson.fromJson(msg, PlayerClientVerifyResponse.class);
+                LocalDateTime checkTime = LocalDateTime.parse(playerClientVerifyResponse.getLast_check());
+                LocalDateTime nowTime = LocalDateTime.now(ZoneId.of("UTC"));
+                if (!checkTime.isAfter(nowTime.minusSeconds(3))) {
+                    return false;
+                }
+                connection.disconnect();
+
+                return playerClientVerifyResponse.isVerified();
+            } catch (IOException e) {
+                plugin.getLogger().log(Level.SEVERE, "Failed to verify player client status", e);
+                return false;
+            }
+        });
     }
 }

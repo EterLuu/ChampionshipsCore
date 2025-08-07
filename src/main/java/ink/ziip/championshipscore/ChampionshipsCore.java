@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore;
 
 import fr.skytasul.glowingentities.GlowingEntities;
+import ink.ziip.championshipscore.api.GameApiClient;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
@@ -45,6 +46,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private PlaceholderManager placeholderManager;
     private VoteManager voteManager;
     private ScheduleManager scheduleManager;
+    private GameApiClient gameApiClient;
 
     @Override
     public void onEnable() {
@@ -78,6 +80,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         placeholderManager = new PlaceholderManager(this);
         voteManager = new VoteManager(this);
         scheduleManager = new ScheduleManager(this);
+        gameApiClient = new GameApiClient(this);
 
         // Plugin startup logic
         configurationManager.load();

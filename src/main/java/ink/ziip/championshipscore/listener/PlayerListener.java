@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.listener;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.GameApiClient;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -19,6 +20,8 @@ import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
+
+import java.util.concurrent.CompletableFuture;
 
 public class PlayerListener extends BaseListener {
     protected PlayerListener(ChampionshipsCore plugin) {
@@ -49,14 +52,27 @@ public class PlayerListener extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent event) {
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getUniqueId());
+        String name = event.getName();
+
         if (Bukkit.getOnlinePlayers().size() >= CCConfig.MAX_PLAYERS) {
-            if (CCConfig.WHITELIST.contains(event.getName()))
+            if (CCConfig.WHITELIST.contains(name))
                 return;
 
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getUniqueId());
             if (championshipTeam == null) {
                 event.setKickMessage(MessageConfig.SERVER_FULL);
                 event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_FULL);
+                return;
+            }
+        }
+
+        if (championshipTeam != null && CCConfig.ENABLE_CLIENT_CHECK) {
+            GameApiClient gameApiClient = ChampionshipsCore.getInstance().getGameApiClient();
+            CompletableFuture<Boolean> cf = gameApiClient.getPlayerClientVerifyStatus(name);
+            if (!cf.join()) {
+                event.setKickMessage(MessageConfig.PLAYER_NOT_VERIFIED);
+                event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
+                return;
             }
         }
     }

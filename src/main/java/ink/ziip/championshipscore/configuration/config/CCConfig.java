@@ -19,12 +19,19 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 4;
+        return 5;
     }
 
     // Mode
     @ConfigOption(path = "mode")
     public static String MODE;
+
+    // API
+    @ConfigOption(path = "live-api")
+    public static String LIVE_API;
+
+    @ConfigOption(path = "client-verify-api")
+    public static String CLIENT_VERIFY_API;
 
     // Players
     @ConfigOption(path = "max-players")
@@ -32,6 +39,9 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "whitelist")
     public static List<String> WHITELIST;
+
+    @ConfigOption(path = "enable-client-check")
+    public static Boolean ENABLE_CLIENT_CHECK;
 
     // Score
     @ConfigOption(path = "weighted-score")
