@@ -1,9 +1,10 @@
 dont-edit-this:
-  version: 5
+  version: 6
 mode: "CHAMPIONSHIP"
 max-players: 100
 whitelist: [ ]
 live-api: ""
+live-api-enabled: false
 client-verify-api: ""
 enable-client-check: true
 weighted-score: false

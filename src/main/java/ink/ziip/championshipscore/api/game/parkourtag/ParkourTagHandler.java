@@ -2,16 +2,14 @@ package ink.ziip.championshipscore.api.game.parkourtag;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -278,6 +276,8 @@ public class ParkourTagHandler extends BaseListener {
 
                     parkourTagArea.getPlayerSurviveTimes().put(player.getUniqueId(), parkourTagArea.getGameConfig().getTimer() - parkourTagArea.getTimer());
                     parkourTagArea.updateTeamSurviveTimes();
+
+                    plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourTag, assailant, assailantTeam, "Player_Tagged", player.getName());
                     return;
                 }
 

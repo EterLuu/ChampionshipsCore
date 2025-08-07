@@ -85,6 +85,7 @@ public class ScheduleManager extends BaseManager {
 
     public void addRound(GameTypeEnum gameTypeEnum) {
         plugin.getRankManager().addGameOrder(gameTypeEnum, plugin.getRankManager().getRound() + 1);
+        plugin.getGameApiClient().sendGlobalEvent("gaming", gameTypeEnum, plugin.getRankManager().getRound());
     }
 
     public void resetRound() {

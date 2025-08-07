@@ -80,7 +80,6 @@ public final class ChampionshipsCore extends JavaPlugin {
         placeholderManager = new PlaceholderManager(this);
         voteManager = new VoteManager(this);
         scheduleManager = new ScheduleManager(this);
-        gameApiClient = new GameApiClient(this);
 
         // Plugin startup logic
         configurationManager.load();
@@ -104,6 +103,8 @@ public final class ChampionshipsCore extends JavaPlugin {
         placeholderManager.load();
         voteManager.load();
         scheduleManager.load();
+
+        gameApiClient = new GameApiClient(this);
 
         getLogger().log(Level.INFO, CCConfig.MODE);
     }

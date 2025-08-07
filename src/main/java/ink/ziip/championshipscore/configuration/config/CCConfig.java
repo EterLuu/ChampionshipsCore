@@ -19,7 +19,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 5;
+        return 6;
     }
 
     // Mode
@@ -29,6 +29,9 @@ public class CCConfig extends BaseConfigurationFile {
     // API
     @ConfigOption(path = "live-api")
     public static String LIVE_API;
+
+    @ConfigOption(path = "live-api-enabled")
+    public static Boolean LIVE_API_ENABLED;
 
     @ConfigOption(path = "client-verify-api")
     public static String CLIENT_VERIFY_API;

@@ -80,6 +80,8 @@ public class VoteManager extends BaseManager {
 
         Collections.reverse(list);
 
+        plugin.getGameApiClient().sendVoteEvent(votes);
+
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(MessageConfig.VOTE_VOTE_BOARD_BAR).append("\n");

@@ -2,7 +2,9 @@ package ink.ziip.championshipscore.api.game.parkourwarrior;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.GameMode;
@@ -52,6 +54,11 @@ public class ParkourWarriorHandler extends BaseListener {
             else {
                 player.setGameMode(GameMode.SPECTATOR);
             }
+
+            ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
+            if (championshipTeam != null)
+                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourWarrior, player, championshipTeam, "Player_Mistake", "");
+
             return;
         }
 

@@ -3,7 +3,10 @@ package ink.ziip.championshipscore.api;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.dto.*;
 import com.google.gson.Gson;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import org.bukkit.entity.Player;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,7 +17,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
@@ -38,7 +44,15 @@ public class GameApiClient extends BaseManager {
         plugin.getLogger().info("GameApiClient unloaded");
     }
 
-    public CompletableFuture<Boolean> sendGameEvent(String gameId, GameEventRequest request) {
+    public void sendGameEvent(GameTypeEnum gameTypeEnum, Player player, ChampionshipTeam championshipTeam, String event, String lore) {
+        if (!CCConfig.LIVE_API_ENABLED)
+            return;
+
+        GameEventRequest request = new GameEventRequest(player.getName(), championshipTeam.getName(), event, lore);
+        sendGameEvent(gameTypeEnum.toString(), request);
+    }
+
+    private CompletableFuture<Boolean> sendGameEvent(String gameId, GameEventRequest request) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String url = baseUrl + "/api/" + gameId + "/event";
@@ -51,7 +65,18 @@ public class GameApiClient extends BaseManager {
         });
     }
 
-    public CompletableFuture<Boolean> sendInGameScoreUpdate(String gameId, List<PlayerScoreRequest> requests) {
+    public void sendInGameScore(GameTypeEnum gameTypeEnum, Map<ChampionshipTeam, Double> scores) {
+        if (!CCConfig.LIVE_API_ENABLED)
+            return;
+
+        List<PlayerScoreRequest> requests = new ArrayList<>();
+        for (Map.Entry<ChampionshipTeam, Double> entry : scores.entrySet()) {
+            requests.add(new PlayerScoreRequest(entry.getKey().getName(), entry.getKey().getName(), entry.getValue().intValue()));
+        }
+        sendInGameScoreUpdate(gameTypeEnum.toString(), requests);
+    }
+
+    private CompletableFuture<Boolean> sendInGameScoreUpdate(String gameId, List<PlayerScoreRequest> requests) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String url = baseUrl + "/api/" + gameId + "/score";
@@ -64,7 +89,25 @@ public class GameApiClient extends BaseManager {
         });
     }
 
-    public CompletableFuture<Boolean> sendGlobalScoreUpdate(List<GlobalScoreRequest> requests) {
+    public void sendGlobalScore(Map<ChampionshipTeam, Double> teamPoints, Map<UUID, Double> playerPoints) {
+        if (!CCConfig.LIVE_API_ENABLED)
+            return;
+
+        List<GlobalScoreRequest> requests = new ArrayList<>();
+        for (Map.Entry<ChampionshipTeam, Double> entry : teamPoints.entrySet()) {
+            ChampionshipTeam team = entry.getKey();
+            double totalScore = entry.getValue();
+            List<GlobalScoreRequest.PlayerScore> playerScores = new ArrayList<>();
+            for (UUID uuid : team.getMembers()) {
+                double playerScore = playerPoints.getOrDefault(uuid, 0.0);
+                playerScores.add(new GlobalScoreRequest.PlayerScore(plugin.getPlayerManager().getPlayerName(uuid), (int) playerScore));
+            }
+            requests.add(new GlobalScoreRequest(team.getName(), (int) totalScore, playerScores));
+        }
+        sendGlobalScoreUpdate(requests);
+    }
+
+    private CompletableFuture<Boolean> sendGlobalScoreUpdate(List<GlobalScoreRequest> requests) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String url = baseUrl + "/api/game/score";
@@ -77,7 +120,16 @@ public class GameApiClient extends BaseManager {
         });
     }
 
-    public CompletableFuture<Boolean> sendGlobalEvent(GlobalEventRequest request) {
+    public void sendGlobalEvent(String status, GameTypeEnum gameTypeEnum, int round) {
+        if (!CCConfig.LIVE_API_ENABLED)
+            return;
+
+        GlobalEventRequest.GameInfo gameInfo = new GlobalEventRequest.GameInfo(gameTypeEnum.toString(), round);
+        GlobalEventRequest request = new GlobalEventRequest(status, gameInfo);
+        sendGlobalEvent(request);
+    }
+
+    private CompletableFuture<Boolean> sendGlobalEvent(GlobalEventRequest request) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String url = baseUrl + "/api/game/event";
@@ -90,7 +142,20 @@ public class GameApiClient extends BaseManager {
         });
     }
 
-    public CompletableFuture<Boolean> sendVoteEvent(List<VoteEventRequest> requests) {
+    public void sendVoteEvent(Map<GameTypeEnum, Integer> votes) {
+        if (!CCConfig.LIVE_API_ENABLED)
+            return;
+
+        List<VoteEventRequest> requests = new ArrayList<>();
+        for (Map.Entry<GameTypeEnum, Integer> entry : votes.entrySet()) {
+            GameTypeEnum gameType = entry.getKey();
+            int voteCount = entry.getValue();
+            requests.add(new VoteEventRequest(gameType.toString(), voteCount));
+        }
+        sendVoteEvent(requests);
+    }
+
+    private CompletableFuture<Boolean> sendVoteEvent(List<VoteEventRequest> requests) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String url = baseUrl + "/api/vote/event";

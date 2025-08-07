@@ -299,6 +299,8 @@ public class BattleBoxArea extends BaseTeamArea {
                     killer.playSound(killer, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
 
                     sendMessageToAllGamePlayers(message);
+
+                    plugin.getGameApiClient().sendGameEvent(GameTypeEnum.BattleBox, killer, killerChampionshipTeam, "Kill", player.getName());
                 }
             }
         }

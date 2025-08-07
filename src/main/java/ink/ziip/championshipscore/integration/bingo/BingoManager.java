@@ -327,6 +327,7 @@ public class BingoManager extends BaseManager {
                 textComponent.addExtra(finalMessages[1]);
 
                 Utils.sendMessageToAllSpigotPlayers(textComponent);
+                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.Bingo, player, championshipTeam, "Item_Found", gameTask.material().name());
             }
 //            if (num == 4) {
 //                String[] messages = MessageConfig.BINGO_TASK_EXPIRED.split("%task%");
