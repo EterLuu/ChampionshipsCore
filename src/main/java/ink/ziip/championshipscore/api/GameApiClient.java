@@ -212,11 +212,11 @@ public class GameApiClient extends BaseManager {
                 reader.close();
 
                 PlayerClientVerifyResponse playerClientVerifyResponse = gson.fromJson(msg, PlayerClientVerifyResponse.class);
-                LocalDateTime checkTime = LocalDateTime.parse(playerClientVerifyResponse.getLast_check());
-                LocalDateTime nowTime = LocalDateTime.now(ZoneId.of("UTC"));
-                if (!checkTime.isAfter(nowTime.minusSeconds(3))) {
-                    return false;
-                }
+//                LocalDateTime checkTime = LocalDateTime.parse(playerClientVerifyResponse.getLast_check());
+//                LocalDateTime nowTime = LocalDateTime.now(ZoneId.of("UTC"));
+//                if (!checkTime.isAfter(nowTime.minusSeconds(3))) {
+//                    return false;
+//                }
                 connection.disconnect();
 
                 return playerClientVerifyResponse.isVerified();

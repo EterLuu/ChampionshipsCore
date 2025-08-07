@@ -258,7 +258,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         destroyBlock(player.getLocation());
     }
 
-    private void giveElytraToAllPlayers(){
+    private void giveElytraToAllPlayers() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && !deathPlayer.contains(uuid)) {

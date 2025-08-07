@@ -185,8 +185,8 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             }
         }
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.HOTY_CODY_DUSKY_GAME_START_SOON);
-        sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GAME_START_SOON_TITLE, MessageConfig.HOTY_CODY_DUSKY_GAME_START_SOON_SUBTITLE);
+        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.HOTY_CODY_DUSKY_GAME_START);
+        sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GAME_START_TITLE, MessageConfig.HOTY_CODY_DUSKY_GAME_START_SUBTITLE);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
