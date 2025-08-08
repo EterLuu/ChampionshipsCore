@@ -264,7 +264,13 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
             if (player != null && !deathPlayer.contains(uuid)) {
                 ItemStack elytra = new ItemStack(Material.ELYTRA);
                 elytra.addEnchantment(Enchantment.UNBREAKING, 1);
-                player.getInventory().addItem(elytra);
+
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+                if (championshipTeam != null) {
+                    player.getInventory().setChestplate(championshipTeam.getChestPlate());
+                }
+
+                player.getInventory().addItem(elytra.clone());
             }
         }
     }
@@ -397,7 +403,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         if (addDeathPlayer(uuid)) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam != null)
-                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.TNTRun, player, championshipTeam, "", player.getName());
+                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.TNTRun, player, championshipTeam, "Player_Fall", player.getName());
             sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_FALL_INTO_VOID.replace("%player%", player.getName()));
         }
     }
