@@ -112,9 +112,10 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
 
         Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
         Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
-        if (plugin.isLoaded())
+        if (plugin.isLoaded()) {
             scheduler.runTaskAsynchronously(plugin, task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(gameTypeEnum)));
-        Utils.sendMessageToAllPlayers(plugin.getRankManager().getTeamRankString());
+            Utils.sendMessageToAllPlayers(plugin.getRankManager().getTeamRankString());
+        }
         handler.unRegister();
         Utils.changeLevelForAllPlayers(0);
     }
