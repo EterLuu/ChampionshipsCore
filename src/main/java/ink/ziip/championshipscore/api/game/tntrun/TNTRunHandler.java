@@ -64,20 +64,20 @@ public class TNTRunHandler extends BaseListener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        if (tntRunTeamArea.notAreaPlayer(player)) {
-            return;
-        }
-
-        Location location = player.getLocation();
-        if (tntRunTeamArea.notInArea(location)) {
-            return;
-        }
-
-        event.setCancelled(true);
-    }
+//    @EventHandler(priority = EventPriority.LOWEST)
+//    public void onPlayerInteract(PlayerInteractEvent event) {
+//        Player player = event.getPlayer();
+//        if (tntRunTeamArea.notAreaPlayer(player)) {
+//            return;
+//        }
+//
+//        Location location = player.getLocation();
+//        if (tntRunTeamArea.notInArea(location)) {
+//            return;
+//        }
+//
+//        event.setCancelled(true);
+//    }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamaged(EntityDamageEvent event) {
