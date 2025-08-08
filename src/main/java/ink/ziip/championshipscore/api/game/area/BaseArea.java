@@ -442,7 +442,7 @@ public abstract class BaseArea {
             return !location.toVector().isInAABB(getGameConfig().getAreaPos1(), getGameConfig().getAreaPos2());
         }
 
-        return false;
+        return true;
     }
 
     public abstract Location getSpectatorSpawnLocation();
