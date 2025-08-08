@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.vote;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.object.game.GameStatusEnum;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -42,10 +43,19 @@ public class VoteManager extends BaseManager {
         Utils.sendMessageToAllPlayers(MessageConfig.VOTE_START_VOTE);
         Utils.sendTitleToAllPlayers(MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
 
+        plugin.getGameApiClient().sendGlobalEvent(GameStatusEnum.VOTING, GameTypeEnum.Bingo, plugin.getRankManager().getRound());
+
         voteTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
             Utils.sendTitleToAllPlayers(MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
+
+            Map<GameTypeEnum, Integer> votes = new HashMap<>();
+            for (GameTypeEnum gameTypeEnum : playerVotes.values()) {
+                votes.put(gameTypeEnum, votes.getOrDefault(gameTypeEnum, 0) + 1);
+            }
+
+            plugin.getGameApiClient().sendVoteEvent(votes, timer);
 
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(timer);
@@ -80,7 +90,7 @@ public class VoteManager extends BaseManager {
 
         Collections.reverse(list);
 
-        plugin.getGameApiClient().sendVoteEvent(votes);
+        plugin.getGameApiClient().sendVoteEvent(votes, 0);
 
         StringBuilder stringBuilder = new StringBuilder();
 

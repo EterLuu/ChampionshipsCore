@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.schedule;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.object.game.GameStatusEnum;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.battlebox.BattleBoxScheduleManager;
 import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskyScheduleManager;
@@ -85,7 +86,7 @@ public class ScheduleManager extends BaseManager {
 
     public void addRound(GameTypeEnum gameTypeEnum) {
         plugin.getRankManager().addGameOrder(gameTypeEnum, plugin.getRankManager().getRound() + 1);
-        plugin.getGameApiClient().sendGlobalEvent("gaming", gameTypeEnum, plugin.getRankManager().getRound());
+        plugin.getGameApiClient().sendGlobalEvent(GameStatusEnum.GAMING, gameTypeEnum, plugin.getRankManager().getRound());
     }
 
     public void resetRound() {

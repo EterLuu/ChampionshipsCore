@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.dto.*;
 import com.google.gson.Gson;
+import ink.ziip.championshipscore.api.object.game.GameStatusEnum;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -48,8 +49,8 @@ public class GameApiClient extends BaseManager {
         if (!CCConfig.LIVE_API_ENABLED)
             return;
 
-        GameEventRequest request = new GameEventRequest(player.getName(), championshipTeam.getName(), event, lore);
-        sendGameEvent(gameTypeEnum.toString(), request);
+        GameEventRequest request = new GameEventRequest(player.getName(), championshipTeam.getColorName().toUpperCase(), event, lore);
+        sendGameEvent(gameTypeEnum.toAPIString(), request);
     }
 
     private CompletableFuture<Boolean> sendGameEvent(String gameId, GameEventRequest request) {
@@ -73,7 +74,7 @@ public class GameApiClient extends BaseManager {
         for (Map.Entry<ChampionshipTeam, Double> entry : scores.entrySet()) {
             requests.add(new PlayerScoreRequest(entry.getKey().getName(), entry.getKey().getName(), entry.getValue().intValue()));
         }
-        sendInGameScoreUpdate(gameTypeEnum.toString(), requests);
+        sendInGameScoreUpdate(gameTypeEnum.toAPIString(), requests);
     }
 
     private CompletableFuture<Boolean> sendInGameScoreUpdate(String gameId, List<PlayerScoreRequest> requests) {
@@ -120,12 +121,12 @@ public class GameApiClient extends BaseManager {
         });
     }
 
-    public void sendGlobalEvent(String status, GameTypeEnum gameTypeEnum, int round) {
+    public void sendGlobalEvent(GameStatusEnum status, GameTypeEnum gameTypeEnum, int round) {
         if (!CCConfig.LIVE_API_ENABLED)
             return;
 
-        GlobalEventRequest.GameInfo gameInfo = new GlobalEventRequest.GameInfo(gameTypeEnum.toString(), round);
-        GlobalEventRequest request = new GlobalEventRequest(status, gameInfo);
+        GlobalEventRequest.GameInfo gameInfo = new GlobalEventRequest.GameInfo(gameTypeEnum.toAPIString(), round);
+        GlobalEventRequest request = new GlobalEventRequest(status.toString(), gameInfo);
         sendGlobalEvent(request);
     }
 

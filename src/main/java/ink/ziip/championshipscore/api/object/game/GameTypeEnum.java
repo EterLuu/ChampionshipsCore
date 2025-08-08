@@ -32,4 +32,31 @@ public enum GameTypeEnum {
 
         return "Unknown";
     }
+
+    public String toAPIString() {
+        if (this == Bingo)
+            return "bingo";
+        if (this == ParkourTag)
+            return "parkour_chase";
+        if (this == BattleBox)
+            return "battle_box";
+        if (this == TNTRun)
+            return "tntrun";
+        if (this == SnowballShowdown)
+            return MessageConfig.GAME_SNOWBALL_SNOW_DOWN;
+        if (this == SkyWars)
+            return "skywars";
+        if (this == TGTTOS)
+            return MessageConfig.GAME_TGTTOS;
+        if (this == DragonEggCarnival)
+            return MessageConfig.GAME_DRAGON_EGG_CARNIVAL;
+        if (this == AdvancementCC)
+            return MessageConfig.GAME_ADVANCEMENT_CC;
+        if (this == ParkourWarrior)
+            return "runaway_warrior";
+        if (this == HotyCodyDusky)
+            return "hot_cod";
+
+        return "Unknown";
+    }
 }
