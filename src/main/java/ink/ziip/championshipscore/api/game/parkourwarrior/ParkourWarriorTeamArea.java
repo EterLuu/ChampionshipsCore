@@ -26,6 +26,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
@@ -353,7 +355,10 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
             if (championshipTeam != null) {
                 double multiplier = gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + 1;
 
-                addPlayerPoints(uuid, finalPoints * multiplier);
+                BigDecimal multiplierMultiplier = BigDecimal.valueOf(multiplier).setScale(2, RoundingMode.HALF_UP);
+                BigDecimal finalPointsBD = BigDecimal.valueOf(finalPoints).setScale(2, RoundingMode.HALF_UP).multiply(multiplierMultiplier);
+
+                addPlayerPoints(uuid, finalPointsBD.doubleValue());
             }
         }
     }

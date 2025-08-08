@@ -55,9 +55,9 @@ public class RankManager extends BaseManager {
     @Override
     public void load() {
         updateTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
+            updateGameOrder();
             updatePlayerPoint();
             updateTeamPoints();
-            updateGameOrder();
 
             plugin.getGameApiClient().sendGlobalScore(teamPoints, playerPoints);
         }, 0, 100L);
