@@ -5,10 +5,12 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -51,16 +53,20 @@ public class BattleBoxScheduleManager extends BaseManager {
         return plugin.getTeamManager().getTeamList().get(new Random().nextInt(plugin.getTeamManager().getTeamList().size()));
     }
 
-    private void generatePairs(int rounds, int groups) {
+    private void generatePairs(int rounds, int pairs) {
         this.rounds.clear();
         for (int i = 0; i < rounds; i++) {
             Set<TwoVTwoVector> set = new HashSet<>();
-            while (set.size() < groups) {
+            while (set.size() < pairs) {
                 ChampionshipTeam t1 = selectTeam();
                 ChampionshipTeam t2 = selectTeam();
                 if (t1.equals(t2)) {
                     continue;
                 }
+                if (alreadyContainsTeam(t1, set))
+                    continue;
+                if (alreadyContainsTeam(t2, set))
+                    continue;
                 TwoVTwoVector tv = new TwoVTwoVector(t1, t2);
                 if (containsPair(tv)) {
                     continue;
@@ -72,6 +78,15 @@ public class BattleBoxScheduleManager extends BaseManager {
             }
             this.rounds.add(set);
         }
+    }
+
+    private boolean alreadyContainsTeam(ChampionshipTeam team, Set<TwoVTwoVector> pairs) {
+        for (TwoVTwoVector pair : pairs) {
+            if (pair.getTeamOne().equals(team) || pair.getTeamTwo().equals(team)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -158,7 +173,24 @@ public class BattleBoxScheduleManager extends BaseManager {
             if (!battleBoxAreaIterator.hasNext()) {
                 return;
             }
-            plugin.getGameManager().joinTeamArea(GameTypeEnum.BattleBox, battleBoxAreaIterator.next(), v.getTeamOne(), v.getTeamTwo());
+
+            String areaName = battleBoxAreaIterator.next();
+
+            String failed = MessageConfig.GAME_TEAM_GAME_START_FAILED
+                    .replace("%team%", v.getTeamOne().getName())
+                    .replace("%rival%", v.getTeamTwo().getName())
+                    .replace("%game%", GameTypeEnum.BattleBox.toString())
+                    .replace("%area%", areaName);
+            String successful = MessageConfig.GAME_TEAM_GAME_START_SUCCESSFUL
+                    .replace("%team%", v.getTeamOne().getName())
+                    .replace("%rival%", v.getTeamTwo().getName())
+                    .replace("%game%", GameTypeEnum.BattleBox.toString())
+                    .replace("%area%", areaName);
+
+            if (plugin.getGameManager().joinTeamArea(GameTypeEnum.BattleBox, areaName, v.getTeamOne(), v.getTeamTwo()))
+                plugin.getLogger().info(ChatColor.stripColor(successful));
+            else
+                plugin.getLogger().warning(ChatColor.stripColor(failed));
         }
     }
 

@@ -23,4 +23,9 @@ public class TwoVTwoVector {
             return true;
         return ((TwoVTwoVector) o).teamTwo.equals(teamOne) && ((TwoVTwoVector) o).teamOne.equals(teamTwo);
     }
+
+    @Override
+    public int hashCode() {
+        return (teamOne.getName()).hashCode();
+    }
 }
