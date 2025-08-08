@@ -189,7 +189,7 @@ public class GameApiClient extends BaseManager {
         return responseCode >= 200 && responseCode < 300;
     }
 
-    public CompletableFuture<Boolean> getPlayerClientVerifyStatus(String playerId) {
+    public CompletableFuture<Boolean> getPlayerClientVerifyStatus(String playerId, boolean timeVerified) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String url = CCConfig.CLIENT_VERIFY_API + "/api/v1/race-safe/client/user/" + playerId + "/status";
@@ -213,11 +213,13 @@ public class GameApiClient extends BaseManager {
                 reader.close();
 
                 PlayerClientVerifyResponse playerClientVerifyResponse = gson.fromJson(msg, PlayerClientVerifyResponse.class);
-//                LocalDateTime checkTime = LocalDateTime.parse(playerClientVerifyResponse.getLast_check());
-//                LocalDateTime nowTime = LocalDateTime.now(ZoneId.of("UTC"));
-//                if (!checkTime.isAfter(nowTime.minusSeconds(3))) {
-//                    return false;
-//                }
+                if (timeVerified) {
+                    LocalDateTime checkTime = LocalDateTime.parse(playerClientVerifyResponse.getLast_check());
+                    LocalDateTime nowTime = LocalDateTime.now(ZoneId.of("UTC"));
+                    if (!checkTime.isAfter(nowTime.minusSeconds(10))) {
+                        return false;
+                    }
+                }
                 connection.disconnect();
 
                 return playerClientVerifyResponse.isVerified();

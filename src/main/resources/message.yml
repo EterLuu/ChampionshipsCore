@@ -61,8 +61,8 @@ spectator:
   join-area: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969你正在旁观%game%游戏的%area%场地。"
   cant-join-area: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969你已经在旁观了，使用“/cc spectate leave”退出旁观。"
 game:
-  team-game-start-successful: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r %team%#edededvs %rival%#ededed启动成功（游戏：%game%，场地：%area%）。"
-  team-game-start-failed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r %team%#edededvs %rival%#ff6b26启动失败（游戏：%game%，场地：%area%）。"
+  team-game-start-successful: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r %team%#ededed vs %rival%#ededed启动成功（游戏：%game%，场地：%area%）。"
+  team-game-start-failed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r %team%#ededed vs %rival%#ff6b26启动失败（游戏：%game%，场地：%area%）。"
   single-team-game-start-successful: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r 游戏启动成功（游戏：%game%，场地：%area%）。"
   single-team-game-start-failed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r 游戏启动失败（游戏：%game%，场地：%area%）。"
   single-game-start-successful: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r 游戏启动成功（游戏：%game%，场地：%area%）。"
@@ -103,7 +103,7 @@ battlebox:
   kit-choose: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed你选择的武器包为：&6%kit%#ededed。"
   kit-already-choose: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed选择失败：你的队伍中已经有人选择了：&6%kit%#ededed。"
   action-bar-count-down: "#24abff游戏剩余时间：#ff6b26%time%#24abff。"
-  show-points: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%team%#ededed得分：%team_points%，#ededed%rival% #ededed得分：%rival_points%。"
+  show-points: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%team%#ededed得分：%team_points%，#ededed%rival%#ededed得分：%rival_points%。"
   kits:
     armor: "武装！"
     speed: "加速！"
@@ -128,7 +128,7 @@ parkourtag:
   become-chaser: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%player%#ededed成为了你队的追击者（还剩%times%次）。"
   become-chaser-failed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ff6b26你达到了成为追击者的上限。"
   action-bar-count-down: "#24abff游戏剩余时间：#ff6b26%time%#24abff。"
-  show-points: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%team%#ededed得分：%team_points%，#ededed%rival% #ededed得分：%rival_points%。"
+  show-points: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%team%#ededed得分：%team_points%，#ededed%rival%#ededed得分：%rival_points%。"
   whole-team-was-killed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%team%#696969全队阵亡。"
   boss-bar:
     chaser: "#ededed你是追击者：追击逃脱者！"
@@ -198,7 +198,7 @@ tntrun:
   game-end-title: "&4[#ff6b26TNTRun&4]"
   game-end-subtitle: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969游戏结束。"
   fall-into-void: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969玩家#696969%player%#696969跌入了虚空。"
-  tnt-rain: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ff6b26TNT&6雨生成，⚠⚠⚠⚠⚠⚠！"
+  tnt-rain: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r &6⚠#ff6b26TNT&6雨生成⚠！"
 dragoneggcarnival:
   start-preparation: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed游戏即将开始。"
   start-preparation-title: "#fff566[&dDragon Egg Carnival#fff566]"

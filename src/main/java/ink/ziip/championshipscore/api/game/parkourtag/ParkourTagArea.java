@@ -130,8 +130,11 @@ public class ParkourTagArea extends BaseTeamArea {
             if (rightAreaChaser == null) {
                 rightAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(rightChampionshipTeam);
 
-                addBossBarPlayer("chaser", Bukkit.getPlayer(rightAreaChaser));
-                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourTag, Bukkit.getPlayer(rightAreaChaser), rightChampionshipTeam, "Chaser_Selected", "");
+                Player player = Bukkit.getPlayer(rightAreaChaser);
+                if (player != null) {
+                    addBossBarPlayer("chaser", player);
+                    plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourTag, player, rightChampionshipTeam, "Chaser_Selected", "");
+                }
 
                 rightChampionshipTeam.sendMessageToAll(message
                         .replace("%player%", rightChampionshipTeam.getColoredColor() + playerManager.getPlayerName(rightAreaChaser))
@@ -142,8 +145,11 @@ public class ParkourTagArea extends BaseTeamArea {
             if (leftAreaChaser == null) {
                 leftAreaChaser = plugin.getGameManager().getParkourTagManager().getTeamChaser(leftChampionshipTeam);
 
-                addBossBarPlayer("chaser", Bukkit.getPlayer(leftAreaChaser));
-                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourTag, Bukkit.getPlayer(leftAreaChaser), leftChampionshipTeam, "Chaser_Selected", "");
+                Player player = Bukkit.getPlayer(leftAreaChaser);
+                if (player != null) {
+                    addBossBarPlayer("chaser", player);
+                    plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourTag, player, leftChampionshipTeam, "Chaser_Selected", "");
+                }
 
                 leftChampionshipTeam.sendMessageToAll(message
                         .replace("%player%", leftChampionshipTeam.getColoredColor() + playerManager.getPlayerName(leftAreaChaser))

@@ -68,11 +68,20 @@ public class PlayerListener extends BaseListener {
 
         if (championshipTeam != null && CCConfig.ENABLE_CLIENT_CHECK) {
             GameApiClient gameApiClient = ChampionshipsCore.getInstance().getGameApiClient();
-            CompletableFuture<Boolean> cf = gameApiClient.getPlayerClientVerifyStatus(name);
+            CompletableFuture<Boolean> cf = gameApiClient.getPlayerClientVerifyStatus(name, false);
             if (!cf.join()) {
                 event.setKickMessage(MessageConfig.PLAYER_NOT_VERIFIED);
                 event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
                 return;
+            } else {
+                plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                    if (!gameApiClient.getPlayerClientVerifyStatus(name, true).join()) {
+                        Player player = Bukkit.getPlayer(name);
+                        if (player != null) {
+                            player.kickPlayer(MessageConfig.PLAYER_NOT_VERIFIED);
+                        }
+                    }
+                }, 100L);
             }
         }
     }
