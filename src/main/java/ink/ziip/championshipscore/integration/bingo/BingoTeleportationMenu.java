@@ -33,7 +33,7 @@ public class BingoTeleportationMenu {
 
             navigationPane.addItem(new GuiItem(playerHead, event -> {
                 Player player = Bukkit.getPlayer(uuid);
-                if (player != null) {
+                if (player != null && player.getWorld().getName().startsWith("bingo")) {
                     openMenuPlayer.teleport(player.getLocation());
                 }
             }));

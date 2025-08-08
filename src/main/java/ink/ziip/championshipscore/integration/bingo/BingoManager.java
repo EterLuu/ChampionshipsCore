@@ -284,13 +284,13 @@ public class BingoManager extends BaseManager {
                 if (number <= 3) {
                     for (UUID uuid : championshipTeam.getMembers()) {
                         playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 50);
-                        addPointsToTeam(championshipTeam, 200);
+                        addPointsToTeam(championshipTeam, 50);
                     }
                     message = message.replace("%points%", "200");
                 } else {
                     for (UUID uuid : championshipTeam.getMembers()) {
                         playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0) + 25);
-                        addPointsToTeam(championshipTeam, 100);
+                        addPointsToTeam(championshipTeam, 25);
                     }
                     message = message.replace("%points%", "100");
                 }
