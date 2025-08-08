@@ -57,7 +57,7 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
 
         addAllSpectatorsToArea();
 
-        plugin.getScheduleManager().addRound(GameTypeEnum.ParkourTag);
+        plugin.getScheduleManager().addRound(GameTypeEnum.HotyCodyDusky);
         enabled = true;
         timer = 10;
         subRound = 0;

@@ -225,7 +225,10 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             if (timer % 2 == 0 && codyHolder != null) {
                 Player player = Bukkit.getPlayer(codyHolder);
                 if (player != null) {
-                    player.setHealth(player.getHealth() - 2);
+                    double health = player.getHealth() - 2;
+                    if (health < 0)
+                        health = 0;
+                    player.setHealth(health);
                     player.playSound(player, Sound.ENTITY_PLAYER_HURT, 1, 1);
                 }
             }
