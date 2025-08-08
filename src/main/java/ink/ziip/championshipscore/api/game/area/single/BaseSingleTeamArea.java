@@ -168,7 +168,6 @@ public abstract class BaseSingleTeamArea extends BaseArea {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 player.setHealth(health);
-                player.setMaxHealth(20);
             }
         }
     }

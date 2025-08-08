@@ -192,7 +192,6 @@ public class ChampionshipTeam {
 
     public void setHealthForAllPlayers(double health) {
         for (Player player : getOnlinePlayers()) {
-            player.setMaxHealth(20);
             player.setHealth(health);
         }
     }

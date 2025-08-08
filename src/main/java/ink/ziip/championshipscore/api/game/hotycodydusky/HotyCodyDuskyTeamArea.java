@@ -225,7 +225,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             if (timer % 2 == 0 && codyHolder != null) {
                 Player player = Bukkit.getPlayer(codyHolder);
                 if (player != null) {
-                    double health = player.getHealth() - 2;
+                    double health = player.getHealth() - 1;
                     if (health < 0)
                         health = 0;
                     player.setHealth(health);
@@ -346,8 +346,6 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             player.addPotionEffect(potionEffectGlowing);
             player.addPotionEffect(potionEffectSpeed);
             player.addPotionEffect(potionEffectHaste);
-            player.setMaxHealth(24);
-            player.setHealth(player.getHealth() + 4);
             player.playSound(player, Sound.ENTITY_ENDERMAN_HURT, 1, 1);
             removeBossBarPlayer("escaper", player);
             addBossBarPlayer("chaser", player);
