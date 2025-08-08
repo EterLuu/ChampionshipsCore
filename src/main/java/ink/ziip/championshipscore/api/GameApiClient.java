@@ -142,24 +142,25 @@ public class GameApiClient extends BaseManager {
         });
     }
 
-    public void sendVoteEvent(Map<GameTypeEnum, Integer> votes) {
+    public void sendVoteEvent(Map<GameTypeEnum, Integer> votes, int timeRemaining) {
         if (!CCConfig.LIVE_API_ENABLED)
             return;
 
-        List<VoteEventRequest> requests = new ArrayList<>();
+        List<VoteEventRequest> voteList = new ArrayList<>();
         for (Map.Entry<GameTypeEnum, Integer> entry : votes.entrySet()) {
             GameTypeEnum gameType = entry.getKey();
             int voteCount = entry.getValue();
-            requests.add(new VoteEventRequest(gameType.toString(), voteCount));
+            voteList.add(new VoteEventRequest(gameType.toString(), voteCount));
         }
-        sendVoteEvent(requests);
+        VoteRequest request = new VoteRequest(voteList, timeRemaining);
+        sendVoteEvent(request);
     }
 
-    private CompletableFuture<Boolean> sendVoteEvent(List<VoteEventRequest> requests) {
+    private CompletableFuture<Boolean> sendVoteEvent(VoteRequest request) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String url = baseUrl + "/api/vote/event";
-                String json = gson.toJson(requests);
+                String json = gson.toJson(request);
                 return sendPostRequest(url, json);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.SEVERE, "Failed to send vote event", e);
