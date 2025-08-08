@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 public class GlobalScoreRequest {
     private String team;
-    private int total_score;
+    private int totalScore;
     private List<PlayerScore> scores;
 
     public GlobalScoreRequest() {
