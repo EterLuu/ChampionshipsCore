@@ -8,13 +8,18 @@ import java.util.List;
 
 @Setter
 @Getter
-@AllArgsConstructor
 public class GlobalScoreRequest {
     private String team;
     private int total_score;
     private List<PlayerScore> scores;
 
     public GlobalScoreRequest() {
+    }
+
+    public GlobalScoreRequest(String team, int total_score, List<PlayerScore> scores) {
+        this.team = team;
+        this.total_score = total_score;
+        this.scores = scores;
     }
 
     @Setter
