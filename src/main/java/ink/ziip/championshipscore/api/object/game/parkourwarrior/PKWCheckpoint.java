@@ -15,6 +15,7 @@ import java.util.List;
 public class PKWCheckpoint {
     private ConfigurationSection pkwCheckpoint;
     private String name;
+    private String originName;
     private PKWCheckPointTypeEnum type;
     private List<CCSelection> subCheckpoints;
     private CCSelection enter;

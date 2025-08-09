@@ -104,6 +104,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 PKWCheckpoint checkpoint = new PKWCheckpoint(
                         checkpointSection,
                         name,
+                        checkpointName,
                         pkwCheckPointType,
                         subCheckpoints,
                         new CCSelection(checkpointSection.getVector("enter.pos1"), checkpointSection.getVector("enter.pos2"), getSpectatorSpawnLocation().getWorld()),
@@ -200,7 +201,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
 
                     ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
                     if (championshipTeam != null)
-                        plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourWarrior, player, championshipTeam, "Checkpoint", checkpoint.getName() + "-" + (index + 1));
+                        plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourWarrior, player, championshipTeam, "Checkpoint", checkpoint.getOriginName() + "-" + (index + 1));
 
                     sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_ARRIVED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName())
                             .replace("%sub-checkpoint%", String.valueOf(i + 1)));
@@ -260,7 +261,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 if (subCheckpointIndex == entry.getKey().getSubCheckpoints().size() - 1) {
                     count++;
                 }
-            } else if (checkpointType == PKWCheckPointTypeEnum.sub && type == PKWCheckPointTypeEnum.sub && entry.getKey().getName().equals(checkpointName)) {
+            } else if (checkpointType == PKWCheckPointTypeEnum.sub && type == PKWCheckPointTypeEnum.sub && entry.getKey().getOriginName().equals(checkpointName)) {
                 return entry.getValue() + 1;
             }
         }
