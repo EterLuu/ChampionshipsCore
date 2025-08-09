@@ -22,9 +22,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.*;
 
 @Getter
 @Setter
@@ -178,6 +176,16 @@ public class TNTRunHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInventoryDrop(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        if (tntRunTeamArea.notAreaPlayer(player)) {
+            return;
+        }
+
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerItemDamage(PlayerItemDamageEvent event) {
         Player player = event.getPlayer();
         if (tntRunTeamArea.notAreaPlayer(player)) {
             return;
