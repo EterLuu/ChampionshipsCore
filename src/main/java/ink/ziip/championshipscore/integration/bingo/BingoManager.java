@@ -88,6 +88,10 @@ public class BingoManager extends BaseManager {
 
             plugin.getScheduleManager().addRound(GameTypeEnum.Bingo);
 
+            for (BingoParticipant participant : teamManager.getParticipants()) {
+                teamManager.removeMemberFromTeam(participant);
+            }
+
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 championshipTeam.teleportAllPlayers(CCConfig.BINGO_SPAWN_LOCATION);
                 championshipTeam.setGameModeForAllPlayers(GameMode.SPECTATOR);
