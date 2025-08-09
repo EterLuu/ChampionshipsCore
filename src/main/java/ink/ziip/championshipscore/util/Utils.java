@@ -113,7 +113,13 @@ public class Utils {
         if (color.equalsIgnoreCase("orange"))
             return ChatColor.GOLD;
         if (color.equalsIgnoreCase("black"))
-            return ChatColor.WHITE;
+            return ChatColor.DARK_GRAY;
+        if (color.equalsIgnoreCase("light_gray"))
+            return ChatColor.GRAY;
+        if (color.equalsIgnoreCase("gray"))
+            return ChatColor.DARK_GRAY;
+        if (color.equalsIgnoreCase("magenta"))
+            return ChatColor.LIGHT_PURPLE;
 
         try {
             return ChatColor.valueOf(color);
