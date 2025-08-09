@@ -182,6 +182,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
                 }
             } else {
                 addBossBarPlayer("escaper", player);
+                player.getInventory().setBoots(player.getInventory().getBoots());
             }
         }
 

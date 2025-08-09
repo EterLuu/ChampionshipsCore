@@ -268,6 +268,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
                 if (championshipTeam != null) {
                     player.getInventory().setChestplate(championshipTeam.getChestPlate());
+                    player.getInventory().setLeggings(championshipTeam.getBoots());
                 }
 
                 player.getInventory().addItem(elytra.clone());
