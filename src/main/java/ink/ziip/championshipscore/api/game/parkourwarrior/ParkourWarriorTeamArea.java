@@ -99,9 +99,11 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                 } catch (NullPointerException ignored) {
                 }
 
+                String name = checkpointSection.getString("name");
+
                 PKWCheckpoint checkpoint = new PKWCheckpoint(
                         checkpointSection,
-                        checkpointName,
+                        name,
                         pkwCheckPointType,
                         subCheckpoints,
                         new CCSelection(checkpointSection.getVector("enter.pos1"), checkpointSection.getVector("enter.pos2"), getSpectatorSpawnLocation().getWorld()),
@@ -198,12 +200,12 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
 
                     ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
                     if (championshipTeam != null)
-                        plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourWarrior, player, championshipTeam, "Checkpoint", checkpoint.getName());
+                        plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourWarrior, player, championshipTeam, "Checkpoint", checkpoint.getName() + "-" + (index + 1));
 
                     sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_ARRIVED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName())
-                            .replace("%sub-checkpoint%", String.valueOf(i)));
+                            .replace("%sub-checkpoint%", String.valueOf(i + 1)));
                     player.sendMessage(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_ARRIVED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName())
-                            .replace("%sub-checkpoint%", String.valueOf(i)));
+                            .replace("%sub-checkpoint%", String.valueOf(i + 1)));
 
                     if (index == checkpoint.getSubCheckpoints().size() - 1) {
                         if (checkpoint.getType() == PKWCheckPointTypeEnum.main) {
@@ -349,7 +351,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
             finalPoints = points2 * getGameConfig().getPoints2() +
                     ascend * acc(points3 == 0 ? 0 : (points3 - 1)) + (points3 == 0 ? 0 : getGameConfig().getPoints3()) * points3 +
                     ascend * acc(points4 == 0 ? 0 : (points4 - 1)) + (points4 == 0 ? 0 : getGameConfig().getPoints4()) * points4 +
-                    10 * acc(points5 == 0 ? 0 : (points5 - 1)) + (points5 == 0 ? 0 : getGameConfig().getPoints5()) * points5;
+                    ascend * acc(points5 == 0 ? 0 : (points5 - 1)) + (points5 == 0 ? 0 : getGameConfig().getPoints5()) * points5;
 
             ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(uuid);
             if (championshipTeam != null) {
