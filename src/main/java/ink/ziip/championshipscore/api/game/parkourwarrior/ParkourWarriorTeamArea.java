@@ -358,8 +358,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
             if (championshipTeam != null) {
                 double multiplier = gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + 1;
 
-                BigDecimal multiplierMultiplier = BigDecimal.valueOf(multiplier).setScale(2, RoundingMode.HALF_UP);
-                BigDecimal finalPointsBD = BigDecimal.valueOf(finalPoints).setScale(2, RoundingMode.HALF_UP).multiply(multiplierMultiplier);
+                BigDecimal finalPointsBD = BigDecimal.valueOf(finalPoints * multiplier).setScale(2, RoundingMode.HALF_UP);
 
                 addPlayerPoints(uuid, finalPointsBD.doubleValue());
             }
