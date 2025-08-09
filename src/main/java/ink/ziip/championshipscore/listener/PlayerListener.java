@@ -77,7 +77,7 @@ public class PlayerListener extends BaseListener {
                 event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
                 return;
             } else {
-                plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (!gameApiClient.getPlayerClientVerifyStatus(name, true).join()) {
                         Player player = Bukkit.getPlayer(name);
                         if (player != null) {
