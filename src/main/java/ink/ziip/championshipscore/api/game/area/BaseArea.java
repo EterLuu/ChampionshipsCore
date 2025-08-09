@@ -396,7 +396,7 @@ public abstract class BaseArea {
         for (Player player : getOnlineSpectators()) {
             player.sendMessage(message);
         }
-        Bukkit.getServer().getLogger().log(Level.INFO, message);
+        Bukkit.getServer().getLogger().log(Level.INFO, ChatColor.stripColor(message));
     }
 
     public void sendActionBarToAllSpectators(String message) {
