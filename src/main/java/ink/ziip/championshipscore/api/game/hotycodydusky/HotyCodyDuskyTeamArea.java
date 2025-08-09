@@ -314,6 +314,9 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             Player codyHolderPlayer = Bukkit.getPlayer(codyHolder);
             if (codyHolderPlayer != null) {
                 codyHolderPlayer.getInventory().clear();
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+                if (championshipTeam != null)
+                    codyHolderPlayer.getInventory().setBoots(championshipTeam.getBoots());
                 codyHolderPlayer.playSound(codyHolderPlayer, Sound.ENTITY_ENDER_PEARL_THROW, 1, 0);
                 for (PotionEffect potionEffect : codyHolderPlayer.getActivePotionEffects())
                     codyHolderPlayer.removePotionEffect(potionEffect.getType());
@@ -332,7 +335,9 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         if (player != null) {
             ItemStack cody = new ItemStack(Material.COD);
             PlayerInventory inventory = player.getInventory();
-            inventory.setBoots(cody.clone());
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+            if (championshipTeam != null)
+                inventory.setBoots(championshipTeam.getBoots());
             inventory.setLeggings(cody.clone());
             inventory.setChestplate(cody.clone());
             inventory.setHelmet(cody.clone());
