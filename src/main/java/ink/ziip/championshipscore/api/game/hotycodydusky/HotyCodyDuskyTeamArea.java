@@ -194,7 +194,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         timer = getGameConfig().getTimer();
         setGameStageEnum(GameStageEnum.PROGRESS);
 
-        selectCodyHolder();
+        selectCodyHolder(true);
 
         startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
 
@@ -255,17 +255,17 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         synchronized (this) {
             if (type == 1) {
                 codyHolder = null;
-                selectCodyHolder();
+                selectCodyHolder(false);
             }
             if (type == 2) {
-                return changeCodyHolder(holder);
+                return changeCodyHolder(holder, false);
             }
 
             return false;
         }
     }
 
-    private void selectCodyHolder() {
+    private void selectCodyHolder(boolean first) {
         if (gameStageEnum != GameStageEnum.PROGRESS) {
             return;
         }
@@ -283,13 +283,13 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         }
 
         UUID holder = alivePlayers.get(new Random().nextInt(alivePlayers.size()));
-        while (!changeCodyHolder(holder)) {
+        while (!changeCodyHolder(holder, first)) {
             holder = alivePlayers.get(new Random().nextInt(alivePlayers.size()));
         }
         addPlayerPoints(holder, 10);
     }
 
-    private boolean changeCodyHolder(UUID to) {
+    private boolean changeCodyHolder(UUID to, boolean first) {
         long lastChangeTime = playerCodyChangeTimes.getOrDefault(to, 0L);
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastChangeTime < 1500) {
@@ -305,11 +305,11 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_PLAYER_RECEIVED_CODY.replace("%player%", playerManager.getPlayerName(to)));
         else
             sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GIVE_CODY_TO_PLAYER.replace("%to%", playerManager.getPlayerName(to)).replace("%from%", playerManager.getPlayerName(codyHolder)));
-        setCodyPlayer(to);
+        setCodyPlayer(to, first);
         return true;
     }
 
-    private void setCodyPlayer(UUID uuid) {
+    private void setCodyPlayer(UUID uuid, boolean first) {
         if (codyHolder != null) {
             Player codyHolderPlayer = Bukkit.getPlayer(codyHolder);
             if (codyHolderPlayer != null) {
@@ -348,7 +348,8 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             PotionEffect potionEffectGlowing = new PotionEffect(PotionEffectType.GLOWING, getTimer() * 20, 0, false, false);
             PotionEffect potionEffectSpeed = new PotionEffect(PotionEffectType.SPEED, getTimer() * 20, 0, false, false);
             PotionEffect potionEffectHaste = new PotionEffect(PotionEffectType.HASTE, getTimer() * 20, 0, false, false);
-            player.addPotionEffect(potionEffectBlindness);
+            if (!first)
+                player.addPotionEffect(potionEffectBlindness);
             player.addPotionEffect(potionEffectGlowing);
             player.addPotionEffect(potionEffectSpeed);
             player.addPotionEffect(potionEffectHaste);
