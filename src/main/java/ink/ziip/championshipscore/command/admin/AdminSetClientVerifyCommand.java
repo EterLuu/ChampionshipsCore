@@ -19,6 +19,7 @@ public class AdminSetClientVerifyCommand extends BaseSubCommand {
         if (args.length == 1) {
             try {
                 CCConfig.ENABLE_CLIENT_CHECK = Boolean.getBoolean(args[0]);
+                plugin.getConfigurationManager().getCCConfig().saveOptions();
             } catch (Exception ignored) {
             }
         }

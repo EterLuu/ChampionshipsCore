@@ -19,7 +19,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 6;
+        return 7;
     }
 
     // Mode
@@ -35,6 +35,10 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "client-verify-api")
     public static String CLIENT_VERIFY_API;
+
+    @ConfigOption(path = "client-verify-whitelist")
+    public static List<String> CLIENT_VERIFY_API_WHITELIST;
+
 
     // Players
     @ConfigOption(path = "max-players")

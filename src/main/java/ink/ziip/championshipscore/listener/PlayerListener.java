@@ -67,6 +67,9 @@ public class PlayerListener extends BaseListener {
         }
 
         if (championshipTeam != null && CCConfig.ENABLE_CLIENT_CHECK) {
+            if (CCConfig.CLIENT_VERIFY_API_WHITELIST.contains(name))
+                return;
+
             GameApiClient gameApiClient = ChampionshipsCore.getInstance().getGameApiClient();
             CompletableFuture<Boolean> cf = gameApiClient.getPlayerClientVerifyStatus(name, false);
             if (!cf.join()) {

@@ -14,5 +14,6 @@ public class AdminMainCommand extends BaseMainCommand {
         addSubCommand(new AdminTeleportationSubCommand());
         addSubCommand(new AdminReloadSubCommand());
         addSubCommand(new AdminSetClientVerifyCommand());
+        addSubCommand(new AdminAddClientVerifyWhitelistSubCommand());
     }
 }
