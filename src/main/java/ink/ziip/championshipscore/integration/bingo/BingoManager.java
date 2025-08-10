@@ -17,10 +17,10 @@ import io.github.steaf23.bingoreloaded.player.BingoParticipant;
 import io.github.steaf23.bingoreloaded.player.BingoPlayer;
 import io.github.steaf23.bingoreloaded.player.team.TeamManager;
 import io.github.steaf23.bingoreloaded.tasks.GameTask;
+import io.github.steaf23.bingoreloaded.tasks.data.TaskData;
 import lombok.Getter;
 import lombok.Setter;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.TranslatableComponent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -34,7 +34,7 @@ import java.util.logging.Level;
 
 public class BingoManager extends BaseManager {
     private final BingoReloaded bingoReloaded;
-    private final Map<Material, List<ChampionshipTeam>> bingoTaskCompleteLists = new ConcurrentHashMap<>();
+    private final Map<TaskData, List<ChampionshipTeam>> bingoTaskCompleteLists = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, Integer> teamPoints = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> playerPoints = new ConcurrentHashMap<>();
     private final HashMap<ChampionshipTeam, Set<Integer>> teamCompleteLines = new HashMap<>();
@@ -317,35 +317,18 @@ public class BingoManager extends BaseManager {
                 if (player != null)
                     playerPoints.put(player.getUniqueId(), playerPoints.getOrDefault(player.getUniqueId(), 0) + 20);
 
-                String[] messages = MessageConfig.BINGO_TASK_COMPLETE.split("%team%");
-                messages[1] = messages[1]
-                        .replace("%points%", String.valueOf(points));
+                String messages = MessageConfig.BINGO_TASK_COMPLETE.replace("%team%", championshipTeam.getColoredName())
+                        .replace("%points%", String.valueOf(points))
+                        .replace("%task%", PlainTextComponentSerializer.plainText().serialize(gameTask.getName()));
 
-                String[] finalMessages = messages[1].split("%task%");
-                TextComponent textComponent = new TextComponent(messages[0]);
-                TextComponent teamComponent = new TextComponent(championshipTeam.getName());
-                textComponent.setColor(Utils.toBungeeChatColor(championshipTeam.getColorName()));
-                textComponent.addExtra(teamComponent);
-                textComponent.addExtra(new TextComponent(finalMessages[0]));
-                textComponent.addExtra(new TranslatableComponent(gameTask.material().getItemTranslationKey()));
-                textComponent.addExtra(finalMessages[1]);
-
-                Utils.sendMessageToAllSpigotPlayers(textComponent);
-                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.Bingo, player, championshipTeam, "Item_Found", gameTask.material().name());
+                Utils.sendMessageToAllPlayers(messages);
+                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.Bingo, player, championshipTeam, "Item_Found", PlainTextComponentSerializer.plainText().serialize(gameTask.getName()));
             }
-//            if (num == 4) {
-//                String[] messages = MessageConfig.BINGO_TASK_EXPIRED.split("%task%");
-//                TextComponent textComponent = new TextComponent(messages[0]);
-//                textComponent.addExtra(new TranslatableComponent(gameTask.material().getItemTranslationKey()));
-//                textComponent.addExtra(messages[1]);
-//
-//                Utils.sendMessageToAllSpigotPlayers(textComponent);
-//            }
         }
     }
 
-    public int getMaterialPoints(Material material) {
-        return getPoints(bingoTaskCompleteLists.getOrDefault(material, Collections.emptyList()).size());
+    public int getGameTaskPoints(GameTask gameTask) {
+        return getPoints(bingoTaskCompleteLists.getOrDefault(gameTask.data, Collections.emptyList()).size());
     }
 
     private void addCompleteTeams(GameTask gameTask, ChampionshipTeam championshipTeam) {
@@ -355,9 +338,9 @@ public class BingoManager extends BaseManager {
     }
 
     private List<ChampionshipTeam> getCompleteTeams(GameTask gameTask) {
-        if (!bingoTaskCompleteLists.containsKey(gameTask.material())) {
-            bingoTaskCompleteLists.put(gameTask.material(), new ArrayList<>());
+        if (!bingoTaskCompleteLists.containsKey(gameTask.data)) {
+            bingoTaskCompleteLists.put(gameTask.data, new ArrayList<>());
         }
-        return bingoTaskCompleteLists.get(gameTask.material());
+        return bingoTaskCompleteLists.get(gameTask.data);
     }
 }
