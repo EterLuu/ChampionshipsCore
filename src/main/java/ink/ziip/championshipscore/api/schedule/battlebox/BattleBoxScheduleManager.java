@@ -49,8 +49,13 @@ public class BattleBoxScheduleManager extends BaseManager {
         return false;
     }
 
-    private ChampionshipTeam selectTeam() {
-        return plugin.getTeamManager().getTeamList().get(new Random().nextInt(plugin.getTeamManager().getTeamList().size()));
+    private ChampionshipTeam selectTeam(Set<TwoVTwoVector> pairs) {
+        List<ChampionshipTeam> selectedTeams = new ArrayList<>();
+        for (ChampionshipTeam team : plugin.getTeamManager().getTeamList()) {
+            if (!alreadyContainsTeam(team, pairs))
+                selectedTeams.add(team);
+        }
+        return selectedTeams.get(new Random().nextInt(selectedTeams.size()));
     }
 
     private void generatePairs(int rounds, int pairs) {
@@ -58,8 +63,8 @@ public class BattleBoxScheduleManager extends BaseManager {
         for (int i = 0; i < rounds; i++) {
             Set<TwoVTwoVector> set = new HashSet<>();
             while (set.size() < pairs) {
-                ChampionshipTeam t1 = selectTeam();
-                ChampionshipTeam t2 = selectTeam();
+                ChampionshipTeam t1 = selectTeam(set);
+                ChampionshipTeam t2 = selectTeam(set);
                 if (t1.equals(t2)) {
                     continue;
                 }
@@ -74,6 +79,43 @@ public class BattleBoxScheduleManager extends BaseManager {
                 if (set.contains(tv)) {
                     continue;
                 }
+                set.add(tv);
+            }
+            this.rounds.add(set);
+        }
+    }
+
+    private void cycleGeneratePairs() {
+        this.rounds.clear();
+
+        List<ChampionshipTeam> teams = new ArrayList<>(plugin.getTeamManager().getTeamList());
+
+        if (teams.size() % 2 != 0) {
+            plugin.getLogger().warning(GameTypeEnum.BattleBox + " teams size is not even, removing one team to make it even.");
+            return;
+        }
+
+        int rounds = 9;
+        int pairs = teams.size() / 2;
+
+        Collections.shuffle(teams);
+
+        ChampionshipTeam firstTeam = teams.getFirst();
+        teams.remove(firstTeam);
+
+        int teamsSize = teams.size();
+
+        for (int i = 0; i < rounds; i++) {
+            int teamIdx = i % teamsSize;
+
+            Set<TwoVTwoVector> set = new HashSet<>();
+
+            set.add(new TwoVTwoVector(firstTeam, teams.get(teamIdx)));
+
+            for (int j = 1; j < pairs; j++) {
+                int firstTeamNum = (i + j) % teamsSize;
+                int secondTeamNum = (i + teamsSize - j) % teamsSize;
+                TwoVTwoVector tv = new TwoVTwoVector(teams.get(firstTeamNum), teams.get(secondTeamNum));
                 set.add(tv);
             }
             this.rounds.add(set);
@@ -118,7 +160,8 @@ public class BattleBoxScheduleManager extends BaseManager {
         subRound = 0;
         completedAreaNum = 0;
 
-        generatePairs(9, 8);
+//        generatePairs(9, 8);
+        cycleGeneratePairs();
 
         firstStartTask = scheduler.runTaskTimer(plugin, () -> {
 
