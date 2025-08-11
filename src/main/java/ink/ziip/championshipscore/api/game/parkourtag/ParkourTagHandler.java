@@ -71,14 +71,14 @@ public class ParkourTagHandler extends BaseListener {
 
                                     rightChampionshipTeam.sendMessageToAll(message
                                             .replace("%player%", player.getName())
-                                            .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid) - 1)));
+                                            .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid))));
                                 }
                                 if (championshipTeam.equals(leftChampionshipTeam)) {
                                     parkourTagArea.setLeftAreaChaser(uuid);
 
                                     leftChampionshipTeam.sendMessageToAll(message
                                             .replace("%player%", player.getName())
-                                            .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid) - 1)));
+                                            .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid))));
                                 }
                             }
                         } else {
