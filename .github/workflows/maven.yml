@@ -27,6 +27,10 @@ jobs:
         java-version: '21'
         distribution: 'zulu'
         cache: maven
+    - name: Download BingoReloaded jars
+      run: |
+        mkdir -p libs
+        wget https://github.com/Steaf23/BingoReloaded/releases/download/v3.2.0/BingoReloaded-3.2.0.jar -O libs/BingoReloaded-3.2.0-all.jar
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
