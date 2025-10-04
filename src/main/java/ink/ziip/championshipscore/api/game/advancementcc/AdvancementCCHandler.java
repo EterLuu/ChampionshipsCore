@@ -8,7 +8,9 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 
 @Setter
 public class AdvancementCCHandler extends BaseListener {
@@ -35,5 +37,27 @@ public class AdvancementCCHandler extends BaseListener {
         }
 
         advancementCCArea.handlePlayerAdvancementDone(player.getUniqueId(), event.getAdvancement());
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEntityEnterNetherPortal(EntityPortalEvent event) {
+        if (event.getEntity() instanceof Player player) {
+            if (advancementCCArea.notInArea(player.getLocation())) {
+                return;
+            }
+
+            if (!advancementCCArea.isAllowTeleport())
+                event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerEnterNetherPortal(PlayerPortalEvent event) {
+        Player player = event.getPlayer();
+        if (advancementCCArea.notInArea(player.getLocation())) {
+            return;
+        }
+        if (!advancementCCArea.isAllowTeleport())
+            event.setCancelled(true);
     }
 }

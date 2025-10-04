@@ -9,8 +9,6 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
-import org.bukkit.advancement.AdvancementDisplay;
-import org.bukkit.advancement.AdvancementDisplayType;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -20,15 +18,20 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class AdvancementCCArea extends BaseSingleTeamArea {
     private final Set<String> advanceentSet = new ConcurrentSkipListSet<>();
+    private final List<String> netherAdvancements = new LinkedList<>();
+    private final Map<String, Integer> playerDeathTimes = new ConcurrentHashMap<>();
     @Getter
     private int timer;
     private int goal;
     private int task;
     private int challenge;
+    @Getter
+    private boolean allowTeleport;
     private BukkitTask startGameProgressTask;
 
     public AdvancementCCArea(ChampionshipsCore plugin, AdvancementCCConfig advancementCCConfig) {
@@ -40,10 +43,17 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
         getGameHandler().register();
 
         setGameStageEnum(GameStageEnum.WAITING);
+
+        netherAdvancements.add("nether/ride_strider");
+        netherAdvancements.add("nether/obtain_ancient_debris");
+        netherAdvancements.add("nether/explore_nether");
+        netherAdvancements.add("nether/find_fortress");
+        netherAdvancements.add("nether/charge_respawn_anchor");
     }
 
     @Override
     public void startGamePreparation() {
+        allowTeleport = false;
         goal = 0;
         task = 0;
         challenge = 0;
@@ -78,7 +88,7 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
     }
 
     private void startGameProgress() {
-        timer = getGameConfig().getTimer() + 5;
+        timer = 0;
 
         getWorld().setTime(0);
 
@@ -106,18 +116,27 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
             sendActionBarToAllGamePlayers(MessageConfig.ACC_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
             sendActionBarToAllGameSpectators(MessageConfig.ACC_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
 
-            if (timer == 0) {
-                endGame();
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
+            for (UUID uuid : gamePlayers) {
+                int count = 0;
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null) {
+                    if (player.getWorld().getName().equals(getWorldName())) {
+                        count++;
+                    }
+                }
+                if (count == gamePlayers.size()) {
+                    endGame();
+                    if (startGameProgressTask != null)
+                        startGameProgressTask.cancel();
+                }
             }
 
-            timer--;
+            timer++;
         }, 0, 20L);
     }
 
     private void teleportPlayersToSpawnLocation() {
-        teleportAllPlayers(getWorld().getSpawnLocation());
+        teleportAllPlayers(getNether().getSpawnLocation());
     }
 
     @Override
@@ -126,6 +145,9 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
         if (notAreaPlayer(player)) {
             return;
         }
+
+        //Add player death times
+
 
         scheduler.runTask(plugin, () -> event.getEntity().spigot().respawn());
     }
@@ -192,32 +214,21 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
     protected synchronized void handlePlayerAdvancementDone(UUID uuid, Advancement advancement) {
         String name = advancement.getKey().toString();
+        if (!netherAdvancements.contains(name)) {
+            return;
+        }
 
         if (!advanceentSet.contains(name)) {
             advanceentSet.add(name);
+            if (advanceentSet.size() == 5)
+                allowTeleport = true;
 
-            AdvancementDisplay advancementDisplay = advancement.getDisplay();
-            if (advancementDisplay != null) {
-                if (advancementDisplay.getType() == AdvancementDisplayType.TASK) {
-                    addPlayerPoints(uuid, 1);
-                    task++;
-                }
-                if (advancementDisplay.getType() == AdvancementDisplayType.GOAL) {
-                    addPlayerPoints(uuid, 3);
-                    goal++;
-                }
-                if (advancementDisplay.getType() == AdvancementDisplayType.CHALLENGE) {
-                    addPlayerPoints(uuid, 5);
-                    challenge++;
-                }
-
-                for (UUID gamePlayer : getGamePlayers()) {
-                    Player player = Bukkit.getPlayer(gamePlayer);
-                    if (player != null) {
-                        AdvancementProgress advancementProgress = player.getAdvancementProgress(advancement);
-                        for (String criteria : advancementProgress.getRemainingCriteria())
-                            advancementProgress.awardCriteria(criteria);
-                    }
+            for (UUID gamePlayer : getGamePlayers()) {
+                Player player = Bukkit.getPlayer(gamePlayer);
+                if (player != null) {
+                    AdvancementProgress advancementProgress = player.getAdvancementProgress(advancement);
+                    for (String criteria : advancementProgress.getRemainingCriteria())
+                        advancementProgress.awardCriteria(criteria);
                 }
             }
         }
@@ -241,7 +252,7 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
     @Override
     public Location getSpectatorSpawnLocation() {
-        return getWorld().getSpawnLocation();
+        return getNether().getSpawnLocation();
     }
 
     @Override
@@ -261,5 +272,9 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
     public World getWorld() {
         return Bukkit.getWorld(getWorldName());
+    }
+
+    public World getNether() {
+        return Bukkit.getWorld(getWorldName() + "_nether");
     }
 }
