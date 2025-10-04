@@ -5,12 +5,14 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import lombok.Setter;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 
 @Setter
 public class AdvancementCCHandler extends BaseListener {
@@ -46,8 +48,12 @@ public class AdvancementCCHandler extends BaseListener {
                 return;
             }
 
-            if (!advancementCCArea.isAllowTeleport())
+            if (!advancementCCArea.isAllowTeleport()) {
                 event.setCancelled(true);
+                return;
+            }
+
+            advancementCCArea.addCompletedPlayerCount(player.getName());
         }
     }
 
@@ -57,7 +63,26 @@ public class AdvancementCCHandler extends BaseListener {
         if (advancementCCArea.notInArea(player.getLocation())) {
             return;
         }
-        if (!advancementCCArea.isAllowTeleport())
+        if (!advancementCCArea.isAllowTeleport()) {
             event.setCancelled(true);
+            return;
+        }
+
+        advancementCCArea.addCompletedPlayerCount(player.getName());
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        if (advancementCCArea.notInArea(player.getLocation())) {
+            return;
+        }
+
+        if (!event.isBedSpawn() && !event.isAnchorSpawn()) {
+            World nether = advancementCCArea.getNether();
+            if (nether != null) {
+                event.setRespawnLocation(nether.getSpawnLocation());
+            }
+        }
     }
 }

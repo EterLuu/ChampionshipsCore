@@ -60,6 +60,17 @@ public class AdvancementCCPlaceholder extends BasePlaceholder {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
         }
+        if (params.startsWith("is_advancement_completed_")) {
+            AdvancementCCArea advancementCCArea = advancementCCManager.getArea(params.split("_", 5)[3]);
+            if (advancementCCArea == null) {
+                advancementCCArea = advancementCCManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
+            }
+            if (advancementCCArea == null) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            String advancementName = params.split("_", 5)[4];
+            return String.valueOf(advancementCCArea.isAdvancementCompleted(advancementName));
+        }
 
         Player player = offlinePlayer.getPlayer();
         if (player == null)

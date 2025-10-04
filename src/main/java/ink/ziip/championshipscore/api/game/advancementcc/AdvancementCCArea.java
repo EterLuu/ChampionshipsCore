@@ -18,21 +18,22 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class AdvancementCCArea extends BaseSingleTeamArea {
     private final Set<String> advanceentSet = new ConcurrentSkipListSet<>();
     private final List<String> netherAdvancements = new LinkedList<>();
-    private final Map<String, Integer> playerDeathTimes = new ConcurrentHashMap<>();
+    private final Map<String, Long> advancementFinishTimes = new HashMap<>();
+    private final Map<String, Integer> playerDeathTimes = new HashMap<>();
     @Getter
-    private int timer;
+    private long timer;
     private int goal;
     private int task;
     private int challenge;
     @Getter
     private boolean allowTeleport;
     private BukkitTask startGameProgressTask;
+    private final Set<String> completedPlayerCounts = new HashSet<>();
 
     public AdvancementCCArea(ChampionshipsCore plugin, AdvancementCCConfig advancementCCConfig) {
         super(plugin, GameTypeEnum.AdvancementCC, new AdvancementCCHandler(plugin), advancementCCConfig);
@@ -44,11 +45,32 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
         setGameStageEnum(GameStageEnum.WAITING);
 
-        netherAdvancements.add("nether/ride_strider");
-        netherAdvancements.add("nether/obtain_ancient_debris");
-        netherAdvancements.add("nether/explore_nether");
-        netherAdvancements.add("nether/find_fortress");
-        netherAdvancements.add("nether/charge_respawn_anchor");
+        netherAdvancements.add("minecraft:nether/ride_strider");
+        netherAdvancements.add("minecraft:nether/obtain_ancient_debris");
+        netherAdvancements.add("minecraft:nether/explore_nether");
+        netherAdvancements.add("minecraft:nether/find_fortress");
+        netherAdvancements.add("minecraft:nether/charge_respawn_anchor");
+
+        Location spawnLocation = getNether().getSpawnLocation();
+        if (spawnLocation != null) {
+            World world = spawnLocation.getWorld();
+            if (world != null) {
+                int x = spawnLocation.getBlockX();
+                int y = spawnLocation.getBlockY();
+                int z = spawnLocation.getBlockZ();
+                for (int i = -1; i <= 1; i++) {
+                    for (int j = -1; j <= 1; j++) {
+                        for (int k = -1; k <= 1; k++) {
+                            world.getBlockAt(x + i, y + j, z + k).setType(Material.AIR);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public synchronized void addCompletedPlayerCount(String playerName) {
+        completedPlayerCounts.add(playerName);
     }
 
     @Override
@@ -116,19 +138,10 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
             sendActionBarToAllGamePlayers(MessageConfig.ACC_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
             sendActionBarToAllGameSpectators(MessageConfig.ACC_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
 
-            for (UUID uuid : gamePlayers) {
-                int count = 0;
-                Player player = Bukkit.getPlayer(uuid);
-                if (player != null) {
-                    if (player.getWorld().getName().equals(getWorldName())) {
-                        count++;
-                    }
-                }
-                if (count == gamePlayers.size()) {
-                    endGame();
-                    if (startGameProgressTask != null)
-                        startGameProgressTask.cancel();
-                }
+            if (completedPlayerCounts.size() == gamePlayers.size()) {
+                endGame();
+                if (startGameProgressTask != null)
+                    startGameProgressTask.cancel();
             }
 
             timer++;
@@ -140,16 +153,25 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
     }
 
     @Override
-    public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
+    public synchronized void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
         Player player = event.getEntity();
         if (notAreaPlayer(player)) {
             return;
         }
 
-        //Add player death times
-
+        //Add player death times, count ++
+        playerDeathTimes.putIfAbsent(player.getName(), 0);
+        int times = playerDeathTimes.get(player.getName());
+        times++;
+        playerDeathTimes.put(player.getName(), times);
 
         scheduler.runTask(plugin, () -> event.getEntity().spigot().respawn());
+    }
+
+    public String isAdvancementCompleted(String advancementName) {
+        if (advanceentSet.contains(advancementName))
+            return "完成于" + String.valueOf(advancementFinishTimes.get(advancementName)) + "秒";
+        return "未完成";
     }
 
     @Override
@@ -170,7 +192,24 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
-        calculatePoints();
+        StringBuilder deathTimesMessage = new StringBuilder("§6=== 玩家死亡次数 ===\n");
+        for (Map.Entry<String, Integer> entry : playerDeathTimes.entrySet()) {
+            deathTimesMessage.append("§e").append(entry.getKey()).append(": §c").append(entry.getValue()).append("次\n");
+        }
+        sendMessageToAllGamePlayers(deathTimesMessage.toString());
+        StringBuilder advancementTimesMessage = new StringBuilder("§6=== 成就完成时间 ===\n");
+        for (Map.Entry<String, Long> entry : advancementFinishTimes.entrySet()) {
+            advancementTimesMessage.append("§e").append(entry.getKey()).append(": §c").append(entry.getValue()).append("秒 \n");
+        }
+        sendMessageToAllGamePlayers(advancementTimesMessage.toString());
+
+        // Send player game time to players
+        long gameTime = timer;
+        String gameTimeMessage = "§6=== 游戏时间 ===\n§e" +
+                (gameTime / 3600) + "小时" +
+                (gameTime % 3600 / 60) + "分" +
+                (gameTime % 60) + "秒\n";
+        sendMessageToAllGamePlayers(gameTimeMessage);
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.ACC_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.ACC_GAME_END_TITLE, MessageConfig.ACC_GAME_END_SUBTITLE);
@@ -209,6 +248,10 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
     @Override
     public void resetArea() {
         advanceentSet.clear();
+        advancementFinishTimes.clear();
+        playerDeathTimes.clear();
+        allowTeleport = false;
+        completedPlayerCounts.clear();
         startGameProgressTask = null;
     }
 
@@ -220,6 +263,7 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
         if (!advanceentSet.contains(name)) {
             advanceentSet.add(name);
+            advancementFinishTimes.put(name, timer);
             if (advanceentSet.size() == 5)
                 allowTeleport = true;
 
