@@ -14,6 +14,8 @@ import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
+import java.util.Objects;
+
 @Setter
 public class AdvancementCCHandler extends BaseListener {
     private AdvancementCCArea advancementCCArea;
@@ -74,15 +76,19 @@ public class AdvancementCCHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
-        if (advancementCCArea.notInArea(player.getLocation())) {
+        if (advancementCCArea.notAreaPlayer(player)) {
+            return;
+        }
+        if (event.isAnchorSpawn()) {
+            return;
+        }
+        if (event.isBedSpawn()) {
             return;
         }
 
-        if (!event.isBedSpawn() && !event.isAnchorSpawn()) {
-            World nether = advancementCCArea.getNether();
-            if (nether != null) {
-                event.setRespawnLocation(nether.getSpawnLocation());
-            }
+        World nether = advancementCCArea.getNether();
+        if (nether != null && !Objects.equals(event.getRespawnLocation().getWorld(), nether)) {
+            event.setRespawnLocation(nether.getSpawnLocation());
         }
     }
 }

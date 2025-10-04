@@ -67,6 +67,10 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
                 }
             }
         }
+
+        getWorld().setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
+        getNether().setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
+        getEnd().setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
     }
 
     public synchronized void addCompletedPlayerCount(String playerName) {
@@ -114,7 +118,7 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
         getWorld().setTime(0);
 
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+        changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
         resetPlayerHealthFoodEffectLevelInventory();
 
         setGameStageEnum(GameStageEnum.PROGRESS);
@@ -164,8 +168,6 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
         int times = playerDeathTimes.get(player.getName());
         times++;
         playerDeathTimes.put(player.getName(), times);
-
-        scheduler.runTask(plugin, () -> event.getEntity().spigot().respawn());
     }
 
     public String isAdvancementCompleted(String advancementName) {
@@ -320,5 +322,9 @@ public class AdvancementCCArea extends BaseSingleTeamArea {
 
     public World getNether() {
         return Bukkit.getWorld(getWorldName() + "_nether");
+    }
+
+    public World getEnd() {
+        return Bukkit.getWorld(getWorldName() + "_the_end");
     }
 }
