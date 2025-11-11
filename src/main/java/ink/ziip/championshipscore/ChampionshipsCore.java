@@ -1,7 +1,6 @@
 package ink.ziip.championshipscore;
 
 import fr.skytasul.glowingentities.GlowingEntities;
-import ink.ziip.championshipscore.api.GameApiClient;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
@@ -10,7 +9,6 @@ import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.api.vote.VoteManager;
 import ink.ziip.championshipscore.integration.papi.PlaceholderManager;
 import ink.ziip.championshipscore.util.world.WorldManager;
-import ink.ziip.championshipscore.integration.bingo.BingoManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
 import ink.ziip.championshipscore.command.CommandManager;
@@ -40,13 +38,11 @@ public final class ChampionshipsCore extends JavaPlugin {
     private WorldEditManager worldEditManager;
     private GameManager gameManager;
     private RankManager rankManager;
-    private BingoManager bingoManager;
     private WorldManager worldManager;
     private GlowingEntities glowingEntities;
     private PlaceholderManager placeholderManager;
     private VoteManager voteManager;
     private ScheduleManager scheduleManager;
-    private GameApiClient gameApiClient;
 
     @Override
     public void onEnable() {
@@ -94,17 +90,11 @@ public final class ChampionshipsCore extends JavaPlugin {
         worldEditManager.load();
 
         gameManager.load();
-        if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
-            bingoManager = new BingoManager(this);
-            bingoManager.load();
-        }
 
         commandManager.load();
         placeholderManager.load();
         voteManager.load();
         scheduleManager.load();
-
-        gameApiClient = new GameApiClient(this);
 
         getLogger().log(Level.INFO, CCConfig.MODE);
     }
@@ -124,10 +114,6 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         worldEditManager.unload();
         worldManager.unload();
-
-        if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
-            bingoManager.unload();
-        }
 
         configurationManager.unload();
         databaseManager.unload();

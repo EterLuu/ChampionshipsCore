@@ -21,12 +21,6 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
         return 1;
     }
 
-    @ConfigOption(path = "bingo")
-    public static List<String> BINGO;
-
-    @ConfigOption(path = "bingo-points")
-    public static List<String> BINGO_POINTS;
-
     @ConfigOption(path = "parkour-tag")
     public static List<String> PARKOUR_TAG;
 

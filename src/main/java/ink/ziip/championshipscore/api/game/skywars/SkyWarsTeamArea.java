@@ -512,8 +512,6 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             sendMessageToAllGamePlayers(message);
 
             addPlayerPoints(assailant.getUniqueId(), 40);
-
-            plugin.getGameApiClient().sendGameEvent(GameTypeEnum.SkyWars, assailant, assailantTeam, "Kill", player.getName());
         } else {
 
             String message = MessageConfig.SKY_WARS_PLAYER_DEATH;
@@ -527,10 +525,6 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
             message = message.replace("%player%", player.getName());
             sendMessageToAllGamePlayers(message);
-
-            ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (playerTeam != null)
-                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.SkyWars, player, playerTeam, "Fall", "");
         }
     }
 

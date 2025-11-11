@@ -4,13 +4,9 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
-import ink.ziip.championshipscore.api.game.advancementcc.AdvancementCCArea;
-import ink.ziip.championshipscore.api.game.advancementcc.AdvancementCCManager;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
-import ink.ziip.championshipscore.api.game.bingo.BingoSpectatorAreaManager;
-import ink.ziip.championshipscore.api.game.bingo.BingoTeamArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
@@ -57,13 +53,9 @@ public class GameManager extends BaseManager {
     @Getter
     private final SnowballShowdownManager snowballShowdownManager;
     @Getter
-    private final AdvancementCCManager advancementCCManager;
-    @Getter
     private final ParkourWarriorManager parkourWarriorManager;
     @Getter
     private final HotyCodyDuskyManager hotyCodyDuskyManager;
-    @Getter
-    private final BingoSpectatorAreaManager bingoSpectatorManager;
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -75,10 +67,8 @@ public class GameManager extends BaseManager {
         tntRunManager = new TNTRunManager(plugin);
         dragonEggCarnivalManager = new DragonEggCarnivalManager(plugin);
         snowballShowdownManager = new SnowballShowdownManager(plugin);
-        advancementCCManager = new AdvancementCCManager(plugin);
         parkourWarriorManager = new ParkourWarriorManager(plugin);
         hotyCodyDuskyManager = new HotyCodyDuskyManager(plugin);
-        bingoSpectatorManager = new BingoSpectatorAreaManager(plugin);
     }
 
     @Override
@@ -90,10 +80,8 @@ public class GameManager extends BaseManager {
         tntRunManager.load();
         dragonEggCarnivalManager.load();
         snowballShowdownManager.load();
-        advancementCCManager.load();
         parkourWarriorManager.load();
         hotyCodyDuskyManager.load();
-        bingoSpectatorManager.load();
 
         gameManagerHandler.register();
     }
@@ -107,10 +95,8 @@ public class GameManager extends BaseManager {
         tntRunManager.unload();
         dragonEggCarnivalManager.unload();
         snowballShowdownManager.unload();
-        advancementCCManager.unload();
         parkourWarriorManager.unload();
         hotyCodyDuskyManager.unload();
-        bingoSpectatorManager.unload();
 
         gameManagerHandler.unRegister();
     }
@@ -124,21 +110,6 @@ public class GameManager extends BaseManager {
         }
         if (teamStatus.containsKey(team))
             return false;
-
-        if (gameTypeEnum == GameTypeEnum.AdvancementCC) {
-            AdvancementCCArea advancementCCArea = getAdvancementCCManager().getArea(area);
-            if (advancementCCArea == null)
-                return false;
-            List<ChampionshipTeam> list = new ArrayList<>();
-            list.add(team);
-            plugin.getRankManager().deleteTeamGamePoints(team, GameTypeEnum.AdvancementCC);
-            if (advancementCCArea.tryStartGame(list)) {
-                teamStatus.put(team, advancementCCArea);
-                addPlayerStatusByTeam(team, advancementCCArea);
-                return true;
-            }
-            return false;
-        }
 
         return false;
     }
@@ -286,19 +257,6 @@ public class GameManager extends BaseManager {
             }
         }
 
-        if (gameTypeEnum == GameTypeEnum.Bingo) {
-            if (plugin.getBingoManager().isStarted())
-                return false;
-
-            plugin.getBingoManager().startGame();
-            BingoTeamArea bingoArea = new BingoTeamArea(plugin, null, null);
-            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                teamStatus.put(championshipTeam, bingoArea);
-                addPlayerStatusByTeam(championshipTeam, bingoArea);
-            }
-            return true;
-        }
-
         if (gameTypeEnum == GameTypeEnum.SkyWars) {
             SkyWarsTeamArea skyWarsArea = skyWarsManager.getArea(area);
             if (skyWarsArea == null)
@@ -397,9 +355,6 @@ public class GameManager extends BaseManager {
 
     public String getPlayerCurrentAreaName(UUID uuid) {
         BaseArea baseArea = playerStatus.get(uuid);
-
-        if (baseArea instanceof BingoTeamArea)
-            return "";
 
         if (baseArea != null)
             return baseArea.getGameConfig().getConfigName();

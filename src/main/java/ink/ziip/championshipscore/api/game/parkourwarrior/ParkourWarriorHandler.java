@@ -55,10 +55,6 @@ public class ParkourWarriorHandler extends BaseListener {
                 player.setGameMode(GameMode.SPECTATOR);
             }
 
-            ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam != null)
-                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourWarrior, player, championshipTeam, "Player_Mistake", "");
-
             return;
         }
 

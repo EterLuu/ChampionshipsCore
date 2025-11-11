@@ -110,13 +110,6 @@ public class SpectateSubCommand extends BaseSubCommand {
                     baseArea = dragonEggCarnival;
                 }
             }
-            if (args[0].equals("acc")) {
-                gameTypeEnum = GameTypeEnum.AdvancementCC;
-                BaseArea advancementCCArea = plugin.getGameManager().getAdvancementCCManager().getArea(args[1]);
-                if (advancementCCArea != null) {
-                    baseArea = advancementCCArea;
-                }
-            }
             if (args[0].equals("parkourwarrior")) {
                 gameTypeEnum = GameTypeEnum.ParkourWarrior;
                 BaseArea parkourWarriorArea = plugin.getGameManager().getParkourWarriorManager().getArea(args[1]);
@@ -129,13 +122,6 @@ public class SpectateSubCommand extends BaseSubCommand {
                 BaseArea hotyCodyDuskyTeamArea = plugin.getGameManager().getHotyCodyDuskyManager().getArea(args[1]);
                 if (hotyCodyDuskyTeamArea != null) {
                     baseArea = hotyCodyDuskyTeamArea;
-                }
-            }
-            if (args[0].equals("bingo")) {
-                gameTypeEnum = GameTypeEnum.Bingo;
-                BaseArea bingoTeamArea = plugin.getGameManager().getBingoSpectatorManager().getArea(args[1]);
-                if (bingoTeamArea != null) {
-                    baseArea = bingoTeamArea;
                 }
             }
             if (gameTypeEnum != null && baseArea != null) {
@@ -195,11 +181,6 @@ public class SpectateSubCommand extends BaseSubCommand {
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
                 return returnList;
             }
-            if (args[0].equals("acc")) {
-                List<String> returnList = plugin.getGameManager().getAdvancementCCManager().getAreaNameList();
-                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
-                return returnList;
-            }
             if (args[0].equals("parkourwarrior")) {
                 List<String> returnList = plugin.getGameManager().getParkourWarriorManager().getAreaNameList();
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
@@ -207,11 +188,6 @@ public class SpectateSubCommand extends BaseSubCommand {
             }
             if (args[0].equals("hotycodydusky")) {
                 List<String> returnList = plugin.getGameManager().getHotyCodyDuskyManager().getAreaNameList();
-                returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
-                return returnList;
-            }
-            if (args[0].equals("bingo")) {
-                List<String> returnList = plugin.getGameManager().getBingoSpectatorManager().getAreaNameList();
                 returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
                 return returnList;
             }

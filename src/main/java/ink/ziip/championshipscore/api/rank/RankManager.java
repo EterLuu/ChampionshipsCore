@@ -58,8 +58,6 @@ public class RankManager extends BaseManager {
             updateGameOrder();
             updatePlayerPoint();
             updateTeamPoints();
-
-            plugin.getGameApiClient().sendGlobalScore(teamPoints, playerPoints);
         }, 0, 100L);
     }
 

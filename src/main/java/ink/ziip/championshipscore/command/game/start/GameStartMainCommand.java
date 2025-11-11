@@ -13,16 +13,12 @@ public class GameStartMainCommand extends BaseMainCommand {
     public GameStartMainCommand() {
         super("start");
         addSubCommand(new BattleBoxStartSubCommand());
-        if (Bukkit.getPluginManager().getPlugin("BingoReloaded") != null) {
-            addSubCommand(new BingoStartSubCommand());
-        }
         addSubCommand(new ParkourTagStartSubCommand());
         addSubCommand(new SkyWarsStartMainCommand());
         addSubCommand(new TGTTOSStartMainCommand());
         addSubCommand(new TNTRunStartMainCommand());
         addSubCommand(new DragonEggCarnivalStartSubCommand());
         addSubCommand(new SnowBallStartMainCommand());
-        addSubCommand(new AdvancementCCStartSubCommand());
         addSubCommand(new ParkourWarriorStartMainCommand());
         addSubCommand(new HotyCodyDuskyStartSubCommand());
     }

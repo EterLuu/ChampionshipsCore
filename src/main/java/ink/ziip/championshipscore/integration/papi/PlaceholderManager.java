@@ -11,12 +11,10 @@ public class PlaceholderManager extends BaseManager {
     private SnowballPlaceholder snowballPlaceholder;
     private TGTTOSPlaceholder tgttosPlaceholder;
     private TNTRunPlaceholder tntRunPlaceholder;
-    private BingoPlaceholder bingoPlaceholder;
     private ChampionshipPlaceholder championshipPlaceholder;
     private VotePlaceholder votePlaceholder;
     private SchedulePlaceholder schedulePlaceholder;
     private LeaderboardPlaceholder leaderboardPlaceholder;
-    private AdvancementCCPlaceholder advancementCCPlaceholder;
     private ParkourWarriorPlaceholder parkourWarriorPlaceholder;
     private HotyCodyDuskyPlaceholder hotyCodyDuskyPlaceholder;
 
@@ -33,12 +31,10 @@ public class PlaceholderManager extends BaseManager {
         snowballPlaceholder = new SnowballPlaceholder(plugin);
         tgttosPlaceholder = new TGTTOSPlaceholder(plugin);
         tntRunPlaceholder = new TNTRunPlaceholder(plugin);
-        bingoPlaceholder = new BingoPlaceholder(plugin);
         championshipPlaceholder = new ChampionshipPlaceholder(plugin);
         votePlaceholder = new VotePlaceholder(plugin);
         schedulePlaceholder = new SchedulePlaceholder(plugin);
         leaderboardPlaceholder = new LeaderboardPlaceholder(plugin);
-        advancementCCPlaceholder = new AdvancementCCPlaceholder(plugin);
         parkourWarriorPlaceholder = new ParkourWarriorPlaceholder(plugin);
         hotyCodyDuskyPlaceholder = new HotyCodyDuskyPlaceholder(plugin);
 
@@ -49,12 +45,10 @@ public class PlaceholderManager extends BaseManager {
         snowballPlaceholder.register();
         tgttosPlaceholder.register();
         tntRunPlaceholder.register();
-        bingoPlaceholder.register();
         championshipPlaceholder.register();
         votePlaceholder.register();
         schedulePlaceholder.register();
         leaderboardPlaceholder.register();
-        advancementCCPlaceholder.register();
         parkourWarriorPlaceholder.register();
         hotyCodyDuskyPlaceholder.register();
     }
@@ -68,12 +62,10 @@ public class PlaceholderManager extends BaseManager {
         snowballPlaceholder.unregister();
         tgttosPlaceholder.unregister();
         tntRunPlaceholder.unregister();
-        bingoPlaceholder.unregister();
         championshipPlaceholder.unregister();
         votePlaceholder.unregister();
         schedulePlaceholder.unregister();
         leaderboardPlaceholder.unregister();
-        advancementCCPlaceholder.unregister();
         parkourWarriorPlaceholder.unregister();
         hotyCodyDuskyPlaceholder.unregister();
     }

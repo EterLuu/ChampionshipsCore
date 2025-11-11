@@ -200,8 +200,6 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                     player.playSound(player, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1);
 
                     ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
-                    if (championshipTeam != null)
-                        plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourWarrior, player, championshipTeam, "Checkpoint", checkpoint.getOriginName() + "-" + (index + 1));
 
                     sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_SUB_CHECKPOINT_ARRIVED.replace("%player%", name).replace("%checkpoint%", checkpoint.getName())
                             .replace("%sub-checkpoint%", String.valueOf(i + 1)));
@@ -225,7 +223,6 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
 
                             if (championshipTeam != null) {
                                 gamePointsMultiplier.put(championshipTeam, gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + checkpoint.getPointMultiplier(getGameConfig()));
-                                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourWarrior, player, championshipTeam, "Player_Finish", "");
                             }
 
                             sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED.replace("%player%", player.getName()));

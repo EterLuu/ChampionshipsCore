@@ -26,29 +26,12 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "mode")
     public static String MODE;
 
-    // API
-    @ConfigOption(path = "live-api")
-    public static String LIVE_API;
-
-    @ConfigOption(path = "live-api-enabled")
-    public static Boolean LIVE_API_ENABLED;
-
-    @ConfigOption(path = "client-verify-api")
-    public static String CLIENT_VERIFY_API;
-
-    @ConfigOption(path = "client-verify-whitelist")
-    public static List<String> CLIENT_VERIFY_API_WHITELIST;
-
-
     // Players
     @ConfigOption(path = "max-players")
     public static int MAX_PLAYERS;
 
     @ConfigOption(path = "whitelist")
     public static List<String> WHITELIST;
-
-    @ConfigOption(path = "enable-client-check")
-    public static Boolean ENABLE_CLIENT_CHECK;
 
     // Score
     @ConfigOption(path = "weighted-score")
@@ -95,18 +78,7 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "lobby.location")
     public static Location LOBBY_LOCATION;
 
-    // Bingo
-    @ConfigOption(path = "bingo.spawn")
-    public static Location BINGO_SPAWN_LOCATION;
-
     // ParkourTag
     @ConfigOption(path = "parkourtag.max-chaser-times")
     public static Integer PARKOUR_TAG_MAX_CHASER_TIMES;
-
-    @ConfigOption(path = "parkourtag.rounds")
-    public static ConfigurationSection PARKOUR_TAG_ROUNDS;
-
-    // BattleBox
-    @ConfigOption(path = "battlebox.rounds")
-    public static ConfigurationSection BATTLE_BOX_ROUNDS;
 }

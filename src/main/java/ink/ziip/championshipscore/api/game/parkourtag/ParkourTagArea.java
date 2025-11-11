@@ -133,7 +133,6 @@ public class ParkourTagArea extends BaseTeamArea {
                 Player player = Bukkit.getPlayer(rightAreaChaser);
                 if (player != null) {
                     addBossBarPlayer("chaser", player);
-                    plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourTag, player, rightChampionshipTeam, "Chaser_Selected", "");
                 }
 
                 rightChampionshipTeam.sendMessageToAll(message
@@ -148,7 +147,6 @@ public class ParkourTagArea extends BaseTeamArea {
                 Player player = Bukkit.getPlayer(leftAreaChaser);
                 if (player != null) {
                     addBossBarPlayer("chaser", player);
-                    plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourTag, player, leftChampionshipTeam, "Chaser_Selected", "");
                 }
 
                 leftChampionshipTeam.sendMessageToAll(message

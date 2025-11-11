@@ -43,8 +43,6 @@ public class VoteManager extends BaseManager {
         Utils.sendMessageToAllPlayers(MessageConfig.VOTE_START_VOTE);
         Utils.sendTitleToAllPlayers(MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
 
-        plugin.getGameApiClient().sendGlobalEvent(GameStatusEnum.VOTING, GameTypeEnum.Bingo, plugin.getRankManager().getRound());
-
         voteTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
@@ -54,8 +52,6 @@ public class VoteManager extends BaseManager {
             for (GameTypeEnum gameTypeEnum : playerVotes.values()) {
                 votes.put(gameTypeEnum, votes.getOrDefault(gameTypeEnum, 0) + 1);
             }
-
-            plugin.getGameApiClient().sendVoteEvent(votes, timer);
 
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(timer);
@@ -89,8 +85,6 @@ public class VoteManager extends BaseManager {
         list.sort(Map.Entry.comparingByValue());
 
         Collections.reverse(list);
-
-        plugin.getGameApiClient().sendVoteEvent(votes, 0);
 
         StringBuilder stringBuilder = new StringBuilder();
 

@@ -23,9 +23,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "server-full")
     public static String SERVER_FULL;
 
-    @ConfigOption(path = "player-not-verified")
-    public static String PLAYER_NOT_VERIFIED;
-
     // Permission
     @ConfigOption(path = "no-permission")
     public static String NO_PERMISSION;
@@ -138,34 +135,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "rank.no-record")
     public static String RANK_NO_RECORD;
 
-    // Bingo
-    @ConfigOption(path = "bingo.game-start")
-    public static String BINGO_GAME_START;
-
-    @ConfigOption(path = "bingo.game-end")
-    public static String BINGO_GAME_END;
-
-    @ConfigOption(path = "bingo.task-complete")
-    public static String BINGO_TASK_COMPLETE;
-
-    @ConfigOption(path = "bingo.line-complete")
-    public static String BINGO_LINE_COMPLETE;
-
-    @ConfigOption(path = "bingo.task-expired")
-    public static String BINGO_TASK_EXPIRED;
-
-    @ConfigOption(path = "bingo.rank-board-bar")
-    public static String BINGO_RANK_BOARD_BAR;
-
-    @ConfigOption(path = "bingo.rank-board-info")
-    public static String BINGO_RANK_BOARD_INFO;
-
-    @ConfigOption(path = "bingo.teleportation-menu")
-    public static String BINGO_TELEPORTATION_MENU;
-
-    @ConfigOption(path = "bingo.pvp-start")
-    public static String BINGO_PVP_START;
-
     // Spectator
     @ConfigOption(path = "spectator.is-player")
     public static String SPECTATOR_IS_PLAYER;
@@ -207,9 +176,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.board-row")
     public static String GAME_BOARD_RWO;
 
-    @ConfigOption(path = "game.bingo")
-    public static String GAME_BINGO;
-
     @ConfigOption(path = "game.parkourtag")
     public static String GAME_PARKOUR_TAG;
 
@@ -230,9 +196,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "game.dragoneggcarnival")
     public static String GAME_DRAGON_EGG_CARNIVAL;
-
-    @ConfigOption(path = "game.advancementcc")
-    public static String GAME_ADVANCEMENT_CC;
 
     @ConfigOption(path = "game.parkourwarrior")
     public static String PARKOUR_WARRIOR;
@@ -730,54 +693,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "snowball.player-leave")
     public static String SNOWBALL_PLAYER_LEAVE;
 
-    // Advancement CC
-    @ConfigOption(path = "advancementcc.start-preparation")
-    public static String ACC_START_PREPARATION;
-
-    @ConfigOption(path = "advancementcc.start-preparation-title")
-    public static String ACC_START_PREPARATION_TITLE;
-
-    @ConfigOption(path = "advancementcc.start-preparation-subtitle")
-    public static String ACC_START_PREPARATION_SUBTITLE;
-
-    @ConfigOption(path = "advancementcc.game-start-soon")
-    public static String ACC_GAME_START_SOON;
-
-    @ConfigOption(path = "advancementcc.game-start-soon-title")
-    public static String ACC_GAME_START_SOON_TITLE;
-
-    @ConfigOption(path = "advancementcc.game-start-soon-subtitle")
-    public static String ACC_GAME_START_SOON_SUBTITLE;
-
-    @ConfigOption(path = "advancementcc.game-start")
-    public static String ACC_GAME_START;
-
-    @ConfigOption(path = "advancementcc.game-start-title")
-    public static String ACC_GAME_START_TITLE;
-
-    @ConfigOption(path = "advancementcc.game-start-subtitle")
-    public static String ACC_GAME_START_SUBTITLE;
-
-    @ConfigOption(path = "advancementcc.game-end")
-    public static String ACC_GAME_END;
-
-    @ConfigOption(path = "advancementcc.game-end-title")
-    public static String ACC_GAME_END_TITLE;
-
-    @ConfigOption(path = "advancementcc.game-end-subtitle")
-    public static String ACC_GAME_END_SUBTITLE;
-
-    @ConfigOption(path = "advancementcc.count-down")
-    public static String ACC_COUNT_DOWN;
-
-    @ConfigOption(path = "advancementcc.action-bar-count-down")
-    public static String ACC_ACTION_BAR_COUNT_DOWN;
-
-    @ConfigOption(path = "advancementcc.player-leave")
-    public static String ACC_PLAYER_LEAVE;
-
-    @ConfigOption(path = "advancementcc.final-count-message")
-    public static String ACC_FINAL_COUNT_MESSAGE;
 
     // Parkour Warrior
     @ConfigOption(path = "parkourwarrior.start-preparation")

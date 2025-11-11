@@ -277,7 +277,6 @@ public class ParkourTagHandler extends BaseListener {
                     parkourTagArea.getPlayerSurviveTimes().put(player.getUniqueId(), parkourTagArea.getGameConfig().getTimer() - parkourTagArea.getTimer());
                     parkourTagArea.updateTeamSurviveTimes();
 
-                    plugin.getGameApiClient().sendGameEvent(GameTypeEnum.ParkourTag, assailant, assailantTeam, "Player_Tagged", player.getName());
                     return;
                 }
 

@@ -323,11 +323,6 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
 
                 removeBossBarPlayer("chaser", codyHolderPlayer);
                 addBossBarPlayer("escaper", codyHolderPlayer);
-                ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
-                Player player = Bukkit.getPlayer(uuid);
-                if (player != null)
-                    if (playerTeam != null)
-                        plugin.getGameApiClient().sendGameEvent(GameTypeEnum.HotyCodyDusky, player, playerTeam, "Cod_Passed", codyHolderPlayer.getName());
             }
         }
         codyHolder = uuid;
@@ -369,8 +364,6 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (championshipTeam != null) {
             addTeamDeathPlayer(championshipTeam);
-
-            plugin.getGameApiClient().sendGameEvent(GameTypeEnum.HotyCodyDusky, player, championshipTeam, "Death", "");
         }
     }
 

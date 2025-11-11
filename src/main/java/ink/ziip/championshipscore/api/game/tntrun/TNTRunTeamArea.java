@@ -402,9 +402,6 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     public void addDeathPlayer(Player player) {
         UUID uuid = player.getUniqueId();
         if (addDeathPlayer(uuid)) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam != null)
-                plugin.getGameApiClient().sendGameEvent(GameTypeEnum.TNTRun, player, championshipTeam, "Player_Fall", player.getName());
             sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_FALL_INTO_VOID.replace("%player%", player.getName()));
         }
     }

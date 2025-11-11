@@ -9,7 +9,6 @@ depend:
   - FastAsyncWorldEdit
 softdepend:
   - PhantomWorlds
-  - BingoReloaded
 commands:
   cc:
     description: Core command.

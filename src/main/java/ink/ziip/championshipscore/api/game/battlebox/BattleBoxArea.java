@@ -13,7 +13,6 @@ import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -299,8 +298,6 @@ public class BattleBoxArea extends BaseTeamArea {
                     killer.playSound(killer, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
 
                     sendMessageToAllGamePlayers(message);
-
-                    plugin.getGameApiClient().sendGameEvent(GameTypeEnum.BattleBox, killer, killerChampionshipTeam, "Kill", player.getName());
                 }
             }
         }

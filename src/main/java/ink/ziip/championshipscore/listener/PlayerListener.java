@@ -2,7 +2,6 @@ package ink.ziip.championshipscore.listener;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.GameApiClient;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -20,8 +19,6 @@ import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
-
-import java.util.concurrent.CompletableFuture;
 
 public class PlayerListener extends BaseListener {
     protected PlayerListener(ChampionshipsCore plugin) {
@@ -63,28 +60,6 @@ public class PlayerListener extends BaseListener {
                 event.setKickMessage(MessageConfig.SERVER_FULL);
                 event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_FULL);
                 return;
-            }
-        }
-
-        if (championshipTeam != null && CCConfig.ENABLE_CLIENT_CHECK) {
-            if (CCConfig.CLIENT_VERIFY_API_WHITELIST.contains(name))
-                return;
-
-            GameApiClient gameApiClient = ChampionshipsCore.getInstance().getGameApiClient();
-            CompletableFuture<Boolean> cf = gameApiClient.getPlayerClientVerifyStatus(name, false);
-            if (!cf.join()) {
-                event.setKickMessage(MessageConfig.PLAYER_NOT_VERIFIED);
-                event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
-                return;
-            } else {
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    if (!gameApiClient.getPlayerClientVerifyStatus(name, true).join()) {
-                        Player player = Bukkit.getPlayer(name);
-                        if (player != null) {
-                            player.kickPlayer(MessageConfig.PLAYER_NOT_VERIFIED);
-                        }
-                    }
-                }, 100L);
             }
         }
     }
