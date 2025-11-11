@@ -3,6 +3,8 @@ ChampionshipsCore
 
 The core plugin of the Summer/Winter Collab Championship.
 
+---
+
 ## Placeholders
 
 ### Player
@@ -114,21 +116,6 @@ The core plugin of the Summer/Winter Collab Championship.
 | `%decarnival_area_rival_wins_[areaName]%`     | Show current times of wins of the rival team in the area.          |
 | `%decarnival_playtool_countdown_[areaName]%`  | Show the current timer of the next play tool provided in the area. |
 | `%decarnival_egg_spawn_countdown_[areaName]%` | Show the current timer of spawning egg in the area.                |
-
-### Bingo
-
-| **Placeholder**                  | **Description**                                     |
-|----------------------------------|-----------------------------------------------------|
-| `%bingo_team_points_[material]%` | Show current points that the item material can get. |
-
-### Advancement CC
-
-| **Placeholder**                | **Description**                       |
-|--------------------------------|---------------------------------------|
-| `%acc_area_status_[areaName]%` | Show current status of the area.      |
-| `%acc_area_timer_[areaName]%`  | Show current timer of the area.       |
-| `%acc_area_team_[areaName]%`   | Show current team of the area.        |
-| `%acc_area_scores_[areaName]%` | Show current team scores of the area. |
 
 ### Parkour Warrior
 
