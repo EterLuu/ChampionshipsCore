@@ -1,13 +1,8 @@
 dont-edit-this:
-  version: 7
+  version: 8
 mode: "CHAMPIONSHIP"
 max-players: 100
 whitelist: [ ]
-live-api: ""
-live-api-enabled: false
-client-verify-api: ""
-client-verify-whitelist: [ ]
-enable-client-check: true
 weighted-score: false
 strict-spectator-rule: false
 chat:

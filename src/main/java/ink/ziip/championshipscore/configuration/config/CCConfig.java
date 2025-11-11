@@ -18,7 +18,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 7;
+        return 8;
     }
 
     // Mode

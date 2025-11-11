@@ -18,7 +18,7 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 1;
+        return 2;
     }
 
     @ConfigOption(path = "parkour-tag")

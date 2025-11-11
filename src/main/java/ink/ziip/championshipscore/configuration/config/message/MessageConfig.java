@@ -16,7 +16,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 3;
+        return 4;
     }
 
     // Player
