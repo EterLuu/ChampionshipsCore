@@ -224,7 +224,7 @@
         <dependency>
             <groupId>fr.skytasul</groupId>
             <artifactId>glowingentities</artifactId>
-            <version>1.4.6</version>
+            <version>1.4.8</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
