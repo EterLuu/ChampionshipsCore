@@ -18,7 +18,6 @@ import java.util.*;
 
 public class HotyCodyDuskyScheduleManager extends BaseManager {
     private final int hotyCodyDuskyRounds = 3;
-    private final int hotyCodyDuskyAreas = 4;
     private final BukkitScheduler scheduler;
     private final HotyCodyDuskyScheduleHandler handler;
     @Getter
@@ -205,6 +204,7 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
     public synchronized void addCompletedAreaNum() {
         completedAreaNum++;
 
+        int hotyCodyDuskyAreas = 4;
         if (completedAreaNum == hotyCodyDuskyAreas) {
             nextHotyCodyDuskyRound();
         }

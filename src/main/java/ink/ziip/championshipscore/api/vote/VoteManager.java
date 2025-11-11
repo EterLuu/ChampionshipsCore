@@ -2,7 +2,6 @@ package ink.ziip.championshipscore.api.vote;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.object.game.GameStatusEnum;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;

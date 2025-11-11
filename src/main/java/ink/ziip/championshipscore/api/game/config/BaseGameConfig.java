@@ -84,9 +84,9 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                             value = Utils.translateColorCodes((String) value);
                         field.set(this, value);
                     }
-//                    else if (!configOption.nullable()) {
-//                        plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file. " + configOption.path() + "/" + getFileName());
-//                    }
+                    else if (!configOption.nullable()) {
+                        plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file. " + configOption.path() + "/" + getFileName());
+                    }
                 } catch (Exception exception) {
                     plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file. ", exception);
                 }

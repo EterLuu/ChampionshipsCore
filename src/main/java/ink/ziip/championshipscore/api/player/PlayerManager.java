@@ -7,7 +7,6 @@ import ink.ziip.championshipscore.api.player.dao.PlayerDaoImpl;
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

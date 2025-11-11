@@ -3,7 +3,6 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorTeamArea;
-import ink.ziip.championshipscore.api.game.tgttos.TGTTOSTeamArea;
 import ink.ziip.championshipscore.api.object.game.parkourwarrior.PKWCheckPointTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;

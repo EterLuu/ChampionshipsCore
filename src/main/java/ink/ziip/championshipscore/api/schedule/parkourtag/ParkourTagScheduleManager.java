@@ -19,7 +19,6 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.*;
 
 public class ParkourTagScheduleManager extends BaseManager {
-    //    private final List<List<String>> parkourTagRounds = new ArrayList<>();
     private final BukkitScheduler scheduler;
     private final ParkourTagScheduleHandler handler;
     private final List<Set<TwoVTwoVector>> rounds = new ArrayList<>();
@@ -38,51 +37,6 @@ public class ParkourTagScheduleManager extends BaseManager {
         scheduler = championshipsCore.getServer().getScheduler();
         subRound = 0;
         completedAreaNum = 0;
-    }
-
-    private boolean containsPair(TwoVTwoVector v) {
-        for (Set<TwoVTwoVector> set : rounds) {
-            if (set.contains(v)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private ChampionshipTeam selectTeam(Set<TwoVTwoVector> pairs) {
-        List<ChampionshipTeam> selectedTeams = new ArrayList<>();
-        for (ChampionshipTeam team : plugin.getTeamManager().getTeamList()) {
-            if (!alreadyContainsTeam(team, pairs))
-                selectedTeams.add(team);
-        }
-        return selectedTeams.get(new Random().nextInt(selectedTeams.size()));
-    }
-
-    private void generatePairs(int rounds, int pairs) {
-        this.rounds.clear();
-        for (int i = 0; i < rounds; i++) {
-            Set<TwoVTwoVector> set = new HashSet<>();
-            while (set.size() < pairs) {
-                ChampionshipTeam t1 = selectTeam(set);
-                ChampionshipTeam t2 = selectTeam(set);
-                if (t1.equals(t2)) {
-                    continue;
-                }
-                if (alreadyContainsTeam(t1, set))
-                    continue;
-                if (alreadyContainsTeam(t2, set))
-                    continue;
-                TwoVTwoVector tv = new TwoVTwoVector(t1, t2);
-                if (containsPair(tv)) {
-                    continue;
-                }
-                if (set.contains(tv)) {
-                    continue;
-                }
-                set.add(tv);
-            }
-            this.rounds.add(set);
-        }
     }
 
     private void cycleGeneratePairs() {
@@ -122,22 +76,8 @@ public class ParkourTagScheduleManager extends BaseManager {
         }
     }
 
-    private boolean alreadyContainsTeam(ChampionshipTeam team, Set<TwoVTwoVector> pairs) {
-        for (TwoVTwoVector pair : pairs) {
-            if (pair.getTeamOne().equals(team) || pair.getTeamTwo().equals(team)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Override
-    public void load() {
-//        ConfigurationSection configurationSection = CCConfig.PARKOUR_TAG_ROUNDS;
-//        for (String key : configurationSection.getKeys(false)) {
-//            parkourTagRounds.add(new ArrayList<>(configurationSection.getStringList(key)));
-//        }
-    }
+    public void load() {}
 
     @Override
     public void unload() {
@@ -160,7 +100,6 @@ public class ParkourTagScheduleManager extends BaseManager {
         subRound = 0;
         completedAreaNum = 0;
 
-//        generatePairs(9, 8);
         cycleGeneratePairs();
 
         firstStartTask = scheduler.runTaskTimer(plugin, () -> {
@@ -204,9 +143,6 @@ public class ParkourTagScheduleManager extends BaseManager {
 
         handler.register();
 
-//        for (String command : parkourTagRounds.get(subRound - 1)) {
-//            Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
-//        }
         startRoundBattle();
     }
 

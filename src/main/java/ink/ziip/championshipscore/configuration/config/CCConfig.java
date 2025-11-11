@@ -4,7 +4,6 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import org.bukkit.Location;
-import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.List;
 

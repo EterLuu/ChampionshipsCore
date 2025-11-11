@@ -108,8 +108,6 @@ public class GameManager extends BaseManager {
             if (playerSpectatorStatus.containsKey(uuid))
                 removeSpectator(uuid);
         }
-        if (teamStatus.containsKey(team))
-            return false;
 
         return false;
     }
