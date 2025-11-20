@@ -44,6 +44,7 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
                 area.endGameFinally();
             }
         }
+        clearAreas();
     }
 
     @Override

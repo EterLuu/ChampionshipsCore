@@ -37,6 +37,7 @@ public class BattleBoxManager extends BaseAreaManager<BattleBoxArea> {
                 area.endGameFinally();
             }
         }
+        clearAreas();
     }
 
     @Override

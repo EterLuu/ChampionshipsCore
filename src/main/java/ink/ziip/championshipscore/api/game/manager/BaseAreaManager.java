@@ -25,4 +25,8 @@ public abstract class BaseAreaManager<T extends BaseArea> extends BaseManager {
     }
 
     public abstract boolean addArea(String name);
+
+    public void clearAreas() {
+        areas.clear();
+    }
 }

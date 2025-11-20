@@ -37,6 +37,7 @@ public class HotyCodyDuskyManager extends BaseAreaManager<HotyCodyDuskyTeamArea>
                 area.endGameFinally();
             }
         }
+        clearAreas();
     }
 
     @Override

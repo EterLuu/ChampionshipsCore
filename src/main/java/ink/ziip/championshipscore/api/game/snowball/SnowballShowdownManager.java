@@ -36,6 +36,7 @@ public class SnowballShowdownManager extends BaseAreaManager<SnowballShowdownTea
                 area.endGameFinally();
             }
         }
+        clearAreas();
     }
 
     @Override

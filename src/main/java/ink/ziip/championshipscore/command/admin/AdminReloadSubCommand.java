@@ -18,8 +18,15 @@ public class AdminReloadSubCommand extends BaseSubCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            ChampionshipsCore.getInstance().onDisable();
-            ChampionshipsCore.getInstance().onEnable();
+            ChampionshipsCore plugin = ChampionshipsCore.getInstance();
+
+            plugin.getGameManager().unload();
+            plugin.getScheduleManager().unload();
+
+            plugin.getConfigurationManager().reload();
+
+            plugin.getGameManager().load();
+            plugin.getScheduleManager().load();
         }
 
         return true;

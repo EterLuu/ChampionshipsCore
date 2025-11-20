@@ -36,6 +36,7 @@ public class TGTTOSManager extends BaseAreaManager<TGTTOSTeamArea> {
                 area.endGameFinally();
             }
         }
+        clearAreas();
     }
 
     @Override

@@ -38,6 +38,7 @@ public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
                 area.endGameFinally();
             }
         }
+        clearAreas();
     }
 
     @Override

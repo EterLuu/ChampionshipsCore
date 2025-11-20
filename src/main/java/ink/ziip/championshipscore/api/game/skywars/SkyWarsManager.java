@@ -37,6 +37,7 @@ public class SkyWarsManager extends BaseAreaManager<SkyWarsTeamArea> {
                 area.endGameFinally();
             }
         }
+        clearAreas();
     }
 
     @Override

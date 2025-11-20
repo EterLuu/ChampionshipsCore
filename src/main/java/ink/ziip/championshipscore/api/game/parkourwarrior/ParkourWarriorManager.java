@@ -36,6 +36,7 @@ public class ParkourWarriorManager extends BaseAreaManager<ParkourWarriorTeamAre
                 area.endGameFinally();
             }
         }
+        clearAreas();
     }
 
     @Override
