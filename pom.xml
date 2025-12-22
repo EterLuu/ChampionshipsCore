@@ -218,7 +218,7 @@
         <dependency>
             <groupId>com.github.stefvanschie.inventoryframework</groupId>
             <artifactId>IF</artifactId>
-            <version>0.11.5</version>
+            <version>0.11.6</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
