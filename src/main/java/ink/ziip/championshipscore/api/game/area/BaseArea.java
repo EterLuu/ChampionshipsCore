@@ -97,11 +97,9 @@ public abstract class BaseArea {
     }
 
     public void addPlayerPointsToDatabase() {
-        if (plugin.isLoaded()) {
-            for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
-                if (playerPointEntry.getValue() != 0)
-                    plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
-            }
+        for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
+            if (playerPointEntry.getValue() != 0)
+                plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
         }
     }
 

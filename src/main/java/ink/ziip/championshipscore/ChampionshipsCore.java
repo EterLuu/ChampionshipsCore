@@ -52,14 +52,17 @@ public final class ChampionshipsCore extends JavaPlugin {
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) {
             getLogger().warning("Could not find PlaceholderAPI!");
             Bukkit.getPluginManager().disablePlugin(this);
+            return;
         }
         if (Bukkit.getPluginManager().getPlugin("ProtocolLib") == null) {
             getLogger().warning("Could not find ProtocolLib!");
             Bukkit.getPluginManager().disablePlugin(this);
+            return;
         }
         if (Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") == null) {
             getLogger().warning("Could not find FastAsyncWorldEdit!");
             Bukkit.getPluginManager().disablePlugin(this);
+            return;
         }
 
         configurationManager = new ConfigurationManager(this);
@@ -101,8 +104,6 @@ public final class ChampionshipsCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        loaded = false;
-
         // Plugin shutdown logic
         gameManager.unload();
         rankManager.unload();
@@ -114,6 +115,8 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         worldEditManager.unload();
         worldManager.unload();
+
+        loaded = false;
 
         configurationManager.unload();
         databaseManager.unload();

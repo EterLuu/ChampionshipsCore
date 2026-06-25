@@ -346,14 +346,6 @@ public class BattleBoxArea extends BaseTeamArea {
             return;
         }
 
-        if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-            player.teleport(getSpectatorSpawnLocation());
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.setGameMode(GameMode.SPECTATOR);
-            });
-        }
-
         player.teleport(getSpectatorSpawnLocation());
         ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
         championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
