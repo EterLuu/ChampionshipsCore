@@ -13,7 +13,7 @@ import java.util.List;
 
 public class SpawnSubCommand extends BaseSubCommand {
     public SpawnSubCommand() {
-        super("spawn");
+        super("spawn", "传送回大厅出生点", "/cc spawn");
     }
 
     @Override

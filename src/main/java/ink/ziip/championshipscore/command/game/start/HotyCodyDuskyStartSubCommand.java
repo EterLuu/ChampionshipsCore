@@ -14,11 +14,15 @@ import java.util.List;
 
 public class HotyCodyDuskyStartSubCommand extends BaseSubCommand {
     public HotyCodyDuskyStartSubCommand() {
-        super("hotycodydusky");
+        super("hotycodydusky", "开始昼夜对决（多队）", "/cc game start hotycodydusky <场地> <队伍...>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         String failed = MessageConfig.GAME_SINGLE_GAME_START_FAILED
                 .replace("%game%", GameTypeEnum.HotyCodyDusky.toString())
                 .replace("%area%", args[0]);

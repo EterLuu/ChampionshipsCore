@@ -30,11 +30,15 @@ public class TGTTOSAreaSetSubCommand extends BaseSubCommand {
     };
 
     public TGTTOSAreaSetSubCommand() {
-        super("set");
+        super("set", "设置到达彼岸场地参数", "/cc game area tgttos set <场地> <参数>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         Player player = (Player) sender;
         TGTTOSTeamArea tgttosTeamArea = plugin.getGameManager().getTgttosManager().getArea(args[0]);
         if (tgttosTeamArea == null) {

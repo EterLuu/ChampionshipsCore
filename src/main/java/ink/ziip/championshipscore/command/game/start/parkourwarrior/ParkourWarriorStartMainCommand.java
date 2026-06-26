@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class ParkourWarriorStartMainCommand extends BaseMainCommand {
     public ParkourWarriorStartMainCommand() {
-        super("parkourwarrior");
+        super("parkourwarrior", "跑酷战士");
         addSubCommand(new ParkourWarriorStartAllSubCommand());
     }
 }

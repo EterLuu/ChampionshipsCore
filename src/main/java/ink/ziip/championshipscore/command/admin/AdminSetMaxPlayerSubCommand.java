@@ -12,11 +12,15 @@ import java.util.List;
 
 public class AdminSetMaxPlayerSubCommand extends BaseSubCommand {
     public AdminSetMaxPlayerSubCommand() {
-        super("set-max-player");
+        super("set-max-player", "设置每场游戏的最大玩家数", "/cc admin set-max-player <数量>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             try {
                 CCConfig.MAX_PLAYERS = Integer.parseInt(args[0]);

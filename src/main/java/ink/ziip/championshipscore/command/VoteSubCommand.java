@@ -13,11 +13,15 @@ import java.util.List;
 
 public class VoteSubCommand extends BaseSubCommand {
     public VoteSubCommand() {
-        super("vote");
+        super("vote", "为下一个游戏投票", "/cc vote <游戏>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             GameTypeEnum gameTypeEnum = null;
             try {

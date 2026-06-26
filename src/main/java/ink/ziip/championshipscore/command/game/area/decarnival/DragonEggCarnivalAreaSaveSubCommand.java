@@ -12,11 +12,15 @@ import java.util.List;
 
 public class DragonEggCarnivalAreaSaveSubCommand extends BaseSubCommand {
     public DragonEggCarnivalAreaSaveSubCommand() {
-        super("save");
+        super("save", "保存龙蛋嘉年华场地", "/cc game area dragoneggcarnival save <场地名>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             if (plugin.getGameManager().getDragonEggCarnivalManager().saveArea(args[0])) {
                 String message = MessageConfig.AREA_SUCCESSFULLY_SAVED

@@ -13,11 +13,15 @@ import java.util.List;
 
 public class SnowBallStartAllSubCommand extends BaseSubCommand {
     public SnowBallStartAllSubCommand() {
-        super("all");
+        super("all", "所有队伍开始雪球对决", "/cc game start snowball all <场地>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             String message = MessageConfig.GAME_SINGLE_GAME_START_FAILED;
 

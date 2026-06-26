@@ -28,11 +28,15 @@ public class SkyWarsAreaSetSubCommand extends BaseSubCommand {
     };
 
     public SkyWarsAreaSetSubCommand() {
-        super("set");
+        super("set", "设置空岛战争场地参数", "/cc game area skywars set <场地> <参数>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         Player player = (Player) sender;
         SkyWarsTeamArea skyWarsArea = plugin.getGameManager().getSkyWarsManager().getArea(args[0]);
         if (skyWarsArea == null) {

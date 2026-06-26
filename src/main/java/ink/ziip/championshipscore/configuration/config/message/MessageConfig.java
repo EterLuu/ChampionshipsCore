@@ -16,7 +16,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 4;
+        return 5;
     }
 
     // Player
@@ -26,6 +26,19 @@ public class MessageConfig extends BaseConfigurationFile {
     // Permission
     @ConfigOption(path = "no-permission")
     public static String NO_PERMISSION;
+
+    // Command help / usage
+    @ConfigOption(path = "command.help-header")
+    public static String COMMAND_HELP_HEADER;
+
+    @ConfigOption(path = "command.help-row")
+    public static String COMMAND_HELP_ROW;
+
+    @ConfigOption(path = "command.help-more")
+    public static String COMMAND_HELP_MORE;
+
+    @ConfigOption(path = "command.usage")
+    public static String COMMAND_USAGE;
 
     // Team
     @ConfigOption(path = "team.successfully-added")

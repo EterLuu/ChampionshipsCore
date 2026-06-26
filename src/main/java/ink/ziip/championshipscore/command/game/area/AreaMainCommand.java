@@ -13,7 +13,7 @@ import ink.ziip.championshipscore.command.game.area.tntrun.TNTRunAreaMainCommand
 
 public class AreaMainCommand extends BaseMainCommand {
     public AreaMainCommand() {
-        super("area");
+        super("area", "游戏场地管理");
         addSubCommand(new BattleBoxAreaMainCommand());
         addSubCommand(new ParkourTagAreaMainCommand());
         addSubCommand(new SkyWarsAreaMainCommand());

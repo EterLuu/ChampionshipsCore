@@ -12,11 +12,15 @@ import java.util.List;
 
 public class SnowBallAreaAddSubCommand extends BaseSubCommand {
     public SnowBallAreaAddSubCommand() {
-        super("add");
+        super("add", "新建雪球对决场地", "/cc game area snowball add <场地名>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             if (plugin.getGameManager().getSnowballShowdownManager().addArea(args[0])) {
                 String message = MessageConfig.AREA_SUCCESSFULLY_ADDED

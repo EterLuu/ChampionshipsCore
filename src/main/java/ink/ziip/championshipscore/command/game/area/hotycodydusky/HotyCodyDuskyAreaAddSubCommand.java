@@ -12,11 +12,15 @@ import java.util.List;
 
 public class HotyCodyDuskyAreaAddSubCommand extends BaseSubCommand {
     public HotyCodyDuskyAreaAddSubCommand() {
-        super("add");
+        super("add", "新建昼夜对决场地", "/cc game area hotycodydusky add <场地名>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             if (plugin.getGameManager().getHotyCodyDuskyManager().addArea(args[0])) {
                 String message = MessageConfig.AREA_SUCCESSFULLY_ADDED

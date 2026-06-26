@@ -15,11 +15,15 @@ import java.util.List;
 
 public class DragonEggCarnivalStartSubCommand extends BaseSubCommand {
     public DragonEggCarnivalStartSubCommand() {
-        super("dragoncarnival");
+        super("dragoncarnival", "开始龙蛋嘉年华（两队对战）", "/cc game start dragoncarnival <场地> <队伍1> <队伍2>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 3) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 3) {
             String failed = MessageConfig.GAME_TEAM_GAME_START_FAILED
                     .replace("%team%", args[1])

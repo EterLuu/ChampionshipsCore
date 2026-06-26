@@ -30,11 +30,15 @@ public class DragonEggCarnivalAreaSetSubCommand extends BaseSubCommand {
     };
 
     public DragonEggCarnivalAreaSetSubCommand() {
-        super("set");
+        super("set", "设置龙蛋嘉年华场地参数", "/cc game area dragoneggcarnival set <场地> <参数>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         Player player = (Player) sender;
         DragonEggCarnivalArea dragonEggCarnivalArea = plugin.getGameManager().getDragonEggCarnivalManager().getArea(args[0]);
         if (dragonEggCarnivalArea == null) {

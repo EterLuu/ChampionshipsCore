@@ -13,7 +13,7 @@ import java.util.Arrays;
 
 public class RankMainCommand extends BaseMainCommand {
     public RankMainCommand() {
-        super("rank");
+        super("rank", "查看积分与排行");
         addSubCommand(new PlayerBoardSubCommand());
         addSubCommand(new TeamBoardSubCommand());
         addSubCommand(new GameWeightInfoSubCommand());

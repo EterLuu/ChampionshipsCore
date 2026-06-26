@@ -12,11 +12,15 @@ import java.util.List;
 
 public class TeamAddSubCommand extends BaseSubCommand {
     public TeamAddSubCommand() {
-        super("add");
+        super("add", "添加队伍", "/cc team add <队伍ID> <名称> <颜色>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 3) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 3) {
             // TODO add pattern
             if (plugin.getTeamManager().addTeam(args[0], args[1], args[2])) {

@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ScheduleResetSubCommand extends BaseSubCommand {
     public ScheduleResetSubCommand() {
-        super("reset");
+        super("reset", "重置赛程轮次", "/cc admin schedule reset");
     }
 
     @Override

@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ScheduleHotyCodyDuskySubCommand extends BaseSubCommand {
     public ScheduleHotyCodyDuskySubCommand() {
-        super("hotycodydusky");
+        super("hotycodydusky", "按赛程开始昼夜对决", "/cc admin schedule hotycodydusky");
     }
 
     @Override

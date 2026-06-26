@@ -12,11 +12,15 @@ import java.util.List;
 
 public class TNTRunAreaSaveSubCommand extends BaseSubCommand {
     public TNTRunAreaSaveSubCommand() {
-        super("save");
+        super("save", "保存TNT奔跑场地", "/cc game area tntrun save <场地名>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             if (plugin.getGameManager().getTntRunManager().saveArea(args[0])) {
                 String message = MessageConfig.AREA_SUCCESSFULLY_SAVED

@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class HotyCodyDuskyAreaMainCommand extends BaseMainCommand {
     public HotyCodyDuskyAreaMainCommand() {
-        super("hotycodydusky");
+        super("hotycodydusky", "昼夜对决场地");
         addSubCommand(new HotyCodyDuskyAreaAddSubCommand());
         addSubCommand(new HotyCodyDuskyAreaSetSubCommand());
     }

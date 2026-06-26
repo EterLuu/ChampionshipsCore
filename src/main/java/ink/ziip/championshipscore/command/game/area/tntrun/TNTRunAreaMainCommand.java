@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class TNTRunAreaMainCommand extends BaseMainCommand {
     public TNTRunAreaMainCommand() {
-        super("tntrun");
+        super("tntrun", "TNT奔跑场地");
         addSubCommand(new TNTRunAreaAddSubCommand());
         addSubCommand(new TNTRunAreaSetSubCommand());
         addSubCommand(new TNTRunAreaSaveSubCommand());

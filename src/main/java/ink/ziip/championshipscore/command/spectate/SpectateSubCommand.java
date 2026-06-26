@@ -34,11 +34,15 @@ public class SpectateSubCommand extends BaseSubCommand {
     };
 
     public SpectateSubCommand() {
-        super("spectate");
+        super("spectate", "观战游戏（leave 退出观战）", "/cc spectate <游戏|leave> [场地]");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (CCConfig.STRICT_SPECTATOR_RULE) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer((Player) sender);
             if (plugin.getRankManager().getRound() != 7) {

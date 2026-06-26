@@ -12,7 +12,7 @@ import java.util.List;
 
 public class AdminReloadSubCommand extends BaseSubCommand {
     public AdminReloadSubCommand() {
-        super("reload");
+        super("reload", "重载插件配置", "/cc admin reload");
     }
 
     @Override

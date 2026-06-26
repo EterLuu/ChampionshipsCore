@@ -13,11 +13,15 @@ import java.util.List;
 
 public class TeamInfoSubCommand extends BaseSubCommand {
     public TeamInfoSubCommand() {
-        super("info");
+        super("info", "查看队伍信息", "/cc team info <队伍ID>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeam(args[0]);
             if (championshipTeam != null)

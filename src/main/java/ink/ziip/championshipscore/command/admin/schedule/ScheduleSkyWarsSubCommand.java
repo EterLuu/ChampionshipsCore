@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ScheduleSkyWarsSubCommand extends BaseSubCommand {
     public ScheduleSkyWarsSubCommand() {
-        super("skywars");
+        super("skywars", "按赛程开始空岛战争", "/cc admin schedule skywars");
     }
 
     @Override

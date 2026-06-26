@@ -10,7 +10,7 @@ import ink.ziip.championshipscore.command.game.start.tntrun.TNTRunStartMainComma
 public class GameStartMainCommand extends BaseMainCommand {
 
     public GameStartMainCommand() {
-        super("start");
+        super("start", "开始游戏");
         addSubCommand(new BattleBoxStartSubCommand());
         addSubCommand(new ParkourTagStartSubCommand());
         addSubCommand(new SkyWarsStartMainCommand());

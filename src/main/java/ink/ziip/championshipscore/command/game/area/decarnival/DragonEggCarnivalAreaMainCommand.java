@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class DragonEggCarnivalAreaMainCommand extends BaseMainCommand {
     public DragonEggCarnivalAreaMainCommand() {
-        super("dragoneggcarnival");
+        super("dragoneggcarnival", "龙蛋嘉年华场地");
         addSubCommand(new DragonEggCarnivalAreaAddSubCommand());
         addSubCommand(new DragonEggCarnivalAreaSaveSubCommand());
         addSubCommand(new DragonEggCarnivalAreaSetSubCommand());

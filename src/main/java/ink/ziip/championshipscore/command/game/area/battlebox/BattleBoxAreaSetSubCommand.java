@@ -32,11 +32,15 @@ public class BattleBoxAreaSetSubCommand extends BaseSubCommand {
     };
 
     public BattleBoxAreaSetSubCommand() {
-        super("set");
+        super("set", "设置战斗箱场地参数", "/cc game area battlebox set <场地> <参数>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         Player player = (Player) sender;
         BattleBoxArea battleBoxArea = plugin.getGameManager().getBattleBoxManager().getArea(args[0]);
         if (battleBoxArea == null) {

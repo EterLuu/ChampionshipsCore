@@ -14,11 +14,15 @@ import java.util.List;
 
 public class MemberAddSubCommand extends BaseSubCommand {
     public MemberAddSubCommand() {
-        super("add");
+        super("add", "向队伍添加成员", "/cc member add <队伍ID> <玩家>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 2) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 2) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeam(args[0]);
             if (championshipTeam == null) {

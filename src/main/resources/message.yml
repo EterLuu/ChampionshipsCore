@@ -1,9 +1,14 @@
 dont-edit-this:
-  version: 4
+  version: 5
 no-permission: "#696969&l[#696969!#696969]&r &4你没有权限！"
 prefix: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r"
 server-full: "服务器已经满人！"
 player-not-verified: "(!)你的客户端没有通过验证，请使用专用客户端！"
+command:
+  help-header: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #fff566可用命令："
+  help-row: " #31e061▪ #ededed%command% #696969- #bababa%description% #696969%detail%"
+  help-more: "#696969..."
+  usage: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #e42d3e用法：#ededed%usage% #696969（%description%）"
 team:
   successfully-added: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed成功添加队伍%team%#ededed。"
   added-failed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969添加队伍%team%失败（%reason%）#696969。"

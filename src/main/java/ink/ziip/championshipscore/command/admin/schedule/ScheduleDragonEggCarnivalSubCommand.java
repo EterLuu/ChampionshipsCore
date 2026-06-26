@@ -12,7 +12,7 @@ import java.util.List;
 
 public class ScheduleDragonEggCarnivalSubCommand extends BaseSubCommand {
     public ScheduleDragonEggCarnivalSubCommand() {
-        super("dragoneggcarnival");
+        super("dragoneggcarnival", "按赛程开始龙蛋嘉年华", "/cc admin schedule dragoneggcarnival");
     }
 
     @Override

@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ScheduleTGTTOSSubCommand extends BaseSubCommand {
     public ScheduleTGTTOSSubCommand() {
-        super("tgttos");
+        super("tgttos", "按赛程开始到达彼岸", "/cc admin schedule tgttos");
     }
 
     @Override
