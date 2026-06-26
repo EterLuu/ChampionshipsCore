@@ -5,24 +5,17 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
-import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
+import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
-import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
-import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyTeamArea;
-import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
-import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorTeamArea;
-import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
-import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
-import ink.ziip.championshipscore.api.game.tgttos.TGTTOSTeamArea;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
-import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
@@ -56,6 +49,11 @@ public class GameManager extends BaseManager {
     private final ParkourWarriorManager parkourWarriorManager;
     @Getter
     private final HotyCodyDuskyManager hotyCodyDuskyManager;
+    /**
+     * Registry mapping each game type to its area manager. Drives the generic
+     * {@code join*} dispatch so adding a game only requires registering it here.
+     */
+    private final Map<GameTypeEnum, BaseAreaManager<? extends BaseArea>> areaManagers = new EnumMap<>(GameTypeEnum.class);
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -69,47 +67,42 @@ public class GameManager extends BaseManager {
         snowballShowdownManager = new SnowballShowdownManager(plugin);
         parkourWarriorManager = new ParkourWarriorManager(plugin);
         hotyCodyDuskyManager = new HotyCodyDuskyManager(plugin);
+
+        areaManagers.put(GameTypeEnum.BattleBox, battleBoxManager);
+        areaManagers.put(GameTypeEnum.ParkourTag, parkourTagManager);
+        areaManagers.put(GameTypeEnum.SkyWars, skyWarsManager);
+        areaManagers.put(GameTypeEnum.TGTTOS, tgttosManager);
+        areaManagers.put(GameTypeEnum.TNTRun, tntRunManager);
+        areaManagers.put(GameTypeEnum.DragonEggCarnival, dragonEggCarnivalManager);
+        areaManagers.put(GameTypeEnum.SnowballShowdown, snowballShowdownManager);
+        areaManagers.put(GameTypeEnum.ParkourWarrior, parkourWarriorManager);
+        areaManagers.put(GameTypeEnum.HotyCodyDusky, hotyCodyDuskyManager);
+    }
+
+    /**
+     * @return the area manager registered for {@code gameTypeEnum}, or {@code null} if none.
+     */
+    @Nullable
+    public BaseAreaManager<? extends BaseArea> getAreaManager(GameTypeEnum gameTypeEnum) {
+        return areaManagers.get(gameTypeEnum);
     }
 
     @Override
     public void load() {
-        battleBoxManager.load();
-        parkourTagManager.load();
-        skyWarsManager.load();
-        tgttosManager.load();
-        tntRunManager.load();
-        dragonEggCarnivalManager.load();
-        snowballShowdownManager.load();
-        parkourWarriorManager.load();
-        hotyCodyDuskyManager.load();
+        for (BaseAreaManager<? extends BaseArea> manager : areaManagers.values()) {
+            manager.load();
+        }
 
         gameManagerHandler.register();
     }
 
     @Override
     public void unload() {
-        battleBoxManager.unload();
-        parkourTagManager.unload();
-        skyWarsManager.unload();
-        tgttosManager.unload();
-        tntRunManager.unload();
-        dragonEggCarnivalManager.unload();
-        snowballShowdownManager.unload();
-        parkourWarriorManager.unload();
-        hotyCodyDuskyManager.unload();
-
-        gameManagerHandler.unRegister();
-    }
-
-    public boolean joinSingleTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam team) {
-        for (UUID uuid : team.getMembers()) {
-            if (playerStatus.containsKey(uuid))
-                return false;
-            if (playerSpectatorStatus.containsKey(uuid))
-                removeSpectator(uuid);
+        for (BaseAreaManager<? extends BaseArea> manager : areaManagers.values()) {
+            manager.unload();
         }
 
-        return false;
+        gameManagerHandler.unRegister();
     }
 
     public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam rightChampionshipTeam, @NotNull ChampionshipTeam leftChampionshipTeam) {
@@ -130,49 +123,20 @@ public class GameManager extends BaseManager {
         if (teamStatus.containsKey(leftChampionshipTeam))
             return false;
 
-        if (gameTypeEnum == GameTypeEnum.BattleBox) {
-            BattleBoxArea battleBoxArea = getBattleBoxManager().getArea(area);
-            if (battleBoxArea == null)
-                return false;
-            if (battleBoxArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
-                teamStatus.put(rightChampionshipTeam, battleBoxArea);
-                teamStatus.put(leftChampionshipTeam, battleBoxArea);
-                addPlayerStatusByTeam(rightChampionshipTeam, battleBoxArea);
-                addPlayerStatusByTeam(leftChampionshipTeam, battleBoxArea);
-                return true;
-            }
+        BaseAreaManager<? extends BaseArea> manager = areaManagers.get(gameTypeEnum);
+        if (manager == null)
             return false;
-        }
-
-        if (gameTypeEnum == GameTypeEnum.ParkourTag) {
-            ParkourTagArea parkourTagArea = getParkourTagManager().getArea(area);
-            if (parkourTagArea == null)
-                return false;
-            if (parkourTagArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
-                teamStatus.put(rightChampionshipTeam, parkourTagArea);
-                teamStatus.put(leftChampionshipTeam, parkourTagArea);
-                addPlayerStatusByTeam(rightChampionshipTeam, parkourTagArea);
-                addPlayerStatusByTeam(leftChampionshipTeam, parkourTagArea);
-                return true;
-            }
+        if (!(manager.getArea(area) instanceof BaseTeamArea teamArea))
             return false;
-        }
 
-        if (gameTypeEnum == GameTypeEnum.DragonEggCarnival) {
-            DragonEggCarnivalArea dragonEggCarnivalArea = getDragonEggCarnivalManager().getArea(area);
-            if (dragonEggCarnivalArea == null)
-                return false;
-            if (dragonEggCarnivalArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
-                teamStatus.put(rightChampionshipTeam, dragonEggCarnivalArea);
-                teamStatus.put(leftChampionshipTeam, dragonEggCarnivalArea);
-                addPlayerStatusByTeam(rightChampionshipTeam, dragonEggCarnivalArea);
-                addPlayerStatusByTeam(leftChampionshipTeam, dragonEggCarnivalArea);
-                return true;
-            }
-            return false;
+        if (teamArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
+            teamStatus.put(rightChampionshipTeam, teamArea);
+            teamStatus.put(leftChampionshipTeam, teamArea);
+            addPlayerStatusByTeam(rightChampionshipTeam, teamArea);
+            addPlayerStatusByTeam(leftChampionshipTeam, teamArea);
+            return true;
         }
-
-        return true;
+        return false;
     }
 
     public synchronized boolean joinSingleTeamAreaForTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam... championshipTeams) {
@@ -187,20 +151,18 @@ public class GameManager extends BaseManager {
             }
         }
 
-        if (gameTypeEnum == GameTypeEnum.HotyCodyDusky) {
-            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = hotyCodyDuskyManager.getArea(area);
-            if (hotyCodyDuskyTeamArea == null)
-                return false;
-
-            if (hotyCodyDuskyTeamArea.tryStartGame(List.of(championshipTeams))) {
-                for (ChampionshipTeam championshipTeam : championshipTeams) {
-                    teamStatus.put(championshipTeam, hotyCodyDuskyTeamArea);
-                    addPlayerStatusByTeam(championshipTeam, hotyCodyDuskyTeamArea);
-                }
-                return true;
-            }
-
+        BaseAreaManager<? extends BaseArea> manager = areaManagers.get(gameTypeEnum);
+        if (manager == null)
             return false;
+        if (!(manager.getArea(area) instanceof BaseSingleTeamArea singleTeamArea))
+            return false;
+
+        if (singleTeamArea.tryStartGame(List.of(championshipTeams))) {
+            for (ChampionshipTeam championshipTeam : championshipTeams) {
+                teamStatus.put(championshipTeam, singleTeamArea);
+                addPlayerStatusByTeam(championshipTeam, singleTeamArea);
+            }
+            return true;
         }
 
         return false;
@@ -221,23 +183,21 @@ public class GameManager extends BaseManager {
             championshipTeams.add(championshipTeam);
         }
 
-        HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = hotyCodyDuskyManager.getArea(area);
-        if (hotyCodyDuskyTeamArea == null)
+        BaseAreaManager<? extends BaseArea> manager = areaManagers.get(gameTypeEnum);
+        if (manager == null)
+            return false;
+        if (!(manager.getArea(area) instanceof BaseSingleTeamArea singleTeamArea))
             return false;
 
         for (UUID playerUUID : players) {
             removeSpectator(playerUUID);
         }
 
-        if (gameTypeEnum == GameTypeEnum.HotyCodyDusky) {
-            if (hotyCodyDuskyTeamArea.tryStartGame(championshipTeams.stream().toList(), players)) {
-                for (UUID playerUUID : players) {
-                    playerStatus.put(playerUUID, hotyCodyDuskyTeamArea);
-                }
-                return true;
+        if (singleTeamArea.tryStartGame(championshipTeams.stream().toList(), players)) {
+            for (UUID playerUUID : players) {
+                playerStatus.put(playerUUID, singleTeamArea);
             }
-
-            return false;
+            return true;
         }
 
         return false;
@@ -255,97 +215,18 @@ public class GameManager extends BaseManager {
             }
         }
 
-        if (gameTypeEnum == GameTypeEnum.SkyWars) {
-            SkyWarsTeamArea skyWarsArea = skyWarsManager.getArea(area);
-            if (skyWarsArea == null)
-                return false;
-
-            if (skyWarsArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    teamStatus.put(championshipTeam, skyWarsArea);
-                    addPlayerStatusByTeam(championshipTeam, skyWarsArea);
-                }
-                return true;
-            }
+        BaseAreaManager<? extends BaseArea> manager = areaManagers.get(gameTypeEnum);
+        if (manager == null)
             return false;
-        }
-
-        if (gameTypeEnum == GameTypeEnum.TGTTOS) {
-            TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(area);
-            if (tgttosTeamArea == null)
-                return false;
-
-            if (tgttosTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    teamStatus.put(championshipTeam, tgttosTeamArea);
-                    addPlayerStatusByTeam(championshipTeam, tgttosTeamArea);
-                }
-                return true;
-            }
-
+        if (!(manager.getArea(area) instanceof BaseSingleTeamArea singleTeamArea))
             return false;
-        }
 
-        if (gameTypeEnum == GameTypeEnum.TNTRun) {
-            TNTRunTeamArea tntRunArea = tntRunManager.getArea(area);
-            if (tntRunArea == null)
-                return false;
-
-            if (tntRunArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    teamStatus.put(championshipTeam, tntRunArea);
-                    addPlayerStatusByTeam(championshipTeam, tntRunArea);
-                }
-                return true;
+        if (singleTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
+            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                teamStatus.put(championshipTeam, singleTeamArea);
+                addPlayerStatusByTeam(championshipTeam, singleTeamArea);
             }
-            return false;
-        }
-
-        if (gameTypeEnum == GameTypeEnum.SnowballShowdown) {
-            SnowballShowdownTeamArea snowballShowdownTeamArea = snowballShowdownManager.getArea(area);
-            if (snowballShowdownTeamArea == null)
-                return false;
-
-            if (snowballShowdownTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    teamStatus.put(championshipTeam, snowballShowdownTeamArea);
-                    addPlayerStatusByTeam(championshipTeam, snowballShowdownTeamArea);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        if (gameTypeEnum == GameTypeEnum.ParkourWarrior) {
-            ParkourWarriorTeamArea parkourWarriorTeamArea = parkourWarriorManager.getArea(area);
-            if (parkourWarriorTeamArea == null)
-                return false;
-
-            if (parkourWarriorTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    teamStatus.put(championshipTeam, parkourWarriorTeamArea);
-                    addPlayerStatusByTeam(championshipTeam, parkourWarriorTeamArea);
-                }
-                return true;
-            }
-
-            return false;
-        }
-
-        if (gameTypeEnum == GameTypeEnum.HotyCodyDusky) {
-            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = hotyCodyDuskyManager.getArea(area);
-            if (hotyCodyDuskyTeamArea == null)
-                return false;
-
-            if (hotyCodyDuskyTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    teamStatus.put(championshipTeam, hotyCodyDuskyTeamArea);
-                    addPlayerStatusByTeam(championshipTeam, hotyCodyDuskyTeamArea);
-                }
-                return true;
-            }
-
-            return false;
+            return true;
         }
 
         return false;

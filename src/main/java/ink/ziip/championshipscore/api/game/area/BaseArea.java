@@ -445,6 +445,8 @@ public abstract class BaseArea {
 
     public abstract Location getSpectatorSpawnLocation();
 
+    public abstract int getTimer();
+
     public abstract void endGame();
 
     public abstract void resetBaseArea();
