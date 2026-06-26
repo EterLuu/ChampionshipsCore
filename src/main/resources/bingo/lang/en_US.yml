@@ -1,0 +1,323 @@
+cmd:
+  player_only: "&cOnly players can run this command."
+  admin_only: "&cYou do not have permission to run this command."
+  unknown: "&cUnknown subcommand. Use /{0} help."
+  help:
+    - "&6===== MineBingo Commands ====="
+    - "&e/{0} menu &7Open the lobby menu"
+    - "&e/{0} join [team] &7Join the game (auto-assigned if omitted)"
+    - "&e/{0} leave &7Leave your team"
+    - "&e/{0} team <team> [player] &7Move a player to a team"
+    - "&e/{0} card &7Show your team's bingo card"
+    - "&e/{0} cardchoose <pool> &7Select the card pool for the next round"
+    - "&e/{0} start|forcestart|end|status|lockteams|setlobby &7Admin commands"
+    - "&e/{0} goto <lobby|game|nether|end> &7Teleport to a world"
+    - "&e/{0} wait &7Extend the start countdown"
+    - "&e/{0} remix <event|random|off|clear|status> &7Control the next round's remix"
+    - "&7Teams: red/orange/yellow/green/aqua/blue/purple/white/spectator"
+  join:
+    ok: "&aJoined {0}&a."
+    usage: "&cUsage: /{0} join [red|orange|yellow|green|aqua|blue|purple|white|spectator]"
+    locked: "&cTeams are locked; you cannot join or switch right now."
+  leave: "&7You left Bingo."
+  team:
+    usage: "&cUsage: /{0} team <red|orange|yellow|green|aqua|blue|purple|white|spectator> [player]"
+    ok: "&aMoved &f{0}&a to {1}&a."
+    not_found: "&cCould not find player {0}."
+  lockteams:
+    usage: "&cUsage: /{0} lockteams <on|off>"
+    "on": "&aTeams locked; players can no longer join or switch teams."
+    "off": "&aTeams unlocked; players may join or switch freely."
+  setlobby:
+    ok: "&aLobby spawn set: {0} {1} {2} {3}"
+    must_in_lobby: "&cStand in lobby world {0} first."
+  goto:
+    usage: "&cUsage: /{0} goto <lobby|game|nether|end|world>"
+    no_world: "&cWorld {0} not found."
+    ok: "&aTeleported to {0}."
+  wait:
+    not_countdown: "&cThere is no start countdown running."
+    ok: "&aCountdown extended, {0} seconds remaining."
+  status: "&7State: {0} &7| Online: &b{1} &7| Playing: &b{2} &7| Locked: {3} &7| Resetting: {4}"
+  no_card: "&cNo bingo card is active."
+  cardchoose:
+    usage: "&cUsage: /{0} cardchoose <pool> &7Current: &f{1}"
+    ok: "&aSelected card pool &f{0}&a ({1} tasks). It applies to the next round."
+    not_found: "&cCard pool &f{0}&c was not found or could not be loaded. Check plugins/MineBingo/cards/{0}.yml."
+    busy: "&cThe game is already voting or running. Switch card pools from the lobby."
+  list:
+    header: "&6===== Team List ====="
+    entry: "{0}&7 ({1}): &f{2}"
+  remix:
+    unknown: "&cUsage: /{0} remix <event|random|off|clear|status>"
+    forced: "&aNext round will trigger remix: &d{0}&a."
+    forced_random: "&aNext round will trigger a &drandom remix&a."
+    forced_off: "&aNext round will have &7no&a remix."
+    cleared: "&aRemix override cleared; next round rolls by chance."
+    status: "&7Remix: enabled {0} &7| chance &b{1}% &7| next forced: &d{2}"
+game:
+  already: "&cA game is already running or counting down."
+  resetting: "&cThe game world is resetting."
+  start_invalid: "&cNot enough players, or no playable teams."
+  starting: "&eBingo starts in {0} seconds."
+  countdown: "&eStarting in: {0}s"
+  countdown_cancelled: "&cStart conditions are no longer met; countdown cancelled."
+  begun: "&aBingo started! Complete card tasks to make a line."
+  title: "&aBingo Started!"
+  subtitle: "&7Complete tasks, make a line"
+  ended: "&6Game over. Winner: {0}&6."
+  stopped: "&cThe game was stopped by an admin."
+  completion_connector: "&f completed task "
+  completion_points: " &7(+{0} pts)"
+  line_completed: "&6{0} &6completed a line and won!"
+  all_completed: "&6{0} &6completed every task on the card!"
+  board_full: "&6The board is fully claimed; scoring by completions."
+  stalemate: "&6No team can still make a line; scoring by completions."
+  team_finished: "&6{0} &6reached the win goal (#{1})!"
+  time_up: "&6Time is up!"
+  draw: "&7No team completed a task. It's a draw."
+  score_result: "&6Top score: {0}&6 ({1} pts)"
+  reset_done: "&aGame world reset complete."
+vote:
+  started: "&dMode vote started! Choose this round's mode within {0} seconds."
+  title: "&dMode Vote"
+  subtitle: "&7Choose this round's game mode"
+  countdown: "&dMode vote: {0}s left"
+  cast: "&aYou voted for &f{0}"
+  result: "&6This round's mode: &f{0}"
+  result_random: "&6Random mode rolled: &f{0}"
+  menu_title: "Choose a game mode"
+  menu_count: "&7Votes: &e{0}"
+  menu_hint: "&eClick to vote"
+  menu_picked: "&a✔ Your pick"
+  menu_locked: "&c🔒 Needs ≥4 teams to unlock"
+difficulty_vote:
+  started: "&bDifficulty vote started! Choose this round's card difficulty within {0} seconds."
+  title: "&bDifficulty Vote"
+  subtitle: "&7Choose this round's card difficulty"
+  countdown: "&bDifficulty vote: {0}s left"
+  cast: "&aYou chose &f{0}"
+  result: "&6This round's card difficulty: &f{0}"
+  menu_title: "Choose card difficulty"
+  menu_count: "&7Votes: &e{0}"
+  menu_hint: "&eClick to choose"
+  menu_picked: "&a✔ Your pick"
+  menu_locked: "&c🔒 Needs every team to have >1 player"
+lines_vote:
+  started: "&bSpeedrun! Vote how many lines win the round within {0} seconds."
+  title: "&bLines to Win"
+  subtitle: "&7How many bingo lines win the round?"
+  countdown: "&bLines vote: {0}s left"
+  cast: "&aYou voted for &f{0} &alines"
+  result: "&6This round wins at: &f{0} &6lines"
+  menu_title: "How many lines to win?"
+  menu_option: "&b{0} lines to win"
+  menu_desc: "&7Complete {0} bingo line(s) to win the round"
+  menu_count: "&7Votes: &e{0}"
+  menu_hint: "&eClick to vote"
+  menu_picked: "&a✔ Your pick"
+card_difficulty:
+  easy:
+    name: "&aNovice"
+    lore:
+      - "&7Task ratio: Easy×12 / Medium×4 / Advanced×2 / Hard×1"
+      - "&7(No very-hard tasks)"
+      - "&7Time limit: &e15 minutes"
+  lite:
+    name: "&eEasy"
+    lore:
+      - "&7Task ratio: Easy×6 / Medium×7 / Advanced×4 / Hard×2"
+      - "&7(No very-hard tasks)"
+      - "&7Time limit: &e30 minutes"
+  normal:
+    name: "&6Standard"
+    lore:
+      - "&7Task ratio: Easy×3 / Medium×5 / Advanced×5 / Hard×4 / Very Hard×2"
+      - "&7(No End-dimension tasks)"
+      - "&7Time limit: &e45 minutes"
+  hard:
+    name: "&cHard"
+    lore:
+      - "&7Task ratio: Easy×1 / Medium×3 / Advanced×5 / Hard×7 / Very Hard×3"
+      - "&7Time limit: &e60 minutes"
+  extreme:
+    name: "&4Extreme"
+    lore:
+      - "&7Task ratio: Easy×1 / Medium×2 / Advanced×3 / Hard×6 / Very Hard×6"
+      - "&7Time limit: &e90 minutes"
+genesis:
+  started: "&5Genesis! Pick a task for this round from the random items within {0} seconds."
+  title: "&5Genesis Pick"
+  subtitle: "&7Pick one item as a task for this round"
+  countdown: "&5Genesis pick: {0}s left"
+  cast: "&aPicked that item as a task for this round"
+  menu_title: "Genesis: pick a task for this round"
+  menu_hint: "&eClick to pick this item for the round"
+  menu_picked: "&a✔ Your pick"
+remix:
+  triggered: "&5✦ A remix has struck! This round: 【{0}&5】 &d{1}"
+  title: "&5✦ A Remix Strikes ✦"
+  blind_reveal: "&8✦ Blind revealed a task: &f"
+  nether:
+    name: "&cNether"
+    desc: "&7Players spawn/respawn in the Nether; half the card is Nether items."
+  scale:
+    name: "&bScale"
+    desc: "&7The card shrinks to 4×4 or 3×3."
+  differential:
+    name: "&dDifferential"
+    desc: "&7Each team gets a different card, but cells lock globally by position."
+  upgrade:
+    name: "&6Upgrade"
+    desc: "&7Everyone gets a netherite kit, elytra and fireworks."
+  blind:
+    name: "&8Blind"
+    desc: "&7Tasks start hidden; they reveal on completion or over time."
+  feast:
+    name: "&eFeast"
+    desc: "&7The whole card is advancements, or the whole card is statistics."
+  coop:
+    name: "&aCo-op"
+    desc: "&7One team; finish the whole card together within an hour."
+  genesis:
+    name: "&5Genesis"
+    desc: "&7Each player picks 1 of their own 9 random items to seed the card."
+mode:
+  domination:
+    name: "&aDomination"
+    lore:
+      - "&7Each cell is claimed by the first team"
+      - "&7to finish it; others can't take it after."
+      - "&7Make a line in your colour to win;"
+      - "&7if no team can still make a line, it settles by most completed;"
+      - "&7board full or timeout → most completed wins."
+  speedrun:
+    name: "&bSpeedrun"
+    lore:
+      - "&7Cells never lock, each team finishes its own."
+      - "&7First team to make a line wins;"
+      - "&7on timeout, most completed wins."
+  quantity:
+    name: "&6Quantity"
+    lore:
+      - "&7Cells never lock, each team finishes its own."
+      - "&7Lines don't win — race for the most tasks:"
+      - "&7first to finish the whole card wins;"
+      - "&7on timeout, most completed wins."
+  points:
+    name: "&ePoints"
+    lore:
+      - "&7Cells never lock, each team finishes its own."
+      - "&7Item pts by claim order, then floor value;"
+      - "&7cell never locks (floor 30 for 4-7 teams, 20 for 8)."
+      - "&7Line bonuses: first 4 lines +200, remaining +100."
+      - "&7Highest total score at timeout wins (needs ≥4 teams)."
+      - "&720-minute round."
+  random:
+    name: "&dRandom"
+    lore:
+      - "&7Picks one of the other modes"
+      - "&7at random for this round."
+card:
+  title: "&6&lBingo Card"
+  win_hint: "&7Complete a full row, column, or diagonal to win"
+  map_name: "{0} &fBingo Card"
+  map_hint: "&7Right-click to view task details"
+  completed_by: "&7Completed by: "
+  completed_at: "&7Completed at: &f{0}"
+  occupied_by: "&7Claimed by another team"
+  voided: "&8Voided"
+  hidden: "&8&l???"
+compass:
+  item_name: "{0} &fTeleport Compass"
+  item_hint: "&7Right-click to open the teammate teleport menu"
+  menu_title: "&8Teammate Teleport"
+  teammate_hint: "&7Click to teleport to this teammate"
+  unavailable: "&cThe teleport compass is unavailable right now."
+  no_teammates: "&cNo online teammates to teleport to."
+  target_offline: "&cThat teammate has gone offline."
+  target_left_team: "&cThat player is no longer on your team."
+  teleport_success: "&aTeleported to &f{0}&a."
+task:
+  collect: "&7Objective: collect this item"
+  one_of: "&7Objective: collect any one of these ({0} options)"
+  one_of_prefix: "Any: "
+  advancement: "&7Objective: earn this advancement"
+  statistic: "&7Objective: reach this statistic"
+  blocks_unit: "blocks"
+  unknown_advancement: "&7Unknown advancement"
+  fish_caught_name: "Fish"
+  fish_caught_desc: "&7Objective: catch a fish"
+board:
+  title: "&6&lMineBingo"
+  state_prefix: "&7State: "
+  mode_prefix: "&7Mode: "
+  mode_voting: "&dVoting…"
+  teams_header: "&6Teams"
+  team_progress: "{0}&7: &f{1}/{2} &7L{3}"
+  team_score: "{0}&7: &e{1}pts &7(&f{2}/{3}&7)"
+  team_members: "{0}&7: &f{1}"
+  countdown: "&7Start: &e{0}s"
+  vote: "&7Vote: &d{0}s"
+  difficulty_vote: "&7Difficulty: &b{0}s"
+  lines_vote: "&7Lines: &b{0}s"
+  genesis: "&7Genesis: &d{0}s"
+  time: "&7Time: &b{0}"
+  blind_progress: "&7Revealed: &f{0}/{1}"
+  locked: "&7Teams locked: {0}"
+state:
+  LOBBY: "&aLobby"
+  COUNTDOWN: "&eCountdown"
+  VOTING: "&dMode Vote"
+  DIFFICULTY_VOTE: "&bDifficulty Vote"
+  LINES_VOTE: "&bLines Vote"
+  GENESIS: "&dGenesis Pick"
+  RUNNING: "&cRunning"
+  ENDED: "&6Ended"
+  RESETTING: "&bResetting"
+common:
+  "yes": "&ayes"
+  "no": "&cno"
+team:
+  RED: "&cRed"
+  ORANGE: "&6Orange"
+  YELLOW: "&eYellow"
+  GREEN: "&aGreen"
+  AQUA: "&bAqua"
+  BLUE: "&9Blue"
+  PURPLE: "&dPurple"
+  WHITE: "&fWhite"
+  SPECTATOR: "&7Spectator"
+menu:
+  disabled: "&cThe menu can only be opened in the lobby."
+  no_perm: "&cYou don't have permission to use this menu."
+  item:
+    name: "&b&lLobby Menu &7(right-click)"
+    lore1: "&7Right-click to open the team & game menu"
+  main:
+    title: "&1&lMineBingo Lobby"
+  status:
+    title: "&e&lLobby Status"
+    state: "&7State: {state}"
+    online: "&7Online: &b{online}"
+    participants: "&7Players: &b{participants}"
+    locked: "&7Teams locked: {locked}"
+    team: "&7Your team: {team}"
+  action:
+    team:
+      name: "&a&lChoose Team"
+      lore1: "&7View and join a team"
+    leave:
+      name: "&c&lLeave Team"
+      lore1: "&7Drop out of this round"
+    close: "&cClose"
+    back: "&7Back"
+  team:
+    title: "&1&lChoose Team"
+    count: "&7Online: &f{current_count}"
+    auto:
+      name: "&a&lAuto-assign"
+      lore1: "&7Join the smallest team"
+    spectator:
+      name: "&7&lSpectate"
+      lore1: "&7Watch as a spectator"

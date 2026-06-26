@@ -1,0 +1,25 @@
+# ChampionshipsCore — Bingo 全局配置
+# 每个场地的几何/积分参数在 bingo/areas/<场地名>.yml 中单独配置。
+
+# 语言文件：bingo/lang/<locale>.yml（首次启动从插件资源生成）。
+locale: "zh_CN"
+# 广播前缀（& / #RRGGBB 颜色码）。
+prefix: ""
+
+cards:
+  # 卡池：bingo/cards/<名称>.yml（首次启动从插件资源生成 default）。
+  selected: "default"
+  # 难度分级表：bingo/tierlists/<名称>.yml（留空则用卡池内联难度）。
+  tierlist: "default"
+  # 卡片难度分布权重，依次对应 EASY:MEDIUM:ADVANCED:HARD:VERY_HARD。
+  # 权重 0 表示排除该难度。默认 3:5:2:1，排除 VERY_HARD。
+  difficulty-weights: [ 3, 5, 2, 1, 0 ]
+
+# 标签过滤层：bingo/tags/<标签>.yml 提供 objective-id 通配列表。
+filters:
+  # 携带任一被排除标签的任务永不出现在卡片上。每个任务自带隐式 dim:<维度> 标签，
+  # 因此 dim:the_end 即可排除所有末地任务（默认不含末地）。
+  # starter_kit 排除初始装备物品（bingo/tags/starter_kit.yml），避免开局自带导致任务秒完成。
+  exclude: [ "dim:the_end", "starter_kit" ]
+  # 每张卡片上携带某标签的任务数量上限。
+  caps: { }

@@ -7,6 +7,8 @@ public enum GameTypeEnum {
 
     @Override
     public String toString() {
+        if (this == Bingo)
+            return MessageConfig.GAME_BINGO;
         if (this == ParkourTag)
             return MessageConfig.GAME_PARKOUR_TAG;
         if (this == BattleBox)

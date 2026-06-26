@@ -73,6 +73,7 @@ game:
   dragoneggcarnival: "龙蛋狂欢"
   parkourwarrior: "跑路战士"
   hotycodydusky: "烫手鳕鱼"
+  bingo: "宾果"
   game-weight: "#ededed====== #31e061S²#dbffe5#e42d3eCC #fff566游戏权值 #696969| #e42d3eRIA #edededx #24abffTRIALHAMMER #edededx &dINF&r #ededed======"
   game-weight-info: "&r  #ededed%game%. #24abff%weight%#696969（&6%total_point%#696969）"
 battlebox:
@@ -178,6 +179,19 @@ tgttos:
   arrived-at-end-point: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed玩家#ededed%player%#ededed到达了终点。"
   team-arrived-at-end-point: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed队伍#ededed%team%#ededed全队到达了终点。"
   fall-into-void: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969玩家#696969%player%#696969跌入了虚空。"
+bingo:
+  start-preparation: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed宾果即将开始。"
+  start-preparation-title: "#ff6b26[&d宾果#ff6b26]"
+  start-preparation-subtitle: "#ededed游戏即将开始"
+  game-start: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ff6b26宾果开始！收集卡片上的物品/统计/进度！"
+  game-start-title: "#ff6b26[&d宾果#ff6b26]"
+  game-start-subtitle: "&6开始！"
+  game-end: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969宾果结束。"
+  game-end-title: "#ff6b26[&d宾果#ff6b26]"
+  game-end-subtitle: "#696969游戏结束。"
+  action-bar-count-down: "#24abff剩余时间：#ff6b26%time%#24abff 秒。"
+  task-completed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%player% #6完成了 #fff566%task% #696969(+%points%)"
+  game-winner: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #fff566获胜队伍：%team% #696969(%points% 分)"
 tntrun:
   start-preparation: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed游戏即将开始（本次倒计时结束后直接开始游戏）。"
   start-preparation-title: "&4[#ff6b26TNTRun&4]"

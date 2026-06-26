@@ -216,6 +216,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.hotycodydusky")
     public static String GAME_HOTY_CODY_DUSKY;
 
+    @ConfigOption(path = "game.bingo")
+    public static String GAME_BINGO;
+
     @ConfigOption(path = "game.game-weight")
     public static String GAME_GAME_WEIGHT;
 
@@ -513,6 +516,43 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tgttos.fall-into-void")
     public static String TGTTOS_FALL_INTO_VOID;
+
+    // Bingo
+    @ConfigOption(path = "bingo.start-preparation")
+    public static String BINGO_START_PREPARATION;
+
+    @ConfigOption(path = "bingo.start-preparation-title")
+    public static String BINGO_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "bingo.start-preparation-subtitle")
+    public static String BINGO_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "bingo.game-start")
+    public static String BINGO_GAME_START;
+
+    @ConfigOption(path = "bingo.game-start-title")
+    public static String BINGO_GAME_START_TITLE;
+
+    @ConfigOption(path = "bingo.game-start-subtitle")
+    public static String BINGO_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "bingo.game-end")
+    public static String BINGO_GAME_END;
+
+    @ConfigOption(path = "bingo.game-end-title")
+    public static String BINGO_GAME_END_TITLE;
+
+    @ConfigOption(path = "bingo.game-end-subtitle")
+    public static String BINGO_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "bingo.action-bar-count-down")
+    public static String BINGO_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "bingo.task-completed")
+    public static String BINGO_TASK_COMPLETED;
+
+    @ConfigOption(path = "bingo.game-winner")
+    public static String BINGO_GAME_WINNER;
 
     // TNT Run
     @ConfigOption(path = "tntrun.start-preparation")

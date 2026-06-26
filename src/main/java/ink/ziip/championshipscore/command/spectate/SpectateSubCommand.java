@@ -37,10 +37,11 @@ public class SpectateSubCommand extends BaseSubCommand {
 
     /**
      * Maps the spectate keyword to its game type. Only games with a spectatable area
-     * manager appear here; keywords such as {@code leave}, {@code acc} and {@code bingo}
-     * are intentionally absent and fall through silently.
+     * manager appear here; keywords such as {@code leave} and {@code acc} are
+     * intentionally absent and fall through silently.
      */
     private static final Map<String, GameTypeEnum> SPECTATABLE_GAMES = Map.of(
+            "bingo", GameTypeEnum.Bingo,
             "battlebox", GameTypeEnum.BattleBox,
             "parkourtag", GameTypeEnum.ParkourTag,
             "skywars", GameTypeEnum.SkyWars,

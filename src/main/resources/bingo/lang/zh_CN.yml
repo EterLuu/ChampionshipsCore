@@ -1,0 +1,324 @@
+cmd:
+  player_only: "&c该指令只能由玩家执行。"
+  admin_only: "&c你没有权限执行该指令。"
+  unknown: "&c未知的子指令，输入 /{0} help 查看帮助。"
+  help:
+    - "&6===== MineBingo 指令帮助 ====="
+    - "&e/{0} menu &7打开大厅菜单"
+    - "&e/{0} join [队伍] &7加入游戏，不填则自动分配"
+    - "&e/{0} leave &7离开当前队伍"
+    - "&e/{0} team <队伍> [玩家] &7调整玩家所在队伍"
+    - "&e/{0} card &7查看本队的宾果卡"
+    - "&e/{0} cardchoose <卡池名> &7选择下一局使用的卡池"
+    - "&e/{0} start|forcestart|end|status|lockteams|setlobby &7管理指令"
+    - "&e/{0} goto <lobby|game|nether|end> &7传送到指定世界"
+    - "&e/{0} wait &7延长开局倒计时"
+    - "&e/{0} remix <奇遇|random|off|clear|status> &7控制下一局奇遇"
+    - "&7可选队伍：红/橙/黄/绿/青/蓝/粉/白/旁观"
+  join:
+    ok: "&a已加入 {0}&a。"
+    usage: "&c用法：/{0} join [red|orange|yellow|green|aqua|blue|purple|white|spectator]"
+    locked: "&c队伍已锁定，暂时无法加入或更换。"
+  leave: "&7你已离开本局 Bingo。"
+  team:
+    usage: "&c用法：/{0} team <red|orange|yellow|green|aqua|blue|purple|white|spectator> [玩家]"
+    ok: "&a已将 &f{0}&a 分配到 {1}&a。"
+    not_found: "&c找不到玩家 {0}。"
+  lockteams:
+    usage: "&c用法：/{0} lockteams <on|off>"
+    "on": "&a队伍已锁定，玩家无法再加入或更换队伍。"
+    "off": "&a队伍已解锁，玩家可自由加入或更换队伍。"
+  setlobby:
+    ok: "&a已设置大厅出生点：{0} {1} {2} {3}"
+    must_in_lobby: "&c请先站在大厅世界 {0} 中。"
+  goto:
+    usage: "&c用法：/{0} goto <lobby|game|nether|end|世界名>"
+    no_world: "&c找不到世界 {0}。"
+    ok: "&a已传送到 {0}。"
+  wait:
+    not_countdown: "&c当前不处于开局倒计时阶段。"
+    ok: "&a已延长开局倒计时，当前剩余 {0} 秒。"
+  status: "&7状态：{0} &7| 在线：&b{1} &7| 参赛：&b{2} &7| 队伍锁定：{3} &7| 世界重置：{4}"
+  no_card: "&c当前没有进行中的宾果卡。"
+  cardchoose:
+    usage: "&c用法：/{0} cardchoose <卡池名> &7当前：&f{1}"
+    ok: "&a已选择卡池 &f{0}&a（{1} 项任务），下一局生效。"
+    not_found: "&c找不到或无法载入卡池 &f{0}&c。请检查 plugins/MineBingo/cards/{0}.yml。"
+    busy: "&c当前游戏已经进入投票或运行阶段，请回到大厅后再切换卡池。"
+  list:
+    header: "&6===== 队伍列表 ====="
+    entry: "{0}&7（{1} 人）：&f{2}"
+  remix:
+    unknown: "&c用法：/{0} remix <奇遇名|random|off|clear|status>"
+    forced: "&a下一局将触发奇遇：&d{0}&a。"
+    forced_random: "&a下一局将触发一个&d随机奇遇&a。"
+    forced_off: "&a下一局将&7不触发&a奇遇。"
+    cleared: "&a已清除奇遇强制设置，下一局按几率触发。"
+    status: "&7奇遇：开关 {0} &7| 几率 &b{1}% &7| 下局强制：&d{2}"
+game:
+  already: "&c游戏已经开始或正在倒计时。"
+  resetting: "&c游戏世界正在重置，请稍候。"
+  start_invalid: "&c参赛人数不足，或没有可参赛的队伍。"
+  starting: "&e本局 Bingo 将在 {0} 秒后开始。"
+  countdown: "&e距开局：{0} 秒"
+  countdown_cancelled: "&c开局条件不再满足，倒计时已取消。"
+  begun: "&aBingo 开始！完成卡片上的任务来连线获胜。"
+  title: "&aBingo 开始！"
+  subtitle: "&7完成任务，连线获胜"
+  ended: "&6游戏结束，获胜队伍：{0}&6。"
+  stopped: "&c游戏已被管理员终止。"
+  completion_connector: "&f 完成了任务 "
+  completion_points: " &7(+{0}分)"
+  line_completed: "&6{0} &6达成连线，获得胜利！"
+  all_completed: "&6{0} &6完成了卡片上的全部任务！"
+  board_full: "&6棋盘已被占满，按完成数量结算。"
+  stalemate: "&6已无队伍能够连线，按完成数量结算。"
+  team_finished: "&6{0} &6完成了胜利目标（第 {1} 名）！"
+  time_up: "&6时间到！"
+  draw: "&7本局无人完成任务，平局。"
+  score_result: "&6得分最高队伍：{0}&6（{1} 分）"
+  reset_done: "&a游戏世界重置完成。"
+vote:
+  started: "&d模式投票开始！请在 {0} 秒内为本局游戏模式投票。"
+  title: "&d模式投票"
+  subtitle: "&7选择本局的游戏模式"
+  countdown: "&d模式投票剩余 {0} 秒"
+  cast: "&a你投给了 &f{0}"
+  result: "&6本局模式：&f{0}"
+  result_random: "&6随机模式抽中：&f{0}"
+  menu_title: "选择游戏模式"
+  menu_count: "&7当前票数：&e{0}"
+  menu_hint: "&e点击投票"
+  menu_picked: "&a✔ 你的选择"
+  menu_locked: "&c🔒 需要 ≥4 支队伍才可选"
+difficulty_vote:
+  started: "&b难度投票开始！请在 {0} 秒内为本局选择卡片难度。"
+  title: "&b难度投票"
+  subtitle: "&7选择本局的卡片难度"
+  countdown: "&b难度投票剩余 {0} 秒"
+  cast: "&a你选择了 &f{0}"
+  result: "&6本局卡片难度：&f{0}"
+  menu_title: "选择卡片难度"
+  menu_count: "&7当前票数：&e{0}"
+  menu_hint: "&e点击选择"
+  menu_picked: "&a✔ 你的选择"
+  menu_locked: "&c🔒 需所有队伍人数 >1 才可选"
+lines_vote:
+  started: "&b速通模式！请在 {0} 秒内投票决定完成几条线算胜利。"
+  title: "&b胜利线数"
+  subtitle: "&7完成几条线算本局胜利？"
+  countdown: "&b线数投票剩余 {0} 秒"
+  cast: "&a你投票了 &f{0} &a条线"
+  result: "&6本局胜利条件：&f{0} &6条线"
+  menu_title: "完成几条线算胜利？"
+  menu_option: "&b{0} 条线获胜"
+  menu_desc: "&7完成 {0} 条宾果线即可赢得本局"
+  menu_count: "&7当前票数：&e{0}"
+  menu_hint: "&e点击投票"
+  menu_picked: "&a✔ 你的选择"
+card_difficulty:
+  easy:
+    name: "&a新手"
+    lore:
+      - "&7任务比例：简单×12 / 中等×4 / 进阶×2 / 困难×1"
+      - "&7（不含极难任务）"
+      - "&7时限：&e15 分钟"
+  lite:
+    name: "&e简单"
+    lore:
+      - "&7任务比例：简单×6 / 中等×7 / 进阶×4 / 困难×2"
+      - "&7（不含极难任务）"
+      - "&7时限：&e30 分钟"
+  normal:
+    name: "&6标准"
+    lore:
+      - "&7任务比例：简单×3 / 中等×5 / 进阶×5 / 困难×4 / 极难×2"
+      - "&7（不含末地任务）"
+      - "&7时限：&e45 分钟"
+  hard:
+    name: "&c困难"
+    lore:
+      - "&7任务比例：简单×1 / 中等×3 / 进阶×5 / 困难×7 / 极难×3"
+      - "&7时限：&e60 分钟"
+  extreme:
+    name: "&4极难"
+    lore:
+      - "&7任务比例：简单×1 / 中等×2 / 进阶×3 / 困难×6 / 极难×6"
+      - "&7时限：&e90 分钟"
+genesis:
+  started: "&5创世！请在 {0} 秒内从随机物品中为本局挑选一个任务。"
+  title: "&5创世选物"
+  subtitle: "&7为本局挑选一个任务物品"
+  countdown: "&5创世选择剩余 {0} 秒"
+  cast: "&a已为本局挑选该物品作为任务"
+  menu_title: "创世：为本局挑选任务"
+  menu_hint: "&e点击为本局挑选此物品"
+  menu_picked: "&a✔ 你的选择"
+remix:
+  triggered: "&5✦ 奇遇降临！本局触发【{0}&5】 &d{1}"
+  title: "&5✦ 奇遇降临 ✦"
+  blind_reveal: "&8✦ 视障揭示了一项任务：&f"
+  nether:
+    name: "&c下界"
+    desc: "&7玩家在下界出生/重生，半数任务为下界物品。"
+  scale:
+    name: "&b缩放"
+    desc: "&7宾果卡缩小为 4×4 或 3×3。"
+  differential:
+    name: "&d差分"
+    desc: "&7每队卡牌不同，但格位全局共享锁定。"
+  upgrade:
+    name: "&6升级"
+    desc: "&7全员获得下界合金套装、鞘翅与烟花火箭。"
+  blind:
+    name: "&8视障"
+    desc: "&7任务开局隐藏，完成或限时逐项揭示。"
+  feast:
+    name: "&e盛宴"
+    desc: "&7全卡为进度成就，或全卡为数据统计。"
+  coop:
+    name: "&a合作"
+    desc: "&7全员同队，一小时内合作完成整张卡。"
+  genesis:
+    name: "&5创世"
+    desc: "&7每人从各自的 9 个随机物品中选 1 个作为任务。"
+mode:
+  domination:
+    name: "&a占据模式"
+    lore:
+      - "&7每个格子归最先完成的队伍占据，"
+      - "&7此后其他队伍无法再完成该格。"
+      - "&7率先用本队颜色连成一线者获胜；"
+      - "&7若已无队伍能再连线，立即按完成数结算；"
+      - "&7棋盘占满或时间到，则完成数多者胜。"
+  speedrun:
+    name: "&b速通模式"
+    lore:
+      - "&7格子不会被占据，各队可分别完成。"
+      - "&7率先连成一线的队伍获胜；"
+      - "&7时间到，则完成数多者胜。"
+  quantity:
+    name: "&6竞量模式"
+    lore:
+      - "&7格子不会被占据，各队可分别完成。"
+      - "&7连线不计胜负，比拼完成数量："
+      - "&7率先完成全部任务的队伍获胜；"
+      - "&7时间到，则完成数多者胜。"
+  points:
+    name: "&e积分模式"
+    lore:
+      - "&7格子不会被占据，各队可分别完成。"
+      - "&7按抢占顺序递减给分，之后均得底分，"
+      - "&7格子不锁定（4-7队底分30，8队底分20）。"
+      - "&7连线额外加分：前4条+200，其余+100。"
+      - "&7时间到总分最高者胜（需≥4队）。"
+      - "&7时长20分钟。"
+
+  random:
+    name: "&d随机模式"
+    lore:
+      - "&7从以上模式中随机抽取一个，"
+      - "&7作为本局的游戏模式。"
+card:
+  title: "&6&l宾果卡"
+  win_hint: "&7连成一行、一列或一条对角线即可获胜"
+  map_name: "{0} &f宾果卡"
+  map_hint: "&7右键查看任务详情"
+  completed_by: "&7完成者："
+  completed_at: "&7完成时间：&f{0}"
+  occupied_by: "&7已被占据"
+  voided: "&8已作废"
+  hidden: "&8&l？？？"
+compass:
+  item_name: "{0} &f传送罗盘"
+  item_hint: "&7右键打开队友传送菜单"
+  menu_title: "&8队友传送"
+  teammate_hint: "&7点击传送到该队友"
+  unavailable: "&c当前无法使用传送罗盘。"
+  no_teammates: "&c没有可传送的在线队友。"
+  target_offline: "&c该队友已下线。"
+  target_left_team: "&c该玩家已不在你的队伍。"
+  teleport_success: "&a已传送到 &f{0}&a。"
+task:
+  collect: "&7目标：收集此物品"
+  one_of: "&7目标：收集其中任意一种（共 {0} 种）"
+  one_of_prefix: "任意："
+  advancement: "&7目标：完成此进度"
+  statistic: "&7目标：达成此统计"
+  blocks_unit: "格"
+  unknown_advancement: "&7未知进度"
+  fish_caught_name: "钓鱼"
+  fish_caught_desc: "&7目标：钓鱼"
+board:
+  title: "&6&lMineBingo"
+  state_prefix: "&7状态："
+  mode_prefix: "&7模式："
+  mode_voting: "&d投票中…"
+  teams_header: "&6队伍"
+  team_progress: "{0}&7：&f{1}/{2} &7连 {3}"
+  team_score: "{0}&7：&e{1}分 &7(&f{2}/{3}&7)"
+  team_members: "{0}&7：&f{1} &7人"
+  countdown: "&7距开局：&e{0}s"
+  vote: "&7投票剩余：&d{0}s"
+  difficulty_vote: "&7难度投票：&b{0}s"
+  lines_vote: "&7线数投票：&b{0}s"
+  genesis: "&7创世选物：&d{0}s"
+  time: "&7已用时：&b{0}"
+  blind_progress: "&7已揭示：&f{0}/{1}"
+  locked: "&7队伍锁定：{0}"
+state:
+  LOBBY: "&a大厅"
+  COUNTDOWN: "&e倒计时"
+  VOTING: "&d模式投票"
+  DIFFICULTY_VOTE: "&b难度投票"
+  LINES_VOTE: "&b线数投票"
+  GENESIS: "&d创世选物"
+  RUNNING: "&c游戏中"
+  ENDED: "&6已结束"
+  RESETTING: "&b重置中"
+common:
+  "yes": "&a是"
+  "no": "&c否"
+team:
+  RED: "&c红队"
+  ORANGE: "&6橙队"
+  YELLOW: "&e黄队"
+  GREEN: "&a绿队"
+  AQUA: "&b青队"
+  BLUE: "&9蓝队"
+  PURPLE: "&d粉队"
+  WHITE: "&f白队"
+  SPECTATOR: "&7旁观者"
+menu:
+  disabled: "&c只能在大厅打开菜单。"
+  no_perm: "&c你没有权限使用该菜单。"
+  item:
+    name: "&b&l大厅菜单 &7(右键打开)"
+    lore1: "&7右键打开队伍与游戏菜单"
+  main:
+    title: "&1&lMineBingo 大厅"
+  status:
+    title: "&e&l大厅状态"
+    state: "&7状态：{state}"
+    online: "&7在线人数：&b{online}"
+    participants: "&7已参赛：&b{participants}"
+    locked: "&7队伍锁定：{locked}"
+    team: "&7我的队伍：{team}"
+  action:
+    team:
+      name: "&a&l选择队伍"
+      lore1: "&7查看并加入一个队伍"
+    leave:
+      name: "&c&l离开队伍"
+      lore1: "&7退出本局，回到旁观"
+    close: "&c关闭"
+    back: "&7返回"
+  team:
+    title: "&1&l选择队伍"
+    count: "&7在线人数：&f{current_count}"
+    auto:
+      name: "&a&l自动分配"
+      lore1: "&7加入人数最少的队伍"
+    spectator:
+      name: "&7&l旁观"
+      lore1: "&7以旁观者身份观战"
