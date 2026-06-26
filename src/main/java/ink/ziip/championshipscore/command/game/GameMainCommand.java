@@ -6,7 +6,7 @@ import ink.ziip.championshipscore.command.game.start.GameStartMainCommand;
 
 public class GameMainCommand extends BaseMainCommand {
     public GameMainCommand() {
-        super("game");
+        super("game", "游戏管理");
         addSubCommand(new GameStartMainCommand());
         addSubCommand(new AreaMainCommand());
     }

@@ -12,11 +12,15 @@ import java.util.List;
 
 public class TeamDeleteSubCommand extends BaseSubCommand {
     public TeamDeleteSubCommand() {
-        super("delete");
+        super("delete", "删除队伍", "/cc team delete <队伍ID>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             // TODO add pattern
             if (plugin.getTeamManager().deleteTeam(args[0])) {

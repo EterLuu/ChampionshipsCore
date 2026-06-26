@@ -11,7 +11,7 @@ import java.util.List;
 
 public class GameWeightInfoSubCommand extends BaseSubCommand {
     public GameWeightInfoSubCommand() {
-        super("info");
+        super("info", "查看各游戏权重信息", "/cc rank info");
     }
 
     @Override

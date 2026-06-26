@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ScheduleSnowballSubCommand extends BaseSubCommand {
     public ScheduleSnowballSubCommand() {
-        super("snowball");
+        super("snowball", "按赛程开始雪球对决", "/cc admin schedule snowball");
     }
 
     @Override

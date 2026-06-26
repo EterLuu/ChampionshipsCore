@@ -78,6 +78,9 @@ public class ChampionshipPlayer {
     }
 
     public void removeRedScreen() {
+        if (player == null)
+            return;
+
         PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
 
         packet.getModifier().writeDefaults();

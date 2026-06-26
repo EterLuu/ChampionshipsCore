@@ -14,11 +14,15 @@ import java.util.List;
 
 public class AdminTeleportationSubCommand extends BaseSubCommand {
     public AdminTeleportationSubCommand() {
-        super("teleport");
+        super("teleport", "将游戏玩家或观众传送到你的位置", "/cc admin teleport <gameplayers|spectators>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1 && sender instanceof Player player) {
             if (args[0].equalsIgnoreCase("gameplayers")) {
                 for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {

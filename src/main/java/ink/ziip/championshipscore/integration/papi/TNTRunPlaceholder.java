@@ -1,14 +1,14 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
+import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
-public class TNTRunPlaceholder extends BasePlaceholder {
+public class TNTRunPlaceholder extends BaseGamePlaceholder<TNTRunTeamArea> {
     public TNTRunPlaceholder(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
     }
@@ -19,36 +19,17 @@ public class TNTRunPlaceholder extends BasePlaceholder {
     }
 
     @Override
-    public String onRequest(OfflinePlayer offlinePlayer, String params) {
-        TNTRunManager tntRunManager = plugin.getGameManager().getTntRunManager();
+    protected BaseAreaManager<TNTRunTeamArea> getManager() {
+        return plugin.getGameManager().getTntRunManager();
+    }
+
+    @Override
+    protected String onGameRequest(OfflinePlayer offlinePlayer, String params) {
 
         /* Non-Player required placeholders */
 
-        if (params.startsWith("area_status_")) {
-            TNTRunTeamArea tntRunTeamArea = tntRunManager.getArea(params.replace("area_status_", ""));
-            if (tntRunTeamArea == null) {
-                tntRunTeamArea = tntRunManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
-            if (tntRunTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            return tntRunTeamArea.getGameStageEnum().toString();
-        }
-        if (params.startsWith("area_timer_")) {
-            TNTRunTeamArea tntRunTeamArea = tntRunManager.getArea(params.replace("area_timer_", ""));
-            if (tntRunTeamArea == null) {
-                tntRunTeamArea = tntRunManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
-            if (tntRunTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            return String.valueOf(tntRunTeamArea.getTimer() + 1);
-        }
         if (params.startsWith("area_tnt_rain_countdown_")) {
-            TNTRunTeamArea tntRunTeamArea = tntRunManager.getArea(params.replace("area_tnt_rain_countdown_", ""));
-            if (tntRunTeamArea == null) {
-                tntRunTeamArea = tntRunManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
+            TNTRunTeamArea tntRunTeamArea = resolveArea(params, "area_tnt_rain_countdown_", offlinePlayer);
             if (tntRunTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
@@ -67,10 +48,7 @@ public class TNTRunPlaceholder extends BasePlaceholder {
             return String.valueOf(0);
         }
         if (params.startsWith("area_survived_players_")) {
-            TNTRunTeamArea tntRunTeamArea = tntRunManager.getArea(params.replace("area_survived_players_", ""));
-            if (tntRunTeamArea == null) {
-                tntRunTeamArea = tntRunManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
+            TNTRunTeamArea tntRunTeamArea = resolveArea(params, "area_survived_players_", offlinePlayer);
             if (tntRunTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }

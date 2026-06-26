@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ScheduleParkourWarriorSubCommand extends BaseSubCommand {
     public ScheduleParkourWarriorSubCommand() {
-        super("parkourwarrior");
+        super("parkourwarrior", "按赛程开始跑酷战士", "/cc admin schedule parkourwarrior");
     }
 
     @Override

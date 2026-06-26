@@ -11,7 +11,7 @@ import java.util.List;
 
 public class PlayerBoardSubCommand extends BaseSubCommand {
     public PlayerBoardSubCommand() {
-        super("playerboard");
+        super("playerboard", "查看个人积分排行榜", "/cc rank playerboard");
     }
 
     @Override

@@ -15,11 +15,15 @@ import java.util.List;
 
 public class BattleBoxStartSubCommand extends BaseSubCommand {
     public BattleBoxStartSubCommand() {
-        super("battlebox");
+        super("battlebox", "开始战斗箱（两队对战）", "/cc game start battlebox <场地> <队伍1> <队伍2>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 3) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 3) {
             String failed = MessageConfig.GAME_TEAM_GAME_START_FAILED
                     .replace("%team%", args[1])

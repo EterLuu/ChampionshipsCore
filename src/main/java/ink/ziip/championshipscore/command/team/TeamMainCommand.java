@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class TeamMainCommand extends BaseMainCommand {
     public TeamMainCommand() {
-        super("team");
+        super("team", "队伍管理");
         addSubCommand(new TeamAddSubCommand());
         addSubCommand(new TeamDeleteSubCommand());
         addSubCommand(new TeamInfoSubCommand());

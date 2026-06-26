@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ScheduleParkourTagSubCommand extends BaseSubCommand {
     public ScheduleParkourTagSubCommand() {
-        super("parkourtag");
+        super("parkourtag", "按赛程开始跑酷追逐", "/cc admin schedule parkourtag");
     }
 
     @Override

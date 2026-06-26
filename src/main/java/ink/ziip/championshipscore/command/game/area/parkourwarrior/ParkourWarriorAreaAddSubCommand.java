@@ -12,11 +12,15 @@ import java.util.List;
 
 public class ParkourWarriorAreaAddSubCommand extends BaseSubCommand {
     public ParkourWarriorAreaAddSubCommand() {
-        super("add");
+        super("add", "新建跑酷战士场地", "/cc game area parkourwarrior add <场地名>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             if (plugin.getGameManager().getParkourWarriorManager().addArea(args[0])) {
                 String message = MessageConfig.AREA_SUCCESSFULLY_ADDED

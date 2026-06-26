@@ -26,11 +26,15 @@ public class HotyCodyDuskyAreaSetSubCommand extends BaseSubCommand {
     };
 
     public HotyCodyDuskyAreaSetSubCommand() {
-        super("set");
+        super("set", "设置昼夜对决场地参数", "/cc game area hotycodydusky set <场地> <参数>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         Player player = (Player) sender;
         HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = plugin.getGameManager().getHotyCodyDuskyManager().getArea(args[0]);
         if (hotyCodyDuskyTeamArea == null) {

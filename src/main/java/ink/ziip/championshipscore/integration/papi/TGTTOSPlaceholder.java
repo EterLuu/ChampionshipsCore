@@ -1,14 +1,14 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
+import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSTeamArea;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-public class TGTTOSPlaceholder extends BasePlaceholder {
+public class TGTTOSPlaceholder extends BaseGamePlaceholder<TGTTOSTeamArea> {
     public TGTTOSPlaceholder(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
     }
@@ -19,46 +19,24 @@ public class TGTTOSPlaceholder extends BasePlaceholder {
     }
 
     @Override
-    public String onRequest(OfflinePlayer offlinePlayer, String params) {
-        TGTTOSManager tgttosManager = plugin.getGameManager().getTgttosManager();
+    protected BaseAreaManager<TGTTOSTeamArea> getManager() {
+        return plugin.getGameManager().getTgttosManager();
+    }
+
+    @Override
+    protected String onGameRequest(OfflinePlayer offlinePlayer, String params) {
 
         /* Non-Player required placeholders */
 
         if (params.startsWith("area_name_")) {
-            TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(params.replace("area_name_", ""));
-            if (tgttosTeamArea == null) {
-                tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
+            TGTTOSTeamArea tgttosTeamArea = resolveArea(params, "area_name_", offlinePlayer);
             if (tgttosTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
             return tgttosTeamArea.getGameConfig().getAreaName();
         }
-        if (params.startsWith("area_status_")) {
-            TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(params.replace("area_status_", ""));
-            if (tgttosTeamArea == null) {
-                tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
-            if (tgttosTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            return tgttosTeamArea.getGameStageEnum().toString();
-        }
-        if (params.startsWith("area_timer_")) {
-            TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(params.replace("area_timer_", ""));
-            if (tgttosTeamArea == null) {
-                tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
-            if (tgttosTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            return String.valueOf(tgttosTeamArea.getTimer() + 1);
-        }
         if (params.startsWith("area_player_arrived_")) {
-            TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(params.replace("area_player_arrived_", ""));
-            if (tgttosTeamArea == null) {
-                tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
+            TGTTOSTeamArea tgttosTeamArea = resolveArea(params, "area_player_arrived_", offlinePlayer);
             if (tgttosTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
@@ -73,10 +51,7 @@ public class TGTTOSPlaceholder extends BasePlaceholder {
             return MessageConfig.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_team_not_arrived_")) {
-            TGTTOSTeamArea tgttosTeamArea = tgttosManager.getArea(params.replace("player_team_not_arrived_", ""));
-            if (tgttosTeamArea == null) {
-                tgttosTeamArea = tgttosManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
+            TGTTOSTeamArea tgttosTeamArea = resolveArea(params, "player_team_not_arrived_", offlinePlayer);
             if (tgttosTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }

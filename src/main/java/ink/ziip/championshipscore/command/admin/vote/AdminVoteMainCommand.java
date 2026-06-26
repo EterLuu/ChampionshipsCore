@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class AdminVoteMainCommand extends BaseMainCommand {
     public AdminVoteMainCommand() {
-        super("vote");
+        super("vote", "投票管理");
         addSubCommand(new AdminVoteStartSubCommand());
         addSubCommand(new AdminVoteEndSubCommand());
     }

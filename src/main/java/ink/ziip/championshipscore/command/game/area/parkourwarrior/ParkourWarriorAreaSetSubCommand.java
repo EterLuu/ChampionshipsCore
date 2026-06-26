@@ -35,11 +35,15 @@ public class ParkourWarriorAreaSetSubCommand extends BaseSubCommand {
     };
 
     public ParkourWarriorAreaSetSubCommand() {
-        super("set");
+        super("set", "设置跑酷战士场地参数", "/cc game area parkourwarrior set <场地> <参数>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         Player player = (Player) sender;
         ParkourWarriorTeamArea parkourWarriorTeamArea = plugin.getGameManager().getParkourWarriorManager().getArea(args[0]);
         if (parkourWarriorTeamArea == null) {

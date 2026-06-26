@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class ScheduleMainCommand extends BaseMainCommand {
     public ScheduleMainCommand() {
-        super("schedule");
+        super("schedule", "赛程安排");
         addSubCommand(new ScheduleDragonEggCarnivalSubCommand());
         addSubCommand(new ScheduleSnowballSubCommand());
         addSubCommand(new ScheduleSkyWarsSubCommand());

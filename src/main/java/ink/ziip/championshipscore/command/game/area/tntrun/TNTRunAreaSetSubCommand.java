@@ -27,11 +27,15 @@ public class TNTRunAreaSetSubCommand extends BaseSubCommand {
     };
 
     public TNTRunAreaSetSubCommand() {
-        super("set");
+        super("set", "设置TNT奔跑场地参数", "/cc game area tntrun set <场地> <参数>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         Player player = (Player) sender;
         TNTRunTeamArea tntRunTeamArea = plugin.getGameManager().getTntRunManager().getArea(args[0]);
         if (tntRunTeamArea == null) {

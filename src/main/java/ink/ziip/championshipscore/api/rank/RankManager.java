@@ -101,6 +101,10 @@ public class RankManager extends BaseManager {
 
     private void updateTeamPoints() {
         scheduler.runTaskAsynchronously(plugin, () -> {
+            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+                gameTotalPoints.put(gameTypeEnum, 0D);
+            }
+
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 teamPoints.put(championshipTeam, plugin.getRankManager().getTeamPoints(championshipTeam));
             }
@@ -139,10 +143,6 @@ public class RankManager extends BaseManager {
 
     private void updatePlayerPoint() {
         scheduler.runTaskAsynchronously(plugin, () -> {
-            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
-                gameTotalPoints.put(gameTypeEnum, 0D);
-            }
-
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(championshipTeam.getId())) {
                     UUID uuid = teamMemberEntry.getUuid();
@@ -179,9 +179,13 @@ public class RankManager extends BaseManager {
                     playerRank.put(entry.getKey(), i);
                     i++;
                 }
-                if (i == 11)
+                if (i == 11) {
                     playerRankString = stringBuilder.toString();
+                    break;
+                }
             }
+            if (i <= 11)
+                playerRankString = stringBuilder.toString();
 
             playerLeaderboard = list;
 
@@ -263,7 +267,11 @@ public class RankManager extends BaseManager {
                     .time(Utils.getCurrentTimeString())
                     .build();
 
-            scheduler.runTaskAsynchronously(plugin, () -> rankDao.addPlayerPoint(playerPointEntry));
+            if (plugin.isLoaded()) {
+                scheduler.runTaskAsynchronously(plugin, () -> rankDao.addPlayerPoint(playerPointEntry));
+            } else {
+                rankDao.addPlayerPoint(playerPointEntry);
+            }
         }
     }
 

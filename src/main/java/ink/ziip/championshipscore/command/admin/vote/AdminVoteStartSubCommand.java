@@ -11,7 +11,7 @@ import java.util.List;
 
 public class AdminVoteStartSubCommand extends BaseSubCommand {
     public AdminVoteStartSubCommand() {
-        super("start");
+        super("start", "开始游戏投票", "/cc admin vote start");
     }
 
     @Override

@@ -13,11 +13,15 @@ import java.util.List;
 
 public class SkyWarsStartAllSubCommand extends BaseSubCommand {
     public SkyWarsStartAllSubCommand() {
-        super("all");
+        super("all", "所有队伍开始空岛战争", "/cc game start skywars all <场地>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             String message = MessageConfig.GAME_SINGLE_GAME_START_FAILED;
 

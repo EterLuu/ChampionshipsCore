@@ -13,11 +13,15 @@ import java.util.List;
 
 public class ParkourWarriorStartAllSubCommand extends BaseSubCommand {
     public ParkourWarriorStartAllSubCommand() {
-        super("all");
+        super("all", "所有队伍开始跑酷战士", "/cc game start parkourwarrior all <场地>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 1) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 1) {
             String message = MessageConfig.GAME_SINGLE_GAME_START_FAILED;
 

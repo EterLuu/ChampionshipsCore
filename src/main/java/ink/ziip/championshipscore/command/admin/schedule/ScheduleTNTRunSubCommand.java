@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ScheduleTNTRunSubCommand extends BaseSubCommand {
     public ScheduleTNTRunSubCommand() {
-        super("tntrun");
+        super("tntrun", "按赛程开始TNT奔跑", "/cc admin schedule tntrun");
     }
 
     @Override

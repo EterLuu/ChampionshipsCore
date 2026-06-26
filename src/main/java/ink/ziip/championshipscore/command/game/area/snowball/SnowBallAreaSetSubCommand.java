@@ -28,11 +28,15 @@ public class SnowBallAreaSetSubCommand extends BaseSubCommand {
     };
 
     public SnowBallAreaSetSubCommand() {
-        super("set");
+        super("set", "设置雪球对决场地参数", "/cc game area snowball set <场地> <参数>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         Player player = (Player) sender;
         SnowballShowdownTeamArea snowballShowdownTeamArea = plugin.getGameManager().getSnowballShowdownManager().getArea(args[0]);
         if (snowballShowdownTeamArea == null) {
@@ -91,7 +95,7 @@ public class SnowBallAreaSetSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            List<String> returnList = plugin.getGameManager().getBattleBoxManager().getAreaNameList();
+            List<String> returnList = plugin.getGameManager().getSnowballShowdownManager().getAreaNameList();
             returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
             return returnList;
         }

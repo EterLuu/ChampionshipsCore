@@ -15,11 +15,15 @@ import java.util.List;
 
 public class ParkourTagStartSubCommand extends BaseSubCommand {
     public ParkourTagStartSubCommand() {
-        super("parkourtag");
+        super("parkourtag", "开始跑酷追逐（两队对战）", "/cc game start parkourtag <场地> <队伍1> <队伍2>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 3) {
+            sendUsage(sender);
+            return true;
+        }
         if (args.length == 3) {
             String failed = MessageConfig.GAME_TEAM_GAME_START_FAILED
                     .replace("%team%", args[1])

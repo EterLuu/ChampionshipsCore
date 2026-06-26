@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ScheduleBattleBoxSubCommand extends BaseSubCommand {
     public ScheduleBattleBoxSubCommand() {
-        super("battlebox");
+        super("battlebox", "按赛程开始战斗箱", "/cc admin schedule battlebox");
     }
 
     @Override

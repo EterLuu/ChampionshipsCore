@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
+import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -9,7 +9,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-public class SkyWarsPlaceholder extends BasePlaceholder {
+public class SkyWarsPlaceholder extends BaseGamePlaceholder<SkyWarsTeamArea> {
     public SkyWarsPlaceholder(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
     }
@@ -20,46 +20,24 @@ public class SkyWarsPlaceholder extends BasePlaceholder {
     }
 
     @Override
-    public String onRequest(OfflinePlayer offlinePlayer, String params) {
-        SkyWarsManager skyWarsManager = plugin.getGameManager().getSkyWarsManager();
+    protected BaseAreaManager<SkyWarsTeamArea> getManager() {
+        return plugin.getGameManager().getSkyWarsManager();
+    }
+
+    @Override
+    protected String onGameRequest(OfflinePlayer offlinePlayer, String params) {
 
         /* Non-Player required placeholders */
 
-        if (params.startsWith("area_status_")) {
-            SkyWarsTeamArea skyWarsTeamArea = skyWarsManager.getArea(params.replace("area_status_", ""));
-            if (skyWarsTeamArea == null) {
-                skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
-            if (skyWarsTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            return skyWarsTeamArea.getGameStageEnum().toString();
-        }
-        if (params.startsWith("area_timer_")) {
-            SkyWarsTeamArea skyWarsTeamArea = skyWarsManager.getArea(params.replace("area_timer_", ""));
-            if (skyWarsTeamArea == null) {
-                skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
-            if (skyWarsTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            return String.valueOf(skyWarsTeamArea.getTimer() + 1);
-        }
         if (params.startsWith("area_survived_players_")) {
-            SkyWarsTeamArea skyWarsTeamArea = skyWarsManager.getArea(params.replace("area_survived_players_", ""));
-            if (skyWarsTeamArea == null) {
-                skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
+            SkyWarsTeamArea skyWarsTeamArea = resolveArea(params, "area_survived_players_", offlinePlayer);
             if (skyWarsTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(skyWarsTeamArea.getSurvivedPlayerNums());
         }
         if (params.startsWith("area_survived_teams_")) {
-            SkyWarsTeamArea skyWarsTeamArea = skyWarsManager.getArea(params.replace("area_survived_teams_", ""));
-            if (skyWarsTeamArea == null) {
-                skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
+            SkyWarsTeamArea skyWarsTeamArea = resolveArea(params, "area_survived_teams_", offlinePlayer);
             if (skyWarsTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
@@ -73,10 +51,7 @@ public class SkyWarsPlaceholder extends BasePlaceholder {
             return MessageConfig.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_border_distance_")) {
-            SkyWarsTeamArea skyWarsTeamArea = skyWarsManager.getArea(params.replace("player_border_distance_", ""));
-            if (skyWarsTeamArea == null) {
-                skyWarsTeamArea = skyWarsManager.getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
-            }
+            SkyWarsTeamArea skyWarsTeamArea = resolveArea(params, "player_border_distance_", offlinePlayer);
             if (skyWarsTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }

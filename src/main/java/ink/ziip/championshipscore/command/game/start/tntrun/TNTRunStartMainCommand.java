@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class TNTRunStartMainCommand extends BaseMainCommand {
     public TNTRunStartMainCommand() {
-        super("tntrun");
+        super("tntrun", "TNT奔跑");
         addSubCommand(new TNTRunStartAllSubCommand());
     }
 }

@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class TGTTOSStartMainCommand extends BaseMainCommand {
     public TGTTOSStartMainCommand() {
-        super("tgttos");
+        super("tgttos", "到达彼岸");
         addSubCommand(new TGTTOSStartAllSubCommand());
     }
 }

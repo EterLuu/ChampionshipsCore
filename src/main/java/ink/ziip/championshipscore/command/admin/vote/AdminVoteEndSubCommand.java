@@ -11,7 +11,7 @@ import java.util.List;
 
 public class AdminVoteEndSubCommand extends BaseSubCommand {
     public AdminVoteEndSubCommand() {
-        super("end");
+        super("end", "结束游戏投票", "/cc admin vote end");
     }
 
     @Override

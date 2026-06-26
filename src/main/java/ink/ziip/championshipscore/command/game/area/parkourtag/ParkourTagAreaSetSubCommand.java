@@ -34,11 +34,15 @@ public class ParkourTagAreaSetSubCommand extends BaseSubCommand {
     };
 
     public ParkourTagAreaSetSubCommand() {
-        super("set");
+        super("set", "设置跑酷追逐场地参数", "/cc game area parkourtag set <场地> <参数>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length < 2) {
+            sendUsage(sender);
+            return true;
+        }
         Player player = (Player) sender;
         ParkourTagArea parkourTagArea = plugin.getGameManager().getParkourTagManager().getArea(args[0]);
         if (parkourTagArea == null) {

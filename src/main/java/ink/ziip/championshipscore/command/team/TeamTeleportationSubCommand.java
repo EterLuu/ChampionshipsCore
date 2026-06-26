@@ -15,13 +15,15 @@ import java.util.List;
 
 public class TeamTeleportationSubCommand extends BaseSubCommand {
     public TeamTeleportationSubCommand() {
-        super("tphere");
+        super("tphere", "将队伍传送到你所在的位置", "/cc team tphere <队伍ID|all>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (args.length < 1)
+        if (args.length < 1) {
+            sendUsage(sender);
             return true;
+        }
 
         Player player = Bukkit.getPlayer(sender.getName());
         if (player != null) {
