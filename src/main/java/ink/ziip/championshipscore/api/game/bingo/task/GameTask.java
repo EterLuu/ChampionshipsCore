@@ -224,6 +224,11 @@ public final class GameTask {
             if (active && statistic && required > 1) {
                 meta.setMaxStackSize(Math.min(required, 99));
             }
+            // Effect potions: stamp the base potion type so the chest-GUI item shows the right liquid colour.
+            if (data instanceof PotionTask potion && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
+                org.bukkit.potion.PotionType type = potion.potionType();
+                if (type != null) pm.setBasePotionType(type);
+            }
             stack.setItemMeta(meta);
         }
         return stack;

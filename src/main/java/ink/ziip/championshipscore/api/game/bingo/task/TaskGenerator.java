@@ -63,6 +63,14 @@ public final class TaskGenerator {
     /** Chance an item-collect task is rerolled into a "craft that item" task (only if it's craftable). */
     private static final double CRAFT_CONVERSION_CHANCE = 0.05;
 
+    /**
+     * Selection-weight multiplier for {@code one_of} buckets. Each set is its own standalone bucket, so
+     * the ~20 sets would otherwise compete as ~20 independent MEDIUM-weight buckets and crowd a card
+     * with several "any X" cells. Halving their weight keeps them varied but down to roughly one per
+     * card, without mislabeling their difficulty tier (which difficulty-filtered modes rely on).
+     */
+    private static final double ONE_OF_WEIGHT_FACTOR = 0.5;
+
     /** Memoised craftability per material; populated lazily from the server's recipe registry. */
     private static final Map<Material, Boolean> CRAFTABLE_CACHE = new ConcurrentHashMap<>();
 
@@ -118,6 +126,10 @@ public final class TaskGenerator {
         for (List<TaskPoolEntry> bucket : buckets) {
             int w = weightFor(bucket.get(0));
             if (w <= 0) continue; // tier excluded (e.g. VERY_HARD weight 0) or empty
+            // Down-weight broad one_of sets so several don't crowd a single card (see field doc).
+            if (bucket.get(0).task() instanceof OneOfTask) {
+                w = Math.max(1, (int) Math.round(w * ONE_OF_WEIGHT_FACTOR));
+            }
             double key = Math.pow(rng.nextDouble(), 1.0 / w);
             keyed.add(new Keyed(bucket, key));
         }
@@ -184,6 +196,12 @@ public final class TaskGenerator {
             for (Material material : set.items()) {
                 out.add("item:" + material);
             }
+            return out;
+        }
+        if (task instanceof PotionTask potion) {
+            // Claim the potion's material so an effect potion and the generic "collect a potion" (or a
+            // second potion of the same form) can't both land on one card.
+            out.add("item:" + potion.form().material.name());
             return out;
         }
         String subject = subjectKey(task);

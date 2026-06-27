@@ -11,7 +11,7 @@ import java.util.Set;
  * {@link AdvancementTask}, {@link StatisticTask}, {@link OneOfTask}. Completion state lives on
  * {@link GameTask}, not here.
  */
-public sealed interface TaskData permits ItemTask, AdvancementTask, StatisticTask, OneOfTask {
+public sealed interface TaskData permits ItemTask, AdvancementTask, StatisticTask, OneOfTask, PotionTask {
     enum TaskType {
         ITEM("item"),
         STATISTIC("statistic"),

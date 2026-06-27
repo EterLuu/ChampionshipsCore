@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.bingo.task.pool;
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
 import ink.ziip.championshipscore.api.game.bingo.task.ItemTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
+import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticHandle;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticTask;
 import ink.ziip.championshipscore.api.game.bingo.task.TaskData;
@@ -86,6 +87,13 @@ public final class TaskPool {
                              Difficulty difficulty, Dimension dimension, String category) {
             entries.add(new TaskPoolEntry(
                     new OneOfTask(items, display, name, count, dimension), difficulty, category));
+            return this;
+        }
+
+        // ── POTION (effect-specific) ──
+        public Builder potion(PotionTask.Form form, String effect, int count, Difficulty difficulty,
+                              Dimension dimension, String category) {
+            entries.add(new TaskPoolEntry(new PotionTask(form, effect, count, dimension), difficulty, category));
             return this;
         }
 

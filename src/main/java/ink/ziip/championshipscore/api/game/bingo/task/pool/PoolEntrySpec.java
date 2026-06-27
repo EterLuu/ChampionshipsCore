@@ -17,7 +17,9 @@ public record PoolEntrySpec(Kind kind, String key, int count, Difficulty difficu
         CRAFT,
         KILL,
         STAT,
-        ONE_OF
+        ONE_OF,
+        /** Effect-specific potion: {@link #key} is {@code <form>:<effect>}, e.g. {@code splash:strength}. */
+        POTION
     }
 
     public PoolEntrySpec {
@@ -53,6 +55,7 @@ public record PoolEntrySpec(Kind kind, String key, int count, Difficulty difficu
             case STAT -> "stat:" + key;
             case ADVANCEMENT -> "advancement:" + key;
             case ONE_OF -> "set:" + (name != null ? name : key);
+            case POTION -> "potion:" + key; // key is already "<form>:<effect>"
         };
     }
 }

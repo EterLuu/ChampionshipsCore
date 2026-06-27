@@ -25,6 +25,16 @@ final class MapColorMatcher {
     /** Map index for a fully-transparent pixel. */
     static final byte TRANSPARENT = 0;
 
+    /**
+     * Card slot shade the sprites are painted over (from {@link TaskImageAtlas#SLOT_SHADE_KEEP}).
+     * Translucent sprite pixels (stained glass, slime, honey, ice…) are alpha-composited onto this
+     * before matching so they read as translucent rather than as a flat opaque block — otherwise
+     * stained glass renders identically to dyed concrete.
+     */
+    private static final int BG_R = (TaskImageAtlas.SLOT_SHADE_KEEP >> 16) & 0xff;
+    private static final int BG_G = (TaskImageAtlas.SLOT_SHADE_KEEP >> 8) & 0xff;
+    private static final int BG_B = TaskImageAtlas.SLOT_SHADE_KEEP & 0xff;
+
     private static volatile Entry[] palette;
     private static final Map<BufferedImage, byte[]> CACHE = new ConcurrentHashMap<>();
 
@@ -78,11 +88,20 @@ final class MapColorMatcher {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int argb = image.getRGB(x, y);
-                if (((argb >> 24) & 0xff) == 0) {
+                int a = (argb >> 24) & 0xff;
+                if (a == 0) {
                     out[y * w + x] = TRANSPARENT;
                     continue;
                 }
                 int r = (argb >> 16) & 0xff, g = (argb >> 8) & 0xff, b = argb & 0xff;
+                // Composite semi-transparent pixels over the slot shade so translucent textures
+                // (stained glass, slime, honey…) read as glassy instead of as a flat opaque block.
+                // Opaque pixels (a == 255) pass through unchanged.
+                if (a < 255) {
+                    r = (r * a + BG_R * (255 - a)) / 255;
+                    g = (g * a + BG_G * (255 - a)) / 255;
+                    b = (b * a + BG_B * (255 - a)) / 255;
+                }
                 if (mr >= 0) {
                     r = r * mr / 255;
                     g = g * mg / 255;

@@ -945,6 +945,8 @@ tiers:
     - "stat:STRIDER_ONE_CM"
   HARD:
     # 趣味任务补充
+    - "potion:normal:*"   # 可饮用效果药水：需酿造(下界)
+    - "potion:splash:*"   # 喷溅效果药水
     - "stat:WALK_ON_WATER_ONE_CM"
     - "advancement:husbandry/leash_all_frog_variants"
     - "advancement:husbandry/froglights"
@@ -1035,7 +1037,6 @@ tiers:
     - "IRON_HORSE_ARMOR"
     - "JUKEBOX"
     - "LEATHER_HORSE_ARMOR"
-    - "LINGERING_POTION"
     - "MACE"
     - "MAGMA_CREAM"
     - "MAP"
@@ -1197,6 +1198,7 @@ tiers:
     - "stat:RECORD_PLAYED"
   VERY_HARD:
     # 趣味任务补充
+    - "potion:lingering:*"   # 滞留药水：需末影龙息(末地)
     - "stat:BEACON_INTERACTION"
     - "advancement:adventure/use_lodestone"
     - "advancement:nether/netherite_armor"
@@ -1221,6 +1223,7 @@ tiers:
     - "END_STONE_BRICK_SLAB"
     - "END_STONE_BRICK_STAIRS"
     - "END_STONE_BRICK_WALL"
+    - "LINGERING_POTION"
     - "LODESTONE"
     - "MUSIC_DISC_5"
     - "NETHERITE_AXE"

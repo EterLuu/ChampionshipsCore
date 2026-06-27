@@ -34,7 +34,7 @@ public final class TaskImageAtlas {
     /** Pixel size of one card cell. */
     private static final int CELL = 24;
     private static final int FRAME_BORDER = 2;
-    private static final int SLOT_SHADE_KEEP = 0xFF967452; // (150,116,82)
+    static final int SLOT_SHADE_KEEP = 0xFF967452; // (150,116,82)
     private static final int SLOT_SHADE_DROP = 0xFF846446; // (132,100,70)
     private static final Color STAT_PANEL = new Color(88, 100, 120);
     private static final Color STAT_BORDER = new Color(48, 56, 70);
@@ -49,6 +49,8 @@ public final class TaskImageAtlas {
     private static boolean failed;
     private static final Map<String, Sprite> SPRITES = new HashMap<>();
     private static final Map<String, Sprite> ENTITIES = new HashMap<>();
+    /** Per-effect potion sprites, keyed {@code <form-infix>/<effect>} e.g. {@code splash_potion/strength}. */
+    private static final Map<String, Sprite> POTION_SPRITES = new HashMap<>();
     private static final Map<String, BufferedImage> CACHE = new ConcurrentHashMap<>();
 
     private static BufferedImage background;
@@ -68,6 +70,13 @@ public final class TaskImageAtlas {
                         new InputStreamReader(atlasStream, StandardCharsets.UTF_8)).getAsJsonObject();
                 loadSection(atlas.getAsJsonObject("sprites"), SPRITES);
                 loadSection(atlas.getAsJsonObject("entities"), ENTITIES);
+            }
+            try (InputStream potionAtlasStream = resource(RES + "potions_atlas.json")) {
+                if (potionAtlasStream != null) {
+                    JsonObject potionAtlas = JsonParser.parseReader(
+                            new InputStreamReader(potionAtlasStream, StandardCharsets.UTF_8)).getAsJsonObject();
+                    loadSection(potionAtlas.getAsJsonObject("potions"), POTION_SPRITES);
+                }
             }
             background = read(RES + "card_background.png");
             if (background != null) unifySlotShade(background);
@@ -135,65 +144,17 @@ public final class TaskImageAtlas {
         return CACHE.computeIfAbsent(k, kk -> s.sheet.getSubimage(s.x, s.y, s.w, s.h));
     }
 
-    public static @Nullable BufferedImage composite(java.util.List<Key> members, Key fallback) {
+    /**
+     * Per-effect potion sprite for the map card, keyed by the potion form's atlas infix
+     * ({@code potion}/{@code splash_potion}/{@code lingering_potion}) and the base effect
+     * ({@code strength}, {@code night_vision}, …). {@code null} if that combination isn't bundled.
+     */
+    public static @Nullable BufferedImage potionImageFor(String formInfix, String effect) {
         ensureLoaded();
-        if (members == null || members.isEmpty()) return imageFor(fallback);
-
-        int parts = Math.min(members.size(), 4);
-        StringBuilder ck = new StringBuilder("c:").append(fallback == null ? "" : fallback.asString()).append('|');
-        for (int i = 0; i < parts; i++) ck.append(members.get(i).asString()).append(',');
-        String cacheKey = ck.toString();
-        BufferedImage cached = CACHE.get(cacheKey);
-        if (cached != null) return cached;
-
-        BufferedImage base = fallback == null ? null : imageFor(fallback);
-        BufferedImage[] img = new BufferedImage[parts];
-        int w = -1, h = -1, resolved = 0;
-        for (int i = 0; i < parts; i++) {
-            BufferedImage m = imageFor(members.get(i));
-            if (m != null) resolved++;
-            else m = base;
-            img[i] = m;
-            if (m != null && w < 0) {
-                w = m.getWidth();
-                h = m.getHeight();
-            }
-        }
-        if (w < 0) return base;
-        if (parts == 1 || resolved < 2) return parts == 1 ? img[0] : base;
-
-        BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-        int w2 = w / 2, h2 = h / 2;
-        switch (parts) {
-            case 2 -> {
-                copyRegion(out, img[0], 0, 0, w2, h);
-                copyRegion(out, img[1], w2, 0, w, h);
-            }
-            case 3 -> {
-                copyRegion(out, img[0], 0, 0, w2, h2);
-                copyRegion(out, img[1], w2, 0, w, h2);
-                copyRegion(out, img[2], 0, h2, w, h);
-            }
-            default -> {
-                copyRegion(out, img[0], 0, 0, w2, h2);
-                copyRegion(out, img[1], w2, 0, w, h2);
-                copyRegion(out, img[2], 0, h2, w2, h);
-                copyRegion(out, img[3], w2, h2, w, h);
-            }
-        }
-        CACHE.put(cacheKey, out);
-        return out;
-    }
-
-    private static void copyRegion(BufferedImage out, @Nullable BufferedImage src,
-                                   int x0, int y0, int x1, int y1) {
-        if (src == null) return;
-        int sw = src.getWidth(), sh = src.getHeight();
-        for (int y = y0; y < y1 && y < sh && y < out.getHeight(); y++) {
-            for (int x = x0; x < x1 && x < sw && x < out.getWidth(); x++) {
-                out.setRGB(x, y, src.getRGB(x, y));
-            }
-        }
+        String k = formInfix + "/" + effect;
+        Sprite s = POTION_SPRITES.get(k);
+        if (s == null) return null;
+        return CACHE.computeIfAbsent("p:" + k, kk -> s.sheet.getSubimage(s.x, s.y, s.w, s.h));
     }
 
     public static @Nullable BufferedImage entityImageFor(Key key) {

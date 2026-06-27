@@ -217,19 +217,46 @@ public class BingoArea extends BaseSingleTeamArea {
         long gameTime = roundSeconds();
 
         Map<org.bukkit.Material, Integer> held = new EnumMap<>(org.bukkit.Material.class);
+        // Effect-specific potions are matched by (material, base effect); keyed "MATERIAL|effect".
+        Map<String, Integer> heldPotions = new HashMap<>();
         for (ItemStack stack : player.getInventory().getContents()) {
-            if (stack != null && !stack.getType().isAir()) {
-                held.merge(stack.getType(), stack.getAmount(), Integer::sum);
+            if (stack == null || stack.getType().isAir()) continue;
+            held.merge(stack.getType(), stack.getAmount(), Integer::sum);
+            String potionEffect = basePotionEffect(stack);
+            if (potionEffect != null) {
+                heldPotions.merge(stack.getType().name() + "|" + potionEffect, stack.getAmount(), Integer::sum);
             }
         }
         for (Map.Entry<org.bukkit.Material, Integer> entry : held.entrySet()) {
             round.tryCompleteItem(player, team, entry.getKey(), entry.getValue(), gameTime)
                     .ifPresent(task -> announceCompletion(player, task));
         }
+        for (Map.Entry<String, Integer> entry : heldPotions.entrySet()) {
+            String[] parts = entry.getKey().split("\\|", 2);
+            round.tryCompletePotion(player, team, org.bukkit.Material.valueOf(parts[0]), parts[1],
+                            entry.getValue(), gameTime)
+                    .ifPresent(task -> announceCompletion(player, task));
+        }
 
         for (GameTask done : round.tryCompleteStatistics(player, team, gameTime)) {
             announceCompletion(player, done);
         }
+    }
+
+    /**
+     * Base effect key of a potion item ("strength", "night_vision", …) with any strong/long modifier
+     * collapsed, or {@code null} when the stack isn't an effect potion. Matches {@code PotionTask.effect}.
+     */
+    private static String basePotionEffect(ItemStack stack) {
+        org.bukkit.Material t = stack.getType();
+        if (t != org.bukkit.Material.POTION && t != org.bukkit.Material.SPLASH_POTION
+                && t != org.bukkit.Material.LINGERING_POTION) {
+            return null;
+        }
+        if (!(stack.getItemMeta() instanceof org.bukkit.inventory.meta.PotionMeta pm)) return null;
+        org.bukkit.potion.PotionType type = pm.getBasePotionType();
+        if (type == null) return null;
+        return type.name().toLowerCase(java.util.Locale.ROOT).replaceFirst("^(strong|long)_", "");
     }
 
     /** Advancement progress check; called from the advancement-done event via the handler. */

@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
 import ink.ziip.championshipscore.api.game.bingo.task.CardDisplayInfo;
 import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
+import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticTask;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.format.TextColor;
@@ -95,10 +96,19 @@ public final class BingoCardMapRenderer extends MapRenderer {
             }
             BufferedImage cell = TaskImageAtlas.statisticCell(cellKey, statisticTask.statistic().statisticType());
             drawImage(canvas, x, y, cell, null);
-        } else if (task.data instanceof OneOfTask set) {
-            List<Key> memberKeys = new ArrayList<>();
-            for (org.bukkit.Material material : set.iconMembers()) memberKeys.add(material.key());
-            BufferedImage image = TaskImageAtlas.composite(memberKeys, key);
+        } else if (task.data instanceof OneOfTask) {
+            // one_of: the representative item plus a small top-right "stack" badge marking the cell as
+            // "any one of a set" — far clearer than the old four-member quadrant collage.
+            BufferedImage image = TaskImageAtlas.imageFor(key);
+            if (image != null) {
+                drawImage(canvas, x + 1, y + 1, image, null);
+            }
+            drawSetBadge(canvas, x, y);
+        } else if (task.data instanceof PotionTask potion) {
+            // Effect-specific potion: its own per-effect coloured sprite (falls back to the plain
+            // potion-material icon if that effect isn't bundled).
+            BufferedImage image = TaskImageAtlas.potionImageFor(potion.form().infix, potion.effect());
+            if (image == null) image = TaskImageAtlas.imageFor(key);
             if (image != null) {
                 drawImage(canvas, x + 1, y + 1, image, null);
             }
@@ -178,6 +188,50 @@ public final class BingoCardMapRenderer extends MapRenderer {
         int d = shiftUpLeft ? -1 : 0;
         canvas.drawText(gridX * 24 + 17 + xStart + d, gridY * 24 + 21 + d, MinecraftFont.Font, "§47;" + amount);
         canvas.drawText(gridX * 24 + 16 + xStart + d, gridY * 24 + 20 + d, MinecraftFont.Font, "§58;" + amount);
+    }
+
+    /** Glyph width/height of the tiny built-in "ANY" font, and the 1px gap between letters. */
+    private static final int GLYPH_W = 4;
+    private static final int GLYPH_H = 5;
+    private static final int GLYPH_GAP = 1;
+    /**
+     * A short 4×5 pixel font spelling the word the cell badge needs ("ANY"). Each letter is five rows;
+     * each row's low {@value #GLYPH_W} bits are its columns, most-significant bit leftmost.
+     */
+    private static final int[][] ANY_GLYPHS = {
+            {0b0110, 0b1001, 0b1111, 0b1001, 0b1001}, // A
+            {0b1001, 0b1101, 0b1011, 0b1001, 0b1001}, // N
+            {0b1001, 0b1001, 0b0110, 0b0010, 0b0010}, // Y
+    };
+
+    /**
+     * Stamps a small yellow "ANY" label across the top of a {@code one_of} cell, marking it as "collect
+     * any one of a set". Kept along the top edge (clear of the bottom-right amount and bottom-left
+     * statistic badge) and drawn with a 1px dark drop-shadow so the word stays legible on any item
+     * beneath. {@code (x,y)} is the cell's slot origin (top-left of the 24px slot).
+     */
+    private static void drawSetBadge(MapCanvas canvas, int x, int y) {
+        byte fg = MapColorMatcher.matchColor(255, 221, 85);  // yellow, matching the task name colour
+        byte shadow = MapColorMatcher.matchColor(28, 28, 30);
+        int total = ANY_GLYPHS.length * GLYPH_W + (ANY_GLYPHS.length - 1) * GLYPH_GAP; // 14px
+        int startX = x + (24 - total) / 2; // centred on the slot
+        int startY = y + 2;
+        // Two passes (all shadow, then all foreground) so adjacent letters' fill never eats a shadow.
+        for (int pass = 0; pass < 2; pass++) {
+            byte colour = pass == 0 ? shadow : fg;
+            int dx = pass == 0 ? 1 : 0, dy = pass == 0 ? 1 : 0;
+            for (int gi = 0; gi < ANY_GLYPHS.length; gi++) {
+                int gx = startX + gi * (GLYPH_W + GLYPH_GAP);
+                int[] glyph = ANY_GLYPHS[gi];
+                for (int row = 0; row < GLYPH_H; row++) {
+                    for (int col = 0; col < GLYPH_W; col++) {
+                        if ((glyph[row] & (1 << (GLYPH_W - 1 - col))) == 0) continue;
+                        int px = gx + col + dx, py = startY + row + dy;
+                        if (px >= 0 && px < 128 && py >= 0 && py < 128) canvas.setPixel(px, py, colour);
+                    }
+                }
+            }
+        }
     }
 
     private static void drawImage(MapCanvas canvas, int x, int y, BufferedImage image, @Nullable TextColor modulate) {

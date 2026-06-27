@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.CardDisplayInfo;
 import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.ItemTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
+import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticCategories;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticCategory;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticHandle;
@@ -342,6 +343,27 @@ public final class BingoRound {
                 continue;
             }
             if (match && heldAmount >= need) {
+                if (task.complete(completion(player, team, gameTime), LOCKS_TASKS)) {
+                    awardPoints(team, task);
+                    return Optional.of(task);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * @return the task just completed for this team by holding a potion of the given form+effect, if
+     * any. {@code effect} is the base effect key (strong/long variants already collapsed by the caller).
+     */
+    public Optional<GameTask> tryCompletePotion(Player player, ChampionshipTeam team, org.bukkit.Material material,
+                                                String effect, int heldAmount, long gameTime) {
+        String teamId = BingoTeamAdapter.id(team);
+        List<GameTask> tasks = card.getTasks();
+        for (GameTask task : tasks) {
+            if (task.isCompletedByTeam(teamId) || task.isVoided()) continue;
+            if (!(task.data instanceof PotionTask pt)) continue;
+            if (pt.form().material == material && pt.effect().equals(effect) && heldAmount >= pt.count()) {
                 if (task.complete(completion(player, team, gameTime), LOCKS_TASKS)) {
                     awardPoints(team, task);
                     return Optional.of(task);

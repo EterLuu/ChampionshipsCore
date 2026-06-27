@@ -58,6 +58,11 @@ public final class MessageService {
         this.fallback = load(this.locale.equalsIgnoreCase("zh_CN") ? "en_US" : "zh_CN");
     }
 
+    /** Whether a lang key resolves (current locale or fallback), without logging a miss like {@link #tr}. */
+    public boolean has(String key) {
+        return getRaw(key) != null;
+    }
+
     public String tr(String key, Object... args) {
         String raw = getRaw(key);
         if (raw == null) {

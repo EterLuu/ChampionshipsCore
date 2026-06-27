@@ -48,6 +48,26 @@ public final class TaskPoolSpec {
                     }
                     case ADVANCEMENT ->
                             b.advancement(e.key(), difficulty, e.dimension(), e.category());
+                    case POTION -> {
+                        // key is "<form>:<effect>"; both must be valid (effect must be a real PotionType).
+                        String[] parts = e.key().split(":", 2);
+                        ink.ziip.championshipscore.api.game.bingo.task.PotionTask.Form form =
+                                parts.length == 2 ? ink.ziip.championshipscore.api.game.bingo.task.PotionTask.Form.parse(parts[0]) : null;
+                        String effect = parts.length == 2 ? parts[1] : null;
+                        boolean valid = effect != null;
+                        if (valid) {
+                            try {
+                                org.bukkit.potion.PotionType.valueOf(effect.toUpperCase(java.util.Locale.ROOT));
+                            } catch (IllegalArgumentException ex) {
+                                valid = false;
+                            }
+                        }
+                        if (form == null || !valid) {
+                            Bukkit.getLogger().warning("[Bingo] 跳过无效药水任务项: '" + e.key() + "'");
+                        } else {
+                            b.potion(form, effect, e.count(), difficulty, e.dimension(), e.category());
+                        }
+                    }
                     case MINE ->
                             b.mineBlock(Material.valueOf(e.key()), e.count(), difficulty, e.dimension(), e.category());
                     case CRAFT -> {

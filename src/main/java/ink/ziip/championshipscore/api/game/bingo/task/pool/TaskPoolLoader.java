@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
+import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.Material;
@@ -189,6 +190,10 @@ public final class TaskPoolLoader {
                 Dimension dimension = parseDimension(raw.get("dimension"), log, sourceName, "set");
                 out.addAll(parseOneOf(raw, difficulty, dimension, null, log, sourceName));
             }
+            // Effect-specific potions; effect "*" expands to every brewable effect.
+            for (Map<?, ?> raw : singletons.getMapList("potions")) {
+                out.addAll(parsePotions(raw, log, sourceName));
+            }
         }
 
         return new TaskPoolSpec(out);
@@ -239,6 +244,41 @@ public final class TaskPoolLoader {
                 difficulty, dimension, categoryId));
     }
 
+    /**
+     * Parse a {@code potions} entry: an effect potion task. {@code form} is normal/splash/lingering,
+     * {@code effect} a vanilla potion key (e.g. {@code strength}) or {@code "*"} to expand to every
+     * {@linkplain PotionTask#BREWABLE brewable} effect.
+     */
+    private static List<PoolEntrySpec> parsePotions(Map<?, ?> raw, Logger log, String sourceName) {
+        PotionTask.Form form = PotionTask.Form.parse(
+                raw.get("form") == null ? "normal" : String.valueOf(raw.get("form")));
+        if (form == null) {
+            log.warning(sourceName + ": 药水任务 form 无效 ('" + raw.get("form") + "')，跳过。");
+            return List.of();
+        }
+        String formKey = form.name().toLowerCase(Locale.ROOT);
+        Object effectObj = raw.get("effect");
+        if (effectObj == null) {
+            log.warning(sourceName + ": 药水任务缺少 effect，跳过。");
+            return List.of();
+        }
+        String effect = String.valueOf(effectObj).trim().toLowerCase(Locale.ROOT);
+        List<String> effects = "*".equals(effect) ? PotionTask.BREWABLE : List.of(effect);
+
+        int count = raw.get("count") instanceof Number n ? n.intValue() : 1;
+        Difficulty difficulty = parseDifficulty(raw.get("difficulty"), log, sourceName, "potion " + formKey);
+        Dimension dimension = parseDimension(raw.get("dimension"), log, sourceName, "potion " + formKey);
+        Object catObj = raw.get("category");
+        String category = catObj == null || String.valueOf(catObj).isBlank() ? null : String.valueOf(catObj).trim();
+
+        List<PoolEntrySpec> out = new ArrayList<>(effects.size());
+        for (String e : effects) {
+            out.add(new PoolEntrySpec(PoolEntrySpec.Kind.POTION, formKey + ":" + e, count,
+                    difficulty, dimension, category));
+        }
+        return out;
+    }
+
     private static String parseKey(Object keyValue, PoolEntrySpec.Kind kind) {
         String s = String.valueOf(keyValue).trim();
         return kind == PoolEntrySpec.Kind.ADVANCEMENT ? s : s.toUpperCase(Locale.ROOT);
@@ -275,7 +315,7 @@ public final class TaskPoolLoader {
             case MINE -> enumNames(Material.values(), pattern);
             case KILL -> enumNames(EntityType.values(), pattern);
             case STAT -> enumNames(Statistic.values(), pattern);
-            case ADVANCEMENT, ONE_OF -> List.of();
+            case ADVANCEMENT, ONE_OF, POTION -> List.of();
         };
     }
 

@@ -1413,12 +1413,13 @@ categories:
       - { entity: PIGLIN_BRUTE }
       - { entity: ZOGLIN }
   # Brewing chain — gated behind nether wart, so HARD and nether-locked.
+  # (LINGERING_POTION lives in singletons.items instead: it needs dragon's breath, so it's End-locked
+  #  and VERY_HARD, not a plain nether brew.)
   - id: brewing_potions
     dimension: nether
     members:
       - { material: POTION }
       - { material: SPLASH_POTION }
-      - { material: LINGERING_POTION }
       - { path: nether/brew_potion }
   - id: netherite_progression
     dimension: nether
@@ -1524,6 +1525,8 @@ categories:
 
 singletons:
   items:
+    # 滞留药水需要末影龙息(末地)，故锁定末地、难度 very_hard，不与下界酿造同组。
+    - { material: LINGERING_POTION, dimension: the_end }
     - { material: FLOWER_POT }
     - { material: PAINTING }
     - { material: ARMOR_STAND }
@@ -1536,9 +1539,11 @@ singletons:
     - { material: TNT }
     - { material: BEACON }
   # one_of (集合任务 / collect any one): 拿到列表中任意一种即完成。列表支持 * / ? 通配符。
-  #   icon  — 容器界面显示的固定代表图标（省略则取列表第一个）。
-  #   name  — 可选显示名；省略时自动显示本地化的“任意：<icon 物品名>”。
-  #   地图卡面的图标会用其中最多 4 个成员拼成（2/3/4 个分别为左右/品字/田字）。
+  #   icon  — 仅用于稳定标识(objectiveId)；卡面实际图标由代表规则决定：
+  #           颜色家族取白色款，非颜色家族按集合稳定地取一个成员。
+  #   name  — 可选显示名；省略时自动显示本地化的“任意<家族>”(家族名见 lang 的 task.family.*)，
+  #           无法识别家族时回退为“任意：<icon 物品名>”。
+  #   地图卡面会在格子顶部标注一个黄色像素 “ANY” 角标。
   # 集合可以是颜色家族（床、羊毛），也可以是种类家族（木板、原矿）。
   sets:
     # 颜色家族 / colour families
@@ -1564,6 +1569,15 @@ singletons:
     - { one_of: [ZOMBIE_HEAD, SKELETON_SKULL, CREEPER_HEAD, PIGLIN_HEAD, WITHER_SKELETON_SKULL], icon: SKELETON_SKULL }
     - { one_of: [PUFFERFISH_BUCKET, TROPICAL_FISH_BUCKET, COD_BUCKET, SALMON_BUCKET, AXOLOTL_BUCKET, TADPOLE_BUCKET], icon: TROPICAL_FISH_BUCKET }
     - { one_of: ["*_ARMOR_TRIM_SMITHING_TEMPLATE"], icon: SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE }
+  # 指定效果药水任务 / effect-specific potions: 酿造或获得指定效果的药水即完成。
+  #   effect — 药水效果(strength / night_vision / ...)，"*" 展开为全部可酿造效果(见 PotionTask.BREWABLE)。
+  #   form   — normal(可饮用) / splash(喷溅) / lingering(滞留)。
+  #   同一 form 共用一个分类，故每张卡每种 form 最多出 1 个药水任务；难度见 tierlist 的 potion:* 规则。
+  #   滞留药水需末影龙息，锁定末地；其余药水需酿造(下界)。
+  potions:
+    - { effect: "*", form: normal,    category: potion_normal,    dimension: nether }
+    - { effect: "*", form: splash,    category: potion_splash,    dimension: nether }
+    - { effect: "*", form: lingering, category: potion_lingering, dimension: the_end }
   advancements:
     - { path: story/mine_stone }
     - { path: story/upgrade_tools }
