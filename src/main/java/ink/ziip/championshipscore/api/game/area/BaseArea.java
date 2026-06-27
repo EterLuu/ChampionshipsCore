@@ -165,7 +165,7 @@ public abstract class BaseArea {
         getGameHandler().unRegister();
         plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + ", start loading world " + getWorldName());
 
-        File target = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), getWorldName());
+        File target = plugin.getWorldManager().getWorldFolder(getWorldName());
 
         // If already has a same world, delete it.
         if (target.isDirectory()) {
@@ -215,7 +215,7 @@ public abstract class BaseArea {
             // Delete old world files stored in maps
             plugin.getWorldManager().deleteWorldFiles(target);
 
-            File source = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), getWorldName());
+            File source = plugin.getWorldManager().getWorldFolder(getWorldName());
 
             plugin.getWorldManager().copyWorldFiles(source, target);
             plugin.getWorldManager().deleteWorldFiles(source);

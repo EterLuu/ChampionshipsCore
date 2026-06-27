@@ -1,0 +1,22 @@
+# Starter-kit items. Objectives matching any of these globs are kept off the card when
+# "starter_kit" is in filters.exclude, so no cell is auto-completed just by holding the kit.
+values:
+  - "GOLDEN_CARROT"
+  - "craft:GOLDEN_CARROT"
+  - "FIREWORK_ROCKET"
+  - "craft:FIREWORK_ROCKET"
+  - "STONE_PICKAXE"
+  - "craft:STONE_PICKAXE"
+  - "STONE_AXE"
+  - "craft:STONE_AXE"
+  - "STONE_SHOVEL"
+  - "craft:STONE_SHOVEL"
+  - "STONE_SWORD"
+  - "craft:STONE_SWORD"
+  - "LEATHER_HELMET"
+  - "craft:LEATHER_HELMET"
+  - "LEATHER_LEGGINGS"
+  - "craft:LEATHER_LEGGINGS"
+  - "LEATHER_BOOTS"
+  - "craft:LEATHER_BOOTS"
+  - "ELYTRA"

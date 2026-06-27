@@ -1,0 +1,1600 @@
+# MineBingo default card pool.
+# Copy this file or add another .yml file in plugins/MineBingo/cards/ to create custom card pools.
+# Select a pool with /mb cardchoose <name>.
+#
+# Categories group tasks by their main bottleneck. Only one member from a category can appear on a card.
+# Material/entity/stat patterns support * and ? and expand to matching enum names while keeping the same category.
+#
+# NOTE: this pool only describes WHAT to do. Difficulty is no longer stored here — it lives entirely in
+# the tier list (tierlists/<name>.yml, selected by config cards.tierlist), which ranks objectives by id.
+# Objectives missing from the active tier list fall back to MEDIUM.
+
+categories:
+  # Basic surface / starter resources.
+  - id: starter_wood
+    dimension: overworld
+    members:
+      - { material: OAK_LOG }
+      - { material: BIRCH_LOG }
+      - { material: SPRUCE_LOG }
+      - { material: OAK_WOOD }
+      - { material: BIRCH_WOOD }
+      - { material: SPRUCE_WOOD }
+      - { material: OAK_PLANKS }
+      - { material: BIRCH_PLANKS }
+      - { material: SPRUCE_PLANKS }
+      - { material: OAK_SLAB }
+      - { material: BIRCH_SLAB }
+      - { material: SPRUCE_SLAB }
+      - { material: OAK_STAIRS }
+      - { material: BIRCH_STAIRS }
+      - { material: SPRUCE_STAIRS }
+      - { material: OAK_FENCE }
+      - { material: BIRCH_FENCE }
+      - { material: SPRUCE_FENCE }
+      - { material: OAK_FENCE_GATE }
+      - { material: BIRCH_FENCE_GATE }
+      - { material: SPRUCE_FENCE_GATE }
+      - { material: OAK_DOOR }
+      - { material: BIRCH_DOOR }
+      - { material: SPRUCE_DOOR }
+      - { material: OAK_TRAPDOOR }
+      - { material: BIRCH_TRAPDOOR }
+      - { material: SPRUCE_TRAPDOOR }
+      - { material: OAK_BUTTON }
+      - { material: BIRCH_BUTTON }
+      - { material: SPRUCE_BUTTON }
+      - { material: OAK_PRESSURE_PLATE }
+      - { material: BIRCH_PRESSURE_PLATE }
+      - { material: SPRUCE_PRESSURE_PLATE }
+      - { material: OAK_BOAT }
+      - { material: BIRCH_BOAT }
+      - { material: SPRUCE_BOAT }
+      - { material: OAK_CHEST_BOAT }
+      - { material: BIRCH_CHEST_BOAT }
+      - { material: SPRUCE_CHEST_BOAT }
+      - { material: OAK_SIGN }
+      - { material: BIRCH_SIGN }
+      - { material: SPRUCE_SIGN }
+      - { material: OAK_HANGING_SIGN }
+      - { material: BIRCH_HANGING_SIGN }
+      - { material: SPRUCE_HANGING_SIGN }
+      - { material: OAK_SHELF }
+      - { material: BIRCH_SHELF }
+      - { material: SPRUCE_SHELF }
+      - { material: STRIPPED_OAK_LOG }
+      - { material: STRIPPED_BIRCH_LOG }
+      - { material: STRIPPED_SPRUCE_LOG }
+      - { material: STRIPPED_OAK_WOOD }
+      - { material: STRIPPED_BIRCH_WOOD }
+      - { material: STRIPPED_SPRUCE_WOOD }
+      - { material: CRAFTING_TABLE }
+      - { block: OAK_LOG, count: 16 }
+  - id: starter_stone
+    dimension: overworld
+    members:
+      - { material: COBBLESTONE }
+      - { material: STONE }
+      - { material: GRANITE }
+      - { material: DIORITE }
+      - { material: ANDESITE }
+      - { material: TUFF }
+      - { material: COARSE_DIRT }
+      - { material: TERRACOTTA }
+      - { material: GLASS }
+      - { material: GLASS_PANE }
+      - { material: BRICK }
+      - { material: COBBLESTONE_SLAB }
+      - { material: COBBLESTONE_STAIRS }
+      - { material: COBBLESTONE_WALL }
+      - { material: STONE_SLAB }
+      - { material: STONE_STAIRS }
+      - { material: STONE_BUTTON }
+      - { material: STONE_PRESSURE_PLATE }
+      - { material: STONE_BRICKS }
+      - { material: STONE_BRICK_SLAB }
+      - { material: STONE_BRICK_STAIRS }
+      - { material: STONE_BRICK_WALL }
+      - { material: GRANITE_SLAB }
+      - { material: GRANITE_STAIRS }
+      - { material: GRANITE_WALL }
+      - { material: DIORITE_SLAB }
+      - { material: DIORITE_STAIRS }
+      - { material: DIORITE_WALL }
+      - { material: ANDESITE_SLAB }
+      - { material: ANDESITE_STAIRS }
+      - { material: ANDESITE_WALL }
+      - { material: TUFF_SLAB }
+      - { material: TUFF_STAIRS }
+      - { material: TUFF_WALL }
+      - { material: POLISHED_GRANITE }
+      - { material: POLISHED_GRANITE_SLAB }
+      - { material: POLISHED_GRANITE_STAIRS }
+      - { material: POLISHED_DIORITE }
+      - { material: POLISHED_DIORITE_SLAB }
+      - { material: POLISHED_DIORITE_STAIRS }
+      - { material: POLISHED_ANDESITE }
+      - { material: POLISHED_ANDESITE_SLAB }
+      - { material: POLISHED_ANDESITE_STAIRS }
+      - { material: POLISHED_TUFF }
+      - { material: POLISHED_TUFF_SLAB }
+      - { material: POLISHED_TUFF_STAIRS }
+      - { material: POLISHED_TUFF_WALL }
+      - { material: TUFF_BRICKS }
+      - { material: TUFF_BRICK_SLAB }
+      - { material: TUFF_BRICK_STAIRS }
+      - { material: TUFF_BRICK_WALL }
+      - { material: CHISELED_TUFF }
+      - { material: CHISELED_TUFF_BRICKS }
+      - { material: SMOOTH_STONE }
+      - { material: SMOOTH_STONE_SLAB }
+      - { block: STONE, count: 16 }
+      - { block: DIRT, count: 16 }
+      - { block: GRAVEL, count: 16 }
+      - { block: SAND, count: 16 }
+      - { stat: FURNACE_INTERACTION, count: 3 }
+  - id: starter_tools
+    dimension: overworld
+    members:
+      - { material: STICK }
+      - { material: FLINT }
+      - { material: TORCH }
+      - { material: FURNACE }
+      - { material: CHEST }
+      - { material: TRAPPED_CHEST }
+      - { material: BARREL }
+      - { material: LEVER }
+      - { material: BOWL }
+      - { material: GLASS_BOTTLE }
+      - { material: CANDLE }
+      - { material: WOODEN_SWORD }
+      - { material: WOODEN_PICKAXE }
+      - { material: WOODEN_AXE }
+      - { material: WOODEN_SHOVEL }
+      - { material: WOODEN_HOE }
+      - { material: WOODEN_SPEAR }
+      - { material: STONE_SWORD }
+      - { material: STONE_PICKAXE }
+      - { material: STONE_AXE }
+      - { material: STONE_SHOVEL }
+      - { material: STONE_HOE }
+      - { material: STONE_SPEAR }
+      - { material: LADDER, count: 4 }
+      - { stat: CHEST_OPENED, count: 5 }
+      - { stat: OPEN_BARREL, count: 3 }
+      - { stat: CRAFTING_TABLE_INTERACTION, count: 3 }
+      - { stat: INTERACT_WITH_CAMPFIRE }
+  - id: starter_combat
+    dimension: overworld
+    members:
+      - { material: BOW }
+      - { material: FISHING_ROD }
+      - { entity: ZOMBIE, count: 3 }
+      - { entity: SKELETON, count: 3 }
+      - { entity: SPIDER, count: 3 }
+      - { entity: CREEPER, count: 3 }
+      - { stat: MOB_KILLS, count: 10 }
+      - { stat: DAMAGE_DEALT, count: 50 }
+      - { stat: DAMAGE_TAKEN, count: 30 }
+      - { stat: DAMAGE_BLOCKED_BY_SHIELD, count: 20 }
+      - { stat: DAMAGE_ABSORBED, count: 10 }
+      - { stat: DEATHS, count: 3 }
+  - id: starter_travel
+    dimension: overworld
+    members:
+      - { stat: WALK_ONE_CM, count: 32 }
+      - { stat: SPRINT_ONE_CM, count: 32 }
+      - { stat: SWIM_ONE_CM, count: 16 }
+      - { stat: BOAT_ONE_CM, count: 20 }
+      - { stat: JUMP, count: 32 }
+      - { stat: SLEEP_IN_BED }
+      - { path: adventure/sleep_in_bed }
+      - { stat: PIG_ONE_CM, count: 10 }
+      - { stat: CLIMB_ONE_CM, count: 10 }
+      - { stat: CROUCH_ONE_CM, count: 10 }
+      - { stat: FALL_ONE_CM, count: 5 }
+      - { stat: WALK_ON_WATER_ONE_CM, count: 10 }
+      - { stat: WALK_UNDER_WATER_ONE_CM, count: 10 }
+
+  # Farming, food, animals and common drops.
+  - id: meat_food
+    dimension: overworld
+    members:
+      - { material: COOKED_BEEF }
+      - { material: COOKED_PORKCHOP }
+      - { material: COOKED_CHICKEN }
+      - { material: COOKED_MUTTON }
+      - { material: COOKED_COD }
+      - { material: COOKED_SALMON }
+      - { material: BEEF }
+      - { material: PORKCHOP }
+      - { material: CHICKEN }
+      - { material: MUTTON }
+      - { material: COD }
+      - { material: SALMON }
+      - { material: MUSHROOM_STEW }
+      - { stat: FISH_CAUGHT }
+  - id: crop_food
+    dimension: overworld
+    members:
+      - { material: WHEAT }
+      - { material: BREAD }
+      - { material: CARROT }
+      - { material: POTATO }
+      - { material: BAKED_POTATO }
+      - { material: BEETROOT }
+      - { material: APPLE }
+      - { material: POISONOUS_POTATO }
+      - { material: WHEAT_SEEDS }
+      - { material: BEETROOT_SEEDS }
+      - { material: MELON_SLICE }
+      - { material: MELON }
+      - { material: MELON_SEEDS }
+      - { material: PUMPKIN }
+      - { material: CARVED_PUMPKIN }
+      - { material: JACK_O_LANTERN }
+      - { material: PUMPKIN_SEEDS }
+      - { material: HAY_BLOCK }
+      - { material: SUGAR_CANE }
+      - { material: SUGAR }
+      - { path: husbandry/plant_seed }
+  - id: prepared_food
+    dimension: overworld
+    members:
+      - { material: BEETROOT_SOUP }
+      - { material: PUMPKIN_PIE }
+      - { material: CAKE }
+      - { material: MILK_BUCKET }
+      - { material: GLISTERING_MELON_SLICE }
+      - { material: FERMENTED_SPIDER_EYE }
+      - { material: SUSPICIOUS_STEW }
+      - { stat: INTERACT_WITH_SMOKER }
+      - { stat: CAKE_SLICES_EATEN, count: 3 }
+  - id: books_and_paper
+    dimension: overworld
+    members:
+      - { material: PAPER }
+      - { material: BOOK }
+      - { material: WRITABLE_BOOK }
+      - { material: WRITTEN_BOOK }
+      - { material: BOOKSHELF }
+      - { material: CHISELED_BOOKSHELF }
+  - id: animal_products
+    dimension: overworld
+    members:
+      - { material: EGG }
+      - { material: LEATHER }
+      - { material: FEATHER }
+      - { material: WHITE_WOOL }
+      - { material: RED_WOOL }
+      - { material: BLACK_WOOL }
+      - { material: LEATHER_HELMET }
+      - { material: LEATHER_CHESTPLATE }
+      - { material: LEATHER_LEGGINGS }
+      - { material: LEATHER_BOOTS }
+      - { material: LEAD }
+      - { material: WHITE_BED }
+      - { entity: COW, count: 3 }
+      - { entity: PIG, count: 3 }
+      - { entity: CHICKEN, count: 3 }
+      - { entity: SHEEP, count: 3 }
+      - { path: husbandry/breed_an_animal }
+      - { stat: ANIMALS_BRED, count: 2 }
+  - id: dyed_soft_blocks
+    dimension: overworld
+    members:
+      - { material: "*_WOOL" }
+      - { material: "*_CARPET" }
+      - { material: "*_BED" }
+      - { material: "*_BANNER" }
+      - { material: "*_BUNDLE" }
+  - id: dyed_glass
+    dimension: overworld
+    members:
+      - { material: "*_STAINED_GLASS" }
+      - { material: "*_STAINED_GLASS_PANE" }
+  - id: dyed_concrete
+    dimension: overworld
+    members:
+      - { material: "*_CONCRETE" }
+      - { material: "*_CONCRETE_POWDER" }
+  - id: dyed_clay
+    dimension: overworld
+    members:
+      - { material: "*_TERRACOTTA" }
+      - { material: "*_GLAZED_TERRACOTTA" }
+  - id: dyed_candles
+    dimension: overworld
+    members:
+      - { material: "*_CANDLE" }
+  - id: dyed_harness
+    dimension: overworld
+    members:
+      - { material: "*_HARNESS" }
+  - id: hostile_drops
+    dimension: overworld
+    members:
+      - { material: STRING }
+      - { material: BONE }
+      - { material: BONE_BLOCK }
+      - { material: SPIDER_EYE }
+      - { material: ROTTEN_FLESH }
+      - { material: GUNPOWDER }
+      - { material: BONE_MEAL }
+      - { material: CREEPER_BANNER_PATTERN }
+      - { material: CREEPER_HEAD }
+      - { material: ZOMBIE_HEAD }
+      - { material: SKELETON_SKULL }
+      - { path: adventure/kill_a_mob }
+      - { path: adventure/shoot_arrow }
+      - { entity: CAVE_SPIDER }
+      - { entity: SILVERFISH }
+      - { entity: BOGGED, count: 3 }
+
+  # Early mining progression.
+  - id: coal
+    dimension: overworld
+    members:
+      - { material: COAL }
+      - { material: CHARCOAL }
+      - { material: COAL_BLOCK }
+      - { block: COAL_ORE, count: 16 }
+  - id: iron_progression
+    dimension: overworld
+    members:
+      - { material: RAW_IRON }
+      - { material: IRON_INGOT }
+      - { material: IRON_NUGGET }
+      - { material: IRON_BLOCK }
+      - { material: RAW_IRON_BLOCK }
+      - { material: IRON_BARS }
+      - { material: IRON_CHAIN }
+      - { material: IRON_DOOR }
+      - { material: IRON_TRAPDOOR }
+      - { material: HEAVY_WEIGHTED_PRESSURE_PLATE }
+      - { block: IRON_ORE, count: 16 }
+      - { path: story/smelt_iron }
+  - id: iron_crafting
+    dimension: overworld
+    members:
+      - { material: IRON_PICKAXE }
+      - { material: IRON_SWORD }
+      - { material: IRON_AXE }
+      - { material: IRON_HELMET }
+      - { material: IRON_CHESTPLATE }
+      - { material: IRON_LEGGINGS }
+      - { material: IRON_BOOTS }
+      - { material: IRON_SHOVEL }
+      - { material: IRON_HOE }
+      - { material: IRON_SPEAR }
+      - { material: SHEARS }
+      - { material: FLINT_AND_STEEL }
+      - { material: BUCKET }
+      - { material: SHIELD }
+      - { material: MINECART }
+      - { material: RAIL }
+      - { material: ACTIVATOR_RAIL }
+      - { material: DETECTOR_RAIL }
+      - { material: CHEST_MINECART }
+      - { material: FURNACE_MINECART }
+      - { material: HOPPER_MINECART }
+      - { path: story/obtain_armor }
+      - { path: story/iron_tools }
+      - { path: story/deflect_arrow }
+      - { stat: INTERACT_WITH_STONECUTTER }
+      - { stat: INTERACT_WITH_GRINDSTONE }
+      - { stat: INTERACT_WITH_SMITHING_TABLE }
+      - { stat: MINECART_ONE_CM, count: 20 }
+  - id: gold_progression
+    dimension: overworld
+    members:
+      - { material: RAW_GOLD }
+      - { material: GOLD_INGOT }
+      - { material: GOLD_NUGGET }
+      - { material: GOLD_BLOCK }
+      - { material: RAW_GOLD_BLOCK }
+      - { block: GOLD_ORE, count: 8 }
+      - { material: GOLDEN_CARROT }
+      - { material: CLOCK }
+      - { material: POWERED_RAIL }
+      - { material: LIGHT_WEIGHTED_PRESSURE_PLATE }
+      - { material: GOLDEN_SWORD }
+      - { material: GOLDEN_PICKAXE }
+      - { material: GOLDEN_AXE }
+      - { material: GOLDEN_SHOVEL }
+      - { material: GOLDEN_HOE }
+      - { material: GOLDEN_SPEAR }
+      - { material: GOLDEN_HELMET }
+      - { material: GOLDEN_CHESTPLATE }
+      - { material: GOLDEN_LEGGINGS }
+      - { material: GOLDEN_BOOTS }
+      - { material: GOLDEN_NAUTILUS_ARMOR }
+      - { material: GOLDEN_DANDELION }
+  - id: redstone_progression
+    dimension: overworld
+    members:
+      - { material: REDSTONE }
+      - { material: REDSTONE_BLOCK }
+      - { block: REDSTONE_ORE, count: 16 }
+      - { material: COMPASS }
+      - { material: REDSTONE_TORCH }
+      - { material: REPEATER }
+      - { material: PISTON }
+      - { material: STICKY_PISTON }
+      - { material: CRAFTER }
+      - { material: TARGET }
+      - { material: NOTE_BLOCK }
+      - { material: HOPPER }
+      - { material: DISPENSER }
+      - { material: DROPPER }
+      - { material: TRIPWIRE_HOOK }
+      - { stat: TARGET_HIT, count: 5 }
+      - { stat: HOPPER_INSPECTED }
+      - { stat: DROPPER_INSPECTED }
+      - { stat: DISPENSER_INSPECTED }
+      - { stat: NOTEBLOCK_PLAYED, count: 5 }
+      - { stat: NOTEBLOCK_TUNED }
+  # Redstone recipes that need a nether-sourced ingredient (quartz / glowstone).
+  # Kept separate so they carry HARD weight and vanish when the nether is disabled.
+  - id: redstone_nether_recipes
+    dimension: nether
+    members:
+      - { material: OBSERVER }
+      - { material: COMPARATOR }
+      - { material: DAYLIGHT_DETECTOR }
+      - { material: REDSTONE_LAMP }
+  - id: lapis_progression
+    dimension: overworld
+    members:
+      - { material: LAPIS_LAZULI }
+      - { material: LAPIS_BLOCK }
+      - { block: LAPIS_ORE, count: 8 }
+      - { material: BLUE_DYE }
+  - id: amethyst_geode
+    dimension: overworld
+    members:
+      - { material: AMETHYST_SHARD }
+      - { material: AMETHYST_BLOCK }
+      - { material: AMETHYST_CLUSTER }
+      - { material: LARGE_AMETHYST_BUD }
+      - { material: MEDIUM_AMETHYST_BUD }
+      - { material: SMALL_AMETHYST_BUD }
+      - { material: SPYGLASS }
+      - { material: TINTED_GLASS }
+      - { material: CALCITE }
+  - id: silk_touch_blocks
+    dimension: overworld
+    members:
+      - { material: GRASS_BLOCK }
+      - { material: MYCELIUM }
+      - { path: husbandry/silk_touch_nest }
+  - id: deepslate_progression
+    dimension: overworld
+    members:
+      - { material: DEEPSLATE }
+      - { material: COBBLED_DEEPSLATE }
+      - { material: COBBLED_DEEPSLATE_SLAB }
+      - { material: COBBLED_DEEPSLATE_STAIRS }
+      - { material: COBBLED_DEEPSLATE_WALL }
+      - { material: POLISHED_DEEPSLATE }
+      - { material: POLISHED_DEEPSLATE_SLAB }
+      - { material: POLISHED_DEEPSLATE_STAIRS }
+      - { material: POLISHED_DEEPSLATE_WALL }
+      - { material: DEEPSLATE_BRICKS }
+      - { material: DEEPSLATE_BRICK_SLAB }
+      - { material: DEEPSLATE_BRICK_STAIRS }
+      - { material: DEEPSLATE_BRICK_WALL }
+      - { material: DEEPSLATE_TILES }
+      - { material: DEEPSLATE_TILE_SLAB }
+      - { material: DEEPSLATE_TILE_STAIRS }
+      - { material: DEEPSLATE_TILE_WALL }
+      - { material: CHISELED_DEEPSLATE }
+      - { material: CRACKED_DEEPSLATE_BRICKS }
+      - { material: CRACKED_DEEPSLATE_TILES }
+      - { block: DEEPSLATE, count: 16 }
+
+  # Copper: expanded with glob patterns, grouped by oxidation cost.
+  - id: copper_basic
+    dimension: overworld
+    members:
+      - { material: RAW_COPPER }
+      - { material: COPPER_INGOT }
+      - { material: COPPER_NUGGET }
+      - { material: RAW_COPPER_BLOCK }
+      - { material: COPPER_BLOCK }
+      - { material: CUT_COPPER }
+      - { material: CUT_COPPER_SLAB }
+      - { material: CUT_COPPER_STAIRS }
+      - { material: CHISELED_COPPER }
+      - { material: LIGHTNING_ROD }
+      - { material: COPPER_TORCH }
+      - { material: COPPER_LANTERN }
+      - { material: COPPER_BARS }
+      - { material: COPPER_CHAIN }
+      - { material: COPPER_BULB }
+      - { material: COPPER_DOOR }
+      - { material: COPPER_GRATE }
+      - { material: COPPER_TRAPDOOR }
+      - { material: COPPER_SWORD }
+      - { material: COPPER_PICKAXE }
+      - { material: COPPER_AXE }
+      - { material: COPPER_SHOVEL }
+      - { material: COPPER_HOE }
+      - { material: COPPER_HELMET }
+      - { material: COPPER_CHESTPLATE }
+      - { material: COPPER_LEGGINGS }
+      - { material: COPPER_BOOTS }
+      - { material: COPPER_CHEST }
+      - { material: COPPER_GOLEM_STATUE }
+      - { material: COPPER_HORSE_ARMOR }
+      - { material: COPPER_NAUTILUS_ARMOR }
+      - { material: COPPER_SPEAR }
+      - { material: WAXED_COPPER_BLOCK }
+      - { material: WAXED_CHISELED_COPPER }
+      - { material: WAXED_CUT_COPPER }
+      - { material: WAXED_CUT_COPPER_SLAB }
+      - { material: WAXED_CUT_COPPER_STAIRS }
+      - { material: WAXED_COPPER_BARS }
+      - { material: WAXED_COPPER_CHAIN }
+      - { material: WAXED_COPPER_BULB }
+      - { material: WAXED_COPPER_CHEST }
+      - { material: WAXED_COPPER_DOOR }
+      - { material: WAXED_COPPER_GRATE }
+      - { material: WAXED_COPPER_GOLEM_STATUE }
+      - { material: WAXED_COPPER_LANTERN }
+      - { material: WAXED_COPPER_TRAPDOOR }
+      - { material: WAXED_LIGHTNING_ROD }
+      - { block: COPPER_ORE, count: 16 }
+  - id: copper_exposed
+    dimension: overworld
+    members:
+      - { material: "EXPOSED_*COPPER*" }
+      - { material: EXPOSED_LIGHTNING_ROD }
+      - { material: "WAXED_EXPOSED_*" }
+  - id: copper_weathered
+    dimension: overworld
+    members:
+      - { material: "WEATHERED_*COPPER*" }
+      - { material: WEATHERED_LIGHTNING_ROD }
+      - { material: "WAXED_WEATHERED_*" }
+  - id: copper_oxidized
+    dimension: overworld
+    members:
+      - { material: "OXIDIZED_*COPPER*" }
+      - { material: OXIDIZED_LIGHTNING_ROD }
+      - { material: "WAXED_OXIDIZED_*" }
+
+  # Diamond and obsidian bottlenecks.
+  - id: diamond_progression
+    dimension: overworld
+    members:
+      - { material: DIAMOND }
+      - { material: DIAMOND_BLOCK }
+      - { material: DIAMOND_PICKAXE }
+      - { material: DIAMOND_SWORD }
+      - { material: DIAMOND_AXE }
+      - { material: DIAMOND_SHOVEL }
+      - { material: DIAMOND_HOE }
+      - { material: DIAMOND_SPEAR }
+      - { material: DIAMOND_HELMET }
+      - { material: DIAMOND_CHESTPLATE }
+      - { material: DIAMOND_LEGGINGS }
+      - { material: DIAMOND_BOOTS }
+      - { material: DIAMOND_NAUTILUS_ARMOR }
+      - { block: DIAMOND_ORE, count: 3 }
+      - { path: story/mine_diamond }
+  - id: diamond_crafting
+    dimension: overworld
+    members:
+      - { material: JUKEBOX }
+      - { material: ENCHANTING_TABLE }
+      - { material: OBSIDIAN }
+      - { material: ENDER_CHEST }
+      - { path: story/enchant_item }
+      - { path: story/shiny_gear }
+      - { path: story/form_obsidian }
+      - { stat: ITEM_ENCHANTED }
+      - { stat: RECORD_PLAYED }
+      - { stat: ENDERCHEST_OPENED }
+  - id: anvil_iron_sink
+    dimension: overworld
+    members:
+      - { material: ANVIL }
+      - { stat: INTERACT_WITH_ANVIL }
+
+  # Biome or ecology bottlenecks.
+  - id: biome_log
+    dimension: overworld
+    members:
+      - { material: JUNGLE_LOG }
+      - { material: ACACIA_LOG }
+      - { material: DARK_OAK_LOG }
+      - { material: MANGROVE_LOG }
+      - { material: CHERRY_LOG }
+      - { material: PALE_OAK_LOG }
+      - { material: JUNGLE_PLANKS }
+      - { material: ACACIA_PLANKS }
+      - { material: DARK_OAK_PLANKS }
+      - { material: MANGROVE_PLANKS }
+      - { material: CHERRY_PLANKS }
+      - { material: PALE_OAK_PLANKS }
+      - { material: JUNGLE_WOOD }
+      - { material: ACACIA_WOOD }
+      - { material: DARK_OAK_WOOD }
+      - { material: MANGROVE_WOOD }
+      - { material: CHERRY_WOOD }
+      - { material: PALE_OAK_WOOD }
+      - { material: JUNGLE_BOAT }
+      - { material: ACACIA_BOAT }
+      - { material: DARK_OAK_BOAT }
+      - { material: MANGROVE_BOAT }
+      - { material: CHERRY_BOAT }
+      - { material: PALE_OAK_BOAT }
+      - { material: JUNGLE_CHEST_BOAT }
+      - { material: ACACIA_CHEST_BOAT }
+      - { material: DARK_OAK_CHEST_BOAT }
+      - { material: MANGROVE_CHEST_BOAT }
+      - { material: CHERRY_CHEST_BOAT }
+      - { material: PALE_OAK_CHEST_BOAT }
+      - { material: JUNGLE_SIGN }
+      - { material: ACACIA_SIGN }
+      - { material: DARK_OAK_SIGN }
+      - { material: MANGROVE_SIGN }
+      - { material: CHERRY_SIGN }
+      - { material: PALE_OAK_SIGN }
+      - { material: JUNGLE_HANGING_SIGN }
+      - { material: ACACIA_HANGING_SIGN }
+      - { material: DARK_OAK_HANGING_SIGN }
+      - { material: MANGROVE_HANGING_SIGN }
+      - { material: CHERRY_HANGING_SIGN }
+      - { material: PALE_OAK_HANGING_SIGN }
+      - { material: JUNGLE_BUTTON }
+      - { material: ACACIA_BUTTON }
+      - { material: DARK_OAK_BUTTON }
+      - { material: MANGROVE_BUTTON }
+      - { material: CHERRY_BUTTON }
+      - { material: PALE_OAK_BUTTON }
+      - { material: JUNGLE_DOOR }
+      - { material: ACACIA_DOOR }
+      - { material: DARK_OAK_DOOR }
+      - { material: MANGROVE_DOOR }
+      - { material: CHERRY_DOOR }
+      - { material: PALE_OAK_DOOR }
+      - { material: JUNGLE_FENCE }
+      - { material: ACACIA_FENCE }
+      - { material: DARK_OAK_FENCE }
+      - { material: MANGROVE_FENCE }
+      - { material: CHERRY_FENCE }
+      - { material: PALE_OAK_FENCE }
+      - { material: JUNGLE_FENCE_GATE }
+      - { material: ACACIA_FENCE_GATE }
+      - { material: DARK_OAK_FENCE_GATE }
+      - { material: MANGROVE_FENCE_GATE }
+      - { material: CHERRY_FENCE_GATE }
+      - { material: PALE_OAK_FENCE_GATE }
+      - { material: JUNGLE_PRESSURE_PLATE }
+      - { material: ACACIA_PRESSURE_PLATE }
+      - { material: DARK_OAK_PRESSURE_PLATE }
+      - { material: MANGROVE_PRESSURE_PLATE }
+      - { material: CHERRY_PRESSURE_PLATE }
+      - { material: PALE_OAK_PRESSURE_PLATE }
+      - { material: JUNGLE_SLAB }
+      - { material: ACACIA_SLAB }
+      - { material: DARK_OAK_SLAB }
+      - { material: MANGROVE_SLAB }
+      - { material: CHERRY_SLAB }
+      - { material: PALE_OAK_SLAB }
+      - { material: JUNGLE_STAIRS }
+      - { material: ACACIA_STAIRS }
+      - { material: DARK_OAK_STAIRS }
+      - { material: MANGROVE_STAIRS }
+      - { material: CHERRY_STAIRS }
+      - { material: PALE_OAK_STAIRS }
+      - { material: JUNGLE_TRAPDOOR }
+      - { material: ACACIA_TRAPDOOR }
+      - { material: DARK_OAK_TRAPDOOR }
+      - { material: MANGROVE_TRAPDOOR }
+      - { material: CHERRY_TRAPDOOR }
+      - { material: PALE_OAK_TRAPDOOR }
+      - { material: JUNGLE_SHELF }
+      - { material: ACACIA_SHELF }
+      - { material: DARK_OAK_SHELF }
+      - { material: MANGROVE_SHELF }
+      - { material: CHERRY_SHELF }
+      - { material: PALE_OAK_SHELF }
+      - { material: STRIPPED_JUNGLE_LOG }
+      - { material: STRIPPED_ACACIA_LOG }
+      - { material: STRIPPED_DARK_OAK_LOG }
+      - { material: STRIPPED_MANGROVE_LOG }
+      - { material: STRIPPED_CHERRY_LOG }
+      - { material: STRIPPED_PALE_OAK_LOG }
+      - { material: STRIPPED_JUNGLE_WOOD }
+      - { material: STRIPPED_ACACIA_WOOD }
+      - { material: STRIPPED_DARK_OAK_WOOD }
+      - { material: STRIPPED_MANGROVE_WOOD }
+      - { material: STRIPPED_CHERRY_WOOD }
+      - { material: STRIPPED_PALE_OAK_WOOD }
+  - id: desert_biome
+    dimension: overworld
+    members:
+      - { material: CACTUS }
+      - { material: GREEN_DYE }
+      - { material: DEAD_BUSH }
+      - { material: CACTUS_FLOWER }
+      - { material: SANDSTONE }
+      - { material: SANDSTONE_SLAB }
+      - { material: SANDSTONE_STAIRS }
+      - { material: SANDSTONE_WALL }
+      - { material: CUT_SANDSTONE }
+      - { material: CUT_SANDSTONE_SLAB }
+      - { material: RED_SANDSTONE }
+      - { material: RED_SANDSTONE_SLAB }
+      - { material: RED_SANDSTONE_STAIRS }
+      - { material: RED_SANDSTONE_WALL }
+      - { material: CUT_RED_SANDSTONE }
+      - { material: CUT_RED_SANDSTONE_SLAB }
+      - { entity: HUSK, count: 3 }
+      - { entity: PARCHED, count: 3 }
+      - { entity: CAMEL_HUSK }
+  - id: swamp_biome
+    dimension: overworld
+    members:
+      - { material: BLUE_ORCHID }
+      - { material: SLIME_BALL }
+      - { material: CLAY_BALL }
+      - { material: CLAY }
+      - { material: BRICKS }
+      - { material: BRICK_SLAB }
+      - { material: BRICK_STAIRS }
+      - { material: BRICK_WALL }
+      - { material: MUD }
+      - { material: PACKED_MUD }
+      - { material: MUD_BRICKS }
+      - { material: MUD_BRICK_SLAB }
+      - { material: MUD_BRICK_STAIRS }
+      - { material: MUD_BRICK_WALL }
+      - { material: MANGROVE_ROOTS }
+      - { material: MUDDY_MANGROVE_ROOTS }
+      - { entity: SLIME, count: 3 }
+  - id: lush_cave_biome
+    dimension: overworld
+    members:
+      - { material: MOSS_BLOCK }
+      - { material: MOSS_CARPET }
+      - { material: GLOW_BERRIES }
+      - { material: BIG_DRIPLEAF }
+      - { material: SMALL_DRIPLEAF }
+      - { material: SPORE_BLOSSOM }
+      - { material: AZALEA }
+      - { material: FLOWERING_AZALEA }
+      - { material: ROOTED_DIRT }
+      - { material: HANGING_ROOTS }
+      - { material: MOSSY_COBBLESTONE }
+      - { material: MOSSY_COBBLESTONE_SLAB }
+      - { material: MOSSY_COBBLESTONE_STAIRS }
+      - { material: MOSSY_COBBLESTONE_WALL }
+      - { material: MOSSY_STONE_BRICKS }
+      - { block: MOSS_BLOCK, count: 4 }
+      - { path: husbandry/axolotl_in_a_bucket }
+  - id: dripstone_cave_biome
+    dimension: overworld
+    members:
+      - { material: DRIPSTONE_BLOCK }
+      - { material: POINTED_DRIPSTONE }
+      - { stat: CAULDRON_FILLED }
+  - id: flower_biome
+    dimension: overworld
+    members:
+      - { material: ALLIUM }
+      - { material: LILY_OF_THE_VALLEY }
+      - { material: SUNFLOWER }
+      - { material: PINK_PETALS }
+      - { material: AZURE_BLUET }
+      - { material: ORANGE_TULIP }
+      - { material: PINK_TULIP }
+      - { material: RED_TULIP }
+      - { material: WHITE_TULIP }
+      - { material: LILAC }
+      - { material: ROSE_BUSH }
+      - { material: PEONY }
+      - { material: WILDFLOWERS }
+      - { material: BUSH }
+      - { material: FIREFLY_BUSH }
+      - { material: FERN }
+      - { material: LARGE_FERN }
+      - { material: SHORT_DRY_GRASS }
+      - { material: TALL_DRY_GRASS }
+      - { material: WHITE_DYE }
+      - { material: LIGHT_GRAY_DYE }
+      - { material: GRAY_DYE }
+      - { material: BLACK_DYE }
+      - { material: RED_DYE }
+      - { material: ORANGE_DYE }
+      - { material: YELLOW_DYE }
+      - { material: LIME_DYE }
+      - { material: CYAN_DYE }
+      - { material: LIGHT_BLUE_DYE }
+      - { material: PURPLE_DYE }
+      - { material: MAGENTA_DYE }
+      - { material: PINK_DYE }
+      - { material: FLOWER_BANNER_PATTERN }
+      - { stat: FLOWER_POTTED }
+  - id: cold_biome
+    dimension: overworld
+    members:
+      - { entity: STRAY, count: 3 }
+      - { material: POWDER_SNOW_BUCKET }
+      - { material: ICE }
+      - { material: PACKED_ICE }
+      - { material: BLUE_ICE }
+      - { material: SNOW }
+      - { material: SNOW_BLOCK }
+      - { material: SNOWBALL }
+      - { entity: POLAR_BEAR }
+      - { entity: SNOW_GOLEM }
+  - id: bamboo_jungle
+    dimension: overworld
+    members:
+      - { material: BAMBOO }
+      - { material: BAMBOO_BLOCK }
+      - { material: BAMBOO_PLANKS }
+      - { material: BAMBOO_MOSAIC }
+      - { material: BAMBOO_MOSAIC_SLAB }
+      - { material: BAMBOO_MOSAIC_STAIRS }
+      - { material: BAMBOO_BUTTON }
+      - { material: BAMBOO_DOOR }
+      - { material: BAMBOO_FENCE }
+      - { material: BAMBOO_FENCE_GATE }
+      - { material: BAMBOO_HANGING_SIGN }
+      - { material: BAMBOO_PRESSURE_PLATE }
+      - { material: BAMBOO_SHELF }
+      - { material: BAMBOO_SIGN }
+      - { material: BAMBOO_SLAB }
+      - { material: BAMBOO_STAIRS }
+      - { material: BAMBOO_TRAPDOOR }
+      - { material: STRIPPED_BAMBOO_BLOCK }
+      - { material: BAMBOO_RAFT }
+      - { material: BAMBOO_CHEST_RAFT }
+      - { material: SCAFFOLDING }
+      - { material: COCOA_BEANS }
+      - { material: BROWN_DYE }
+      - { material: COOKIE }
+  - id: bee_ecology
+    dimension: overworld
+    members:
+      - { material: HONEY_BOTTLE }
+      - { material: HONEYCOMB }
+      - { material: HONEY_BLOCK }
+      - { material: HONEYCOMB_BLOCK }
+      - { material: BEEHIVE }
+      - { path: husbandry/make_a_sign_glow }
+      - { path: husbandry/wax_on }
+      - { path: husbandry/wax_off }
+      - { path: husbandry/safely_harvest_honey }
+      - { material: BEE_NEST }
+  - id: rabbit_ecology
+    dimension: overworld
+    members:
+      - { material: RABBIT_FOOT }
+      - { material: RABBIT_HIDE }
+      - { material: RABBIT }
+      - { material: COOKED_RABBIT }
+      - { material: RABBIT_STEW }
+      - { entity: RABBIT, count: 3 }
+  - id: turtle_ecology
+    dimension: overworld
+    members:
+      - { material: TURTLE_SCUTE }
+      - { material: TURTLE_EGG }
+      - { material: TURTLE_HELMET }
+  - id: armadillo_ecology
+    dimension: overworld
+    members:
+      - { material: ARMADILLO_SCUTE }
+      - { material: WOLF_ARMOR }
+      - { path: husbandry/remove_wolf_armor }
+  - id: goat_ecology
+    dimension: overworld
+    members:
+      - { material: GOAT_HORN }
+      - { path: husbandry/ride_a_boat_with_a_goat }
+      - { entity: GOAT }
+  - id: sniffer_ecology
+    dimension: overworld
+    members:
+      - { material: SNIFFER_EGG }
+      - { material: TORCHFLOWER_SEEDS }
+      - { material: TORCHFLOWER }
+      - { material: PITCHER_POD }
+      - { material: PITCHER_PLANT }
+      - { entity: SNIFFER }
+      - { path: husbandry/obtain_sniffer_egg }
+      - { path: husbandry/feed_snifflet }
+  - id: pale_garden_biome
+    dimension: overworld
+    members:
+      - { material: PALE_MOSS_BLOCK }
+      - { material: PALE_MOSS_CARPET }
+      - { material: PALE_HANGING_MOSS }
+      - { material: LEAF_LITTER }
+      - { material: RESIN_CLUMP }
+      - { material: RESIN_BLOCK }
+      - { material: RESIN_BRICK }
+      - { material: RESIN_BRICKS }
+      - { material: RESIN_BRICK_SLAB }
+      - { material: RESIN_BRICK_STAIRS }
+      - { material: RESIN_BRICK_WALL }
+      - { material: CREAKING_HEART }
+      - { entity: CREAKING }
+  - id: overland_misc_biome
+    dimension: overworld
+    members:
+      - { material: OAK_LEAVES }
+      - { material: BIRCH_LEAVES }
+      - { material: SPRUCE_LEAVES }
+      - { material: ACACIA_LEAVES }
+      - { material: DARK_OAK_LEAVES }
+      - { material: JUNGLE_LEAVES }
+      - { material: MANGROVE_LEAVES }
+      - { material: CHERRY_LEAVES }
+      - { material: PALE_OAK_LEAVES }
+      - { material: BIRCH_SAPLING }
+      - { material: OAK_SAPLING }
+      - { material: SPRUCE_SAPLING }
+      - { material: ACACIA_SAPLING }
+      - { material: DARK_OAK_SAPLING }
+      - { material: JUNGLE_SAPLING }
+      - { material: MANGROVE_PROPAGULE }
+      - { material: CHERRY_SAPLING }
+      - { material: PALE_OAK_SAPLING }
+      - { material: PODZOL }
+      - { material: TALL_GRASS }
+      - { material: SHORT_GRASS }
+      - { material: VINE }
+      - { material: GLOW_LICHEN }
+      - { material: LILY_PAD }
+      - { material: SEA_PICKLE }
+      - { material: SWEET_BERRIES }
+      - { material: OPEN_EYEBLOSSOM }
+      - { material: CLOSED_EYEBLOSSOM }
+  - id: mushroom_fields_biome
+    dimension: overworld
+    members:
+      - { material: BROWN_MUSHROOM }
+      - { material: RED_MUSHROOM }
+      - { material: BROWN_MUSHROOM_BLOCK }
+      - { material: RED_MUSHROOM_BLOCK }
+      - { material: MUSHROOM_STEM }
+      - { entity: MOOSHROOM }
+  - id: rideable_animals
+    dimension: overworld
+    members:
+      - { material: CARROT_ON_A_STICK }
+      - { entity: HORSE }
+      - { entity: DONKEY }
+      - { entity: MULE }
+      - { entity: LLAMA }
+      - { entity: CAMEL }
+      - { stat: HORSE_ONE_CM, count: 20 }
+  # Golems: iron golems guard villages; copper golems are player-built. Both are kill objectives.
+  - id: golems
+    dimension: overworld
+    members:
+      - { entity: IRON_GOLEM }
+      - { entity: COPPER_GOLEM }
+
+  # Structure / loot chest bottlenecks.
+  - id: village_bottleneck
+    dimension: overworld
+    members:
+      - { material: EMERALD }
+      - { material: EMERALD_BLOCK }
+      - { material: BELL }
+      - { material: CARTOGRAPHY_TABLE }
+      - { material: LOOM }
+      - { material: GLOBE_BANNER_PATTERN }
+      - { material: GRINDSTONE }
+      - { material: LECTERN }
+      - { material: FLETCHING_TABLE }
+      - { material: COMPOSTER }
+      - { material: BLAST_FURNACE }
+      - { material: SMOKER }
+      - { material: STONECUTTER }
+      - { material: SMITHING_TABLE }
+      - { material: CAULDRON }
+      - { material: LANTERN }
+      - { material: CROSSBOW }
+      - { path: adventure/trade }
+      - { stat: TALKED_TO_VILLAGER, count: 3 }
+      - { stat: TRADED_WITH_VILLAGER, count: 3 }
+      - { stat: BELL_RING, count: 3 }
+      - { stat: INTERACT_WITH_CARTOGRAPHY_TABLE }
+      - { stat: INTERACT_WITH_LOOM }
+      - { stat: INTERACT_WITH_LECTERN }
+      - { stat: INTERACT_WITH_BLAST_FURNACE }
+      - { stat: ARMOR_CLEANED }
+      - { stat: BANNER_CLEANED }
+  - id: generic_loot_chest
+    dimension: overworld
+    members:
+      - { material: SADDLE }
+      - { material: NAME_TAG }
+      - { material: GOLDEN_APPLE }
+      - { material: ENCHANTED_GOLDEN_APPLE }
+      - { material: MOJANG_BANNER_PATTERN }
+      - { material: ENCHANTED_BOOK }
+      - { material: EXPERIENCE_BOTTLE }
+      - { material: COBWEB }
+      - { material: CHAINMAIL_HELMET }
+      - { material: CHAINMAIL_CHESTPLATE }
+      - { material: CHAINMAIL_LEGGINGS }
+      - { material: CHAINMAIL_BOOTS }
+      - { material: IRON_HORSE_ARMOR }
+      - { material: GOLDEN_HORSE_ARMOR }
+      - { material: DIAMOND_HORSE_ARMOR }
+      - { material: LEATHER_HORSE_ARMOR }
+      - { material: ARROW }
+      - { material: SPECTRAL_ARROW }
+      - { material: TIPPED_ARROW }
+      - { material: FIRE_CHARGE }
+      - { material: FIREWORK_ROCKET }
+      - { material: FIREWORK_STAR }
+      - { material: TNT_MINECART }
+  - id: overworld_music_disc_loot
+    dimension: overworld
+    members:
+      - { material: MUSIC_DISC_CAT }
+      - { material: MUSIC_DISC_13 }
+      - { material: MUSIC_DISC_BLOCKS }
+      - { material: MUSIC_DISC_CHIRP }
+      - { material: MUSIC_DISC_FAR }
+      - { material: MUSIC_DISC_MALL }
+      - { material: MUSIC_DISC_MELLOHI }
+      - { material: MUSIC_DISC_STAL }
+      - { material: MUSIC_DISC_STRAD }
+      - { material: MUSIC_DISC_WARD }
+      - { material: MUSIC_DISC_11 }
+      - { material: MUSIC_DISC_WAIT }
+      - { material: MUSIC_DISC_OTHERSIDE }
+      - { material: MUSIC_DISC_LAVA_CHICKEN }
+      - { material: MUSIC_DISC_TEARS }
+  - id: banner_pattern_crafting
+    dimension: overworld
+    members:
+      - { material: BORDURE_INDENTED_BANNER_PATTERN }
+      - { material: FIELD_MASONED_BANNER_PATTERN }
+  - id: map_and_treasure_loot
+    dimension: overworld
+    members:
+      - { material: MAP }
+      - { material: FILLED_MAP }
+      - { material: HEART_OF_THE_SEA }
+      - { material: NAUTILUS_SHELL }
+  - id: archaeology_loot
+    dimension: overworld
+    members:
+      - { material: BRUSH }
+      - { material: SUSPICIOUS_SAND }
+      - { material: SUSPICIOUS_GRAVEL }
+      - { material: ANGLER_POTTERY_SHERD }
+      - { material: ARCHER_POTTERY_SHERD }
+      - { material: ARMS_UP_POTTERY_SHERD }
+      - { material: BLADE_POTTERY_SHERD }
+      - { material: BREWER_POTTERY_SHERD }
+      - { material: BURN_POTTERY_SHERD }
+      - { material: DANGER_POTTERY_SHERD }
+      - { material: EXPLORER_POTTERY_SHERD }
+      - { material: FLOW_POTTERY_SHERD }
+      - { material: FRIEND_POTTERY_SHERD }
+      - { material: GUSTER_POTTERY_SHERD }
+      - { material: HEART_POTTERY_SHERD }
+      - { material: HEARTBREAK_POTTERY_SHERD }
+      - { material: HOWL_POTTERY_SHERD }
+      - { material: MINER_POTTERY_SHERD }
+      - { material: MOURNER_POTTERY_SHERD }
+      - { material: PLENTY_POTTERY_SHERD }
+      - { material: PRIZE_POTTERY_SHERD }
+      - { material: SCRAPE_POTTERY_SHERD }
+      - { material: SHEAF_POTTERY_SHERD }
+      - { material: SHELTER_POTTERY_SHERD }
+      - { material: SKULL_POTTERY_SHERD }
+      - { material: SNORT_POTTERY_SHERD }
+      - { material: MUSIC_DISC_RELIC }
+      - { material: DECORATED_POT }
+      - { path: adventure/salvage_sherd }
+      - { path: adventure/craft_decorated_pot_using_only_sherds }
+  - id: overworld_common_trim_loot
+    dimension: overworld
+    members:
+      - { material: COAST_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: DUNE_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: EYE_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: HOST_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: RAISER_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: WILD_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { path: adventure/trim_with_any_armor_pattern }
+      - { path: adventure/trim_with_all_exclusive_armor_patterns }
+  - id: mansion_loot
+    dimension: overworld
+    members:
+      - { material: VEX_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { entity: VINDICATOR }
+      - { entity: EVOKER }
+      - { entity: ALLAY }
+      - { entity: VEX }
+      - { path: husbandry/allay_deliver_item_to_player }
+  - id: ocean_ruins_trim
+    dimension: overworld
+    members:
+      - { material: TIDE_ARMOR_TRIM_SMITHING_TEMPLATE }
+  - id: deep_dark_loot
+    dimension: overworld
+    members:
+      - { material: ECHO_SHARD }
+      - { material: RECOVERY_COMPASS }
+      - { material: MUSIC_DISC_5 }
+      - { material: DISC_FRAGMENT_5 }
+      - { material: SCULK }
+      - { material: SCULK_CATALYST }
+      - { material: SCULK_SENSOR }
+      - { material: CALIBRATED_SCULK_SENSOR }
+      - { material: SCULK_SHRIEKER }
+      - { material: SCULK_VEIN }
+      - { material: WARD_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { entity: WARDEN }
+  - id: trial_chamber_loot
+    dimension: overworld
+    members:
+      - { material: BREEZE_ROD }
+      - { material: WIND_CHARGE }
+      - { material: TRIAL_KEY }
+      - { material: OMINOUS_TRIAL_KEY }
+      - { material: OMINOUS_BOTTLE }
+      - { material: MACE }
+      - { material: HEAVY_CORE }
+      - { material: MUSIC_DISC_CREATOR }
+      - { material: MUSIC_DISC_CREATOR_MUSIC_BOX }
+      - { material: MUSIC_DISC_PRECIPICE }
+      - { material: BOLT_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: FLOW_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: GUSTER_BANNER_PATTERN }
+      - { material: FLOW_BANNER_PATTERN }
+      - { entity: BREEZE, count: 2 }
+      - { path: adventure/minecraft_trials_edition }
+      - { path: adventure/under_lock_and_key }
+      - { path: adventure/revaulting }
+      - { path: adventure/blowback }
+      - { path: adventure/crafters_crafting_crafters }
+  - id: raid_loot
+    dimension: overworld
+    members:
+      - { material: TOTEM_OF_UNDYING }
+      - { path: adventure/totem_of_undying }
+      - { path: adventure/voluntary_exile }
+      - { stat: RAID_TRIGGER }
+      - { stat: RAID_WIN }
+      - { entity: PILLAGER, count: 3 }
+      - { entity: RAVAGER }
+  # Skill-based combat advancements: ranged trick shots, raids, channeling.
+  - id: combat_feats
+    dimension: overworld
+    members:
+      - { path: adventure/bullseye }
+      - { path: adventure/sniper_duel }
+      - { path: adventure/two_birds_one_arrow }
+      - { path: adventure/who_needs_rockets }
+      - { path: adventure/very_very_frightening }
+      - { path: adventure/hero_of_the_village }
+
+  # Ocean bottlenecks.
+  - id: ocean_common
+    dimension: overworld
+    members:
+      - { material: INK_SAC }
+      - { material: GLOW_INK_SAC }
+      - { material: KELP }
+      - { material: DRIED_KELP }
+      - { material: DRIED_KELP_BLOCK }
+      - { material: SEAGRASS }
+      - { material: COD_BUCKET }
+      - { material: SALMON_BUCKET }
+      - { material: PUFFERFISH_BUCKET }
+      - { material: TROPICAL_FISH_BUCKET }
+      - { material: AXOLOTL_BUCKET }
+      - { material: TADPOLE_BUCKET }
+      - { path: husbandry/fishy_business }
+      - { path: husbandry/tactical_fishing }
+      - { entity: DROWNED, count: 3 }
+      - { entity: SQUID }
+      - { entity: GLOW_SQUID }
+      - { entity: DOLPHIN }
+      - { entity: ZOMBIE_NAUTILUS, count: 3 }
+      - { stat: NAUTILUS_ONE_CM, count: 10 }
+  - id: coral_ocean
+    dimension: overworld
+    members:
+      - { material: "*_CORAL" }
+      - { material: "*_CORAL_BLOCK" }
+      - { material: "*_CORAL_FAN" }
+  - id: frog_ecology
+    dimension: overworld
+    members:
+      - { entity: FROG }
+      - { entity: TADPOLE }
+      - { path: husbandry/tadpole_in_a_bucket }
+      - { path: husbandry/leash_all_frog_variants }
+  # Froglights need a frog to eat a (nether) magma cube, so they sit a tier above the frog basics.
+  - id: froglights
+    dimension: overworld
+    members:
+      - { material: OCHRE_FROGLIGHT }
+      - { material: VERDANT_FROGLIGHT }
+      - { material: PEARLESCENT_FROGLIGHT }
+      - { path: husbandry/froglights }
+  - id: ocean_monument
+    dimension: overworld
+    members:
+      - { material: PRISMARINE_SHARD }
+      - { material: PRISMARINE_CRYSTALS }
+      - { material: PRISMARINE }
+      - { material: PRISMARINE_SLAB }
+      - { material: PRISMARINE_STAIRS }
+      - { material: PRISMARINE_WALL }
+      - { material: PRISMARINE_BRICKS }
+      - { material: PRISMARINE_BRICK_SLAB }
+      - { material: PRISMARINE_BRICK_STAIRS }
+      - { material: DARK_PRISMARINE }
+      - { material: DARK_PRISMARINE_SLAB }
+      - { material: DARK_PRISMARINE_STAIRS }
+      - { material: SEA_LANTERN }
+      - { material: SPONGE }
+      - { material: WET_SPONGE }
+      - { entity: GUARDIAN }
+      - { entity: ELDER_GUARDIAN }
+  - id: ocean_rare
+    dimension: overworld
+    members:
+      - { material: TRIDENT }
+      - { material: CONDUIT }
+      - { path: adventure/throw_trident }
+
+  # Nether progression.
+  - id: nether_entry
+    dimension: nether
+    members:
+      - { material: NETHERRACK }
+      - { material: MAGMA_BLOCK }
+      - { material: BASALT }
+      - { material: BLACKSTONE }
+      - { material: BLACKSTONE_SLAB }
+      - { material: BLACKSTONE_STAIRS }
+      - { material: BLACKSTONE_WALL }
+      - { material: POLISHED_BLACKSTONE }
+      - { material: POLISHED_BLACKSTONE_SLAB }
+      - { material: POLISHED_BLACKSTONE_STAIRS }
+      - { material: POLISHED_BLACKSTONE_WALL }
+      - { material: POLISHED_BLACKSTONE_BRICKS }
+      - { material: POLISHED_BLACKSTONE_BRICK_SLAB }
+      - { material: POLISHED_BLACKSTONE_BRICK_STAIRS }
+      - { material: POLISHED_BLACKSTONE_BRICK_WALL }
+      - { material: CHISELED_POLISHED_BLACKSTONE }
+      - { material: CRACKED_POLISHED_BLACKSTONE_BRICKS }
+      - { material: POLISHED_BASALT }
+      - { material: SMOOTH_BASALT }
+      - { material: SOUL_SAND }
+      - { material: SOUL_SOIL }
+      - { material: SOUL_TORCH }
+      - { material: SOUL_LANTERN }
+      - { material: SOUL_CAMPFIRE }
+      - { block: NETHERRACK, count: 32 }
+      - { path: nether/root }
+      - { path: nether/fast_travel }
+  - id: nether_gold_quartz
+    dimension: nether
+    members:
+      - { material: QUARTZ }
+      - { material: QUARTZ_BLOCK }
+      - { material: QUARTZ_BRICKS }
+      - { material: QUARTZ_PILLAR }
+      - { material: QUARTZ_SLAB }
+      - { material: QUARTZ_STAIRS }
+      - { material: CHISELED_QUARTZ_BLOCK }
+      - { material: SMOOTH_QUARTZ }
+      - { material: SMOOTH_QUARTZ_SLAB }
+      - { material: SMOOTH_QUARTZ_STAIRS }
+      - { block: NETHER_QUARTZ_ORE, count: 8 }
+      - { material: NETHER_GOLD_ORE }
+      - { block: NETHER_GOLD_ORE, count: 8 }
+      - { path: nether/distract_piglin }
+  - id: nether_fungus_biome
+    dimension: nether
+    members:
+      - { material: WARPED_FUNGUS }
+      - { material: CRIMSON_FUNGUS }
+      - { material: WARPED_STEM }
+      - { material: CRIMSON_STEM }
+      - { material: WARPED_HYPHAE }
+      - { material: CRIMSON_HYPHAE }
+      - { material: WARPED_PLANKS }
+      - { material: CRIMSON_PLANKS }
+      - { material: WARPED_SIGN }
+      - { material: CRIMSON_SIGN }
+      - { material: WARPED_HANGING_SIGN }
+      - { material: CRIMSON_HANGING_SIGN }
+      - { material: WARPED_NYLIUM }
+      - { material: CRIMSON_NYLIUM }
+      - { material: WARPED_ROOTS }
+      - { material: CRIMSON_ROOTS }
+      - { material: NETHER_SPROUTS }
+      - { material: WARPED_WART_BLOCK }
+      - { material: NETHER_WART_BLOCK }
+      - { material: WARPED_BUTTON }
+      - { material: CRIMSON_BUTTON }
+      - { material: WARPED_DOOR }
+      - { material: CRIMSON_DOOR }
+      - { material: WARPED_FENCE }
+      - { material: CRIMSON_FENCE }
+      - { material: WARPED_FENCE_GATE }
+      - { material: CRIMSON_FENCE_GATE }
+      - { material: WARPED_PRESSURE_PLATE }
+      - { material: CRIMSON_PRESSURE_PLATE }
+      - { material: WARPED_SLAB }
+      - { material: CRIMSON_SLAB }
+      - { material: WARPED_STAIRS }
+      - { material: CRIMSON_STAIRS }
+      - { material: WARPED_TRAPDOOR }
+      - { material: CRIMSON_TRAPDOOR }
+      - { material: WARPED_SHELF }
+      - { material: CRIMSON_SHELF }
+      - { material: STRIPPED_WARPED_STEM }
+      - { material: STRIPPED_CRIMSON_STEM }
+      - { material: STRIPPED_WARPED_HYPHAE }
+      - { material: STRIPPED_CRIMSON_HYPHAE }
+      - { material: WEEPING_VINES }
+      - { material: TWISTING_VINES }
+      - { material: SHROOMLIGHT }
+      - { entity: HOGLIN }
+      - { entity: PIGLIN, count: 3 }
+      - { path: nether/ride_strider }
+      - { stat: STRIDER_ONE_CM, count: 20 }
+  - id: glowstone
+    dimension: nether
+    members:
+      - { material: GLOWSTONE_DUST }
+      - { material: GLOWSTONE }
+  - id: nether_fortress
+    dimension: nether
+    members:
+      - { material: BLAZE_ROD }
+      - { material: BLAZE_POWDER }
+      - { material: NETHER_WART }
+      - { material: BREWING_STAND }
+      - { material: GHAST_TEAR }
+      - { material: MAGMA_CREAM }
+      - { material: NETHER_BRICK }
+      - { material: NETHER_BRICKS }
+      - { material: NETHER_BRICK_FENCE }
+      - { material: NETHER_BRICK_SLAB }
+      - { material: NETHER_BRICK_STAIRS }
+      - { material: NETHER_BRICK_WALL }
+      - { material: CHISELED_NETHER_BRICKS }
+      - { material: CRACKED_NETHER_BRICKS }
+      - { material: RED_NETHER_BRICKS }
+      - { material: RED_NETHER_BRICK_SLAB }
+      - { material: RED_NETHER_BRICK_STAIRS }
+      - { material: RED_NETHER_BRICK_WALL }
+      - { material: WITHER_SKELETON_SKULL }
+      - { material: SKULL_BANNER_PATTERN }
+      - { material: WITHER_ROSE }
+      - { entity: BLAZE, count: 3 }
+      - { entity: WITHER_SKELETON }
+      - { entity: GHAST }
+      - { path: nether/find_fortress }
+      - { path: nether/obtain_blaze_rod }
+      - { path: nether/return_to_sender }
+      - { path: nether/uneasy_alliance }
+      - { stat: BREWINGSTAND_INTERACTION }
+  - id: nether_bastion_loot
+    dimension: nether
+    members:
+      - { material: CRYING_OBSIDIAN }
+      - { material: GILDED_BLACKSTONE }
+      - { material: PIGLIN_BANNER_PATTERN }
+      - { material: MUSIC_DISC_PIGSTEP }
+      - { material: RIB_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { material: SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { path: nether/find_bastion }
+      - { path: nether/explore_nether }
+      - { path: nether/loot_bastion }
+      - { entity: PIGLIN_BRUTE }
+      - { entity: ZOGLIN }
+  # Brewing chain — gated behind nether wart, so HARD and nether-locked.
+  # (LINGERING_POTION lives in singletons.items instead: it needs dragon's breath, so it's End-locked
+  #  and VERY_HARD, not a plain nether brew.)
+  - id: brewing_potions
+    dimension: nether
+    members:
+      - { material: POTION }
+      - { material: SPLASH_POTION }
+      - { path: nether/brew_potion }
+  - id: netherite_progression
+    dimension: nether
+    members:
+      - { material: ANCIENT_DEBRIS }
+      - { material: NETHERITE_SCRAP }
+      - { material: NETHERITE_INGOT }
+      - { material: NETHERITE_BLOCK }
+      - { material: NETHERITE_UPGRADE_SMITHING_TEMPLATE }
+      - { material: NETHERITE_SWORD }
+      - { material: NETHERITE_PICKAXE }
+      - { material: NETHERITE_AXE }
+      - { material: NETHERITE_SHOVEL }
+      - { material: NETHERITE_HOE }
+      - { material: NETHERITE_HELMET }
+      - { material: NETHERITE_CHESTPLATE }
+      - { material: NETHERITE_LEGGINGS }
+      - { material: NETHERITE_BOOTS }
+      - { material: NETHERITE_HORSE_ARMOR }
+      - { material: NETHERITE_NAUTILUS_ARMOR }
+      - { material: NETHERITE_SPEAR }
+      - { material: LODESTONE }
+      - { block: ANCIENT_DEBRIS }
+      - { path: nether/obtain_ancient_debris }
+      - { path: adventure/use_lodestone }
+      - { path: nether/netherite_armor }
+  - id: nether_boss_setup
+    dimension: nether
+    members:
+      - { path: nether/get_wither_skull }
+      - { material: RESPAWN_ANCHOR }
+      - { path: nether/charge_respawn_anchor }
+  - id: nether_ghastling
+    dimension: nether
+    members:
+      - { material: DRIED_GHAST }
+      - { entity: HAPPY_GHAST }
+  - id: wither_boss
+    dimension: nether
+    members:
+      - { material: NETHER_STAR }
+      - { entity: WITHER }
+      - { stat: BEACON_INTERACTION }
+
+  # End progression.
+  # Overworld-obtainable: endermen spawn on the surface at night, so these stay available
+  # even when the End is disabled. Keep ENDER_PEARL out of any the_end category.
+  - id: enderman_overworld
+    dimension: overworld
+    members:
+      - { material: ENDER_PEARL }
+      - { entity: ENDERMAN, count: 3 }
+      - { entity: ENDERMITE }
+  - id: end_access
+    dimension: the_end
+    members:
+      - { material: ENDER_EYE }
+      - { path: story/follow_ender_eye }
+      - { path: end/root }
+  - id: end_basic
+    dimension: the_end
+    members:
+      - { material: END_STONE }
+      - { block: END_STONE, count: 16 }
+      - { material: CHORUS_FRUIT }
+      - { material: POPPED_CHORUS_FRUIT }
+      - { material: CHORUS_FLOWER }
+      - { material: CHORUS_PLANT }
+      - { material: PURPUR_BLOCK }
+      - { material: PURPUR_SLAB }
+      - { material: PURPUR_STAIRS }
+      - { material: PURPUR_PILLAR }
+      - { material: END_STONE_BRICKS }
+      - { material: END_STONE_BRICK_SLAB }
+      - { material: END_STONE_BRICK_STAIRS }
+      - { material: END_STONE_BRICK_WALL }
+      - { material: END_ROD }
+  - id: end_dragon
+    dimension: the_end
+    members:
+      - { material: DRAGON_BREATH }
+      - { material: DRAGON_EGG }
+      - { material: END_CRYSTAL }
+      - { path: end/kill_dragon }
+      - { path: end/dragon_egg }
+      - { path: end/dragon_breath }
+  - id: end_city
+    dimension: the_end
+    members:
+      - { material: SHULKER_BOX }
+      - { material: "*_SHULKER_BOX" }
+      - { material: SHULKER_SHELL }
+      - { material: ELYTRA }
+      - { material: DRAGON_HEAD }
+      - { entity: SHULKER }
+      - { path: end/enter_end_gateway }
+      - { path: end/find_end_city }
+      - { path: end/levitate }
+      - { material: SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE }
+      - { stat: CLEAN_SHULKER_BOX }
+      - { stat: SHULKER_BOX_OPENED }
+      - { stat: AVIATE_ONE_CM, count: 20 }
+
+singletons:
+  items:
+    # 滞留药水需要末影龙息(末地)，故锁定末地、难度 very_hard，不与下界酿造同组。
+    - { material: LINGERING_POTION, dimension: the_end }
+    - { material: FLOWER_POT }
+    - { material: PAINTING }
+    - { material: ARMOR_STAND }
+    - { material: ITEM_FRAME }
+    - { material: CAMPFIRE }
+    - { material: POPPY }
+    - { material: DANDELION }
+    - { material: CORNFLOWER }
+    - { material: OXEYE_DAISY }
+    - { material: TNT }
+    - { material: BEACON }
+  # one_of (集合任务 / collect any one): 拿到列表中任意一种即完成。列表支持 * / ? 通配符。
+  #   icon  — 仅用于稳定标识(objectiveId)；卡面实际图标由代表规则决定：
+  #           颜色家族取白色款，非颜色家族按集合稳定地取一个成员。
+  #   name  — 可选显示名；省略时自动显示本地化的“任意<家族>”(家族名见 lang 的 task.family.*)，
+  #           无法识别家族时回退为“任意：<icon 物品名>”。
+  #   地图卡面会在格子顶部标注一个黄色像素 “ANY” 角标。
+  # 集合可以是颜色家族（床、羊毛），也可以是种类家族（木板、原矿）。
+  sets:
+    # 颜色家族 / colour families
+    - { one_of: ["*_BED"], icon: RED_BED }
+    - { one_of: ["*_WOOL"], icon: WHITE_WOOL }
+    - { one_of: ["*_CARPET"], icon: BLUE_CARPET }
+    - { one_of: ["*_CANDLE"], icon: ORANGE_CANDLE }
+    - { one_of: ["*_CONCRETE_POWDER"], icon: LIME_CONCRETE_POWDER }
+    - { one_of: ["*_CONCRETE"], icon: LIME_CONCRETE }
+    - { one_of: ["*_STAINED_GLASS"], icon: CYAN_STAINED_GLASS }
+    - { one_of: ["*_GLAZED_TERRACOTTA"], icon: MAGENTA_GLAZED_TERRACOTTA }
+    - { one_of: ["*_SHULKER_BOX"], icon: RED_SHULKER_BOX }
+    # 种类家族 / type families
+    - { one_of: ["*_PLANKS"], icon: OAK_PLANKS }
+    - { one_of: ["*_SAPLING"], icon: BIRCH_SAPLING }
+    - { one_of: ["*_LEAVES"], icon: OAK_LEAVES }
+    - { one_of: [TUBE_CORAL, BRAIN_CORAL, BUBBLE_CORAL, FIRE_CORAL, HORN_CORAL], icon: BRAIN_CORAL }
+    - { one_of: [RAW_IRON, RAW_COPPER, RAW_GOLD], icon: RAW_IRON, count: 3 }
+    - { one_of: ["*_HORSE_ARMOR"], icon: IRON_HORSE_ARMOR }
+    - { one_of: ["MUSIC_DISC_*"], icon: MUSIC_DISC_CAT }
+    - { one_of: ["*_DYE"], icon: RED_DYE }
+    - { one_of: ["*_BANNER"], icon: WHITE_BANNER }
+    - { one_of: [ZOMBIE_HEAD, SKELETON_SKULL, CREEPER_HEAD, PIGLIN_HEAD, WITHER_SKELETON_SKULL], icon: SKELETON_SKULL }
+    - { one_of: [PUFFERFISH_BUCKET, TROPICAL_FISH_BUCKET, COD_BUCKET, SALMON_BUCKET, AXOLOTL_BUCKET, TADPOLE_BUCKET], icon: TROPICAL_FISH_BUCKET }
+    - { one_of: ["*_ARMOR_TRIM_SMITHING_TEMPLATE"], icon: SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE }
+  # 指定效果药水任务 / effect-specific potions: 酿造或获得指定效果的药水即完成。
+  #   effect — 药水效果(strength / night_vision / ...)，"*" 展开为全部可酿造效果(见 PotionTask.BREWABLE)。
+  #   form   — normal(可饮用) / splash(喷溅) / lingering(滞留)。
+  #   同一 form 共用一个分类，故每张卡每种 form 最多出 1 个药水任务；难度见 tierlist 的 potion:* 规则。
+  #   滞留药水需末影龙息，锁定末地；其余药水需酿造(下界)。
+  potions:
+    - { effect: "*", form: normal,    category: potion_normal,    dimension: nether }
+    - { effect: "*", form: splash,    category: potion_splash,    dimension: nether }
+    - { effect: "*", form: lingering, category: potion_lingering, dimension: the_end }
+  advancements:
+    - { path: story/mine_stone }
+    - { path: story/upgrade_tools }
+    - { path: story/lava_bucket }
+    - { path: story/cure_zombie_villager }
+    - { path: husbandry/tame_an_animal }
+    - { path: adventure/honey_block_slide }
+    - { path: adventure/ol_betsy }
+  mine:
+    - { block: OBSIDIAN, count: 4 }
+    - { block: EMERALD_ORE, count: 3 }
+    - { block: GLOWSTONE, count: 8, dimension: nether }
+    - { block: MAGMA_BLOCK, count: 8, dimension: nether }
+    - { block: SOUL_SAND, count: 8, dimension: nether }
+    - { block: PACKED_ICE, count: 8 }
+    - { block: CLAY, count: 8 }
+    - { block: SCULK, count: 8 }
+  kill:
+    - { entity: WITCH, count: 3 }
+    - { entity: MAGMA_CUBE, count: 3, dimension: nether }

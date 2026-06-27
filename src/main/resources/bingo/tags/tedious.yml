@@ -1,0 +1,28 @@
+# "tedious" tag — grindy / time-consuming objectives.
+#
+# This file only DEFINES the tag; it changes nothing until you reference it in config.yml:
+#   filters:
+#     exclude: [tedious]      # never show these
+#   # or
+#     caps: { tedious: 2 }    # at most 2 per card
+#
+# values are objective-id globs (same ids as the tier list):
+#   item=material name; mine:/craft:/kill:/stat:/advancement:/set: prefixes; * ? wildcards.
+values:
+  - BEACON
+  - CONDUIT
+  - NETHER_STAR
+  - DRAGON_EGG
+  - DRAGON_HEAD
+  - HEAVY_CORE
+  - "*_SHULKER_BOX"
+  - "set:*SHULKER_BOX"
+  - "advancement:adventure/adventuring_time"
+  - "advancement:husbandry/balanced_diet"
+  - "advancement:husbandry/bred_all_animals"
+  - "advancement:nether/all_effects"
+  - "advancement:nether/all_potions"
+  - "advancement:nether/create_full_beacon"
+  - "advancement:end/respawn_dragon"
+  - "advancement:adventure/trim_with_all_exclusive_armor_patterns"
+  - "stat:BEACON_INTERACTION"

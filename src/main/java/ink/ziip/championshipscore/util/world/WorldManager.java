@@ -12,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 
 /**
@@ -33,6 +34,27 @@ public class WorldManager extends BaseManager {
     @Override
     public void unload() {
 
+    }
+
+    /**
+     * The on-disk parent directory that holds every world folder. Since MC 26.1 custom worlds are
+     * stored as dimensions under {@code <level>/dimensions/minecraft/} instead of as top-level folders
+     * in the server container, so {@link org.bukkit.Server#getWorldContainer()} no longer points at
+     * them. The main world is always loaded and always first, so its folder's parent is the common
+     * parent of every world dimension. Must be called on the main thread.
+     */
+    public File getDimensionsContainer() {
+        return Bukkit.getWorlds().get(0).getWorldFolder().getParentFile();
+    }
+
+    /**
+     * Resolves the on-disk folder for {@code worldName} under the MC 26.1 dimensions layout, working
+     * even when that world is not loaded. Folder names are lower-cased with spaces replaced by
+     * underscores, matching how the server names dimension folders.
+     */
+    public File getWorldFolder(String worldName) {
+        String folder = worldName.toLowerCase(Locale.ENGLISH).replace(' ', '_');
+        return new File(getDimensionsContainer(), folder);
     }
 
     public void createEmptyWorld(String name, World.Environment environment) {
@@ -111,7 +133,7 @@ public class WorldManager extends BaseManager {
         unloadWorld(name, false);
 
         if (removeFile) {
-            File target = new File(plugin.getServer().getWorldContainer().getAbsolutePath(), name);
+            File target = getWorldFolder(name);
             deleteWorldFiles(target);
         }
     }

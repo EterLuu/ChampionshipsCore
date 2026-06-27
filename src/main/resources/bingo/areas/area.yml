@@ -1,0 +1,27 @@
+dont-edit-this:
+  version: 1
+name: "area"
+# Round duration in seconds.
+timer: 1200
+# Preparation countdown before the round starts, in seconds.
+prepare-time: 10
+# Card width (3 or 5). A 5-wide card has 12 lines (5 rows + 5 cols + 2 diagonals).
+card-width: 5
+# Optional explicit spectator viewpoint; defaults to the bingo world spawn when unset.
+spectator-spawn-point:
+# area-pos is unused for bingo (whole-world play) but kept for the config contract.
+area-pos1:
+area-pos2:
+# Players are randomly scattered into a ring around the bingo world spawn at round start.
+scatter-ring-radius: 1000
+scatter-ring-jitter: 300
+scatter-max-tries: 32
+# Points by completion rank: 1st team to complete a cell=50, 2nd=40, 3rd=30, 4th=20, 5th=10,
+# and the last value is the floor for the 6th team and beyond (=5).
+points-per-rank: [ 50, 40, 30, 20, 10, 5 ]
+# Line bonuses are per-team and independent of other teams (each team can earn all 12 lines).
+# First `line-bonus-major-count` lines each award `line-bonus`; the rest award `line-bonus-minor`.
+# Default: first 4 lines = 200 each, remaining 8 lines = 100 each.
+line-bonus: 200
+line-bonus-major-count: 4
+line-bonus-minor: 100

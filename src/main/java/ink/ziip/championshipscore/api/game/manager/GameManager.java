@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
 import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
+import ink.ziip.championshipscore.api.game.bingo.BingoManager;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
@@ -49,6 +50,8 @@ public class GameManager extends BaseManager {
     private final ParkourWarriorManager parkourWarriorManager;
     @Getter
     private final HotyCodyDuskyManager hotyCodyDuskyManager;
+    @Getter
+    private final BingoManager bingoManager;
     /**
      * Registry mapping each game type to its area manager. Drives the generic
      * {@code join*} dispatch so adding a game only requires registering it here.
@@ -67,7 +70,9 @@ public class GameManager extends BaseManager {
         snowballShowdownManager = new SnowballShowdownManager(plugin);
         parkourWarriorManager = new ParkourWarriorManager(plugin);
         hotyCodyDuskyManager = new HotyCodyDuskyManager(plugin);
+        bingoManager = new BingoManager(plugin);
 
+        areaManagers.put(GameTypeEnum.Bingo, bingoManager);
         areaManagers.put(GameTypeEnum.BattleBox, battleBoxManager);
         areaManagers.put(GameTypeEnum.ParkourTag, parkourTagManager);
         areaManagers.put(GameTypeEnum.SkyWars, skyWarsManager);
