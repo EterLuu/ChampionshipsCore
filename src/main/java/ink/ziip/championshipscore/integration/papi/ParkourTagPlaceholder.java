@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
+import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagMatch;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.Location;
@@ -28,29 +29,31 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
     @Override
     protected String onGameRequest(OfflinePlayer offlinePlayer, String params) {
 
-        /* Non-Player required placeholders */
+        /* Match-relative placeholders (the requesting player's own match within the area) */
 
-        if (params.startsWith("area_team_")) {
-            ParkourTagArea parkourTagArea = resolveArea(params, "area_team_", offlinePlayer);
-            if (parkourTagArea == null) {
+        if (params.startsWith("area_team_") || params.startsWith("area_rival_")) {
+            boolean rival = params.startsWith("area_rival_");
+            ParkourTagArea parkourTagArea = resolveArea(params, rival ? "area_rival_" : "area_team_", offlinePlayer);
+            Player matchPlayer = offlinePlayer.getPlayer();
+            if (parkourTagArea == null || matchPlayer == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            ChampionshipTeam championshipTeam = parkourTagArea.getLeftChampionshipTeam();
-            if (championshipTeam == null) {
+            ParkourTagMatch match = parkourTagArea.matchOf(matchPlayer);
+            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(matchPlayer);
+            if (match == null || team == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getName();
-        }
-        if (params.startsWith("area_rival_")) {
-            ParkourTagArea parkourTagArea = resolveArea(params, "area_rival_", offlinePlayer);
-            if (parkourTagArea == null) {
+            ChampionshipTeam result;
+            if (rival) {
+                result = team.equals(match.getRight()) ? match.getLeft()
+                        : team.equals(match.getLeft()) ? match.getRight() : null;
+            } else {
+                result = team;
+            }
+            if (result == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            ChampionshipTeam championshipTeam = parkourTagArea.getRightChampionshipTeam();
-            if (championshipTeam == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            return championshipTeam.getName();
+            return result.getName();
         }
 
         /* Player required placeholders */

@@ -1,0 +1,16 @@
+name: "黄金塔"
+stars: 7
+# A 2x2 gold-block column, three blocks tall — the golden (7-star) order.
+blocks:
+  - "0,0,0=minecraft:gold_block"
+  - "1,0,0=minecraft:gold_block"
+  - "0,0,1=minecraft:gold_block"
+  - "1,0,1=minecraft:gold_block"
+  - "0,1,0=minecraft:gold_block"
+  - "1,1,0=minecraft:gold_block"
+  - "0,1,1=minecraft:gold_block"
+  - "1,1,1=minecraft:gold_block"
+  - "0,2,0=minecraft:gold_block"
+  - "1,2,0=minecraft:gold_block"
+  - "0,2,1=minecraft:gold_block"
+  - "1,2,1=minecraft:gold_block"

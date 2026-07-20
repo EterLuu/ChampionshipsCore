@@ -287,7 +287,8 @@ public class BingoArea extends BaseSingleTeamArea {
 
     /**
      * Ensures a participant is holding their team's card map: a no-op if one is already present,
-     * otherwise a fresh copy is added (dropped at their feet if the inventory is full).
+     * otherwise a fresh copy is placed in the off-hand (empty at round start — the kit never fills it),
+     * falling back to any free slot, and dropped at their feet only when the inventory is full.
      */
     public void ensureCardFor(Player player) {
         if (player == null || round == null || player.isDead()) return;
@@ -299,10 +300,17 @@ public class BingoArea extends BaseSingleTeamArea {
         }
         round.mapItem(team).ifPresent(map -> {
             ItemStack card = map.clone();
-            if (!inv.addItem(card).isEmpty()) {
+            if (isEmpty(player.getInventory().getItemInOffHand())) {
+                player.getInventory().setItemInOffHand(card);
+            } else if (!inv.addItem(card).isEmpty()) {
                 player.getWorld().dropItem(player.getLocation(), card);
             }
         });
+    }
+
+    /** True when an inventory slot holds nothing (null or an air stack). */
+    private static boolean isEmpty(ItemStack item) {
+        return item == null || item.getType().isAir();
     }
 
     private long roundSeconds() {

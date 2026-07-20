@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.bingo.world;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRules;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 
@@ -39,7 +40,10 @@ public final class BingoWorldManager {
 
     private World ensureWorld(String name, World.Environment environment) {
         World existing = Bukkit.getWorld(name);
-        if (existing != null) return existing;
+        if (existing != null) {
+            disableSpectatorChunkGen(existing);
+            return existing;
+        }
 
         // Vanilla terrain generation: deliberately no custom generator (the shared WorldManager uses a
         // VoidChunkGenerator for arena games; bingo needs real terrain to explore).
@@ -51,7 +55,20 @@ public final class BingoWorldManager {
             return null;
         }
         world.setAutoSave(true);
+        disableSpectatorChunkGen(world);
         plugin.getLogger().info("[Bingo] 世界已就绪：" + name + "（" + environment + "）");
         return world;
+    }
+
+    /**
+     * Spectators flying ahead of survivors shouldn't pre-generate terrain (lag + world bloat). A freshly
+     * generated world defaults to {@code spectatorsGenerateChunks=true}; bake the rule in here, on both
+     * first creation and subsequent loads, so it holds regardless of when players enter.
+     */
+    private void disableSpectatorChunkGen(World world) {
+        try {
+            world.setGameRule(GameRules.SPECTATORS_GENERATE_CHUNKS, false);
+        } catch (Throwable ignored) {
+        }
     }
 }

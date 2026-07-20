@@ -11,6 +11,7 @@ import lombok.Setter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.block.sign.Side;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -54,7 +55,7 @@ public class BattleBoxHandler extends BaseListener {
                 if (block != null) {
                     if (block.getType() == Material.BIRCH_WALL_SIGN) {
                         Sign sign = (Sign) block.getState();
-                        String kit = ChatColor.stripColor(sign.getSide(Side.FRONT).getLine(0));
+                        String kit = PlainTextComponentSerializer.plainText().serialize(sign.getSide(Side.FRONT).line(0));
                         BBWeaponKitEnum type = getBbWeaponKitEnum(kit);
                         if (type != null) {
                             if (battleBoxArea.setPlayerWeaponKit(player, type)) {
@@ -167,7 +168,8 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (!event.getBlock().getLocation().toVector().isInAABB(battleBoxArea.getGameConfig().getWoolPos1(), battleBoxArea.getGameConfig().getWoolPos2())) {
+        BattleBoxMatch match = battleBoxArea.matchOf(player);
+        if (match == null || !match.isInWool(event.getBlock().getLocation().toVector())) {
             event.setCancelled(true);
         }
 
@@ -191,7 +193,8 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (!event.getBlock().getLocation().toVector().isInAABB(battleBoxArea.getGameConfig().getWoolPos1(), battleBoxArea.getGameConfig().getWoolPos2())) {
+        BattleBoxMatch match = battleBoxArea.matchOf(player);
+        if (match == null || !match.isInWool(event.getBlock().getLocation().toVector())) {
             event.setCancelled(true);
         }
 

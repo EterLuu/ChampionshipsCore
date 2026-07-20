@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 5
+  version: 6
 no-permission: "#696969&l[#696969!#696969]&r &4你没有权限！"
 prefix: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r"
 server-full: "服务器已经满人！"
@@ -74,6 +74,7 @@ game:
   parkourwarrior: "跑路战士"
   hotycodydusky: "烫手鳕鱼"
   bingo: "宾果"
+  buildmart: "建材集市"
   game-weight: "#ededed====== #31e061S²#dbffe5#e42d3eCC #fff566游戏权值 #696969| #e42d3eRIA #edededx #24abffTRIALHAMMER #edededx &dINF&r #ededed======"
   game-weight-info: "&r  #ededed%game%. #24abff%weight%#696969（&6%total_point%#696969）"
 battlebox:
@@ -192,6 +193,30 @@ bingo:
   action-bar-count-down: "#24abff剩余时间：#ff6b26%time%#24abff 秒。"
   task-completed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%player% #6完成了 #fff566%task% #696969(+%points%)"
   game-winner: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #fff566获胜队伍：%team% #696969(%points% 分)"
+buildmart:
+  start-preparation: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed建材集市即将开始。"
+  start-preparation-title: "#ff6b26[&e建材集市#ff6b26]"
+  start-preparation-subtitle: "#ededed游戏即将开始"
+  game-start: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ff6b26建材集市开始！前往资源市场采集建材，按蓝图建造！"
+  game-start-title: "#ff6b26[&e建材集市#ff6b26]"
+  game-start-subtitle: "&6开始建造！"
+  game-end: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969建材集市结束。"
+  game-end-title: "#ff6b26[&e建材集市#ff6b26]"
+  game-end-subtitle: "#696969游戏结束。"
+  action-bar-count-down: "#24abff剩余时间：#ff6b26%time%#24abff 秒。"
+  build-completed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed%team% #6完成了 #fff566%blueprint% #696969(%stars%★ +%points%)"
+  golden-build-completed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r &6✦ #ededed%team% #6完成了黄金建筑 #fff566%blueprint% #696969(+%points%)"
+  golden-refreshed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r &6✦ 新的黄金建筑已在展示区刷新！限时 2 分钟。"
+  golden-expired: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #696969黄金建筑已过期，未完成的黄金区已清空。"
+  blueprint-selected: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed已选择蓝图 #fff566%blueprint% #696969(%stars%★)，参考建筑已生成。"
+  blueprint-refreshed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed地块蓝图已刷新为 #fff566%blueprint% #696969(%stars%★)，原有建造已清空。"
+  refresh-used: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ff6b26该地块的刷新机会已用完。"
+  no-free-slot: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ff6b26没有空闲的建造地块，请先完成现有建筑。"
+  submit-incomplete: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ff6b26%blueprint% #ededed尚未完成 #696969(%matched%/%total% 方块)，请修正后再提交。"
+  library-refreshed: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed蓝图库已刷新可选建筑列表。"
+  award-entrepreneur: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #fff566企业家（总星级最高）：%team%"
+  award-chef: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #fff566厨师（完成最多）：%team%"
+  award-quality: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #fff566质量保证（平均星级最高）：%team%"
 tntrun:
   start-preparation: "#bababa[#31e061S²#dbffe5#e42d3eCC#bababa]&r #ededed游戏即将开始（本次倒计时结束后直接开始游戏）。"
   start-preparation-title: "&4[#ff6b26TNTRun&4]"

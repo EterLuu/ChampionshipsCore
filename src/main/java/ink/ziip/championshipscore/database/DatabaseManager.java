@@ -23,11 +23,26 @@ public class DatabaseManager extends BaseManager {
 
     @Override
     public void load() {
-        if (CCConfig.DATABASE_TYPE.equals("MARIADB"))
+        if (CCConfig.DATABASE_TYPE.equals("MARIADB")) {
             this.driverClass = "org.mariadb.jdbc.Driver";
-        else
+            // The pool holds connections open for their whole lifetime, so the driver's
+            // connection-close packet class is never loaded during normal operation.
+            // HikariCP closes pooled connections asynchronously on its "connection-closer"
+            // thread; at server shutdown that thread outlives the plugin classloader and
+            // would throw NoClassDefFoundError the first time it loads QuitPacket. Preload
+            // it now while the classloader is alive so the cached class is used at shutdown.
+            preloadClass("org.mariadb.jdbc.message.client.QuitPacket");
+        } else {
             this.driverClass = "com.mysql.cj.jdbc.Driver";
+        }
         initialize();
+    }
+
+    private void preloadClass(String className) {
+        try {
+            Class.forName(className);
+        } catch (Throwable ignored) {
+        }
     }
 
     @Override
@@ -46,7 +61,7 @@ public class DatabaseManager extends BaseManager {
         dataSource.setDriverClassName(driverClass);
 
         if (CCConfig.DATABASE_TYPE.equals("MARIADB"))
-            dataSource.setJdbcUrl("jdbc:mariadb://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8?useMysqlMetadata=true");
+            dataSource.setJdbcUrl("jdbc:mariadb://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
         else
             dataSource.setJdbcUrl("jdbc:mysql://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
         dataSource.setUsername(CCConfig.DATABASE_USERNAME);

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
+import ink.ziip.championshipscore.api.game.battlebox.BattleBoxMatch;
 import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
 import ink.ziip.championshipscore.api.object.game.battlebox.BBWeaponKitEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -28,29 +29,25 @@ public class BattleBoxPlaceholder extends BaseGamePlaceholder<BattleBoxArea> {
     @Override
     protected String onGameRequest(OfflinePlayer offlinePlayer, String params) {
 
-        /* Non-Player required placeholders */
+        /* Match-relative placeholders (the requesting player's own match within the area) */
 
-        if (params.startsWith("area_team_")) {
-            BattleBoxArea battleBoxArea = resolveArea(params, "area_team_", offlinePlayer);
-            if (battleBoxArea == null) {
+        if (params.startsWith("area_team_") || params.startsWith("area_rival_")) {
+            boolean rival = params.startsWith("area_rival_");
+            BattleBoxArea battleBoxArea = resolveArea(params, rival ? "area_rival_" : "area_team_", offlinePlayer);
+            Player matchPlayer = offlinePlayer.getPlayer();
+            if (battleBoxArea == null || matchPlayer == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            ChampionshipTeam championshipTeam = battleBoxArea.getLeftChampionshipTeam();
-            if (championshipTeam == null) {
+            BattleBoxMatch match = battleBoxArea.matchOf(matchPlayer);
+            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(matchPlayer);
+            if (match == null || team == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getName();
-        }
-        if (params.startsWith("area_rival_")) {
-            BattleBoxArea battleBoxArea = resolveArea(params, "area_rival_", offlinePlayer);
-            if (battleBoxArea == null) {
+            ChampionshipTeam result = rival ? match.rivalOf(team) : team;
+            if (result == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            ChampionshipTeam championshipTeam = battleBoxArea.getRightChampionshipTeam();
-            if (championshipTeam == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            return championshipTeam.getName();
+            return result.getName();
         }
 
         /* Player required placeholders */

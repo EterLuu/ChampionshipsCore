@@ -7,6 +7,8 @@ public class TNTRunAreaMainCommand extends BaseMainCommand {
         super("tntrun", "TNT奔跑场地");
         addSubCommand(new TNTRunAreaAddSubCommand());
         addSubCommand(new TNTRunAreaSetSubCommand());
+        addSubCommand(new TNTRunSchematicSubCommand());
+        addSubCommand(new TNTRunPrepareSubCommand());
         addSubCommand(new TNTRunAreaSaveSubCommand());
     }
 }

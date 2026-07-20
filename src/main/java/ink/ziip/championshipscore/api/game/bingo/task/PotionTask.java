@@ -52,15 +52,21 @@ public record PotionTask(Form form, String effect, int count, Dimension dimensio
 
     /**
      * Every brewable potion type a card can fairly ask for. Includes the ominous effects
-     * (oozing/weaving/wind_charging/infestation) and the brewable bases (mundane/thick/awkward — they
+     * (oozing/weaving/wind_charged/infested) and the brewable bases (mundane/thick/awkward — they
      * share the no-effect default appearance). Excludes only the un-brewable water bottle and the
      * creative/command-only luck. Used to expand a {@code "*"} effect in the card pool.
+     *
+     * <p>Keys are the vanilla {@link PotionType} names lower-cased, so they round-trip through both
+     * {@link #potionType()} (completion matching) and the {@code item.minecraft.*.effect.*} translation
+     * keys (display name). {@code wind_charged}/{@code infested} are the real enum names — earlier
+     * {@code wind_charging}/{@code infestation} spellings never matched a held potion and so could not
+     * be completed.
      */
     public static final List<String> BREWABLE = List.of(
             "night_vision", "invisibility", "leaping", "fire_resistance", "swiftness", "slowness",
             "water_breathing", "healing", "harming", "poison", "regeneration", "strength", "weakness",
             "turtle_master", "slow_falling",
-            "oozing", "weaving", "wind_charging", "infestation",
+            "oozing", "weaving", "wind_charged", "infested",
             "mundane", "thick", "awkward");
 
     public PotionTask {

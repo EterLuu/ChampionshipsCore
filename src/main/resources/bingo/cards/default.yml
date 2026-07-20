@@ -247,7 +247,6 @@ categories:
       - { material: MILK_BUCKET }
       - { material: GLISTERING_MELON_SLICE }
       - { material: FERMENTED_SPIDER_EYE }
-      - { material: SUSPICIOUS_STEW }
       - { stat: INTERACT_WITH_SMOKER }
       - { stat: CAKE_SLICES_EATEN, count: 3 }
   - id: books_and_paper
@@ -925,7 +924,6 @@ categories:
       - { material: RESIN_BRICK_STAIRS }
       - { material: RESIN_BRICK_WALL }
       - { material: CREAKING_HEART }
-      - { entity: CREAKING }
   - id: overland_misc_biome
     dimension: overworld
     members:
@@ -1022,7 +1020,6 @@ categories:
       - { material: GOLDEN_APPLE }
       - { material: ENCHANTED_GOLDEN_APPLE }
       - { material: MOJANG_BANNER_PATTERN }
-      - { material: ENCHANTED_BOOK }
       - { material: EXPERIENCE_BOTTLE }
       - { material: COBWEB }
       - { material: CHAINMAIL_HELMET }
@@ -1560,7 +1557,7 @@ singletons:
     - { one_of: ["*_PLANKS"], icon: OAK_PLANKS }
     - { one_of: ["*_SAPLING"], icon: BIRCH_SAPLING }
     - { one_of: ["*_LEAVES"], icon: OAK_LEAVES }
-    - { one_of: [TUBE_CORAL, BRAIN_CORAL, BUBBLE_CORAL, FIRE_CORAL, HORN_CORAL], icon: BRAIN_CORAL }
+    - { one_of: ["*_CORAL"], icon: BRAIN_CORAL }
     - { one_of: [RAW_IRON, RAW_COPPER, RAW_GOLD], icon: RAW_IRON, count: 3 }
     - { one_of: ["*_HORSE_ARMOR"], icon: IRON_HORSE_ARMOR }
     - { one_of: ["MUSIC_DISC_*"], icon: MUSIC_DISC_CAT }
@@ -1569,6 +1566,12 @@ singletons:
     - { one_of: [ZOMBIE_HEAD, SKELETON_SKULL, CREEPER_HEAD, PIGLIN_HEAD, WITHER_SKELETON_SKULL], icon: SKELETON_SKULL }
     - { one_of: [PUFFERFISH_BUCKET, TROPICAL_FISH_BUCKET, COD_BUCKET, SALMON_BUCKET, AXOLOTL_BUCKET, TADPOLE_BUCKET], icon: TROPICAL_FISH_BUCKET }
     - { one_of: ["*_ARMOR_TRIM_SMITHING_TEMPLATE"], icon: SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE }
+    # 任意附魔书 -- 单成员集合：拿到任意一本附魔书（任意魔咒）即完成。
+    - { one_of: [ENCHANTED_BOOK], icon: ENCHANTED_BOOK }
+    # 任意旗帜图案 -- 拿到任意一种旗帜图案即完成（与各具体图案任务并存，靠 item 主体去重）。
+    - { one_of: ["*_BANNER_PATTERN"], icon: GLOBE_BANNER_PATTERN }
+    # 任意迷之炖菜 -- 单成员集合：拿到任意一碗迷之炖菜（任意效果）即完成。
+    - { one_of: [SUSPICIOUS_STEW], icon: SUSPICIOUS_STEW }
   # 指定效果药水任务 / effect-specific potions: 酿造或获得指定效果的药水即完成。
   #   effect — 药水效果(strength / night_vision / ...)，"*" 展开为全部可酿造效果(见 PotionTask.BREWABLE)。
   #   form   — normal(可饮用) / splash(喷溅) / lingering(滞留)。

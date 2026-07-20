@@ -6,13 +6,12 @@ import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
-import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -20,14 +19,11 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * Modified under <a href="https://github.com/AlessioDP/ADP-Core">ADP-Core</a>
@@ -42,7 +38,9 @@ public abstract class BaseConfigurationFile {
     @Getter
     protected YamlConfiguration configuration;
     protected Path configurationPath;
-    private boolean loadingDefaultOptions = false;
+    // True while loading the bundled resource template (see loadDefaultOptions); null placeholders in
+    // the template are expected, so "missing field" warnings are suppressed until the real file loads.
+    protected boolean loadingDefaults = false;
 
     /**
      * Initialize the configuration into the path of plugin folder
@@ -56,11 +54,11 @@ public abstract class BaseConfigurationFile {
         configuration = new YamlConfiguration();
         try {
             configuration.options().indent(2);
-            loadConfigurationFile(configuration);
+            configuration.load(configurationPath.toFile());
 
             loadFileOptions();
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file. " + getFileName(), exception);
+            plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file.");
         }
     }
 
@@ -112,11 +110,10 @@ public abstract class BaseConfigurationFile {
             for (Field field : fields) {
                 ConfigOption co = field.getAnnotation(ConfigOption.class);
                 if (co != null) {
-                    configuration.set(co.path(), serializeConfigValue(field.get(null)));
+                    configuration.set(co.path(), field.get(null));
                 }
             }
 
-            normalizeLocationValues(configuration);
             configuration.save(configurationPath.toFile());
         } catch (Exception exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to save configuration option. ", exception);
@@ -137,15 +134,17 @@ public abstract class BaseConfigurationFile {
             YamlConfiguration yamlConfiguration = new YamlConfiguration();
             InputStream inputStream = plugin.getResource(getResourceName());
             if (inputStream != null) {
-                yamlConfiguration.loadFromString(normalizeLocationYaml(new String(inputStream.readAllBytes())));
-                loadingDefaultOptions = true;
+                yamlConfiguration.loadFromString(new String(inputStream.readAllBytes()));
+                // The bundled resource is a template whose placeholders (e.g. area spawn points) are
+                // intentionally empty; don't warn about them - real values come from the on-disk file.
+                loadingDefaults = true;
                 try {
                     loadFromConfiguration(yamlConfiguration);
-                } finally {
-                    loadingDefaultOptions = false;
-                }
 
-                loadCustomDefaultOptions();
+                    loadCustomDefaultOptions();
+                } finally {
+                    loadingDefaults = false;
+                }
             }
         } catch (InvalidConfigurationException | IOException e) {
             throw new RuntimeException(e);
@@ -198,16 +197,20 @@ public abstract class BaseConfigurationFile {
                     }
 
                     // Otherwise get it normally
-                    if (value == null) value = getConfigValue(yamlConfiguration, configOption.path(), field.getType());
+                    if (value == null) value = yamlConfiguration.get(configOption.path());
 
-                    if (value == null)
+                    // Locations may be stored as a raw section (world/world_key + x/y/z/yaw/pitch,
+                    // without the '==' marker); rebuild them so field.set doesn't throw.
+                    value = coerceLocationSection(value, field);
+
+                    if (value == null && !loadingDefaults && !configOption.nullable())
                         plugin.getLogger().log(Level.SEVERE, "Warning, null value found: " + configOption.path() + "/" + getFileName());
 
                     if (value != null) {
                         if (value instanceof String)
                             value = Utils.translateColorCodes((String) value);
                         field.set(null, value);
-                    } else if (!configOption.nullable() && !isLoadingDefaultOptions()) {
+                    } else if (!configOption.nullable() && !loadingDefaults) {
                         plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file. " + configOption.path() + "/" + getFileName());
                     }
                 } catch (Exception exception) {
@@ -215,6 +218,27 @@ public abstract class BaseConfigurationFile {
                 }
             }
         }
+    }
+
+    /**
+     * Locations may be stored on disk as a raw section (world/world_key + x/y/z/yaw/pitch, without the
+     * '==' marker Bukkit uses to auto-deserialize). Rebuild such a section into a Location; the world
+     * may not be loaded yet at config-load time, so it is left null rather than throwing. Shared by
+     * {@link #loadFromConfiguration} and {@link ink.ziip.championshipscore.api.game.config.BaseGameConfig#loadFromConfiguration}.
+     */
+    protected Object coerceLocationSection(Object value, Field field) {
+        if (value instanceof ConfigurationSection && field.getType() == Location.class) {
+            ConfigurationSection section = (ConfigurationSection) value;
+            World world = null;
+            if (section.contains("world_key")) {
+                world = plugin.getServer().getWorld(NamespacedKey.fromString(section.getString("world_key")));
+            } else if (section.contains("world")) {
+                world = plugin.getServer().getWorld(section.getString("world"));
+            }
+            value = new Location(world, section.getDouble("x"), section.getDouble("y"), section.getDouble("z"),
+                    (float) section.getDouble("yaw"), (float) section.getDouble("pitch"));
+        }
+        return value;
     }
 
     /**
@@ -258,11 +282,10 @@ public abstract class BaseConfigurationFile {
             for (Field field : fields) {
                 ConfigOption co = field.getAnnotation(ConfigOption.class);
                 if (co != null && yamlConfiguration.get(co.path()) != null) {
-                    configuration.set(co.path(), serializeConfigValue(getConfigValue(yamlConfiguration, co.path(), field.getType())));
+                    configuration.set(co.path(), yamlConfiguration.get(co.path()));
                 }
             }
 
-            normalizeLocationValues(configuration);
             configuration.save(configurationPath.toFile());
 
             // Reload options from the file
@@ -292,234 +315,4 @@ public abstract class BaseConfigurationFile {
      * @return the latest configuration version
      */
     public abstract int getLatestVersion();
-
-    protected boolean isLoadingDefaultOptions() {
-        return loadingDefaultOptions;
-    }
-
-    private void loadConfigurationFile(@NotNull YamlConfiguration target) throws IOException, InvalidConfigurationException {
-        if (repairLocationSerialization()) {
-            plugin.getLogger().warning("Repaired Location serialization in " + getFileName());
-        }
-        target.load(configurationPath.toFile());
-    }
-
-    private boolean repairLocationSerialization() throws IOException {
-        String original = Files.readString(configurationPath, StandardCharsets.UTF_8);
-        String repaired = normalizeLocationYaml(original);
-        if (original.equals(repaired)) {
-            return false;
-        }
-        Files.writeString(configurationPath, repaired, StandardCharsets.UTF_8);
-        return true;
-    }
-
-    private String normalizeLocationYaml(String content) {
-        return flattenLocationWorldSections(stripLocationSerializationTags(content));
-    }
-
-    private String stripLocationSerializationTags(String content) {
-        String[] lines = content.split("\\R", -1);
-        StringBuilder builder = new StringBuilder(content.length());
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            String trimmed = line.trim();
-            if (!trimmed.equals("==: org.bukkit.Location") && !trimmed.equals("==: Location")) {
-                builder.append(line);
-                if (i < lines.length - 1) {
-                    builder.append('\n');
-                }
-            }
-        }
-        return builder.toString();
-    }
-
-    private String flattenLocationWorldSections(String content) {
-        String[] lines = content.split("\\R", -1);
-        StringBuilder builder = new StringBuilder(content.length());
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            if (line.trim().equals("world:")) {
-                int indent = countIndent(line);
-                int end = i + 1;
-                String worldName = null;
-                while (end < lines.length) {
-                    String child = lines[end];
-                    if (!child.isBlank() && countIndent(child) <= indent) {
-                        break;
-                    }
-                    String trimmed = child.trim();
-                    if (trimmed.startsWith("name:")) {
-                        worldName = trimmed.substring("name:".length()).trim();
-                    }
-                    end++;
-                }
-                if (worldName != null && !worldName.isBlank()) {
-                    builder.append(line, 0, line.indexOf("world:")).append("world: ").append(worldName);
-                    if (end < lines.length || !lines[end - 1].isEmpty()) {
-                        builder.append('\n');
-                    }
-                    i = end - 1;
-                    continue;
-                }
-            }
-            builder.append(line);
-            if (i < lines.length - 1) {
-                builder.append('\n');
-            }
-        }
-        return builder.toString();
-    }
-
-    private int countIndent(String line) {
-        int indent = 0;
-        while (indent < line.length() && line.charAt(indent) == ' ') {
-            indent++;
-        }
-        return indent;
-    }
-
-    protected Object getConfigValue(@NotNull YamlConfiguration yamlConfiguration, @NotNull String path, @NotNull Class<?> targetType) {
-        if (targetType == Location.class) {
-            Location location = getLocationValue(yamlConfiguration, path);
-            if (location != null) {
-                return location;
-            }
-        }
-        if (targetType == Vector.class) {
-            Vector vector = getVectorValue(yamlConfiguration, path);
-            if (vector != null) {
-                return vector;
-            }
-        }
-        if (ConfigurationSection.class.isAssignableFrom(targetType)) {
-            ConfigurationSection section = yamlConfiguration.getConfigurationSection(path);
-            if (section != null) {
-                return section;
-            }
-        }
-        return yamlConfiguration.get(path);
-    }
-
-    protected Object serializeConfigValue(Object value) {
-        if (value instanceof Location location) {
-            Map<String, Object> serialized = new LinkedHashMap<>();
-            serialized.put("world", location.getWorld() != null ? location.getWorld().getName() : null);
-            serialized.put("x", location.getX());
-            serialized.put("y", location.getY());
-            serialized.put("z", location.getZ());
-            serialized.put("pitch", location.getPitch());
-            serialized.put("yaw", location.getYaw());
-            return serialized;
-        }
-        return value;
-    }
-
-    protected void normalizeLocationValues(@NotNull ConfigurationSection section) {
-        for (String key : section.getKeys(false)) {
-            Object value = section.get(key);
-            if (value instanceof Location) {
-                section.set(key, serializeConfigValue(value));
-                continue;
-            }
-            ConfigurationSection child = section.getConfigurationSection(key);
-            if (child != null) {
-                normalizeLocationValues(child);
-            }
-        }
-    }
-
-    protected Location getLocationValue(@NotNull YamlConfiguration yamlConfiguration, @NotNull String path) {
-        Object value = yamlConfiguration.get(path);
-        if (value instanceof Location location) {
-            return location;
-        }
-
-        ConfigurationSection section = yamlConfiguration.getConfigurationSection(path);
-        if (section == null) {
-            return null;
-        }
-
-        World world = getWorld(section, yamlConfiguration, path);
-        return new Location(
-                world,
-                section.getDouble("x"),
-                section.getDouble("y"),
-                section.getDouble("z"),
-                (float) section.getDouble("yaw"),
-                (float) section.getDouble("pitch")
-        );
-    }
-
-    protected Vector getVectorValue(@NotNull YamlConfiguration yamlConfiguration, @NotNull String path) {
-        Object value = yamlConfiguration.get(path);
-        if (value instanceof Vector vector) {
-            return vector;
-        }
-
-        ConfigurationSection section = yamlConfiguration.getConfigurationSection(path);
-        if (section == null) {
-            return null;
-        }
-        return new Vector(
-                section.getDouble("x"),
-                section.getDouble("y"),
-                section.getDouble("z")
-        );
-    }
-
-    private World getWorld(@NotNull ConfigurationSection section, @NotNull YamlConfiguration yamlConfiguration, @NotNull String path) {
-        Object worldValue = section.get("world");
-        if (worldValue instanceof World world) {
-            return world;
-        }
-        String worldName = extractWorldName(worldValue);
-        if (worldName == null) {
-            worldName = yamlConfiguration.getString(path + ".world.name");
-        }
-        if (worldName != null && !worldName.isBlank()) {
-            return Bukkit.getWorld(worldName);
-        }
-
-        String uuid = extractWorldUuid(worldValue);
-        if (uuid == null) {
-            uuid = yamlConfiguration.getString(path + ".world.uid", yamlConfiguration.getString(path + ".world.uuid"));
-        }
-        if (uuid != null && !uuid.isBlank()) {
-            try {
-                return Bukkit.getWorld(UUID.fromString(uuid));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-        return null;
-    }
-
-    private String extractWorldName(Object worldValue) {
-        if (worldValue instanceof String worldName) {
-            return worldName;
-        }
-        if (worldValue instanceof ConfigurationSection section) {
-            return section.getString("name");
-        }
-        if (worldValue instanceof Map<?, ?> map) {
-            Object name = map.get("name");
-            return name != null ? name.toString() : null;
-        }
-        return null;
-    }
-
-    private String extractWorldUuid(Object worldValue) {
-        if (worldValue instanceof ConfigurationSection section) {
-            String uuid = section.getString("uid");
-            return uuid != null ? uuid : section.getString("uuid");
-        }
-        if (worldValue instanceof Map<?, ?> map) {
-            Object uuid = map.get("uid");
-            if (uuid == null) {
-                uuid = map.get("uuid");
-            }
-            return uuid != null ? uuid.toString() : null;
-        }
-        return null;
-    }
 }

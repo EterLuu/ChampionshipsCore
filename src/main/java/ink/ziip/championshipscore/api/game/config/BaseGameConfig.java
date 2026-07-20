@@ -40,11 +40,10 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                 field.setAccessible(true);
                 ConfigOption co = field.getDeclaredAnnotation(ConfigOption.class);
                 if (co != null) {
-                    configuration.set(co.path(), serializeConfigValue(field.get(this)));
+                    configuration.set(co.path(), field.get(this));
                 }
             }
 
-            normalizeLocationValues(configuration);
             configuration.save(configurationPath.toFile());
         } catch (Exception exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to save configuration option. ", exception);
@@ -78,14 +77,17 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                     }
 
                     // Otherwise get it normally
-                    if (value == null) value = getConfigValue(yamlConfiguration, configOption.path(), field.getType());
+                    if (value == null) value = yamlConfiguration.get(configOption.path());
+
+                    // Locations may be stored as a raw section (no '==' marker); rebuild them.
+                    value = coerceLocationSection(value, field);
 
                     if (value != null) {
                         if (value instanceof String)
                             value = Utils.translateColorCodes((String) value);
                         field.set(this, value);
                     }
-                    else if (!configOption.nullable() && !isLoadingDefaultOptions()) {
+                    else if (!configOption.nullable() && !loadingDefaults) {
                         plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file. " + configOption.path() + "/" + getFileName());
                     }
                 } catch (Exception exception) {
@@ -103,11 +105,10 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                 field.setAccessible(true);
                 ConfigOption co = field.getDeclaredAnnotation(ConfigOption.class);
                 if (co != null && yamlConfiguration.get(co.path()) != null) {
-                    configuration.set(co.path(), serializeConfigValue(getConfigValue(yamlConfiguration, co.path(), field.getType())));
+                    configuration.set(co.path(), yamlConfiguration.get(co.path()));
                 }
             }
 
-            normalizeLocationValues(configuration);
             configuration.save(configurationPath.toFile());
 
             // Reload options from the file

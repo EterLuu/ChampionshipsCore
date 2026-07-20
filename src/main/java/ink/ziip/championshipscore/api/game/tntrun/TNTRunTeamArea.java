@@ -22,7 +22,9 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.NumberConversions;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -485,6 +487,27 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
             player.teleport(spawnLocations);
             return;
         }
+    }
+
+    /**
+     * In-bounds means inside some copy's own box. With the prepare/template model each stamped copy is a
+     * self-contained sub-arena, so the play area is the set of per-copy boxes (not one box spanning the
+     * void gaps between them) — fixing the old single-{@code area-pos} limitation. Legacy areas without a
+     * stamped grid fall back to the inherited single-box check.
+     */
+    @Override
+    public boolean notInArea(Location location) {
+        List<BoundingBox> boxes = getGameConfig().getCopyBoxes();
+        if (boxes.isEmpty()) return super.notInArea(location);
+        if (location == null || location.getWorld() == null
+                || !location.getWorld().getName().equals(getWorldName())) {
+            return true;
+        }
+        Vector point = location.toVector();
+        for (BoundingBox box : boxes) {
+            if (box.contains(point)) return false;
+        }
+        return true;
     }
 
     @Override

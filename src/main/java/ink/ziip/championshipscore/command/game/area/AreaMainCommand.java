@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.game.area;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.command.game.area.battlebox.BattleBoxAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.bingo.BingoAreaMainCommand;
+import ink.ziip.championshipscore.command.game.area.buildmart.BuildMartAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.decarnival.DragonEggCarnivalAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.hotycodydusky.HotyCodyDuskyAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.parkourtag.ParkourTagAreaMainCommand;
@@ -16,6 +17,7 @@ public class AreaMainCommand extends BaseMainCommand {
     public AreaMainCommand() {
         super("area", "游戏场地管理");
         addSubCommand(new BingoAreaMainCommand());
+        addSubCommand(new BuildMartAreaMainCommand());
         addSubCommand(new BattleBoxAreaMainCommand());
         addSubCommand(new ParkourTagAreaMainCommand());
         addSubCommand(new SkyWarsAreaMainCommand());

@@ -1,6 +1,5 @@
 package ink.ziip.championshipscore;
 
-import fr.skytasul.glowingentities.GlowingEntities;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
@@ -8,6 +7,7 @@ import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.api.vote.VoteManager;
 import ink.ziip.championshipscore.integration.papi.PlaceholderManager;
+import ink.ziip.championshipscore.util.glow.GlowingEntities;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;

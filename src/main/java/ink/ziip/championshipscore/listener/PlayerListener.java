@@ -7,6 +7,10 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
+import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
 import org.bukkit.entity.*;
@@ -14,7 +18,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -26,18 +29,34 @@ public class PlayerListener extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerChat(AsyncPlayerChatEvent event) {
+    public void onPlayerChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
-
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+
+        // Pick the chat layout for this sender; both %s slots are name then message (String.format order).
+        final String format;
+        final Component messageOverride;
         if (player.hasPermission("cc.refuge")) {
-            event.setFormat(Utils.translateColorCodes(CCConfig.CHAT_REFUGEE));
-            event.setMessage(Utils.translateColorCodes("&f" + event.getMessage()));
+            format = Utils.translateColorCodes(CCConfig.CHAT_REFUGEE);
+            // Refugees may colour their own message; the leading &f resets any inherited colour.
+            String typed = PlainTextComponentSerializer.plainText().serialize(event.message());
+            messageOverride = Utils.toComponent("&f" + typed);
         } else if (championshipTeam == null) {
-            event.setFormat(Utils.translateColorCodes(CCConfig.CHAT_SPECTATOR));
+            format = Utils.translateColorCodes(CCConfig.CHAT_SPECTATOR);
+            messageOverride = null;
         } else {
-            event.setFormat(Utils.translateColorCodes(CCConfig.CHAT_PLAYER.replace("%team%", championshipTeam.getColoredName())));
+            format = Utils.translateColorCodes(CCConfig.CHAT_PLAYER.replace("%team%", championshipTeam.getColoredName()));
+            messageOverride = null;
         }
+
+        // Serialise name/message back to legacy, format, and parse the whole line once, so colour codes
+        // bleed into the substituted name/message across the %s boundaries.
+        event.renderer((source, sourceDisplayName, message, viewer) -> {
+            Component actualMessage = messageOverride != null ? messageOverride : message;
+            String nameLegacy = LegacyComponentSerializer.legacySection().serialize(sourceDisplayName);
+            String messageLegacy = LegacyComponentSerializer.legacySection().serialize(actualMessage);
+            return LegacyComponentSerializer.legacySection().deserialize(String.format(format, nameLegacy, messageLegacy));
+        });
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -57,7 +76,8 @@ public class PlayerListener extends BaseListener {
                 return;
 
             if (championshipTeam == null) {
-                event.setKickMessage(MessageConfig.SERVER_FULL);
+                event.kickMessage(LegacyComponentSerializer.legacySection()
+                        .deserialize(Utils.translateColorCodes(MessageConfig.SERVER_FULL)));
                 event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_FULL);
                 return;
             }

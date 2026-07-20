@@ -1,0 +1,17 @@
+name: "小木屋地基"
+stars: 3
+# A 3x3 oak plank floor with four oak log corner posts.
+blocks:
+  - "0,0,0=minecraft:oak_planks"
+  - "1,0,0=minecraft:oak_planks"
+  - "2,0,0=minecraft:oak_planks"
+  - "0,0,1=minecraft:oak_planks"
+  - "1,0,1=minecraft:oak_planks"
+  - "2,0,1=minecraft:oak_planks"
+  - "0,0,2=minecraft:oak_planks"
+  - "1,0,2=minecraft:oak_planks"
+  - "2,0,2=minecraft:oak_planks"
+  - "0,1,0=minecraft:oak_log[axis=y]"
+  - "2,1,0=minecraft:oak_log[axis=y]"
+  - "0,1,2=minecraft:oak_log[axis=y]"
+  - "2,1,2=minecraft:oak_log[axis=y]"

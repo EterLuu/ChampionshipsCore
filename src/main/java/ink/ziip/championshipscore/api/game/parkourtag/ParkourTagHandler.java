@@ -53,38 +53,8 @@ public class ParkourTagHandler extends BaseListener {
 
         if (parkourTagArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
             Block block = event.getClickedBlock();
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                if (block != null) {
-                    if (block.getType() == Material.BIRCH_WALL_SIGN) {
-                        UUID uuid = player.getUniqueId();
-                        if (plugin.getGameManager().getParkourTagManager().canBeChaser(uuid)) {
-                            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
-                            if (championshipTeam != null) {
-                                ChampionshipTeam rightChampionshipTeam = parkourTagArea.getRightChampionshipTeam();
-                                ChampionshipTeam leftChampionshipTeam = parkourTagArea.getLeftChampionshipTeam();
-
-                                String message = MessageConfig.PARKOUR_TAG_BECOME_CHASER;
-
-                                if (championshipTeam.equals(rightChampionshipTeam)) {
-                                    parkourTagArea.setRightAreaChaser(uuid);
-
-                                    rightChampionshipTeam.sendMessageToAll(message
-                                            .replace("%player%", player.getName())
-                                            .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid))));
-                                }
-                                if (championshipTeam.equals(leftChampionshipTeam)) {
-                                    parkourTagArea.setLeftAreaChaser(uuid);
-
-                                    leftChampionshipTeam.sendMessageToAll(message
-                                            .replace("%player%", player.getName())
-                                            .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - plugin.getGameManager().getParkourTagManager().getChaserTimes(uuid))));
-                                }
-                            }
-                        } else {
-                            player.sendMessage(MessageConfig.PARKOUR_TAG_BECOME_CHASER_FAILED);
-                        }
-                    }
-                }
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK && block != null && block.getType() == Material.BIRCH_WALL_SIGN) {
+                parkourTagArea.chooseChaser(player);
             }
         }
     }
@@ -145,44 +115,10 @@ public class ParkourTagHandler extends BaseListener {
         }
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
-
             ItemStack mainHandItem = player.getInventory().getItemInMainHand();
             ItemStack offHandItem = player.getInventory().getItemInOffHand();
-
             if (mainHandItem.getType() == Material.CLOCK || offHandItem.getType() == Material.CLOCK) {
-
-                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-                if (championshipTeam != null) {
-
-                    if (plugin.getGameManager().getParkourTagManager().canUseClock(championshipTeam)) {
-                        Player chaser = null;
-
-                        if (championshipTeam.equals(parkourTagArea.getRightChampionshipTeam())) {
-                            chaser = parkourTagArea.getLeftAreaChaserPlayer();
-                            for (Player leftEscapee : parkourTagArea.getLeftAreaEscapees()) {
-                                leftEscapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_CLOCK);
-                            }
-                            parkourTagArea.setLeftAreaEscapeesClockCoolDown();
-                        }
-
-                        if (championshipTeam.equals(parkourTagArea.getLeftChampionshipTeam())) {
-                            chaser = parkourTagArea.getRightAreaChaserPlayer();
-                            for (Player rightEscapee : parkourTagArea.getRightAreaEscapees()) {
-                                rightEscapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_CLOCK);
-                            }
-                            parkourTagArea.setRightAreaEscapeesClockCoolDown();
-                        }
-
-                        if (chaser != null) {
-                            chaser.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 60, 0));
-                        }
-
-                        plugin.getGameManager().getParkourTagManager().setClockUsedTimes(championshipTeam);
-                    } else {
-
-                        player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_CLOCK_FAILED);
-                    }
-                }
+                parkourTagArea.useClock(player);
             }
         }
 
@@ -242,44 +178,9 @@ public class ParkourTagHandler extends BaseListener {
                     return;
                 }
 
-                if (parkourTagArea.getRightAreaEscapees().contains(assailant) || parkourTagArea.getLeftAreaEscapees().contains(assailant)) {
+                if (parkourTagArea.handleChaserDamage(player, assailant)) {
                     event.setCancelled(true);
-                    return;
                 }
-
-                ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
-                ChampionshipTeam assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
-
-                if (playerTeam == null || assailantTeam == null)
-                    return;
-
-                if (playerTeam.equals(assailantTeam)) {
-                    return;
-                }
-
-                if (assailant.getUniqueId().equals(parkourTagArea.getLeftAreaChaser()) || assailant.getUniqueId().equals(parkourTagArea.getRightAreaChaser())) {
-                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                        player.setGameMode(GameMode.SPECTATOR);
-                    });
-                    assailant.playSound(assailant, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
-
-                    // Add 6 points to chaser
-                    parkourTagArea.addPlayerPoints(assailant.getUniqueId(), 6);
-
-                    String message = MessageConfig.PARKOUR_TAG_CATCH_PLAYER
-                            .replace("%player%", playerTeam.getColoredColor() + player.getName())
-                            .replace("%chaser%", assailantTeam.getColoredColor() + assailant.getName());
-
-                    parkourTagArea.sendMessageToPlayerAreaPlayers(assailant, message);
-
-                    parkourTagArea.getPlayerSurviveTimes().put(player.getUniqueId(), parkourTagArea.getGameConfig().getTimer() - parkourTagArea.getTimer());
-                    parkourTagArea.updateTeamSurviveTimes();
-
-                    return;
-                }
-
-                event.setCancelled(true);
             }
         }
     }

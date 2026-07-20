@@ -10,7 +10,6 @@ import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageCo
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -27,7 +26,6 @@ public class BattleBoxScheduleManager extends BaseManager {
     private int timer;
     @Getter
     private boolean enabled;
-    private int completedAreaNum;
     private BukkitTask firstStartTask;
     private BukkitTask startTask;
 
@@ -36,7 +34,6 @@ public class BattleBoxScheduleManager extends BaseManager {
         handler = new BattleBoxScheduleHandler(championshipsCore, this);
         scheduler = championshipsCore.getServer().getScheduler();
         subRound = 0;
-        completedAreaNum = 0;
     }
 
     private void cycleGeneratePairs() {
@@ -98,7 +95,6 @@ public class BattleBoxScheduleManager extends BaseManager {
         enabled = true;
         timer = 10;
         subRound = 0;
-        completedAreaNum = 0;
 
         cycleGeneratePairs();
 
@@ -147,30 +143,20 @@ public class BattleBoxScheduleManager extends BaseManager {
     }
 
     private void startRoundBattle() {
-        Iterator<String> battleBoxAreaIterator = plugin.getGameManager().getBattleBoxManager().getAreaNameList().iterator();
-        for (TwoVTwoVector v : rounds.get(subRound - 1)) {
-            if (!battleBoxAreaIterator.hasNext()) {
-                return;
-            }
-
-            String areaName = battleBoxAreaIterator.next();
-
-            String failed = MessageConfig.GAME_TEAM_GAME_START_FAILED
-                    .replace("%team%", v.getTeamOne().getName())
-                    .replace("%rival%", v.getTeamTwo().getName())
-                    .replace("%game%", GameTypeEnum.BattleBox.toString())
-                    .replace("%area%", areaName);
-            String successful = MessageConfig.GAME_TEAM_GAME_START_SUCCESSFUL
-                    .replace("%team%", v.getTeamOne().getName())
-                    .replace("%rival%", v.getTeamTwo().getName())
-                    .replace("%game%", GameTypeEnum.BattleBox.toString())
-                    .replace("%area%", areaName);
-
-            if (plugin.getGameManager().joinTeamArea(GameTypeEnum.BattleBox, areaName, v.getTeamOne(), v.getTeamTwo()))
-                plugin.getLogger().info(ChatColor.stripColor(successful));
-            else
-                plugin.getLogger().warning(ChatColor.stripColor(failed));
+        // One Battle Box area now hosts all of this round's matches in parallel (one per stamped copy).
+        String areaName = plugin.getGameManager().getBattleBoxManager().getAreaNameList()
+                .stream().findFirst().orElse(null);
+        if (areaName == null) {
+            plugin.getLogger().warning(GameTypeEnum.BattleBox + " has no area configured; cannot start round.");
+            return;
         }
+
+        List<TwoVTwoVector> pairs = new ArrayList<>(rounds.get(subRound - 1));
+
+        if (plugin.getGameManager().joinBattleBoxArea(areaName, pairs))
+            plugin.getLogger().info(Utils.stripColorCodes(GameTypeEnum.BattleBox + " round " + subRound + " started with " + pairs.size() + " matches in area " + areaName));
+        else
+            plugin.getLogger().warning(Utils.stripColorCodes(GameTypeEnum.BattleBox + " round " + subRound + " failed to start in area " + areaName));
     }
 
     public void endSchedule() {
@@ -198,7 +184,6 @@ public class BattleBoxScheduleManager extends BaseManager {
         if (!enabled)
             return;
 
-        completedAreaNum = 0;
         subRound++;
         if (subRound > rounds.size()) {
             endSchedule();
@@ -233,12 +218,9 @@ public class BattleBoxScheduleManager extends BaseManager {
         }, 0, 20L);
     }
 
-    public synchronized void addCompletedAreaNum() {
-        completedAreaNum++;
-
-        if (completedAreaNum == rounds.getFirst().size()) {
-            nextBattleBoxRound();
-        }
+    /** Called when the Battle Box area finishes a whole round (all its parallel matches done). */
+    public synchronized void onRoundComplete() {
+        nextBattleBoxRound();
     }
 
     public void addAllSpectatorsToArea() {

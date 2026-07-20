@@ -32,7 +32,8 @@ public class SpectateSubCommand extends BaseSubCommand {
             "acc",
             "parkourwarrior",
             "hotycodydusky",
-            "bingo"
+            "bingo",
+            "buildmart"
     };
 
     /**
@@ -40,17 +41,18 @@ public class SpectateSubCommand extends BaseSubCommand {
      * manager appear here; keywords such as {@code leave} and {@code acc} are
      * intentionally absent and fall through silently.
      */
-    private static final Map<String, GameTypeEnum> SPECTATABLE_GAMES = Map.of(
-            "bingo", GameTypeEnum.Bingo,
-            "battlebox", GameTypeEnum.BattleBox,
-            "parkourtag", GameTypeEnum.ParkourTag,
-            "skywars", GameTypeEnum.SkyWars,
-            "tgttos", GameTypeEnum.TGTTOS,
-            "tntrun", GameTypeEnum.TNTRun,
-            "snowball", GameTypeEnum.SnowballShowdown,
-            "dragoneggcarnival", GameTypeEnum.DragonEggCarnival,
-            "parkourwarrior", GameTypeEnum.ParkourWarrior,
-            "hotycodydusky", GameTypeEnum.HotyCodyDusky
+    private static final Map<String, GameTypeEnum> SPECTATABLE_GAMES = Map.ofEntries(
+            Map.entry("bingo", GameTypeEnum.Bingo),
+            Map.entry("battlebox", GameTypeEnum.BattleBox),
+            Map.entry("parkourtag", GameTypeEnum.ParkourTag),
+            Map.entry("skywars", GameTypeEnum.SkyWars),
+            Map.entry("tgttos", GameTypeEnum.TGTTOS),
+            Map.entry("tntrun", GameTypeEnum.TNTRun),
+            Map.entry("snowball", GameTypeEnum.SnowballShowdown),
+            Map.entry("dragoneggcarnival", GameTypeEnum.DragonEggCarnival),
+            Map.entry("parkourwarrior", GameTypeEnum.ParkourWarrior),
+            Map.entry("hotycodydusky", GameTypeEnum.HotyCodyDusky),
+            Map.entry("buildmart", GameTypeEnum.BuildMart)
     );
 
     public SpectateSubCommand() {

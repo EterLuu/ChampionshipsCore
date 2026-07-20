@@ -12,11 +12,15 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.UUID;
 
 public class ChampionshipPlayer {
@@ -109,7 +113,14 @@ public class ChampionshipPlayer {
     public void sendTitle(String title, String subTitle) {
         if (player == null)
             return;
-        player.sendTitle(Utils.translateColorCodes(setPlaceholders(title)), Utils.translateColorCodes(setPlaceholders(subTitle)), 1, 20, 1);
+        // legacySection() decodes the §-prefixed codes (incl. §x hex) that translateColorCodes emits.
+        Component titleComponent = LegacyComponentSerializer.legacySection()
+                .deserialize(Utils.translateColorCodes(setPlaceholders(title)));
+        Component subTitleComponent = LegacyComponentSerializer.legacySection()
+                .deserialize(Utils.translateColorCodes(setPlaceholders(subTitle)));
+        // fade-in 1 tick, stay 20 ticks, fade-out 1 tick
+        Title.Times times = Title.Times.times(Duration.ofMillis(50), Duration.ofSeconds(1), Duration.ofMillis(50));
+        player.showTitle(Title.title(titleComponent, subTitleComponent, times));
     }
 
     private String setPlaceholders(String content) {

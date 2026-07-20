@@ -45,7 +45,7 @@ public class TeamManager extends BaseManager {
             team = scoreboard.registerNewTeam(colorName);
 
             try {
-                team.setColor(Utils.toChatColor(colorName));
+                team.color(Utils.toNamedTextColor(colorName));
             } catch (Exception ignored) {
             }
 
@@ -76,7 +76,7 @@ public class TeamManager extends BaseManager {
             team = scoreboard.registerNewTeam(colorName);
 
             try {
-                team.setColor(Utils.toChatColor(colorName));
+                team.color(Utils.toNamedTextColor(colorName));
             } catch (Exception ignored) {
             }
 

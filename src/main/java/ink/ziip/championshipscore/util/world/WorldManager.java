@@ -77,22 +77,20 @@ public class WorldManager extends BaseManager {
 
         world.setDifficulty(org.bukkit.Difficulty.NORMAL);
         world.setSpawnFlags(true, true);
-        world.setPVP(true);
         world.setStorm(false);
         world.setThundering(false);
         world.setWeatherDuration(Integer.MAX_VALUE);
-        world.setKeepSpawnInMemory(false);
         world.setTicksPerSpawns(SpawnCategory.ANIMAL, 1);
         world.setTicksPerSpawns(SpawnCategory.MONSTER, 1);
         world.setAutoSave(!readOnly);
 
-        world.setGameRule(GameRule.SEND_COMMAND_FEEDBACK, false);
-        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-        world.setGameRule(GameRule.MOB_GRIEFING, true);
-        world.setGameRule(GameRule.DO_FIRE_TICK, true);
-        world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, false);
-        world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+        world.setGameRule(GameRules.PVP, true);
+        world.setGameRule(GameRules.SEND_COMMAND_FEEDBACK, false);
+        world.setGameRule(GameRules.SPAWN_MOBS, false);
+        world.setGameRule(GameRules.MOB_GRIEFING, true);
+        world.setGameRule(GameRules.SHOW_DEATH_MESSAGES, false);
+        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+        world.setGameRule(GameRules.ADVANCE_TIME, false);
     }
 
     public void copyWorldFiles(File source, File target) {

@@ -19,7 +19,7 @@ public class ParkourWarriorManager extends BaseAreaManager<ParkourWarriorTeamAre
         areasFolder.mkdirs();
 
         scheduler.runTask(plugin, task -> {
-            String[] areaList = areasFolder.list();
+            String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
             if (areaList != null) {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);

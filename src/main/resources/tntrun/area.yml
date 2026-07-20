@@ -3,6 +3,17 @@ dont-edit-this:
 name: "area"
 timer: 180
 spectator-spawn-point:
+# Legacy single play-area box (pre-prepare areas only). Prepared maps ignore this and derive one tight box
+# per copy from copy-size + the copy grid, so each sub-arena bounds its own players.
 area-pos1:
 area-pos2:
+# Prepare/template model: build one arena, /cc game area tntrun schematic, then
+#   /cc game area tntrun prepare <area> <copies>
+# stamps that many copies in a row and records copies + copy-size below. Then stand in copy 0 and set
+# copy-spawn. copies = how many arena copies players are split across; copy-spawn = the spawn inside copy 0;
+# copy-size = one copy's block dimensions (auto-recorded, used to derive each copy's boundary box).
+copies: 0
+copy-size:
+copy-spawn:
+# Legacy explicit per-copy spawn list (pre-prepare areas). Leave empty when using copy-spawn + copies.
 player-spawn-points: [ ]

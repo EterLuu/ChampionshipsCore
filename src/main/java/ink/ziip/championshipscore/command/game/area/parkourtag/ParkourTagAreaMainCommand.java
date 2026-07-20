@@ -7,5 +7,7 @@ public class ParkourTagAreaMainCommand extends BaseMainCommand {
         super("parkourtag", "跑酷追逐场地");
         addSubCommand(new ParkourTagAreaAddSubCommand());
         addSubCommand(new ParkourTagAreaSetSubCommand());
+        addSubCommand(new ParkourTagSchematicSubCommand());
+        addSubCommand(new ParkourTagPrepareSubCommand());
     }
 }

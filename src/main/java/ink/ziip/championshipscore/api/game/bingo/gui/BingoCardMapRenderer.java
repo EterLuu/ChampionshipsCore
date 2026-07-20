@@ -267,21 +267,24 @@ public final class BingoCardMapRenderer extends MapRenderer {
 
     private void drawWinOverlay(MapCanvas canvas, RoundOutcome outcome, int offset, int n) {
         if (outcome.winnerId() == null) return;
-        // Only paint on the WINNING team's card.
-        if (!outcome.winnerId().equals(teamId)) return;
+        // Paint on EVERY team's card (winners and losers alike), using the winner's id for the
+        // completion lookup. The board is shared across teams, so a losing team's card shows how the
+        // winner won (their lines / completed cells) rather than their own progress — the intended
+        // "you lost; here's how" read.
+        String winnerId = outcome.winnerId();
 
         TextColor color = outcome.winnerColor() != null ? outcome.winnerColor() : teamColor;
         byte palette = MapColorMatcher.matchColor(color.red(), color.green(), color.blue());
 
         switch (outcome.type()) {
-            case LINES -> drawWinningLines(canvas, palette, offset, n);
-            case FULL_CARD, MOST_COMPLETED, TOP_SCORE -> drawWinningCellHighlights(canvas, palette, offset, n);
+            case LINES -> drawWinningLines(canvas, winnerId, palette, offset, n);
+            case FULL_CARD, MOST_COMPLETED, TOP_SCORE -> drawWinningCellHighlights(canvas, winnerId, palette, offset, n);
             case DRAW -> { /* no overlay on a draw */ }
         }
     }
 
-    private void drawWinningLines(MapCanvas canvas, byte palette, int offset, int n) {
-        List<int[]> lines = card.completedLines(teamId);
+    private void drawWinningLines(MapCanvas canvas, String winnerId, byte palette, int offset, int n) {
+        List<int[]> lines = card.completedLines(winnerId);
         for (int[] line : lines) {
             int firstIdx = line[0];
             int lastIdx = line[line.length - 1];
@@ -335,8 +338,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
         }
     }
 
-    private void drawWinningCellHighlights(MapCanvas canvas, byte palette, int offset, int n) {
-        int[] indices = card.completedIndices(teamId);
+    private void drawWinningCellHighlights(MapCanvas canvas, String winnerId, byte palette, int offset, int n) {
+        int[] indices = card.completedIndices(winnerId);
         for (int idx : indices) {
             int gridX = idx % n + offset;
             int gridY = idx / n + offset;

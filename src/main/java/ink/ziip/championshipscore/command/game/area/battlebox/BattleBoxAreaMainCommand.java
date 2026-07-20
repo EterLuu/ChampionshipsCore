@@ -7,5 +7,7 @@ public class BattleBoxAreaMainCommand extends BaseMainCommand {
         super("battlebox", "战斗箱场地");
         addSubCommand(new BattleBoxAreaAddSubCommand());
         addSubCommand(new BattleBoxAreaSetSubCommand());
+        addSubCommand(new BattleBoxSchematicSubCommand());
+        addSubCommand(new BattleBoxPrepareSubCommand());
     }
 }

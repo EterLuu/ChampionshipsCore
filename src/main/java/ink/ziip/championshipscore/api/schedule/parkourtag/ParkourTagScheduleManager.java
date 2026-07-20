@@ -10,7 +10,6 @@ import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageCo
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -27,7 +26,6 @@ public class ParkourTagScheduleManager extends BaseManager {
     private int timer;
     @Getter
     private boolean enabled;
-    private int completedAreaNum;
     private BukkitTask firstStartTask;
     private BukkitTask startTask;
 
@@ -36,7 +34,6 @@ public class ParkourTagScheduleManager extends BaseManager {
         handler = new ParkourTagScheduleHandler(championshipsCore, this);
         scheduler = championshipsCore.getServer().getScheduler();
         subRound = 0;
-        completedAreaNum = 0;
     }
 
     private void cycleGeneratePairs() {
@@ -98,7 +95,6 @@ public class ParkourTagScheduleManager extends BaseManager {
         enabled = true;
         timer = 10;
         subRound = 0;
-        completedAreaNum = 0;
 
         cycleGeneratePairs();
 
@@ -147,30 +143,20 @@ public class ParkourTagScheduleManager extends BaseManager {
     }
 
     private void startRoundBattle() {
-        Iterator<String> parkourTagIterator = plugin.getGameManager().getParkourTagManager().getAreaNameList().iterator();
-        for (TwoVTwoVector v : rounds.get(subRound - 1)) {
-            if (!parkourTagIterator.hasNext()) {
-                return;
-            }
-
-            String areaName = parkourTagIterator.next();
-
-            String failed = MessageConfig.GAME_TEAM_GAME_START_FAILED
-                    .replace("%team%", v.getTeamOne().getName())
-                    .replace("%rival%", v.getTeamTwo().getName())
-                    .replace("%game%", GameTypeEnum.ParkourTag.toString())
-                    .replace("%area%", areaName);
-            String successful = MessageConfig.GAME_TEAM_GAME_START_SUCCESSFUL
-                    .replace("%team%", v.getTeamOne().getName())
-                    .replace("%rival%", v.getTeamTwo().getName())
-                    .replace("%game%", GameTypeEnum.ParkourTag.toString())
-                    .replace("%area%", areaName);
-
-            if (plugin.getGameManager().joinTeamArea(GameTypeEnum.ParkourTag, areaName, v.getTeamOne(), v.getTeamTwo()))
-                plugin.getLogger().info(ChatColor.stripColor(successful));
-            else
-                plugin.getLogger().warning(ChatColor.stripColor(failed));
+        // One Parkour Tag area now hosts all of this round's matches in parallel (one per stamped copy).
+        String areaName = plugin.getGameManager().getParkourTagManager().getAreaNameList()
+                .stream().findFirst().orElse(null);
+        if (areaName == null) {
+            plugin.getLogger().warning(GameTypeEnum.ParkourTag + " has no area configured; cannot start round.");
+            return;
         }
+
+        List<TwoVTwoVector> pairs = new ArrayList<>(rounds.get(subRound - 1));
+
+        if (plugin.getGameManager().joinParkourTagArea(areaName, pairs))
+            plugin.getLogger().info(Utils.stripColorCodes(GameTypeEnum.ParkourTag + " round " + subRound + " started with " + pairs.size() + " matches in area " + areaName));
+        else
+            plugin.getLogger().warning(Utils.stripColorCodes(GameTypeEnum.ParkourTag + " round " + subRound + " failed to start in area " + areaName));
     }
 
     public void endSchedule() {
@@ -197,7 +183,6 @@ public class ParkourTagScheduleManager extends BaseManager {
         if (!enabled)
             return;
 
-        completedAreaNum = 0;
         subRound++;
         if (subRound > rounds.size()) {
             endSchedule();
@@ -232,12 +217,9 @@ public class ParkourTagScheduleManager extends BaseManager {
         }, 0, 20L);
     }
 
-    public synchronized void addCompletedAreaNum() {
-        completedAreaNum++;
-
-        if (completedAreaNum == rounds.getFirst().size()) {
-            nextParkourTagRound();
-        }
+    /** Called when the Parkour Tag area finishes a whole round (all its parallel matches done). */
+    public synchronized void onRoundComplete() {
+        nextParkourTagRound();
     }
 
     public void addAllSpectatorsToArea() {

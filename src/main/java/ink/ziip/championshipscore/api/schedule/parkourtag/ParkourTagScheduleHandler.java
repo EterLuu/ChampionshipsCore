@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.schedule.parkourtag;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
+import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,10 +16,11 @@ public class ParkourTagScheduleHandler extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onGameEnd(TeamGameEndEvent event) {
-        if (event.getBaseTeamArea() instanceof ParkourTagArea) {
+    public void onGameEnd(SingleGameEndEvent event) {
+        // The single Parkour Tag area now ends once per round (all its parallel matches finished).
+        if (event.getBaseSingleTeamArea() instanceof ParkourTagArea) {
             if (scheduleManager.isEnabled()) {
-                scheduleManager.addCompletedAreaNum();
+                scheduleManager.onRoundComplete();
             }
         }
     }

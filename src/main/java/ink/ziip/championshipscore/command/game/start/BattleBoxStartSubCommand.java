@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.game.start;
 
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -36,7 +37,7 @@ public class BattleBoxStartSubCommand extends BaseSubCommand {
             ChampionshipTeam leftChampionshipTeam = plugin.getTeamManager().getTeam(args[2]);
 
             if (battleBoxArea != null && rightChampionshipTeam != null && leftChampionshipTeam != null) {
-                if (plugin.getGameManager().joinTeamArea(GameTypeEnum.BattleBox, args[0], rightChampionshipTeam, leftChampionshipTeam)) {
+                if (plugin.getGameManager().joinBattleBoxArea(args[0], List.of(new TwoVTwoVector(rightChampionshipTeam, leftChampionshipTeam)))) {
                     String successful = MessageConfig.GAME_TEAM_GAME_START_SUCCESSFUL
                             .replace("%team%", rightChampionshipTeam.getColoredName())
                             .replace("%rival%", leftChampionshipTeam.getColoredName())

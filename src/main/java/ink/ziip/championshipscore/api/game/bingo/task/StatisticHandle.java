@@ -191,7 +191,7 @@ public record StatisticHandle(@NotNull Statistic statistic, @Nullable EntityType
             case DAMAGE_DEALT_ABSORBED -> Material.DAMAGED_ANVIL;
             case DAMAGE_DEALT_RESISTED -> Material.NETHERITE_SWORD;
             case DAMAGE_BLOCKED_BY_SHIELD -> Material.SHIELD;
-            case DAMAGE_ABSORBED -> Material.SPONGE;
+            case DAMAGE_ABSORBED -> Material.GOLDEN_APPLE;
             case DAMAGE_RESISTED -> Material.DIAMOND_CHESTPLATE;
             case CLEAN_SHULKER_BOX -> Material.SHULKER_SHELL;
             case OPEN_BARREL -> Material.BARREL;

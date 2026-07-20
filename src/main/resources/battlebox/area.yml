@@ -22,7 +22,6 @@ wool-pos2:
   y: 0.0
   z: 0.0
 left-spawn-point:
-  ==: org.bukkit.Location
   world: battlebox
   x: 0.0
   y: 0.0
@@ -30,7 +29,6 @@ left-spawn-point:
   pitch: 0.0
   yaw: 0.0
 right-spawn-point:
-  ==: org.bukkit.Location
   world: battlebox
   x: 0.0
   y: 0.0
@@ -39,7 +37,6 @@ right-spawn-point:
   yaw: 0.0
 potion-spawn-points: [ ]
 left-pre-spawn-point:
-  ==: org.bukkit.Location
   world: battlebox
   x: 0.0
   y: 0.0
@@ -47,7 +44,6 @@ left-pre-spawn-point:
   pitch: 0.0
   yaw: 0.0
 right-pre-spawn-point:
-  ==: org.bukkit.Location
   world: battlebox
   x: 0.0
   y: 0.0
@@ -56,7 +52,6 @@ right-pre-spawn-point:
   yaw: 0.0
 name: area
 spectator-spawn-point:
-  ==: org.bukkit.Location
   world: battlebox
   x: 0.0
   y: 0.0

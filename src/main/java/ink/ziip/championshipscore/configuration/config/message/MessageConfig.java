@@ -16,7 +16,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 5;
+        return 6;
     }
 
     // Player
@@ -218,6 +218,9 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "game.bingo")
     public static String GAME_BINGO;
+
+    @ConfigOption(path = "game.buildmart", nullable = true)
+    public static String GAME_BUILD_MART;
 
     @ConfigOption(path = "game.game-weight")
     public static String GAME_GAME_WEIGHT;
@@ -553,6 +556,76 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "bingo.game-winner")
     public static String BINGO_GAME_WINNER;
+
+    // Build Mart
+    @ConfigOption(path = "buildmart.start-preparation", nullable = true)
+    public static String BUILD_MART_START_PREPARATION;
+
+    @ConfigOption(path = "buildmart.start-preparation-title", nullable = true)
+    public static String BUILD_MART_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "buildmart.start-preparation-subtitle", nullable = true)
+    public static String BUILD_MART_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "buildmart.game-start", nullable = true)
+    public static String BUILD_MART_GAME_START;
+
+    @ConfigOption(path = "buildmart.game-start-title", nullable = true)
+    public static String BUILD_MART_GAME_START_TITLE;
+
+    @ConfigOption(path = "buildmart.game-start-subtitle", nullable = true)
+    public static String BUILD_MART_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "buildmart.game-end", nullable = true)
+    public static String BUILD_MART_GAME_END;
+
+    @ConfigOption(path = "buildmart.game-end-title", nullable = true)
+    public static String BUILD_MART_GAME_END_TITLE;
+
+    @ConfigOption(path = "buildmart.game-end-subtitle", nullable = true)
+    public static String BUILD_MART_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "buildmart.action-bar-count-down", nullable = true)
+    public static String BUILD_MART_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "buildmart.build-completed", nullable = true)
+    public static String BUILD_MART_BUILD_COMPLETED;
+
+    @ConfigOption(path = "buildmart.golden-build-completed", nullable = true)
+    public static String BUILD_MART_GOLDEN_BUILD_COMPLETED;
+
+    @ConfigOption(path = "buildmart.golden-refreshed", nullable = true)
+    public static String BUILD_MART_GOLDEN_REFRESHED;
+
+    @ConfigOption(path = "buildmart.golden-expired", nullable = true)
+    public static String BUILD_MART_GOLDEN_EXPIRED;
+
+    @ConfigOption(path = "buildmart.blueprint-selected", nullable = true)
+    public static String BUILD_MART_BLUEPRINT_SELECTED;
+
+    @ConfigOption(path = "buildmart.blueprint-refreshed", nullable = true)
+    public static String BUILD_MART_BLUEPRINT_REFRESHED;
+
+    @ConfigOption(path = "buildmart.refresh-used", nullable = true)
+    public static String BUILD_MART_REFRESH_USED;
+
+    @ConfigOption(path = "buildmart.no-free-slot", nullable = true)
+    public static String BUILD_MART_NO_FREE_SLOT;
+
+    @ConfigOption(path = "buildmart.submit-incomplete", nullable = true)
+    public static String BUILD_MART_SUBMIT_INCOMPLETE;
+
+    @ConfigOption(path = "buildmart.library-refreshed", nullable = true)
+    public static String BUILD_MART_LIBRARY_REFRESHED;
+
+    @ConfigOption(path = "buildmart.award-entrepreneur", nullable = true)
+    public static String BUILD_MART_AWARD_ENTREPRENEUR;
+
+    @ConfigOption(path = "buildmart.award-chef", nullable = true)
+    public static String BUILD_MART_AWARD_CHEF;
+
+    @ConfigOption(path = "buildmart.award-quality", nullable = true)
+    public static String BUILD_MART_AWARD_QUALITY;
 
     // TNT Run
     @ConfigOption(path = "tntrun.start-preparation")

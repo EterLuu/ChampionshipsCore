@@ -1,0 +1,9 @@
+name: "石头十字"
+stars: 2
+# A simple flat plus/cross of stone, anchored at the build corner (y=0 layer).
+blocks:
+  - "1,0,0=minecraft:stone"
+  - "0,0,1=minecraft:stone"
+  - "1,0,1=minecraft:stone"
+  - "2,0,1=minecraft:stone"
+  - "1,0,2=minecraft:stone"

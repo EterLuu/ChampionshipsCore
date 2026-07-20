@@ -215,8 +215,16 @@ public final class TaskGenerator {
         if (task instanceof ItemTask itemTask) {
             return "item:" + itemTask.itemType();
         }
-        if (task instanceof StatisticTask statisticTask && statisticTask.statistic().itemType() != null) {
-            return "item:" + statisticTask.statistic().itemType();
+        if (task instanceof StatisticTask statisticTask) {
+            // mine/craft share the item subject so a collect task and its craft/mine variant can't
+            // co-exist; kill and untyped statistics have no item, so key on their own identity.
+            StatisticHandle h = statisticTask.statistic();
+            if (h.itemType() != null) return "item:" + h.itemType();
+            return h.entityType() != null ? "kill:" + h.entityType() : "stat:" + h.statisticType().name();
+        }
+        if (task instanceof AdvancementTask advancementTask) {
+            return "adv:" + (advancementTask.advancement() == null ? "unknown"
+                    : advancementTask.advancement().key().value());
         }
         return null;
     }

@@ -275,14 +275,14 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
                 ChampionshipTeam playerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
                 ChampionshipTeam killerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(killer);
                 if (playerChampionshipTeam != null && killerChampionshipTeam != null) {
-                    event.setDeathMessage(null);
+                    event.deathMessage(null);
 
                     killer.playSound(killer, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
 
                     addShoot(killer, player);
                 }
             } else {
-                event.setDeathMessage(null);
+                event.deathMessage(null);
                 ChampionshipTeam playerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
                 if (playerChampionshipTeam != null) {
                     String message = MessageConfig.SNOWBALL_PLAYER_DEATH
@@ -426,10 +426,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
             if (gamePlayer != null) {
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
                 if (championshipTeam != null) {
-                    try {
-                        plugin.getGlowingEntities().setGlowing(gamePlayer, player, Utils.toChatColor(championshipTeam.getColorName()));
-                    } catch (Exception ignored) {
-                    }
+                    plugin.getGlowingEntities().setGlowing(gamePlayer, player);
                 }
             }
         }
@@ -440,10 +437,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
                 if (gamePlayer != null) {
                     ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
                     if (championshipTeam != null) {
-                        try {
-                            plugin.getGlowingEntities().unsetGlowing(gamePlayer, player);
-                        } catch (ReflectiveOperationException ignored) {
-                        }
+                        plugin.getGlowingEntities().unsetGlowing(gamePlayer, player);
                     }
                 }
             }

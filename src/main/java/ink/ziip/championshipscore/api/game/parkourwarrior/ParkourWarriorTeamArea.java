@@ -13,6 +13,8 @@ import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
+import net.kyori.adventure.text.format.TextDecoration;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
@@ -305,7 +307,8 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         ItemStack barrier = new ItemStack(Material.BARRIER);
         ItemMeta meta = barrier.getItemMeta();
         if (meta != null)
-            meta.setDisplayName(MessageConfig.PARKOUR_WARRIOR_KITS_BACK_TOOL_NAME);
+            meta.displayName(Utils.toComponent(MessageConfig.PARKOUR_WARRIOR_KITS_BACK_TOOL_NAME)
+                    .decoration(TextDecoration.ITALIC, false));
         barrier.setItemMeta(meta);
 
         player.getInventory().setItem(8, barrier);

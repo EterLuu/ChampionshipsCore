@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 8
+  version: 9
 mode: "CHAMPIONSHIP"
 max-players: 100
 whitelist: [ ]
@@ -27,3 +27,5 @@ lobby:
     z: 0.0
     pitch: 0.0
     yaw: 0.0
+parkourtag:
+  max-chaser-times: 4

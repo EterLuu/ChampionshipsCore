@@ -1,17 +1,22 @@
 package ink.ziip.championshipscore.util;
 
-import net.md_5.bungee.api.chat.BaseComponent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +52,34 @@ public class Utils {
             message = message.replace(hexCode, builder.toString());
             matcher = pattern.matcher(message);
         }
-        return ChatColor.translateAlternateColorCodes('&', message);
+        return translateAmpersandCodes(message);
+    }
+
+    /** The color/format code characters accepted after {@code &}, including {@code x} for hex sequences. */
+    private static final String COLOR_CODE_CHARS = "0123456789AaBbCcDdEeFfKkLlMmNnOoRrXx";
+    private static final char SECTION = '§';
+
+    /** Replaces {@code &<code>} with the section-sign form the client renders. */
+    private static String translateAmpersandCodes(String message) {
+        char[] chars = message.toCharArray();
+        for (int i = 0; i + 1 < chars.length; i++) {
+            if (chars[i] == '&' && COLOR_CODE_CHARS.indexOf(chars[i + 1]) > -1) {
+                chars[i] = SECTION;
+                chars[i + 1] = Character.toLowerCase(chars[i + 1]);
+            }
+        }
+        return new String(chars);
+    }
+
+    /** Strips section-sign colour/format codes (incl. {@code §x} hex) from a string, for plain-text logging. */
+    public static String stripColorCodes(String message) {
+        if (message == null) return null;
+        return message.replaceAll("(?i)§[0-9A-FK-ORX]", "");
+    }
+
+    /** Colour-translates a legacy string and parses it into an Adventure component. */
+    public static Component toComponent(String message) {
+        return LegacyComponentSerializer.legacySection().deserialize(translateColorCodes(message));
     }
 
     public static List<String> getOnlinePlayerNames() {
@@ -95,36 +127,28 @@ public class Utils {
         }
     }
 
-    public static ChatColor toChatColor(@NotNull String color) {
-        if (color.equalsIgnoreCase("green"))
-            return ChatColor.DARK_GREEN;
-        if (color.equalsIgnoreCase("brown"))
-            return ChatColor.DARK_RED;
-        if (color.equalsIgnoreCase("lime"))
-            return ChatColor.DARK_AQUA;
-        if (color.equalsIgnoreCase("pink"))
-            return ChatColor.LIGHT_PURPLE;
-        if (color.equalsIgnoreCase("light_blue"))
-            return ChatColor.AQUA;
-        if (color.equalsIgnoreCase("cyan"))
-            return ChatColor.GREEN;
-        if (color.equalsIgnoreCase("purple"))
-            return ChatColor.DARK_PURPLE;
-        if (color.equalsIgnoreCase("orange"))
-            return ChatColor.GOLD;
-        if (color.equalsIgnoreCase("black"))
-            return ChatColor.DARK_GRAY;
-        if (color.equalsIgnoreCase("light_gray"))
-            return ChatColor.GRAY;
-        if (color.equalsIgnoreCase("gray"))
-            return ChatColor.DARK_GRAY;
-        if (color.equalsIgnoreCase("magenta"))
-            return ChatColor.LIGHT_PURPLE;
-
-        try {
-            return ChatColor.valueOf(color);
-        } catch (Exception exception) {
-            return ChatColor.WHITE;
+    /**
+     * Resolves a team colour name to its Adventure text colour. The special cases remap Minecraft wool/dye
+     * names to the nearest chat colour (e.g. {@code GREEN} wool → dark green); any other name is matched
+     * against the 16 named colours directly, falling back to white.
+     */
+    public static NamedTextColor toNamedTextColor(@NotNull String color) {
+        switch (color.toLowerCase(Locale.ROOT)) {
+            case "green": return NamedTextColor.DARK_GREEN;
+            case "brown": return NamedTextColor.DARK_RED;
+            case "lime": return NamedTextColor.DARK_AQUA;
+            case "pink":
+            case "magenta": return NamedTextColor.LIGHT_PURPLE;
+            case "light_blue": return NamedTextColor.AQUA;
+            case "cyan": return NamedTextColor.GREEN;
+            case "purple": return NamedTextColor.DARK_PURPLE;
+            case "orange": return NamedTextColor.GOLD;
+            case "black":
+            case "gray": return NamedTextColor.DARK_GRAY;
+            case "light_gray": return NamedTextColor.GRAY;
+            default:
+                NamedTextColor named = NamedTextColor.NAMES.value(color.toLowerCase(Locale.ROOT));
+                return named != null ? named : NamedTextColor.WHITE;
         }
     }
 
@@ -134,31 +158,6 @@ public class Utils {
                 "pink", "gray", "light_gray", "cyan", "purple", "blue",
                 "brown", "green", "red", "black"
         };
-    }
-
-    public static net.md_5.bungee.api.ChatColor toBungeeChatColor(@NotNull String color) {
-        if (color.equalsIgnoreCase("green"))
-            return net.md_5.bungee.api.ChatColor.DARK_GREEN;
-        if (color.equalsIgnoreCase("brown"))
-            return net.md_5.bungee.api.ChatColor.DARK_RED;
-        if (color.equalsIgnoreCase("lime"))
-            return net.md_5.bungee.api.ChatColor.DARK_AQUA;
-        if (color.equalsIgnoreCase("pink"))
-            return net.md_5.bungee.api.ChatColor.LIGHT_PURPLE;
-        if (color.equalsIgnoreCase("light_blue"))
-            return net.md_5.bungee.api.ChatColor.AQUA;
-        if (color.equalsIgnoreCase("cyan"))
-            return net.md_5.bungee.api.ChatColor.GREEN;
-        if (color.equalsIgnoreCase("purple"))
-            return net.md_5.bungee.api.ChatColor.DARK_PURPLE;
-        if (color.equalsIgnoreCase("orange"))
-            return net.md_5.bungee.api.ChatColor.GOLD;
-
-        try {
-            return net.md_5.bungee.api.ChatColor.of(color);
-        } catch (Exception exception) {
-            return net.md_5.bungee.api.ChatColor.WHITE;
-        }
     }
 
     public static UUID getPlayerUUID(String name) {
@@ -200,14 +199,13 @@ public class Utils {
     }
 
     public static void sendTitleToAllPlayers(String title, String subtitle) {
+        Component titleComponent = LegacyComponentSerializer.legacySection().deserialize(title);
+        Component subtitleComponent = LegacyComponentSerializer.legacySection().deserialize(subtitle);
+        // No fade in/out; stay 20 ticks.
+        Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO);
+        Title titleMessage = Title.title(titleComponent, subtitleComponent, times);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendTitle(title, subtitle, 0, 20, 0);
-        }
-    }
-
-    public static void sendMessageToAllSpigotPlayers(BaseComponent message) {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.spigot().sendMessage(message);
+            player.showTitle(titleMessage);
         }
     }
 }

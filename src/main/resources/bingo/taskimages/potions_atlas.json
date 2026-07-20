@@ -11,7 +11,7 @@
       "potion/fire_resistance",
       "potion/harming",
       "potion/healing",
-      "potion/infestation",
+      "potion/infested",
       "potion/invisibility",
       "potion/leaping",
       "potion/luck",
@@ -29,12 +29,12 @@
       "potion/water_breathing",
       "potion/weakness",
       "potion/weaving",
-      "potion/wind_charging",
+      "potion/wind_charged",
       "splash_potion/awkward",
       "splash_potion/fire_resistance",
       "splash_potion/harming",
       "splash_potion/healing",
-      "splash_potion/infestation",
+      "splash_potion/infested",
       "splash_potion/invisibility",
       "splash_potion/leaping",
       "splash_potion/luck",
@@ -52,12 +52,12 @@
       "splash_potion/water_breathing",
       "splash_potion/weakness",
       "splash_potion/weaving",
-      "splash_potion/wind_charging",
+      "splash_potion/wind_charged",
       "lingering_potion/awkward",
       "lingering_potion/fire_resistance",
       "lingering_potion/harming",
       "lingering_potion/healing",
-      "lingering_potion/infestation",
+      "lingering_potion/infested",
       "lingering_potion/invisibility",
       "lingering_potion/leaping",
       "lingering_potion/luck",
@@ -75,7 +75,7 @@
       "lingering_potion/water_breathing",
       "lingering_potion/weakness",
       "lingering_potion/weaving",
-      "lingering_potion/wind_charging"
+      "lingering_potion/wind_charged"
     ]
   }
 }

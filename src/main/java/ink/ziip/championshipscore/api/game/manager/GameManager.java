@@ -7,10 +7,13 @@ import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
 import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
+import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoManager;
+import ink.ziip.championshipscore.api.game.buildmart.BuildMartManager;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
+import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
@@ -18,6 +21,7 @@ import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
 import org.bukkit.entity.Player;
@@ -52,6 +56,8 @@ public class GameManager extends BaseManager {
     private final HotyCodyDuskyManager hotyCodyDuskyManager;
     @Getter
     private final BingoManager bingoManager;
+    @Getter
+    private final BuildMartManager buildMartManager;
     /**
      * Registry mapping each game type to its area manager. Drives the generic
      * {@code join*} dispatch so adding a game only requires registering it here.
@@ -71,8 +77,10 @@ public class GameManager extends BaseManager {
         parkourWarriorManager = new ParkourWarriorManager(plugin);
         hotyCodyDuskyManager = new HotyCodyDuskyManager(plugin);
         bingoManager = new BingoManager(plugin);
+        buildMartManager = new BuildMartManager(plugin);
 
         areaManagers.put(GameTypeEnum.Bingo, bingoManager);
+        areaManagers.put(GameTypeEnum.BuildMart, buildMartManager);
         areaManagers.put(GameTypeEnum.BattleBox, battleBoxManager);
         areaManagers.put(GameTypeEnum.ParkourTag, parkourTagManager);
         areaManagers.put(GameTypeEnum.SkyWars, skyWarsManager);
@@ -234,6 +242,78 @@ public class GameManager extends BaseManager {
             return true;
         }
 
+        return false;
+    }
+
+    /**
+     * Starts a round of parallel Battle Box matches: every {@link TwoVTwoVector} pairing runs in its own
+     * stamped arena copy of the one Battle Box area. Mirrors the team-status bookkeeping of the other join
+     * methods. Used by both the manual start command (one pair) and the Swiss schedule (a round's pairs).
+     */
+    public synchronized boolean joinBattleBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
+        Set<ChampionshipTeam> teams = new LinkedHashSet<>();
+        for (TwoVTwoVector pair : pairs) {
+            teams.add(pair.getTeamOne());
+            teams.add(pair.getTeamTwo());
+        }
+        for (ChampionshipTeam team : teams) {
+            if (teamStatus.containsKey(team))
+                return false;
+            for (UUID uuid : team.getMembers()) {
+                if (playerStatus.containsKey(uuid))
+                    return false;
+            }
+        }
+        if (!(battleBoxManager.getArea(area) instanceof BattleBoxArea battleBoxArea))
+            return false;
+
+        for (ChampionshipTeam team : teams) {
+            for (UUID uuid : team.getMembers()) {
+                removeSpectator(uuid);
+            }
+        }
+
+        if (battleBoxArea.tryStartMatches(pairs)) {
+            for (ChampionshipTeam team : teams) {
+                teamStatus.put(team, battleBoxArea);
+                addPlayerStatusByTeam(team, battleBoxArea);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /** Battle-Box-style parallel start for Parkour Tag: each pairing runs in its own stamped arena copy. */
+    public synchronized boolean joinParkourTagArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
+        Set<ChampionshipTeam> teams = new LinkedHashSet<>();
+        for (TwoVTwoVector pair : pairs) {
+            teams.add(pair.getTeamOne());
+            teams.add(pair.getTeamTwo());
+        }
+        for (ChampionshipTeam team : teams) {
+            if (teamStatus.containsKey(team))
+                return false;
+            for (UUID uuid : team.getMembers()) {
+                if (playerStatus.containsKey(uuid))
+                    return false;
+            }
+        }
+        if (!(parkourTagManager.getArea(area) instanceof ParkourTagArea parkourTagArea))
+            return false;
+
+        for (ChampionshipTeam team : teams) {
+            for (UUID uuid : team.getMembers()) {
+                removeSpectator(uuid);
+            }
+        }
+
+        if (parkourTagArea.tryStartMatches(pairs)) {
+            for (ChampionshipTeam team : teams) {
+                teamStatus.put(team, parkourTagArea);
+                addPlayerStatusByTeam(team, parkourTagArea);
+            }
+            return true;
+        }
         return false;
     }
 
