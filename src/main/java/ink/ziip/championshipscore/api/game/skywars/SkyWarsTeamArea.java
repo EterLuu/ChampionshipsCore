@@ -21,12 +21,18 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Chest;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.HappyGhast;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitTask;
@@ -41,6 +47,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     private final List<UUID> deathPlayer = new ArrayList<>();
     private final Map<ChampionshipTeam, Integer> teamDeathPlayers = new ConcurrentHashMap<>();
     private final List<SkyWarsShrink> shrinkTimes = new ArrayList<>();
+    private final Map<ChampionshipTeam, Location> teamSpawnLocations = new HashMap<>();
+    private final List<HappyGhast> spawnedHappyGhasts = new ArrayList<>();
     @Getter
     private int timer;
     private BukkitTask startGamePreparationTask;
@@ -57,16 +65,20 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     public void resetArea() {
         deathPlayer.clear();
         teamDeathPlayers.clear();
+        teamSpawnLocations.clear();
+        spawnedHappyGhasts.clear();
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
         borderCheckTask = null;
 
-        loadMap(World.Environment.NORMAL);
+        preloadMap();
     }
 
     @Override
     public void resetGame() {
+        cancelIntroduction();
+        cancelFinalCountdown();
         resetBaseArea();
         playerPoints.clear();
     }
@@ -82,14 +94,24 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         getGameHandler().setSkyWarsArea(this);
         skyWarsConfig.setAreaName(areaName);
 
-        if (!firstTime) {
-            loadMap(World.Environment.NORMAL);
+        if (firstTime) {
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
         }
 
-        if (!getGameConfig().getShrinkTime().isEmpty()) {
-            for (String key : getGameConfig().getShrinkTime()) {
+    }
+
+    /** Preloads a clean arena at startup and immediately after each completed game. */
+    public void preloadMap() {
+        loadMap(World.Environment.NORMAL);
+        reloadShrinkTimes();
+    }
+
+    private void reloadShrinkTimes() {
+        shrinkTimes.clear();
+        List<String> configuredShrinkTimes = getGameConfig().getShrinkTime();
+        if (configuredShrinkTimes != null) {
+            for (String key : configuredShrinkTimes) {
                 String[] shrinkTimeSetting = key.split(":");
                 if (shrinkTimeSetting.length == 4) {
                     try {
@@ -99,10 +121,10 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                         int toHeight = Integer.parseInt(shrinkTimeSetting[3]);
                         shrinkTimes.add(new SkyWarsShrink(start, end, toRadius, toHeight));
                     } catch (NumberFormatException e) {
-                        plugin.getLogger().log(Level.WARNING, "Invalid shrink time format: " + key);
+                        logGame(Level.WARNING, "配置", "无效的边界收缩配置=" + key);
                     }
                 } else {
-                    plugin.getLogger().log(Level.WARNING, "Invalid shrink time format: " + key);
+                    logGame(Level.WARNING, "配置", "无效的边界收缩配置=" + key);
                 }
             }
         }
@@ -112,6 +134,14 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
+
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         teleportAllPlayers(getGameConfig().getPreSpawnPoint());
@@ -119,8 +149,8 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_START_PREPARATION_TITLE, MessageConfig.SKY_WARS_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.SKY_WARS_START_PREPARATION,
+                MessageConfig.SKY_WARS_START_PREPARATION_TITLE, MessageConfig.SKY_WARS_START_PREPARATION_SUBTITLE);
 
         setBorderShrinkTask(getGameConfig().getTimeEnableBoundaryShrink(),
                 0,
@@ -134,12 +164,13 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
             // changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -163,12 +194,10 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
             if (championshipTeam != null) {
                 addTeamDeathPlayer(championshipTeam, false);
-                plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + getGameConfig().getAreaName() + ", " + "Player " + playerManager.getPlayerName(uuid) + " (" + uuid + "), not online, added to death players");
+                logGame(Level.INFO, "玩家", "玩家=" + playerManager.getPlayerName(uuid) + " uuid=" + uuid
+                        + " 状态=离线，计入淘汰");
             }
         }
-
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_GAME_START_SOON);
-        sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_GAME_START_SOON_TITLE, MessageConfig.SKY_WARS_GAME_START_SOON_SUBTITLE);
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
@@ -176,41 +205,38 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 
         giveItemToAllGamePlayers();
 
-        timer = getGameConfig().getTimer() + 5;
-        setGameStageEnum(GameStageEnum.PROGRESS);
+        startFinalCountdown(MessageConfig.SKY_WARS_GAME_START_SOON_TITLE,
+                MessageConfig.SKY_WARS_GAME_START_TITLE, MessageConfig.SKY_WARS_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
-
-            if (timer > getGameConfig().getTimer()) {
-                String countDown = MessageConfig.SKY_WARS_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
-                sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-
-            if (timer == getGameConfig().getTimer()) {
-
-                if (getGameConfig().isGlassCage()) {
-                    scheduler.runTaskAsynchronously(plugin, () -> {
-                        for (ChampionshipTeam championshipTeam : gameTeams) {
-                            for (Player player : championshipTeam.getOnlinePlayers()) {
-                                clearGlassCages(player);
-                                break;
-                            }
-                        }
-                    });
+    private void beginGameProgress() {
+        if (getGameConfig().isGlassCage()) {
+            for (ChampionshipTeam championshipTeam : gameTeams) {
+                for (Player player : championshipTeam.getOnlinePlayers()) {
+                    clearGlassCages(player);
+                    break;
                 }
-
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_GAME_START);
-                sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_GAME_START_TITLE, MessageConfig.SKY_WARS_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
             }
+        }
 
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
             // changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
+            String timerMessage = MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer));
+            sendActionBarToActiveGamePlayers(timerMessage);
+            updateSpectatorTimerBossBar(timerMessage, timer, getGameConfig().getTimer());
+
+            if (timer == 0)
+                return;
 
             if (timer == getGameConfig().getTimeEnableBoundaryShrink()) {
                 startBorderShrink();
+            }
+
+            Integer spawnHappyGhastTime = getGameConfig().getSpawnHappyGhast();
+            if (spawnHappyGhastTime != null && timer == spawnHappyGhastTime) {
+                spawnTeamHappyGhasts();
             }
 
             for (SkyWarsShrink skyWarsShrink : shrinkTimes) {
@@ -223,36 +249,27 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                             skyWarsShrink.getToRadius(),
                             skyWarsShrink.getToHeight()
                     );
-                    sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_BOARD_SHRINK);
+                    sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_BOARD_SHRINK);
                     playSoundToAllGamePlayers(Sound.BLOCK_ANVIL_USE, 1, 12F);
                 }
                 if (timer == skyWarsShrink.getEndTime()) {
                     lowShrink = 0;
                     heightShrink = 0;
                     shrink = 0;
-                    sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_STOP_BOARD_SHRINK);
+                    sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_STOP_BOARD_SHRINK);
                     playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1, 12F);
                 }
             }
 
             if (timer == getGameConfig().getTimeDisableHealthRegain()) {
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_DEDUCT_FOOD_LEVEL);
+                sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_DEDUCT_FOOD_LEVEL);
             }
 
             if (timer <= getGameConfig().getTimeDisableHealthRegain()) {
                 damageAllPlayers();
             }
 
-            if (timer == 0) {
-                // changeLevelForAllGamePlayers(timer);
-                sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
-                endGame();
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-            }
-
-            timer--;
-        }, 0, 20L);
+        }, this::endGame);
     }
 
     private void setBorderShrinkTask(int start, int end, double startRadius, double startHeight, double startLow, int toRadius, int toHeight) {
@@ -378,12 +395,14 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         if (borderCheckTask != null)
             borderCheckTask.cancel();
 
+        removeSpawnedHappyGhasts();
+        teamSpawnLocations.clear();
+
         calculatePoints();
 
         setGameStageEnum(GameStageEnum.END);
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SKY_WARS_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.SKY_WARS_GAME_END_TITLE, MessageConfig.SKY_WARS_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.SKY_WARS_GAME_END_TITLE, MessageConfig.SKY_WARS_GAME_END_SUBTITLE);
 
         teleportAllPlayers(CCConfig.LOBBY_LOCATION);
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -401,7 +420,6 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
             }
         }
 
-        sendMessageToAllGamePlayers(getPlayerPointsRank());
         sendMessageToAllGamePlayers(getTeamPointsRank());
         addPlayerPointsToDatabase();
     }
@@ -409,7 +427,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
     private void addTeamDeathPlayer(ChampionshipTeam championshipTeam, boolean addedPoints) {
         teamDeathPlayers.put(championshipTeam, teamDeathPlayers.getOrDefault(championshipTeam, 0) + 1);
         Integer deathPlayer = teamDeathPlayers.get(championshipTeam);
-        plugin.getLogger().log(Level.INFO, GameTypeEnum.SkyWars + ", " + getGameConfig().getAreaName() + ", " + "Added team " + championshipTeam.getName() + " death player, now: " + deathPlayer);
+        logGame(Level.INFO, "淘汰", "队伍=" + championshipTeam.getName() + " 已淘汰人数=" + deathPlayer);
         if (deathPlayer != null) {
             if (deathPlayer == championshipTeam.getMembers().size()) {
                 sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_WHOLE_TEAM_WAS_KILLED.replace("%team%", championshipTeam.getColoredName()));
@@ -455,7 +473,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                 event.getEntity().spigot().respawn();
                 event.getEntity().teleport(getSpectatorSpawnLocation());
             });
-            player.teleport(getGameConfig().getPreSpawnPoint());
+            player.teleport(getPreparationTeleportLocation(getGameConfig().getPreSpawnPoint()));
             return;
         }
 
@@ -554,7 +572,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         }
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            player.teleport(getGameConfig().getPreSpawnPoint());
+            player.teleport(getPreparationTeleportLocation(getGameConfig().getPreSpawnPoint()));
             return;
         }
 
@@ -628,8 +646,9 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
         Collections.shuffle(gameTeams);
 
         for (ChampionshipTeam championshipTeam : gameTeams) {
+            Location location;
             if (spawnPointsI.hasNext()) {
-                Location location = Utils.getLocation(spawnPointsI.next());
+                location = Utils.getLocation(spawnPointsI.next());
                 for (int i = 0; i < championshipTeam.getOnlinePlayers().size(); i++) {
                     Player player = championshipTeam.getOnlinePlayers().get(i);
                     if (player != null) {
@@ -641,9 +660,76 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
                 }
             } else {
                 spawnPointsI = getGameConfig().getTeamSpawnPoints().iterator();
-                championshipTeam.teleportAllPlayers(Utils.getLocation(spawnPointsI.next()));
+                location = Utils.getLocation(spawnPointsI.next());
+                championshipTeam.teleportAllPlayers(location);
+            }
+            // Record the raw spawn point (without player offsets) so the team's
+            // happy ghast can be spawned exactly here later in the game.
+            teamSpawnLocations.put(championshipTeam, location.clone());
+        }
+    }
+
+    /**
+     * Spawn a stationary, no-AI happy ghast wearing the team-colored harness at
+     * each team's spawn point. Triggered at the configured time (default: 2
+     * minutes into the game). No AI is enough to keep it at the spawn point:
+     * the happy ghast hovers via its FloatGoal (an AI goal, disabled by NoAI),
+     * and gravity is only applied inside travel(), which NoAI skips - so it
+     * neither falls nor drifts away. 50 HP.
+     */
+    private void spawnTeamHappyGhasts() {
+        for (Map.Entry<ChampionshipTeam, Location> entry : teamSpawnLocations.entrySet()) {
+            ChampionshipTeam team = entry.getKey();
+            Location baseLocation = entry.getValue();
+            World world = baseLocation.getWorld();
+            if (world == null) {
+                logGame(Level.WARNING, "实体", "队伍=" + team.getName() + " 未生成快乐恶魂：出生点世界为空");
+                continue;
+            }
+
+            Location spawnLocation = baseLocation.clone().add(0, 2, 0);
+            HappyGhast happyGhast = (HappyGhast) world.spawnEntity(spawnLocation, EntityType.HAPPY_GHAST);
+            if (happyGhast == null) {
+                logGame(Level.WARNING, "实体", "队伍=" + team.getName() + " 的快乐恶魂生成被取消");
+                continue;
+            }
+
+            happyGhast.setAI(false);
+            happyGhast.setPersistent(false);
+            happyGhast.setAdult();
+
+            // Team-colored harness in the BODY slot (same slot as llama carpet / wolf armor).
+            Material harnessMaterial = Material.getMaterial(team.getColorName() + "_HARNESS");
+            if (harnessMaterial != null) {
+                EntityEquipment equipment = happyGhast.getEquipment();
+                if (equipment != null) {
+                    equipment.setItem(EquipmentSlot.BODY, new ItemStack(harnessMaterial));
+                }
+            } else {
+                logGame(Level.WARNING, "实体", "队伍=" + team.getName() + " 颜色=" + team.getColorName()
+                        + " 未找到对应挽具");
+            }
+
+            // 50 HP: raise max health first so setHealth(50) is not capped.
+            AttributeInstance maxHealth = happyGhast.getAttribute(Attribute.MAX_HEALTH);
+            if (maxHealth != null) {
+                maxHealth.setBaseValue(50.0);
+                happyGhast.setHealth(50.0);
+            }
+
+            spawnedHappyGhasts.add(happyGhast);
+
+            logGame(Level.INFO, "实体", "队伍=" + team.getName() + " 已生成快乐恶魂，挽具=" + team.getColorName());
+        }
+    }
+
+    private void removeSpawnedHappyGhasts() {
+        for (HappyGhast happyGhast : spawnedHappyGhasts) {
+            if (happyGhast != null && !happyGhast.isDead()) {
+                happyGhast.remove();
             }
         }
+        spawnedHappyGhasts.clear();
     }
 
     private void damageAllPlayers() {
@@ -684,7 +770,7 @@ public class SkyWarsTeamArea extends BaseSingleTeamArea {
 //
 //        ItemStack sword = new ItemStack(Material.IRON_SWORD);
 //        ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
-//        pickaxe.addEnchantment(Enchantment.EFFICIENCY, 3);
+//        pickaxe.addEnchantment(Enchants.get(EnchantmentKeys.EFFICIENCY), 3);
 //        ItemStack bow = new ItemStack(Material.BOW);
 //        ItemStack arrows = new ItemStack(Material.ARROW);
 //        arrows.setAmount(4);

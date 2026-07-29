@@ -1,19 +1,56 @@
 dont-edit-this:
-  version: 2
+  version: 3
 name: area
-timer: 240
+timer: 960
 area-pos1:
 area-pos2:
 pre-spawn-point:
 spectator-spawn-point:
 team-spawn-points: [ ]
 glass-cage: true
+# 边界标准（对应 16 分钟赛制文档）：初始水平 240、上下 ±50（以中心 Y=76 换算为绝对 Y，
+# 新地图需按自己的中心 Y 调整这三个高度）；开局 5 分钟（剩余 11:00）开始分阶段收缩，
+# 每阶段 30 秒内缩到目标值，最后 10 秒完全闭合。
 boundary:
-  default-height: 120
-  middle-height: 70
-  lowest-height: 20
+  default-height: 126
+  middle-height: 126
+  lowest-height: 26
   radius: 240
-shrink-time: []
+shrink-time:
+- 660:630:150:126
+- 540:510:100:126
+- 420:390:65:106
+- 300:270:30:96
+- 180:150:15:86
+- 90:60:5:86
+- 60:10:0:76
 time:
-  enable-boundary-shrink: 210
+  enable-boundary-shrink: 660
   disable-health-regain: 20
+  spawn-happy-ghast: 840
+
+# ── 规则介绍阶段（introduction）────────────────────────────
+# 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
+# 规则文案（rules，每个子列表为一段，支持 & 颜色码与 #RRGGBB 十六进制颜色），期间可以自由参观
+# 场地；结束后传送到正式准备点位，读秒后开始游戏。
+# 将 introduction-spawn-point 留空或把 rules 设为 [] 即可跳过该阶段。
+introduction-spawn-point:
+rules:
+  - - "#696969==========&r #ff6b26[#fff566空岛乱斗#ff6b26] #696969==========&r"
+    - "#fff566咻——欢迎来到空岛，千万别往下看！"
+    - "#ededed一局定胜负，所有队伍同场竞技（16 分钟）"
+    - "#ededed各队出生在各自的小岛上，向外收集资源"
+    - "#ededed开局 2 分钟后，主岛会生成可骑乘的#fff566乐魂"
+    - "#ededed开局 5 分钟后安全空域开始收缩，出圈持续掉血"
+    - "#ededed合成、酿造、附魔，武装自己击落对手！"
+  - - "#696969==========&r #fff566积分规则 #696969==========&r"
+    - "#ededed每击杀一名对手：#fff566+40 分"
+    - "#ededed存活到对局结束：#fff566+50 分"
+    - "#ededed最终获胜还有额外的胜利奖励分"
+  - - "#696969==========&r #fff566小提示 #696969==========&r"
+    - "#fff566奖励箱物资固定，越靠中心越豪华"
+    - "#ededed最中央竞技场的箱子里有 TNT 和鞘翅"
+    - "#edededTNT 不会自动爆炸，需要手动点燃"
+    - "#ededed没有下界和末地，别造传送门"
+    - "#ededed刷怪蛋的怪物会攻击所有玩家"
+    - "#ededed死亡后物品会装进原地的箱子里"

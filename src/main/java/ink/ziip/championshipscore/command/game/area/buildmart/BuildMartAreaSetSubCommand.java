@@ -4,9 +4,12 @@ import ink.ziip.championshipscore.api.game.buildmart.BuildMartArea;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
+import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,8 +42,12 @@ public class BuildMartAreaSetSubCommand extends BaseSubCommand {
             "normal-ref-1",
             "normal-ref-2",
             "normal-ref-3",
+            "normal-submit-1",
+            "normal-submit-2",
+            "normal-submit-3",
             "golden-plot",
             "golden-ref",
+            "golden-submit",
     };
 
     public BuildMartAreaSetSubCommand() {
@@ -67,7 +74,16 @@ public class BuildMartAreaSetSubCommand extends BaseSubCommand {
                 sendUsage(sender);
                 return true;
             }
-            config.setBaseLocation(args[2], player.getLocation());
+            // Submit-button keys capture the admin's WorldEdit single-block selection (the button itself);
+            // other base keys capture the admin's position (the plot/reference origin they're standing at).
+            Location loc;
+            if (isSubmitKey(args[2])) {
+                loc = selectedSingleBlockLocation(player, sender);
+                if (loc == null) return true; // error already sent
+            } else {
+                loc = player.getLocation();
+            }
+            config.setBaseLocation(args[2], loc);
             sender.sendMessage(MessageConfig.AREA_SETTING_OPTION_SUCCEEDED
                     .replace("%area%", args[0])
                     .replace("%option%", "base." + args[2]));
@@ -94,6 +110,39 @@ public class BuildMartAreaSetSubCommand extends BaseSubCommand {
                 .replace("%area%", args[0])
                 .replace("%option%", args[1]));
         return true;
+    }
+
+    /** Whether {@code key} is a submit-button base key (captured by WorldEdit single-block selection). */
+    private static boolean isSubmitKey(String key) {
+        return key.equals("normal-submit-1") || key.equals("normal-submit-2")
+                || key.equals("normal-submit-3") || key.equals("golden-submit");
+    }
+
+    /**
+     * The admin's current WorldEdit selection as a single block, or {@code null} (with an error sent to
+     * {@code sender}) when the selection is missing or spans more than one block. Used for submit-button
+     * placement so the exact button block is captured without aiming ambiguity.
+     */
+    @Nullable
+    private Location selectedSingleBlockLocation(Player player, CommandSender sender) {
+        Vector[] selection;
+        try {
+            selection = plugin.getWorldEditManager().getPlayerSelection(player, true);
+        } catch (Exception e) {
+            Utils.sendAdminError(sender, "无法读取 WorldEdit 选区，请选中提交按钮方块。");
+            return null;
+        }
+        Vector min = Vector.getMinimum(selection[0], selection[1]);
+        Vector max = Vector.getMaximum(selection[0], selection[1]);
+        int sx = max.getBlockX() - min.getBlockX() + 1;
+        int sy = max.getBlockY() - min.getBlockY() + 1;
+        int sz = max.getBlockZ() - min.getBlockZ() + 1;
+        if (sx != 1 || sy != 1 || sz != 1) {
+            Utils.sendAdminError(sender, "提交按钮选区必须为单一方块 #696969• #ededed当前 #fff566"
+                    + sx + "×" + sy + "×" + sz);
+            return null;
+        }
+        return new Location(player.getWorld(), min.getBlockX(), min.getBlockY(), min.getBlockZ());
     }
 
     @Override

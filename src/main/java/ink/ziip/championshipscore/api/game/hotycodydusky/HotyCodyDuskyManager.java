@@ -15,6 +15,9 @@ public class HotyCodyDuskyManager extends BaseAreaManager<HotyCodyDuskyTeamArea>
 
     @Override
     public void load() {
+        if (!loadArenaWorld("hotycodydusky"))
+            return;
+
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "hotycodydusky");
         areasFolder.mkdirs();

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.GameMode;
@@ -47,7 +48,7 @@ public class TGTTOSHandler extends BaseListener {
             return;
         }
 
-        if (!tgttosTeamArea.getGameConfig().getAreaType().equals("ROAD") || tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
+        if (!tgttosTeamArea.getGameConfig().getAreaType().equals("ROAD")) {
             event.setCancelled(true);
             return;
         }
@@ -73,7 +74,7 @@ public class TGTTOSHandler extends BaseListener {
             return;
         }
 
-        if (!tgttosTeamArea.getBlockStates().contains(event.getBlock().getState()) || tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
+        if (!tgttosTeamArea.getBlockStates().contains(event.getBlock().getState())) {
             event.setCancelled(true);
             return;
         }
@@ -93,7 +94,7 @@ public class TGTTOSHandler extends BaseListener {
                 return;
             }
 
-            if (tgttosTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS || tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
+            if (tgttosTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
                 event.setCancelled(true);
                 return;
             }
@@ -158,17 +159,12 @@ public class TGTTOSHandler extends BaseListener {
                     tgttosTeamArea.giveRoadToolToPlayer(player);
                 }
 
-                tgttosTeamArea.sendMessageToAllGamePlayers(MessageConfig.TGTTOS_FALL_INTO_VOID.replace("%player%", player.getName()));
+                Utils.sendActionBar(player, MessageConfig.TGTTOS_FALL_INTO_VOID);
             }
             tgttosTeamArea.teleportPlayerToSpawnPoint(player);
             return;
         }
 
-        if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
-                event.setCancelled(true);
-            }
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -188,11 +184,6 @@ public class TGTTOSHandler extends BaseListener {
             return;
         }
 
-        if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (tgttosTeamArea.getTimer() >= tgttosTeamArea.getGameConfig().getTimer()) {
-                event.setCancelled(true);
-            }
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

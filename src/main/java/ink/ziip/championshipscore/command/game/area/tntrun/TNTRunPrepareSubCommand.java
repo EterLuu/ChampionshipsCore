@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.game.tntrun.TNTRunConfig;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunLayout;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -39,7 +40,7 @@ public class TNTRunPrepareSubCommand extends BaseSubCommand {
         }
         TNTRunTeamArea area = plugin.getGameManager().getTntRunManager().getArea(args[0]);
         if (area == null) {
-            sender.sendMessage("§c找不到场地 §e" + args[0] + "§c。");
+            Utils.sendAdminError(sender, "找不到场地 #fff566" + args[0]);
             return true;
         }
         int copies;
@@ -50,19 +51,19 @@ public class TNTRunPrepareSubCommand extends BaseSubCommand {
             return true;
         }
         if (copies < 1) {
-            sender.sendMessage("§c份数必须 ≥ 1。");
+            Utils.sendAdminError(sender, "赛道份数必须至少为 #fff5661");
             return true;
         }
 
         World world = Bukkit.getWorld(area.getWorldName());
         if (world == null) {
-            sender.sendMessage("§c世界 §e" + area.getWorldName() + " §c未加载，无法生成。");
+            Utils.sendAdminError(sender, "世界 #fff566" + area.getWorldName() + " #ededed尚未加载。");
             return true;
         }
 
         File file = new File(new File(new File(plugin.getDataFolder(), "tntrun"), "schematics"), "arena.schem");
         if (!file.isFile()) {
-            sender.sendMessage("§c缺少 schematic：请先用 §e/cc game area tntrun schematic§c 保存赛道模板。");
+            Utils.sendAdminError(sender, "缺少赛道模板，请先执行 #fff566/cc game area tntrun schematic");
             return true;
         }
 
@@ -71,7 +72,7 @@ public class TNTRunPrepareSubCommand extends BaseSubCommand {
             size = plugin.getWorldEditManager().getSchematicDimensions(file);
             ArenaPreparer.stampCopies(plugin, world, file, TNTRunLayout.GRID, copies);
         } catch (Exception e) {
-            sender.sendMessage("§c粘贴失败：" + e.getMessage());
+            Utils.sendAdminError(sender, "生成赛道失败：#fff566" + e.getMessage());
             return true;
         }
 
@@ -82,9 +83,9 @@ public class TNTRunPrepareSubCommand extends BaseSubCommand {
         config.saveOptions();
         area.saveMap(World.Environment.NORMAL);
 
-        sender.sendMessage("§a已生成 §e" + copies + " §a份赛道并固化为模板（边界已自动计算）。");
-        sender.sendMessage("§7进入世界、站到 0 号赛道(0,100,0 附近)用 §f/cc game area tntrun set "
-                + args[0] + " copy-spawn §7设置出生点即可。");
+        Utils.sendAdminSuccess(sender, "已生成并保存 #fff566" + copies + " #ededed份 TNT飞跃赛道，边界已计算。");
+        Utils.sendAdminInfo(sender, "下一步：在 0 号赛道执行 #fff566/cc game area tntrun set "
+                + args[0] + " copy-spawn");
         return true;
     }
 

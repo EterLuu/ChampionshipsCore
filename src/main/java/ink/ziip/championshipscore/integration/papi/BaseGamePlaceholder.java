@@ -59,11 +59,11 @@ public abstract class BaseGamePlaceholder<T extends BaseArea> extends BasePlaceh
 
     /**
      * Render the {@code area_timer_} placeholder for a resolved area. Defaults to the
-     * remaining countdown ({@code timer + 1}); games with bespoke timer semantics may
+     * exact game timer; games with bespoke timer semantics may
      * override this.
      */
     protected String areaTimer(T area) {
-        return String.valueOf(area.getTimer() + 1);
+        return String.valueOf(area.getTimer());
     }
 
     /**

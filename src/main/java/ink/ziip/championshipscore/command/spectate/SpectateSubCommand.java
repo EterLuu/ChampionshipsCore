@@ -14,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,6 @@ public class SpectateSubCommand extends BaseSubCommand {
             "tntrun",
             "snowball",
             "dragoneggcarnival",
-            "acc",
             "parkourwarrior",
             "hotycodydusky",
             "bingo",
@@ -38,8 +36,7 @@ public class SpectateSubCommand extends BaseSubCommand {
 
     /**
      * Maps the spectate keyword to its game type. Only games with a spectatable area
-     * manager appear here; keywords such as {@code leave} and {@code acc} are
-     * intentionally absent and fall through silently.
+     * manager appear here; the {@code leave} keyword is intentionally absent.
      */
     private static final Map<String, GameTypeEnum> SPECTATABLE_GAMES = Map.ofEntries(
             Map.entry("bingo", GameTypeEnum.Bingo),
@@ -112,7 +109,13 @@ public class SpectateSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            List<String> returnList = new ArrayList<>(Arrays.asList(games));
+            List<String> returnList = new ArrayList<>();
+            for (String game : games) {
+                GameTypeEnum type = SPECTATABLE_GAMES.get(game);
+                // "leave" has no game type and stays; games are hidden unless enabled.
+                if (type == null || plugin.getGameManager().isGameEnabled(type))
+                    returnList.add(game);
+            }
             returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
             return returnList;
         }

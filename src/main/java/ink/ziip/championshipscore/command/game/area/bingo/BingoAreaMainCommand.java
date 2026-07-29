@@ -7,5 +7,6 @@ public class BingoAreaMainCommand extends BaseMainCommand {
         super("bingo", "宾果场地");
         addSubCommand(new BingoAreaAddSubCommand());
         addSubCommand(new BingoAreaSetSubCommand());
+        addSubCommand(new BingoPrepareSubCommand());
     }
 }

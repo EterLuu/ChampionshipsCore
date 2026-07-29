@@ -92,22 +92,31 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
+
         teleportAllPlayers(getSpectatorSpawnLocation());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TGTTOS_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.TGTTOS_START_PREPARATION_TITLE, MessageConfig.TGTTOS_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.TGTTOS_START_PREPARATION,
+                MessageConfig.TGTTOS_START_PREPARATION_TITLE, MessageConfig.TGTTOS_START_PREPARATION_SUBTITLE);
 
         timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            changeLevelForAllGamePlayers(timer);
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -116,11 +125,6 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
     protected void startGameProgress() {
         teleportAllPlayerToSpawnPoints();
-
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TGTTOS_GAME_START_SOON);
-        sendTitleToAllGamePlayers(MessageConfig.TGTTOS_GAME_START_SOON_TITLE, MessageConfig.TGTTOS_GAME_START_SOON_SUBTITLE);
-
-        timer = getGameConfig().getTimer() + 5;
 
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -136,37 +140,20 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         }
 
+        startFinalCountdown(MessageConfig.TGTTOS_GAME_START_SOON_TITLE,
+                MessageConfig.TGTTOS_GAME_START_TITLE, MessageConfig.TGTTOS_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
+
+    private void beginGameProgress() {
         spawnChicken();
         spawnMonsters();
-
-        setGameStageEnum(GameStageEnum.PROGRESS);
-
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
-
-            if (timer > getGameConfig().getTimer()) {
-                String countDown = MessageConfig.TGTTOS_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
-                sendTitleToAllGamePlayers(MessageConfig.TGTTOS_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-
-            if (timer == getGameConfig().getTimer()) {
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TGTTOS_GAME_START);
-                sendTitleToAllGamePlayers(MessageConfig.TGTTOS_GAME_START_TITLE, MessageConfig.TGTTOS_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-            }
-
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
             changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGameSpectators(MessageConfig.TGTTOS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
-
-            if (timer == 0) {
-                endGame();
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-            }
-
-            timer--;
-        }, 0, 20L);
+            updateSpectatorTimerBossBar(MessageConfig.TGTTOS_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
+        }, this::endGame);
     }
 
     @Override
@@ -187,8 +174,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         cleanInventoryForAllGamePlayers();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TGTTOS_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.TGTTOS_GAME_END_TITLE, MessageConfig.TGTTOS_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.TGTTOS_GAME_END_TITLE, MessageConfig.TGTTOS_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -198,11 +184,10 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
-
-        sendMessageToAllGamePlayers(getPlayerPointsRank());
         sendMessageToAllGamePlayers(getTeamPointsRank());
         addPlayerPointsToDatabase();
+
+        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 
         resetGame();
     }
@@ -267,13 +252,13 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             return;
         }
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            player.teleport(getSpectatorSpawnLocation());
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
             championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
                 player.setGameMode(GameMode.ADVENTURE);
             });
         }
-        if (getGameStageEnum() == GameStageEnum.PROGRESS) {
+        if (getGameStageEnum() == GameStageEnum.COUNTDOWN || getGameStageEnum() == GameStageEnum.PROGRESS) {
             player.teleport(getSpectatorSpawnLocation());
             if (getGameConfig().getAreaType().equals("ROAD")) {
                 ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();

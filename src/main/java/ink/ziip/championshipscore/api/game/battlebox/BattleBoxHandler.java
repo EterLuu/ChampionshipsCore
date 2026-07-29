@@ -211,7 +211,7 @@ public class BattleBoxHandler extends BaseListener {
         Location location = player.getLocation();
         if (battleBoxArea.notInArea(location)) {
             if (battleBoxArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(battleBoxArea.getSpectatorSpawnLocation());
+                player.teleport(battleBoxArea.getPreparationTeleportLocation(battleBoxArea.getSpectatorSpawnLocation()));
             }
             if (battleBoxArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
@@ -224,11 +224,6 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (battleBoxArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (battleBoxArea.getTimer() >= battleBoxArea.getGameConfig().getTimer()) {
-                event.setCancelled(true);
-            }
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -248,9 +243,6 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (battleBoxArea.getTimer() >= battleBoxArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -270,9 +262,6 @@ public class BattleBoxHandler extends BaseListener {
                 return;
             }
 
-            if (battleBoxArea.getTimer() >= battleBoxArea.getGameConfig().getTimer()) {
-                event.setCancelled(true);
-            }
         }
     }
 
@@ -293,9 +282,6 @@ public class BattleBoxHandler extends BaseListener {
             return;
         }
 
-        if (battleBoxArea.getTimer() >= battleBoxArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

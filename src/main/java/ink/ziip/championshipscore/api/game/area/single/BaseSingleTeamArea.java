@@ -77,12 +77,13 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append(MessageConfig.GAME_BOARD_BAR
-                        .replace("%game%", gameTypeEnum.toString())
-                        .replace("%area%", gameConfig.getAreaName()))
+                        .replace("%game%", gameTypeEnum.toString()))
                 .append("\n");
 
         int i = 1;
         for (Map.Entry<ChampionshipTeam, Integer> entry : list) {
+            if (i > 5)
+                break;
             String row = MessageConfig.GAME_BOARD_RWO
                     .replace("%team_rank%", String.valueOf(i))
                     .replace("%team%", entry.getKey().getColoredName())
@@ -115,20 +116,23 @@ public abstract class BaseSingleTeamArea extends BaseArea {
     }
 
     @Override
-    public void sendActionBarToAllGameSpectators(String message) {
+    protected Collection<Player> getOnlineParticipantSpectators() {
+        List<Player> players = new ArrayList<>();
         for (UUID uuid : gamePlayers) {
-            ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
-            if (championshipPlayer.getPlayer() != null && championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                championshipPlayer.sendActionBar(message);
-            }
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && player.getGameMode() == GameMode.SPECTATOR)
+                players.add(player);
         }
-        sendActionBarToAllSpectators(message);
+        return players;
     }
 
-    @Override
-    public void sendMessageToAllGamePlayersInActionbarAndMessage(String message) {
-        sendMessageToAllGamePlayers(message);
-        sendActionBarToAllGamePlayers(message);
+    protected void sendActionBarToActiveGamePlayers(String message) {
+        for (UUID uuid : gamePlayers) {
+            ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
+            Player player = championshipPlayer == null ? null : championshipPlayer.getPlayer();
+            if (player != null && player.getGameMode() != GameMode.SPECTATOR)
+                championshipPlayer.sendActionBar(message);
+        }
     }
 
     @Override
@@ -216,6 +220,15 @@ public abstract class BaseSingleTeamArea extends BaseArea {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
                 player.playSound(player.getLocation(), sound, volume, pitch);
+        }
+    }
+
+    @Override
+    public void playNoteToAllGamePlayers(Instrument instrument, Note note) {
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
+                player.playNote(player.getLocation(), instrument, note);
         }
     }
 

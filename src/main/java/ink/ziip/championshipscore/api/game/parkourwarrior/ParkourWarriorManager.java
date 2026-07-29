@@ -14,6 +14,9 @@ public class ParkourWarriorManager extends BaseAreaManager<ParkourWarriorTeamAre
 
     @Override
     public void load() {
+        if (!loadArenaWorld("rawarrior"))
+            return;
+
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "parkourwarrior");
         areasFolder.mkdirs();

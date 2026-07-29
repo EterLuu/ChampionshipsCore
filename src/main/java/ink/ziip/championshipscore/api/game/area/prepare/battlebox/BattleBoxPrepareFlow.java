@@ -1,0 +1,157 @@
+package ink.ziip.championshipscore.api.game.area.prepare.battlebox;
+
+import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.area.BaseArea;
+import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
+import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.ListStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.SchematicStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.StampStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
+import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
+import ink.ziip.championshipscore.api.game.battlebox.BattleBoxConfig;
+import ink.ziip.championshipscore.api.game.battlebox.BattleBoxLayout;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.util.Utils;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
+/**
+ * Battle Box's prepare flow: the full schematic -> stamp -> set-every-point sequence. Copy 0 is pasted at
+ * {@link BattleBoxLayout#FIRST} = (0,100,0); every other copy's anchors are derived from copy 0 at match
+ * time, so the admin only configures copy 0. The shared {@code battlebox} world is loaded by the server at
+ * startup (bukkit.yml / VoidGen), so it is available without any plugin-side world creation.
+ */
+public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
+
+    private static final String WORLD = "battlebox";
+
+    private static final Function<ChampionshipsCore, File> SCHEMATIC =
+            plugin -> new File(new File(new File(plugin.getDataFolder(), "battlebox"), "schematics"), "arena.schem");
+
+    @Override
+    public @NotNull String worldName() {
+        return WORLD;
+    }
+
+    @Override
+    public boolean isInCorrectWorld(@NotNull Player player) {
+        World w = player.getWorld();
+        return w != null && WORLD.equals(w.getName());
+    }
+
+    @Override
+    public @NotNull Location copyZeroLocation(@NotNull BaseArea area) {
+        World w = Bukkit.getWorld(WORLD);
+        if (w == null) return CCConfig.LOBBY_LOCATION;
+        return BattleBoxLayout.FIRST.toLocation(w);
+    }
+
+    @Override
+    public @NotNull List<PrepareStep> buildSteps(@NotNull BaseArea area) {
+        List<PrepareStep> steps = new ArrayList<>();
+
+        steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player), WORLD));
+
+        steps.add(new SchematicStep(SCHEMATIC,
+                Component.text("保存场地模板"),
+                Component.text("用 WorldEdit 选取整个场地后点击，保存为 arena.schem")));
+
+        steps.add(new StampStep(SCHEMATIC, BattleBoxLayout.GRID));
+
+        steps.add(new WeSelectionStep("area_pos",
+                Component.text("场地总边界"),
+                Component.text("用 WorldEdit 选取整个盖章区域"),
+                Material.BEDROCK,
+                a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
+                (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },
+                Utils.formatAdminSuccess("已设置场地总边界。")));
+
+        steps.add(new StandAndRunStep("spectator_spawn",
+                Component.text("旁观者出生点"),
+                Component.text("站到旁观位置后点击"),
+                Material.ENDER_EYE,
+                a -> cfg(a).getSpectatorSpawnPoint() != null,
+                (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
+                Utils.formatAdminSuccess("已设置旁观者出生点。")));
+
+        steps.add(new StandAndRunStep("right_spawn",
+                Component.text("右侧队伍出生点"),
+                Component.text("站到右侧队伍出生位置后点击"),
+                Material.GREEN_WOOL,
+                a -> cfg(a).getRightSpawnPoint() != null,
+                (a, loc) -> cfg(a).setRightSpawnPoint(loc),
+                Utils.formatAdminSuccess("已设置右侧队伍出生点。")));
+
+        steps.add(new StandAndRunStep("left_spawn",
+                Component.text("左侧队伍出生点"),
+                Component.text("站到左侧队伍出生位置后点击"),
+                Material.RED_WOOL,
+                a -> cfg(a).getLeftSpawnPoint() != null,
+                (a, loc) -> cfg(a).setLeftSpawnPoint(loc),
+                Utils.formatAdminSuccess("已设置左侧队伍出生点。")));
+
+        steps.add(new StandAndRunStep("right_pre_spawn",
+                Component.text("右侧预备点"),
+                Component.text("站到右侧队伍预备位置后点击"),
+                Material.GREEN_STAINED_GLASS,
+                a -> cfg(a).getRightPreSpawnPoint() != null,
+                (a, loc) -> cfg(a).setRightPreSpawnPoint(loc),
+                Utils.formatAdminSuccess("已设置右侧预备点。")));
+
+        steps.add(new StandAndRunStep("left_pre_spawn",
+                Component.text("左侧预备点"),
+                Component.text("站到左侧队伍预备位置后点击"),
+                Material.RED_STAINED_GLASS,
+                a -> cfg(a).getLeftPreSpawnPoint() != null,
+                (a, loc) -> cfg(a).setLeftPreSpawnPoint(loc),
+                Utils.formatAdminSuccess("已设置左侧预备点。")));
+
+        steps.add(new WeSelectionStep("wool_pos",
+                Component.text("羊毛区域"),
+                Component.text("用 WorldEdit 选取羊毛放置区域"),
+                Material.YELLOW_WOOL,
+                a -> cfg(a).getWoolPos1() != null && cfg(a).getWoolPos2() != null,
+                (a, sel) -> { cfg(a).setWoolPos1(sel[0]); cfg(a).setWoolPos2(sel[1]); },
+                Utils.formatAdminSuccess("已设置羊毛区域。")));
+
+        steps.add(new ListStep("potion_spawn_points",
+                Component.text("药水生成点"),
+                Component.text("逐个添加药水生成位置"),
+                Material.LIME_WOOL,
+                a -> {
+                    List<String> l = cfg(a).getPotionSpawnPoints();
+                    return l == null || l.isEmpty();
+                },
+                (a, s) -> {
+                    BattleBoxConfig c = cfg(a);
+                    List<String> l = c.getPotionSpawnPoints();
+                    if (l == null) l = new ArrayList<>();
+                    l.add(s);
+                    c.setPotionSpawnPoints(l);
+                },
+                a -> cfg(a).setPotionSpawnPoints(new ArrayList<>()),
+                a -> {
+                    List<String> l = cfg(a).getPotionSpawnPoints();
+                    return l == null ? 0 : l.size();
+                }));
+
+        return steps;
+    }
+
+    private static BattleBoxConfig cfg(BaseArea area) {
+        return ((BattleBoxArea) area).getGameConfig();
+    }
+}

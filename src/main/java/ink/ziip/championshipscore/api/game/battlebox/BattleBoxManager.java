@@ -15,6 +15,9 @@ public class BattleBoxManager extends BaseAreaManager<BattleBoxArea> {
 
     @Override
     public void load() {
+        if (!loadArenaWorld("battlebox"))
+            return;
+
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "battlebox");
         areasFolder.mkdirs();

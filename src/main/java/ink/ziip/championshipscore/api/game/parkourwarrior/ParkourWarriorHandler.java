@@ -39,12 +39,6 @@ public class ParkourWarriorHandler extends BaseListener {
             return;
         }
 
-        if (parkourWarriorTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (parkourWarriorTeamArea.getTimer() >= parkourWarriorTeamArea.getGameConfig().getTimer()) {
-                event.setCancelled(true);
-            }
-        }
-
         Location location = player.getLocation();
         if (parkourWarriorTeamArea.notInArea(location)) {
             if (parkourWarriorTeamArea.getTimer() >= 30 && parkourWarriorTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS)

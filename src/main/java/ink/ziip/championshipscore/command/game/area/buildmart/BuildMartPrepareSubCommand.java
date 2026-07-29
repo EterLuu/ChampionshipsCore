@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartArea;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartLayout;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -36,7 +37,7 @@ public class BuildMartPrepareSubCommand extends BaseSubCommand {
         }
         BuildMartArea area = plugin.getGameManager().getBuildMartManager().getArea(args[0]);
         if (area == null) {
-            sender.sendMessage("§c找不到场地 §e" + args[0] + "§c。");
+            Utils.sendAdminError(sender, "找不到场地 #fff566" + args[0]);
             return true;
         }
         int teams;
@@ -47,13 +48,13 @@ public class BuildMartPrepareSubCommand extends BaseSubCommand {
             return true;
         }
         if (teams < 1) {
-            sender.sendMessage("§c队伍数必须 ≥ 1。");
+            Utils.sendAdminError(sender, "队伍数必须至少为 #fff5661");
             return true;
         }
 
         World world = Bukkit.getWorld(area.getWorldName());
         if (world == null) {
-            sender.sendMessage("§c世界 §e" + area.getWorldName() + " §c未加载，无法生成。");
+            Utils.sendAdminError(sender, "世界 #fff566" + area.getWorldName() + " #ededed尚未加载。");
             return true;
         }
 
@@ -61,7 +62,7 @@ public class BuildMartPrepareSubCommand extends BaseSubCommand {
         File hubFile = new File(schematics, "hub.schem");
         File baseFile = new File(schematics, "base.schem");
         if (!hubFile.isFile() || !baseFile.isFile()) {
-            sender.sendMessage("§c缺少 schematic：请先用 §e/cc game area buildmart schematic hub§c 和 §ebase§c 保存模板。");
+            Utils.sendAdminError(sender, "缺少模板，请先分别保存 #fff566hub #ededed和 #fff566base");
             return true;
         }
 
@@ -70,16 +71,16 @@ public class BuildMartPrepareSubCommand extends BaseSubCommand {
                     BuildMartLayout.HUB.getBlockX(), BuildMartLayout.HUB.getBlockY(), BuildMartLayout.HUB.getBlockZ());
             ArenaPreparer.stampCopies(plugin, world, baseFile, BuildMartLayout.GRID, teams);
         } catch (Exception e) {
-            sender.sendMessage("§c粘贴失败：" + e.getMessage());
+            Utils.sendAdminError(sender, "生成地图失败：#fff566" + e.getMessage());
             return true;
         }
 
         // Persist the freshly stamped world back into the static template so every round loads it.
         area.saveMap(World.Environment.NORMAL);
 
-        sender.sendMessage("§a已生成地图：大厅 + §e" + teams + " §a个基地，并固化为模板。");
-        sender.sendMessage("§7现在进入世界、站到 0 号基地(0,100,500)处用 §f/cc game area buildmart set "
-                + args[0] + " base <键> §7配置基地锚点。");
+        Utils.sendAdminSuccess(sender, "已生成并保存建材集市地图：大厅 + #fff566" + teams + " #ededed个基地。");
+        Utils.sendAdminInfo(sender, "下一步：在 0 号基地执行 #fff566/cc game area buildmart set "
+                + args[0] + " base <键>");
         return true;
     }
 

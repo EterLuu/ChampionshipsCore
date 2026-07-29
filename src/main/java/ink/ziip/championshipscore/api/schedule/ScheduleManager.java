@@ -4,6 +4,8 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.battlebox.BattleBoxScheduleManager;
+import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleManager;
 import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskyScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourtag.ParkourTagScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleHandler;
@@ -18,6 +20,7 @@ import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -43,6 +46,8 @@ public class ScheduleManager extends BaseManager {
     private ParkourWarriorScheduleManager parkourWarriorScheduleManager;
     @Getter
     private HotyCodyDuskyScheduleManager hotyCodyDuskyScheduleManager;
+    @Getter
+    private BingoScheduleManager bingoScheduleManager;
     private int timer;
 
     public ScheduleManager(ChampionshipsCore championshipsCore) {
@@ -60,6 +65,7 @@ public class ScheduleManager extends BaseManager {
         parkourTagScheduleManager = new ParkourTagScheduleManager(plugin);
         parkourWarriorScheduleManager = new ParkourWarriorScheduleManager(plugin, new ParkourWarriorScheduleHandler(plugin));
         hotyCodyDuskyScheduleManager = new HotyCodyDuskyScheduleManager(plugin);
+        bingoScheduleManager = new BingoScheduleManager(plugin, new BingoScheduleHandler(plugin));
 
         snowballScheduleManager.load();
         skyWarsScheduleManager.load();
@@ -69,6 +75,7 @@ public class ScheduleManager extends BaseManager {
         parkourTagScheduleManager.load();
         parkourWarriorScheduleManager.load();
         hotyCodyDuskyScheduleManager.load();
+        bingoScheduleManager.load();
     }
 
     @Override
@@ -81,6 +88,7 @@ public class ScheduleManager extends BaseManager {
         parkourTagScheduleManager.unload();
         parkourWarriorScheduleManager.unload();
         hotyCodyDuskyScheduleManager.unload();
+        bingoScheduleManager.unload();
     }
 
     public void addRound(GameTypeEnum gameTypeEnum) {
@@ -91,6 +99,52 @@ public class ScheduleManager extends BaseManager {
         plugin.getRankManager().resetGameOrder();
     }
 
+    /** Shows a lobby/round transition in the action bar only. */
+    public void showRoundPreparationCountdown(GameTypeEnum gameType, int round, int seconds) {
+        String roundValue = String.valueOf(Math.max(1, round));
+        String secondsValue = String.valueOf(Math.max(0, seconds));
+        Utils.sendActionBarToAllPlayers(MessageConfig.GAME_ROUND_PREPARATION_ACTION_BAR
+                .replace("%game%", gameType.toString())
+                .replace("%round%", roundValue)
+                .replace("%time%", secondsValue));
+    }
+
+    /**
+     * Ends the schedule manager of the given game (cancels its countdown/round tasks and unregisters its
+     * handler). Called before force-ending the area so the SingleGameEndEvent fired by endGame doesn't
+     * advance the schedule via nextRound().
+     */
+    public void endGameSchedule(GameTypeEnum gameTypeEnum) {
+        switch (gameTypeEnum) {
+            case SnowballShowdown -> { if (snowballScheduleManager.isEnabled()) snowballScheduleManager.endSchedule(); }
+            case SkyWars -> { if (skyWarsScheduleManager.isEnabled()) skyWarsScheduleManager.endSchedule(); }
+            case TNTRun -> { if (tntRunScheduleManager.isEnabled()) tntRunScheduleManager.endSchedule(); }
+            case TGTTOS -> { if (tgttosScheduleManager.isEnabled()) tgttosScheduleManager.endSchedule(); }
+            case ParkourWarrior -> { if (parkourWarriorScheduleManager.isEnabled()) parkourWarriorScheduleManager.endSchedule(); }
+            case BattleBox -> { if (battleBoxScheduleManager.isEnabled()) battleBoxScheduleManager.endSchedule(); }
+            case ParkourTag -> { if (parkourTagScheduleManager.isEnabled()) parkourTagScheduleManager.endSchedule(); }
+            case HotyCodyDusky -> { if (hotyCodyDuskyScheduleManager.isEnabled()) hotyCodyDuskyScheduleManager.endSchedule(); }
+            case Bingo -> { if (bingoScheduleManager.isEnabled()) bingoScheduleManager.endSchedule(); }
+            default -> { } // DragonEggCarnival / BuildMart have no schedule manager
+        }
+    }
+
+    /**
+     * Undo the most recently started game: stop its schedule, force-end its running areas, then (after a
+     * short delay so the area's async score recording lands first) clear its status entry + point records.
+     * @return the game that was undone, or null if no round exists.
+     */
+    public GameTypeEnum deleteLatestGame() {
+        GameTypeEnum latest = plugin.getRankManager().getLatestGame();
+        if (latest == null) return null;
+        endGameSchedule(latest);
+        plugin.getGameManager().forceEndAreas(latest);
+        // force-end -> endGame -> addPlayerPoints (async). Delay the soft-delete so those INSERTs land
+        // before UPDATE ... SET valid=0, otherwise late inserts survive with valid=1.
+        scheduler.runTaskLaterAsynchronously(plugin, () -> plugin.getRankManager().deleteGameRecords(latest), 60L);
+        return latest;
+    }
+
     public void startDragonEggCarnival(ChampionshipTeam team, ChampionshipTeam rival) {
         plugin.getScheduleManager().addRound(GameTypeEnum.DragonEggCarnival);
         timer = 10;
@@ -98,6 +152,7 @@ public class ScheduleManager extends BaseManager {
         scheduler.runTaskTimer(plugin, (task) -> {
 
             Utils.changeLevelForAllPlayers(timer);
+            showRoundPreparationCountdown(GameTypeEnum.DragonEggCarnival, 1, timer);
 
             if (timer == 10) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.DRAGON_EGG_CARNIVAL)
@@ -108,13 +163,6 @@ public class ScheduleManager extends BaseManager {
             if (timer == 5) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.DRAGON_EGG_CARNIVAL_POINTS));
             }
-            if (timer < 5 && timer > 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-            if (timer == 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-            }
-
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(0);
                 plugin.getGameManager().joinTeamArea(GameTypeEnum.DragonEggCarnival, "area1", team, rival);
@@ -145,6 +193,8 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.SKY_WARS);
         if (gameTypeEnum == GameTypeEnum.ParkourWarrior)
             return Utils.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR);
+        if (gameTypeEnum == GameTypeEnum.Bingo)
+            return Utils.getMessage(ScheduleMessageConfig.BINGO);
 
         return "";
     }
@@ -160,6 +210,8 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.SKY_WARS_POINTS);
         if (gameTypeEnum == GameTypeEnum.ParkourWarrior)
             return Utils.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR_POINTS);
+        if (gameTypeEnum == GameTypeEnum.Bingo)
+            return Utils.getMessage(ScheduleMessageConfig.BINGO_POINTS);
 
         return "";
     }

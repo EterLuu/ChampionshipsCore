@@ -95,6 +95,14 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
+
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         for (List<Location> locations : areaLocations) {
@@ -134,67 +142,49 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SNOWBALL_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_START_PREPARATION_TITLE, MessageConfig.SNOWBALL_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.SNOWBALL_START_PREPARATION,
+                MessageConfig.SNOWBALL_START_PREPARATION_TITLE, MessageConfig.SNOWBALL_START_PREPARATION_SUBTITLE);
 
         timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            changeLevelForAllGamePlayers(timer);
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
             timer--;
         }, 0, 20L);
     }
 
     public void startGameProgress() {
-        timer = getGameConfig().getTimer() + 5;
-
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
 
         giveItemToAllGamePlayersAndTeleport();
 
-        setGameStageEnum(GameStageEnum.PROGRESS);
+        startFinalCountdown(MessageConfig.SNOWBALL_GAME_START_SOON_TITLE,
+                MessageConfig.SNOWBALL_GAME_START_TITLE, MessageConfig.SNOWBALL_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
+    private void beginGameProgress() {
+        for (UUID uuid : gamePlayers) {
+            playerRespawnTime.put(uuid, System.currentTimeMillis());
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
+                player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 60, 0));
+        }
 
-            if (timer > getGameConfig().getTimer()) {
-                String countDown = MessageConfig.SNOWBALL_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
-                sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-
-            if (timer == getGameConfig().getTimer()) {
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SNOWBALL_GAME_START);
-                sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_GAME_START_TITLE, MessageConfig.SNOWBALL_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-
-                for (UUID uuid : gamePlayers) {
-                    playerRespawnTime.put(uuid, System.currentTimeMillis());
-                    Player player = Bukkit.getPlayer(uuid);
-
-                    if (player != null)
-                        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 60, 0));
-                }
-            }
-
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
             changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGameSpectators(MessageConfig.SNOWBALL_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
+            updateSpectatorTimerBossBar(MessageConfig.SNOWBALL_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
             calculateCurrentRank();
-
-            if (timer == 0) {
-                endGame();
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-            }
-
-            timer--;
-        }, 0, 20L);
+        }, this::endGame);
     }
 
     @Override
@@ -218,8 +208,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
         calculatePoints();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SNOWBALL_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_GAME_END_TITLE, MessageConfig.SNOWBALL_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.SNOWBALL_GAME_END_TITLE, MessageConfig.SNOWBALL_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -255,7 +244,6 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
             }
         }
 
-        sendMessageToAllGamePlayers(getPlayerPointsRank());
         sendMessageToAllGamePlayers(getTeamPointsRank());
 
         addPlayerPointsToDatabase();
@@ -336,7 +324,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
             return;
         }
 
-        if (getGameStageEnum() == GameStageEnum.PROGRESS) {
+        if (getGameStageEnum() == GameStageEnum.COUNTDOWN || getGameStageEnum() == GameStageEnum.PROGRESS) {
             respawnPlayer(player);
         }
     }
@@ -445,6 +433,12 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     }
 
     public synchronized void teleportPlayerToSpawnLocation(Player player) {
+        // During the rule-introduction phase everyone roams from the introduction spawn point.
+        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
+        if (isIntroductionPhase() && introductionSpawnPoint != null) {
+            player.teleport(introductionSpawnPoint);
+            return;
+        }
         List<Location> locations = playerRespawnLocations.get(player.getUniqueId());
         if (locations != null) {
             Iterator<Location> locationIterator = locationIterators.get(locations);

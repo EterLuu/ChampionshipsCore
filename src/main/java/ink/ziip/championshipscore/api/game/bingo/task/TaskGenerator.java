@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /**
  * Generates the task list for a card from the active {@link TaskPoolSource}, filtered by included
@@ -60,6 +61,17 @@ public final class TaskGenerator {
         difficultyWeights = (weights == null) ? null : weights.clone();
     }
 
+    /**
+     * A predicate that reports whether a task would be trivialised by the starter kit (handed out at
+     * round start), so those objectives are kept off every card. Installed once at startup from
+     * {@link ink.ziip.championshipscore.api.game.bingo.BingoStarterKit#trivialises}. Null = no kit filter.
+     */
+    private static volatile Predicate<TaskData> kitFilter;
+
+    public static void setKitFilter(Predicate<TaskData> filter) {
+        kitFilter = filter;
+    }
+
     /** Chance an item-collect task is rerolled into a "craft that item" task (only if it's craftable). */
     private static final double CRAFT_CONVERSION_CHANCE = 0.05;
 
@@ -84,6 +96,10 @@ public final class TaskGenerator {
         List<TaskPoolEntry> entries = new ArrayList<>(pool.entries());
         // Tag layer: drop any objective carrying an excluded tag (unobtainable, a disabled dimension, …).
         entries.removeIf(e -> filters.isExcluded(e.task()));
+        // Starter-kit layer: drop any objective the kit would auto-complete at round start.
+        if (kitFilter != null) {
+            entries.removeIf(e -> kitFilter.test(e.task()));
+        }
 
         int fullCardSize = settings.size().fullCardSize;
 

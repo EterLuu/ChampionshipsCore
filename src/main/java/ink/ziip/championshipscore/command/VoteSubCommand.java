@@ -31,7 +31,8 @@ public class VoteSubCommand extends BaseSubCommand {
                 return true;
             }
 
-            if (gameTypeEnum == GameTypeEnum.DragonEggCarnival) {
+            if (gameTypeEnum == GameTypeEnum.DragonEggCarnival
+                    || !plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
                 sender.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
                 return true;
             }
@@ -45,8 +46,14 @@ public class VoteSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         List<String> returnList = new ArrayList<>();
-        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
-            returnList.add(gameTypeEnum.name());
+        if (args.length == 1) {
+            String prefix = args[0].toLowerCase();
+            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+                if (plugin.getGameManager().isGameEnabled(gameTypeEnum)
+                        && gameTypeEnum.name().toLowerCase().startsWith(prefix)) {
+                    returnList.add(gameTypeEnum.name());
+                }
+            }
         }
         return returnList;
     }

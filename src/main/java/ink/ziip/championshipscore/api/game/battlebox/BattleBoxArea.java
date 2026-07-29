@@ -117,6 +117,14 @@ public class BattleBoxArea extends BaseSingleTeamArea {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
+
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         for (BattleBoxMatch match : matches) {
             match.getRight().teleportAllPlayers(match.getRightPreSpawn());
@@ -127,17 +135,18 @@ public class BattleBoxArea extends BaseSingleTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_START_PREPARATION_TITLE, MessageConfig.BATTLE_BOX_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.BATTLE_BOX_START_PREPARATION,
+                MessageConfig.BATTLE_BOX_START_PREPARATION_TITLE, MessageConfig.BATTLE_BOX_START_PREPARATION_SUBTITLE);
 
         timer = 20;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            changeLevelForAllGamePlayers(timer);
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -146,11 +155,6 @@ public class BattleBoxArea extends BaseSingleTeamArea {
 
     protected void startGameProgress() {
         summonPotions();
-
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_START_SOON);
-        sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_START_SOON_TITLE, MessageConfig.BATTLE_BOX_GAME_START_SOON_SUBTITLE);
-
-        timer = getGameConfig().getTimer() + 5;
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
         for (BattleBoxMatch match : matches) {
@@ -163,42 +167,20 @@ public class BattleBoxArea extends BaseSingleTeamArea {
 
         giveItemToAllGamePlayers();
 
-        setGameStageEnum(GameStageEnum.PROGRESS);
+        startFinalCountdown(MessageConfig.BATTLE_BOX_GAME_START_SOON_TITLE,
+                MessageConfig.BATTLE_BOX_GAME_START_TITLE, MessageConfig.BATTLE_BOX_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
-            if (timer > getGameConfig().getTimer()) {
-                String countDown = MessageConfig.BATTLE_BOX_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
-                sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-
-            if (timer == getGameConfig().getTimer()) {
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_START);
-                sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_START_TITLE, MessageConfig.BATTLE_BOX_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-            }
-
+    private void beginGameProgress() {
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
             changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGameSpectators(MessageConfig.BATTLE_BOX_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
-
-            if (timer == 0) {
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-            }
-
-            timer--;
-        }, 0, 20L);
+            updateSpectatorTimerBossBar(MessageConfig.BATTLE_BOX_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
+        }, this::endGame);
 
         woolCheckerTask = scheduler.runTaskTimer(plugin, () -> {
-            if (timer == -1) {
-                changeLevelForAllGamePlayers(0);
-                endGame();
-                if (woolCheckerTask != null)
-                    woolCheckerTask.cancel();
-                return;
-            }
-
             if (getGameStageEnum() != GameStageEnum.PROGRESS)
                 return;
 
@@ -255,8 +237,7 @@ public class BattleBoxArea extends BaseSingleTeamArea {
         }
         addPlayerPointsToDatabase();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_END_TITLE, MessageConfig.BATTLE_BOX_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.BATTLE_BOX_GAME_END_TITLE, MessageConfig.BATTLE_BOX_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -305,6 +286,7 @@ public class BattleBoxArea extends BaseSingleTeamArea {
     private void messageMatch(BattleBoxMatch match, String message) {
         match.getRight().sendMessageToAll(message);
         match.getLeft().sendMessageToAll(message);
+        sendMessageToAllSpectators(message);
     }
 
     @Override
@@ -317,6 +299,7 @@ public class BattleBoxArea extends BaseSingleTeamArea {
             ChampionshipTeam rival = match == null ? null : match.rivalOf(team);
             plugin.getRankManager().addPlayerPoints(entry.getKey(), rival, gameTypeEnum, gameConfig.getAreaName(), entry.getValue());
         }
+        plugin.getRankManager().refreshAfterPendingPointWrites();
     }
 
     @Override
@@ -382,6 +365,12 @@ public class BattleBoxArea extends BaseSingleTeamArea {
     }
 
     private void teleportPlayerToPreSpawnLocation(Player player) {
+        // During the rule-introduction phase everyone roams from the introduction spawn point.
+        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
+        if (isIntroductionPhase() && introductionSpawnPoint != null) {
+            player.teleport(introductionSpawnPoint);
+            return;
+        }
         BattleBoxMatch match = matchOf(player);
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (match != null && team != null) {

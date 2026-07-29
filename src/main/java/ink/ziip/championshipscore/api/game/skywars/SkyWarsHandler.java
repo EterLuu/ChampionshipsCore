@@ -47,9 +47,6 @@ public class SkyWarsHandler extends BaseListener {
             return;
         }
 
-        if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -147,9 +144,6 @@ public class SkyWarsHandler extends BaseListener {
             return;
         }
 
-        if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -169,9 +163,6 @@ public class SkyWarsHandler extends BaseListener {
             return;
         }
 
-        if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -257,9 +248,6 @@ public class SkyWarsHandler extends BaseListener {
             return;
         }
 
-        if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -272,7 +260,7 @@ public class SkyWarsHandler extends BaseListener {
         Location location = player.getLocation();
         if (skyWarsArea.notInArea(location)) {
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(skyWarsArea.getSpectatorSpawnLocation());
+                player.teleport(skyWarsArea.getPreparationTeleportLocation(skyWarsArea.getSpectatorSpawnLocation()));
             }
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
@@ -322,11 +310,6 @@ public class SkyWarsHandler extends BaseListener {
             }
         }
 
-        if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (skyWarsArea.getTimer() >= skyWarsArea.getGameConfig().getTimer()) {
-                event.setCancelled(true);
-            }
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

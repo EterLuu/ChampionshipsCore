@@ -67,6 +67,10 @@ public final class BingoRound {
     private final Map<ChampionshipTeam, Integer> scores = new HashMap<>();
     private final Map<ChampionshipTeam, Integer> awardedLines = new HashMap<>();
     private int lastScoreDelta;
+    /** Cell points earned by the completing player in the most recent completion (by claim rank). */
+    private int lastCellDelta;
+    /** Per-member line bonus triggered by the most recent completion; caller credits every team member. */
+    private int lastLineDelta;
 
     /**
      * @param itemPoints points per claim rank (index 0 = first team to claim a cell), never null.
@@ -191,47 +195,69 @@ public final class BingoRound {
         return scores.getOrDefault(team, 0);
     }
 
-    /** Points gained in the most recent completion (for the broadcast). */
-    public int lastScoreDelta() {
-        return lastScoreDelta;
+    /** Teams ranked by score descending, ties broken by earliest last-completion time. */
+    public List<ChampionshipTeam> rankedTeams() {
+        List<ChampionshipTeam> sorted = new ArrayList<>(teams);
+        sorted.sort((a, b) -> {
+            int diff = scores.getOrDefault(b, 0) - scores.getOrDefault(a, 0);
+            if (diff != 0) return diff;
+            return Long.compare(lastCompletionTime(a), lastCompletionTime(b));
+        });
+        return sorted;
     }
 
     /** Team with the highest score; ties broken by earliest last-completion time. Null if all zero. */
     public ChampionshipTeam resolveTopScore() {
-        ChampionshipTeam best = null;
-        int bestScore = -1;
-        long bestTime = Long.MAX_VALUE;
-        for (ChampionshipTeam team : teams) {
-            int s = scores.getOrDefault(team, 0);
-            long time = lastCompletionTime(team);
-            if (s > bestScore || (s == bestScore && time < bestTime)) {
-                best = team;
-                bestScore = s;
-                bestTime = time;
-            }
+        for (ChampionshipTeam team : rankedTeams()) {
+            if (scores.getOrDefault(team, 0) > 0) return team;
         }
-        return bestScore <= 0 ? null : best;
+        return null;
     }
 
-    /** Awards points for completing {@code task} and for any newly-earned lines. Sets {@link #lastScoreDelta}. */
+    /**
+     * Awards points for completing {@code task} and for any newly-earned lines. Splits the delta into a
+     * per-player cell portion ({@link #lastCellDelta}, by claim rank) and a per-member line bonus
+     * ({@link #lastLineDelta}); the caller credits each accordingly - the completing player gets the cell
+     * points, every team member gets the line bonus. The team-score tracker mirrors
+     * {@code BaseArea#getTeamPoints} (cell once + line bonus × team size) so winner resolution stays
+     * consistent with the sum-of-members ranking.
+     */
     private void awardPoints(ChampionshipTeam team, GameTask task) {
-        lastScoreDelta = 0;
+        lastCellDelta = 0;
+        lastLineDelta = 0;
 
         int rank = task.claimRank(BingoTeamAdapter.id(team));
         if (rank >= 0) {
-            lastScoreDelta += rank < itemPoints.length ? itemPoints[rank] : itemPoints[itemPoints.length - 1];
+            lastCellDelta = rank < itemPoints.length ? itemPoints[rank] : itemPoints[itemPoints.length - 1];
         }
 
         int totalLines = countCompletedLines(team);
         int prevLines = awardedLines.getOrDefault(team, 0);
         if (totalLines > prevLines) {
             for (int i = prevLines; i < totalLines; i++) {
-                lastScoreDelta += (i < lineBonusMajorCount) ? lineBonus : lineBonusMinor;
+                lastLineDelta += (i < lineBonusMajorCount) ? lineBonus : lineBonusMinor;
             }
             awardedLines.put(team, totalLines);
         }
 
-        scores.merge(team, lastScoreDelta, Integer::sum);
+        lastScoreDelta = lastCellDelta + lastLineDelta;
+        int teamSize = Math.max(1, team.getMembers().size());
+        scores.merge(team, lastCellDelta + lastLineDelta * teamSize, Integer::sum);
+    }
+
+    /** Points gained in the most recent completion (cell + one share of line bonus), for the broadcast. */
+    public int lastScoreDelta() {
+        return lastScoreDelta;
+    }
+
+    /** Cell points the completing player earned in the most recent completion (credited to that player). */
+    public int lastCellDelta() {
+        return lastCellDelta;
+    }
+
+    /** Per-member line bonus triggered by the most recent completion (credited to every team member). */
+    public int lastLineDelta() {
+        return lastLineDelta;
     }
 
     // ── round-start setup ────────────────────────────────────────────────────────────────────
@@ -241,6 +267,22 @@ public final class BingoRound {
         java.util.Iterator<Advancement> it = org.bukkit.Bukkit.advancementIterator();
         while (it.hasNext()) revokeAdvancement(player, it.next());
 
+        Map<StatisticHandle, Integer> baselines = statBaselines.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>());
+        for (GameTask task : card.getTasks()) {
+            if (task.data.getType() == TaskData.TaskType.STATISTIC) {
+                StatisticHandle h = ((StatisticTask) task.data).statistic();
+                baselines.putIfAbsent(h, readStatistic(player, h));
+            }
+        }
+    }
+
+    /**
+     * Snapshots statistic baselines for a participant <em>without</em> revoking advancements - used when
+     * a player reconnects mid-round, where their earned advancements and card progress must be preserved.
+     * Only baselines statistics that don't already have one, so a participant who was online at round
+     * start (already prepared) is left untouched.
+     */
+    public void ensureStatBaselines(Player player) {
         Map<StatisticHandle, Integer> baselines = statBaselines.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>());
         for (GameTask task : card.getTasks()) {
             if (task.data.getType() == TaskData.TaskType.STATISTIC) {

@@ -25,7 +25,9 @@ public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
             if (areaList != null) {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
-                    areas.put(name, new TNTRunTeamArea(plugin, new TNTRunConfig(plugin, name), false, name));
+                    TNTRunTeamArea area = new TNTRunTeamArea(plugin, new TNTRunConfig(plugin, name), false, name);
+                    areas.put(name, area);
+                    area.preloadMap();
                 }
             }
         });

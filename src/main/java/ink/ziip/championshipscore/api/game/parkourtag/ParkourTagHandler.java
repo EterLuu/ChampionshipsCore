@@ -94,7 +94,7 @@ public class ParkourTagHandler extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerUseClock(PlayerInteractEvent event) {
+    public void onPlayerUseEnderEye(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         if (parkourTagArea.notAreaPlayer(player)) {
             return;
@@ -109,16 +109,11 @@ public class ParkourTagHandler extends BaseListener {
             return;
         }
 
-        if (parkourTagArea.getTimer() >= parkourTagArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-            return;
-        }
-
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
             ItemStack mainHandItem = player.getInventory().getItemInMainHand();
             ItemStack offHandItem = player.getInventory().getItemInOffHand();
-            if (mainHandItem.getType() == Material.CLOCK || offHandItem.getType() == Material.CLOCK) {
-                parkourTagArea.useClock(player);
+            if (mainHandItem.getType() == Material.ENDER_EYE || offHandItem.getType() == Material.ENDER_EYE) {
+                parkourTagArea.useEnderEye(player);
             }
         }
 
@@ -141,19 +136,45 @@ public class ParkourTagHandler extends BaseListener {
             return;
         }
 
-        if (parkourTagArea.getTimer() >= parkourTagArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
+            ItemStack mainHandItem = player.getInventory().getItemInMainHand();
+            ItemStack offHandItem = player.getInventory().getItemInOffHand();
+            if (mainHandItem.getType() == Material.FEATHER || offHandItem.getType() == Material.FEATHER) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 120, 1));
+                player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_FEATHER);
+                mainHandItem.setAmount(0);
+                offHandItem.setAmount(0);
+            }
+        }
+
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerUseWindCharge(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (parkourTagArea.notAreaPlayer(player)) {
+            return;
+        }
+
+        Location location = player.getLocation();
+        if (parkourTagArea.notInArea(location)) {
+            return;
+        }
+
+        if (parkourTagArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
             return;
         }
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
             ItemStack mainHandItem = player.getInventory().getItemInMainHand();
             ItemStack offHandItem = player.getInventory().getItemInOffHand();
-            if (mainHandItem.getType() == Material.POTION || offHandItem.getType() == Material.POTION) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 120, 1));
-                player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_FEATHER);
-                mainHandItem.setAmount(0);
-                offHandItem.setAmount(0);
+            if (mainHandItem.getType() == Material.WIND_CHARGE || offHandItem.getType() == Material.WIND_CHARGE) {
+                parkourTagArea.useWindCharge(player);
+                // Consume the user's held wind charge too (useWindCharge clears slot 1 for the whole
+                // team, but the user may have moved theirs into the off-hand).
+                if (mainHandItem.getType() == Material.WIND_CHARGE) mainHandItem.setAmount(0);
+                if (offHandItem.getType() == Material.WIND_CHARGE) offHandItem.setAmount(0);
             }
         }
 
@@ -189,6 +210,16 @@ public class ParkourTagHandler extends BaseListener {
     public void onPlayerDropItems(PlayerDropItemEvent event) {
         Player player = event.getPlayer();
         if (parkourTagArea.notAreaPlayer(player)) {
+            return;
+        }
+
+        // Kit items (ender eye / feather / wind charge) are never droppable for match players,
+        // regardless of where they currently stand.
+        ItemStack dropped = event.getItemDrop().getItemStack();
+        if (dropped.getType() == Material.ENDER_EYE
+                || dropped.getType() == Material.FEATHER
+                || dropped.getType() == Material.WIND_CHARGE) {
+            event.setCancelled(true);
             return;
         }
 
@@ -256,7 +287,7 @@ public class ParkourTagHandler extends BaseListener {
         Location location = player.getLocation();
         if (parkourTagArea.notInArea(location)) {
             if (parkourTagArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(parkourTagArea.getSpectatorSpawnLocation());
+                player.teleport(parkourTagArea.getPreparationTeleportLocation(parkourTagArea.getSpectatorSpawnLocation()));
             }
             if (parkourTagArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
@@ -273,9 +304,6 @@ public class ParkourTagHandler extends BaseListener {
             return;
         }
 
-        if (parkourTagArea.getTimer() >= parkourTagArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

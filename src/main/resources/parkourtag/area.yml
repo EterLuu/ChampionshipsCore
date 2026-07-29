@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 1
+  version: 2
 name: area
 timer: 60
 area-pos1:
@@ -17,3 +17,31 @@ right-area:
   area-pos2:
   chaser-spawn-point:
   escapee-spawn-points: [ ]
+
+# ── 规则介绍阶段（introduction）────────────────────────────
+# 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
+# 规则文案（rules，每个子列表为一段，支持 & 颜色码与 #RRGGBB 十六进制颜色），期间可以自由参观
+# 场地；结束后传送到正式准备点位，读秒后开始游戏。
+# 将 introduction-spawn-point 留空或把 rules 设为 [] 即可跳过该阶段。
+introduction-spawn-point:
+rules:
+  - - "#696969==========&r #8a70ff[#24abff跑酷追击#8a70ff] #696969==========&r"
+    - "#fff566跑！跳！别回头——追击者出笼啦！"
+    - "#ededed随机匹配 9 轮，每轮与对手队伍各赛一场"
+    - "#ededed每局 1 分钟，两场比赛同时进行"
+    - "#ededed每局双方各选 1 名#8a70ff追击者#ededed，其余 3 人逃脱"
+    - "#ededed追击者只需#ff6b26一击#ededed即可让逃脱者出局"
+    - "#ededed逃脱者要拼尽全力活到最后"
+  - - "#696969==========&r #fff566积分规则 #696969==========&r"
+    - "#ededed逃脱者：全员存活每人 #fff566+20#ededed，每活 10 秒 #fff566+2"
+    - "#ededed追击者：抓光全部逃脱者 #fff566+42#ededed（每 10 秒递减 7）"
+    - "#ededed追击者每抓到 1 名逃脱者 #fff566+6 分"
+    - "#ededed追击方抓光对手：全队每人 #fff566+30 分"
+    - "#ededed双方都抓光时，只有更快的一方得分"
+    - "#ededed同一名玩家全场最多担任 #fff5664 次#ededed追击者"
+  - - "#696969==========&r #fff566小提示 #696969==========&r"
+    - "#fff566逃脱者道具（全队共享）："
+    - "#ededed末影之眼：显示追击者轮廓 3 秒（冷却 10 秒）"
+    - "#ededed风弹：让追击者浮空 1.5 秒（每局仅 1 次）"
+    - "#ededed追击者的羽毛：6 秒速度 II（每局仅 1 次）"
+    - "#ededed分散逃跑，别给追击者串糖葫芦的机会"

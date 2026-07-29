@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.team.dao;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
+import ink.ziip.championshipscore.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
@@ -33,7 +34,7 @@ public class TeamDaoImpl implements TeamDao {
                 return teamEntries;
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("查询队伍列表", exception);
             return Collections.emptyList();
         }
     }
@@ -63,7 +64,7 @@ public class TeamDaoImpl implements TeamDao {
                 }
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("新增队伍", exception);
             return -1;
         }
     }
@@ -81,7 +82,7 @@ public class TeamDaoImpl implements TeamDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("删除队伍", exception);
         }
     }
 
@@ -110,7 +111,7 @@ public class TeamDaoImpl implements TeamDao {
                 return members;
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("查询队伍成员", exception);
             return Collections.emptySet();
         }
     }
@@ -128,7 +129,7 @@ public class TeamDaoImpl implements TeamDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("清空队伍成员", exception);
         }
     }
 
@@ -145,7 +146,7 @@ public class TeamDaoImpl implements TeamDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("删除队伍成员", exception);
         }
     }
 
@@ -163,7 +164,12 @@ public class TeamDaoImpl implements TeamDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("新增队伍成员", exception);
         }
+    }
+
+    private void logFailure(String operation, SQLException exception) {
+        plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Database", "队伍",
+                "操作=" + operation + " 失败"), exception);
     }
 }

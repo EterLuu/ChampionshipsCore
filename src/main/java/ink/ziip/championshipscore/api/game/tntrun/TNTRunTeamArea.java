@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.tntrun;
 
+import io.papermc.paper.registry.keys.EnchantmentKeys;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
@@ -8,12 +9,12 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Enchants;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
@@ -51,11 +52,15 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         getGameHandler().setTntRunTeamArea(this);
         tntRunConfig.setAreaName(areaName);
 
-        if (!firstTime) {
-            loadMap(World.Environment.NORMAL);
+        if (firstTime) {
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
         }
+    }
+
+    /** Preloads a clean arena at startup and immediately after each completed game. */
+    public void preloadMap() {
+        loadMap(World.Environment.NORMAL);
     }
 
     @Override
@@ -68,15 +73,20 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         handlePlayerMoveTask = null;
         tntGeneratorTask = null;
 
-        scheduler.runTaskLater(plugin, () -> {
-            loadMap(World.Environment.NORMAL);
-        }, 100L);
+        preloadMap();
     }
 
     @Override
     public void resetGame() {
+        cancelIntroduction();
+        cancelFinalCountdown();
         playerPoints.clear();
         resetBaseArea();
+    }
+
+    @Override
+    public boolean freezeMovementDuringCountdown() {
+        return false;
     }
 
     @Override
@@ -91,6 +101,14 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     @Override
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
+
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
@@ -125,23 +143,18 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         giveElytraToAllPlayers();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_START_PREPARATION_TITLE, MessageConfig.TNT_RUN_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.TNT_RUN_START_PREPARATION,
+                MessageConfig.TNT_RUN_START_PREPARATION_TITLE, MessageConfig.TNT_RUN_START_PREPARATION_SUBTITLE);
 
         timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+            showPreparationCountdown(timer);
 
-            if (timer < 5 && timer > 0) {
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-
-            changeLevelForAllGamePlayers(timer);
-
-            if (timer == 0) {
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-                startGameProgress();
+            if (timer == 5) {
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -149,40 +162,33 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     }
 
     public void startGameProgress() {
-        setGameStageEnum(GameStageEnum.PROGRESS);
-        timer = getGameConfig().getTimer();
-
         int offlinePlayers = 0;
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) {
                 deathPlayer.add(uuid);
                 offlinePlayers++;
-                plugin.getLogger().log(Level.INFO, gameTypeEnum + ", " + gameConfig.getAreaName() + "Player " + playerManager.getPlayerName(uuid) + " (" + uuid + ") not online");
+                logGame(Level.INFO, "玩家", "玩家=" + playerManager.getPlayerName(uuid) + " uuid=" + uuid
+                        + " 状态=离线，计入淘汰");
             }
         }
         addPointsToAllSurvivePlayers(offlinePlayers * 4);
 
 //        resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_GAME_START);
-        sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_GAME_START_TITLE, MessageConfig.TNT_RUN_GAME_START_SUBTITLE);
-        playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
+        startFinalCountdown(MessageConfig.TNT_RUN_START_PREPARATION_TITLE,
+                MessageConfig.TNT_RUN_GAME_START_TITLE, MessageConfig.TNT_RUN_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
-
+    private void beginGameProgress() {
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
             changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGameSpectators(MessageConfig.TNT_RUN_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
-
-            if (timer == 0) {
-                changeLevelForAllGamePlayers(timer);
-                endGame();
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-            }
+            updateSpectatorTimerBossBar(MessageConfig.TNT_RUN_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
 
             if (timer == 120 || timer == 60 || timer == 20) {
-                sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
                 sendActionBarToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
 
                 tntTimer = 9;
@@ -243,9 +249,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                 }, 0, 20L);
 
             }
-
-            timer--;
-        }, 0, 20L);
+        }, this::endGame);
 
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
         handlePlayerMoveTask = scheduler.runTaskTimerAsynchronously(plugin, () -> gamePlayersCopy.forEach(uuid -> {
@@ -254,6 +258,11 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                 handlePlayerMove(player);
             }
         }), 0, 1L);
+    }
+
+    @Override
+    protected String getFinalCountdownSubtitle(String gameTitle) {
+        return MessageConfig.TNT_RUN_FINAL_COUNTDOWN_SUBTITLE;
     }
 
     private void handlePlayerMove(@NotNull Player player) {
@@ -265,7 +274,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && !deathPlayer.contains(uuid)) {
                 ItemStack elytra = new ItemStack(Material.ELYTRA);
-                elytra.addEnchantment(Enchantment.UNBREAKING, 1);
+                elytra.addEnchantment(Enchants.get(EnchantmentKeys.UNBREAKING), 1);
 
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
                 if (championshipTeam != null) {
@@ -359,8 +368,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         setGameStageEnum(GameStageEnum.END);
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_GAME_END_TITLE, MessageConfig.TNT_RUN_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.TNT_RUN_GAME_END_TITLE, MessageConfig.TNT_RUN_GAME_END_SUBTITLE);
 
         teleportAllPlayers(CCConfig.LOBBY_LOCATION);
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -395,7 +403,6 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                 addPlayerPoints(deathPlayer.get(deathPlayer.size() - 2), 30);
         }
 
-        sendMessageToAllGamePlayers(getPlayerPointsRank());
         sendMessageToAllGamePlayers(getTeamPointsRank());
 
         addPlayerPointsToDatabase();
@@ -476,6 +483,12 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     }
 
     public void teleportPlayerToSpawnPoint(Player player) {
+        // During the rule-introduction phase everyone roams from the introduction spawn point.
+        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
+        if (isIntroductionPhase() && introductionSpawnPoint != null) {
+            player.teleport(introductionSpawnPoint);
+            return;
+        }
         Location location = playerSpawnLocations.get(player.getUniqueId());
 
         if (location != null) {

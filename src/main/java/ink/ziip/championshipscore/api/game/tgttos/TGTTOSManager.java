@@ -14,6 +14,9 @@ public class TGTTOSManager extends BaseAreaManager<TGTTOSTeamArea> {
 
     @Override
     public void load() {
+        if (!loadArenaWorld("tgttos"))
+            return;
+
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "tgttos");
         areasFolder.mkdirs();

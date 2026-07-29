@@ -14,6 +14,9 @@ public class SnowballShowdownManager extends BaseAreaManager<SnowballShowdownTea
 
     @Override
     public void load() {
+        if (!loadArenaWorld("snowball"))
+            return;
+
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "snowball");
         areasFolder.mkdirs();

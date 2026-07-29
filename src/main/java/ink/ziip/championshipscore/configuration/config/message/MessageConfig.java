@@ -4,6 +4,10 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import lombok.Getter;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 @Getter
 public class MessageConfig extends BaseConfigurationFile {
@@ -16,7 +20,18 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 6;
+        return 11;
+    }
+
+    /** Keep unrelated rank/vote copy while replacing the unified gameplay and administration copy in v11. */
+    @Override
+    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) {
+        for (String section : List.of("command", "team", "member", "reason", "area", "spectator", "game",
+                "battlebox", "parkourtag", "skywars", "tgttos", "bingo", "buildmart", "tntrun",
+                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky"))
+            outdatedConfiguration.set(section, null);
+        outdatedConfiguration.set("no-permission", null);
+        super.loadFromOutdatedConfiguration(outdatedConfiguration);
     }
 
     // Player
@@ -114,6 +129,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "area-status.preparation")
     public static String AREA_STATUS_PREPARATION;
 
+    @ConfigOption(path = "area-status.countdown")
+    public static String AREA_STATUS_COUNTDOWN;
+
     @ConfigOption(path = "area-status.progress")
     public static String AREA_STATUS_PROGRESS;
 
@@ -136,17 +154,32 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "rank.team-board-row")
     public static String RANK_TEAM_BOARD_ROW;
 
+    @ConfigOption(path = "rank.team-board-entry")
+    public static String RANK_TEAM_BOARD_ENTRY;
+
     @ConfigOption(path = "rank.player-board-bar")
     public static String RANK_PLAYER_BOARD_BAR;
 
     @ConfigOption(path = "rank.player-board-row")
     public static String RANK_PLAYER_BOARD_ROW;
 
+    @ConfigOption(path = "rank.player-board-entry")
+    public static String RANK_PLAYER_BOARD_ENTRY;
+
     @ConfigOption(path = "rank.not-player")
     public static String RANK_NOT_PLAYER;
 
     @ConfigOption(path = "rank.no-record")
     public static String RANK_NO_RECORD;
+
+    @ConfigOption(path = "rank.final-board-bar")
+    public static String RANK_FINAL_BOARD_BAR;
+
+    @ConfigOption(path = "rank.final-recap-hint")
+    public static String RANK_FINAL_RECAP_HINT;
+
+    @ConfigOption(path = "rank.no-recap")
+    public static String RANK_NO_RECAP;
 
     // Spectator
     @ConfigOption(path = "spectator.is-player")
@@ -227,6 +260,39 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "game.game-weight-info")
     public static String GAME_GAME_WEIGHT_INFO;
+
+    @ConfigOption(path = "game.preparation-count-down")
+    public static String GAME_PREPARATION_COUNT_DOWN;
+
+    @ConfigOption(path = "game.round-preparation-title")
+    public static String GAME_ROUND_PREPARATION_TITLE;
+
+    @ConfigOption(path = "game.round-preparation-subtitle")
+    public static String GAME_ROUND_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "game.round-preparation-action-bar")
+    public static String GAME_ROUND_PREPARATION_ACTION_BAR;
+
+    @ConfigOption(path = "game.start-count-down-title")
+    public static String GAME_START_COUNT_DOWN_TITLE;
+
+    @ConfigOption(path = "game.start-count-down-subtitle")
+    public static String GAME_START_COUNT_DOWN_SUBTITLE;
+
+    @ConfigOption(path = "game.start-count-down-action-bar")
+    public static String GAME_START_COUNT_DOWN_ACTION_BAR;
+
+    @ConfigOption(path = "game.start-action-bar")
+    public static String GAME_START_ACTION_BAR;
+
+    @ConfigOption(path = "game.end-action-bar")
+    public static String GAME_END_ACTION_BAR;
+
+    @ConfigOption(path = "game.round-end-title")
+    public static String GAME_ROUND_END_TITLE;
+
+    @ConfigOption(path = "game.round-end-subtitle")
+    public static String GAME_ROUND_END_SUBTITLE;
 
     // BattleBox
     @ConfigOption(path = "battlebox.start-preparation")
@@ -365,20 +431,29 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourtag.whole-team-was-killed")
     public static String PARKOUR_TAG_WHOLE_TEAM_WAS_KILLED;
 
-    @ConfigOption(path = "parkourtag.kits.clock")
-    public static String PARKOUR_TAG_KITS_CLOCK;
+    @ConfigOption(path = "parkourtag.kits.ender-eye")
+    public static String PARKOUR_TAG_KITS_ENDER_EYE;
 
     @ConfigOption(path = "parkourtag.kits.feather")
     public static String PARKOUR_TAG_KITS_FEATHER;
 
-    @ConfigOption(path = "parkourtag.kits.use-clock")
-    public static String PARKOUR_TAG_KITS_USE_CLOCK;
+    @ConfigOption(path = "parkourtag.kits.use-ender-eye")
+    public static String PARKOUR_TAG_KITS_USE_ENDER_EYE;
 
-    @ConfigOption(path = "parkourtag.kits.use-clock-failed")
-    public static String PARKOUR_TAG_KITS_USE_CLOCK_FAILED;
+    @ConfigOption(path = "parkourtag.kits.use-ender-eye-failed")
+    public static String PARKOUR_TAG_KITS_USE_ENDER_EYE_FAILED;
 
     @ConfigOption(path = "parkourtag.kits.use-feather")
     public static String PARKOUR_TAG_KITS_USE_FEATHER;
+
+    @ConfigOption(path = "parkourtag.kits.wind-charge")
+    public static String PARKOUR_TAG_KITS_WIND_CHARGE;
+
+    @ConfigOption(path = "parkourtag.kits.use-wind-charge")
+    public static String PARKOUR_TAG_KITS_USE_WIND_CHARGE;
+
+    @ConfigOption(path = "parkourtag.kits.use-wind-charge-failed")
+    public static String PARKOUR_TAG_KITS_USE_WIND_CHARGE_FAILED;
 
     @ConfigOption(path = "parkourtag.boss-bar.chaser")
     public static String PARKOUR_TAG_BOSS_BAR_CHASER;
@@ -600,23 +675,20 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "buildmart.golden-expired", nullable = true)
     public static String BUILD_MART_GOLDEN_EXPIRED;
 
-    @ConfigOption(path = "buildmart.blueprint-selected", nullable = true)
-    public static String BUILD_MART_BLUEPRINT_SELECTED;
-
-    @ConfigOption(path = "buildmart.blueprint-refreshed", nullable = true)
-    public static String BUILD_MART_BLUEPRINT_REFRESHED;
-
-    @ConfigOption(path = "buildmart.refresh-used", nullable = true)
-    public static String BUILD_MART_REFRESH_USED;
-
-    @ConfigOption(path = "buildmart.no-free-slot", nullable = true)
-    public static String BUILD_MART_NO_FREE_SLOT;
-
     @ConfigOption(path = "buildmart.submit-incomplete", nullable = true)
     public static String BUILD_MART_SUBMIT_INCOMPLETE;
 
-    @ConfigOption(path = "buildmart.library-refreshed", nullable = true)
-    public static String BUILD_MART_LIBRARY_REFRESHED;
+    @ConfigOption(path = "buildmart.submit-locked", nullable = true)
+    public static String BUILD_MART_SUBMIT_LOCKED;
+
+    @ConfigOption(path = "buildmart.golden-submit-failed", nullable = true)
+    public static String BUILD_MART_GOLDEN_SUBMIT_FAILED;
+
+    @ConfigOption(path = "buildmart.golden-submit-confirm", nullable = true)
+    public static String BUILD_MART_GOLDEN_SUBMIT_CONFIRM;
+
+    @ConfigOption(path = "buildmart.blueprint-auto-refreshed", nullable = true)
+    public static String BUILD_MART_BLUEPRINT_AUTO_REFRESHED;
 
     @ConfigOption(path = "buildmart.award-entrepreneur", nullable = true)
     public static String BUILD_MART_AWARD_ENTREPRENEUR;
@@ -651,6 +723,10 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tntrun.action-bar-count-down")
     public static String TNT_RUN_ACTION_BAR_COUNT_DOWN;
+
+    // Optional during the v9 -> v10 bootstrap; the bundled default remains active until migration.
+    @ConfigOption(path = "tntrun.final-countdown-subtitle", nullable = true)
+    public static String TNT_RUN_FINAL_COUNTDOWN_SUBTITLE;
 
     @ConfigOption(path = "tntrun.game-end")
     public static String TNT_RUN_GAME_END;
@@ -710,6 +786,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "dragoneggcarnival.action-bar-count-down")
     public static String DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN;
 
+    @ConfigOption(path = "dragoneggcarnival.dragon-phase-count-down", nullable = true)
+    public static String DRAGON_EGG_CARNIVAL_DRAGON_PHASE_COUNT_DOWN;
+
     @ConfigOption(path = "dragoneggcarnival.game-end")
     public static String DRAGON_EGG_CARNIVAL_GAME_END;
 
@@ -754,6 +833,12 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawned")
     public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED;
+
+    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawned-title", nullable = true)
+    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_TITLE;
+
+    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawned-subtitle", nullable = true)
+    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_SUBTITLE;
 
     @ConfigOption(path = "dragoneggcarnival.gain-kit")
     public static String DRAGON_EGG_CARNIVAL_GAIN_KIT;
@@ -863,6 +948,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourwarrior.action-bar-count-down")
     public static String PARKOUR_WARRIOR_ACTION_BAR_COUNT_DOWN;
 
+    @ConfigOption(path = "parkourwarrior.sudden-death-count-down", nullable = true)
+    public static String PARKOUR_WARRIOR_SUDDEN_DEATH_COUNT_DOWN;
+
     @ConfigOption(path = "parkourwarrior.arrived-at-checkpoint")
     public static String PARKOUR_WARRIOR_SUB_CHECKPOINT_ENTERED;
 
@@ -886,6 +974,12 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "parkourwarrior.start-sudden-death")
     public static String PARKOUR_WARRIOR_START_SUDDEN_DEATH;
+
+    @ConfigOption(path = "parkourwarrior.start-sudden-death-title", nullable = true)
+    public static String PARKOUR_WARRIOR_START_SUDDEN_DEATH_TITLE;
+
+    @ConfigOption(path = "parkourwarrior.start-sudden-death-subtitle", nullable = true)
+    public static String PARKOUR_WARRIOR_START_SUDDEN_DEATH_SUBTITLE;
 
 
     // Hoty Cody Dusky
@@ -1002,4 +1096,16 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "vote.vote-board-row")
     public static String VOTE_VOTE_BOARD_ROW;
+
+    @ConfigOption(path = "vote.boss-bar")
+    public static String VOTE_BOSS_BAR;
+
+    @ConfigOption(path = "vote.not-voted")
+    public static String VOTE_NOT_VOTED;
+
+    @ConfigOption(path = "vote.end-vote-title")
+    public static String VOTE_END_VOTE_TITLE;
+
+    @ConfigOption(path = "vote.end-vote-subtitle")
+    public static String VOTE_END_VOTE_SUBTITLE;
 }

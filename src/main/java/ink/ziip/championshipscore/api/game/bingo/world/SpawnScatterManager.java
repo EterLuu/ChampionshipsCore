@@ -17,14 +17,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 /**
- * Scatters players around a world's spawn into a ring, picking a safe top-of-surface spot per player
- * (clear of water/lava/hazards, with headroom). Ported from minebingo, with the {@code Tasks} wrapper
- * replaced by the Bukkit scheduler. Chunk loads use Paper's async chunk API so a large scatter doesn't
- * stall the main thread; the safety scan and the final teleport run back on the main thread.
+ * Scatters players within a small disc around a world's spawn, picking a safe top-of-surface spot per
+ * player (clear of water/lava/hazards, with headroom). Ported from minebingo, with the {@code Tasks}
+ * wrapper replaced by the Bukkit scheduler. Chunk loads use Paper's async chunk API so the scatter
+ * doesn't stall the main thread; the safety scan and the final teleport run back on the main thread.
  */
 public final class SpawnScatterManager {
-    private static final int MIN_RING_RADIUS = 8;
-    private static final int MIN_PLAYER_DISTANCE_SQ = 24 * 24;
     private static final Set<Biome> WATER_BIOMES = Set.of(
             Biome.OCEAN, Biome.DEEP_OCEAN, Biome.WARM_OCEAN, Biome.LUKEWARM_OCEAN,
             Biome.DEEP_LUKEWARM_OCEAN, Biome.COLD_OCEAN, Biome.DEEP_COLD_OCEAN,
@@ -41,15 +39,14 @@ public final class SpawnScatterManager {
         Bukkit.getScheduler().runTask(plugin, runnable);
     }
 
-    public void performScatterAsync(World world, List<Player> players, int ringRadius, int jitter, int maxTries, Runnable onComplete) {
+    public void performScatterAsync(World world, List<Player> players, int radius, int maxTries, Runnable onComplete) {
         if (world == null || players.isEmpty()) {
             if (onComplete != null) onComplete.run();
             return;
         }
-        int radius = Math.max(16, Math.max(MIN_RING_RADIUS, ringRadius));
-        int effectiveJitter = Math.max(0, jitter);
+        int discRadius = Math.max(1, radius);
         int tries = Math.max(8, maxTries);
-        processPlayersAsync(world, players, new ArrayList<>(), radius, effectiveJitter, tries, locations -> runMain(() -> {
+        processPlayersAsync(world, players, new ArrayList<>(), discRadius, tries, locations -> runMain(() -> {
             for (int i = 0; i < players.size(); i++) {
                 Location loc = i < locations.size() ? locations.get(i) : fallbackWorldSpawn(world);
                 teleportReset(players.get(i), loc);
@@ -58,19 +55,19 @@ public final class SpawnScatterManager {
         }));
     }
 
-    private void processPlayersAsync(World world, List<Player> players, List<Location> taken, int radius, int jitter, int tries, Consumer<List<Location>> onAllDone) {
+    private void processPlayersAsync(World world, List<Player> players, List<Location> taken, int radius, int tries, Consumer<List<Location>> onAllDone) {
         int index = taken.size();
         if (index >= players.size()) {
             onAllDone.accept(taken);
             return;
         }
-        findSingleSpotAsync(world, taken, radius, jitter, tries, loc -> {
+        findSingleSpotAsync(world, radius, tries, loc -> {
             taken.add(loc);
-            processPlayersAsync(world, players, taken, radius, jitter, tries, onAllDone);
+            processPlayersAsync(world, players, taken, radius, tries, onAllDone);
         });
     }
 
-    private void findSingleSpotAsync(World world, List<Location> taken, int radius, int jitter, int triesLeft, Consumer<Location> callback) {
+    private void findSingleSpotAsync(World world, int radius, int triesLeft, Consumer<Location> callback) {
         if (triesLeft <= 0) {
             callback.accept(fallbackWorldSpawn(world));
             return;
@@ -78,27 +75,19 @@ public final class SpawnScatterManager {
         int cx = world.getSpawnLocation().getBlockX();
         int cz = world.getSpawnLocation().getBlockZ();
         Random random = ThreadLocalRandom.current();
+        // Uniform sample over a disc: r = R*sqrt(u) keeps point density even (a plain r = R*u would
+        // pile points near the centre). Angle is uniform on [0, 2π).
         double angle = random.nextDouble() * Math.PI * 2.0;
-        int distance = radius + (jitter <= 0 ? 0 : random.nextInt(-jitter, jitter + 1));
-        if (distance < MIN_RING_RADIUS) distance = MIN_RING_RADIUS;
+        double distance = radius * Math.sqrt(random.nextDouble());
         int x = cx + (int) Math.round(Math.cos(angle) * distance);
         int z = cz + (int) Math.round(Math.sin(angle) * distance);
 
         world.getChunkAtAsync(new Location(world, x, 0, z)).thenAccept(chunk -> runMain(() -> {
             Location candidate = toTopSafe(world, x, z);
-            boolean valid = candidate != null;
-            if (valid) {
-                for (Location used : taken) {
-                    if (used.distanceSquared(candidate) < MIN_PLAYER_DISTANCE_SQ) {
-                        valid = false;
-                        break;
-                    }
-                }
-            }
-            if (valid) {
+            if (candidate != null) {
                 callback.accept(candidate);
             } else {
-                findSingleSpotAsync(world, taken, radius, jitter, triesLeft - 1, callback);
+                findSingleSpotAsync(world, radius, triesLeft - 1, callback);
             }
         })).exceptionally(ex -> {
             runMain(() -> callback.accept(fallbackWorldSpawn(world)));

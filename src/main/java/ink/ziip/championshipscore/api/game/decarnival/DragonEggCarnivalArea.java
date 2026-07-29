@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.decarnival;
 
+import io.papermc.paper.registry.keys.EnchantmentKeys;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
@@ -8,11 +9,11 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Enchants;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -37,6 +38,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     private int timer;
     private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
+    private BukkitTask roundRestartTask;
     private int round;
     @Getter
     private int rightTeamPoints;
@@ -50,11 +52,15 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         getGameHandler().setDragonEggCarnivalArea(this);
         dragonEggCarnivalConfig.setAreaName(areaName);
 
-        if (!firstTime) {
-            loadMap(World.Environment.THE_END);
+        if (firstTime) {
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
         }
+    }
+
+    /** Preloads a clean arena at startup and after a full game or an internal best-of-five round. */
+    public void preloadMap() {
+        loadMap(World.Environment.THE_END);
     }
 
     @Override
@@ -66,13 +72,22 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
+        roundRestartTask = null;
 
-        loadMap(World.Environment.THE_END);
+        preloadMap();
     }
 
     @Override
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
+
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         if (rightChampionshipTeam != null)
@@ -83,17 +98,19 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION,
+                MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_TITLE,
+                MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_SUBTITLE);
 
         timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            changeLevelForAllGamePlayers(timer);
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -101,11 +118,6 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     }
 
     protected void startGameProgress() {
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON);
-        sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON_SUBTITLE);
-
-        timer = -3;
-
         dragonEgg = getGameConfig().getDragonEggSpawnPoint().getBlock();
         dragonEgg.setType(Material.DRAGON_EGG, true);
 
@@ -124,25 +136,23 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         giveItemToAllGamePlayers();
 
-        setGameStageEnum(GameStageEnum.PROGRESS);
+        startFinalCountdown(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON_TITLE,
+                MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_TITLE,
+                MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
+
+    private void beginGameProgress() {
+        timer = 0;
+        giveRandomKitToTeamMembers(rightChampionshipTeam);
+        giveRandomKitToTeamMembers(leftChampionshipTeam);
+        changeLevelForAllGamePlayers(timer);
+        updateSpectatorTimerBossBar(MessageConfig.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN
+                .replace("%time%", String.valueOf(timer)), 1D);
 
         startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
-
-            if (timer < 0) {
-                String countDown = MessageConfig.DRAGON_EGG_CARNIVAL_COUNT_DOWN
-                        .replace("%time%", String.valueOf(-timer));
-                sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-                changeLevelForAllGamePlayers(-timer);
-            } else {
-                changeLevelForAllGamePlayers(timer);
-            }
-
-            if (timer == 0) {
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START);
-                sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-            }
+            timer++;
+            changeLevelForAllGamePlayers(timer);
 
             if (timer % 10 == 0) {
                 giveRandomKitToTeamMembers(rightChampionshipTeam);
@@ -152,13 +162,16 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
             if (timer == 80 || timer == 90 | timer == 95) {
                 String message = MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON.replace("%time%", String.valueOf(100 - timer));
-                sendMessageToAllGamePlayers(message);
-                sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON_SUBTITLE);
+                sendActionBarToAllGamePlayers(message);
+                if (timer == 95)
+                    sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON_TITLE,
+                            MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON_SUBTITLE);
             }
 
             if (timer == 100) {
                 dragonEgg.setType(Material.AIR, true);
-                sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED);
+                sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_TITLE,
+                        MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_SUBTITLE);
                 Location location = getGameConfig().getDragonSpawnPoint();
                 World world = location.getWorld();
                 if (world != null) {
@@ -169,10 +182,12 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
                 giveDragonItemToAllGamePlayers();
             }
 
-            sendActionBarToAllGameSpectators(MessageConfig.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
-
-            timer++;
-        }, 0, 20L);
+            String timerTemplate = timer >= 100
+                    ? MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_PHASE_COUNT_DOWN
+                    : MessageConfig.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN;
+            updateSpectatorTimerBossBar(timerTemplate
+                    .replace("%time%", String.valueOf(timer)), Math.max(0D, (100D - timer) / 100D));
+        }, 20L, 20L);
     }
 
     protected synchronized void endGameInForm(ChampionshipTeam championshipTeam) {
@@ -198,6 +213,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
+        clearBossBars();
 
         if (championshipTeam.equals(rightChampionshipTeam))
             rightTeamPoints += 1;
@@ -207,20 +223,23 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         if (rightTeamPoints == 3 || leftTeamPoints == 3) {
             endGame();
         } else {
-            loadMap(World.Environment.THE_END);
-            sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART);
-            sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_SUBTITLE);
+            preloadMap();
+            sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_TITLE,
+                    MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_SUBTITLE);
 
-            timer = 10;
-            scheduler.runTaskTimer(plugin, (task) -> {
-                if (timer == 0) {
+            final int[] restartRemaining = {10};
+            roundRestartTask = scheduler.runTaskTimer(plugin, () -> {
+                int seconds = restartRemaining[0];
+                if (seconds == 0) {
+                    if (roundRestartTask != null)
+                        roundRestartTask.cancel();
+                    roundRestartTask = null;
                     startGameProgress();
-                    task.cancel();
+                    return;
                 }
 
-                changeLevelForAllGamePlayers(timer);
-
-                timer--;
+                changeLevelForAllGamePlayers(seconds);
+                restartRemaining[0]--;
             }, 0, 20L);
         }
     }
@@ -239,6 +258,9 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
+        if (roundRestartTask != null)
+            roundRestartTask.cancel();
+        cancelFinalCountdown();
 
         if (rightChampionshipTeam != null) {
             removeFinalTagToGamePlayers(rightChampionshipTeam);
@@ -247,8 +269,8 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             removeFinalTagToGamePlayers(leftChampionshipTeam);
         }
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_TITLE, MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_TITLE,
+                MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -286,11 +308,12 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             return;
         }
 
-        if (getGameStageEnum() == GameStageEnum.PREPARATION) {
+        if (getGameStageEnum() == GameStageEnum.PREPARATION || getGameStageEnum() == GameStageEnum.COUNTDOWN) {
             scheduler.runTask(plugin, () -> {
                 event.getEntity().spigot().respawn();
                 teleportPlayerToSpawnLocation(event.getEntity());
-                event.getEntity().setGameMode(GameMode.ADVENTURE);
+                event.getEntity().setGameMode(getGameStageEnum() == GameStageEnum.COUNTDOWN
+                        ? GameMode.SURVIVAL : GameMode.ADVENTURE);
             });
 
             return;
@@ -377,7 +400,9 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             return;
         }
 
-        if (getGameStageEnum() == GameStageEnum.PREPARATION || getGameStageEnum() == GameStageEnum.PROGRESS) {
+        if (getGameStageEnum() == GameStageEnum.PREPARATION
+                || getGameStageEnum() == GameStageEnum.COUNTDOWN
+                || getGameStageEnum() == GameStageEnum.PROGRESS) {
             teleportPlayerToSpawnLocation(player);
             return;
         }
@@ -442,6 +467,12 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
     }
 
     public void teleportPlayerToSpawnLocation(Player player) {
+        // During the rule-introduction phase everyone roams from the introduction spawn point.
+        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
+        if (isIntroductionPhase() && introductionSpawnPoint != null) {
+            player.teleport(introductionSpawnPoint);
+            return;
+        }
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
         if (championshipTeam != null) {
             if (championshipTeam.equals(rightChampionshipTeam)) {
@@ -490,7 +521,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
     private void giveGoldenHelmetToTeamPlayers(ChampionshipTeam championshipTeam) {
         ItemStack helmet = new ItemStack(Material.GOLDEN_HELMET);
-        helmet.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
+        helmet.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.UNBREAKING), 3);
         for (Player player : championshipTeam.getOnlinePlayers()) {
             PlayerInventory inventory = player.getInventory();
             inventory.setHelmet(helmet.clone());
@@ -522,8 +553,8 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         ItemStack cookedBeef = new ItemStack(Material.COOKED_BEEF);
         cookedBeef.setAmount(64);
 
-        bow.addEnchantment(Enchantment.INFINITY, 1);
-        bow.addEnchantment(Enchantment.POWER, 2);
+        bow.addEnchantment(Enchants.get(EnchantmentKeys.INFINITY), 1);
+        bow.addEnchantment(Enchants.get(EnchantmentKeys.POWER), 2);
 
         PlayerInventory inventory = player.getInventory();
 
@@ -549,25 +580,25 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
 
     private void giveItemToPlayer(Player player) {
         ItemStack helmet = new ItemStack(Material.NETHERITE_HELMET);
-        helmet.addUnsafeEnchantment(Enchantment.PROTECTION, 5);
-        helmet.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
+        helmet.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.PROTECTION), 5);
+        helmet.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.UNBREAKING), 3);
 
         ItemStack elytra = new ItemStack(Material.ELYTRA);
-        elytra.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
+        elytra.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.UNBREAKING), 3);
 
         ItemStack leggings = new ItemStack(Material.NETHERITE_LEGGINGS);
-        leggings.addUnsafeEnchantment(Enchantment.PROTECTION, 5);
-        leggings.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
+        leggings.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.PROTECTION), 5);
+        leggings.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.UNBREAKING), 3);
 
         ItemStack boots = new ItemStack(Material.NETHERITE_BOOTS);
-        boots.addUnsafeEnchantment(Enchantment.PROTECTION, 5);
-        boots.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
+        boots.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.PROTECTION), 5);
+        boots.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.UNBREAKING), 3);
 
         ItemStack bucket = new ItemStack(Material.WATER_BUCKET);
 
         ItemStack pickaxe = new ItemStack(Material.NETHERITE_PICKAXE);
-        pickaxe.addUnsafeEnchantment(Enchantment.EFFICIENCY, 3);
-        pickaxe.addUnsafeEnchantment(Enchantment.UNBREAKING, 3);
+        pickaxe.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.EFFICIENCY), 3);
+        pickaxe.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.UNBREAKING), 3);
 
         ItemStack torch = new ItemStack(Material.TORCH);
         torch.setAmount(64);
@@ -579,7 +610,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
         cookedBeef.setAmount(64);
 
         ItemStack stick = new ItemStack(Material.STICK);
-        stick.addUnsafeEnchantment(Enchantment.KNOCKBACK, 5);
+        stick.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.KNOCKBACK), 5);
 
         PlayerInventory inventory = player.getInventory();
         inventory.setHelmet(helmet.clone());

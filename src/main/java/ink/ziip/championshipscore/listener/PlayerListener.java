@@ -91,6 +91,13 @@ public class PlayerListener extends BaseListener {
         playerManager.getPlayer(player).updatePlayer();
         playerManager.updatePlayer(player);
 
+        // Let normal join/teleport notices finish first, then restore a recent result that may have
+        // been missed while this player was disconnected.
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline())
+                plugin.getRankManager().replayRecentRankingSummary(player);
+        }, 40L);
+
         plugin.getServer().recipeIterator().forEachRemaining(recipe -> {
             if (recipe instanceof Keyed keyedRecipe) {
                 player.discoverRecipe(keyedRecipe.getKey());

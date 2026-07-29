@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.command;
 
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import lombok.Getter;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -26,6 +27,15 @@ public class BaseMainCommand extends MainCommand {
         super();
         this.commandName = command;
         this.description = description;
+    }
+
+    /**
+     * Registers a per-game sub-command only when that game is enabled via {@code enabled-games};
+     * disabled games disappear from command execution, help listing and tab completion entirely.
+     */
+    protected void addGameSubCommand(GameTypeEnum gameTypeEnum, BaseMainCommand subCommand) {
+        if (plugin.getGameManager().isGameEnabled(gameTypeEnum))
+            addSubCommand(subCommand);
     }
 
     /**

@@ -94,13 +94,6 @@ public class SnowballShowdownHandler extends BaseListener {
                 return;
             }
 
-            if (snowballShowdownTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                if (snowballShowdownTeamArea.getTimer() >= snowballShowdownTeamArea.getGameConfig().getTimer()) {
-                    event.setCancelled(true);
-                    return;
-                }
-            }
-
             if (event.getDamager() instanceof Snowball) {
                 Projectile projectile = (Projectile) event.getDamager();
                 ProjectileSource projectileSource = projectile.getShooter();
@@ -203,9 +196,6 @@ public class SnowballShowdownHandler extends BaseListener {
             return;
         }
 
-        if (snowballShowdownTeamArea.getTimer() >= snowballShowdownTeamArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

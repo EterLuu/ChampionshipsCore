@@ -4,6 +4,8 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import lombok.Getter;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -18,7 +20,13 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 2;
+        return 3;
+    }
+
+    /** Version 3 is a full visual refresh; all schedule panels intentionally use the new defaults. */
+    @Override
+    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) {
+        loadFileOptions();
     }
 
     @ConfigOption(path = "parkour-tag")
@@ -74,6 +82,12 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "hoty-cody-dusky-points")
     public static List<String> HOTY_CODY_DUSKY_POINTS;
+
+    @ConfigOption(path = "bingo")
+    public static List<String> BINGO;
+
+    @ConfigOption(path = "bingo-points")
+    public static List<String> BINGO_POINTS;
 
     @ConfigOption(path = "next-round-soon")
     public static List<String> NEXT_ROUND_SOON;

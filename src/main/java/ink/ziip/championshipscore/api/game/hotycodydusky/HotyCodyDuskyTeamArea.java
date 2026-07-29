@@ -70,8 +70,8 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
 
         setGameStageEnum(GameStageEnum.END);
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.HOTY_CODY_DUSKY_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GAME_END_TITLE, MessageConfig.HOTY_CODY_DUSKY_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.HOTY_CODY_DUSKY_GAME_END_TITLE,
+                MessageConfig.HOTY_CODY_DUSKY_GAME_END_SUBTITLE);
 
         teleportAllPlayers(CCConfig.LOBBY_LOCATION);
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -108,7 +108,6 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             }
         }
 
-        sendMessageToAllGamePlayers(getPlayerPointsRank());
         sendMessageToAllGamePlayers(getTeamPointsRank());
         addPlayerPointsToDatabase();
     }
@@ -142,6 +141,14 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
+
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         teleportAllPlayers(getGameConfig().getPlayerSpawnPoint());
@@ -152,18 +159,19 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         createBossBar("chaser", MessageConfig.HOTY_CODY_DUSKY_BOSS_BAR_CHASER, BarColor.RED, BarStyle.SOLID);
         createBossBar("escaper", MessageConfig.HOTY_CODY_DUSKY_BOSS_BAR_ESCAPER, BarColor.WHITE, BarStyle.SOLID);
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_TITLE, MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION,
+                MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_TITLE,
+                MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE);
 
         timer = 10;
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGameSpectators(MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -178,7 +186,8 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
                 if (championshipTeam != null) {
                     addTeamDeathPlayer(championshipTeam);
-                    plugin.getLogger().log(Level.INFO, GameTypeEnum.HotyCodyDusky + ", " + getGameConfig().getAreaName() + ", " + "Player " + playerManager.getPlayerName(uuid) + " (" + uuid + "), not online, added to death players");
+                    logGame(Level.INFO, "玩家", "玩家=" + playerManager.getPlayerName(uuid) + " uuid=" + uuid
+                            + " 状态=离线，计入淘汰");
                 }
             } else {
                 addBossBarPlayer("escaper", player);
@@ -186,44 +195,25 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             }
         }
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.HOTY_CODY_DUSKY_GAME_START);
-        sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GAME_START_TITLE, MessageConfig.HOTY_CODY_DUSKY_GAME_START_SUBTITLE);
-
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+        startFinalCountdown(MessageConfig.HOTY_CODY_DUSKY_GAME_START_SOON_TITLE,
+                MessageConfig.HOTY_CODY_DUSKY_GAME_START_TITLE, MessageConfig.HOTY_CODY_DUSKY_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
 
+    private void beginGameProgress() {
         timer = getGameConfig().getTimer();
-        setGameStageEnum(GameStageEnum.PROGRESS);
-
         selectCodyHolder(true);
-
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
-
-            if (timer > getGameConfig().getTimer()) {
-                String countDown = MessageConfig.HOTY_CODY_DUSKY_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
-                sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-
-            if (timer == getGameConfig().getTimer()) {
-
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.HOTY_CODY_DUSKY_GAME_START);
-                sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GAME_START_TITLE, MessageConfig.HOTY_CODY_DUSKY_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-            }
-
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
             changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGameSpectators(MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
+            updateSpectatorTimerBossBar(MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer))
+                    .replace("%holder%", codyHolder == null ? "待定" : playerManager.getPlayerName(codyHolder)),
+                    timer, getGameConfig().getTimer());
 
-            if (timer == 0) {
-                changeLevelForAllGamePlayers(timer);
-                sendActionBarToAllGameSpectators(MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
-                endGame();
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-            }
-
-            if (timer % 3 == 0 && codyHolder != null) {
+            int elapsed = getGameConfig().getTimer() - timer;
+            if (timer > 0 && elapsed > 0 && elapsed % 3 == 0 && codyHolder != null) {
                 Player player = Bukkit.getPlayer(codyHolder);
                 if (player != null) {
                     double health = player.getHealth() - 2;
@@ -234,8 +224,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
                 }
             }
 
-            timer--;
-        }, 0, 20L);
+        }, this::endGame);
     }
 
     public int getSurvivedPlayerNums() {
@@ -302,9 +291,9 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             playerCodyChangeTimes.put(codyHolder, System.currentTimeMillis());
         }
         if (codyHolder == null)
-            sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_PLAYER_RECEIVED_CODY.replace("%player%", playerManager.getPlayerName(to)));
+            sendActionBarToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_PLAYER_RECEIVED_CODY.replace("%player%", playerManager.getPlayerName(to)));
         else
-            sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GIVE_CODY_TO_PLAYER.replace("%to%", playerManager.getPlayerName(to)).replace("%from%", playerManager.getPlayerName(codyHolder)));
+            sendActionBarToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GIVE_CODY_TO_PLAYER.replace("%to%", playerManager.getPlayerName(to)).replace("%from%", playerManager.getPlayerName(codyHolder)));
         setCodyPlayer(to, first);
         return true;
     }
@@ -391,7 +380,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
     private void addTeamDeathPlayer(ChampionshipTeam championshipTeam) {
         teamDeathPlayers.put(championshipTeam, teamDeathPlayers.getOrDefault(championshipTeam, 0) + 1);
         Integer deathPlayer = teamDeathPlayers.get(championshipTeam);
-        plugin.getLogger().log(Level.INFO, GameTypeEnum.HotyCodyDusky + ", " + getGameConfig().getAreaName() + ", " + "Added team " + championshipTeam.getName() + " death player, now: " + deathPlayer);
+        logGame(Level.INFO, "淘汰", "队伍=" + championshipTeam.getName() + " 已淘汰人数=" + deathPlayer);
         if (deathPlayer != null) {
             if (deathPlayer == championshipTeam.getMembers().size()) {
                 sendMessageToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_WHOLE_TEAM_WAS_KILLED.replace("%team%", championshipTeam.getColoredName()));
@@ -415,7 +404,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
                 event.getEntity().spigot().respawn();
                 event.getEntity().teleport(getSpectatorSpawnLocation());
             });
-            player.teleport(getGameConfig().getPlayerSpawnPoint());
+            player.teleport(getPreparationTeleportLocation(getGameConfig().getPlayerSpawnPoint()));
             return;
         }
 
@@ -467,7 +456,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         }
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            player.teleport(getGameConfig().getPlayerSpawnPoint());
+            player.teleport(getPreparationTeleportLocation(getGameConfig().getPlayerSpawnPoint()));
             return;
         }
 

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.buildmart;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -34,7 +35,7 @@ public class BuildMartConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 1;
+        return 2;
     }
 
     @ConfigOption(path = "name")
@@ -82,17 +83,9 @@ public class BuildMartConfig extends BaseGameConfig {
     @ConfigOption(path = "golden-display-point", nullable = true)
     private Location goldenDisplayPoint;
 
-    /** How often (seconds) the normal blueprint library re-rolls its selectable list. */
-    @ConfigOption(path = "library-refresh-seconds")
-    private int libraryRefreshSeconds = 90;
-
     /** How often (seconds) the golden blueprint is swapped; it stays live for this whole window. */
     @ConfigOption(path = "golden-refresh-seconds")
     private int goldenRefreshSeconds = 120;
-
-    /** How often (seconds) the hub resource zones are reset back to their template state. */
-    @ConfigOption(path = "resource-reset-seconds")
-    private int resourceResetSeconds = 60;
 
     /** Cooldown (ms) on portal triggers to stop the player bouncing back and forth. */
     @ConfigOption(path = "portal-cooldown-millis")
@@ -145,7 +138,8 @@ public class BuildMartConfig extends BaseGameConfig {
         try {
             configuration.save(configurationPath.toFile());
         } catch (Exception exception) {
-            plugin.getLogger().warning("[BuildMart] 无法保存基地坐标: " + exception.getMessage());
+            plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, areaName, "配置", "保存",
+                    "无法保存基地坐标 | " + exception.getMessage()));
         }
     }
 }

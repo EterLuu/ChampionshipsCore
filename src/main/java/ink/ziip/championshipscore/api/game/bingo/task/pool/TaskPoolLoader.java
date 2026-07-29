@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
 import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.Material;
@@ -56,11 +58,11 @@ public final class TaskPoolLoader {
             return result.spec().get();
         }
 
-        plugin.getLogger().warning("[Bingo] 卡池 '" + selected + "' 无法载入，回退到 default。");
+        plugin.getLogger().warning(gameLog("卡池=" + selected + " 无法加载，回退到 default"));
         LoadResult fallback = loadCard(plugin, DEFAULT_CARD);
         TaskPoolSource.setName(DEFAULT_CARD);
         return fallback.spec().orElseGet(() -> {
-            plugin.getLogger().warning("[Bingo] default 卡池也无法载入，本次使用空任务池。");
+            plugin.getLogger().warning(gameLog("default 卡池无法加载，本轮使用空任务池"));
             return new TaskPoolSpec(List.of());
         });
     }
@@ -105,10 +107,10 @@ public final class TaskPoolLoader {
             if (parsed.isEmpty()) {
                 return LoadResult.error(name, "empty");
             }
-            log.info("[Bingo] 已从 bingo/cards/" + name + ".yml 载入卡池 (" + parsed.entries().size() + " 项)");
+            log.info(gameLog("已加载 bingo/cards/" + name + ".yml，任务数=" + parsed.entries().size()));
             return LoadResult.ok(name, parsed);
         } catch (Exception e) {
-            log.warning("[Bingo] 解析卡池 bingo/cards/" + name + ".yml 失败: " + e.getMessage());
+            log.warning(gameLog("解析 bingo/cards/" + name + ".yml 失败 | " + e.getMessage()));
             return LoadResult.error(name, e.getMessage());
         }
     }
@@ -116,20 +118,20 @@ public final class TaskPoolLoader {
     private static void ensureDefaultCard(JavaPlugin plugin) {
         File dir = cardsDir(plugin);
         if (!dir.exists() && !dir.mkdirs()) {
-            plugin.getLogger().warning("[Bingo] 无法创建卡池目录 " + dir.getPath());
+            plugin.getLogger().warning(gameLog("无法创建卡池目录=" + dir.getPath()));
             return;
         }
         File defaultFile = new File(dir, DEFAULT_CARD + ".yml");
         if (defaultFile.exists()) return;
         try (InputStream in = plugin.getResource(DEFAULT_RESOURCE)) {
             if (in == null) {
-                plugin.getLogger().warning("[Bingo] Jar 中缺少默认卡池资源 " + DEFAULT_RESOURCE);
+                plugin.getLogger().warning(gameLog("JAR 缺少默认卡池资源=" + DEFAULT_RESOURCE));
                 return;
             }
             Files.copy(in, defaultFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            plugin.getLogger().info("[Bingo] 已生成默认卡池 bingo/cards/default.yml");
+            plugin.getLogger().info(gameLog("已生成默认卡池 bingo/cards/default.yml"));
         } catch (IOException e) {
-            plugin.getLogger().warning("[Bingo] 无法写出默认卡池 bingo/cards/default.yml: " + e.getMessage());
+            plugin.getLogger().warning(gameLog("无法写出默认卡池 bingo/cards/default.yml | " + e.getMessage()));
         }
     }
 
@@ -143,7 +145,7 @@ public final class TaskPoolLoader {
         for (Map<?, ?> raw : y.getMapList("categories")) {
             Object idObj = raw.get("id");
             if (idObj == null) {
-                log.warning(sourceName + ": 跳过无 id 的分类项。");
+                log.warning(gameLog(sourceName + " 存在无 id 分类，已跳过"));
                 continue;
             }
             String id = String.valueOf(idObj).trim();
@@ -153,7 +155,7 @@ public final class TaskPoolLoader {
 
             Object membersObj = raw.get("members");
             if (!(membersObj instanceof List<?> rawMembers)) {
-                log.warning(sourceName + ": 分类 '" + id + "' 缺少 members，跳过。");
+                log.warning(gameLog(sourceName + " 分类=" + id + " 缺少 members，已跳过"));
                 continue;
             }
             for (Object m : rawMembers) {
@@ -211,7 +213,7 @@ public final class TaskPoolLoader {
             int count = member.get("count") instanceof Number n ? n.intValue() : 1;
             return expandEntry(g.kind(), key, count, difficulty, dimension, categoryId, log, sourceName);
         }
-        log.warning(sourceName + ": 分类 '" + categoryId + "' 的成员不含可识别 kind 字段，跳过。");
+        log.warning(gameLog(sourceName + " 分类=" + categoryId + " 成员缺少有效 kind，已跳过"));
         return List.of();
     }
 
@@ -219,7 +221,7 @@ public final class TaskPoolLoader {
                                                   String categoryId, Logger log, String sourceName) {
         Object raw = member.get("one_of");
         if (!(raw instanceof List<?> list) || list.isEmpty()) {
-            log.warning(sourceName + ": one_of 任务缺少成员列表，跳过。");
+            log.warning(gameLog(sourceName + " one_of 任务缺少成员列表，已跳过"));
             return List.of();
         }
         LinkedHashSet<String> members = new LinkedHashSet<>();
@@ -234,7 +236,7 @@ public final class TaskPoolLoader {
             }
         }
         if (members.isEmpty()) {
-            log.warning(sourceName + ": one_of 任务未匹配任何物品，跳过。");
+            log.warning(gameLog(sourceName + " one_of 任务未匹配物品，已跳过"));
             return List.of();
         }
         int count = member.get("count") instanceof Number n ? n.intValue() : 1;
@@ -253,13 +255,13 @@ public final class TaskPoolLoader {
         PotionTask.Form form = PotionTask.Form.parse(
                 raw.get("form") == null ? "normal" : String.valueOf(raw.get("form")));
         if (form == null) {
-            log.warning(sourceName + ": 药水任务 form 无效 ('" + raw.get("form") + "')，跳过。");
+            log.warning(gameLog(sourceName + " 药水任务 form=" + raw.get("form") + " 无效，已跳过"));
             return List.of();
         }
         String formKey = form.name().toLowerCase(Locale.ROOT);
         Object effectObj = raw.get("effect");
         if (effectObj == null) {
-            log.warning(sourceName + ": 药水任务缺少 effect，跳过。");
+            log.warning(gameLog(sourceName + " 药水任务缺少 effect，已跳过"));
             return List.of();
         }
         String effect = String.valueOf(effectObj).trim().toLowerCase(Locale.ROOT);
@@ -293,7 +295,7 @@ public final class TaskPoolLoader {
 
         List<String> keys = globKeys(kind, key);
         if (keys.isEmpty()) {
-            log.warning(sourceName + ": 通配任务 '" + key + "' 未匹配任何 " + kind + "，跳过。");
+            log.warning(gameLog(sourceName + " 通配任务=" + key + " 未匹配 " + kind + "，已跳过"));
             return List.of();
         }
 
@@ -362,7 +364,7 @@ public final class TaskPoolLoader {
         try {
             return Difficulty.valueOf(String.valueOf(value).trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            log.warning(sourceName + ": '" + key + "' 的 difficulty 无效 ('" + value + "')，按 MEDIUM 处理。");
+            log.warning(gameLog(sourceName + " 任务=" + key + " difficulty=" + value + " 无效，使用 MEDIUM"));
             return Difficulty.MEDIUM;
         }
     }
@@ -370,9 +372,13 @@ public final class TaskPoolLoader {
     private static Dimension parseDimension(Object value, Logger log, String sourceName, String key) {
         if (value == null) return Dimension.OVERWORLD;
         return Dimension.parse(String.valueOf(value)).orElseGet(() -> {
-            log.warning(sourceName + ": '" + key + "' 的 dimension 无效 ('" + value + "')，按 overworld 处理。");
+            log.warning(gameLog(sourceName + " 任务=" + key + " dimension=" + value + " 无效，使用 overworld"));
             return Dimension.OVERWORLD;
         });
+    }
+
+    private static String gameLog(String message) {
+        return Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "卡池", message);
     }
 
     public record LoadResult(String name, Optional<TaskPoolSpec> spec, String error) {

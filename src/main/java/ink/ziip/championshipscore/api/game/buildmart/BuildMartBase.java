@@ -34,10 +34,16 @@ public class BuildMartBase {
     private final List<Location> normalBuildAnchors = new ArrayList<>();
     private final List<Location> normalReferenceAnchors = new ArrayList<>();
 
+    /** Per-plot normal submit-button block coords (null-padded so index = plot number, 0-based). */
+    private final List<Location> normalSubmitAnchors = new ArrayList<>();
+
     @Nullable
     private final Location goldenBuildAnchor;
     @Nullable
     private final Location goldenReferenceAnchor;
+    /** The golden plot's submit-button block coord. */
+    @Nullable
+    private final Location goldenSubmitAnchor;
 
     public BuildMartBase(int teamId, ConfigurationSection section) {
         this.teamId = teamId;
@@ -49,10 +55,13 @@ public class BuildMartBase {
             Location ref = loc(section, "normal-ref-" + i);
             if (build != null) normalBuildAnchors.add(build);
             if (ref != null) normalReferenceAnchors.add(ref);
+            // Always add (null-padded) so the list index lines up with the plot number.
+            normalSubmitAnchors.add(loc(section, "normal-submit-" + i));
         }
 
         this.goldenBuildAnchor = loc(section, "golden-plot");
         this.goldenReferenceAnchor = loc(section, "golden-ref");
+        this.goldenSubmitAnchor = loc(section, "golden-submit");
     }
 
     /** Copy constructor that shifts every anchor of {@code template} by {@code delta} for a new seat. */
@@ -68,8 +77,12 @@ public class BuildMartBase {
             Location shifted = shift(anchor, delta);
             if (shifted != null) normalReferenceAnchors.add(shifted);
         }
+        for (Location anchor : template.normalSubmitAnchors) {
+            normalSubmitAnchors.add(shift(anchor, delta)); // keep null-padded alignment
+        }
         this.goldenBuildAnchor = shift(template.goldenBuildAnchor, delta);
         this.goldenReferenceAnchor = shift(template.goldenReferenceAnchor, delta);
+        this.goldenSubmitAnchor = shift(template.goldenSubmitAnchor, delta);
     }
 
     /**

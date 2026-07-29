@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.object.stage;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 public enum GameStageEnum {
-    WAITING, LOADING, PREPARATION, PROGRESS, STOPPING, END;
+    WAITING, LOADING, PREPARATION, COUNTDOWN, PROGRESS, STOPPING, END;
 
     @Override
     public String toString() {
@@ -13,6 +13,8 @@ public enum GameStageEnum {
             return MessageConfig.AREA_STATUS_LOADING;
         if (this == PREPARATION)
             return MessageConfig.AREA_STATUS_PREPARATION;
+        if (this == COUNTDOWN)
+            return MessageConfig.AREA_STATUS_COUNTDOWN;
         if (this == PROGRESS)
             return MessageConfig.AREA_STATUS_PROGRESS;
         if (this == STOPPING)

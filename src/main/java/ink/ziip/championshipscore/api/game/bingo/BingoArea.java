@@ -17,11 +17,13 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.util.world.WorldManager;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.GameRules;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -33,6 +35,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -44,10 +47,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
 
 /**
- * Bingo arena: every team plays the same generated card in a pre-built static world (copied from
- * {@code plugin/maps/bingo}, like the other CC games). Players explore the world in survival, and a
+ * Bingo arena: every team plays the same generated card across persistent vanilla-generated
+ * overworld/nether/end dimensions. Players explore the world in survival, and a
  * card cell is claimed when a team member collects the item, reaches the statistic, or earns the
  * advancement. Fixed points mode: completing a cell scores by claim rank, completing a line scores a
  * bonus; the round ends on the timer (or when the board is fully claimed) and is settled by score.
@@ -66,11 +70,25 @@ public class BingoArea extends BaseSingleTeamArea {
 
     private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
+    /** Scheduled re-enable of world PvP after the 3-minute grace; cancelled if the round ends early. */
+    private BukkitTask pvpEnableTask;
 
     /** One recycled MapView per team, reused every round so the server's map-id counter stays bounded. */
     private final Map<ChampionshipTeam, MapView> teamMapViews = new HashMap<>();
 
+    /**
+     * Last recorded position of each participant who disconnected mid-round, so a reconnect restores
+     * them to where they logged out instead of re-scattering them. Cleared on reset.
+     */
+    private final Map<UUID, Location> lastQuitLocations = new HashMap<>();
+
     private final SpawnScatterManager scatterManager;
+
+    /**
+     * Parsed permanent potion effects for the current round (empty outside a running round).
+     * Re-parsed from {@link BingoConfig#getPermanentEffects()} each {@link #startGameProgress}.
+     */
+    private List<PotionEffect> permanentEffects = List.of();
 
     public BingoArea(ChampionshipsCore plugin, BingoConfig bingoConfig) {
         super(plugin, GameTypeEnum.Bingo, new BingoHandler(plugin), bingoConfig);
@@ -93,28 +111,43 @@ public class BingoArea extends BaseSingleTeamArea {
         round = null;
         startGamePreparationTask = null;
         startGameProgressTask = null;
+        if (pvpEnableTask != null) {
+            pvpEnableTask.cancel();
+            pvpEnableTask = null;
+        }
+        lastQuitLocations.clear();
+        permanentEffects = List.of();
     }
 
     @Override
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
+
         teleportAllPlayers(getSpectatorSpawnLocation());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BINGO_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.BINGO_START_PREPARATION_TITLE, MessageConfig.BINGO_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.BINGO_START_PREPARATION,
+                MessageConfig.BINGO_START_PREPARATION_TITLE, MessageConfig.BINGO_START_PREPARATION_SUBTITLE);
 
         timer = getGameConfig().getPrepareTime();
         startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            changeLevelForAllGamePlayers(timer);
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -125,10 +158,14 @@ public class BingoArea extends BaseSingleTeamArea {
         World world = Bukkit.getWorld(getWorldName());
         if (world == null) {
             // The persistent bingo world should have been created at startup; without it we can't play.
-            plugin.getLogger().warning("[Bingo] 世界 " + getWorldName() + " 不存在，无法开始游戏。");
+            logGame(Level.WARNING, "世界", "世界=" + getWorldName() + " 不存在，无法开始");
             endGame();
             return;
         }
+
+        // Design doc: game-start world time is 9000 (noon); time then flows naturally (doDaylightCycle
+        // stays at its default true). Set on the overworld only - nether has no time, end is static.
+        world.setTime(9000);
 
         // Build the round's shared card and per-team card maps.
         round = new BingoRound(
@@ -150,6 +187,11 @@ public class BingoArea extends BaseSingleTeamArea {
                     round.setMapItem(team, CardMapItem.create(view, world, card, team, 0)));
         }
 
+        // Parse the round's permanent effects once; handed out per-player below and re-ensured by the
+        // tracker (see beginRunningAfterScatter). Done after the round exists but before the state reset
+        // so the effects land on a clean player alongside the starter kit.
+        permanentEffects = BingoPermanentEffects.parse(getGameConfig().getPermanentEffects());
+
         resetPlayerHealthFoodEffectLevelInventory();
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
@@ -165,46 +207,58 @@ public class BingoArea extends BaseSingleTeamArea {
             BingoStarterKit.give(player, team);
             round.prepareParticipant(player, team);
             ensureCardFor(player);
+            // Permanent effects go on last (and after the clear above) so they survive into the round.
+            ensurePermanentEffects(player);
         }
 
         // Random scatter around the bingo world spawn; the round only begins once everyone is placed.
         BingoConfig config = getGameConfig();
         scatterManager.performScatterAsync(world, players,
-                config.getScatterRingRadius(), config.getScatterRingJitter(), config.getScatterMaxTries(),
+                config.getScatterRadius(), config.getScatterMaxTries(),
                 this::beginRunningAfterScatter);
     }
 
-    /** Called once the async scatter has placed every participant: starts the live round + tracker. */
+    /** Called once the async scatter has placed every participant: starts the authoritative final countdown. */
     private void beginRunningAfterScatter() {
         if (round == null) return;
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BINGO_GAME_START);
-        sendTitleToAllGamePlayers(MessageConfig.BINGO_GAME_START_TITLE, MessageConfig.BINGO_GAME_START_SUBTITLE);
-        playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
+        startFinalCountdown(MessageConfig.BINGO_START_PREPARATION_TITLE,
+                MessageConfig.BINGO_GAME_START_TITLE, MessageConfig.BINGO_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
 
-        setGameStageEnum(GameStageEnum.PROGRESS);
+    private void beginGameProgress() {
         roundStartMillis = System.currentTimeMillis();
-        timer = getGameConfig().getTimer();
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
+        // PvP grace (design doc: first 3 minutes PvP off, then on). Enforced at the world level via the
+        // PVP gamerule - one toggle covers melee + projectiles, so no per-event cancellation is needed.
+        // Same-team friendly fire stays cancelled in BingoHandler throughout the whole round.
+        setBingoPvP(false);
+        if (pvpEnableTask != null) pvpEnableTask.cancel();
+        pvpEnableTask = scheduler.runTaskLater(plugin, () -> setBingoPvP(true), PVP_GRACE_TICKS);
+
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
             if (round == null) return;
+
+            updateSpectatorTimerBossBar(MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
+            if (timer == 0)
+                return;
 
             for (UUID uuid : gamePlayers) {
                 Player player = Bukkit.getPlayer(uuid);
-                if (player != null) checkPlayerProgress(player);
+                if (player == null) continue;
+                // Self-heal permanent effects (death/reconnect/temp-potion-overwrite all drop them)
+                // and keep glide-suppressed effects off while gliding. Cheap: a few getPotionEffect calls.
+                ensurePermanentEffects(player);
+                checkPlayerProgress(player);
             }
 
-            sendActionBarToAllGameSpectators(MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
-
-            if (timer <= 0 || round.boardFullyClaimed()) {
+            if (round.boardFullyClaimed()) {
                 endGame();
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-                return;
             }
-
-            timer--;
-        }, 0, 20L);
+        }, this::endGame);
     }
 
     /** Item + statistic progress check for one player; called every tracker tick and on inventory events. */
@@ -269,15 +323,22 @@ public class BingoArea extends BaseSingleTeamArea {
                 .ifPresent(task -> announceCompletion(player, task));
     }
 
-    /** Credits the completing player with the cell's points and broadcasts the completion. */
+    /** Credits the completing player with the cell's points, credits any line bonus to every team
+     * member, and broadcasts the completion. */
     private void announceCompletion(Player player, GameTask task) {
         if (round == null) return;
-        int delta = round.lastScoreDelta();
-        if (delta != 0) addPlayerPoints(player.getUniqueId(), delta);
+        int cellDelta = round.lastCellDelta();
+        int lineDelta = round.lastLineDelta();
+        if (cellDelta != 0) addPlayerPoints(player.getUniqueId(), cellDelta);
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        // Line bonus goes to every team member ("队内所有成员+50/+25"), not just the completer.
+        if (lineDelta != 0 && team != null) {
+            addPlayerPointsToAllTeamMembers(team, lineDelta);
+        }
 
+        int delta = cellDelta + lineDelta;
         String taskName = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
                 .serialize(task.data.getName());
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         String teamColor = team == null ? "" : team.getColoredColor();
         sendMessageToAllGamePlayers(MessageConfig.BINGO_TASK_COMPLETED
                 .replace("%player%", teamColor + player.getName())
@@ -317,6 +378,19 @@ public class BingoArea extends BaseSingleTeamArea {
         return Math.max(0L, (System.currentTimeMillis() - roundStartMillis) / 1000L);
     }
 
+    /** First-3-minutes PvP grace, in ticks (180s). After it elapses world PvP is re-enabled. */
+    private static final long PVP_GRACE_TICKS = 180L * 20L;
+
+    /** Toggles PvP on every bingo dimension (overworld/nether/end) via the PVP gamerule (World.setPVP
+     *  is deprecated since 1.21.9). The gamerule covers melee and projectiles in one toggle, so the
+     *  grace needs no per-event cancellation. */
+    private void setBingoPvP(boolean enabled) {
+        for (String name : new String[]{WorldManager.BINGO_OVERWORLD, WorldManager.BINGO_NETHER, WorldManager.BINGO_END}) {
+            World w = Bukkit.getWorld(name);
+            if (w != null) w.setGameRule(GameRules.PVP, enabled);
+        }
+    }
+
     @Override
     public Location getSpectatorSpawnLocation() {
         Location set = gameConfig.getSpectatorSpawnPoint();
@@ -327,16 +401,29 @@ public class BingoArea extends BaseSingleTeamArea {
     }
 
     /**
+     * Where a participant respawns after a death mid-round: the bingo overworld's spawn point. Vanilla
+     * would send a bedless player to the main-world spawn (the lobby); this keeps them in the game.
+     */
+    public Location getRespawnLocation() {
+        World world = Bukkit.getWorld(getWorldName());
+        return world != null ? world.getSpawnLocation() : null;
+    }
+
+    /** True for the bingo overworld and its nether/end dimensions. */
+    private boolean isBingoWorld(World world) {
+        return WorldManager.isBingoWorld(world);
+    }
+
+    /**
      * Bingo spans the whole world, so there is no area bounding box. A spectator is "in area" anywhere
-     * in the bingo world; only leaving the bingo world entirely counts as out of area (and would pull
-     * them back). This also avoids dereferencing the optional, possibly-unset {@code area-pos}.
+     * in any bingo dimension (overworld/nether/end); only leaving the bingo worlds entirely counts as
+     * out of area (and would pull them back). Uses the unified {@link #isBingoWorld} so nether/end
+     * spectators aren't wrongly yanked back to the overworld spawn.
      */
     @Override
     public boolean notInArea(Location location) {
-        Location spawn = getSpectatorSpawnLocation();
-        if (location == null || location.getWorld() == null || spawn == null || spawn.getWorld() == null)
-            return false;
-        return !location.getWorld().getName().equals(spawn.getWorld().getName());
+        if (location == null || location.getWorld() == null) return false;
+        return !isBingoWorld(location.getWorld());
     }
 
     @Override
@@ -348,6 +435,11 @@ public class BingoArea extends BaseSingleTeamArea {
             startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
+        if (pvpEnableTask != null) {
+            pvpEnableTask.cancel();
+            pvpEnableTask = null;
+        }
+        setBingoPvP(true); // restore world PvP for between rounds / next round
 
         // Resolve the winner and stamp the outcome so the card-map renderer paints the win overlay.
         if (round != null) {
@@ -366,9 +458,11 @@ public class BingoArea extends BaseSingleTeamArea {
         }
 
         cleanInventoryForAllGamePlayers();
+        // Release spectators (online -> lobby + ADVENTURE, offline -> dropped) so a reconnect after
+        // game end doesn't strand them in a finished game.
+        releaseAllSpectators();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BINGO_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.BINGO_GAME_END_TITLE, MessageConfig.BINGO_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.BINGO_GAME_END_TITLE, MessageConfig.BINGO_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -376,11 +470,10 @@ public class BingoArea extends BaseSingleTeamArea {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
-
-        sendMessageToAllGamePlayers(getPlayerPointsRank());
         sendMessageToAllGamePlayers(getTeamPointsRank());
         addPlayerPointsToDatabase();
+
+        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 
         resetGame();
     }
@@ -405,21 +498,146 @@ public class BingoArea extends BaseSingleTeamArea {
     public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
         Player player = event.getEntity();
         if (notAreaPlayer(player)) return;
-        // Survival respawn handled by vanilla; re-issue the card on the next tick after respawn.
-        scheduler.runTaskLater(plugin, () -> ensureCardFor(player), 2L);
+        // KEEP_INVENTORY is on, so the player's items (incl. the card map) survive the death. The
+        // respawn location is redirected into the bingo world by BingoHandler#onRespawn, which also
+        // re-issues the card there as a safety net.
     }
 
     @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        if (notAreaPlayer(player)) return;
+        // Record where the participant logged out so a mid-round reconnect puts them back here rather
+        // than re-scattering them. Only captured while in a bingo world - a player who crashed during
+        // the lobby->world teleport (still in the lobby) has no spot to return to and is scattered in.
+        if (getGameStageEnum() == GameStageEnum.PROGRESS && isBingoWorld(player.getWorld())) {
+            lastQuitLocations.put(player.getUniqueId(), player.getLocation());
+        }
+    }
+
+    /** Bingo spectators survive a disconnect and are restored on reconnect; endGame releases them. */
+    @Override
+    public boolean keepSpectatorAcrossReconnect() {
+        return true;
     }
 
     @Override
     public void handlePlayerJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (notAreaPlayer(player)) return;
-        if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-            ensureCardFor(player);
+
+        GameStageEnum stage = getGameStageEnum();
+        if (stage == GameStageEnum.PREPARATION) {
+            // Reintegrate a participant who disconnected before/while the lobby->world teleport ran.
+            resetPlayerHealthFoodEffectLevelInventory();
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
+            scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
+            return;
         }
+        if (stage == GameStageEnum.PROGRESS) {
+            // Mid-round reconnect: a participant is returning to a round already in progress. KEEP_INVENTORY
+            // is on and the inventory is restored from playerdata, so do NOT wipe it (that would discard
+            // collected card items). Only re-issue the kit if they never received it (e.g. crashed before
+            // the round-start handout) - hasKit gates that to avoid duplicating the non-stacking tools.
+            // Earned advancements and card progress are preserved (no prepareParticipant revoke); only
+            // missing statistic baselines are filled in.
+            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+            if (team == null) return;
+            if (round != null) round.ensureStatBaselines(player);
+            ensureKitAndCard(player);
+            refreshVitals(player);
+
+            if (isBingoWorld(player.getWorld())) {
+                // Reconnecting inside a bingo dimension: send them back to where they logged out, or
+                // scatter in if no spot was recorded (e.g. crashed during the lobby->world teleport).
+                Location last = lastQuitLocations.remove(player.getUniqueId());
+                if (last != null && last.getWorld() != null) {
+                    scheduler.runTask(plugin, () -> {
+                        player.teleport(last);
+                        player.setFallDistance(0f);
+                        player.setFireTicks(0);
+                    });
+                } else {
+                    scatterIntoBingo(player);
+                }
+            } else {
+                // Reconnecting outside any bingo world (e.g. lobby, or stranded in another world): bring
+                // them into the bingo overworld with a fresh scatter. No inventory clear - hasKit gates
+                // the kit so nothing duplicates.
+                lastQuitLocations.remove(player.getUniqueId());
+                scatterIntoBingo(player);
+            }
+            return;
+        }
+        // END / LOADING / WAITING (transitional, normally unreachable for a reconnect): benign default.
+        player.teleport(getSpectatorSpawnLocation());
+        scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
+    }
+
+    /**
+     * Re-issues the starter kit (only when the player doesn't already have it - see
+     * {@link BingoStarterKit#hasKit}) and ensures they hold their team's card map. The single kit
+     * (re-)issuance path used on both death-respawn and mid-round reconnect, so the gating lives in
+     * one place and the non-stacking tools can never duplicate.
+     */
+    public void ensureKitAndCard(Player player) {
+        if (player == null || notAreaPlayer(player)) return;
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (team == null) return;
+        if (!BingoStarterKit.hasKit(player)) {
+            BingoStarterKit.give(player, team);
+        }
+        ensureCardFor(player);
+        // Death clears potion effects in vanilla; restore the permanent ones on respawn.
+        ensurePermanentEffects(player);
+    }
+
+    /**
+     * Re-applies any permanent effect the participant is currently missing (no-op outside a round
+     * where {@link #permanentEffects} is empty). Delegates to {@link BingoPermanentEffects#ensure},
+     * which skips glide-suppressed effects while the player is gliding and never overwrites active
+     * temporary buffs. Called from the per-second tracker, {@link #ensureKitAndCard} (respawn) and
+     * {@link #refreshVitals} (reconnect) so effects survive every kind of mid-round drop.
+     */
+    private void ensurePermanentEffects(Player player) {
+        if (permanentEffects.isEmpty() || player == null) return;
+        BingoPermanentEffects.ensure(player, permanentEffects);
+    }
+
+    /**
+     * Toggles the permanent Slow Falling effect off while a participant is gliding with an elytra
+     * (it cancels elytra flight) and back on when gliding ends. Driven by
+     * {@code EntityToggleGlideEvent} in {@link BingoHandler} so the change is immediate, not delayed
+     * to the next tracker tick. No-op when the configured set has no glide-suppressed effect.
+     */
+    public void onGlideToggle(Player player, boolean gliding) {
+        if (permanentEffects.isEmpty() || player == null) return;
+        BingoPermanentEffects.onGlideToggle(player, permanentEffects, gliding);
+    }
+
+    /** Sets a participant to SURVIVAL with full vitals and no potion effects (used on reconnect). */
+    private void refreshVitals(Player player) {
+        scheduler.runTask(plugin, () -> {
+            player.setGameMode(GameMode.SURVIVAL);
+            player.setHealth(20.0);
+            player.setFoodLevel(20);
+            player.setFireTicks(0);
+            for (org.bukkit.potion.PotionEffect effect : player.getActivePotionEffects()) {
+                player.removePotionEffect(effect.getType());
+            }
+            // The strip above just cleared the permanent effects too; re-apply them now (deferred, so
+            // this runs after the kit/card handed out synchronously in handlePlayerJoin).
+            BingoPermanentEffects.ensure(player, permanentEffects);
+        });
+    }
+
+    /** Scatters a single participant into the bingo overworld around its spawn. */
+    private void scatterIntoBingo(Player player) {
+        World world = Bukkit.getWorld(getWorldName());
+        if (world == null) return;
+        BingoConfig config = getGameConfig();
+        scatterManager.performScatterAsync(world, List.of(player),
+                config.getScatterRadius(), config.getScatterMaxTries(), null);
     }
 
     @Override

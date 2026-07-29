@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 1
+  version: 2
 name: "area"
 timer: 300
 spectator-spawn-point:
@@ -10,3 +10,25 @@ player-spawn-points:
   area2: [ ]
   area3: [ ]
   area4: [ ]
+
+# ── 规则介绍阶段（introduction）────────────────────────────
+# 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
+# 规则文案（rules，每个子列表为一段，支持 & 颜色码与 #RRGGBB 十六进制颜色），期间可以自由参观
+# 场地；结束后传送到正式准备点位，读秒后开始游戏。
+# 将 introduction-spawn-point 留空或把 rules 设为 [] 即可跳过该阶段。
+introduction-spawn-point:
+rules:
+  - - "#696969==========&r #ff6b26[&6雪球大战#ff6b26] #696969==========&r"
+    - "#fff566搓个雪球，把对手统统轰下去吧！"
+    - "#ededed用雪球击退对手，将他们打下平台"
+    - "#ededed坠入虚空即被淘汰，成为旁观者"
+    - "#ededed和队友配合，把对手逼到边缘再出手"
+  - - "#696969==========&r #fff566积分规则 #696969==========&r"
+    - "#ededed每击落一名对手：#fff566+4 分"
+    - "#ededed对局结束按存活名次结算排名分"
+    - "#ededed名次越靠前，奖励越高"
+  - - "#696969==========&r #fff566小提示 #696969==========&r"
+    - "#fff566雪球的击退才是本体，瞄准对手脚下"
+    - "#ededed别站在平台边缘，容易被一发入魂"
+    - "#ededed连续命中可以打得对手无法还手"
+    - "#ededed走位！走位！站着不动就是活靶子"

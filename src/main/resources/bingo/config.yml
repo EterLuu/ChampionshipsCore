@@ -19,7 +19,7 @@ cards:
 filters:
   # 携带任一被排除标签的任务永不出现在卡片上。每个任务自带隐式 dim:<维度> 标签，
   # 因此 dim:the_end 即可排除所有末地任务（默认不含末地）。
-  # starter_kit 排除初始装备物品（bingo/tags/starter_kit.yml），避免开局自带导致任务秒完成。
-  exclude: [ "dim:the_end", "starter_kit" ]
+  # starter_kit 相关任务（初始装备物品、kit 触发的进度）由代码侧 BingoStarterKit.trivialises() 排除，不再走标签文件。
+  exclude: [ "dim:the_end" ]
   # 每张卡片上携带某标签的任务数量上限。
   caps: { }

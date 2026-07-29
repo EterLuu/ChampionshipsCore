@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -17,6 +18,7 @@ public class RankMainCommand extends BaseMainCommand {
         addSubCommand(new PlayerBoardSubCommand());
         addSubCommand(new TeamBoardSubCommand());
         addSubCommand(new GameWeightInfoSubCommand());
+        addSubCommand(new RankRecapSubCommand());
     }
 
     @Override
@@ -31,9 +33,9 @@ public class RankMainCommand extends BaseMainCommand {
                 double teamPoints = rankManager.getPlayerTeamPoints(player);
                 int teamRank = rankManager.getPlayerTeamRank(player);
                 String message = MessageConfig.RANK_RANK_INFO
-                        .replace("%player_point%", String.valueOf(playerPoints))
+                        .replace("%player_point%", Utils.formatPoints(playerPoints))
                         .replace("%player_rank%", String.valueOf(playerRank))
-                        .replace("%team_point%", String.valueOf(teamPoints))
+                        .replace("%team_point%", Utils.formatPoints(teamPoints))
                         .replace("%team_rank%", String.valueOf(teamRank));
                 sender.sendMessage(message);
             } else {

@@ -3,11 +3,14 @@ package ink.ziip.championshipscore.command.game.area.battlebox;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxLayout;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,22 +25,30 @@ import java.util.List;
  * (teams / 2). After this, stand in copy 0 (pasted at {@link BattleBoxLayout#FIRST}) and set the template
  * points with {@code /cc game area battlebox set <area> ...}.
  *
- * <p>Usage: {@code /cc game area battlebox prepare <area> <copies>}.
+ * <p>Usage: {@code /cc game area battlebox prepare [场地 份数]} -- no args opens the guided prepare GUI.
  */
 public class BattleBoxPrepareSubCommand extends BaseSubCommand {
     public BattleBoxPrepareSubCommand() {
-        super("prepare", "按对战场地模板生成多份地图", "/cc game area battlebox prepare <场地> <份数>");
+        super("prepare", "对战场地准备 GUI（无参）；或 <场地> <份数> 直接盖章", "/cc game area battlebox prepare [场地 份数]");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length == 0) {
+            if (!(sender instanceof Player player)) {
+                Utils.sendAdminError(sender, "准备向导只能由玩家打开。");
+                return true;
+            }
+            plugin.getPrepareSessionManager().openAreaListGui(player, GameTypeEnum.BattleBox);
+            return true;
+        }
         if (args.length != 2) {
             sendUsage(sender);
             return true;
         }
         BattleBoxArea area = plugin.getGameManager().getBattleBoxManager().getArea(args[0]);
         if (area == null) {
-            sender.sendMessage("§c找不到场地 §e" + args[0] + "§c。");
+            Utils.sendAdminError(sender, "找不到场地 #fff566" + args[0]);
             return true;
         }
         int copies;
@@ -48,34 +59,34 @@ public class BattleBoxPrepareSubCommand extends BaseSubCommand {
             return true;
         }
         if (copies < 1) {
-            sender.sendMessage("§c份数必须 ≥ 1。");
+            Utils.sendAdminError(sender, "场地份数必须至少为 #fff5661");
             return true;
         }
 
         World world = Bukkit.getWorld(area.getWorldName());
         if (world == null) {
-            sender.sendMessage("§c世界 §e" + area.getWorldName() + " §c未加载，无法生成。");
+            Utils.sendAdminError(sender, "世界 #fff566" + area.getWorldName() + " #ededed尚未加载。");
             return true;
         }
 
         File file = new File(new File(new File(plugin.getDataFolder(), "battlebox"), "schematics"), "arena.schem");
         if (!file.isFile()) {
-            sender.sendMessage("§c缺少 schematic：请先用 §e/cc game area battlebox schematic§c 保存对战场地模板。");
+            Utils.sendAdminError(sender, "缺少场地模板，请先执行 #fff566/cc game area battlebox schematic");
             return true;
         }
 
         try {
             ArenaPreparer.stampCopies(plugin, world, file, BattleBoxLayout.GRID, copies);
         } catch (Exception e) {
-            sender.sendMessage("§c粘贴失败：" + e.getMessage());
+            Utils.sendAdminError(sender, "生成场地失败：#fff566" + e.getMessage());
             return true;
         }
 
         area.saveMap(World.Environment.NORMAL);
 
-        sender.sendMessage("§a已生成 §e" + copies + " §a份对战场地并固化为模板。");
-        sender.sendMessage("§7进入世界、站到 0 号场地(0,100,0 附近)用 §f/cc game area battlebox set "
-                + args[0] + " <点位> §7配置左右出生/预备点、wool-pos、area-pos、potion 点。");
+        Utils.sendAdminSuccess(sender, "已生成并保存 #fff566" + copies + " #ededed份斗战方框场地。");
+        Utils.sendAdminInfo(sender, "下一步：在 0 号场地执行 #fff566/cc game area battlebox set "
+                + args[0] + " <点位>");
         return true;
     }
 

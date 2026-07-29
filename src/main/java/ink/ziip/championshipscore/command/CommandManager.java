@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.command.member.MemberMainCommand;
 import ink.ziip.championshipscore.command.rank.RankMainCommand;
 import ink.ziip.championshipscore.command.spectate.SpectateSubCommand;
 import ink.ziip.championshipscore.command.team.TeamMainCommand;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.PluginCommand;
@@ -53,7 +54,7 @@ public class CommandManager extends BaseManager {
 
             corePluginCommand.unregister(commandMap);
         } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "Unregister commands failed.");
+            plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("Command", "卸载", "命令注销失败"), e);
         }
     }
 }

@@ -1,15 +1,20 @@
 package ink.ziip.championshipscore.util;
 
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
+import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -100,6 +105,23 @@ public class Utils {
                 Float.parseFloat(str[5]));
     }
 
+    /**
+     * Reads a Location stored as a raw config section (world/world_key + x/y/z/yaw/pitch) without the
+     * '==: Location' marker Bukkit uses to auto-deserialize. The world may be unresolved at load time;
+     * it is left null rather than throwing (teleports will then fail with a clear "world is null").
+     */
+    public static Location getLocation(ConfigurationSection section) {
+        if (section == null) return null;
+        World world = null;
+        if (section.contains("world_key")) {
+            world = Bukkit.getWorld(NamespacedKey.fromString(section.getString("world_key")));
+        } else if (section.contains("world")) {
+            world = Bukkit.getWorld(section.getString("world"));
+        }
+        return new Location(world, section.getDouble("x"), section.getDouble("y"), section.getDouble("z"),
+                (float) section.getDouble("yaw"), (float) section.getDouble("pitch"));
+    }
+
     public static String getLocationConfigString(Location location) {
         if (location.getWorld() != null)
             return location.getWorld().getName() +
@@ -170,6 +192,10 @@ public class Utils {
         return currentTime.format(formatter);
     }
 
+    public static String formatPoints(double points) {
+        return BigDecimal.valueOf(points).setScale(0, RoundingMode.HALF_UP).toPlainString();
+    }
+
     public static String getMessage(List<String> messages) {
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -192,6 +218,58 @@ public class Utils {
         }
     }
 
+    public static void sendAdminSuccess(CommandSender sender, String message) {
+        sender.sendMessage(formatAdminSuccess(message));
+    }
+
+    public static void sendAdminInfo(CommandSender sender, String message) {
+        sender.sendMessage(formatAdminInfo(message));
+    }
+
+    public static void sendAdminError(CommandSender sender, String message) {
+        sender.sendMessage(formatAdminError(message));
+    }
+
+    public static String formatAdminSuccess(String message) {
+        return translateColorCodes("#bababa[#fff566管理#bababa] #ededed" + message);
+    }
+
+    public static String formatAdminInfo(String message) {
+        return translateColorCodes("#bababa[#fff566管理#bababa] #bababa" + message);
+    }
+
+    public static String formatAdminError(String message) {
+        return translateColorCodes("#bababa[#ff6b26管理#bababa] #ededed" + message);
+    }
+
+    public static String formatGameLog(GameTypeEnum gameType, String area, String stage,
+                                       String event, String message) {
+        String game = gameType == null ? "-" : gameType.toString();
+        return "[游戏:" + plainLogValue(game) + "] [场地:" + plainLogValue(area) + "] [阶段:"
+                + plainLogValue(stage) + "] [事件:" + plainLogValue(event) + "] " + plainLogValue(message);
+    }
+
+    public static String formatModuleLog(String module, String event, String message) {
+        return "[模块:" + plainLogValue(module) + "] [事件:" + plainLogValue(event) + "] "
+                + plainLogValue(message);
+    }
+
+    private static String plainLogValue(String value) {
+        if (value == null || value.isBlank()) return "-";
+        return stripColorCodes(translateColorCodes(value));
+    }
+
+    public static void sendActionBar(Player player, String message) {
+        player.sendActionBar(LegacyComponentSerializer.legacySection()
+                .deserialize(translateColorCodes(message)));
+    }
+
+    public static void sendActionBarToAllPlayers(String message) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            sendActionBar(player, message);
+        }
+    }
+
     public static void changeLevelForAllPlayers(int level) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.setLevel(Math.abs(level));
@@ -199,10 +277,13 @@ public class Utils {
     }
 
     public static void sendTitleToAllPlayers(String title, String subtitle) {
-        Component titleComponent = LegacyComponentSerializer.legacySection().deserialize(title);
-        Component subtitleComponent = LegacyComponentSerializer.legacySection().deserialize(subtitle);
-        // No fade in/out; stay 20 ticks.
-        Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO);
+        sendTitleToAllPlayers(title, subtitle, 20);
+    }
+
+    public static void sendTitleToAllPlayers(String title, String subtitle, int stayTicks) {
+        Component titleComponent = LegacyComponentSerializer.legacySection().deserialize(translateColorCodes(title));
+        Component subtitleComponent = LegacyComponentSerializer.legacySection().deserialize(translateColorCodes(subtitle));
+        Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofMillis(stayTicks * 50L), Duration.ZERO);
         Title titleMessage = Title.title(titleComponent, subtitleComponent, times);
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.showTitle(titleMessage);

@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -61,6 +62,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         firstStartTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
+            scheduleManager.showRoundPreparationCountdown(gameTypeEnum, 1, timer);
 
             if (timer == 10) {
                 Utils.sendMessageToAllPlayers(scheduleManager.getScheduleStrings(gameTypeEnum));
@@ -68,13 +70,6 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
 
             if (timer == 5) {
                 Utils.sendMessageToAllPlayers(scheduleManager.getSchedulePointsStrings(gameTypeEnum));
-            }
-
-            if (timer < 5 && timer > 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-            if (timer == 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
             }
 
             if (timer == 0) {
@@ -111,12 +106,10 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         enabled = false;
 
         Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
-        Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
+        Utils.sendTitleToAllPlayers(MessageConfig.GAME_ROUND_END_TITLE.replace("%game%", gameTypeEnum.toString()),
+                MessageConfig.GAME_ROUND_END_SUBTITLE, 60);
         if (plugin.isLoaded()) {
-            scheduler.runTaskLaterAsynchronously(plugin, () -> {
-                scheduler.runTaskAsynchronously(plugin, task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(gameTypeEnum)));
-                Utils.sendMessageToAllPlayers(plugin.getRankManager().getTeamRankString());
-            }, 40L);
+            scheduler.runTaskLater(plugin, () -> plugin.getRankManager().broadcastFinalRankings(gameTypeEnum), 40L);
         }
         handler.unRegister();
         Utils.changeLevelForAllPlayers(0);
@@ -138,21 +131,15 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         startTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
+            scheduleManager.showRoundPreparationCountdown(gameTypeEnum, subRound, timer);
 
             if (timer == 30) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.NEXT_ROUND_SOON));
             }
 
-            if (timer < 5 && timer > 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-            if (timer == 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-            }
-
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(0);
-                plugin.getGameManager().joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea());
+                plugin.getGameManager().joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea(), false);
                 if (startTask != null)
                     startTask.cancel();
             }

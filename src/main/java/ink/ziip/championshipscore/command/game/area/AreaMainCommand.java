@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.command.game.area;
 
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.command.game.area.battlebox.BattleBoxAreaMainCommand;
 import ink.ziip.championshipscore.command.game.area.bingo.BingoAreaMainCommand;
@@ -16,16 +17,16 @@ import ink.ziip.championshipscore.command.game.area.tntrun.TNTRunAreaMainCommand
 public class AreaMainCommand extends BaseMainCommand {
     public AreaMainCommand() {
         super("area", "游戏场地管理");
-        addSubCommand(new BingoAreaMainCommand());
-        addSubCommand(new BuildMartAreaMainCommand());
-        addSubCommand(new BattleBoxAreaMainCommand());
-        addSubCommand(new ParkourTagAreaMainCommand());
-        addSubCommand(new SkyWarsAreaMainCommand());
-        addSubCommand(new TGTTOSAreaMainCommand());
-        addSubCommand(new TNTRunAreaMainCommand());
-        addSubCommand(new DragonEggCarnivalAreaMainCommand());
-        addSubCommand(new SnowBallAreaMainCommand());
-        addSubCommand(new ParkourWarriorAreaMainCommand());
-        addSubCommand(new HotyCodyDuskyAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.Bingo, new BingoAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.BuildMart, new BuildMartAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.BattleBox, new BattleBoxAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.ParkourTag, new ParkourTagAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.SkyWars, new SkyWarsAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.TGTTOS, new TGTTOSAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.TNTRun, new TNTRunAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.SnowballShowdown, new SnowBallAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.ParkourWarrior, new ParkourWarriorAreaMainCommand());
+        addGameSubCommand(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyAreaMainCommand());
     }
 }

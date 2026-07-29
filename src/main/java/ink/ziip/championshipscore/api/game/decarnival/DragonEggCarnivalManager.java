@@ -25,7 +25,9 @@ public class DragonEggCarnivalManager extends BaseAreaManager<DragonEggCarnivalA
             if (areaList != null) {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
-                    areas.put(name, new DragonEggCarnivalArea(plugin, new DragonEggCarnivalConfig(plugin, name), false, name));
+                    DragonEggCarnivalArea area = new DragonEggCarnivalArea(plugin, new DragonEggCarnivalConfig(plugin, name), false, name);
+                    areas.put(name, area);
+                    area.preloadMap();
                 }
             }
         });

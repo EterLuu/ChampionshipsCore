@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore;
 
+import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
@@ -8,6 +9,7 @@ import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.api.vote.VoteManager;
 import ink.ziip.championshipscore.integration.papi.PlaceholderManager;
 import ink.ziip.championshipscore.util.glow.GlowingEntities;
+import ink.ziip.championshipscore.util.Utils;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
@@ -43,6 +45,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private PlaceholderManager placeholderManager;
     private VoteManager voteManager;
     private ScheduleManager scheduleManager;
+    private PrepareSessionManager prepareSessionManager;
 
     @Override
     public void onEnable() {
@@ -50,17 +53,17 @@ public final class ChampionshipsCore extends JavaPlugin {
         loaded = true;
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) {
-            getLogger().warning("Could not find PlaceholderAPI!");
+            getLogger().warning(Utils.formatModuleLog("Bootstrap", "依赖", "缺少 PlaceholderAPI，插件已停用"));
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (Bukkit.getPluginManager().getPlugin("ProtocolLib") == null) {
-            getLogger().warning("Could not find ProtocolLib!");
+            getLogger().warning(Utils.formatModuleLog("Bootstrap", "依赖", "缺少 ProtocolLib，插件已停用"));
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") == null) {
-            getLogger().warning("Could not find FastAsyncWorldEdit!");
+            getLogger().warning(Utils.formatModuleLog("Bootstrap", "依赖", "缺少 FastAsyncWorldEdit，插件已停用"));
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -73,6 +76,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         teamManager = new TeamManager(this);
         worldEditManager = new WorldEditManager(this);
         gameManager = new GameManager(this);
+        prepareSessionManager = new PrepareSessionManager(this);
         rankManager = new RankManager(this);
         worldManager = new WorldManager(this);
         glowingEntities = new GlowingEntities(this);
@@ -94,18 +98,21 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         gameManager.load();
 
+        prepareSessionManager.load();
+
         commandManager.load();
         placeholderManager.load();
         voteManager.load();
         scheduleManager.load();
 
-        getLogger().log(Level.INFO, CCConfig.MODE);
+        getLogger().log(Level.INFO, Utils.formatModuleLog("Bootstrap", "启动", "模式=" + CCConfig.MODE));
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
         gameManager.unload();
+        prepareSessionManager.unload();
         rankManager.unload();
 
         listenerManager.unload();

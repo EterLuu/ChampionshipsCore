@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.papermc.paper.advancement.AdvancementDisplay;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Bukkit;
 import org.bukkit.Statistic;
@@ -49,6 +51,8 @@ public final class TaskImageAtlas {
     private static boolean failed;
     private static final Map<String, Sprite> SPRITES = new HashMap<>();
     private static final Map<String, Sprite> ENTITIES = new HashMap<>();
+    /** Statistic corner-badge sprites from the dedicated atlas. */
+    private static final Map<String, Sprite> STATISTIC_SPRITES = new HashMap<>();
     /** Per-effect potion sprites, keyed {@code <form-infix>/<effect>} e.g. {@code splash_potion/strength}. */
     private static final Map<String, Sprite> POTION_SPRITES = new HashMap<>();
     private static final Map<String, BufferedImage> CACHE = new ConcurrentHashMap<>();
@@ -71,6 +75,18 @@ public final class TaskImageAtlas {
                 loadSection(atlas.getAsJsonObject("sprites"), SPRITES);
                 loadSection(atlas.getAsJsonObject("entities"), ENTITIES);
             }
+            try (InputStream statAtlasStream = resource(RES + "statistic_atlas.json")) {
+                JsonObject statAtlas = JsonParser.parseReader(
+                        new InputStreamReader(statAtlasStream, StandardCharsets.UTF_8)).getAsJsonObject();
+                loadSection(statAtlas.getAsJsonObject("badges"), STATISTIC_SPRITES);
+                for (String name : new String[]{"block_mined", "item_broken", "item_crafted", "item_used",
+                        "item_picked_up", "item_dropped", "kill_entity", "entity_killed_by"}) {
+                    Sprite s = STATISTIC_SPRITES.get(name);
+                    if (s != null) {
+                        statisticBadges.put(name, s.sheet.getSubimage(s.x, s.y, s.w, s.h));
+                    }
+                }
+            }
             try (InputStream potionAtlasStream = resource(RES + "potions_atlas.json")) {
                 if (potionAtlasStream != null) {
                     JsonObject potionAtlas = JsonParser.parseReader(
@@ -80,19 +96,16 @@ public final class TaskImageAtlas {
             }
             background = read(RES + "card_background.png");
             if (background != null) unifySlotShade(background);
-            for (String name : new String[]{"block_mined", "item_broken", "item_crafted", "item_used",
-                    "item_picked_up", "item_dropped", "kill_entity", "entity_killed_by"}) {
-                BufferedImage badge = read(RES + "statistic_badge/" + name + ".png");
-                if (badge != null) statisticBadges.put(name, badge);
-            }
             advancementFrameTask = read(RES + "advancement_frame_task.png");
             advancementFrameGoal = read(RES + "advancement_frame_goal.png");
             advancementFrameChallenge = read(RES + "advancement_frame_challenge.png");
             loaded = true;
-            Bukkit.getLogger().info("[Bingo] Loaded " + SPRITES.size() + " task images for map rendering.");
+            Bukkit.getLogger().info(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "图集",
+                    "已加载任务图像=" + SPRITES.size()));
         } catch (Exception ex) {
             failed = true;
-            Bukkit.getLogger().warning("[Bingo] Failed to load task image atlas: " + ex.getMessage());
+            Bukkit.getLogger().warning(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "图集",
+                    "任务图集加载失败 | " + ex.getMessage()));
         }
     }
 
@@ -114,13 +127,20 @@ public final class TaskImageAtlas {
         JsonArray names = section.getAsJsonArray("names");
         int colCount = names.size() / rows + 1;
 
+        int offsetX = 0, offsetY = 0;
+        if (section.has("offset")) {
+            JsonArray offset = section.getAsJsonArray("offset");
+            offsetX = offset.get(0).getAsInt();
+            offsetY = offset.get(1).getAsInt();
+        }
+
         BufferedImage sheet = read(RES + file);
         if (sheet == null) return;
 
         for (int i = 0; i < names.size(); i++) {
             String name = names.get(i).getAsString();
-            int x = (i % colCount) * sizeX;
-            int y = (i / colCount) * sizeY;
+            int x = offsetX + (i % colCount) * sizeX;
+            int y = offsetY + (i / colCount) * sizeY;
             if (x + sizeX > sheet.getWidth() || y + sizeY > sheet.getHeight()) continue;
             dest.put(name, new Sprite(sheet, x, y, sizeX, sizeY));
         }
@@ -202,7 +222,9 @@ public final class TaskImageAtlas {
         }
 
         if (badge != null) {
-            g.drawImage(badge, BADGE_X, BADGE_Y, null);
+            // Badges live in 22x22 atlas cells with their 16x16 content centered, so shift 3px up-left
+            // to keep the badge's visual center at the same pixel as the original 16x16 files.
+            g.drawImage(badge, BADGE_X - 3, BADGE_Y - 3, null);
         }
 
         g.dispose();

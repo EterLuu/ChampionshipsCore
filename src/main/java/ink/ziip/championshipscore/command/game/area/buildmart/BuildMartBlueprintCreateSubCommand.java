@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.game.area.buildmart;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
@@ -26,6 +27,8 @@ import java.util.List;
 public class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
     /** Safety cap on exported block count to avoid accidentally serializing a giant region. */
     private static final int MAX_BLOCKS = 20000;
+    /** Per-axis cap on selection size; a build order must fit in a 7×7×7 build zone. */
+    private static final int MAX_SIZE = 7;
 
     public BuildMartBlueprintCreateSubCommand() {
         super("create", "从WE选区导出蓝图", "/cc game area buildmart blueprint create <名称> <星级>");
@@ -50,12 +53,24 @@ public class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         try {
             selection = plugin.getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            sender.sendMessage("§c无法读取 WorldEdit 选区，请先用 //pos1 //pos2 选择区域。");
+            Utils.sendAdminError(sender, "无法读取 WorldEdit 选区，请先选择蓝图区域。");
             return true;
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
         Vector max = Vector.getMaximum(selection[0], selection[1]);
         World world = player.getWorld();
+
+        int sizeX = max.getBlockX() - min.getBlockX() + 1;
+        int sizeY = max.getBlockY() - min.getBlockY() + 1;
+        int sizeZ = max.getBlockZ() - min.getBlockZ() + 1;
+        if (sizeY > MAX_SIZE) {
+            Utils.sendAdminError(sender, "蓝图高度上限 #fff566" + MAX_SIZE + " #696969• #ededed当前 #fff566" + sizeY);
+            return true;
+        }
+        if (sizeX > MAX_SIZE || sizeZ > MAX_SIZE) {
+            Utils.sendAdminError(sender, "蓝图长宽上限 #fff566" + MAX_SIZE + " #696969• #ededed当前 #fff566" + sizeX + "×" + sizeZ);
+            return true;
+        }
 
         List<String> blocks = new ArrayList<>();
         for (int x = min.getBlockX(); x <= max.getBlockX(); x++) {
@@ -68,14 +83,14 @@ public class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                     int oz = z - min.getBlockZ();
                     blocks.add(ox + "," + oy + "," + oz + "=" + block.getBlockData().getAsString());
                     if (blocks.size() > MAX_BLOCKS) {
-                        sender.sendMessage("§c选区方块数超过上限 " + MAX_BLOCKS + "，已取消。");
+                        Utils.sendAdminError(sender, "选区超过 #fff566" + MAX_BLOCKS + " #ededed个方块，已取消。");
                         return true;
                     }
                 }
             }
         }
         if (blocks.isEmpty()) {
-            sender.sendMessage("§c选区内没有任何非空气方块。");
+            Utils.sendAdminError(sender, "选区内没有可导出的方块。");
             return true;
         }
 
@@ -89,12 +104,13 @@ public class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         try {
             yaml.save(file);
         } catch (Exception e) {
-            sender.sendMessage("§c保存蓝图失败：" + e.getMessage());
+            Utils.sendAdminError(sender, "保存蓝图失败：#fff566" + e.getMessage());
             return true;
         }
 
         plugin.getGameManager().getBuildMartManager().reloadOrderPool();
-        sender.sendMessage("§a已导出蓝图 §e" + name + " §7(" + stars + "★, " + blocks.size() + " 个方块)，蓝图库已刷新。");
+        Utils.sendAdminSuccess(sender, "已导出蓝图 #fff566" + name + " #696969• #ededed" + stars
+                + " 星 #696969• #ededed" + blocks.size() + " 个方块");
         return true;
     }
 

@@ -23,7 +23,7 @@ public class SkyWarsConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 2;
+        return 3;
     }
 
     @ConfigOption(path = "name")
@@ -70,4 +70,7 @@ public class SkyWarsConfig extends BaseGameConfig {
 
     @ConfigOption(path = "time.disable-health-regain")
     private Integer timeDisableHealthRegain;
+
+    @ConfigOption(path = "time.spawn-happy-ghast", nullable = true)
+    private Integer spawnHappyGhast = 120;
 }

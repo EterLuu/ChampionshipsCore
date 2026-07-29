@@ -24,7 +24,9 @@ public class SkyWarsManager extends BaseAreaManager<SkyWarsTeamArea> {
             if (areaList != null) {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
-                    areas.put(name, new SkyWarsTeamArea(plugin, new SkyWarsConfig(plugin, name), false, name));
+                    SkyWarsTeamArea area = new SkyWarsTeamArea(plugin, new SkyWarsConfig(plugin, name), false, name);
+                    areas.put(name, area);
+                    area.preloadMap();
                 }
             }
         });

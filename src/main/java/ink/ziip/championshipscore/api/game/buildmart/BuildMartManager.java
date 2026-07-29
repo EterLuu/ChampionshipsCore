@@ -3,8 +3,10 @@ package ink.ziip.championshipscore.api.game.buildmart;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartOrderPool;
 import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import lombok.Getter;
+import ink.ziip.championshipscore.util.Utils;
 
 import java.io.File;
 import java.io.InputStream;
@@ -42,7 +44,9 @@ public class BuildMartManager extends BaseAreaManager<BuildMartArea> {
             if (areaList != null) {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
-                    areas.put(name, new BuildMartArea(plugin, new BuildMartConfig(plugin, name)));
+                    BuildMartArea area = new BuildMartArea(plugin, new BuildMartConfig(plugin, name));
+                    areas.put(name, area);
+                    area.preloadMap();
                 }
             }
         });
@@ -73,7 +77,8 @@ public class BuildMartManager extends BaseAreaManager<BuildMartArea> {
             try (InputStream in = plugin.getResource("buildmart/blueprints/" + name)) {
                 if (in != null) Files.copy(in, target.toPath());
             } catch (Exception e) {
-                plugin.getLogger().warning("[BuildMart] 无法写出示例蓝图 " + name + ": " + e.getMessage());
+                plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "加载", "蓝图",
+                        "无法写出示例蓝图=" + name + " | " + e.getMessage()));
             }
         }
     }
@@ -95,7 +100,10 @@ public class BuildMartManager extends BaseAreaManager<BuildMartArea> {
         buildMartConfig.setAreaName(name);
         buildMartConfig.saveOptions();
 
-        BuildMartArea buildMartArea = areas.putIfAbsent(name, new BuildMartArea(plugin, buildMartConfig));
+        BuildMartArea newArea = new BuildMartArea(plugin, buildMartConfig);
+        BuildMartArea buildMartArea = areas.putIfAbsent(name, newArea);
+        if (buildMartArea == null)
+            newArea.preloadMap();
 
         return buildMartArea == null;
     }

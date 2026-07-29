@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
     private final Map<UUID, Integer> chaserTimes = new ConcurrentHashMap<>();
-    private final Map<ChampionshipTeam, Long> clockUsedTimes = new ConcurrentHashMap<>();
+    private final Map<ChampionshipTeam, Long> enderEyeUsedTimes = new ConcurrentHashMap<>();
 
     public ParkourTagManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -22,6 +22,9 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
 
     @Override
     public void load() {
+        if (!loadArenaWorld("parkourtag"))
+            return;
+
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "parkourtag");
         areasFolder.mkdirs();
@@ -76,12 +79,12 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
         return UUID.fromString("00000000-0000-0000-0000-000000000000");
     }
 
-    public void setClockUsedTimes(ChampionshipTeam championshipTeam) {
-        clockUsedTimes.put(championshipTeam, System.currentTimeMillis());
+    public void setEnderEyeUsedTimes(ChampionshipTeam championshipTeam) {
+        enderEyeUsedTimes.put(championshipTeam, System.currentTimeMillis());
     }
 
-    public boolean canUseClock(ChampionshipTeam championshipTeam) {
-        return (System.currentTimeMillis() - clockUsedTimes.getOrDefault(championshipTeam, 0L)) > 10000L;
+    public boolean canUseEnderEye(ChampionshipTeam championshipTeam) {
+        return (System.currentTimeMillis() - enderEyeUsedTimes.getOrDefault(championshipTeam, 0L)) > 10000L;
     }
 
     public boolean canBeChaser(UUID uuid) {

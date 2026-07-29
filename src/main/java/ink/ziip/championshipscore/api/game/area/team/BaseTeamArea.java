@@ -11,14 +11,15 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.GameMode;
+import org.bukkit.Instrument;
 import org.bukkit.Location;
+import org.bukkit.Note;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Getter
 public abstract class BaseTeamArea extends BaseArea {
@@ -62,6 +63,7 @@ public abstract class BaseTeamArea extends BaseArea {
                 }
             }
         }
+        plugin.getRankManager().refreshAfterPendingPointWrites();
     }
 
     @Override
@@ -83,32 +85,17 @@ public abstract class BaseTeamArea extends BaseArea {
     }
 
     @Override
-    public void sendActionBarToAllGameSpectators(String message) {
+    protected Collection<Player> getOnlineParticipantSpectators() {
+        Set<Player> players = new LinkedHashSet<>();
         if (rightChampionshipTeam != null)
-            for (ChampionshipPlayer championshipPlayer : rightChampionshipTeam.getOnlineCCPlayers()) {
-                Player player = championshipPlayer.getPlayer();
-                if (player != null) {
-                    if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                        championshipPlayer.sendActionBar(message);
-                    }
-                }
-            }
+            for (Player player : rightChampionshipTeam.getOnlinePlayers())
+                if (player.getGameMode() == GameMode.SPECTATOR)
+                    players.add(player);
         if (leftChampionshipTeam != null)
-            for (ChampionshipPlayer championshipPlayer : leftChampionshipTeam.getOnlineCCPlayers()) {
-                Player player = championshipPlayer.getPlayer();
-                if (player != null) {
-                    if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                        championshipPlayer.sendActionBar(message);
-                    }
-                }
-            }
-        sendActionBarToAllSpectators(message);
-    }
-
-    @Override
-    public void sendMessageToAllGamePlayersInActionbarAndMessage(String message) {
-        sendMessageToAllGamePlayers(message);
-        sendActionBarToAllGamePlayers(message);
+            for (Player player : leftChampionshipTeam.getOnlinePlayers())
+                if (player.getGameMode() == GameMode.SPECTATOR)
+                    players.add(player);
+        return players;
     }
 
     @Override
@@ -183,6 +170,16 @@ public abstract class BaseTeamArea extends BaseArea {
             rightChampionshipTeam.playSoundToAllPlayers(sound, volume, pitch);
         if (leftChampionshipTeam != null)
             leftChampionshipTeam.playSoundToAllPlayers(sound, volume, pitch);
+    }
+
+    @Override
+    public void playNoteToAllGamePlayers(Instrument instrument, Note note) {
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.getOnlinePlayers()
+                    .forEach(player -> player.playNote(player.getLocation(), instrument, note));
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.getOnlinePlayers()
+                    .forEach(player -> player.playNote(player.getLocation(), instrument, note));
     }
 
     @Override

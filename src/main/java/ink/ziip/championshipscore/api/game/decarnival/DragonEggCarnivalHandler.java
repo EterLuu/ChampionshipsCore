@@ -43,9 +43,6 @@ public class DragonEggCarnivalHandler extends BaseListener {
             return;
         }
 
-        if (dragonEggCarnivalArea.getTimer() <= 0) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -73,9 +70,6 @@ public class DragonEggCarnivalHandler extends BaseListener {
                 return;
             }
 
-            if (dragonEggCarnivalArea.getTimer() <= 0) {
-                event.setCancelled(true);
-            }
         }
     }
 
@@ -88,8 +82,9 @@ public class DragonEggCarnivalHandler extends BaseListener {
 
         Location location = player.getLocation();
         if (dragonEggCarnivalArea.notInArea(location)) {
-            if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(dragonEggCarnivalArea.getSpectatorSpawnLocation());
+            if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PREPARATION
+                    || dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.COUNTDOWN) {
+                player.teleport(dragonEggCarnivalArea.getPreparationTeleportLocation(dragonEggCarnivalArea.getSpectatorSpawnLocation()));
             }
             if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
@@ -105,12 +100,6 @@ public class DragonEggCarnivalHandler extends BaseListener {
                 }
             }
             return;
-        }
-
-        if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (dragonEggCarnivalArea.getTimer() <= 0) {
-                event.setCancelled(true);
-            }
         }
     }
 

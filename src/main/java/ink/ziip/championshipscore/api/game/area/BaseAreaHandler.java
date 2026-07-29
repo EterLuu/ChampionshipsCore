@@ -21,10 +21,19 @@ public class BaseAreaHandler extends BaseListener {
         this.baseArea = baseArea;
     }
 
+    private boolean isCountdownParticipant(Player player) {
+        return baseArea.getGameStageEnum() == ink.ziip.championshipscore.api.object.stage.GameStageEnum.COUNTDOWN
+                && !baseArea.notAreaPlayer(player);
+    }
+
+    private boolean isCountdownMovementFrozen(Player player) {
+        return baseArea.freezeMovementDuringCountdown() && isCountdownParticipant(player);
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDropItems(PlayerDropItemEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player)) {
+        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -32,7 +41,7 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPlaceBlock(BlockPlaceEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player)) {
+        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -40,7 +49,7 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerBreakBlock(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player)) {
+        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -48,7 +57,7 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player)) {
+        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -56,7 +65,7 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamageByBlock(EntityDamageByBlockEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (baseArea.isSpectator(player)) {
+            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
                 event.setCancelled(true);
             }
         }
@@ -65,12 +74,12 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamageByEntity(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (baseArea.isSpectator(player)) {
+            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
                 event.setCancelled(true);
             }
         }
         if (event.getDamager() instanceof Player player) {
-            if (baseArea.isSpectator(player)) {
+            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
                 event.setCancelled(true);
             }
         }
@@ -79,7 +88,12 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamaged(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (baseArea.isSpectator(player)) {
+            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+                event.setCancelled(true);
+                return;
+            }
+            // Rule-introduction phase: participants roam the arena freely but must not get hurt.
+            if (baseArea.isIntroductionPhase() && !baseArea.notAreaPlayer(player)) {
                 event.setCancelled(true);
             }
         }
@@ -88,6 +102,13 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+        if (isCountdownMovementFrozen(player)
+                && (event.getFrom().getX() != event.getTo().getX()
+                || event.getFrom().getY() != event.getTo().getY()
+                || event.getFrom().getZ() != event.getTo().getZ())) {
+            event.setCancelled(true);
+            return;
+        }
         if (baseArea.isSpectator(player)) {
             if (baseArea.notInArea(player.getLocation())) {
                 player.teleport(baseArea.getSpectatorSpawnLocation());
@@ -98,7 +119,7 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player)) {
+        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -106,7 +127,7 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPickupItem(EntityPickupItemEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (baseArea.isSpectator(player)) {
+            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
                 event.setCancelled(true);
             }
         }
@@ -115,7 +136,7 @@ public class BaseAreaHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPickupArrow(PlayerPickupArrowEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player)) {
+        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
             event.setCancelled(true);
         }
     }

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.game.area.buildmart;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -45,10 +46,10 @@ public class BuildMartSchematicSubCommand extends BaseSubCommand {
         try {
             plugin.getWorldEditManager().saveSelectionAsSchematic(player, file);
         } catch (Exception e) {
-            sender.sendMessage("§c保存失败，请先用 //pos1 //pos2 选好区域：" + e.getMessage());
+            Utils.sendAdminError(sender, "保存模板失败，请检查 WorldEdit 选区：#fff566" + e.getMessage());
             return true;
         }
-        sender.sendMessage("§a已保存 §e" + name + " §a模板到 §7" + file.getName() + "§a，可用于 prepare。");
+        Utils.sendAdminSuccess(sender, "已保存建材集市 #fff566" + name + " #ededed模板：#fff566" + file.getName());
         return true;
     }
 

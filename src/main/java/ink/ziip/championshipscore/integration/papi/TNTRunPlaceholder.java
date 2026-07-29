@@ -39,11 +39,11 @@ public class TNTRunPlaceholder extends BaseGamePlaceholder<TNTRunTeamArea> {
 
             int timer = tntRunTeamArea.getTimer();
             if (timer >= 120)
-                return String.valueOf(timer - 120 + 1);
+                return String.valueOf(timer - 120);
             if (timer >= 60)
-                return String.valueOf(timer - 60 + 1);
+                return String.valueOf(timer - 60);
             if (timer >= 20)
-                return String.valueOf(timer - 20 + 1);
+                return String.valueOf(timer - 20);
 
             return String.valueOf(0);
         }

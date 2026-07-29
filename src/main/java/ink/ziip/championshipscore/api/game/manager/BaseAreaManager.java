@@ -3,13 +3,17 @@ package ink.ziip.championshipscore.api.game.manager;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
+import org.bukkit.World;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class BaseAreaManager<T extends BaseArea> extends BaseManager {
     protected final ConcurrentHashMap<String, T> areas = new ConcurrentHashMap<>();
+    private final Set<String> managedWorlds = new LinkedHashSet<>();
 
     public BaseAreaManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -26,7 +30,27 @@ public abstract class BaseAreaManager<T extends BaseArea> extends BaseManager {
 
     public abstract boolean addArea(String name);
 
+    /** Loads and takes ownership of a void arena world for this enabled game. */
+    protected boolean loadArenaWorld(String worldName) {
+        if (!plugin.getWorldManager().loadWorld(worldName, World.Environment.NORMAL, false))
+            return false;
+        managedWorlds.add(worldName);
+        return true;
+    }
+
+    /** Loads and takes ownership of one vanilla-survival Bingo dimension. */
+    protected boolean loadBingoWorld(String worldName, World.Environment environment) {
+        if (!plugin.getWorldManager().loadBingoWorld(worldName, environment))
+            return false;
+        managedWorlds.add(worldName);
+        return true;
+    }
+
     public void clearAreas() {
+        areas.values().forEach(BaseArea::clearBossBars);
         areas.clear();
+        for (String worldName : managedWorlds)
+            plugin.getWorldManager().unloadWorld(worldName, true);
+        managedWorlds.clear();
     }
 }

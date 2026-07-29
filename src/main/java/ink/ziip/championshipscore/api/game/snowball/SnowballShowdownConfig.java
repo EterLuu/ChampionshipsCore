@@ -21,7 +21,7 @@ public class SnowballShowdownConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 1;
+        return 2;
     }
 
     @ConfigOption(path = "name")
