@@ -1,13 +1,13 @@
 package ink.ziip.championshipscore.api.game.parkourwarrior;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 
-public class ParkourWarriorManager extends BaseAreaManager<ParkourWarriorTeamArea> {
+public class ParkourWarriorManager extends BaseGameInstanceManager<ParkourWarriorTeamArea> {
     public ParkourWarriorManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
     }

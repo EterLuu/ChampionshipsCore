@@ -27,7 +27,7 @@ public class WorldUnloadSubCommand extends BaseSubCommand {
 
         World world = Bukkit.getWorld(args[0]);
         if (world == null) {
-            Utils.sendAdminError(sender, "世界 #fff566" + args[0] + " #ededed未加载");
+            Utils.sendAdminError(sender, "世界 &#fff566" + args[0] + " &#ededed未加载");
             return true;
         }
         if (plugin.getWorldManager().isMainWorld(world)) {
@@ -37,12 +37,12 @@ public class WorldUnloadSubCommand extends BaseSubCommand {
 
         int movedPlayers = world.getPlayerCount();
         if (!plugin.getWorldManager().unloadWorld(world.getName(), true)) {
-            Utils.sendAdminError(sender, "世界 #fff566" + world.getName() + " #ededed卸载失败 #696969• 请检查控制台");
+            Utils.sendAdminError(sender, "世界 &#fff566" + world.getName() + " &#ededed卸载失败 &#696969• 请检查控制台");
             return true;
         }
 
-        Utils.sendAdminSuccess(sender, "已保存并卸载世界 #fff566" + world.getName()
-                + (movedPlayers == 0 ? "" : " #696969• 已迁回 " + movedPlayers + " 名玩家"));
+        Utils.sendAdminSuccess(sender, "已保存并卸载世界 &#fff566" + world.getName()
+                + (movedPlayers == 0 ? "" : " &#696969• 已迁回 " + movedPlayers + " 名玩家"));
         return true;
     }
 

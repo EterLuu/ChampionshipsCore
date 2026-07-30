@@ -161,7 +161,7 @@ public final class GameTask {
             material = Material.BARRIER;
             lore.add(Component.text()
                     .append(msg.component("card.completed_by"))
-                    .append(own.playerName().color(own.teamColor() == null ? NamedTextColor.WHITE : own.teamColor()))
+                    .append(own.playerName())
                     .decoration(TextDecoration.ITALIC, false).build());
             lore.add(msg.component("card.completed_at", formatTime(own.completedAt())));
             glow = true;
@@ -175,7 +175,7 @@ public final class GameTask {
                     .decoration(TextDecoration.ITALIC, false).build());
             lore.add(Component.text()
                     .append(msg.component("card.completed_by"))
-                    .append(claimer.playerName().color(claimer.teamColor() == null ? NamedTextColor.WHITE : claimer.teamColor()))
+                    .append(claimer.playerName())
                     .decoration(TextDecoration.ITALIC, false).build());
             glow = true;
         } else {
@@ -196,8 +196,7 @@ public final class GameTask {
             boolean first = true;
             for (Completion c : completions.values()) {
                 if (!first) cl.append(Component.text(", ", NamedTextColor.GRAY));
-                cl.append(Component.text().color(c.teamColor() == null ? NamedTextColor.WHITE : c.teamColor())
-                        .append(c.playerName()).build());
+                cl.append(c.playerName());
                 first = false;
             }
             lore.add(cl.build());

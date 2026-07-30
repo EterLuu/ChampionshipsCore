@@ -1,20 +1,24 @@
 package ink.ziip.championshipscore.api.game.skywars;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.World;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 
-public class SkyWarsManager extends BaseAreaManager<SkyWarsTeamArea> {
+public class SkyWarsManager extends BaseGameInstanceManager<SkyWarsTeamArea> {
+    private final SkyWarsVariantRegistry variantRegistry;
+
     public SkyWarsManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
+        variantRegistry = new SkyWarsVariantRegistry(championshipsCore);
     }
 
     @Override
     public void load() {
+        variantRegistry.load();
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "skywars");
         areasFolder.mkdirs();
@@ -24,7 +28,8 @@ public class SkyWarsManager extends BaseAreaManager<SkyWarsTeamArea> {
             if (areaList != null) {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
-                    SkyWarsTeamArea area = new SkyWarsTeamArea(plugin, new SkyWarsConfig(plugin, name), false, name);
+                    SkyWarsTeamArea area = new SkyWarsTeamArea(plugin, new SkyWarsConfig(plugin, name),
+                            false, name, variantRegistry);
                     areas.put(name, area);
                     area.preloadMap();
                 }
@@ -54,7 +59,7 @@ public class SkyWarsManager extends BaseAreaManager<SkyWarsTeamArea> {
         skyWarsConfig.setAreaName(name);
         skyWarsConfig.saveOptions();
 
-        SkyWarsTeamArea skyWarsArea = new SkyWarsTeamArea(plugin, skyWarsConfig, true, name);
+        SkyWarsTeamArea skyWarsArea = new SkyWarsTeamArea(plugin, skyWarsConfig, true, name, variantRegistry);
         areas.put(name, skyWarsArea);
 
         return true;
@@ -69,7 +74,6 @@ public class SkyWarsManager extends BaseAreaManager<SkyWarsTeamArea> {
             return false;
         }
 
-        skyWarsArea.saveMap(World.Environment.NORMAL);
-        return true;
+        return skyWarsArea.saveMap(World.Environment.NORMAL);
     }
 }

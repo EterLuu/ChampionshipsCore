@@ -64,11 +64,11 @@ public class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         int sizeY = max.getBlockY() - min.getBlockY() + 1;
         int sizeZ = max.getBlockZ() - min.getBlockZ() + 1;
         if (sizeY > MAX_SIZE) {
-            Utils.sendAdminError(sender, "蓝图高度上限 #fff566" + MAX_SIZE + " #696969• #ededed当前 #fff566" + sizeY);
+            Utils.sendAdminError(sender, "蓝图高度上限 &#fff566" + MAX_SIZE + " &#696969• &#ededed当前 &#fff566" + sizeY);
             return true;
         }
         if (sizeX > MAX_SIZE || sizeZ > MAX_SIZE) {
-            Utils.sendAdminError(sender, "蓝图长宽上限 #fff566" + MAX_SIZE + " #696969• #ededed当前 #fff566" + sizeX + "×" + sizeZ);
+            Utils.sendAdminError(sender, "蓝图长宽上限 &#fff566" + MAX_SIZE + " &#696969• &#ededed当前 &#fff566" + sizeX + "×" + sizeZ);
             return true;
         }
 
@@ -83,7 +83,7 @@ public class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                     int oz = z - min.getBlockZ();
                     blocks.add(ox + "," + oy + "," + oz + "=" + block.getBlockData().getAsString());
                     if (blocks.size() > MAX_BLOCKS) {
-                        Utils.sendAdminError(sender, "选区超过 #fff566" + MAX_BLOCKS + " #ededed个方块，已取消。");
+                        Utils.sendAdminError(sender, "选区超过 &#fff566" + MAX_BLOCKS + " &#ededed个方块，已取消。");
                         return true;
                     }
                 }
@@ -104,13 +104,13 @@ public class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         try {
             yaml.save(file);
         } catch (Exception e) {
-            Utils.sendAdminError(sender, "保存蓝图失败：#fff566" + e.getMessage());
+            Utils.sendAdminError(sender, "保存蓝图失败：&#fff566" + e.getMessage());
             return true;
         }
 
         plugin.getGameManager().getBuildMartManager().reloadOrderPool();
-        Utils.sendAdminSuccess(sender, "已导出蓝图 #fff566" + name + " #696969• #ededed" + stars
-                + " 星 #696969• #ededed" + blocks.size() + " 个方块");
+        Utils.sendAdminSuccess(sender, "已导出蓝图 &#fff566" + name + " &#696969• &#ededed" + stars
+                + " 星 &#696969• &#ededed" + blocks.size() + " 个方块");
         return true;
     }
 

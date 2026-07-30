@@ -1,14 +1,13 @@
 package ink.ziip.championshipscore.api.game.parkourtag;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -30,20 +29,7 @@ public class ParkourTagMatch {
     private final int copyIndex;
     private final ChampionshipTeam right;
     private final ChampionshipTeam left;
-
-    private final Location rightPreSpawn;
-    private final Location leftPreSpawn;
-    private final Location spectatorSpawn;
-
-    private final Location leftAreaChaserSpawn;
-    private final List<Location> leftAreaEscapeeSpawns = new ArrayList<>();
-    private final Vector leftAreaMin;
-    private final Vector leftAreaMax;
-
-    private final Location rightAreaChaserSpawn;
-    private final List<Location> rightAreaEscapeeSpawns = new ArrayList<>();
-    private final Vector rightAreaMin;
-    private final Vector rightAreaMax;
+    private final ParkourTagGeometry geometry;
 
     @Setter
     private UUID rightAreaChaser;
@@ -56,38 +42,25 @@ public class ParkourTagMatch {
     private final Map<UUID, Integer> playerSurviveTimes = new ConcurrentHashMap<>();
 
     public ParkourTagMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left, ParkourTagConfig config) {
+        this(copyIndex, right, left, new ReplicatedSpatialLayout<>(ParkourTagGeometry.from(config),
+                ParkourTagLayout.GRID, config.getCopyCount()).geometry(copyIndex));
+    }
+
+    public ParkourTagMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left,
+                           ParkourTagGeometry geometry) {
         this.copyIndex = copyIndex;
         this.right = right;
         this.left = left;
-        Vector d = ParkourTagLayout.delta(copyIndex);
-
-        this.rightPreSpawn = shift(config.getRightPreSpawnPoint(), d);
-        this.leftPreSpawn = shift(config.getLeftPreSpawnPoint(), d);
-        this.spectatorSpawn = shift(config.getSpectatorSpawnPoint(), d);
-
-        this.leftAreaChaserSpawn = shift(config.getLeftAreaChaserSpawnPoint(), d);
-        this.leftAreaMin = Vector.getMinimum(config.getLeftAreaAreaPos1(), config.getLeftAreaAreaPos2()).add(d);
-        this.leftAreaMax = Vector.getMaximum(config.getLeftAreaAreaPos1(), config.getLeftAreaAreaPos2()).add(d);
-        addSpawns(config.getLeftAreaEscapeeSpawnPoints(), d, leftAreaEscapeeSpawns);
-
-        this.rightAreaChaserSpawn = shift(config.getRightAreaChaserSpawnPoint(), d);
-        this.rightAreaMin = Vector.getMinimum(config.getRightAreaAreaPos1(), config.getRightAreaAreaPos2()).add(d);
-        this.rightAreaMax = Vector.getMaximum(config.getRightAreaAreaPos1(), config.getRightAreaAreaPos2()).add(d);
-        addSpawns(config.getRightAreaEscapeeSpawnPoints(), d, rightAreaEscapeeSpawns);
+        this.geometry = geometry;
     }
 
-    private static void addSpawns(List<String> raw, Vector delta, List<Location> out) {
-        if (raw == null) return;
-        for (String s : raw) {
-            Location location = Utils.getLocation(s);
-            if (location != null) out.add(location.add(delta));
-        }
-    }
-
-    @Nullable
-    private static Location shift(@Nullable Location location, Vector delta) {
-        return location == null ? null : location.clone().add(delta);
-    }
+    public Location getRightPreSpawn() { return geometry.getRightPreSpawn(); }
+    public Location getLeftPreSpawn() { return geometry.getLeftPreSpawn(); }
+    public Location getSpectatorSpawn() { return geometry.getSpectatorSpawn(); }
+    public Location getLeftAreaChaserSpawn() { return geometry.getLeftZone().getChaserSpawn(); }
+    public List<Location> getLeftAreaEscapeeSpawns() { return geometry.getLeftZone().getEscapeeSpawns(); }
+    public Location getRightAreaChaserSpawn() { return geometry.getRightZone().getChaserSpawn(); }
+    public List<Location> getRightAreaEscapeeSpawns() { return geometry.getRightZone().getEscapeeSpawns(); }
 
     public boolean contains(Player player) {
         UUID uuid = player.getUniqueId();
@@ -95,11 +68,11 @@ public class ParkourTagMatch {
     }
 
     public boolean isInLeftArea(Location location) {
-        return location.toVector().isInAABB(leftAreaMin, leftAreaMax);
+        return geometry.getLeftZone().contains(location);
     }
 
     public boolean isInRightArea(Location location) {
-        return location.toVector().isInAABB(rightAreaMin, rightAreaMax);
+        return geometry.getRightZone().contains(location);
     }
 
     public boolean isInArea(Location location) {
@@ -107,11 +80,11 @@ public class ParkourTagMatch {
     }
 
     public BoundingBox getLeftAreaBox() {
-        return BoundingBox.of(leftAreaMin, leftAreaMax.clone().add(new Vector(1, 1, 1)));
+        return geometry.getLeftZone().box();
     }
 
     public BoundingBox getRightAreaBox() {
-        return BoundingBox.of(rightAreaMin, rightAreaMax.clone().add(new Vector(1, 1, 1)));
+        return geometry.getRightZone().box();
     }
 
     /** Right team's escapees (everyone on the right team except its chaser). */

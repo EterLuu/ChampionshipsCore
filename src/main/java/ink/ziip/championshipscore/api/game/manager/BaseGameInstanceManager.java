@@ -2,25 +2,31 @@ package ink.ziip.championshipscore.api.game.manager;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import org.bukkit.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class BaseAreaManager<T extends BaseArea> extends BaseManager {
+public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extends BaseManager {
     protected final ConcurrentHashMap<String, T> areas = new ConcurrentHashMap<>();
     private final Set<String> managedWorlds = new LinkedHashSet<>();
 
-    public BaseAreaManager(ChampionshipsCore championshipsCore) {
+    public BaseGameInstanceManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
     }
 
     public List<String> getAreaNameList() {
         return new java.util.ArrayList<>(areas.keySet());
+    }
+
+    /** All permanent runtime instances owned by this manager; one per map in the legacy default. */
+    public Collection<T> getRuntimeInstances() {
+        return List.copyOf(areas.values());
     }
 
     @Nullable
@@ -47,7 +53,7 @@ public abstract class BaseAreaManager<T extends BaseArea> extends BaseManager {
     }
 
     public void clearAreas() {
-        areas.values().forEach(BaseArea::clearBossBars);
+        getRuntimeInstances().forEach(BaseGameInstance::dispose);
         areas.clear();
         for (String worldName : managedWorlds)
             plugin.getWorldManager().unloadWorld(worldName, true);

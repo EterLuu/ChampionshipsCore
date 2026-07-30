@@ -34,7 +34,7 @@ public class WorldCreateSubCommand extends BaseSubCommand {
             return true;
         }
         if (Bukkit.getWorld(worldName) != null) {
-            Utils.sendAdminInfo(sender, "世界 #fff566" + worldName + " #bababa已加载");
+            Utils.sendAdminInfo(sender, "世界 &#fff566" + worldName + " &#bababa已加载");
             return true;
         }
 
@@ -47,7 +47,7 @@ public class WorldCreateSubCommand extends BaseSubCommand {
         WorldManager worldManager = plugin.getWorldManager();
         World.Environment bingoEnvironment = WorldManager.getBingoEnvironment(worldName);
         if (bingoEnvironment != null && args.length == 2 && environment != bingoEnvironment) {
-            Utils.sendAdminError(sender, "Bingo 维度 #fff566" + worldName + " #ededed必须使用 #fff566"
+            Utils.sendAdminError(sender, "Bingo 维度 &#fff566" + worldName + " &#ededed必须使用 &#fff566"
                     + bingoEnvironment.name().toLowerCase());
             return true;
         }
@@ -57,12 +57,12 @@ public class WorldCreateSubCommand extends BaseSubCommand {
                 ? worldManager.loadWorld(worldName, environment, false)
                 : worldManager.loadBingoWorld(worldName, bingoEnvironment);
         if (!loaded) {
-            Utils.sendAdminError(sender, "世界 #fff566" + worldName + " #ededed加载失败 #696969• 请检查控制台");
+            Utils.sendAdminError(sender, "世界 &#fff566" + worldName + " &#ededed加载失败 &#696969• 请检查控制台");
             return true;
         }
 
-        Utils.sendAdminSuccess(sender, "已" + (existed ? "加载" : "创建") + "世界 #fff566" + worldName
-                + " #696969• " + (bingoEnvironment == null ? environment : bingoEnvironment).name().toLowerCase());
+        Utils.sendAdminSuccess(sender, "已" + (existed ? "加载" : "创建") + "世界 &#fff566" + worldName
+                + " &#696969• " + (bingoEnvironment == null ? environment : bingoEnvironment).name().toLowerCase());
         return true;
     }
 

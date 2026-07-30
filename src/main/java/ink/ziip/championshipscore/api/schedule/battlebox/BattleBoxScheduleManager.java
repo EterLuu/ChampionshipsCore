@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.schedule.battlebox;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -28,6 +29,9 @@ public class BattleBoxScheduleManager extends BaseManager {
     private boolean enabled;
     private BukkitTask firstStartTask;
     private BukkitTask startTask;
+    private String scheduledMapName;
+    private final Set<BattleBoxArea> activeRoundInstances =
+            Collections.newSetFromMap(new IdentityHashMap<>());
 
     public BattleBoxScheduleManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -36,15 +40,15 @@ public class BattleBoxScheduleManager extends BaseManager {
         subRound = 0;
     }
 
-    private void cycleGeneratePairs() {
+    private boolean cycleGeneratePairs() {
         this.rounds.clear();
 
         List<ChampionshipTeam> teams = new ArrayList<>(plugin.getTeamManager().getTeamList());
 
-        if (teams.size() % 2 != 0) {
+        if (teams.size() < 2 || teams.size() % 2 != 0) {
             plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BattleBox, "-", "调度", "对阵",
-                    "队伍数=" + teams.size() + "，无法为奇数队伍生成对阵"));
-            return;
+                    "队伍数=" + teams.size() + "，至少需要两支且必须为偶数"));
+            return false;
         }
 
         int rounds = Math.min(9, teams.size() - 1); // >=10 teams capped at 9 rounds; fewer -> full N-1 round-robin
@@ -72,6 +76,7 @@ public class BattleBoxScheduleManager extends BaseManager {
             }
             this.rounds.add(set);
         }
+        return !this.rounds.isEmpty();
     }
 
     @Override
@@ -87,6 +92,27 @@ public class BattleBoxScheduleManager extends BaseManager {
     public void startBattleBox() {
         if (enabled) {
             endSchedule();
+            removeAllSpectatorsFromArea();
+            return;
+        }
+
+        if (!cycleGeneratePairs()) return;
+        scheduledMapName = plugin.getGameManager().getBattleBoxManager().getAreaNameList()
+                .stream().sorted().findFirst().orElse(null);
+        if (scheduledMapName == null) {
+            plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BattleBox, "-", "调度", "启动",
+                    "无法开始：未配置地图"));
+            return;
+        }
+        int requiredInstances = rounds.getFirst().size();
+        long availableInstances = plugin.getGameManager().getBattleBoxManager()
+                .getMapInstances(scheduledMapName).stream()
+                .filter(instance -> instance.getGameStageEnum() == ink.ziip.championshipscore.api.object.stage.GameStageEnum.WAITING)
+                .count();
+        if (availableInstances < requiredInstances) {
+            plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BattleBox, scheduledMapName, "调度", "启动",
+                    "无法开始：需要实例=" + requiredInstances + "，空闲实例=" + availableInstances));
+            scheduledMapName = null;
             return;
         }
 
@@ -96,8 +122,6 @@ public class BattleBoxScheduleManager extends BaseManager {
         enabled = true;
         timer = 10;
         subRound = 0;
-
-        cycleGeneratePairs();
 
         firstStartTask = scheduler.runTaskTimer(plugin, () -> {
 
@@ -129,6 +153,8 @@ public class BattleBoxScheduleManager extends BaseManager {
 
         subRound++;
         if (subRound > rounds.size()) {
+            endSchedule();
+            removeAllSpectatorsFromArea();
             return;
         }
 
@@ -138,23 +164,37 @@ public class BattleBoxScheduleManager extends BaseManager {
     }
 
     private void startRoundBattle() {
-        // One Battle Box area now hosts all of this round's matches in parallel (one per stamped copy).
-        String areaName = plugin.getGameManager().getBattleBoxManager().getAreaNameList()
-                .stream().findFirst().orElse(null);
+        String areaName = scheduledMapName;
         if (areaName == null) {
-            plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BattleBox, "-", "调度", "轮次",
-                    "第 " + subRound + " 轮无法开始：未配置场地"));
+            abortSchedule("第 " + subRound + " 轮无法开始：地图不存在");
             return;
         }
 
         List<TwoVTwoVector> pairs = new ArrayList<>(rounds.get(subRound - 1));
 
-        if (plugin.getGameManager().joinBattleBoxArea(areaName, pairs, subRound == 1))
+        List<BattleBoxArea> started = plugin.getGameManager()
+                .joinBattleBoxInstances(areaName, pairs, subRound == 1);
+        if (started != null) {
+            activeRoundInstances.clear();
+            activeRoundInstances.addAll(started);
             plugin.getLogger().info(Utils.formatGameLog(GameTypeEnum.BattleBox, areaName, "调度", "轮次",
                     "第 " + subRound + " 轮开始，对局数=" + pairs.size()));
-        else
-            plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BattleBox, areaName, "调度", "轮次",
-                    "第 " + subRound + " 轮启动失败"));
+        } else {
+            abortSchedule("第 " + subRound + " 轮启动失败");
+        }
+    }
+
+    private void abortSchedule(String reason) {
+        plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BattleBox,
+                scheduledMapName == null ? "-" : scheduledMapName, "调度", "中止", reason));
+        if (firstStartTask != null) firstStartTask.cancel();
+        if (startTask != null) startTask.cancel();
+        enabled = false;
+        activeRoundInstances.clear();
+        scheduledMapName = null;
+        handler.unRegister();
+        removeAllSpectatorsFromArea();
+        Utils.changeLevelForAllPlayers(0);
     }
 
     public void endSchedule() {
@@ -164,6 +204,8 @@ public class BattleBoxScheduleManager extends BaseManager {
             startTask.cancel();
 
         enabled = false;
+        activeRoundInstances.clear();
+        scheduledMapName = null;
 
         Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
         Utils.sendTitleToAllPlayers(MessageConfig.GAME_ROUND_END_TITLE.replace("%game%", GameTypeEnum.BattleBox.toString()),
@@ -209,9 +251,10 @@ public class BattleBoxScheduleManager extends BaseManager {
         }, 0, 20L);
     }
 
-    /** Called when the Battle Box area finishes a whole round (all its parallel matches done). */
-    public synchronized void onRoundComplete() {
-        nextBattleBoxRound();
+    /** Advances only after every independently running instance in this round has ended. */
+    public synchronized void onInstanceComplete(BattleBoxArea instance) {
+        if (!activeRoundInstances.remove(instance)) return;
+        if (activeRoundInstances.isEmpty()) nextBattleBoxRound();
     }
 
     public void addAllSpectatorsToArea() {

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
+import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -88,6 +89,10 @@ public final class ListStepGui {
         int slot = event.getRawSlot();
         switch (slot) {
             case ADD_SLOT -> {
+                if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
+                    Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
+                    return;
+                }
                 String m = step.listAdd(session, player);
                 if (m != null) player.sendMessage(m);
                 refresh(top, session, step);

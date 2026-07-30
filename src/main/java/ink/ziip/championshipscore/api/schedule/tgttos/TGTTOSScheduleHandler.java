@@ -18,7 +18,7 @@ public class TGTTOSScheduleHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
-        if (event.getBaseSingleTeamArea() instanceof TGTTOSTeamArea) {
+        if (event.getGameInstance() instanceof TGTTOSTeamArea) {
             if (scheduleManager.isEnabled()) {
                 scheduleManager.nextRound();
             }

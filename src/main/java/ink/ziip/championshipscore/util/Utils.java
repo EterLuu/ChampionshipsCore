@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.util;
 
+import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -12,6 +14,7 @@ import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -29,6 +32,9 @@ import java.util.regex.Pattern;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
+    private static final Pattern EXPLICIT_HEX_COLOR = Pattern.compile("&#([a-fA-F0-9]{6})");
+    private static final Pattern LEGACY_HEX_COLOR = Pattern.compile("(?<!&)#([a-fA-F0-9]{6})");
+
     private Utils() {
     }
 
@@ -41,23 +47,26 @@ public class Utils {
         }
     }
 
+    /** Translates the preferred {@code &#RRGGBB} syntax and the legacy {@code #RRGGBB} syntax. */
     public static String translateColorCodes(String message) {
-        Pattern pattern = Pattern.compile("#[a-fA-F0-9]{6}");
-        Matcher matcher = pattern.matcher(message);
-        while (matcher.find()) {
-            String hexCode = message.substring(matcher.start(), matcher.end());
-            String replaceSharp = hexCode.replace('#', 'x');
-
-            char[] ch = replaceSharp.toCharArray();
-            StringBuilder builder = new StringBuilder();
-            for (char c : ch) {
-                builder.append("&").append(c);
-            }
-
-            message = message.replace(hexCode, builder.toString());
-            matcher = pattern.matcher(message);
-        }
+        message = expandHexColors(message, EXPLICIT_HEX_COLOR);
+        message = expandHexColors(message, LEGACY_HEX_COLOR);
         return translateAmpersandCodes(message);
+    }
+
+    private static String expandHexColors(String message, Pattern pattern) {
+        Matcher matcher = pattern.matcher(message);
+        StringBuffer expanded = new StringBuffer();
+        while (matcher.find()) {
+            String hex = matcher.group(1);
+            StringBuilder replacement = new StringBuilder("&x");
+            for (char digit : hex.toCharArray()) {
+                replacement.append('&').append(digit);
+            }
+            matcher.appendReplacement(expanded, Matcher.quoteReplacement(replacement.toString()));
+        }
+        matcher.appendTail(expanded);
+        return expanded.toString();
     }
 
     /** The color/format code characters accepted after {@code &}, including {@code x} for hex sequences. */
@@ -93,6 +102,51 @@ public class Utils {
             players.add(player.getName());
         }
         return players;
+    }
+
+    /** Neutral player name followed by the player's coloured team, matching the server chat identity. */
+    public static String formatPlayerName(@NotNull Player player) {
+        ChampionshipTeam team = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
+        return formatPlayerName(player.getName(), team);
+    }
+
+    /** Offline-safe player identity for messages which only have a UUID. */
+    public static String formatPlayerName(@NotNull UUID uuid) {
+        ChampionshipsCore plugin = ChampionshipsCore.getInstance();
+        return formatPlayerName(plugin.getPlayerManager().getPlayerName(uuid),
+                plugin.getTeamManager().getTeamByPlayer(uuid));
+    }
+
+    /** Resolves a possibly offline player's team without creating or changing player data. */
+    public static String formatPlayerName(@NotNull String name) {
+        ChampionshipsCore plugin = ChampionshipsCore.getInstance();
+        Player online = Bukkit.getPlayerExact(name);
+        ChampionshipTeam team = online == null ? null : plugin.getTeamManager().getTeamByPlayer(online);
+        if (team == null) {
+            for (ChampionshipTeam candidate : plugin.getTeamManager().getTeamList()) {
+                boolean member = candidate.getMembers().stream()
+                        .map(plugin.getPlayerManager()::getPlayerName)
+                        .anyMatch(name::equalsIgnoreCase);
+                if (member) {
+                    team = candidate;
+                    break;
+                }
+            }
+        }
+        return formatPlayerName(name, team);
+    }
+
+    /** Formats a known player/team pair without applying the team colour to the player's name. */
+    public static String formatPlayerName(@NotNull String name, @Nullable ChampionshipTeam team) {
+        String identity = "&f" + name;
+        if (team != null)
+            identity += " &7<" + team.getColoredName() + "&7>";
+        return translateColorCodes(identity);
+    }
+
+    /** Neutral player name for messages which already display the team separately. */
+    public static String formatPlayerNameOnly(@NotNull String name) {
+        return translateColorCodes("&f" + name);
     }
 
     public static Location getLocation(String content) {
@@ -231,15 +285,15 @@ public class Utils {
     }
 
     public static String formatAdminSuccess(String message) {
-        return translateColorCodes("#bababa[#fff566管理#bababa] #ededed" + message);
+        return translateColorCodes("&#bababa[&#fff566管理&#bababa] &#ededed" + message);
     }
 
     public static String formatAdminInfo(String message) {
-        return translateColorCodes("#bababa[#fff566管理#bababa] #bababa" + message);
+        return translateColorCodes("&#bababa[&#fff566管理&#bababa] &#bababa" + message);
     }
 
     public static String formatAdminError(String message) {
-        return translateColorCodes("#bababa[#ff6b26管理#bababa] #ededed" + message);
+        return translateColorCodes("&#bababa[&#ff6b26管理&#bababa] &#ededed" + message);
     }
 
     public static String formatGameLog(GameTypeEnum gameType, String area, String stage,

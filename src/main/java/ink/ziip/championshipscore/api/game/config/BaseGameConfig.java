@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -13,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +27,17 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     public BaseGameConfig(@NotNull ChampionshipsCore plugin, String configName) {
         super(plugin);
         this.configName = configName;
+    }
+
+    /**
+     * Game map configs load through this method rather than {@code BaseConfigurationManager}, so the
+     * version check would never run for them. Migrate outdated files here: the old file is renamed to
+     * {@code *.outdated} and its values are copied onto the latest bundled template.
+     */
+    @Override
+    public void initializeConfiguration(Path pluginFolder) {
+        super.initializeConfiguration(pluginFolder);
+        checkVersion(true);
     }
 
     @Override
@@ -106,13 +119,18 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) {
         try {
-            for (Field field : getConfigFields()) {
-                field.setAccessible(true);
-                ConfigOption co = field.getDeclaredAnnotation(ConfigOption.class);
-                if (co != null && yamlConfiguration.get(co.path()) != null) {
-                    configuration.set(co.path(), yamlConfiguration.get(co.path()));
+            // Preserve every user-owned leaf, including game-specific custom sections which are not
+            // represented by @ConfigOption fields (for example Build Mart's base template). The new
+            // bundled template still supplies newly introduced paths, while its version marker wins.
+            for (String path : yamlConfiguration.getKeys(true)) {
+                if ("dont-edit-this.version".equals(path)) continue;
+                Object value = yamlConfiguration.get(path);
+                if (!(value instanceof ConfigurationSection)) {
+                    configuration.set(path, value);
                 }
             }
+
+            customizeMigratedConfiguration(yamlConfiguration, configuration);
 
             configuration.save(configurationPath.toFile());
 
@@ -122,6 +140,11 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
             plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "保存",
                     "配置文件=" + getFileName() + " 保存失败"), exception);
         }
+    }
+
+    /** Per-game hook for version-specific defaults that cannot safely come from a shared map template. */
+    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
+                                                  @NotNull YamlConfiguration migratedConfiguration) {
     }
 
     /**

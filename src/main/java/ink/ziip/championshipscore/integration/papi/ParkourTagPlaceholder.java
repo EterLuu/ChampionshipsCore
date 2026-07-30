@@ -1,11 +1,12 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagMatch;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -22,7 +23,7 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
     }
 
     @Override
-    protected BaseAreaManager<ParkourTagArea> getManager() {
+    protected BaseGameInstanceManager<ParkourTagArea> getManager() {
         return plugin.getGameManager().getParkourTagManager();
     }
 
@@ -72,7 +73,7 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
             if (championshipTeam == null)
                 return MessageConfig.PLACEHOLDER_NONE;
 
-            return championshipTeam.getColoredColor() + player.getName();
+            return Utils.formatPlayerName(player);
         }
 
         if (params.startsWith("area_escapees_")) {

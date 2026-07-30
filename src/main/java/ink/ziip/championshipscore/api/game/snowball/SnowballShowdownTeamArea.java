@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.snowball;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
+public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
     private final List<List<Location>> areaLocations = new ArrayList<>();
     private final Map<UUID, List<Location>> playerRespawnLocations = new ConcurrentHashMap<>();
     private final Map<UUID, Location> playerSpawnLocation = new ConcurrentHashMap<>();
@@ -274,7 +274,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
                 ChampionshipTeam playerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
                 if (playerChampionshipTeam != null) {
                     String message = MessageConfig.SNOWBALL_PLAYER_DEATH
-                            .replace("%player%", playerChampionshipTeam.getColoredColor() + player.getName());
+                            .replace("%player%", Utils.formatPlayerName(player));
 
                     sendMessageToAllGamePlayers(message);
                 }
@@ -306,7 +306,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
         if (playerChampionshipTeam != null) {
             String message = MessageConfig.SNOWBALL_PLAYER_LEAVE
-                    .replace("%player%", playerChampionshipTeam.getColoredColor() + player.getName());
+                    .replace("%player%", Utils.formatPlayerName(player));
 
             sendMessageToAllGamePlayers(message);
         }
@@ -348,8 +348,8 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         addPlayerPoints(assailant.getUniqueId(), 4);
         addPlayerIndividualKills(assailant);
         String message = MessageConfig.SNOWBALL_KILL_PLAYER
-                .replace("%player%", playerChampionshipTeam.getColoredColor() + player.getName())
-                .replace("%killer%", assailantChampionshipTeam.getColoredColor() + assailant.getName());
+                .replace("%player%", Utils.formatPlayerName(player))
+                .replace("%killer%", Utils.formatPlayerName(assailant));
         sendMessageToAllGamePlayers(message);
 
         ItemStack snowball = new ItemStack(Material.SNOWBALL);

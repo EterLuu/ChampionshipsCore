@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.bingo;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.game.RoundOutcome;
 import ink.ziip.championshipscore.api.game.bingo.gui.BingoCardMapRenderer;
@@ -60,7 +60,7 @@ import java.util.logging.Level;
  * configured {@code player-spawn-points} in survival mode. The final mechanism is pending the user's
  * decision.
  */
-public class BingoArea extends BaseSingleTeamArea {
+public class BingoArea extends BaseMultiTeamGameInstance {
     @Getter
     @Nullable
     private BingoRound round;
@@ -339,9 +339,8 @@ public class BingoArea extends BaseSingleTeamArea {
         int delta = cellDelta + lineDelta;
         String taskName = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
                 .serialize(task.data.getName());
-        String teamColor = team == null ? "" : team.getColoredColor();
         sendMessageToAllGamePlayers(MessageConfig.BINGO_TASK_COMPLETED
-                .replace("%player%", teamColor + player.getName())
+                .replace("%player%", Utils.formatPlayerName(player))
                 .replace("%task%", taskName)
                 .replace("%points%", String.valueOf(delta)));
     }

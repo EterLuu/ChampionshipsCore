@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.bingo.BingoArea;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
@@ -38,7 +38,7 @@ public class BingoPlaceholder extends BaseGamePlaceholder<BingoArea> {
     }
 
     @Override
-    protected BaseAreaManager<BingoArea> getManager() {
+    protected BaseGameInstanceManager<BingoArea> getManager() {
         return plugin.getGameManager().getBingoManager();
     }
 

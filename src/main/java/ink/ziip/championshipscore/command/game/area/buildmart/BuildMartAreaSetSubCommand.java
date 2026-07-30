@@ -138,7 +138,7 @@ public class BuildMartAreaSetSubCommand extends BaseSubCommand {
         int sy = max.getBlockY() - min.getBlockY() + 1;
         int sz = max.getBlockZ() - min.getBlockZ() + 1;
         if (sx != 1 || sy != 1 || sz != 1) {
-            Utils.sendAdminError(sender, "提交按钮选区必须为单一方块 #696969• #ededed当前 #fff566"
+            Utils.sendAdminError(sender, "提交按钮选区必须为单一方块 &#696969• &#ededed当前 &#fff566"
                     + sx + "×" + sy + "×" + sz);
             return null;
         }

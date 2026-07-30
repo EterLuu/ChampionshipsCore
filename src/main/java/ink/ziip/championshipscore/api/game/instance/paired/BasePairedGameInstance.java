@@ -1,9 +1,9 @@
-package ink.ziip.championshipscore.api.game.area.team;
+package ink.ziip.championshipscore.api.game.instance.paired;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
@@ -22,13 +22,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 @Getter
-public abstract class BaseTeamArea extends BaseArea {
+public abstract class BasePairedGameInstance extends BaseGameInstance {
     @Nullable
     protected ChampionshipTeam rightChampionshipTeam;
     @Nullable
     protected ChampionshipTeam leftChampionshipTeam;
 
-    public BaseTeamArea(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum, BaseListener gameHandler, BaseGameConfig gameConfig) {
+    public BasePairedGameInstance(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum,
+                                  BaseListener gameHandler, BaseGameConfig gameConfig) {
         super(plugin, gameTypeEnum, gameHandler, gameConfig);
     }
 

@@ -1,4 +1,4 @@
-package ink.ziip.championshipscore.api.game.area;
+package ink.ziip.championshipscore.api.game.instance;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
@@ -13,10 +13,10 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 
-public class BaseAreaHandler extends BaseListener {
-    private final BaseArea baseArea;
+public class GameInstanceHandler extends BaseListener {
+    private final BaseGameInstance baseArea;
 
-    public BaseAreaHandler(ChampionshipsCore plugin, BaseArea baseArea) {
+    public GameInstanceHandler(ChampionshipsCore plugin, BaseGameInstance baseArea) {
         super(plugin);
         this.baseArea = baseArea;
     }
@@ -110,7 +110,7 @@ public class BaseAreaHandler extends BaseListener {
             return;
         }
         if (baseArea.isSpectator(player)) {
-            if (baseArea.notInArea(player.getLocation())) {
+            if (!baseArea.isSpectatorLocationAllowed(player.getLocation())) {
                 player.teleport(baseArea.getSpectatorSpawnLocation());
             }
         }

@@ -12,18 +12,22 @@ import java.util.List;
 
 public class ScheduleDragonEggCarnivalSubCommand extends BaseSubCommand {
     public ScheduleDragonEggCarnivalSubCommand() {
-        super("dragoneggcarnival", "按赛程开始龙蛋嘉年华", "/cc admin schedule dragoneggcarnival");
+        super("dragoneggcarnival", "按赛程开始龙蛋嘉年华",
+                "/cc admin schedule dragoneggcarnival <队伍1> <队伍2>");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (args.length == 2) {
-            ChampionshipTeam rightChampionshipTeam = plugin.getTeamManager().getTeam(args[0]);
-            ChampionshipTeam leftChampionshipTeam = plugin.getTeamManager().getTeam(args[1]);
+        if (args.length != 2) {
+            sendUsage(sender);
+            return true;
+        }
 
-            if (rightChampionshipTeam != null && leftChampionshipTeam != null) {
-                plugin.getScheduleManager().startDragonEggCarnival(rightChampionshipTeam, leftChampionshipTeam);
-            }
+        ChampionshipTeam rightChampionshipTeam = plugin.getTeamManager().getTeam(args[0]);
+        ChampionshipTeam leftChampionshipTeam = plugin.getTeamManager().getTeam(args[1]);
+
+        if (rightChampionshipTeam != null && leftChampionshipTeam != null) {
+            plugin.getScheduleManager().startDragonEggCarnival(rightChampionshipTeam, leftChampionshipTeam);
         }
 
         return true;

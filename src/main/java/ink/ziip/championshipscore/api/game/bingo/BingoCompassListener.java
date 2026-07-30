@@ -2,10 +2,11 @@ package ink.ziip.championshipscore.api.game.bingo;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -55,7 +56,7 @@ public final class BingoCompassListener extends BaseListener {
 
     /** The bingo round the player is currently in, or null. */
     private @Nullable BingoArea bingoAreaOf(Player player) {
-        BaseArea area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
+        BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
         return area instanceof BingoArea bingoArea ? bingoArea : null;
     }
 
@@ -105,11 +106,11 @@ public final class BingoCompassListener extends BaseListener {
         player.openInventory(inv);
     }
 
-    /** An ender pearl labelled with the teammate's name in team colour, tagged with their UUID. */
+    /** An ender pearl labelled with the standard player/team identity, tagged with their UUID. */
     private static ItemStack button(Player target, ChampionshipTeam team) {
         ItemStack item = new ItemStack(Material.ENDER_PEARL);
         item.editMeta(meta -> {
-            meta.displayName(Component.text(target.getName(), BingoTeamAdapter.color(team))
+            meta.displayName(Utils.toComponent(Utils.formatPlayerName(target))
                     .decoration(TextDecoration.ITALIC, false));
             meta.lore(List.of(Component.text("点击传送到此队友").color(NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
@@ -146,7 +147,8 @@ public final class BingoCompassListener extends BaseListener {
         }
         player.closeInventory();
         player.teleport(target.getLocation());
-        player.sendMessage(Component.text("已传送到 " + target.getName()).color(NamedTextColor.AQUA));
+        player.sendMessage(Component.text("已传送到 ", NamedTextColor.AQUA)
+                .append(Utils.toComponent(Utils.formatPlayerName(target))));
     }
 
     @EventHandler

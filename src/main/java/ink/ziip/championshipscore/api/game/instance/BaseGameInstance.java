@@ -1,8 +1,9 @@
-package ink.ziip.championshipscore.api.game.area;
+package ink.ziip.championshipscore.api.game.instance;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
@@ -32,13 +33,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
 import java.util.logging.Level;
 
-public abstract class BaseArea {
+public abstract class BaseGameInstance {
     private static final String SPECTATOR_TIMER_BOSS_BAR = "spectator-game-timer";
     protected final HashSet<UUID> spectators = new HashSet<>();
     protected final Map<UUID, Double> playerPoints = new ConcurrentHashMap<>();
     protected final ChampionshipsCore plugin;
     protected final BukkitScheduler scheduler;
-    protected final BaseAreaHandler baseAreaHandler;
+    protected final GameInstanceHandler gameInstanceHandler;
     protected final PlayerManager playerManager;
     protected final Map<String, BossBar> bossBars = new ConcurrentHashMap<>();
 
@@ -62,7 +63,8 @@ public abstract class BaseArea {
     protected GameStageEnum gameStageEnum;
     protected GameTypeEnum gameTypeEnum;
 
-    public BaseArea(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum, BaseListener gameHandler, BaseGameConfig gameConfig) {
+    public BaseGameInstance(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum, BaseListener gameHandler,
+                            BaseGameConfig gameConfig) {
         this.playerManager = plugin.getPlayerManager();
 
         this.gameStageEnum = GameStageEnum.END;
@@ -73,8 +75,8 @@ public abstract class BaseArea {
         this.gameHandler = gameHandler;
         this.gameConfig = gameConfig;
 
-        baseAreaHandler = new BaseAreaHandler(plugin, this);
-        baseAreaHandler.register();
+        gameInstanceHandler = new GameInstanceHandler(plugin, this);
+        gameInstanceHandler.register();
     }
 
     public void resetGame() {
@@ -86,6 +88,15 @@ public abstract class BaseArea {
 
         setGameStageEnum(GameStageEnum.WAITING);
         logGame(Level.INFO, "流程", "场地已重置，等待下一场");
+    }
+
+    /** Permanently releases listeners and UI owned by this instance when its manager unloads it. */
+    public void dispose() {
+        cancelIntroduction();
+        cancelFinalCountdown();
+        clearBossBars();
+        getGameHandler().unRegister();
+        gameInstanceHandler.unRegister();
     }
 
     public void resetPlayerHealthFoodEffectLevelInventory() {
@@ -155,16 +166,13 @@ public abstract class BaseArea {
 
         int i = 1;
         for (Map.Entry<UUID, Double> entry : list) {
-            String username = plugin.getPlayerManager().getPlayerName(entry.getKey());
-            if (username != null) {
-                String row = MessageConfig.RANK_PLAYER_BOARD_ROW
-                        .replace("%player_rank%", String.valueOf(i))
-                        .replace("%player%", username)
-                        .replace("%player_point%", Utils.formatPoints(entry.getValue()));
+            String row = MessageConfig.RANK_PLAYER_BOARD_ROW
+                    .replace("%player_rank%", String.valueOf(i))
+                    .replace("%player%", Utils.formatPlayerName(entry.getKey()))
+                    .replace("%player_point%", Utils.formatPoints(entry.getValue()));
 
-                stringBuilder.append(row).append("\n");
-                i++;
-            }
+            stringBuilder.append(row).append("\n");
+            i++;
         }
 
         return stringBuilder.toString();
@@ -207,10 +215,16 @@ public abstract class BaseArea {
         File source = new File(maps, getWorldName());
 
         // Copy world files to destination
-        plugin.getWorldManager().copyWorldFiles(source, target);
+        if (!plugin.getWorldManager().copyWorldFiles(source, target)) {
+            logGame(Level.SEVERE, "世界", "加载失败：无法从地图模板复制 " + getWorldName());
+            return;
+        }
 
         // Load world
-        plugin.getWorldManager().loadWorld(getWorldName(), environment, false);
+        if (!plugin.getWorldManager().loadWorld(getWorldName(), environment, false)) {
+            logGame(Level.SEVERE, "世界", "加载失败：Bukkit 无法加载 " + getWorldName());
+            return;
+        }
 
         getGameConfig().initializeConfiguration(plugin.getFolder());
         getGameHandler().register();
@@ -220,36 +234,62 @@ public abstract class BaseArea {
         teleportAllSpectators(getSpectatorSpawnLocation());
     }
 
-    public void saveMap(World.Environment environment) {
+    /** True only when every instance backed by this same world is idle and the map can be reloaded safely. */
+    public boolean canSaveMap() {
         if (getGameStageEnum() != GameStageEnum.WAITING)
-            return;
+            return false;
+        BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                plugin.getGameManager().getAreaManager(gameTypeEnum);
+        if (manager == null)
+            return true;
+        return manager.getRuntimeInstances().stream()
+                .filter(instance -> getWorldName().equals(instance.getWorldName()))
+                .allMatch(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING);
+    }
+
+    public boolean saveMap(World.Environment environment) {
+        if (!canSaveMap()) {
+            logGame(Level.WARNING, "世界", "保存被拒绝：同一地图仍有运行中的游戏实例");
+            return false;
+        }
 
         setGameStageEnum(GameStageEnum.END);
         logGame(Level.INFO, "世界", "开始保存 " + getWorldName());
         teleportAllSpectators(getLobbyLocation());
 
         World editWorld = plugin.getServer().getWorld(getWorldName());
-        if (editWorld != null) {
-            for (Player player : editWorld.getPlayers()) {
-                player.teleport(CCConfig.LOBBY_LOCATION);
-            }
-
-            // Unload world but not remove files
-            plugin.getWorldManager().unloadWorld(getWorldName(), true);
-
-            File dataDirectory = new File(plugin.getDataFolder(), "maps");
-            File target = new File(dataDirectory, getWorldName());
-
-            // Delete old world files stored in maps
-            plugin.getWorldManager().deleteWorldFiles(target);
-
-            File source = plugin.getWorldManager().getWorldFolder(getWorldName());
-
-            plugin.getWorldManager().copyWorldFiles(source, target);
-            plugin.getWorldManager().deleteWorldFiles(source);
-
-            loadMap(environment);
+        if (editWorld == null) {
+            setGameStageEnum(GameStageEnum.WAITING);
+            logGame(Level.WARNING, "世界", "保存失败：世界未加载 " + getWorldName());
+            return false;
         }
+        for (Player player : editWorld.getPlayers()) {
+            player.teleport(CCConfig.LOBBY_LOCATION);
+        }
+
+        // Unload world but not remove files
+        plugin.getWorldManager().unloadWorld(getWorldName(), true);
+
+        File dataDirectory = new File(plugin.getDataFolder(), "maps");
+        File target = new File(dataDirectory, getWorldName());
+
+        // Delete old world files stored in maps
+        plugin.getWorldManager().deleteWorldFiles(target);
+
+        File source = plugin.getWorldManager().getWorldFolder(getWorldName());
+
+        if (!plugin.getWorldManager().copyWorldFiles(source, target)) {
+            plugin.getWorldManager().deleteWorldFiles(target);
+            plugin.getWorldManager().loadWorld(getWorldName(), environment, false);
+            setGameStageEnum(GameStageEnum.WAITING);
+            logGame(Level.SEVERE, "世界", "保存失败：无法写入地图模板，已保留并重新加载编辑世界 " + getWorldName());
+            return false;
+        }
+        plugin.getWorldManager().deleteWorldFiles(source);
+
+        loadMap(environment);
+        return getGameStageEnum() == GameStageEnum.WAITING
+                && plugin.getServer().getWorld(getWorldName()) != null;
     }
 
     private BossBar createBossBar(String title, BarColor color, BarStyle style) {
@@ -385,7 +425,7 @@ public abstract class BaseArea {
             return;
         }
 
-        List<List<String>> rules = gameConfig.getRules();
+        List<List<String>> rules = getIntroductionRules();
         Location introductionSpawnPoint = gameConfig.getIntroductionSpawnPoint();
         if (rules == null || rules.isEmpty() || introductionSpawnPoint == null) {
             onComplete.run();
@@ -425,6 +465,11 @@ public abstract class BaseArea {
         }, 0, 20L);
     }
 
+    /** Variant-aware games override this without coupling the base lifecycle to a concrete config model. */
+    protected List<List<String>> getIntroductionRules() {
+        return gameConfig.getRules();
+    }
+
     private void broadcastRuleSection(@NotNull List<String> lines) {
         for (String line : lines)
             sendMessageToAllGamePlayers(Utils.translateColorCodes(line));
@@ -449,16 +494,23 @@ public abstract class BaseArea {
         sendTitleToAllGamePlayers(title, subtitle);
     }
 
-    /**
-     * Runs the authoritative 5..1 countdown. The supplied callback starts live game systems at T0;
-     * the stage transition, start title and high cue all happen in that same server tick.
-     */
+    /** Runs the default five-second final countdown. */
     protected void startFinalCountdown(String gameTitle, String startTitle, String startSubtitle,
                                        @NotNull Runnable onStart) {
+        startFinalCountdown(5, gameTitle, startTitle, startSubtitle, onStart);
+    }
+
+    /**
+     * Runs the authoritative final countdown. The supplied callback starts live game systems at T0;
+     * the stage transition, start title and high cue all happen in that same server tick.
+     */
+    protected void startFinalCountdown(int countdownSeconds, String gameTitle, String startTitle,
+                                       String startSubtitle, @NotNull Runnable onStart) {
         cancelFinalCountdown();
         setGameStageEnum(GameStageEnum.COUNTDOWN);
-        logGame(Level.INFO, "流程", "开始 5 秒开赛倒计时");
-        final int[] remaining = {5};
+        int duration = Math.max(0, countdownSeconds);
+        logGame(Level.INFO, "流程", "开始 " + duration + " 秒开赛倒计时");
+        final int[] remaining = {duration};
 
         finalCountdownTask = scheduler.runTaskTimer(plugin, () -> {
             int seconds = remaining[0];
@@ -761,6 +813,14 @@ public abstract class BaseArea {
         }
 
         return true;
+    }
+
+    /**
+     * The space an external spectator may explore. Usually this is the instance boundary, while a
+     * shared map can override it to include all of its permanently allocated instance copies.
+     */
+    public boolean isSpectatorLocationAllowed(@NotNull Location location) {
+        return !notInArea(location);
     }
 
     public abstract Location getSpectatorSpawnLocation();

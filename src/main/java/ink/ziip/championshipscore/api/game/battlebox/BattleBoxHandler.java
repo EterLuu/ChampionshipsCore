@@ -220,6 +220,7 @@ public class BattleBoxHandler extends BaseListener {
                     }
                     return;
                 }
+                event.setCancelled(true);
             }
             return;
         }

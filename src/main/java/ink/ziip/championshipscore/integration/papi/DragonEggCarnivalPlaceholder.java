@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -20,7 +20,7 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
     }
 
     @Override
-    protected BaseAreaManager<DragonEggCarnivalArea> getManager() {
+    protected BaseGameInstanceManager<DragonEggCarnivalArea> getManager() {
         return plugin.getGameManager().getDragonEggCarnivalManager();
     }
 

@@ -1,7 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.battlebox;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
@@ -10,9 +9,9 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.SchematicStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StampStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
-import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxConfig;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxLayout;
+import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
@@ -31,49 +30,47 @@ import java.util.function.Function;
 /**
  * Battle Box's prepare flow: the full schematic -> stamp -> set-every-point sequence. Copy 0 is pasted at
  * {@link BattleBoxLayout#FIRST} = (0,100,0); every other copy's anchors are derived from copy 0 at match
- * time, so the admin only configures copy 0. The shared {@code battlebox} world is loaded by the server at
- * startup (bukkit.yml / VoidGen), so it is available without any plugin-side world creation.
+ * time, so the admin only configures copy 0. Each map definition owns its own physical world.
  */
 public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
-
-    private static final String WORLD = "battlebox";
 
     private static final Function<ChampionshipsCore, File> SCHEMATIC =
             plugin -> new File(new File(new File(plugin.getDataFolder(), "battlebox"), "schematics"), "arena.schem");
 
     @Override
-    public @NotNull String worldName() {
-        return WORLD;
+    public @NotNull String worldName(@NotNull SetupTarget target) {
+        return target.worldName();
     }
 
     @Override
-    public boolean isInCorrectWorld(@NotNull Player player) {
+    public boolean isInCorrectWorld(@NotNull Player player, @NotNull SetupTarget target) {
         World w = player.getWorld();
-        return w != null && WORLD.equals(w.getName());
+        return w != null && target.worldName().equals(w.getName());
     }
 
     @Override
-    public @NotNull Location copyZeroLocation(@NotNull BaseArea area) {
-        World w = Bukkit.getWorld(WORLD);
+    public @NotNull Location copyZeroLocation(@NotNull SetupTarget target) {
+        World w = Bukkit.getWorld(target.worldName());
         if (w == null) return CCConfig.LOBBY_LOCATION;
         return BattleBoxLayout.FIRST.toLocation(w);
     }
 
     @Override
-    public @NotNull List<PrepareStep> buildSteps(@NotNull BaseArea area) {
+    public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
 
-        steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player), WORLD));
+        steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
         steps.add(new SchematicStep(SCHEMATIC,
                 Component.text("保存场地模板"),
                 Component.text("用 WorldEdit 选取整个场地后点击，保存为 arena.schem")));
 
-        steps.add(new StampStep(SCHEMATIC, BattleBoxLayout.GRID));
+        steps.add(new StampStep(SCHEMATIC, BattleBoxLayout.GRID,
+                (a, count) -> cfg(a).setCopyCount(count)));
 
         steps.add(new WeSelectionStep("area_pos",
-                Component.text("场地总边界"),
-                Component.text("用 WorldEdit 选取整个盖章区域"),
+                Component.text("0 号模板边界"),
+                Component.text("只选取 0 号场地；其他副本会自动平移"),
                 Material.BEDROCK,
                 a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
                 (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },
@@ -151,7 +148,7 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
         return steps;
     }
 
-    private static BattleBoxConfig cfg(BaseArea area) {
-        return ((BattleBoxArea) area).getGameConfig();
+    private static BattleBoxConfig cfg(SetupTarget target) {
+        return (BattleBoxConfig) target.config();
     }
 }

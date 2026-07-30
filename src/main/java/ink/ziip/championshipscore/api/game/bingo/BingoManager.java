@@ -11,7 +11,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSource;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSpec;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TierlistLoader;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.util.world.WorldManager;
@@ -35,7 +35,7 @@ import java.util.List;
  * in {@code plugin/bingo/areas/*.yml}; the rest of the bingo data (config.yml, lang, cards, tags,
  * tierlists) lives directly under {@code plugin/bingo/}.
  */
-public class BingoManager extends BaseAreaManager<BingoArea> {
+public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     private MessageService messageService;
     private CardItemListener cardItemListener;
     private BingoCompassListener compassListener;

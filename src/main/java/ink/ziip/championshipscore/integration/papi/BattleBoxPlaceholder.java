@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxMatch;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.battlebox.BBWeaponKitEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -22,7 +22,7 @@ public class BattleBoxPlaceholder extends BaseGamePlaceholder<BattleBoxArea> {
     }
 
     @Override
-    protected BaseAreaManager<BattleBoxArea> getManager() {
+    protected BaseGameInstanceManager<BattleBoxArea> getManager() {
         return plugin.getGameManager().getBattleBoxManager();
     }
 

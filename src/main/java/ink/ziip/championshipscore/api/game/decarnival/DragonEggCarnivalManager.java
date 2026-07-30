@@ -1,14 +1,14 @@
 package ink.ziip.championshipscore.api.game.decarnival;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.World;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 
-public class DragonEggCarnivalManager extends BaseAreaManager<DragonEggCarnivalArea> {
+public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggCarnivalArea> {
 
     public DragonEggCarnivalManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -70,7 +70,6 @@ public class DragonEggCarnivalManager extends BaseAreaManager<DragonEggCarnivalA
             return false;
         }
 
-        dragonEggCarnivalArea.saveMap(World.Environment.THE_END);
-        return true;
+        return dragonEggCarnivalArea.saveMap(World.Environment.THE_END);
     }
 }

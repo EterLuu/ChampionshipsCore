@@ -143,8 +143,8 @@ public class VoteManager extends BaseManager {
         }
 
         if (list.isEmpty()) {
-            stringBuilder.append("#ededed  本轮没有有效投票");
-            Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE, "#ededed本轮没有有效投票", 40);
+            stringBuilder.append("&#ededed  本轮没有有效投票");
+            Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE, "&#ededed本轮没有有效投票", 40);
         } else {
             Map.Entry<GameTypeEnum, Integer> winner = list.get(0);
             Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE,

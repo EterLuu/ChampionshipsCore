@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.game.tntrun;
 import io.papermc.paper.registry.keys.EnchantmentKeys;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
-public class TNTRunTeamArea extends BaseSingleTeamArea {
+public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     @Getter
     private final Map<UUID, Location> playerSpawnLocations = new ConcurrentHashMap<>();
     @Getter
@@ -411,7 +411,8 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     public void addDeathPlayer(Player player) {
         UUID uuid = player.getUniqueId();
         if (addDeathPlayer(uuid)) {
-            sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_FALL_INTO_VOID.replace("%player%", player.getName()));
+            sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_FALL_INTO_VOID
+                    .replace("%player%", Utils.formatPlayerName(player)));
         }
     }
 
@@ -453,7 +454,8 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         }
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-            sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_FALL_INTO_VOID.replace("%player%", player.getName()));
+            sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_FALL_INTO_VOID
+                    .replace("%player%", Utils.formatPlayerName(player)));
             addDeathPlayer(player);
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
             championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {

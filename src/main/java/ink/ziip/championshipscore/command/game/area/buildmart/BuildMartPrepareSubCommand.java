@@ -37,7 +37,7 @@ public class BuildMartPrepareSubCommand extends BaseSubCommand {
         }
         BuildMartArea area = plugin.getGameManager().getBuildMartManager().getArea(args[0]);
         if (area == null) {
-            Utils.sendAdminError(sender, "找不到场地 #fff566" + args[0]);
+            Utils.sendAdminError(sender, "找不到场地 &#fff566" + args[0]);
             return true;
         }
         int teams;
@@ -48,13 +48,17 @@ public class BuildMartPrepareSubCommand extends BaseSubCommand {
             return true;
         }
         if (teams < 1) {
-            Utils.sendAdminError(sender, "队伍数必须至少为 #fff5661");
+            Utils.sendAdminError(sender, "队伍数必须至少为 &#fff5661");
             return true;
         }
 
         World world = Bukkit.getWorld(area.getWorldName());
         if (world == null) {
-            Utils.sendAdminError(sender, "世界 #fff566" + area.getWorldName() + " #ededed尚未加载。");
+            Utils.sendAdminError(sender, "世界 &#fff566" + area.getWorldName() + " &#ededed尚未加载。");
+            return true;
+        }
+        if (!area.canSaveMap()) {
+            Utils.sendAdminError(sender, "同一地图仍有游戏实例运行，无法重新生成或保存。");
             return true;
         }
 
@@ -62,7 +66,7 @@ public class BuildMartPrepareSubCommand extends BaseSubCommand {
         File hubFile = new File(schematics, "hub.schem");
         File baseFile = new File(schematics, "base.schem");
         if (!hubFile.isFile() || !baseFile.isFile()) {
-            Utils.sendAdminError(sender, "缺少模板，请先分别保存 #fff566hub #ededed和 #fff566base");
+            Utils.sendAdminError(sender, "缺少模板，请先分别保存 &#fff566hub &#ededed和 &#fff566base");
             return true;
         }
 
@@ -71,15 +75,20 @@ public class BuildMartPrepareSubCommand extends BaseSubCommand {
                     BuildMartLayout.HUB.getBlockX(), BuildMartLayout.HUB.getBlockY(), BuildMartLayout.HUB.getBlockZ());
             ArenaPreparer.stampCopies(plugin, world, baseFile, BuildMartLayout.GRID, teams);
         } catch (Exception e) {
-            Utils.sendAdminError(sender, "生成地图失败：#fff566" + e.getMessage());
+            Utils.sendAdminError(sender, "生成地图失败：&#fff566" + e.getMessage());
             return true;
         }
 
         // Persist the freshly stamped world back into the static template so every round loads it.
-        area.saveMap(World.Environment.NORMAL);
+        if (!area.saveMap(World.Environment.NORMAL)) {
+            Utils.sendAdminError(sender, "地图保存失败，请查看控制台日志；基地数量未写入配置。");
+            return true;
+        }
+        area.getGameConfig().setBaseCount(teams);
+        area.getGameConfig().saveOptions();
 
-        Utils.sendAdminSuccess(sender, "已生成并保存建材集市地图：大厅 + #fff566" + teams + " #ededed个基地。");
-        Utils.sendAdminInfo(sender, "下一步：在 0 号基地执行 #fff566/cc game area buildmart set "
+        Utils.sendAdminSuccess(sender, "已生成并保存建材集市地图：大厅 + &#fff566" + teams + " &#ededed个基地。");
+        Utils.sendAdminInfo(sender, "下一步：在 0 号基地执行 &#fff566/cc game area buildmart set "
                 + args[0] + " base <键>");
         return true;
     }

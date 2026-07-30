@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.api.game.battlebox;
 
-import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +15,6 @@ import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -32,55 +31,31 @@ public class BattleBoxMatch {
     private final int copyIndex;
     private final ChampionshipTeam right;
     private final ChampionshipTeam left;
-
-    private final Location rightSpawn;
-    private final Location leftSpawn;
-    private final Location rightPreSpawn;
-    private final Location leftPreSpawn;
-    private final Location spectatorSpawn;
-
-    /** Inclusive wool-floor corners (where blocks may be placed/broken and wool is counted). */
-    private final Vector woolMin;
-    private final Vector woolMax;
-    /** Inclusive overall arena bounds for this copy (in-bounds / item cleanup). */
-    private final Vector areaMin;
-    private final Vector areaMax;
-
-    private final List<Location> potionLocations = new ArrayList<>();
+    private final BattleBoxGeometry geometry;
 
     /** True once a team has reached 9 wool (or the match is otherwise settled); its players are frozen. */
     @Setter
     private boolean finished;
 
     public BattleBoxMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left, BattleBoxConfig config) {
+        this(copyIndex, right, left, new ReplicatedSpatialLayout<>(BattleBoxGeometry.from(config),
+                BattleBoxLayout.GRID, config.getCopyCount()).geometry(copyIndex));
+    }
+
+    public BattleBoxMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left,
+                          BattleBoxGeometry geometry) {
         this.copyIndex = copyIndex;
         this.right = right;
         this.left = left;
-        Vector d = BattleBoxLayout.delta(copyIndex);
-
-        this.rightSpawn = shift(config.getRightSpawnPoint(), d);
-        this.leftSpawn = shift(config.getLeftSpawnPoint(), d);
-        this.rightPreSpawn = shift(config.getRightPreSpawnPoint(), d);
-        this.leftPreSpawn = shift(config.getLeftPreSpawnPoint(), d);
-        this.spectatorSpawn = shift(config.getSpectatorSpawnPoint(), d);
-
-        this.woolMin = Vector.getMinimum(config.getWoolPos1(), config.getWoolPos2()).add(d);
-        this.woolMax = Vector.getMaximum(config.getWoolPos1(), config.getWoolPos2()).add(d);
-        this.areaMin = Vector.getMinimum(config.getAreaPos1(), config.getAreaPos2()).add(d);
-        this.areaMax = Vector.getMaximum(config.getAreaPos1(), config.getAreaPos2()).add(d);
-
-        if (config.getPotionSpawnPoints() != null) {
-            for (String raw : config.getPotionSpawnPoints()) {
-                Location location = Utils.getLocation(raw);
-                if (location != null) potionLocations.add(location.add(d));
-            }
-        }
+        this.geometry = geometry;
     }
 
-    @Nullable
-    private static Location shift(@Nullable Location location, Vector delta) {
-        return location == null ? null : location.clone().add(delta);
-    }
+    public Location getRightSpawn() { return geometry.getRightSpawn(); }
+    public Location getLeftSpawn() { return geometry.getLeftSpawn(); }
+    public Location getRightPreSpawn() { return geometry.getRightPreSpawn(); }
+    public Location getLeftPreSpawn() { return geometry.getLeftPreSpawn(); }
+    public Location getSpectatorSpawn() { return geometry.getSpectatorSpawn(); }
+    public List<Location> getPotionLocations() { return geometry.getPotionSpawns(); }
 
     /** True when {@code player} belongs to either team in this match. */
     public boolean contains(Player player) {
@@ -98,19 +73,19 @@ public class BattleBoxMatch {
     }
 
     public boolean isInWool(Vector point) {
-        return point.isInAABB(woolMin, woolMax);
+        return geometry.isInWool(point);
     }
 
     public boolean isInArea(Vector point) {
-        return point.isInAABB(areaMin, areaMax);
+        return geometry.contains(point);
     }
 
     public BoundingBox getAreaBox() {
-        return BoundingBox.of(areaMin, areaMax.clone().add(new Vector(1, 1, 1)));
+        return geometry.boundaryBox();
     }
 
     private World world() {
-        return rightSpawn == null ? null : rightSpawn.getWorld();
+        return geometry.getRightSpawn() == null ? null : geometry.getRightSpawn().getWorld();
     }
 
     /** Counts blocks of each material inside this match's wool floor. */
@@ -118,6 +93,8 @@ public class BattleBoxMatch {
         HashMap<Material, Integer> blockCount = new HashMap<>();
         World world = world();
         if (world == null) return blockCount;
+        Vector woolMin = geometry.getWoolMin();
+        Vector woolMax = geometry.getWoolMax();
         for (int x = woolMin.getBlockX(); x <= woolMax.getBlockX(); x++) {
             for (int y = woolMin.getBlockY(); y <= woolMax.getBlockY(); y++) {
                 for (int z = woolMin.getBlockZ(); z <= woolMax.getBlockZ(); z++) {
@@ -133,6 +110,8 @@ public class BattleBoxMatch {
     public void resetWool(Material material) {
         World world = world();
         if (world == null) return;
+        Vector woolMin = geometry.getWoolMin();
+        Vector woolMax = geometry.getWoolMax();
         for (int x = woolMin.getBlockX(); x <= woolMax.getBlockX(); x++) {
             for (int y = woolMin.getBlockY(); y <= woolMax.getBlockY(); y++) {
                 for (int z = woolMin.getBlockZ(); z <= woolMax.getBlockZ(); z++) {

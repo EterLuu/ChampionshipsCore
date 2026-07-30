@@ -40,7 +40,7 @@ public class TNTRunPrepareSubCommand extends BaseSubCommand {
         }
         TNTRunTeamArea area = plugin.getGameManager().getTntRunManager().getArea(args[0]);
         if (area == null) {
-            Utils.sendAdminError(sender, "找不到场地 #fff566" + args[0]);
+            Utils.sendAdminError(sender, "找不到场地 &#fff566" + args[0]);
             return true;
         }
         int copies;
@@ -51,19 +51,23 @@ public class TNTRunPrepareSubCommand extends BaseSubCommand {
             return true;
         }
         if (copies < 1) {
-            Utils.sendAdminError(sender, "赛道份数必须至少为 #fff5661");
+            Utils.sendAdminError(sender, "赛道份数必须至少为 &#fff5661");
             return true;
         }
 
         World world = Bukkit.getWorld(area.getWorldName());
         if (world == null) {
-            Utils.sendAdminError(sender, "世界 #fff566" + area.getWorldName() + " #ededed尚未加载。");
+            Utils.sendAdminError(sender, "世界 &#fff566" + area.getWorldName() + " &#ededed尚未加载。");
+            return true;
+        }
+        if (!area.canSaveMap()) {
+            Utils.sendAdminError(sender, "同一地图仍有游戏实例运行，无法重新生成或保存。");
             return true;
         }
 
         File file = new File(new File(new File(plugin.getDataFolder(), "tntrun"), "schematics"), "arena.schem");
         if (!file.isFile()) {
-            Utils.sendAdminError(sender, "缺少赛道模板，请先执行 #fff566/cc game area tntrun schematic");
+            Utils.sendAdminError(sender, "缺少赛道模板，请先执行 &#fff566/cc game area tntrun schematic");
             return true;
         }
 
@@ -72,19 +76,22 @@ public class TNTRunPrepareSubCommand extends BaseSubCommand {
             size = plugin.getWorldEditManager().getSchematicDimensions(file);
             ArenaPreparer.stampCopies(plugin, world, file, TNTRunLayout.GRID, copies);
         } catch (Exception e) {
-            Utils.sendAdminError(sender, "生成赛道失败：#fff566" + e.getMessage());
+            Utils.sendAdminError(sender, "生成赛道失败：&#fff566" + e.getMessage());
             return true;
         }
 
-        // Record copy count + size (per-copy boundaries are derived from these), then fix into the template.
+        // Persist the physical copies first; only publish matching geometry after the save succeeds.
         TNTRunConfig config = area.getGameConfig();
+        if (!area.saveMap(World.Environment.NORMAL)) {
+            Utils.sendAdminError(sender, "地图保存失败，请查看控制台日志；赛道数量未写入配置。");
+            return true;
+        }
         config.setCopies(copies);
         config.setCopySize(size);
         config.saveOptions();
-        area.saveMap(World.Environment.NORMAL);
 
-        Utils.sendAdminSuccess(sender, "已生成并保存 #fff566" + copies + " #ededed份 TNT飞跃赛道，边界已计算。");
-        Utils.sendAdminInfo(sender, "下一步：在 0 号赛道执行 #fff566/cc game area tntrun set "
+        Utils.sendAdminSuccess(sender, "已生成并保存 &#fff566" + copies + " &#ededed份 TNT飞跃赛道，边界已计算。");
+        Utils.sendAdminInfo(sender, "下一步：在 0 号赛道执行 &#fff566/cc game area tntrun set "
                 + args[0] + " copy-spawn");
         return true;
     }

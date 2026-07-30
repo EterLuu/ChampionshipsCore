@@ -1,9 +1,9 @@
-package ink.ziip.championshipscore.api.game.area.single;
+package ink.ziip.championshipscore.api.game.instance.multiteam;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
@@ -20,11 +20,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
-public abstract class BaseSingleTeamArea extends BaseArea {
+public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     protected final List<UUID> gamePlayers = new ArrayList<>();
     protected final List<ChampionshipTeam> gameTeams = new ArrayList<>();
 
-    public BaseSingleTeamArea(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum, BaseListener gameHandler, BaseGameConfig gameConfig) {
+    public BaseMultiTeamGameInstance(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum,
+                                     BaseListener gameHandler, BaseGameConfig gameConfig) {
         super(plugin, gameTypeEnum, gameHandler, gameConfig);
     }
 

@@ -233,33 +233,36 @@ public class WorldManager extends BaseManager {
         return worldName != null && worldName.matches("[A-Za-z0-9_-]+");
     }
 
-    public void copyWorldFiles(File source, File target) {
+    public boolean copyWorldFiles(File source, File target) {
         try {
             List<String> ignore = List.of("uid.dat", "session.dat", "session.lock");
-            if (!ignore.contains(source.getName())) {
-                if (source.isDirectory()) {
-                    if ((!target.exists()) &&
-                            (target.mkdirs())) {
-                        String[] files = source.list();
-                        if (files != null) {
-                            for (String file : files) {
-                                File srcFile = new File(source, file);
-                                File destFile = new File(target, file);
-                                copyWorldFiles(srcFile, destFile);
-                            }
-                        }
-                    }
-                } else {
-                    java.io.InputStream in = new java.io.FileInputStream(source);
-                    OutputStream out = new java.io.FileOutputStream(target);
-                    byte[] buffer = new byte['Ѐ'];
+            if (ignore.contains(source.getName()))
+                return true;
+            if (!source.exists())
+                throw new FileNotFoundException(source.getPath());
+
+            if (source.isDirectory()) {
+                if (!target.isDirectory() && !target.mkdirs())
+                    throw new IOException("无法创建目标目录 " + target.getPath());
+                String[] files = source.list();
+                if (files == null)
+                    throw new IOException("无法读取源目录 " + source.getPath());
+                for (String file : files) {
+                    File srcFile = new File(source, file);
+                    File destFile = new File(target, file);
+                    if (!copyWorldFiles(srcFile, destFile))
+                        return false;
+                }
+            } else {
+                try (java.io.InputStream in = new java.io.FileInputStream(source);
+                     OutputStream out = new java.io.FileOutputStream(target)) {
+                    byte[] buffer = new byte[4096];
                     int length;
                     while ((length = in.read(buffer)) > 0)
                         out.write(buffer, 0, length);
-                    in.close();
-                    out.close();
                 }
             }
+            return true;
         } catch (FileNotFoundException e) {
             plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "复制",
                     "源文件不存在=" + source.getPath() + " 目标=" + target.getPath()), e);
@@ -267,6 +270,7 @@ public class WorldManager extends BaseManager {
             plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "复制",
                     "世界文件复制失败，源=" + source.getPath() + " 目标=" + target.getPath()), e);
         }
+        return false;
     }
 
     public void deleteWorld(String name, boolean removeFile) {

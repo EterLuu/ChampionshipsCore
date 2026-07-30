@@ -35,10 +35,10 @@ public class BattleBoxSchematicSubCommand extends BaseSubCommand {
         try {
             plugin.getWorldEditManager().saveSelectionAsSchematic(player, file);
         } catch (Exception e) {
-            Utils.sendAdminError(sender, "保存模板失败，请检查 WorldEdit 选区：#fff566" + e.getMessage());
+            Utils.sendAdminError(sender, "保存模板失败，请检查 WorldEdit 选区：&#fff566" + e.getMessage());
             return true;
         }
-        Utils.sendAdminSuccess(sender, "已保存斗战方框模板：#fff566" + file.getName());
+        Utils.sendAdminSuccess(sender, "已保存斗战方框模板：&#fff566" + file.getName());
         return true;
     }
 

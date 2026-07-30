@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.setup.AreaBackedSetupTarget;
+import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,20 +20,25 @@ public class PrepareSession {
     private final ChampionshipsCore plugin;
     private final GameTypeEnum gameType;
     private final String areaName;
-    private final BaseArea area;
+    private final SetupTarget target;
     private final PrepareFlowDefinition flow;
     private final List<PrepareStep> steps;
     private boolean worldConfirmed;
     private boolean stamped;
 
     public PrepareSession(@NotNull ChampionshipsCore plugin, @NotNull GameTypeEnum gameType,
-                          @NotNull String areaName, @NotNull BaseArea area, @NotNull PrepareFlowDefinition flow) {
+                          @NotNull String areaName, @NotNull BaseGameInstance area, @NotNull PrepareFlowDefinition flow) {
+        this(plugin, gameType, areaName, new AreaBackedSetupTarget(plugin, gameType, areaName, area), flow);
+    }
+
+    public PrepareSession(@NotNull ChampionshipsCore plugin, @NotNull GameTypeEnum gameType,
+                          @NotNull String areaName, @NotNull SetupTarget target, @NotNull PrepareFlowDefinition flow) {
         this.plugin = plugin;
         this.gameType = gameType;
         this.areaName = areaName;
-        this.area = area;
+        this.target = target;
         this.flow = flow;
-        this.steps = flow.buildSteps(area);
+        this.steps = flow.buildSteps(target);
     }
 
     public ChampionshipsCore getPlugin() {
@@ -46,8 +53,8 @@ public class PrepareSession {
         return areaName;
     }
 
-    public BaseArea getArea() {
-        return area;
+    public SetupTarget getTarget() {
+        return target;
     }
 
     public PrepareFlowDefinition getFlow() {

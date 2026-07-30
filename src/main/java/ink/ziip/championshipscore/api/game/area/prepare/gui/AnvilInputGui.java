@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
@@ -75,7 +75,7 @@ public final class AnvilInputGui {
                 return;
             }
             if (n < 1) {
-                Utils.sendAdminError(player, "份数必须至少为 #fff5661");
+                Utils.sendAdminError(player, "份数必须至少为 &#fff5661");
                 return;
             }
             player.closeInventory();
@@ -98,10 +98,10 @@ public final class AnvilInputGui {
     private static @Nullable String validateName(@NotNull PrepareSessionManager manager, @NotNull GameTypeEnum gameType, @Nullable String name) {
         if (name == null || name.isBlank()) return Utils.formatAdminError("场地名不能为空。");
         String trimmed = name.trim();
-        if (trimmed.length() > 32) return Utils.formatAdminError("场地名不能超过 #fff56632 #ededed个字符。");
+        if (trimmed.length() > 32) return Utils.formatAdminError("场地名不能超过 &#fff56632 &#ededed个字符。");
         if (trimmed.matches(".*[\\\\/:*?\"<>|].*")) return Utils.formatAdminError("场地名包含无效字符。");
-        BaseAreaManager<?> mgr = manager.getPlugin().getGameManager().getAreaManager(gameType);
-        if (mgr != null && mgr.getArea(trimmed) != null) return Utils.formatAdminError("场地 #fff566" + trimmed + " #ededed已存在。");
+        BaseGameInstanceManager<?> mgr = manager.getPlugin().getGameManager().getAreaManager(gameType);
+        if (mgr != null && mgr.getArea(trimmed) != null) return Utils.formatAdminError("场地 &#fff566" + trimmed + " &#ededed已存在。");
         return null;
     }
 

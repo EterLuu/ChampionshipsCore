@@ -13,8 +13,8 @@ import java.util.List;
 /**
  * Shared "stamp out N copies" step behind the per-game {@code prepare} commands. Pastes a single arena
  * schematic at every {@link ArenaGrid#origin(int)} for copies {@code 0..count-1}. Pairs with
- * {@code BaseArea#saveMap} (called by each game afterwards) to persist the stamped world into the static
- * map template, so every later round just loads it — no runtime cloning.
+ * {@code BaseGameInstance#saveMap} (called by each game afterwards) to persist the stamped world into
+ * the static map template, so every later round just loads it — no runtime cloning.
  */
 public final class ArenaPreparer {
     private ArenaPreparer() {

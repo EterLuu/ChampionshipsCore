@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.buildmart;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartOrderPool;
 import ink.ziip.championshipscore.api.game.buildmart.reference.ReferenceBuilder;
@@ -35,15 +35,11 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Build Mart arena: every team builds in its own base inside a pre-built static world (copied from
- * {@code plugin/maps/buildmart}). Players gather materials from the central resource market (the hub),
- * are auto-assigned random blueprints on their plots, and replicate them for dynamic, time-scaled points.
- *
- * <p>Phase 1 implements only the area lifecycle (waiting → preparation → progress → end) so the area can
- * be created and a round can be started/ended. Blueprints, portals, flight, scoring and the end awards
- * are layered in by the later phases.
+ * Build Mart game instance: every team builds in its own base inside a prepared static world. Players
+ * gather materials from the central resource market, receive random blueprints on their plots, and
+ * replicate them for time-scaled points.
  */
-public class BuildMartArea extends BaseSingleTeamArea {
+public class BuildMartArea extends BaseMultiTeamGameInstance {
     @Getter
     private int timer;
 
@@ -83,6 +79,37 @@ public class BuildMartArea extends BaseSingleTeamArea {
     /** Preloads a clean arena at startup and immediately after each completed game. */
     public void preloadMap() {
         loadMap(World.Environment.NORMAL);
+    }
+
+    /** Makes a newly created, not-yet-templated map editable by prepare without deleting its world. */
+    public void initializeForSetup() {
+        getGameHandler().register();
+        setGameStageEnum(GameStageEnum.WAITING);
+    }
+
+    @Override
+    public boolean tryStartGame(List<ChampionshipTeam> teams) {
+        return canStartConfiguredMap(teams.size()) && super.tryStartGame(teams);
+    }
+
+    @Override
+    public boolean tryStartGame(List<ChampionshipTeam> teams, List<UUID> players) {
+        return canStartConfiguredMap(teams.size()) && super.tryStartGame(teams, players);
+    }
+
+    private boolean canStartConfiguredMap(int teamCount) {
+        BuildMartMapGeometry geometry = getGameConfig().resolveMapGeometry();
+        BuildMartBase base = getGameConfig().getBaseTemplate();
+        boolean configured = getGameStageEnum() == GameStageEnum.WAITING
+                && teamCount > 0 && teamCount <= getGameConfig().getBaseCount()
+                && getGameConfig().getTimer() > 0 && getGameConfig().getPrepareTime() >= 0
+                && geometry.getBoundary() != null && geometry.getHub() != null
+                && geometry.getHubReturn() != null && geometry.getHubSpawn() != null
+                && geometry.getGoldenDisplay() != null
+                && base != null && base.isComplete();
+        if (!configured)
+            logGame(Level.WARNING, "启动", "地图配置尚未完成或队伍数量超出 base-count，无法开始游戏");
+        return configured;
     }
 
     @Override
@@ -408,7 +435,6 @@ public class BuildMartArea extends BaseSingleTeamArea {
         } else if (golden) {
             // Golden incomplete submit: clear the build zone (no material return), must rebuild from scratch.
             ReferenceBuilder.clear(blueprint, slot.getBuildAnchor());
-            slot.clear();
             playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_GOLDEN_SUBMIT_FAILED
                     .replace("%blueprint%", blueprint.getDisplayName()));
         } else {
@@ -619,10 +645,11 @@ public class BuildMartArea extends BaseSingleTeamArea {
 
     @Override
     public boolean notInArea(Location location) {
-        Location spawn = getSpectatorSpawnLocation();
-        if (location == null || location.getWorld() == null || spawn == null || spawn.getWorld() == null)
-            return false;
-        return !location.getWorld().getName().equals(spawn.getWorld().getName());
+        if (location == null || location.getWorld() == null
+                || !location.getWorld().getName().equals(getWorldName()))
+            return true;
+        org.bukkit.util.BoundingBox boundary = getGameConfig().resolveMapGeometry().getBoundary();
+        return boundary != null && !boundary.contains(location.toVector());
     }
 
     @Override
@@ -706,6 +733,6 @@ public class BuildMartArea extends BaseSingleTeamArea {
 
     @Override
     public String getWorldName() {
-        return "buildmart";
+        return getGameConfig().resolveWorldName();
     }
 }

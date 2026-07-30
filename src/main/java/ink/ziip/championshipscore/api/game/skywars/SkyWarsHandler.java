@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.*;
@@ -79,8 +80,8 @@ public class SkyWarsHandler extends BaseListener {
                     if (playerTeam == null || assailantTeam == null)
                         return;
                     message = message
-                            .replace("%player%", playerTeam.getColoredColor() + player.getName())
-                            .replace("%killer%", assailantTeam.getColoredColor() + spawner.getName());
+                            .replace("%player%", Utils.formatPlayerName(player))
+                            .replace("%killer%", Utils.formatPlayerName(spawner));
                     skyWarsArea.sendMessageToAllGamePlayers(message);
 
                     if (!playerTeam.equals(assailantTeam)) {
@@ -187,6 +188,19 @@ public class SkyWarsHandler extends BaseListener {
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerMountHappyGhast(EntityMountEvent event) {
+        if (!(event.getEntity() instanceof Player player)
+                || !(event.getMount() instanceof HappyGhast happyGhast)
+                || !skyWarsArea.isTeamHappyGhast(happyGhast)
+                || skyWarsArea.canRideTeamHappyGhast(player, happyGhast)) {
+            return;
+        }
+
+        event.setCancelled(true);
+        Utils.sendActionBar(player, "&#fff566空岛乱斗 &#bababa• &#ff6b26这不是你们队的乐魂");
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {
@@ -286,8 +300,8 @@ public class SkyWarsHandler extends BaseListener {
                             String message = MessageConfig.SKY_WARS_KILL_PLAYER_BY_VOID;
 
                             message = message
-                                    .replace("%player%", playerTeam.getColoredColor() + player.getName())
-                                    .replace("%killer%", assailantTeam.getColoredColor() + assailant.getName());
+                                    .replace("%player%", Utils.formatPlayerName(player))
+                                    .replace("%killer%", Utils.formatPlayerName(assailant));
 
                             skyWarsArea.sendMessageToAllGamePlayers(message);
                             skyWarsArea.addPlayerPoints(assailant.getUniqueId(), 40);
@@ -297,7 +311,7 @@ public class SkyWarsHandler extends BaseListener {
 
                             String message = MessageConfig.SKY_WARS_PLAYER_DEATH_BY_VOID;
 
-                            message = message.replace("%player%", player.getName());
+                            message = message.replace("%player%", Utils.formatPlayerName(player));
                             skyWarsArea.sendMessageToAllGamePlayers(message);
                             skyWarsArea.addDeathPlayer(player);
                         }
@@ -341,7 +355,8 @@ public class SkyWarsHandler extends BaseListener {
             }
 
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                skyWarsArea.sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_PLAYER_CREATE_PORTAL.replace("%player%", player.getName()));
+                skyWarsArea.sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_PLAYER_CREATE_PORTAL
+                        .replace("%player%", Utils.formatPlayerName(player)));
             }
         }
 

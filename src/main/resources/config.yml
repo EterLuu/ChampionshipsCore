@@ -22,9 +22,9 @@ enabled-games:
   - "HotyCodyDusky"
   - "BuildMart"
 chat:
-  refugee: "&7[&c&l裁判组&7] &f%s&7:&f %s"
-  player: "&8[%team%&8] &f%s&7:&f %s"
-  spectator: "&8[&7旁观&8] &7%s&7:&7 %s"
+  refugee: "&8<&f%s &7<&c裁判组&7>&8>&#696969:&f %s"
+  player: "&8<&f%s &7<%team%&7>&8>&#696969:&f %s"
+  spectator: "&8<&f%s &7<&7旁观&7>&8>&#696969:&7 %s"
 database:
   type: "MARIADB"
   address: "127.0.0.1"

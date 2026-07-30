@@ -1,13 +1,13 @@
 package ink.ziip.championshipscore.api.game.snowball;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 
-public class SnowballShowdownManager extends BaseAreaManager<SnowballShowdownTeamArea> {
+public class SnowballShowdownManager extends BaseGameInstanceManager<SnowballShowdownTeamArea> {
     public SnowballShowdownManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
     }

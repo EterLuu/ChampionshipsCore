@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.command.spectate;
 
-import ink.ziip.championshipscore.api.game.area.BaseArea;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
@@ -86,11 +86,11 @@ public class SpectateSubCommand extends BaseSubCommand {
             if (gameTypeEnum == null) {
                 return true;
             }
-            BaseAreaManager<? extends BaseArea> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
+            BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
             if (manager == null) {
                 return true;
             }
-            BaseArea baseArea = manager.getArea(args[1]);
+            BaseGameInstance baseArea = manager.getArea(args[1]);
             if (baseArea == null) {
                 return true;
             }
@@ -122,7 +122,7 @@ public class SpectateSubCommand extends BaseSubCommand {
         if (args.length == 2) {
             GameTypeEnum gameTypeEnum = SPECTATABLE_GAMES.get(args[0]);
             if (gameTypeEnum != null) {
-                BaseAreaManager<? extends BaseArea> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
+                BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
                 if (manager != null) {
                     List<String> returnList = manager.getAreaNameList();
                     returnList.removeIf(s -> s != null && !s.startsWith(args[1]));

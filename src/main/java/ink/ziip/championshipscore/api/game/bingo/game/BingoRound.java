@@ -17,6 +17,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.TaskDisplayMode;
 import ink.ziip.championshipscore.api.game.bingo.task.TaskGenerator;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
@@ -219,8 +220,8 @@ public final class BingoRound {
      * per-player cell portion ({@link #lastCellDelta}, by claim rank) and a per-member line bonus
      * ({@link #lastLineDelta}); the caller credits each accordingly - the completing player gets the cell
      * points, every team member gets the line bonus. The team-score tracker mirrors
-     * {@code BaseArea#getTeamPoints} (cell once + line bonus × team size) so winner resolution stays
-     * consistent with the sum-of-members ranking.
+     * {@code BaseGameInstance#getTeamPoints} (cell once + line bonus × team size) so winner resolution
+     * stays consistent with the sum-of-members ranking.
      */
     private void awardPoints(ChampionshipTeam team, GameTask task) {
         lastCellDelta = 0;
@@ -458,7 +459,7 @@ public final class BingoRound {
     }
 
     private GameTask.Completion completion(Player player, ChampionshipTeam team, long gameTime) {
-        Component name = Component.text(player.getName());
+        Component name = Utils.toComponent(Utils.formatPlayerName(player));
         return new GameTask.Completion(player.getUniqueId(), name,
                 BingoTeamAdapter.color(team), BingoTeamAdapter.id(team), gameTime);
     }

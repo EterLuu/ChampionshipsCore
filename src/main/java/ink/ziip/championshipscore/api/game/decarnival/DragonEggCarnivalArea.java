@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.game.decarnival;
 import io.papermc.paper.registry.keys.EnchantmentKeys;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
+import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -33,7 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class DragonEggCarnivalArea extends BaseTeamArea {
+public class DragonEggCarnivalArea extends BasePairedGameInstance {
     @Getter
     private int timer;
     private BukkitTask startGamePreparationTask;
@@ -356,8 +356,8 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
                 }
 
                 message = message
-                        .replace("%player%", playerTeam.getColoredColor() + player.getName())
-                        .replace("%killer%", assailantTeam.getColoredColor() + assailant.getName());
+                        .replace("%player%", Utils.formatPlayerName(player))
+                        .replace("%killer%", Utils.formatPlayerName(assailant));
 
                 sendMessageToAllGamePlayers(message);
 
@@ -372,7 +372,7 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
                     }
                 }
 
-                message = message.replace("%player%", player.getName());
+                message = message.replace("%player%", Utils.formatPlayerName(player));
                 sendMessageToAllGamePlayers(message);
             }
         }
@@ -390,7 +390,8 @@ public class DragonEggCarnivalArea extends BaseTeamArea {
             return;
         }
 
-        sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_LEAVE.replace("%player%", player.getName()));
+        sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_LEAVE
+                .replace("%player%", Utils.formatPlayerName(player)));
     }
 
     @Override

@@ -38,6 +38,9 @@ public abstract class BaseConfigurationFile {
     @Getter
     protected YamlConfiguration configuration;
     protected Path configurationPath;
+    /** Base directory {@link #getFileName()} resolves against; remembered so version migration can
+     *  re-initialize from the same root (game configs carry a folder prefix in their file name). */
+    protected Path configurationBasePath;
     // True while loading the bundled resource template (see loadDefaultOptions); null placeholders in
     // the template are expected, so "missing field" warnings are suppressed until the real file loads.
     protected boolean loadingDefaults = false;
@@ -48,6 +51,7 @@ public abstract class BaseConfigurationFile {
      * @param pluginFolder the plugin folder path
      */
     public void initializeConfiguration(Path pluginFolder) {
+        this.configurationBasePath = pluginFolder;
         loadDefaultOptions();
 
         configurationPath = saveDefaultConfigurationFile(pluginFolder);
@@ -279,14 +283,17 @@ public abstract class BaseConfigurationFile {
                             configuration.getInt("dont-edit-this.version", -1), getLatestVersion())));
 
             Path outdatedPath = configurationPath.getParent();
-            String outdatedFileName = getFileName() + ".outdated";
+            String simpleFileName = configurationPath.getFileName().toString();
+            String outdatedFileName = simpleFileName + ".outdated";
             int counter = 1;
             while (outdatedPath.resolve(outdatedFileName).toFile().exists()) {
-                outdatedFileName = getFileName() + ".outdated" + counter;
+                outdatedFileName = simpleFileName + ".outdated" + counter;
                 counter++;
             }
-            if (outdatedPath.resolve(getFileName()).toFile().renameTo(outdatedPath.resolve(outdatedFileName).toFile())) {
-                initializeConfiguration(outdatedPath);
+            if (configurationPath.toFile().renameTo(outdatedPath.resolve(outdatedFileName).toFile())) {
+                // Re-create the fresh template from the same base root used originally: game config
+                // file names include their folder prefix, so the parent directory alone is wrong.
+                initializeConfiguration(configurationBasePath != null ? configurationBasePath : outdatedPath);
 
                 try {
                     YamlConfiguration outdatedConfiguration = YamlConfiguration.loadConfiguration(outdatedPath.resolve(outdatedFileName).toFile());

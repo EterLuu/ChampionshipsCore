@@ -33,18 +33,18 @@ public class WorldTeleportSubCommand extends BaseSubCommand {
 
         World world = Bukkit.getWorld(args[0]);
         if (world == null) {
-            Utils.sendAdminError(sender, "世界 #fff566" + args[0] + " #ededed未加载 #696969• 请先使用 create");
+            Utils.sendAdminError(sender, "世界 &#fff566" + args[0] + " &#ededed未加载 &#696969• 请先使用 create");
             return true;
         }
 
         Location target = world.getSpawnLocation();
         if (!player.teleport(target)) {
-            Utils.sendAdminError(sender, "无法传送至世界 #fff566" + world.getName());
+            Utils.sendAdminError(sender, "无法传送至世界 &#fff566" + world.getName());
             return true;
         }
         player.setAllowFlight(true);
         player.setFlying(true);
-        Utils.sendAdminSuccess(sender, "已传送至世界 #fff566" + world.getName() + " #696969• 飞行已开启");
+        Utils.sendAdminSuccess(sender, "已传送至世界 &#fff566" + world.getName() + " &#696969• 飞行已开启");
         return true;
     }
 

@@ -1,9 +1,9 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
-import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
+import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -19,14 +19,14 @@ import java.util.function.Predicate;
  */
 public class StandAndRunStep extends PrepareStep {
 
-    private final Predicate<BaseArea> setPredicate;
-    private final BiConsumer<BaseArea, Location> setter;
+    private final Predicate<SetupTarget> setPredicate;
+    private final BiConsumer<SetupTarget, Location> setter;
     private final String doneMessage;
 
     public StandAndRunStep(@NotNull String key, @NotNull Component name, @NotNull Component description,
                            @NotNull Material icon,
-                           @NotNull Predicate<BaseArea> setPredicate,
-                           @NotNull BiConsumer<BaseArea, Location> setter,
+                           @NotNull Predicate<SetupTarget> setPredicate,
+                           @NotNull BiConsumer<SetupTarget, Location> setter,
                            @NotNull String doneMessage) {
         super(key, name, description, icon, StepCaptureType.STAND_AND_RUN);
         this.setPredicate = setPredicate;
@@ -36,13 +36,13 @@ public class StandAndRunStep extends PrepareStep {
 
     @Override
     public boolean isSet(PrepareSession session) {
-        return session != null && setPredicate.test(session.getArea());
+        return session != null && setPredicate.test(session.getTarget());
     }
 
     @Override
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
-        setter.accept(session.getArea(), player.getLocation());
-        session.getArea().getGameConfig().saveOptions();
+        setter.accept(session.getTarget(), player.getLocation());
+        session.getTarget().config().saveOptions();
         return doneMessage;
     }
 }

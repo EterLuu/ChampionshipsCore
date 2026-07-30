@@ -168,18 +168,15 @@ public class RankManager extends BaseManager {
 
         int i = 1;
         for (Map.Entry<UUID, Double> entry : list) {
-            String username = plugin.getPlayerManager().getPlayerName(entry.getKey());
-            if (username != null) {
-                String row = MessageConfig.RANK_PLAYER_BOARD_ROW
-                        .replace("%player_rank%", String.valueOf(i))
-                        .replace("%player%", username)
-                        .replace("%player_point%", Utils.formatPoints(entry.getValue()));
+            String row = MessageConfig.RANK_PLAYER_BOARD_ROW
+                    .replace("%player_rank%", String.valueOf(i))
+                    .replace("%player%", Utils.formatPlayerName(entry.getKey()))
+                    .replace("%player_point%", Utils.formatPoints(entry.getValue()));
 
-                stringBuilder.append(row).append("\n");
+            stringBuilder.append(row).append("\n");
 
-                playerRank.put(entry.getKey(), i);
-                i++;
-            }
+            playerRank.put(entry.getKey(), i);
+            i++;
             if (i == 11) {
                 playerRankString = stringBuilder.toString();
                 break;
@@ -314,13 +311,13 @@ public class RankManager extends BaseManager {
                 winner = gameLeaderboard.get(0).getKey().getColoredName();
                 winnerPoints = Utils.formatPoints(gameLeaderboard.get(0).getValue());
             }
-            String subtitle = "#ededed#1 " + winner + " #bababa• #ff6b26" + winnerPoints + " 分";
+            String subtitle = "&#ededed#1 " + winner + " &#bababa• &#ff6b26" + winnerPoints + " 分";
             scheduler.runTask(plugin, () -> {
                 Utils.sendMessageToAllPlayers(summary);
-                Utils.sendTitleToAllPlayers("#fff566&l本轮结算", subtitle, 60);
+                Utils.sendTitleToAllPlayers("&#fff566&l本轮结算", subtitle, 60);
                 Utils.playSoundToAllPlayers(org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 0.8F, 1.1F);
                 scheduler.runTaskLater(plugin, () -> Utils.sendActionBarToAllPlayers(
-                        "#bababa聊天被顶掉？ #ededed/cc rank recap #bababa可重看本次结算"), 60L);
+                        "&#bababa聊天被顶掉？ &#ededed/cc rank recap &#bababa可重看本次结算"), 60L);
             });
         });
     }
@@ -352,7 +349,7 @@ public class RankManager extends BaseManager {
             return;
         }
         player.sendMessage(summary);
-        Utils.sendActionBar(player, "#ededed已重新显示最近一次结算");
+        Utils.sendActionBar(player, "&#ededed已重新显示最近一次结算");
     }
 
     /** Replays a recent result to players who disconnected while it was announced. */
@@ -361,7 +358,7 @@ public class RankManager extends BaseManager {
         if (summary == null || System.currentTimeMillis() - latestRankingSummaryAt > JOIN_RECAP_WINDOW_MILLIS)
             return;
         player.sendMessage(summary);
-        Utils.sendActionBar(player, "#bababa完整总榜 #ededed/cc rank teamboard");
+        Utils.sendActionBar(player, "&#bababa完整总榜 &#ededed/cc rank teamboard");
     }
 
     private void queuePeriodicRefresh() {

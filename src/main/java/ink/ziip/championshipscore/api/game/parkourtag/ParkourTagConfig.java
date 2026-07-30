@@ -6,7 +6,9 @@ import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -22,14 +24,26 @@ public class ParkourTagConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 2;
+        return 4;
     }
 
     @ConfigOption(path = "name")
     private String areaName;
 
+    /** Physical map world. Empty legacy configs continue to use the historical shared world. */
+    @ConfigOption(path = "world-name", nullable = true)
+    private String worldName;
+
+    public String resolveWorldName() {
+        return worldName == null || worldName.isBlank() ? "parkourtag" : worldName;
+    }
+
     @ConfigOption(path = "timer")
     private int timer;
+
+    /** Number of independently runnable instances stamped from copy 0 in this map. */
+    @ConfigOption(path = "copy-count")
+    private int copyCount = 8;
 
     @ConfigOption(path = "area-pos1")
     private Vector areaPos1;
@@ -69,4 +83,11 @@ public class ParkourTagConfig extends BaseGameConfig {
 
     @ConfigOption(path = "right-area.escapee-spawn-points")
     private List<String> rightAreaEscapeeSpawnPoints;
+
+    @Override
+    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
+                                                  @NotNull YamlConfiguration migratedConfiguration) {
+        if (oldConfiguration.getString("world-name", "").isBlank())
+            migratedConfiguration.set("world-name", "parkourtag");
+    }
 }

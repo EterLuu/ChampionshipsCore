@@ -4,9 +4,9 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
-import ink.ziip.championshipscore.api.game.area.team.BaseTeamArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
+import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoManager;
@@ -36,9 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class GameManager extends BaseManager {
-    private final Map<UUID, BaseArea> playerSpectatorStatus = new ConcurrentHashMap<>();
-    private final Map<ChampionshipTeam, BaseArea> teamStatus = new ConcurrentHashMap<>();
-    private final Map<UUID, BaseArea> playerStatus = new ConcurrentHashMap<>();
+    private final Map<UUID, BaseGameInstance> playerSpectatorStatus = new ConcurrentHashMap<>();
+    private final Map<ChampionshipTeam, BaseGameInstance> teamStatus = new ConcurrentHashMap<>();
+    private final Map<UUID, BaseGameInstance> playerStatus = new ConcurrentHashMap<>();
     private final GameManagerHandler gameManagerHandler;
     @Getter
     private final BattleBoxManager battleBoxManager;
@@ -66,7 +66,7 @@ public class GameManager extends BaseManager {
      * Registry mapping each game type to its area manager. Drives the generic
      * {@code join*} dispatch so adding a game only requires registering it here.
      */
-    private final Map<GameTypeEnum, BaseAreaManager<? extends BaseArea>> areaManagers = new EnumMap<>(GameTypeEnum.class);
+    private final Map<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> areaManagers = new EnumMap<>(GameTypeEnum.class);
     /** Lazily parsed from {@link CCConfig#ENABLED_GAMES}; see {@link #getEnabledGames()}. */
     private Set<GameTypeEnum> enabledGames;
 
@@ -102,7 +102,7 @@ public class GameManager extends BaseManager {
      * @return the area manager registered for {@code gameTypeEnum}, or {@code null} if none.
      */
     @Nullable
-    public BaseAreaManager<? extends BaseArea> getAreaManager(GameTypeEnum gameTypeEnum) {
+    public BaseGameInstanceManager<? extends BaseGameInstance> getAreaManager(GameTypeEnum gameTypeEnum) {
         return areaManagers.get(gameTypeEnum);
     }
 
@@ -151,7 +151,7 @@ public class GameManager extends BaseManager {
 
     @Override
     public void load() {
-        for (Map.Entry<GameTypeEnum, BaseAreaManager<? extends BaseArea>> entry : areaManagers.entrySet()) {
+        for (Map.Entry<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> entry : areaManagers.entrySet()) {
             if (isGameEnabled(entry.getKey())) {
                 entry.getValue().load();
             } else {
@@ -165,7 +165,7 @@ public class GameManager extends BaseManager {
 
     @Override
     public void unload() {
-        for (Map.Entry<GameTypeEnum, BaseAreaManager<? extends BaseArea>> entry : areaManagers.entrySet()) {
+        for (Map.Entry<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> entry : areaManagers.entrySet()) {
             if (isGameEnabled(entry.getKey()))
                 entry.getValue().unload();
         }
@@ -176,15 +176,14 @@ public class GameManager extends BaseManager {
     /**
      * Force-ends every currently-running area of the given game (any area not in WAITING). Used by the
      * schedule "delete current game" flow to scrap a broken/in-progress game before clearing its records.
-     * Calls {@link BaseArea#endGameFinally()}, which kicks players/spectators out and resets the area.
+     * Calls {@link BaseGameInstance#endGameFinally()}, which removes players and resets the instance.
      */
     public void forceEndAreas(@NotNull GameTypeEnum gameTypeEnum) {
-        BaseAreaManager<?> manager = areaManagers.get(gameTypeEnum);
+        BaseGameInstanceManager<?> manager = areaManagers.get(gameTypeEnum);
         if (manager == null) return;
-        for (String name : manager.getAreaNameList()) {
-            BaseArea area = manager.getArea(name);
-            if (area != null && area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+        for (BaseGameInstance instance : manager.getRuntimeInstances()) {
+            if (instance.getGameStageEnum() != GameStageEnum.WAITING) {
+                instance.endGameFinally();
             }
         }
     }
@@ -215,10 +214,10 @@ public class GameManager extends BaseManager {
         if (teamStatus.containsKey(leftChampionshipTeam))
             return false;
 
-        BaseAreaManager<? extends BaseArea> manager = areaManagers.get(gameTypeEnum);
+        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
         if (manager == null)
             return false;
-        if (!(manager.getArea(area) instanceof BaseTeamArea teamArea))
+        if (!(manager.getArea(area) instanceof BasePairedGameInstance teamArea))
             return false;
 
         teamArea.setIntroductionEnabledForNextStart(showIntroduction);
@@ -253,10 +252,10 @@ public class GameManager extends BaseManager {
             }
         }
 
-        BaseAreaManager<? extends BaseArea> manager = areaManagers.get(gameTypeEnum);
+        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
         if (manager == null)
             return false;
-        if (!(manager.getArea(area) instanceof BaseSingleTeamArea singleTeamArea))
+        if (!(manager.getArea(area) instanceof BaseMultiTeamGameInstance singleTeamArea))
             return false;
 
         singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
@@ -294,10 +293,10 @@ public class GameManager extends BaseManager {
             championshipTeams.add(championshipTeam);
         }
 
-        BaseAreaManager<? extends BaseArea> manager = areaManagers.get(gameTypeEnum);
+        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
         if (manager == null)
             return false;
-        if (!(manager.getArea(area) instanceof BaseSingleTeamArea singleTeamArea))
+        if (!(manager.getArea(area) instanceof BaseMultiTeamGameInstance singleTeamArea))
             return false;
 
         for (UUID playerUUID : players) {
@@ -335,10 +334,10 @@ public class GameManager extends BaseManager {
             }
         }
 
-        BaseAreaManager<? extends BaseArea> manager = areaManagers.get(gameTypeEnum);
+        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
         if (manager == null)
             return false;
-        if (!(manager.getArea(area) instanceof BaseSingleTeamArea singleTeamArea))
+        if (!(manager.getArea(area) instanceof BaseMultiTeamGameInstance singleTeamArea))
             return false;
 
         singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
@@ -354,34 +353,45 @@ public class GameManager extends BaseManager {
         return false;
     }
 
-    /**
-     * Starts a round of parallel Battle Box matches: every {@link TwoVTwoVector} pairing runs in its own
-     * stamped arena copy of the one Battle Box area. Mirrors the team-status bookkeeping of the other join
-     * methods. Used by both the manual start command (one pair) and the Swiss schedule (a round's pairs).
-     */
+    /** Starts one or more independent Battle Box instances from a shared map definition. */
     public synchronized boolean joinBattleBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
         return joinBattleBoxArea(area, pairs, true);
     }
 
     public synchronized boolean joinBattleBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs,
                                                    boolean showIntroduction) {
+        return joinBattleBoxInstances(area, pairs, showIntroduction) != null;
+    }
+
+    /** Returns the exact instances started for round-completion tracking, or {@code null} on failure. */
+    public synchronized @Nullable List<BattleBoxArea> joinBattleBoxInstances(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
         if (!isGameEnabled(GameTypeEnum.BattleBox))
-            return false;
+            return null;
+        if (pairs.isEmpty())
+            return null;
         Set<ChampionshipTeam> teams = new LinkedHashSet<>();
         for (TwoVTwoVector pair : pairs) {
             teams.add(pair.getTeamOne());
             teams.add(pair.getTeamTwo());
         }
+        if (teams.size() != pairs.size() * 2)
+            return null;
         for (ChampionshipTeam team : teams) {
             if (teamStatus.containsKey(team))
-                return false;
+                return null;
             for (UUID uuid : team.getMembers()) {
                 if (playerStatus.containsKey(uuid))
-                    return false;
+                    return null;
             }
         }
-        if (!(battleBoxManager.getArea(area) instanceof BattleBoxArea battleBoxArea))
-            return false;
+        List<BattleBoxArea> pool = battleBoxManager.getMapInstances(area);
+        List<BattleBoxArea> selected = pool.stream()
+                .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
+                .limit(pairs.size())
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (selected.size() < pairs.size())
+            return null;
 
         for (ChampionshipTeam team : teams) {
             for (UUID uuid : team.getMembers()) {
@@ -389,16 +399,20 @@ public class GameManager extends BaseManager {
             }
         }
 
-        battleBoxArea.setIntroductionEnabledForNextStart(showIntroduction);
-        if (battleBoxArea.tryStartMatches(pairs)) {
-            for (ChampionshipTeam team : teams) {
-                teamStatus.put(team, battleBoxArea);
-                addPlayerStatusByTeam(team, battleBoxArea);
+        for (int i = 0; i < pairs.size(); i++) {
+            BattleBoxArea instance = selected.get(i);
+            TwoVTwoVector pair = pairs.get(i);
+            instance.setIntroductionEnabledForNextStart(showIntroduction);
+            if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
+                instance.setIntroductionEnabledForNextStart(true);
+                return null;
             }
-            return true;
+            teamStatus.put(pair.getTeamOne(), instance);
+            teamStatus.put(pair.getTeamTwo(), instance);
+            addPlayerStatusByTeam(pair.getTeamOne(), instance);
+            addPlayerStatusByTeam(pair.getTeamTwo(), instance);
         }
-        battleBoxArea.setIntroductionEnabledForNextStart(true);
-        return false;
+        return List.copyOf(selected);
     }
 
     /** Battle-Box-style parallel start for Parkour Tag: each pairing runs in its own stamped arena copy. */
@@ -408,23 +422,38 @@ public class GameManager extends BaseManager {
 
     public synchronized boolean joinParkourTagArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs,
                                                     boolean showIntroduction) {
+        return joinParkourTagInstances(area, pairs, showIntroduction) != null;
+    }
+
+    /** Returns the exact instances started for round-completion tracking, or {@code null} on failure. */
+    public synchronized @Nullable List<ParkourTagArea> joinParkourTagInstances(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
         if (!isGameEnabled(GameTypeEnum.ParkourTag))
-            return false;
+            return null;
+        if (pairs.isEmpty())
+            return null;
         Set<ChampionshipTeam> teams = new LinkedHashSet<>();
         for (TwoVTwoVector pair : pairs) {
             teams.add(pair.getTeamOne());
             teams.add(pair.getTeamTwo());
         }
+        if (teams.size() != pairs.size() * 2)
+            return null;
         for (ChampionshipTeam team : teams) {
             if (teamStatus.containsKey(team))
-                return false;
+                return null;
             for (UUID uuid : team.getMembers()) {
                 if (playerStatus.containsKey(uuid))
-                    return false;
+                    return null;
             }
         }
-        if (!(parkourTagManager.getArea(area) instanceof ParkourTagArea parkourTagArea))
-            return false;
+        List<ParkourTagArea> pool = parkourTagManager.getMapInstances(area);
+        List<ParkourTagArea> selected = pool.stream()
+                .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
+                .limit(pairs.size())
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (selected.size() < pairs.size())
+            return null;
 
         for (ChampionshipTeam team : teams) {
             for (UUID uuid : team.getMembers()) {
@@ -432,20 +461,24 @@ public class GameManager extends BaseManager {
             }
         }
 
-        parkourTagArea.setIntroductionEnabledForNextStart(showIntroduction);
-        if (parkourTagArea.tryStartMatches(pairs)) {
-            for (ChampionshipTeam team : teams) {
-                teamStatus.put(team, parkourTagArea);
-                addPlayerStatusByTeam(team, parkourTagArea);
+        for (int i = 0; i < pairs.size(); i++) {
+            ParkourTagArea instance = selected.get(i);
+            TwoVTwoVector pair = pairs.get(i);
+            instance.setIntroductionEnabledForNextStart(showIntroduction);
+            if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
+                instance.setIntroductionEnabledForNextStart(true);
+                return null;
             }
-            return true;
+            teamStatus.put(pair.getTeamOne(), instance);
+            teamStatus.put(pair.getTeamTwo(), instance);
+            addPlayerStatusByTeam(pair.getTeamOne(), instance);
+            addPlayerStatusByTeam(pair.getTeamTwo(), instance);
         }
-        parkourTagArea.setIntroductionEnabledForNextStart(true);
-        return false;
+        return List.copyOf(selected);
     }
 
     public String getPlayerCurrentAreaName(UUID uuid) {
-        BaseArea baseArea = playerStatus.get(uuid);
+        BaseGameInstance baseArea = playerStatus.get(uuid);
 
         if (baseArea != null)
             return baseArea.getGameConfig().getConfigName();
@@ -458,11 +491,11 @@ public class GameManager extends BaseManager {
         return "";
     }
 
-    public BaseArea getTeamCurrenArea(ChampionshipTeam championshipTeam) {
+    public BaseGameInstance getTeamCurrenArea(ChampionshipTeam championshipTeam) {
         return teamStatus.get(championshipTeam);
     }
 
-    private void addPlayerStatusByTeam(ChampionshipTeam championshipTeam, BaseArea baseArea) {
+    private void addPlayerStatusByTeam(ChampionshipTeam championshipTeam, BaseGameInstance baseArea) {
         for (UUID uuid : championshipTeam.getMembers()) {
             playerStatus.put(uuid, baseArea);
         }
@@ -489,16 +522,16 @@ public class GameManager extends BaseManager {
     }
 
     @Nullable
-    public BaseArea getBasePlayerArea(UUID uuid) {
+    public BaseGameInstance getBasePlayerArea(UUID uuid) {
         return playerStatus.get(uuid);
     }
 
     @Nullable
-    public BaseArea getPlayerSpectatorStatus(UUID uuid) {
+    public BaseGameInstance getPlayerSpectatorStatus(UUID uuid) {
         return playerSpectatorStatus.get(uuid);
     }
 
-    public synchronized boolean spectateArea(@NotNull Player player, @NotNull BaseArea baseArea) {
+    public synchronized boolean spectateArea(@NotNull Player player, @NotNull BaseGameInstance baseArea) {
         UUID uuid = player.getUniqueId();
         if (playerSpectatorStatus.containsKey(uuid)) {
             return false;
@@ -515,7 +548,7 @@ public class GameManager extends BaseManager {
     public boolean leaveSpectating(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         if (playerSpectatorStatus.containsKey(uuid)) {
-            BaseArea baseArea = playerSpectatorStatus.get(uuid);
+            BaseGameInstance baseArea = playerSpectatorStatus.get(uuid);
             baseArea.removeSpectator(player);
             playerSpectatorStatus.remove(uuid);
             return true;
@@ -526,7 +559,7 @@ public class GameManager extends BaseManager {
 
     public void removeSpectator(@NotNull UUID uuid) {
         if (playerSpectatorStatus.containsKey(uuid)) {
-            BaseArea baseArea = playerSpectatorStatus.get(uuid);
+            BaseGameInstance baseArea = playerSpectatorStatus.get(uuid);
             baseArea.removeSpectator(uuid);
             playerSpectatorStatus.remove(uuid);
         }
@@ -534,7 +567,7 @@ public class GameManager extends BaseManager {
 
     public void removeSpectatingPlayerFromList(@NotNull UUID uuid) {
         if (playerSpectatorStatus.containsKey(uuid)) {
-            BaseArea baseArea = playerSpectatorStatus.get(uuid);
+            BaseGameInstance baseArea = playerSpectatorStatus.get(uuid);
             baseArea.onlyRemoveSpectatorFromList(uuid);
             playerSpectatorStatus.remove(uuid);
         }

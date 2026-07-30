@@ -1,11 +1,11 @@
 package ink.ziip.championshipscore.api.game.area.prepare.bingo;
 
-import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
-import ink.ziip.championshipscore.api.game.bingo.BingoArea;
+import ink.ziip.championshipscore.api.game.bingo.BingoConfig;
+import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -28,25 +28,25 @@ import java.util.List;
 public class BingoPrepareFlow extends PrepareFlowDefinition {
 
     @Override
-    public @NotNull String worldName() {
+    public @NotNull String worldName(@NotNull SetupTarget target) {
         return WorldManager.BINGO_OVERWORLD;
     }
 
     @Override
-    public boolean isInCorrectWorld(@NotNull Player player) {
+    public boolean isInCorrectWorld(@NotNull Player player, @NotNull SetupTarget target) {
         return WorldManager.isBingoWorld(player.getWorld());
     }
 
     @Override
-    public @NotNull Location copyZeroLocation(@NotNull BaseArea area) {
+    public @NotNull Location copyZeroLocation(@NotNull SetupTarget target) {
         World overworld = Bukkit.getWorld(WorldManager.BINGO_OVERWORLD);
         if (overworld == null) return CCConfig.LOBBY_LOCATION;
-        Location spectator = area.getGameConfig().getSpectatorSpawnPoint();
+        Location spectator = target.config().getSpectatorSpawnPoint();
         return spectator != null ? spectator : overworld.getSpawnLocation();
     }
 
     @Override
-    public @NotNull List<PrepareStep> buildSteps(@NotNull BaseArea area) {
+    public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         ConfirmWorldStep confirm = new ConfirmWorldStep(
                 player -> WorldManager.isBingoWorld(player.getWorld()),
                 WorldManager.BINGO_OVERWORLD);
@@ -56,8 +56,8 @@ public class BingoPrepareFlow extends PrepareFlowDefinition {
                 Component.text("设置旁观者出生点"),
                 Component.text("站到目标点位后点击"),
                 Material.ENDER_EYE,
-                a -> ((BingoArea) a).getGameConfig().getSpectatorSpawnPoint() != null,
-                (a, loc) -> ((BingoArea) a).getGameConfig().setSpectatorSpawnPoint(loc),
+                t -> ((BingoConfig) t.config()).getSpectatorSpawnPoint() != null,
+                (t, loc) -> ((BingoConfig) t.config()).setSpectatorSpawnPoint(loc),
                 Utils.formatAdminSuccess("已设置旁观者出生点。"));
 
         return List.of(confirm, spectator);

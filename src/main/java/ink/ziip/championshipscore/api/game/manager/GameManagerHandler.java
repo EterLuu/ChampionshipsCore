@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -47,13 +47,13 @@ public class GameManagerHandler extends BaseListener {
         UUID uuid = player.getUniqueId();
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
         if (championshipTeam != null) {
-            BaseArea baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
+            BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
             if (baseArea != null) {
                 baseArea.handlePlayerDeath(event);
                 return;
             }
         } else {
-            BaseArea baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
+            BaseGameInstance baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
             if (baseArea != null) {
                 baseArea.handleSpectatorDeath(event);
                 return;
@@ -80,7 +80,7 @@ public class GameManagerHandler extends BaseListener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
-        BaseArea baseArea = null;
+        BaseGameInstance baseArea = null;
         if (championshipTeam != null) {
             baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
             if (baseArea != null) {
@@ -120,7 +120,7 @@ public class GameManagerHandler extends BaseListener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
-        BaseArea baseArea = null;
+        BaseGameInstance baseArea = null;
         if (championshipTeam != null) {
             baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
             if (baseArea != null) {

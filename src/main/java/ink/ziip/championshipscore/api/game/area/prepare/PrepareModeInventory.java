@@ -54,13 +54,13 @@ public final class PrepareModeInventory {
 
     private static ItemStack statusItem(@NotNull Player player, @NotNull PrepareSession session) {
         GameTypeEnum game = session.getGameType();
-        boolean inWorld = session.getFlow().isInCorrectWorld(player);
+        boolean inWorld = session.getFlow().isInCorrectWorld(player, session.getTarget());
         int done = session.doneCount();
         int total = session.totalSteps();
 
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("游戏：" + game + "   场地：" + session.getAreaName()).color(NamedTextColor.GRAY));
-        lore.add(Component.text("目标世界：" + session.getFlow().worldName()
+        lore.add(Component.text("目标世界：" + session.getFlow().worldName(session.getTarget())
                         + (inWorld ? "  ✅ 已在正确世界" : "  ❌ 请前往该世界")).color(inWorld ? NamedTextColor.GREEN : NamedTextColor.RED));
         lore.add(Component.text("进度：" + done + "/" + total).color(NamedTextColor.AQUA));
 
@@ -80,7 +80,8 @@ public final class PrepareModeInventory {
     private static ItemStack teleportItem(@NotNull PrepareSession session) {
         ItemStack item = PrepareKeys.item(Material.ENDER_PEARL,
                 Component.text("传送至 0 号场地").color(NamedTextColor.AQUA),
-                List.of(Component.text("前往 " + session.getFlow().worldName() + " 世界 / 回到 0 号场地").color(NamedTextColor.GRAY)));
+                List.of(Component.text("前往 " + session.getFlow().worldName(session.getTarget())
+                        + " 世界 / 回到 0 号场地").color(NamedTextColor.GRAY)));
         PrepareKeys.setAction(item, "teleport");
         return item;
     }

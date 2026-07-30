@@ -18,7 +18,7 @@ public class SnowballScheduleHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
-        if (event.getBaseSingleTeamArea() instanceof SnowballShowdownTeamArea) {
+        if (event.getGameInstance() instanceof SnowballShowdownTeamArea) {
             if (scheduleManager.isEnabled()) {
                 scheduleManager.nextRound();
             }

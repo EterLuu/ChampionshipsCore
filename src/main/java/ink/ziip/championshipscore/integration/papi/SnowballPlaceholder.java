@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownTeamArea;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
@@ -19,7 +19,7 @@ public class SnowballPlaceholder extends BaseGamePlaceholder<SnowballShowdownTea
     }
 
     @Override
-    protected BaseAreaManager<SnowballShowdownTeamArea> getManager() {
+    protected BaseGameInstanceManager<SnowballShowdownTeamArea> getManager() {
         return plugin.getGameManager().getSnowballShowdownManager();
     }
 

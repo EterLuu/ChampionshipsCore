@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -19,7 +19,7 @@ public class TNTRunPlaceholder extends BaseGamePlaceholder<TNTRunTeamArea> {
     }
 
     @Override
-    protected BaseAreaManager<TNTRunTeamArea> getManager() {
+    protected BaseGameInstanceManager<TNTRunTeamArea> getManager() {
         return plugin.getGameManager().getTntRunManager();
     }
 

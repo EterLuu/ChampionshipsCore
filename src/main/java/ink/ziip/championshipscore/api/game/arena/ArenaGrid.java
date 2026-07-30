@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.arena;
 
+import ink.ziip.championshipscore.api.game.spatial.SpatialTransform;
 import org.bukkit.util.Vector;
 
 /**
@@ -20,5 +21,10 @@ public interface ArenaGrid {
     /** Translation from copy 0 to {@code index}; copy-0 anchors shifted by this give copy {@code index}. */
     default Vector delta(int index) {
         return origin(index).clone().subtract(origin(0));
+    }
+
+    /** Typed placement transform from copy 0 to {@code index}. */
+    default SpatialTransform transform(int index) {
+        return SpatialTransform.translation(delta(index));
     }
 }

@@ -48,7 +48,7 @@ public class ParkourTagPrepareSubCommand extends BaseSubCommand {
         }
         ParkourTagArea area = plugin.getGameManager().getParkourTagManager().getArea(args[0]);
         if (area == null) {
-            Utils.sendAdminError(sender, "找不到场地 #fff566" + args[0]);
+            Utils.sendAdminError(sender, "找不到场地 &#fff566" + args[0]);
             return true;
         }
         int copies;
@@ -59,33 +59,42 @@ public class ParkourTagPrepareSubCommand extends BaseSubCommand {
             return true;
         }
         if (copies < 1) {
-            Utils.sendAdminError(sender, "场地份数必须至少为 #fff5661");
+            Utils.sendAdminError(sender, "场地份数必须至少为 &#fff5661");
             return true;
         }
 
         World world = Bukkit.getWorld(area.getWorldName());
         if (world == null) {
-            Utils.sendAdminError(sender, "世界 #fff566" + area.getWorldName() + " #ededed尚未加载。");
+            Utils.sendAdminError(sender, "世界 &#fff566" + area.getWorldName() + " &#ededed尚未加载。");
+            return true;
+        }
+        if (!area.canSaveMap()) {
+            Utils.sendAdminError(sender, "同一地图仍有游戏实例运行，无法重新生成或保存。");
             return true;
         }
 
         File file = new File(new File(new File(plugin.getDataFolder(), "parkourtag"), "schematics"), "arena.schem");
         if (!file.isFile()) {
-            Utils.sendAdminError(sender, "缺少场地模板，请先执行 #fff566/cc game area parkourtag schematic");
+            Utils.sendAdminError(sender, "缺少场地模板，请先执行 &#fff566/cc game area parkourtag schematic");
             return true;
         }
 
         try {
             ArenaPreparer.stampCopies(plugin, world, file, ParkourTagLayout.GRID, copies);
         } catch (Exception e) {
-            Utils.sendAdminError(sender, "生成场地失败：#fff566" + e.getMessage());
+            Utils.sendAdminError(sender, "生成场地失败：&#fff566" + e.getMessage());
             return true;
         }
 
-        area.saveMap(World.Environment.NORMAL);
+        if (!area.saveMap(World.Environment.NORMAL)) {
+            Utils.sendAdminError(sender, "地图保存失败，请查看控制台日志；复制数量未写入配置。");
+            return true;
+        }
+        area.getGameConfig().setCopyCount(copies);
+        area.getGameConfig().saveOptions();
 
-        Utils.sendAdminSuccess(sender, "已生成并保存 #fff566" + copies + " #ededed份跑酷追击场地。");
-        Utils.sendAdminInfo(sender, "下一步：在 0 号场地执行 #fff566/cc game area parkourtag set "
+        Utils.sendAdminSuccess(sender, "已生成并保存 &#fff566" + copies + " &#ededed份跑酷追击场地。");
+        Utils.sendAdminInfo(sender, "下一步：在 0 号场地执行 &#fff566/cc game area parkourtag set "
                 + args[0] + " <点位>");
         return true;
     }

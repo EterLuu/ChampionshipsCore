@@ -30,22 +30,22 @@ public class WorldListSubCommand extends BaseSubCommand {
 
         List<World> loaded = new ArrayList<>(Bukkit.getWorlds());
         loaded.sort((left, right) -> left.getName().compareToIgnoreCase(right.getName()));
-        Utils.sendAdminInfo(sender, "已加载世界 #696969(" + loaded.size() + ")");
+        Utils.sendAdminInfo(sender, "已加载世界 &#696969(" + loaded.size() + ")");
         Set<String> loadedNames = new HashSet<>();
         for (World world : loaded) {
             loadedNames.add(world.getName());
-            String main = plugin.getWorldManager().isMainWorld(world) ? " #fff566[主世界]" : "";
-            sender.sendMessage(Utils.translateColorCodes("#bababa• #ededed" + world.getName() + main + " #696969— "
-                    + world.getEnvironment().name().toLowerCase() + " #bababa• " + world.getPlayerCount() + " 人"));
+            String main = plugin.getWorldManager().isMainWorld(world) ? " &#fff566[主世界]" : "";
+            sender.sendMessage(Utils.translateColorCodes("&#bababa• &#ededed" + world.getName() + main + " &#696969— "
+                    + world.getEnvironment().name().toLowerCase() + " &#bababa• " + world.getPlayerCount() + " 人"));
         }
 
         List<String> unloaded = plugin.getWorldManager().getStoredWorldNames();
         unloaded.removeIf(loadedNames::contains);
-        Utils.sendAdminInfo(sender, "磁盘未加载世界 #696969(" + unloaded.size() + ")");
+        Utils.sendAdminInfo(sender, "磁盘未加载世界 &#696969(" + unloaded.size() + ")");
         if (unloaded.isEmpty())
-            sender.sendMessage(Utils.translateColorCodes("#696969无"));
+            sender.sendMessage(Utils.translateColorCodes("&#696969无"));
         else
-            sender.sendMessage(Utils.translateColorCodes("#bababa" + String.join("#696969, #bababa", unloaded)));
+            sender.sendMessage(Utils.translateColorCodes("&#bababa" + String.join("&#696969, &#bababa", unloaded)));
         return true;
     }
 

@@ -18,7 +18,7 @@ public class TNTRunScheduleHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
-        if (event.getBaseSingleTeamArea() instanceof TNTRunTeamArea) {
+        if (event.getGameInstance() instanceof TNTRunTeamArea) {
             if (scheduleManager.isEnabled()) {
                 scheduleManager.nextRound();
             }

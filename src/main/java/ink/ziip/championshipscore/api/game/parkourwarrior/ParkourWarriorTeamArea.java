@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.parkourwarrior;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.game.parkourwarrior.CCSelection;
 import ink.ziip.championshipscore.api.object.game.parkourwarrior.PKWCheckPointTypeEnum;
@@ -32,7 +32,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 
-public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
+public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     private final Map<UUID, Location> playerSpawnLocations = new HashMap<>();
     private final Map<UUID, Integer> playerLastSubCheckpoint = new HashMap<>();
     private final Map<UUID, PKWCheckpoint> playerLastCheckpoint = new HashMap<>();
@@ -124,7 +124,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
     public synchronized void handlePlayerMove(Player player) {
         Location currentLocation = player.getLocation();
         UUID uuid = player.getUniqueId();
-        String name = player.getName();
+        String name = Utils.formatPlayerName(player);
         PKWCheckpoint lastCheckpoint = playerLastCheckpoint.get(uuid);
         int lastSubCheckpoint = playerLastSubCheckpoint.get(uuid);
 
@@ -229,8 +229,10 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                                 gamePointsMultiplier.put(championshipTeam, gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + checkpoint.getPointMultiplier(getGameConfig()));
                             }
 
-                            sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED.replace("%player%", player.getName()));
-                            player.sendMessage(MessageConfig.PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED.replace("%player%", player.getName()));
+                            sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED
+                                    .replace("%player%", Utils.formatPlayerName(player)));
+                            player.sendMessage(MessageConfig.PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED
+                                    .replace("%player%", Utils.formatPlayerName(player)));
 
                             player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
 
@@ -599,7 +601,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
     public void teleportPlayerToSpawnPoint(Player player, boolean broadcast) {
         player.teleport(playerSpawnLocations.getOrDefault(player.getUniqueId(), getGameConfig().getPlayerSpawnPoint()));
         if (broadcast) {
-            String name = player.getName();
+            String name = Utils.formatPlayerName(player);
             sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_FALL_INTO_VOID.replace("%player%", name));
             player.sendMessage(MessageConfig.PARKOUR_WARRIOR_FALL_INTO_VOID.replace("%player%", name));
         }

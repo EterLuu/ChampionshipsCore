@@ -1,14 +1,14 @@
 package ink.ziip.championshipscore.api.game.tntrun;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.World;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 
-public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
+public class TNTRunManager extends BaseGameInstanceManager<TNTRunTeamArea> {
 
     public TNTRunManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -70,7 +70,6 @@ public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
             return false;
         }
 
-        tntRunArea.saveMap(World.Environment.NORMAL);
-        return true;
+        return tntRunArea.saveMap(World.Environment.NORMAL);
     }
 }

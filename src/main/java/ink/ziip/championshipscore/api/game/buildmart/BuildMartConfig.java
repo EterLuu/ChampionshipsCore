@@ -9,19 +9,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Per-area Build Mart configuration. The arena is a pre-built static world copied from
- * {@code plugin/maps/buildmart}, mirroring the other CC games. Geometry is split between the central
- * resource market (the hub) and the per-team bases; blueprint pools and the dynamic scoring windows are
- * tunable here too.
- *
- * <p>Phase 1 only wires the lifecycle-critical fields (timer, prepare-time, hub/spectator spawns, the
- * area bounding box). Per-team base/build-zone geometry and the resource-zone definitions are layered in
- * by the later phases.
+ * Per-map Build Mart configuration. The arena is restored from {@code plugin/maps/<world-name>}.
+ * Geometry is split between the central resource market and a single base template; the remaining team
+ * bases are derived from that template using the map's fixed placement grid.
  */
 @Getter
 @Setter
@@ -35,11 +31,19 @@ public class BuildMartConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 2;
+        return 4;
     }
 
     @ConfigOption(path = "name")
     private String areaName;
+
+    /** Physical map world. Empty legacy configs continue to use the historical world. */
+    @ConfigOption(path = "world-name", nullable = true)
+    private String worldName;
+
+    public String resolveWorldName() {
+        return worldName == null || worldName.isBlank() ? "buildmart" : worldName;
+    }
 
     /** Round duration in seconds. Default 12 minutes. */
     @ConfigOption(path = "timer")
@@ -48,6 +52,10 @@ public class BuildMartConfig extends BaseGameConfig {
     /** Preparation countdown before the round starts, in seconds. */
     @ConfigOption(path = "prepare-time")
     private int prepareTime = 10;
+
+    /** Number of internal team-base replicas physically stamped into this map. */
+    @ConfigOption(path = "base-count")
+    private int baseCount = 8;
 
     @ConfigOption(path = "area-pos1", nullable = true)
     private Vector areaPos1;
@@ -111,21 +119,21 @@ public class BuildMartConfig extends BaseGameConfig {
      */
     @Nullable
     public BuildMartBase getSeatBase(int seat) {
-        BuildMartBase template = getBaseTemplate();
-        if (template == null) return null;
-        return template.translated(seat, BuildMartLayout.delta(seat));
+        return resolveMapGeometry().baseForSeat(seat);
+    }
+
+    public @NotNull BuildMartMapGeometry resolveMapGeometry() {
+        return BuildMartMapGeometry.from(this);
     }
 
     /** True when {@code location} lies within the configured hub bounding box. */
     public boolean isInHub(@NotNull Location location) {
-        if (hubPos1 == null || hubPos2 == null) return false;
-        return location.toVector().isInAABB(Vector.getMinimum(hubPos1, hubPos2), Vector.getMaximum(hubPos1, hubPos2));
+        return resolveMapGeometry().isInHub(location);
     }
 
     /** True when {@code location} lies within the hub→base return region. */
     public boolean isInHubReturn(@NotNull Location location) {
-        if (hubReturnPos1 == null || hubReturnPos2 == null) return false;
-        return location.toVector().isInAABB(Vector.getMinimum(hubReturnPos1, hubReturnPos2), Vector.getMaximum(hubReturnPos1, hubReturnPos2));
+        return resolveMapGeometry().isInHubReturn(location);
     }
 
     /**
@@ -141,5 +149,12 @@ public class BuildMartConfig extends BaseGameConfig {
             plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, areaName, "配置", "保存",
                     "无法保存基地坐标 | " + exception.getMessage()));
         }
+    }
+
+    @Override
+    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
+                                                  @NotNull YamlConfiguration migratedConfiguration) {
+        if (oldConfiguration.getString("world-name", "").isBlank())
+            migratedConfiguration.set("world-name", "buildmart");
     }
 }

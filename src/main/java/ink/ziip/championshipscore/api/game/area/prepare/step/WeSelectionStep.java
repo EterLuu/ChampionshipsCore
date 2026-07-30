@@ -1,9 +1,9 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
-import ink.ziip.championshipscore.api.game.area.BaseArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
+import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -20,14 +20,14 @@ import java.util.function.Predicate;
  */
 public class WeSelectionStep extends PrepareStep {
 
-    private final Predicate<BaseArea> setPredicate;
-    private final BiConsumer<BaseArea, Vector[]> setter; // [pos1, pos2]
+    private final Predicate<SetupTarget> setPredicate;
+    private final BiConsumer<SetupTarget, Vector[]> setter; // [pos1, pos2]
     private final String doneMessage;
 
     public WeSelectionStep(@NotNull String key, @NotNull Component name, @NotNull Component description,
                            @NotNull Material icon,
-                           @NotNull Predicate<BaseArea> setPredicate,
-                           @NotNull BiConsumer<BaseArea, Vector[]> setter,
+                           @NotNull Predicate<SetupTarget> setPredicate,
+                           @NotNull BiConsumer<SetupTarget, Vector[]> setter,
                            @NotNull String doneMessage) {
         super(key, name, description, icon, StepCaptureType.WE_SELECTION);
         this.setPredicate = setPredicate;
@@ -37,7 +37,7 @@ public class WeSelectionStep extends PrepareStep {
 
     @Override
     public boolean isSet(PrepareSession session) {
-        return session != null && setPredicate.test(session.getArea());
+        return session != null && setPredicate.test(session.getTarget());
     }
 
     @Override
@@ -48,8 +48,8 @@ public class WeSelectionStep extends PrepareStep {
         } catch (Exception e) {
             return Utils.formatAdminError("请先用 WorldEdit 选取两个端点。");
         }
-        setter.accept(session.getArea(), selection);
-        session.getArea().getGameConfig().saveOptions();
+        setter.accept(session.getTarget(), selection);
+        session.getTarget().config().saveOptions();
         return doneMessage;
     }
 }

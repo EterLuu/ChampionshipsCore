@@ -1,11 +1,11 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
-import ink.ziip.championshipscore.api.game.area.BaseArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -58,7 +58,7 @@ public final class AreaListGui {
 
     public static void open(@NotNull PrepareSessionManager manager, @NotNull Player player, @NotNull GameTypeEnum gameType) {
         PrepareFlowDefinition flow = manager.flow(gameType);
-        BaseAreaManager<?> areaManager = manager.getPlugin().getGameManager().getAreaManager(gameType);
+        BaseGameInstanceManager<?> areaManager = manager.getPlugin().getGameManager().getAreaManager(gameType);
         List<String> names = areaManager == null ? List.of() : areaManager.getAreaNameList();
 
         int needed = names.size() + 2; // areas + new + close
@@ -70,7 +70,7 @@ public final class AreaListGui {
 
         int slot = 0;
         for (String name : names) {
-            BaseArea area = areaManager.getArea(name);
+            BaseGameInstance area = areaManager.getArea(name);
             int done = 0, total = 0;
             if (flow != null && area != null) {
                 PrepareSession preview = new PrepareSession(manager.getPlugin(), gameType, name, area, flow);

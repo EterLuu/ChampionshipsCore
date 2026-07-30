@@ -12,7 +12,7 @@ import java.util.List;
 
 public class TeamAddSubCommand extends BaseSubCommand {
     public TeamAddSubCommand() {
-        super("add", "添加队伍", "/cc team add <队伍ID> <名称> <颜色>");
+        super("add", "添加队伍", "/cc team add <内部队伍名> <颜色名> <聊天颜色代码>");
     }
 
     @Override

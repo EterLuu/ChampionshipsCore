@@ -25,9 +25,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Per-area Build Mart listener. Phase 2 handles the base↔hub portals and the build-zone flight rule:
- * players may fly anywhere in their base/build area but not inside the hub. Block place/break protection,
- * resource gathering and the death/quit lifecycle are layered in by the later phases.
+ * Per-instance Build Mart listener for portals, build-zone flight, block protection, submissions, and
+ * player lifecycle events.
  */
 @Getter
 @Setter

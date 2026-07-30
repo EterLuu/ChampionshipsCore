@@ -18,7 +18,7 @@ public class ParkourWarriorScheduleHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
-        if (event.getBaseSingleTeamArea() instanceof ParkourWarriorTeamArea) {
+        if (event.getGameInstance() instanceof ParkourWarriorTeamArea) {
             if (scheduleManager.isEnabled()) {
                 scheduleManager.nextRound();
             }

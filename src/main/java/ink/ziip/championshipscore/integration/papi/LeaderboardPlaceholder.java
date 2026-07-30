@@ -32,12 +32,8 @@ public class LeaderboardPlaceholder extends BasePlaceholder {
                 int num = Integer.parseInt(params.replace("player_", ""));
 
                 Map.Entry<UUID, Double> playerEntry = rankManager.getPlayerLeaderboard().get(num - 1);
-                String name = plugin.getPlayerManager().getPlayerName(playerEntry.getKey());
-                if (name == null)
-                    return MessageConfig.PLACEHOLDER_NONE;
-
                 return MessageConfig.RANK_PLAYER_BOARD_ENTRY
-                        .replace("%player%", name)
+                        .replace("%player%", Utils.formatPlayerName(playerEntry.getKey()))
                         .replace("%player_point%", Utils.formatPoints(playerEntry.getValue()));
             } catch (Exception ignored) {
                 return MessageConfig.PLACEHOLDER_NONE;

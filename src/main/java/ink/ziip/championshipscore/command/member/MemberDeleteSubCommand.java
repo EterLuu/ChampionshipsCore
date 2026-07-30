@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.member;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
@@ -27,20 +28,20 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
             if (championshipTeam == null) {
                 String message = MessageConfig.MEMBER_DELETED_FAILED
                         .replace("%team%", args[0])
-                        .replace("%player%", args[1])
+                        .replace("%player%", Utils.formatPlayerName(args[1]))
                         .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
                 sender.sendMessage(message);
                 return true;
             }
             if (plugin.getTeamManager().deleteTeamMember(args[1], args[0])) {
                 String message = MessageConfig.MEMBER_SUCCESSFULLY_DELETED
-                        .replace("%team%", args[0])
-                        .replace("%player%", args[1]);
+                        .replace("%team%", championshipTeam.getColoredName())
+                        .replace("%player%", Utils.formatPlayerNameOnly(args[1]));
                 sender.sendMessage(message);
             } else {
                 String message = MessageConfig.MEMBER_DELETED_FAILED
                         .replace("%team%", args[0])
-                        .replace("%player%", args[1])
+                        .replace("%player%", Utils.formatPlayerName(args[1]))
                         .replace("%reason%", MessageConfig.REASON_MEMBER_DOES_NOT_EXIST);
                 sender.sendMessage(message);
             }

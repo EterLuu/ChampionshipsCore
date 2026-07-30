@@ -27,14 +27,14 @@ public class ScheduleDeleteSubCommand extends BaseSubCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length != 1) {
-            Utils.sendAdminInfo(sender, "用法 #696969• #ededed/cc admin schedule delete <确认参数>");
+            Utils.sendAdminInfo(sender, "用法 &#696969• &#ededed/cc admin schedule delete <确认参数>");
             return true;
         }
         GameTypeEnum latest = plugin.getScheduleManager().deleteLatestGame();
         if (latest == null) {
             Utils.sendAdminError(sender, "没有可撤销的轮次");
         } else {
-            Utils.sendAdminSuccess(sender, "正在撤销 #fff566" + latest + " #696969• 约 3 秒后清除轮次与成绩");
+            Utils.sendAdminSuccess(sender, "正在撤销 &#fff566" + latest + " &#696969• 约 3 秒后清除轮次与成绩");
         }
         return true;
     }

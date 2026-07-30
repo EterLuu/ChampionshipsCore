@@ -1,0 +1,34 @@
+id: default
+lifecycle:
+  preparation-seconds: 10
+  countdown-seconds: 5
+  duration-seconds: 960
+mechanics:
+  glass-cage: true
+  boundary:
+    default-height: 126
+    middle-height: 76
+    lowest-height: 26
+    radius: 240
+    enable-at-remaining-seconds: 660
+    shrink-schedule:
+      - 660:630:150:126
+      - 540:510:100:126
+      - 420:390:65:106
+      - 300:270:30:96
+      - 180:150:15:86
+      - 90:60:5:86
+      - 60:10:0:76
+  disable-health-regain-at-remaining-seconds: 20
+  spawn-happy-ghast-at-remaining-seconds: 840
+scoring:
+  kill: 40
+  survive: 50
+  player-elimination-survival: 10
+  team-elimination-survival: 2
+presentation:
+  rules:
+    - - "&#696969==========&r &#ff6b26[&#fff566空岛乱斗&#ff6b26] &#696969==========&r"
+      - "&#ededed收集资源、击落对手，并留在不断收缩的安全空域内。"
+    - - "&#696969==========&r &#fff566积分规则 &#696969==========&r"
+      - "&#ededed击杀、淘汰发生时的存活与最终存活均会获得积分。"

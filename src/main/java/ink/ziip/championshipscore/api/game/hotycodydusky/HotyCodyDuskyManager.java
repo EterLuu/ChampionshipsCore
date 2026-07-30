@@ -1,13 +1,13 @@
 package ink.ziip.championshipscore.api.game.hotycodydusky;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 
-public class HotyCodyDuskyManager extends BaseAreaManager<HotyCodyDuskyTeamArea> {
+public class HotyCodyDuskyManager extends BaseGameInstanceManager<HotyCodyDuskyTeamArea> {
 
     public HotyCodyDuskyManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);

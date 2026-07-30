@@ -2,11 +2,11 @@ package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AreaListGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
@@ -98,13 +98,13 @@ public class PrepareSessionManager extends BaseManager {
 
     /** Called after the anvil confirms a new area name: create it via the manager then enter the session. */
     public void createAndEnter(@NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String name) {
-        BaseAreaManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
+        BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
         if (mgr == null) {
             Utils.sendAdminError(player, "该游戏不可用");
             return;
         }
         if (!mgr.addArea(name)) {
-            Utils.sendAdminError(player, "场地 #fff566" + name + " #ededed已存在");
+            Utils.sendAdminError(player, "场地 &#fff566" + name + " &#ededed已存在");
             return;
         }
         enterSession(player, gameType, name);
@@ -116,10 +116,10 @@ public class PrepareSessionManager extends BaseManager {
             Utils.sendAdminError(player, "该游戏暂不支持 prepare");
             return;
         }
-        BaseAreaManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
-        BaseArea area = mgr == null ? null : mgr.getArea(areaName);
+        BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
+        BaseGameInstance area = mgr == null ? null : mgr.getArea(areaName);
         if (area == null) {
-            Utils.sendAdminError(player, "找不到场地 #fff566" + areaName);
+            Utils.sendAdminError(player, "找不到场地 &#fff566" + areaName);
             return;
         }
         if (sessions.containsKey(player.getUniqueId())) exitSession(player);
@@ -128,8 +128,8 @@ public class PrepareSessionManager extends BaseManager {
         PrepareSession session = new PrepareSession(plugin, gameType, areaName, area, flow);
         sessions.put(player.getUniqueId(), session);
         PrepareModeInventory.apply(player, session);
-        Utils.sendAdminSuccess(player, "进入 prepare #bababa• #fff566" + gameType + " #696969/ #fff566" + areaName);
-        Utils.sendAdminInfo(player, "使用物品栏配置步骤 #696969• 末影珍珠传送 #696969• 屏障退出");
+        Utils.sendAdminSuccess(player, "进入 prepare &#bababa• &#fff566" + gameType + " &#696969/ &#fff566" + areaName);
+        Utils.sendAdminInfo(player, "使用物品栏配置步骤 &#696969• 末影珍珠传送 &#696969• 屏障退出");
     }
 
     public void exitSession(@NotNull Player player) {
@@ -138,7 +138,7 @@ public class PrepareSessionManager extends BaseManager {
         restoreSnapshot(player);
         snapshots.remove(player.getUniqueId());
         deleteSnapshotFile(player.getUniqueId());
-        Utils.sendAdminSuccess(player, "已退出 prepare #696969• 物品栏已还原");
+        Utils.sendAdminSuccess(player, "已退出 prepare &#696969• 物品栏已还原");
     }
 
     // ── click routing (called by PrepareListener) ────────────────────────────────────────────
@@ -146,6 +146,12 @@ public class PrepareSessionManager extends BaseManager {
     public void handleStepClick(@NotNull Player player, @NotNull PrepareSession session, @NotNull String stepKey) {
         PrepareStep step = session.step(stepKey);
         if (step == null) return;
+        if (step.captureType() != StepCaptureType.CONFIRM_WORLD
+                && step.captureType() != StepCaptureType.STAMP
+                && !session.getFlow().isInCorrectWorld(player, session.getTarget())) {
+            Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
+            return;
+        }
         switch (step.captureType()) {
             case CONFIRM_WORLD, STAND_AND_RUN, WE_SELECTION, SCHEMATIC -> {
                 String msg = step.capture(session, player);
@@ -164,7 +170,7 @@ public class PrepareSessionManager extends BaseManager {
     public void handleActionClick(@NotNull Player player, @NotNull PrepareSession session, @NotNull String action) {
         switch (action) {
             case "teleport" -> {
-                Location dest = session.getFlow().copyZeroLocation(session.getArea());
+                Location dest = session.getFlow().copyZeroLocation(session.getTarget());
                 if (dest == null || dest.getWorld() == null) {
                     Utils.sendAdminError(player, "目标世界未加载");
                     return;
@@ -213,7 +219,7 @@ public class PrepareSessionManager extends BaseManager {
         if (snap.cursor != null) player.setItemOnCursor(snap.cursor);
         deleteSnapshotFile(player.getUniqueId());
         snapshots.remove(player.getUniqueId());
-        Utils.sendAdminInfo(player, "检测到未结束的 prepare #696969• 物品栏已还原");
+        Utils.sendAdminInfo(player, "检测到未结束的 prepare &#696969• 物品栏已还原");
     }
 
     private void saveSnapshotFile(@NotNull UUID id, @NotNull Snapshot snap) {

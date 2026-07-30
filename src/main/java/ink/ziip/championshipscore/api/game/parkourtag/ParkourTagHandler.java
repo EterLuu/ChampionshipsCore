@@ -296,6 +296,7 @@ public class ParkourTagHandler extends BaseListener {
                     }
                     return;
                 }
+                event.setCancelled(true);
             }
             return;
         }

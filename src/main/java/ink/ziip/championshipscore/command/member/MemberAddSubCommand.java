@@ -28,20 +28,20 @@ public class MemberAddSubCommand extends BaseSubCommand {
             if (championshipTeam == null) {
                 String message = MessageConfig.MEMBER_ADDED_FAILED
                         .replace("%team%", args[0])
-                        .replace("%player%", args[1])
+                        .replace("%player%", Utils.formatPlayerName(args[1]))
                         .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
                 sender.sendMessage(message);
                 return true;
             }
             if (plugin.getTeamManager().addTeamMember(args[1], championshipTeam)) {
                 String message = MessageConfig.MEMBER_SUCCESSFULLY_ADDED
-                        .replace("%team%", args[0])
-                        .replace("%player%", args[1]);
+                        .replace("%team%", championshipTeam.getColoredName())
+                        .replace("%player%", Utils.formatPlayerNameOnly(args[1]));
                 sender.sendMessage(message);
             } else {
                 String message = MessageConfig.MEMBER_ADDED_FAILED
                         .replace("%team%", args[0])
-                        .replace("%player%", args[1])
+                        .replace("%player%", Utils.formatPlayerName(args[1]))
                         .replace("%reason%", MessageConfig.REASON_MEMBER_ALREADY_EXIST);
                 sender.sendMessage(message);
             }

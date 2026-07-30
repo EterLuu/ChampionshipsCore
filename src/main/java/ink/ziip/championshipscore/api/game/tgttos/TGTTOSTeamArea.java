@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.tgttos;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -27,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TGTTOSTeamArea extends BaseSingleTeamArea {
+public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
     @Getter
     private final List<BlockState> blockStates = new ArrayList<>();
     @Getter
@@ -209,7 +209,8 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
             addTeamArrivedPlayer(championshipTeam);
 
-            sendMessageToAllGamePlayers(MessageConfig.TGTTOS_ARRIVED_AT_POINT.replace("%player%", championshipTeam.getColoredColor() + player.getName()));
+            sendMessageToAllGamePlayers(MessageConfig.TGTTOS_ARRIVED_AT_POINT
+                    .replace("%player%", Utils.formatPlayerName(player)));
         }
     }
 
