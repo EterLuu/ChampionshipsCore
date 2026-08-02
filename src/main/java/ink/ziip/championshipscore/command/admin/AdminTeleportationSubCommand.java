@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.admin;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -23,19 +24,22 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        if (args.length == 1 && sender instanceof Player player) {
-            if (args[0].equalsIgnoreCase("gameplayers")) {
-                for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                    championshipTeam.teleportAllPlayers(player.getLocation());
+        if (!(sender instanceof Player player)) {
+            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            return true;
+        }
+        if (args[0].equalsIgnoreCase("gameplayers")) {
+            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+                championshipTeam.teleportAllPlayers(player.getLocation());
+            }
+        } else if (args[0].equalsIgnoreCase("spectators")) {
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                if (plugin.getTeamManager().getTeamByPlayer(online.getUniqueId()) == null) {
+                    online.teleport(player.getLocation());
                 }
             }
-            if (args[0].equalsIgnoreCase("spectators")) {
-                for (Player online : Bukkit.getOnlinePlayers()) {
-                    if (plugin.getTeamManager().getTeamByPlayer(online.getUniqueId()) == null) {
-                        online.teleport(player.getLocation());
-                    }
-                }
-            }
+        } else {
+            sendUsage(sender);
         }
 
         return true;
@@ -44,7 +48,7 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1)
-            return List.of("gameplayers", "spectators");
+            return filterStartsWith(List.of("gameplayers", "spectators"), args[0]);
         return Collections.emptyList();
     }
 }

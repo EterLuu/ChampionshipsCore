@@ -28,6 +28,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +112,20 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         if (!configured)
             logGame(Level.WARNING, "启动", "地图配置尚未完成或队伍数量超出 base-count，无法开始游戏");
         return configured;
+    }
+
+    @Override
+    protected Collection<Location> getStartPreloadLocations() {
+        List<Location> locations = new ArrayList<>();
+        locations.add(getSpectatorSpawnLocation());
+        if (getGameConfig().getHubSpawnPoint() != null)
+            locations.add(getGameConfig().getHubSpawnPoint());
+        int count = Math.min(gameTeams.size(), getGameConfig().getBaseCount());
+        for (int seat = 0; seat < count; seat++) {
+            BuildMartBase base = getGameConfig().getSeatBase(seat);
+            if (base != null && base.getSpawn() != null) locations.add(base.getSpawn());
+        }
+        return locations;
     }
 
     @Override

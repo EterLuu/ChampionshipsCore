@@ -1,0 +1,63 @@
+package ink.ziip.championshipscore.command;
+
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import org.bukkit.command.CommandSender;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+
+/**
+ * The user-facing command index. Keep each canonical command and its help copy together here;
+ * legacy routes deliberately do not appear in this catalogue.
+ */
+public final class CommandCatalog {
+    private record Entry(String usage, String description) {}
+
+    private static final List<Entry> PLAYER_COMMANDS = List.of(
+            new Entry("/cc spawn", "回到大厅（游戏或观战期间不可用）"),
+            new Entry("/cc vote <游戏>", "为下一个游戏投票"),
+            new Entry("/cc spectate leave | <游戏> <场地>", "退出或进入观战"),
+            new Entry("/cc rank [teamboard|playerboard|info|recap]", "查看个人、队伍与结算积分")
+    );
+
+    private static final List<Entry> ADMIN_COMMANDS = List.of(
+            new Entry("/cc team add|delete|info|tphere ...", "管理队伍与队伍传送"),
+            new Entry("/cc team member add|delete <队伍> <玩家>", "管理队伍成员"),
+            new Entry("/cc game start <游戏> ...", "直接启动单局，不创建正式赛程"),
+            new Entry("/cc event start <游戏> [参数]", "开始正式比赛；同一赛事进行中时再次执行会紧急停止"),
+            new Entry("/cc event stop <游戏>", "显式停止正式比赛的赛程任务"),
+            new Entry("/cc event reset|undo --confirm", "重置赛程或撤销最近正式比赛"),
+            new Entry("/cc map edit <游戏>", "打开地图准备与编辑界面（可编辑未启用游戏）"),
+            new Entry("/cc map blueprint create <名称> <星级>", "从 WorldEdit 选区导出建材集市蓝图"),
+            new Entry("/cc admin vote|world|dodgebolt ...", "投票、世界与躲避箭裁判控制"),
+            new Entry("/cc admin reload|sudo|teleport|set-max-player ...", "系统维护与现场管理")
+    );
+
+    private CommandCatalog() {}
+
+    public static void send(@NotNull CommandSender sender) {
+        boolean admin = sender.hasPermission(MainCommand.ADMIN_PERMISSION);
+        boolean player = admin || sender.hasPermission(MainCommand.PLAYER_PERMISSION);
+        if (!player && !admin) {
+            sender.sendMessage(MessageConfig.NO_PERMISSION);
+            return;
+        }
+
+        StringBuilder message = new StringBuilder(MessageConfig.COMMAND_CATALOG_HEADER);
+        if (player)
+            appendSection(message, MessageConfig.COMMAND_CATALOG_PLAYER, PLAYER_COMMANDS);
+        if (admin)
+            appendSection(message, MessageConfig.COMMAND_CATALOG_ADMIN, ADMIN_COMMANDS);
+        sender.sendMessage(message.toString());
+    }
+
+    private static void appendSection(@NotNull StringBuilder message, @NotNull String title,
+                                      @NotNull List<Entry> entries) {
+        message.append("\n").append(title);
+        for (Entry entry : entries) {
+            message.append("\n").append(MessageConfig.COMMAND_CATALOG_ROW
+                    .replace("%usage%", entry.usage())
+                    .replace("%description%", entry.description()));
+        }
+    }
+}

@@ -72,4 +72,12 @@ public class ParkourWarriorConfig extends BaseGameConfig {
 
     @ConfigOption(path = "checkpoints")
     private ConfigurationSection checkpoints;
+
+    /** Ensures newly-created maps have a mutable checkpoint root for the guided editor. */
+    public ConfigurationSection ensureCheckpoints() {
+        if (checkpoints == null) {
+            checkpoints = configuration.createSection("checkpoints");
+        }
+        return checkpoints;
+    }
 }

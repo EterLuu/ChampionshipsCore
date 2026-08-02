@@ -189,7 +189,8 @@ public class VoteManager extends BaseManager {
             return;
         }
 
-        if (gameTypeEnum == null || !plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
+        if (gameTypeEnum == null || gameTypeEnum == GameTypeEnum.Dodgebolt
+                || !plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
             player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
             return;
         }

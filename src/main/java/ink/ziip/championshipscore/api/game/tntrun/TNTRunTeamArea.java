@@ -60,7 +60,20 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
     /** Preloads a clean arena at startup and immediately after each completed game. */
     public void preloadMap() {
-        loadMap(World.Environment.NORMAL);
+        loadPublishedMapOrDraft(World.Environment.NORMAL);
+    }
+
+    @Override
+    protected Collection<Location> getStartPreloadLocations() {
+        List<Location> locations = new ArrayList<>();
+        List<String> configured = getGameConfig().getPlayerSpawnPoints();
+        if (configured != null) {
+            for (String raw : configured) {
+                Location location = Utils.getLocation(raw);
+                if (location != null) locations.add(location);
+            }
+        }
+        return locations;
     }
 
     @Override

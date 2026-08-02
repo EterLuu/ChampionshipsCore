@@ -18,15 +18,22 @@ public class BaseMainCommand extends MainCommand {
     protected final String commandName;
     @Getter
     protected final String description;
+    @Getter
+    protected final String permission;
 
     public BaseMainCommand(String command) {
-        this(command, "");
+        this(command, "", "");
     }
 
     public BaseMainCommand(String command, String description) {
+        this(command, description, "");
+    }
+
+    public BaseMainCommand(String command, String description, String permission) {
         super();
         this.commandName = command;
         this.description = description;
+        this.permission = permission;
     }
 
     /**
@@ -59,7 +66,7 @@ public class BaseMainCommand extends MainCommand {
             return true;
         }
 
-        BaseMainCommand subCommand = subCommandMap.get(args[0]);
+        BaseMainCommand subCommand = findSubCommand(args[0]);
         if (subCommand != null) {
             return subCommand.onCommand(sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }
@@ -72,10 +79,14 @@ public class BaseMainCommand extends MainCommand {
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            return filterStartsWith(new ArrayList<>(subCommandMap.keySet()), args[0]);
+            List<String> visible = new ArrayList<>();
+            for (BaseMainCommand subCommand : subCommandMap.values()) {
+                visible.add(subCommand.getCommandName());
+            }
+            return filterStartsWith(visible, args[0]);
         }
 
-        BaseMainCommand subCommand = subCommandMap.get(args[0]);
+        BaseMainCommand subCommand = findSubCommand(args[0]);
         if (subCommand != null) {
             return subCommand.onTabComplete(sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }

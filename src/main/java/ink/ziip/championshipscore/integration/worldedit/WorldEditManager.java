@@ -17,6 +17,8 @@ import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.regions.RegionSelector;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
@@ -141,6 +143,16 @@ public class WorldEditManager extends BaseManager {
                         .build();
                 Operations.complete(operation);
             }
+        }
+    }
+
+    /** Clears an exact minimum-corner/dimensions cuboid before an adaptive layout is stamped again. */
+    public void clearCuboid(@NotNull World world, @NotNull Vector origin, @NotNull Vector dimensions) throws Exception {
+        BlockVector3 min = BlockVector3.at(origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
+        BlockVector3 max = min.add(dimensions.getBlockX() - 1, dimensions.getBlockY() - 1,
+                dimensions.getBlockZ() - 1);
+        try (EditSession editSession = worldEdit.newEditSession(BukkitAdapter.adapt(world))) {
+            editSession.setBlocks((Region) new CuboidRegion(min, max), BlockTypes.AIR.getDefaultState());
         }
     }
 }

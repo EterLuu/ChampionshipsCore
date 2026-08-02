@@ -35,6 +35,7 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
 
     @Override
     public void resetBaseArea() {
+        releaseStartChunks();
         resetArea();
         rightChampionshipTeam = null;
         leftChampionshipTeam = null;
@@ -47,7 +48,7 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
 
         this.rightChampionshipTeam = rightChampionshipTeam;
         this.leftChampionshipTeam = leftChampionshipTeam;
-        startGamePreparation();
+        startGamePreparationAfterPreload();
         return true;
     }
 

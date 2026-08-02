@@ -7,12 +7,9 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -21,7 +18,10 @@ import org.bukkit.inventory.view.AnvilView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -32,6 +32,8 @@ import java.util.function.IntConsumer;
  * (via {@link org.bukkit.event.inventory.PrepareAnvilEvent}) so no XP is ever charged.
  */
 public final class AnvilInputGui {
+    private static final Map<UUID, Holder> OPEN_INPUTS = new HashMap<>();
+
     private AnvilInputGui() {
     }
 
@@ -60,7 +62,7 @@ public final class AnvilInputGui {
                 player.sendMessage(error);
                 return;
             }
-            player.closeInventory();
+            close(player);
             manager.createAndEnter(player, gameType, text);
         });
     }
@@ -78,21 +80,45 @@ public final class AnvilInputGui {
                 Utils.sendAdminError(player, "份数必须至少为 &#fff5661");
                 return;
             }
-            player.closeInventory();
+            close(player);
             onCount.accept(n);
         });
     }
 
     private static void open(@NotNull Player player, @NotNull Mode mode, @NotNull String prompt, @NotNull Consumer<String> callback) {
         Holder holder = new Holder(mode, callback);
-        AnvilInventory inv = (AnvilInventory) Bukkit.createInventory(holder, InventoryType.ANVIL,
-                Component.text(prompt).decoration(TextDecoration.ITALIC, false));
+        AnvilView view = (AnvilView) player.openAnvil(null, true);
+        AnvilInventory inv = (AnvilInventory) view.getTopInventory();
         holder.inventory = inv;
+        OPEN_INPUTS.put(player.getUniqueId(), holder);
+        view.setTitle(prompt);
         inv.setFirstItem(PrepareKeys.item(Material.PAPER, Component.text(prompt),
                 List.of(Component.text("在上方重命名栏输入，再点击右侧结果格确认").color(NamedTextColor.GRAY))));
-        AnvilView view = (AnvilView) player.openInventory(inv);
         view.setMaximumRepairCost(0);
         view.setRepairCost(0);
+    }
+
+    public static @Nullable Holder getHolder(@NotNull Player player, @NotNull Inventory inventory) {
+        Holder holder = OPEN_INPUTS.get(player.getUniqueId());
+        return holder != null && holder.inventory == inventory ? holder : null;
+    }
+
+    public static void clear(@NotNull Player player, @NotNull Inventory inventory) {
+        Holder holder = getHolder(player, inventory);
+        if (holder != null) {
+            holder.inventory.clear();
+            OPEN_INPUTS.remove(player.getUniqueId());
+        }
+    }
+
+    /** Remove the input placeholder before its container is closed, so it cannot enter a player inventory. */
+    public static void close(@NotNull Player player) {
+        Holder holder = OPEN_INPUTS.remove(player.getUniqueId());
+        if (holder == null) return;
+        holder.inventory.clear();
+        if (player.getOpenInventory().getTopInventory() == holder.inventory) {
+            player.closeInventory();
+        }
     }
 
     private static @Nullable String validateName(@NotNull PrepareSessionManager manager, @NotNull GameTypeEnum gameType, @Nullable String name) {

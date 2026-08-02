@@ -43,7 +43,7 @@ public class ParkourTagMatch {
 
     public ParkourTagMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left, ParkourTagConfig config) {
         this(copyIndex, right, left, new ReplicatedSpatialLayout<>(ParkourTagGeometry.from(config),
-                ParkourTagLayout.GRID, config.getCopyCount()).geometry(copyIndex));
+                config.getCopyGrid(), config.getCopyCount()).geometry(copyIndex));
     }
 
     public ParkourTagMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left,

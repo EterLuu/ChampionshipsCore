@@ -19,7 +19,11 @@ public abstract class BaseSubCommand extends BaseMainCommand {
     }
 
     public BaseSubCommand(String commandName, String description, String usage) {
-        super(commandName, description);
+        this(commandName, description, usage, "");
+    }
+
+    public BaseSubCommand(String commandName, String description, String usage, String permission) {
+        super(commandName, description, permission);
         this.usage = usage;
     }
 
@@ -37,6 +41,11 @@ public abstract class BaseSubCommand extends BaseMainCommand {
         sender.sendMessage(MessageConfig.COMMAND_USAGE
                 .replace("%usage%", usage)
                 .replace("%description%", description == null ? "" : description));
+    }
+
+    /** Prefix-filter a dynamic candidate list using the same case-insensitive rules as the command tree. */
+    protected List<String> complete(@NotNull List<String> candidates, @NotNull String prefix) {
+        return filterStartsWith(candidates, prefix);
     }
 
     public abstract boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args);

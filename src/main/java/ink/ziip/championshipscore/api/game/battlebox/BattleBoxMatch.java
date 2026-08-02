@@ -39,7 +39,7 @@ public class BattleBoxMatch {
 
     public BattleBoxMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left, BattleBoxConfig config) {
         this(copyIndex, right, left, new ReplicatedSpatialLayout<>(BattleBoxGeometry.from(config),
-                BattleBoxLayout.GRID, config.getCopyCount()).geometry(copyIndex));
+                config.getCopyGrid(), config.getCopyCount()).geometry(copyIndex));
     }
 
     public BattleBoxMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left,

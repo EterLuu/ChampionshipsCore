@@ -28,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -97,7 +98,20 @@ public class BattleBoxArea extends BasePairedGameInstance {
 
     private BattleBoxGeometry configuredGeometry(int index) {
         return new ReplicatedSpatialLayout<>(BattleBoxGeometry.from(getGameConfig()),
-                BattleBoxLayout.GRID, getGameConfig().getCopyCount()).geometry(index);
+                getGameConfig().getCopyGrid(), getGameConfig().getCopyCount()).geometry(index);
+    }
+
+    @Override
+    protected Collection<Location> getStartPreloadLocations() {
+        if (match == null) return List.of();
+        List<Location> locations = new ArrayList<>();
+        locations.add(match.getRightPreSpawn());
+        locations.add(match.getLeftPreSpawn());
+        locations.add(match.getRightSpawn());
+        locations.add(match.getLeftSpawn());
+        locations.add(match.getSpectatorSpawn());
+        locations.addAll(match.getPotionLocations());
+        return locations;
     }
 
     /** The match a player belongs to this round, or {@code null} for non-participants. */

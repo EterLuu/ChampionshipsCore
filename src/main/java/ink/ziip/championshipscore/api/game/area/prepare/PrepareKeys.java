@@ -25,7 +25,7 @@ public final class PrepareKeys {
     /** Step item -> the step's key. */
     public static final NamespacedKey STEP_KEY =
             NamespacedKey.fromString("championshipscore:prepare_step");
-    /** Control item -> one of {@code teleport}/{@code exit}. */
+    /** Control item -> one of {@code teleport}/{@code steps}/{@code validate}/{@code publish}/{@code exit}. */
     public static final NamespacedKey ACTION =
             NamespacedKey.fromString("championshipscore:prepare_action");
 

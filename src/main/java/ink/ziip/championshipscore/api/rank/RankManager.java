@@ -20,6 +20,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -30,6 +31,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RankManager extends BaseManager {
     private static final long JOIN_RECAP_WINDOW_MILLIS = 10 * 60 * 1000L;
+    /** Dodgebolt is a non-scoring final and must never participate in regular-season ranking data. */
+    private static final Set<GameTypeEnum> SCORING_GAMES =
+            Collections.unmodifiableSet(EnumSet.complementOf(EnumSet.of(GameTypeEnum.Dodgebolt)));
     private static final Map<ChampionshipTeam, Double> teamPoints = new ConcurrentHashMap<>();
     private static final Map<UUID, Double> playerPoints = new ConcurrentHashMap<>();
     private static final Map<ChampionshipTeam, Integer> teamRank = new ConcurrentHashMap<>();
@@ -88,7 +92,7 @@ public class RankManager extends BaseManager {
     }
 
     public int getRound() {
-        return gameOrder.keySet().size();
+        return (int) gameOrder.keySet().stream().filter(RankManager::isScoringGame).count();
     }
 
     public double getPlayerTeamPoints(Player player) {
@@ -104,7 +108,8 @@ public class RankManager extends BaseManager {
     }
 
     private void updateTeamPoints() {
-        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+        gameTotalPoints.clear();
+        for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             gameTotalPoints.put(gameTypeEnum, 0D);
         }
 
@@ -187,7 +192,8 @@ public class RankManager extends BaseManager {
 
         playerLeaderboard = list;
 
-        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+        gameWeight.clear();
+        for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             try {
                 BigDecimal totalNum = BigDecimal.valueOf(15000D).setScale(4, RoundingMode.HALF_UP);
                 BigDecimal weight = totalNum.divide(BigDecimal.valueOf(gameTotalPoints.get(gameTypeEnum)), RoundingMode.HALF_UP);
@@ -203,12 +209,15 @@ public class RankManager extends BaseManager {
     }
 
     private void updateGameOrder() {
+        gameOrder.clear();
         for (GameStatusEntry gameStatusEntry : rankDao.getGameStatusList()) {
-            gameOrder.put(gameStatusEntry.getGame(), gameStatusEntry.getOrder());
+            if (isScoringGame(gameStatusEntry.getGame()))
+                gameOrder.put(gameStatusEntry.getGame(), gameStatusEntry.getOrder());
         }
     }
 
     public void addGameOrder(GameTypeEnum gameTypeEnum, int order) {
+        if (!isScoringGame(gameTypeEnum)) return;
         enqueueRankTask(() -> {
             if (rankDao.getGameStatusOrder(gameTypeEnum) != -1)
                 return;
@@ -243,7 +252,7 @@ public class RankManager extends BaseManager {
         GameTypeEnum latest = null;
         int maxOrder = -1;
         for (Map.Entry<GameTypeEnum, Integer> entry : gameOrder.entrySet()) {
-            if (entry.getValue() > maxOrder) {
+            if (isScoringGame(entry.getKey()) && entry.getValue() > maxOrder) {
                 maxOrder = entry.getValue();
                 latest = entry.getKey();
             }
@@ -261,6 +270,7 @@ public class RankManager extends BaseManager {
     }
 
     public void addPlayerPoints(UUID uuid, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, double points) {
+        if (!isScoringGame(gameTypeEnum)) return;
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (rival == null) {
             rival = championshipTeam;
@@ -296,8 +306,25 @@ public class RankManager extends BaseManager {
         enqueueRankTask(this::refreshRankingsNow);
     }
 
+    /** Resolves finalists only after every score write submitted before this call has reached the cache. */
+    public void withFreshTeamLeaderboard(java.util.function.Consumer<List<Map.Entry<ChampionshipTeam, Double>>> callback) {
+        enqueueRankTask(() -> {
+            refreshRankingsNow();
+            List<Map.Entry<ChampionshipTeam, Double>> snapshot = List.copyOf(teamLeaderboard);
+            scheduler.runTask(plugin, () -> callback.accept(snapshot));
+        });
+    }
+
+    public double getCachedTeamPoints(@NotNull ChampionshipTeam team) {
+        for (Map.Entry<ChampionshipTeam, Double> entry : teamLeaderboard) {
+            if (entry.getKey().equals(team)) return entry.getValue();
+        }
+        return 0D;
+    }
+
     /** Refreshes caches after all prior score writes and broadcasts a six-line round summary. */
     public void broadcastFinalRankings(GameTypeEnum gameTypeEnum) {
+        if (!isScoringGame(gameTypeEnum)) return;
         enqueueRankTask(() -> {
             refreshRankingsNow();
             List<Map.Entry<ChampionshipTeam, Double>> gameLeaderboard = getGameTeamLeaderboard(gameTypeEnum);
@@ -412,7 +439,7 @@ public class RankManager extends BaseManager {
 
         double points = 0d;
         for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-            if (playerPointEntry.getValid() == 1) {
+            if (playerPointEntry.getValid() == 1 && isScoringGame(playerPointEntry.getGame())) {
                 points = points + playerPointEntry.getPoints();
             }
         }
@@ -429,7 +456,7 @@ public class RankManager extends BaseManager {
         List<PlayerPointEntry> playerPointEntries = rankDao.getTeamPlayerPoints(championshipTeam.getId());
 
         double points = 0;
-        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+        for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
             for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                 if (playerPointEntry.getValid() == 1 && playerPointEntry.getGame() == gameTypeEnum) {
@@ -463,6 +490,7 @@ public class RankManager extends BaseManager {
     }
 
     private double getTeamPoints(ChampionshipTeam championshipTeam, GameTypeEnum gameTypeEnum) {
+        if (!isScoringGame(gameTypeEnum)) return 0D;
         List<PlayerPointEntry> playerPointEntries = rankDao.getTeamPlayerPoints(championshipTeam.getId());
 
         double points = 0;
@@ -507,6 +535,7 @@ public class RankManager extends BaseManager {
     }
 
     public double getGameWeight(GameTypeEnum gameTypeEnum) {
+        if (!isScoringGame(gameTypeEnum)) return 1D;
         BigDecimal weight = gameWeight.getOrDefault(gameTypeEnum, BigDecimal.ONE).setScale(4, RoundingMode.HALF_UP);
         return weight.doubleValue();
     }
@@ -516,7 +545,7 @@ public class RankManager extends BaseManager {
 
         stringBuilder.append(MessageConfig.GAME_GAME_WEIGHT).append("\n");
 
-        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+        for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             String row = MessageConfig.GAME_GAME_WEIGHT_INFO
                     .replace("%game%", gameTypeEnum.toString())
                     .replace("%weight%", String.valueOf(getGameWeight(gameTypeEnum)))
@@ -526,5 +555,9 @@ public class RankManager extends BaseManager {
         }
 
         return stringBuilder.toString();
+    }
+
+    private static boolean isScoringGame(@Nullable GameTypeEnum gameTypeEnum) {
+        return gameTypeEnum != null && SCORING_GAMES.contains(gameTypeEnum);
     }
 }

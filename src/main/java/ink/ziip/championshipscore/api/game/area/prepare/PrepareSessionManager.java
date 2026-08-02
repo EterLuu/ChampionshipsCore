@@ -2,10 +2,10 @@ package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AreaListGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
@@ -40,6 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PrepareSessionManager extends BaseManager {
     private final Map<GameTypeEnum, PrepareFlowDefinition> flows = new ConcurrentHashMap<>();
     private final Map<UUID, PrepareSession> sessions = new ConcurrentHashMap<>();
+    /** One editor per game/map. The value is the owning player's UUID. */
+    private final Map<String, UUID> mapLocks = new ConcurrentHashMap<>();
     private final Map<UUID, Snapshot> snapshots = new ConcurrentHashMap<>();
     private final Path sessionsDir;
     private PrepareListener listener;
@@ -57,8 +59,17 @@ public class PrepareSessionManager extends BaseManager {
         return flows.get(gameType);
     }
 
+    /** Whether this game has a complete map preparation workflow exposed by the command layer. */
+    public boolean supports(@NotNull GameTypeEnum gameType) {
+        return flows.containsKey(gameType);
+    }
+
     public @Nullable PrepareSession getSession(Player player) {
         return sessions.get(player.getUniqueId());
+    }
+
+    public boolean hasActiveSessions() {
+        return !sessions.isEmpty();
     }
 
     @Override
@@ -66,6 +77,15 @@ public class PrepareSessionManager extends BaseManager {
         flows.put(GameTypeEnum.Bingo, new ink.ziip.championshipscore.api.game.area.prepare.bingo.BingoPrepareFlow());
         flows.put(GameTypeEnum.ParkourTag, new ink.ziip.championshipscore.api.game.area.prepare.parkourtag.ParkourTagPrepareFlow());
         flows.put(GameTypeEnum.BattleBox, new ink.ziip.championshipscore.api.game.area.prepare.battlebox.BattleBoxPrepareFlow());
+        flows.put(GameTypeEnum.TNTRun, new ink.ziip.championshipscore.api.game.area.prepare.tntrun.TNTRunPrepareFlow());
+        flows.put(GameTypeEnum.BuildMart, new ink.ziip.championshipscore.api.game.area.prepare.buildmart.BuildMartPrepareFlow());
+        flows.put(GameTypeEnum.SkyWars, new SkyWarsPrepareFlow());
+        flows.put(GameTypeEnum.TGTTOS, new TGTTOSPrepareFlow());
+        flows.put(GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalPrepareFlow());
+        flows.put(GameTypeEnum.SnowballShowdown, new SnowballShowdownPrepareFlow());
+        flows.put(GameTypeEnum.ParkourWarrior, new ParkourWarriorPrepareFlow());
+        flows.put(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyPrepareFlow());
+        flows.put(GameTypeEnum.Dodgebolt, new DodgeboltPrepareFlow());
         try {
             Files.createDirectories(sessionsDir);
         } catch (IOException e) {
@@ -73,6 +93,7 @@ public class PrepareSessionManager extends BaseManager {
         }
         listener = new PrepareListener(plugin, this);
         listener.register();
+        auditArchivedLegacyAreas();
     }
 
     @Override
@@ -80,12 +101,14 @@ public class PrepareSessionManager extends BaseManager {
         for (UUID id : new ArrayList<>(sessions.keySet())) {
             Player p = Bukkit.getPlayer(id);
             if (p != null) {
+                AnvilInputGui.close(p);
                 restoreSnapshot(p);
                 deleteSnapshotFile(id);
             }
             // offline players: leave the snapshot file so restorePendingSnapshot can restore on next join
         }
         sessions.clear();
+        mapLocks.clear();
         snapshots.clear();
         if (listener != null) listener.unRegister();
     }
@@ -107,6 +130,8 @@ public class PrepareSessionManager extends BaseManager {
             Utils.sendAdminError(player, "场地 &#fff566" + name + " &#ededed已存在");
             return;
         }
+        var target = mgr.getSetupTarget(gameType, name);
+        if (target != null) target.config().beginPrepareDraft();
         enterSession(player, gameType, name);
     }
 
@@ -117,24 +142,34 @@ public class PrepareSessionManager extends BaseManager {
             return;
         }
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
-        BaseGameInstance area = mgr == null ? null : mgr.getArea(areaName);
-        if (area == null) {
-            Utils.sendAdminError(player, "找不到场地 &#fff566" + areaName);
+        var target = mgr == null ? null : mgr.getSetupTarget(gameType, areaName);
+        if (target == null) {
+            Utils.sendAdminError(player, "找不到地图 &#fff566" + areaName);
             return;
         }
         if (sessions.containsKey(player.getUniqueId())) exitSession(player);
+        String lockKey = lockKey(gameType, areaName);
+        UUID owner = mapLocks.putIfAbsent(lockKey, player.getUniqueId());
+        if (owner != null && !owner.equals(player.getUniqueId())) {
+            Player editor = Bukkit.getPlayer(owner);
+            Utils.sendAdminError(player, "该地图正由 &#fff566"
+                    + (editor == null ? owner : editor.getName()) + " &#ededed编辑");
+            return;
+        }
 
         saveSnapshot(player);
-        PrepareSession session = new PrepareSession(plugin, gameType, areaName, area, flow);
+        PrepareSession session = new PrepareSession(plugin, gameType, areaName, target, flow);
         sessions.put(player.getUniqueId(), session);
         PrepareModeInventory.apply(player, session);
         Utils.sendAdminSuccess(player, "进入 prepare &#bababa• &#fff566" + gameType + " &#696969/ &#fff566" + areaName);
-        Utils.sendAdminInfo(player, "使用物品栏配置步骤 &#696969• 末影珍珠传送 &#696969• 屏障退出");
+        Utils.sendAdminInfo(player, "使用热键栏配置 prepare &#696969• 打开箱子编辑步骤 &#696969• 屏障退出");
     }
 
     public void exitSession(@NotNull Player player) {
         PrepareSession session = sessions.remove(player.getUniqueId());
         if (session == null) return;
+        mapLocks.remove(lockKey(session.getGameType(), session.getAreaName()), player.getUniqueId());
+        AnvilInputGui.close(player);
         restoreSnapshot(player);
         snapshots.remove(player.getUniqueId());
         deleteSnapshotFile(player.getUniqueId());
@@ -176,10 +211,74 @@ public class PrepareSessionManager extends BaseManager {
                     return;
                 }
                 player.teleport(dest);
-                Utils.sendAdminSuccess(player, "已传送至 0 号场地");
+                Utils.sendAdminSuccess(player, "已传送至 "
+                        + session.getFlow().editorLocationName(session.getTarget()));
             }
+            case "steps" -> StepMenuGui.open(player, session);
             case "exit" -> exitSession(player);
+            case "validate" -> validate(player, session, false);
+            case "publish" -> {
+                if (!validate(player, session, true)) return;
+                if (!session.getTarget().canSaveMap()) {
+                    Utils.sendAdminError(player, "同一地图仍有游戏实例运行，无法发布");
+                    return;
+                }
+                Utils.sendAdminInfo(player, "正在发布地图，请稍候……");
+                if (!session.getFlow().publish(session)) {
+                    Utils.sendAdminError(player, "地图发布失败，请查看控制台日志；草稿仍保持锁定状态");
+                    return;
+                }
+                session.getTarget().config().markPreparePublished();
+                Location destination = session.getFlow().copyZeroLocation(session.getTarget());
+                if (destination != null && destination.getWorld() != null) player.teleport(destination);
+                PrepareModeInventory.refresh(player, session);
+                Utils.sendAdminSuccess(player, "地图已发布 &#696969• &#edededrevision &#fff566"
+                        + session.getTarget().config().getPrepareRevision());
+            }
             default -> {
+            }
+        }
+    }
+
+    /** Game-start guard: a locked, dirty, or explicitly unpublished map cannot be selected. */
+    public boolean canStart(@NotNull GameTypeEnum gameType, @NotNull String mapName) {
+        if (mapLocks.containsKey(lockKey(gameType, mapName))) return false;
+        BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
+        var target = mgr == null ? null : mgr.getSetupTarget(gameType, mapName);
+        return target != null && target.config().isPrepareReady();
+    }
+
+    private boolean validate(Player player, PrepareSession session, boolean forPublish) {
+        java.util.List<String> errors = session.getFlow().validate(session);
+        if (errors.isEmpty()) {
+            Utils.sendAdminSuccess(player, forPublish ? "校验通过，开始发布" : "校验通过，可以发布");
+            return true;
+        }
+        Utils.sendAdminError(player, "校验失败，仍缺少 &#fff566" + errors.size() + " &#ededed项：");
+        for (String error : errors) player.sendMessage(Utils.translateColorCodes("  &#ff6b26• &#ededed" + error));
+        return false;
+    }
+
+    private static String lockKey(GameTypeEnum gameType, String mapName) {
+        return gameType.name() + "\u0000" + mapName.toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** Reports legacy manual Area files that are retained for rollback but excluded from every scan. */
+    private void auditArchivedLegacyAreas() {
+        for (String game : java.util.List.of("battlebox", "parkourtag")) {
+            Path archive = plugin.getFolder().resolve(game).resolve("_archived_manual_areas");
+            if (!Files.isDirectory(archive)) continue;
+            try (var files = Files.list(archive)) {
+                long count = files.filter(path -> path.getFileName().toString().toLowerCase(java.util.Locale.ROOT)
+                        .endsWith(".yml")).count();
+                if (count > 0) {
+                    plugin.getLogger().info(Utils.formatModuleLog("Prepare", "旧场地审计",
+                            "游戏=" + game + " 归档配置=" + count
+                                    + " 状态=已隔离未加载，未删除磁盘数据"));
+                }
+            } catch (IOException e) {
+                plugin.getLogger().warning(Utils.formatModuleLog("Prepare", "旧场地审计",
+                        "无法读取 " + archive + " | " + e.getMessage()));
             }
         }
     }
@@ -204,8 +303,8 @@ public class PrepareSessionManager extends BaseManager {
         PlayerInventory inv = player.getInventory();
         if (snap.storage != null) inv.setStorageContents(snap.storage);
         if (snap.armor != null) inv.setArmorContents(snap.armor);
-        if (snap.offhand != null) inv.setItemInOffHand(snap.offhand);
-        if (snap.cursor != null) player.setItemOnCursor(snap.cursor);
+        inv.setItemInOffHand(snap.offhand);
+        player.setItemOnCursor(snap.cursor);
     }
 
     /** Crash recovery: if a snapshot file lingers from a non-clean exit, restore the real inventory. */
@@ -215,8 +314,8 @@ public class PrepareSessionManager extends BaseManager {
         PlayerInventory inv = player.getInventory();
         if (snap.storage != null) inv.setStorageContents(snap.storage);
         if (snap.armor != null) inv.setArmorContents(snap.armor);
-        if (snap.offhand != null) inv.setItemInOffHand(snap.offhand);
-        if (snap.cursor != null) player.setItemOnCursor(snap.cursor);
+        inv.setItemInOffHand(snap.offhand);
+        player.setItemOnCursor(snap.cursor);
         deleteSnapshotFile(player.getUniqueId());
         snapshots.remove(player.getUniqueId());
         Utils.sendAdminInfo(player, "检测到未结束的 prepare &#696969• 物品栏已还原");

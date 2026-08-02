@@ -5,12 +5,15 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AreaListGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
+import io.papermc.paper.event.player.PlayerPickItemEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -46,21 +49,26 @@ public class PrepareListener extends BaseListener {
             AreaListGui.handleClick(manager, event, player, h);
             return;
         }
-        if (holder instanceof AnvilInputGui.Holder h) {
-            AnvilInputGui.handleClick(manager, event, player, h);
+        AnvilInputGui.Holder anvilHolder = AnvilInputGui.getHolder(player, top);
+        if (anvilHolder != null) {
+            AnvilInputGui.handleClick(manager, event, player, anvilHolder);
             return;
         }
         if (holder instanceof ListStepGui.Holder h) {
             ListStepGui.handleClick(manager, event, player, h);
             return;
         }
+        if (holder instanceof StepMenuGui.Holder h) {
+            StepMenuGui.handleClick(manager, event, player, h);
+            return;
+        }
 
         PrepareSession session = manager.getSession(player);
         if (session == null) return;
 
-        // In prepare mode: lock the inventory. Only clicks in the player's own 36-slot inventory are routed
-        // to step/action handlers; everything else (crafting grid, external inventories) is just cancelled
-        // so prepare items can't be moved out.
+        // In prepare mode: lock the inventory. Only clicks in the player's own hotbar are routed to the
+        // control handlers; everything else (main inventory, crafting grid, external inventories) is
+        // cancelled so prepare items cannot be moved out.
         Inventory clicked = event.getClickedInventory();
         if (clicked == event.getView().getBottomInventory()) {
             event.setCancelled(true);
@@ -81,8 +89,14 @@ public class PrepareListener extends BaseListener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.getWhoClicked() instanceof Player player
+                && AnvilInputGui.getHolder(player, event.getView().getTopInventory()) != null) {
+            event.setCancelled(true);
+            return;
+        }
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
-        if (holder instanceof AreaListGui.Holder || holder instanceof AnvilInputGui.Holder || holder instanceof ListStepGui.Holder) {
+        if (holder instanceof AreaListGui.Holder || holder instanceof ListStepGui.Holder
+                || holder instanceof StepMenuGui.Holder) {
             event.setCancelled(true);
             return;
         }
@@ -127,6 +141,24 @@ public class PrepareListener extends BaseListener {
         }
     }
 
+    /**
+     * Creative pick-block normally writes to the selected hotbar slot. Redirect it away from the
+     * fixed prepare controls while leaving the editor able to obtain building materials by middle-click.
+     */
+    @EventHandler
+    public void onCreativePickItem(@NotNull PlayerPickItemEvent event) {
+        Player player = event.getPlayer();
+        PrepareSession session = manager.getSession(player);
+        if (session == null || !PrepareModeInventory.isControlSlot(session, event.getTargetSlot())) return;
+
+        int targetSlot = PrepareModeInventory.creativePickTarget(player, session);
+        if (targetSlot < 0) {
+            event.setCancelled(true);
+            return;
+        }
+        event.setTargetSlot(targetSlot);
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         if (manager.getSession(event.getPlayer()) != null) {
@@ -149,10 +181,18 @@ public class PrepareListener extends BaseListener {
 
     @EventHandler
     public void onPrepareAnvil(@NotNull PrepareAnvilEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof AnvilInputGui.Holder) {
+        if (event.getView().getPlayer() instanceof Player player
+                && AnvilInputGui.getHolder(player, event.getView().getTopInventory()) != null) {
             AnvilView view = event.getView();
             view.setRepairCost(0);
             view.setMaximumRepairCost(0);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClose(@NotNull InventoryCloseEvent event) {
+        if (event.getPlayer() instanceof Player player) {
+            AnvilInputGui.clear(player, event.getInventory());
         }
     }
 }

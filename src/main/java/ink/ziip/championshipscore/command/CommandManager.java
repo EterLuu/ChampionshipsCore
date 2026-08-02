@@ -3,8 +3,9 @@ package ink.ziip.championshipscore.command;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.command.admin.AdminMainCommand;
+import ink.ziip.championshipscore.command.event.EventMainCommand;
 import ink.ziip.championshipscore.command.game.GameMainCommand;
-import ink.ziip.championshipscore.command.member.MemberMainCommand;
+import ink.ziip.championshipscore.command.map.MapMainCommand;
 import ink.ziip.championshipscore.command.rank.RankMainCommand;
 import ink.ziip.championshipscore.command.spectate.SpectateSubCommand;
 import ink.ziip.championshipscore.command.team.TeamMainCommand;
@@ -30,8 +31,9 @@ public class CommandManager extends BaseManager {
         MainCommand mainCommand = new MainCommand();
 
         mainCommand.addSubCommand(new TeamMainCommand());
-        mainCommand.addSubCommand(new MemberMainCommand());
         mainCommand.addSubCommand(new GameMainCommand());
+        mainCommand.addSubCommand(new EventMainCommand());
+        mainCommand.addSubCommand(new MapMainCommand());
         mainCommand.addSubCommand(new SpectateSubCommand());
         mainCommand.addSubCommand(new RankMainCommand());
         mainCommand.addSubCommand(new AdminMainCommand());

@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.instance;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.arena.ArenaChunkPreloader;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -29,7 +30,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntConsumer;
 import java.util.logging.Level;
 
@@ -42,6 +45,9 @@ public abstract class BaseGameInstance {
     protected final GameInstanceHandler gameInstanceHandler;
     protected final PlayerManager playerManager;
     protected final Map<String, BossBar> bossBars = new ConcurrentHashMap<>();
+    private final Set<ArenaChunkPreloader.ChunkTicket> startChunkTickets = ConcurrentHashMap.newKeySet();
+    private volatile CompletableFuture<Void> startPreloadFuture = CompletableFuture.completedFuture(null);
+    private volatile CompletableFuture<Void> coordinatedStartGate;
 
     /** Duration (seconds) of the optional rule-introduction phase preceding the normal preparation. */
     protected static final int INTRODUCTION_DURATION = 45;
@@ -80,6 +86,7 @@ public abstract class BaseGameInstance {
     }
 
     public void resetGame() {
+        releaseStartChunks();
         cancelIntroduction();
         cancelFinalCountdown();
         resetBaseArea();
@@ -92,11 +99,66 @@ public abstract class BaseGameInstance {
 
     /** Permanently releases listeners and UI owned by this instance when its manager unloads it. */
     public void dispose() {
+        releaseStartChunks();
         cancelIntroduction();
         cancelFinalCountdown();
         clearBossBars();
         getGameHandler().unRegister();
         gameInstanceHandler.unRegister();
+    }
+
+    /** Landing points that must be warm before preparation starts. Games with replicas override this. */
+    protected Collection<Location> getStartPreloadLocations() {
+        return List.of();
+    }
+
+    /** Starts preparation only after all landing chunks are loaded and ticketed. Must be called on main. */
+    protected final void startGamePreparationAfterPreload() {
+        releaseStartChunks();
+        List<Location> locations = new ArrayList<>(getStartPreloadLocations());
+        if (gameConfig.getIntroductionSpawnPoint() != null)
+            locations.add(gameConfig.getIntroductionSpawnPoint());
+        AtomicReference<Throwable> preloadError = new AtomicReference<>();
+        CompletableFuture<Void> preload;
+        if (locations.isEmpty()) {
+            preload = CompletableFuture.completedFuture(null);
+        } else {
+            logGame(Level.INFO, "区块", "开始异步预热落地区域，目标点=" + locations.size());
+            preload = ArenaChunkPreloader.preload(plugin, locations, 1, startChunkTickets)
+                    .exceptionally(error -> {
+                        preloadError.set(error);
+                        return null;
+                    });
+        }
+        startPreloadFuture = preload;
+        CompletableFuture<Void> gate = coordinatedStartGate;
+        CompletableFuture<Void> ready = gate == null ? preload : preload.thenCompose(unused -> gate);
+        ready.whenComplete((unused, ignored) ->
+                scheduler.runTask(plugin, () -> {
+                    if (!plugin.isLoaded() || getGameStageEnum() != GameStageEnum.LOADING) {
+                        releaseStartChunks();
+                        return;
+                    }
+                    Throwable error = preloadError.get();
+                    if (error != null)
+                        logGame(Level.WARNING, "区块", "预热未完全成功，将使用已加载区块 | " + error.getMessage());
+                    else if (!locations.isEmpty())
+                        logGame(Level.INFO, "区块", "落地区域预热完成，区块票=" + startChunkTickets.size());
+                    coordinatedStartGate = null;
+                    startGamePreparation();
+                }));
+    }
+
+    public final void coordinateStartWith(@NotNull CompletableFuture<Void> gate) {
+        coordinatedStartGate = gate;
+    }
+
+    public final @NotNull CompletableFuture<Void> getStartPreloadFuture() {
+        return startPreloadFuture;
+    }
+
+    protected final void releaseStartChunks() {
+        ArenaChunkPreloader.release(plugin, startChunkTickets);
     }
 
     public void resetPlayerHealthFoodEffectLevelInventory() {
@@ -234,6 +296,43 @@ public abstract class BaseGameInstance {
         teleportAllSpectators(getSpectatorSpawnLocation());
     }
 
+    /**
+     * Restores a published map template when one exists. New maps deliberately have no template until
+     * prepare publishes their first revision, so reopening the server must keep their editable draft
+     * world instead of deleting it and then failing a template copy.
+     */
+    public final void loadPublishedMapOrDraft(World.Environment environment) {
+        getGameConfig().initializeConfiguration(plugin.getFolder());
+        File template = new File(new File(plugin.getDataFolder(), "maps"), getWorldName());
+        if (getGameConfig().isPrepareReady() && template.isDirectory()) {
+            loadMap(environment);
+            return;
+        }
+
+        if (getGameConfig().isPrepareReady()) {
+            getGameConfig().beginPrepareDraft();
+            logGame(Level.SEVERE, "世界", "已发布地图缺少模板，已降为草稿并禁止开赛：" + template.getPath());
+        }
+        loadDraftWorld(environment);
+    }
+
+    private void loadDraftWorld(World.Environment environment) {
+        clearBossBars();
+        teleportAllSpectators(getLobbyLocation());
+        setGameStageEnum(GameStageEnum.END);
+        getGameHandler().unRegister();
+        logGame(Level.INFO, "世界", "加载 prepare 草稿 " + getWorldName());
+
+        if (!plugin.getWorldManager().loadWorld(getWorldName(), environment, false)) {
+            logGame(Level.SEVERE, "世界", "草稿世界加载失败：" + getWorldName());
+            return;
+        }
+
+        getGameHandler().register();
+        setGameStageEnum(GameStageEnum.WAITING);
+        logGame(Level.INFO, "世界", "草稿世界已就绪，等待 prepare 发布");
+    }
+
     /** True only when every instance backed by this same world is idle and the map can be reloaded safely. */
     public boolean canSaveMap() {
         if (getGameStageEnum() != GameStageEnum.WAITING)
@@ -272,24 +371,61 @@ public abstract class BaseGameInstance {
 
         File dataDirectory = new File(plugin.getDataFolder(), "maps");
         File target = new File(dataDirectory, getWorldName());
-
-        // Delete old world files stored in maps
-        plugin.getWorldManager().deleteWorldFiles(target);
-
         File source = plugin.getWorldManager().getWorldFolder(getWorldName());
+        String transaction = ".prepare-" + getWorldName() + "-" + UUID.randomUUID();
+        File staging = new File(dataDirectory, transaction + "-staging");
+        File backup = new File(dataDirectory, transaction + "-previous");
 
-        if (!plugin.getWorldManager().copyWorldFiles(source, target)) {
-            plugin.getWorldManager().deleteWorldFiles(target);
+        // Copy first, then swap directories. The last published template is not touched until a complete
+        // staging copy exists; if either move fails, restore it and keep the editable world intact.
+        if (!plugin.getWorldManager().copyWorldFiles(source, staging)) {
+            plugin.getWorldManager().deleteWorldFiles(staging);
             plugin.getWorldManager().loadWorld(getWorldName(), environment, false);
             setGameStageEnum(GameStageEnum.WAITING);
-            logGame(Level.SEVERE, "世界", "保存失败：无法写入地图模板，已保留并重新加载编辑世界 " + getWorldName());
+            logGame(Level.SEVERE, "世界", "发布失败：无法写入暂存模板，旧版本未改变 " + getWorldName());
+            return false;
+        }
+        try {
+            if (target.exists())
+                java.nio.file.Files.move(target.toPath(), backup.toPath());
+            java.nio.file.Files.move(staging.toPath(), target.toPath());
+        } catch (Exception exception) {
+            plugin.getWorldManager().deleteWorldFiles(staging);
+            try {
+                if (!target.exists() && backup.exists())
+                    java.nio.file.Files.move(backup.toPath(), target.toPath());
+            } catch (Exception rollback) {
+                logGame(Level.SEVERE, "世界", "发布回滚失败：" + rollback.getMessage());
+            }
+            plugin.getWorldManager().loadWorld(getWorldName(), environment, false);
+            setGameStageEnum(GameStageEnum.WAITING);
+            logGame(Level.SEVERE, "世界", "发布失败：模板切换失败，编辑世界已保留 | "
+                    + exception.getMessage());
             return false;
         }
         plugin.getWorldManager().deleteWorldFiles(source);
 
         loadMap(environment);
-        return getGameStageEnum() == GameStageEnum.WAITING
+        boolean loaded = getGameStageEnum() == GameStageEnum.WAITING
                 && plugin.getServer().getWorld(getWorldName()) != null;
+        if (loaded) {
+            plugin.getWorldManager().deleteWorldFiles(backup);
+            return true;
+        }
+
+        // A complete previous revision exists: put it back if the new snapshot cannot be reloaded.
+        if (backup.exists()) {
+            plugin.getWorldManager().deleteWorld(getWorldName(), true);
+            plugin.getWorldManager().deleteWorldFiles(target);
+            try {
+                java.nio.file.Files.move(backup.toPath(), target.toPath());
+                loadMap(environment);
+                logGame(Level.SEVERE, "世界", "新 revision 加载失败，已回滚到上一发布版本");
+            } catch (Exception rollback) {
+                logGame(Level.SEVERE, "世界", "新 revision 加载失败且回滚失败：" + rollback.getMessage());
+            }
+        }
+        return false;
     }
 
     private BossBar createBossBar(String title, BarColor color, BarStyle style) {
@@ -644,7 +780,8 @@ public abstract class BaseGameInstance {
         if (isSpectator(player)) {
             player.teleport(getSpectatorSpawnLocation());
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> player.setGameMode(GameMode.SPECTATOR));
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore,
+                    () -> applySpectatorGameMode(player));
         }
     }
 
@@ -652,7 +789,8 @@ public abstract class BaseGameInstance {
         for (Player player : getOnlineSpectators()) {
             player.teleport(location);
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> player.setGameMode(GameMode.SPECTATOR));
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore,
+                    () -> applySpectatorGameMode(player));
         }
     }
 
@@ -660,7 +798,17 @@ public abstract class BaseGameInstance {
         spectators.add(player.getUniqueId());
         player.teleport(getSpectatorSpawnLocation());
         ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> player.setGameMode(GameMode.SPECTATOR));
+        championshipsCore.getServer().getScheduler().runTask(championshipsCore,
+                () -> applySpectatorGameMode(player));
+    }
+
+    /** Applies the mode used by external spectators of this game. Most games use vanilla spectator mode. */
+    protected void applySpectatorGameMode(@NotNull Player player) {
+        player.setGameMode(GameMode.SPECTATOR);
+    }
+
+    /** Restores any per-game spectator state before the player leaves this game. */
+    protected void clearSpectatorGameMode(@NotNull Player player) {
     }
 
     public void removeAllSpectator() {
@@ -730,7 +878,10 @@ public abstract class BaseGameInstance {
             removePlayerFromBossBars(player);
             player.teleport(getLobbyLocation());
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> player.setGameMode(GameMode.ADVENTURE));
+            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                clearSpectatorGameMode(player);
+                player.setGameMode(GameMode.ADVENTURE);
+            });
             player.setLevel(0);
         }
     }

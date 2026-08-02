@@ -238,6 +238,14 @@ public abstract class BaseConfigurationFile {
      * {@link #loadFromConfiguration} and {@link ink.ziip.championshipscore.api.game.config.BaseGameConfig#loadFromConfiguration}.
      */
     protected Object coerceLocationSection(Object value, Field field) {
+        return coerceLocationSection(value, field, true);
+    }
+
+    /**
+     * Converts a raw location section while allowing map configs to defer world resolution until their
+     * template world has been loaded. Global configuration still validates unresolved worlds immediately.
+     */
+    protected Object coerceLocationSection(Object value, Field field, boolean reportMissingWorld) {
         if (value instanceof ConfigurationSection && field.getType() == Location.class) {
             ConfigurationSection section = (ConfigurationSection) value;
             World world = null;
@@ -249,7 +257,7 @@ public abstract class BaseConfigurationFile {
                 worldIdentifier = section.getString("world");
                 world = plugin.getServer().getWorld(worldIdentifier);
             }
-            if (world == null && worldIdentifier != null && !loadingDefaults) {
+            if (world == null && worldIdentifier != null && !loadingDefaults && reportMissingWorld) {
                 // A world was configured but couldn't be resolved. Usually a stale world_key (e.g.
                 // minecraft:world after the 1.21.5+ migration to minecraft:overworld) or a typo. Warn
                 // loudly at load time instead of letting it surface later as a cryptic

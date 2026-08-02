@@ -21,18 +21,15 @@ public class TeamAddSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        if (args.length == 3) {
-            // TODO add pattern
-            if (plugin.getTeamManager().addTeam(args[0], args[1], args[2])) {
-                String message = MessageConfig.TEAM_SUCCESSFULLY_ADDED
-                        .replace("%team%", args[0]);
-                sender.sendMessage(message);
-            } else {
-                String message = MessageConfig.TEAM_ADDED_FAILED
-                        .replace("%team%", args[0])
-                        .replace("%reason%", MessageConfig.REASON_TEAM_ALREADY_EXIST);
-                sender.sendMessage(message);
-            }
+        if (plugin.getTeamManager().addTeam(args[0], args[1], args[2])) {
+            String message = MessageConfig.TEAM_SUCCESSFULLY_ADDED
+                    .replace("%team%", args[0]);
+            sender.sendMessage(message);
+        } else {
+            String message = MessageConfig.TEAM_ADDED_FAILED
+                    .replace("%team%", args[0])
+                    .replace("%reason%", MessageConfig.REASON_TEAM_ALREADY_EXIST);
+            sender.sendMessage(message);
         }
         return true;
     }

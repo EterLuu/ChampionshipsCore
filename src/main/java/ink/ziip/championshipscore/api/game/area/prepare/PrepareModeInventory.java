@@ -3,7 +3,6 @@ package ink.ziip.championshipscore.api.game.area.prepare;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -15,17 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Builds and refreshes the dedicated prepare-mode player inventory: a status item, a teleport-to-copy-0
- * control, an exit control, an untagged WorldEdit wand (so WE selection still works), and one item per
- * {@link PrepareStep} showing its current state. All step/control items are PDC-tagged via {@link PrepareKeys}
- * so {@code PrepareListener} can route clicks; the wand is deliberately left untagged so WorldEdit's own
- * interact handlers run.
+ * Builds and refreshes the dedicated prepare-mode hotbar. The hotbar contains the fixed controls and one
+ * entry point for the paged, single-row step menu; no step item is placed in the player's main inventory.
+ * The WorldEdit wand is deliberately left untagged so WorldEdit's own interact handlers run.
  */
 public final class PrepareModeInventory {
     private PrepareModeInventory() {
     }
 
-    /** Wipe the player's inventory completely and lay out the prepare items. */
+    /** Wipe the player's inventory completely and lay out the prepare hotbar. */
     public static void apply(@NotNull Player player, @NotNull PrepareSession session) {
         PlayerInventory inv = player.getInventory();
         inv.clear();
@@ -35,21 +32,43 @@ public final class PrepareModeInventory {
         refresh(player, session);
     }
 
-    /** Re-render the items (re-reads each step's state). Does not touch saved contents. */
+    /**
+     * Re-render the fixed controls without disturbing the spare hotbar slots used for creative-mode
+     * building materials. The full inventory is only cleared when a prepare session starts.
+     */
     public static void refresh(@NotNull Player player, @NotNull PrepareSession session) {
         PlayerInventory inv = player.getInventory();
         inv.setItem(0, statusItem(player, session));
         inv.setItem(1, teleportItem(session));
-        inv.setItem(2, exitItem());
-        inv.setItem(3, wandItem());
+        inv.setItem(2, stepsItem(session));
+        inv.setItem(3, validateItem());
+        inv.setItem(4, publishItem(session));
+        if (session.requiresWorldEdit()) inv.setItem(5, wandItem());
+        inv.setItem(8, exitItem());
+    }
 
-        List<PrepareStep> steps = session.getSteps();
-        for (int i = 0; i < steps.size() && (4 + i) < 36; i++) {
-            inv.setItem(4 + i, stepItem(session, steps.get(i)));
+    /** Slots reserved for prepare controls and therefore never valid creative pick-block targets. */
+    public static boolean isControlSlot(@NotNull PrepareSession session, int slot) {
+        return switch (slot) {
+            case 0, 1, 2, 3, 4, 8 -> true;
+            case 5 -> session.requiresWorldEdit();
+            default -> false;
+        };
+    }
+
+    /**
+     * Finds a safe hotbar target for creative pick-block. Prefer an empty spare slot, then reuse a
+     * spare material slot rather than ever overwriting a prepare control.
+     */
+    public static int creativePickTarget(@NotNull Player player, @NotNull PrepareSession session) {
+        PlayerInventory inv = player.getInventory();
+        for (int slot = 0; slot < 9; slot++) {
+            if (!isControlSlot(session, slot) && inv.getItem(slot) == null) return slot;
         }
-        for (int i = 4 + steps.size(); i < 36; i++) {
-            inv.setItem(i, null);
+        for (int slot = 0; slot < 9; slot++) {
+            if (!isControlSlot(session, slot)) return slot;
         }
+        return -1;
     }
 
     private static ItemStack statusItem(@NotNull Player player, @NotNull PrepareSession session) {
@@ -59,10 +78,13 @@ public final class PrepareModeInventory {
         int total = session.totalSteps();
 
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("游戏：" + game + "   场地：" + session.getAreaName()).color(NamedTextColor.GRAY));
+        lore.add(Component.text("游戏：" + game + "   地图：" + session.getAreaName()).color(NamedTextColor.GRAY));
         lore.add(Component.text("目标世界：" + session.getFlow().worldName(session.getTarget())
                         + (inWorld ? "  ✅ 已在正确世界" : "  ❌ 请前往该世界")).color(inWorld ? NamedTextColor.GREEN : NamedTextColor.RED));
         lore.add(Component.text("进度：" + done + "/" + total).color(NamedTextColor.AQUA));
+        lore.add(Component.text(session.getTarget().config().isPrepareReady()
+                ? "状态：✅ 已发布" : "状态：⚠ 草稿 / 有未发布修改")
+                .color(session.getTarget().config().isPrepareReady() ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
 
         List<String> pending = new ArrayList<>();
         for (PrepareStep step : session.getSteps()) {
@@ -78,11 +100,21 @@ public final class PrepareModeInventory {
     }
 
     private static ItemStack teleportItem(@NotNull PrepareSession session) {
+        String destination = session.getFlow().editorLocationName(session.getTarget());
         ItemStack item = PrepareKeys.item(Material.ENDER_PEARL,
-                Component.text("传送至 0 号场地").color(NamedTextColor.AQUA),
+                Component.text("传送至 " + destination).color(NamedTextColor.AQUA),
                 List.of(Component.text("前往 " + session.getFlow().worldName(session.getTarget())
-                        + " 世界 / 回到 0 号场地").color(NamedTextColor.GRAY)));
+                        + " 世界 / 前往 " + destination).color(NamedTextColor.GRAY)));
         PrepareKeys.setAction(item, "teleport");
+        return item;
+    }
+
+    private static ItemStack stepsItem(@NotNull PrepareSession session) {
+        ItemStack item = PrepareKeys.item(Material.CHEST,
+                Component.text("编辑准备步骤").color(NamedTextColor.AQUA),
+                List.of(Component.text("打开单行步骤菜单").color(NamedTextColor.GRAY),
+                        Component.text("步骤数量：" + session.totalSteps()).color(NamedTextColor.GRAY)));
+        PrepareKeys.setAction(item, "steps");
         return item;
     }
 
@@ -94,29 +126,30 @@ public final class PrepareModeInventory {
         return item;
     }
 
+    private static ItemStack validateItem() {
+        ItemStack item = PrepareKeys.item(Material.SPYGLASS,
+                Component.text("校验地图").color(NamedTextColor.YELLOW),
+                List.of(Component.text("列出所有未完成的必需步骤").color(NamedTextColor.GRAY)));
+        PrepareKeys.setAction(item, "validate");
+        return item;
+    }
+
+    private static ItemStack publishItem(PrepareSession session) {
+        boolean ready = session.getTarget().config().isPrepareReady();
+        ItemStack item = PrepareKeys.item(ready ? Material.LIME_DYE : Material.YELLOW_DYE,
+                Component.text(ready ? "地图已发布" : "验证并发布")
+                        .color(ready ? NamedTextColor.GREEN : NamedTextColor.GOLD),
+                List.of(Component.text(ready ? "再次发布会生成新的 revision" : "校验通过后固化世界并允许开赛")
+                        .color(NamedTextColor.GRAY)));
+        PrepareKeys.setAction(item, "publish");
+        return item;
+    }
+
     /** Untagged on purpose: WorldEdit's wand interact handlers must not be cancelled. */
     private static ItemStack wandItem() {
         return PrepareKeys.item(Material.WOODEN_AXE,
                 Component.text("WorldEdit 选区工具").color(NamedTextColor.GOLD),
                 List.of(Component.text("左键选 pos1，右键选 pos2（用于边界/模板步骤）").color(NamedTextColor.GRAY)));
-    }
-
-    private static ItemStack stepItem(@NotNull PrepareSession session, @NotNull PrepareStep step) {
-        List<Component> lore = new ArrayList<>();
-        lore.add(step.description().color(NamedTextColor.GRAY));
-        lore.add(Component.text(statusText(session, step)).color(step.isSet(session) ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
-        ItemStack item = PrepareKeys.item(step.icon(), step.displayName().color(NamedTextColor.WHITE), lore);
-        PrepareKeys.setStep(item, step.key());
-        return item;
-    }
-
-    private static String statusText(@NotNull PrepareSession session, @NotNull PrepareStep step) {
-        return switch (step.captureType()) {
-            case CONFIRM_WORLD -> session.isWorldConfirmed() ? "✅ 已确认所在世界" : "⬜ 未确认";
-            case STAMP -> session.isStamped() ? "✅ 已盖章生成" : "⬜ 未盖章";
-            case LIST -> step.isSet(session) ? ("✅ 已设置（" + step.listCount(session) + " 个）") : "⬜ 未设置";
-            default -> step.isSet(session) ? "✅ 已设置" : "⬜ 未设置";
-        };
     }
 
     private static String plain(Component c) {

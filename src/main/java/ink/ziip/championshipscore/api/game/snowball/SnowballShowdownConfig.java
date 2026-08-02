@@ -41,4 +41,12 @@ public class SnowballShowdownConfig extends BaseGameConfig {
 
     @ConfigOption(path = "player-spawn-points")
     private ConfigurationSection playerSpawnPoints;
+
+    /** Ensures newly-created maps have the section used by the prepare list steps. */
+    public ConfigurationSection ensurePlayerSpawnPoints() {
+        if (playerSpawnPoints == null) {
+            playerSpawnPoints = configuration.createSection("player-spawn-points");
+        }
+        return playerSpawnPoints;
+    }
 }

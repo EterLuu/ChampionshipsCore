@@ -116,7 +116,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         // resolve through a Location cached against the world instance which is about to be unloaded.
         mapGeometry = null;
         resolvedVariant = null;
-        loadMap(World.Environment.NORMAL);
+        loadPublishedMapOrDraft(World.Environment.NORMAL);
         resolvedVariant = resolveVariant();
         mapGeometry = getGameConfig().resolveMapGeometry();
         reloadShrinkTimes();

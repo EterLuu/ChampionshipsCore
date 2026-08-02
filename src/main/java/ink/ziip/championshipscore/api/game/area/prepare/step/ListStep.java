@@ -46,15 +46,15 @@ public class ListStep extends PrepareStep {
 
     @Override
     public String listAdd(@NotNull PrepareSession session, @NotNull Player player) {
-        adder.accept(session.getTarget(), Utils.getLocationConfigString(player.getLocation()));
-        session.getTarget().config().saveOptions();
+        adder.accept(session.getTarget(), Utils.getLocationConfigString(Utils.centerOnBlock(player.getLocation())));
+        session.markDirty();
         return Utils.formatAdminSuccess("已添加点位 &#696969• &#ededed当前 &#fff566" + listCount(session) + " &#ededed个");
     }
 
     @Override
     public String listClear(@NotNull PrepareSession session, @NotNull Player player) {
         clearer.accept(session.getTarget());
-        session.getTarget().config().saveOptions();
+        session.markDirty();
         return Utils.formatAdminSuccess("已清空点位列表。");
     }
 

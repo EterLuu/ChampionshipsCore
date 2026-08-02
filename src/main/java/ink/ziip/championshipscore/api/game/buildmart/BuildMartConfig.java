@@ -2,6 +2,9 @@ package ink.ziip.championshipscore.api.game.buildmart;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
+import ink.ziip.championshipscore.api.game.arena.ArenaLayoutPlanner;
+import ink.ziip.championshipscore.api.game.arena.RingArenaGrid;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.util.Utils;
@@ -31,7 +34,7 @@ public class BuildMartConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 4;
+        return 5;
     }
 
     @ConfigOption(path = "name")
@@ -56,6 +59,36 @@ public class BuildMartConfig extends BaseGameConfig {
     /** Number of internal team-base replicas physically stamped into this map. */
     @ConfigOption(path = "base-count")
     private int baseCount = 8;
+
+    @ConfigOption(path = "copy-layout.center", nullable = true)
+    private Vector copyLayoutCenter;
+
+    @ConfigOption(path = "copy-layout.spacing", nullable = true)
+    private Integer copyLayoutSpacing;
+
+    @ConfigOption(path = "copy-layout.hub-size", nullable = true)
+    private Vector hubSchematicSize;
+
+    @ConfigOption(path = "copy-layout.base-size", nullable = true)
+    private Vector baseSchematicSize;
+
+    public @NotNull ArenaGrid getBaseGrid() {
+        Vector center = getHubOrigin();
+        int spacing = copyLayoutSpacing == null ? BuildMartLayout.SPACING : copyLayoutSpacing;
+        return new RingArenaGrid(center, spacing);
+    }
+
+    public @NotNull Vector getHubOrigin() {
+        return (copyLayoutCenter == null ? BuildMartLayout.HUB : copyLayoutCenter).clone();
+    }
+
+    public @NotNull ArenaGrid prepareBaseGrid(@NotNull Vector hubSize, @NotNull Vector baseSize) {
+        copyLayoutCenter = BuildMartLayout.HUB.clone();
+        copyLayoutSpacing = ArenaLayoutPlanner.ringSpacing(hubSize, baseSize);
+        hubSchematicSize = hubSize.clone();
+        baseSchematicSize = baseSize.clone();
+        return getBaseGrid();
+    }
 
     @ConfigOption(path = "area-pos1", nullable = true)
     private Vector areaPos1;
@@ -149,6 +182,16 @@ public class BuildMartConfig extends BaseGameConfig {
             plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, areaName, "配置", "保存",
                     "无法保存基地坐标 | " + exception.getMessage()));
         }
+    }
+
+    public boolean hasBaseLocation(@NotNull String key) {
+        return configuration != null && !configuration.getString("base." + key, "").isBlank();
+    }
+
+    public void invalidateMovedBaseGeometry() {
+        if (configuration != null) configuration.set("base", null);
+        areaPos1 = null;
+        areaPos2 = null;
     }
 
     @Override

@@ -28,6 +28,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,7 +103,21 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
     private ParkourTagGeometry configuredGeometry(int index) {
         return new ReplicatedSpatialLayout<>(ParkourTagGeometry.from(getGameConfig()),
-                ParkourTagLayout.GRID, getGameConfig().getCopyCount()).geometry(index);
+                getGameConfig().getCopyGrid(), getGameConfig().getCopyCount()).geometry(index);
+    }
+
+    @Override
+    protected Collection<Location> getStartPreloadLocations() {
+        if (match == null) return List.of();
+        List<Location> locations = new ArrayList<>();
+        locations.add(match.getRightPreSpawn());
+        locations.add(match.getLeftPreSpawn());
+        locations.add(match.getSpectatorSpawn());
+        locations.add(match.getLeftAreaChaserSpawn());
+        locations.add(match.getRightAreaChaserSpawn());
+        locations.addAll(match.getLeftAreaEscapeeSpawns());
+        locations.addAll(match.getRightAreaEscapeeSpawns());
+        return locations;
     }
 
     @Nullable
@@ -267,7 +283,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         Location configured = ThreadLocalRandom.current().nextInt(2) == 0
                 ? getGameConfig().getLeftAreaChaserSpawnPoint()
                 : getGameConfig().getRightAreaChaserSpawnPoint();
-        return ParkourTagLayout.GRID.transform(copyIndex).apply(configured);
+        return getGameConfig().getCopyGrid().transform(copyIndex).apply(configured);
     }
 
     @Override

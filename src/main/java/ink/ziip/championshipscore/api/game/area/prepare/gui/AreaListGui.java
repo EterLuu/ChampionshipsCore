@@ -1,6 +1,5 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
-import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -70,16 +69,20 @@ public final class AreaListGui {
 
         int slot = 0;
         for (String name : names) {
-            BaseGameInstance area = areaManager.getArea(name);
+            var target = areaManager.getSetupTarget(gameType, name);
             int done = 0, total = 0;
-            if (flow != null && area != null) {
-                PrepareSession preview = new PrepareSession(manager.getPlugin(), gameType, name, area, flow);
+            if (flow != null && target != null) {
+                PrepareSession preview = new PrepareSession(manager.getPlugin(), gameType, name, target, flow);
                 done = preview.configDone();
                 total = preview.configTotal();
             }
             ItemStack item = PrepareKeys.item(Material.PAPER,
                     Component.text(name).color(NamedTextColor.WHITE),
                     List.of(Component.text("配置进度：" + done + "/" + total).color(NamedTextColor.GRAY),
+                            Component.text(target != null && target.config().isPrepareReady()
+                                    ? "✅ 已发布" : "⚠ 草稿 / 有未发布修改").color(
+                                    target != null && target.config().isPrepareReady()
+                                            ? NamedTextColor.GREEN : NamedTextColor.YELLOW),
                             Component.text("点击进入编辑").color(NamedTextColor.AQUA)));
             inv.setItem(slot, item);
             holder.slotToArea.put(slot, name);
@@ -88,8 +91,8 @@ public final class AreaListGui {
 
         holder.newSlot = slot;
         inv.setItem(slot, PrepareKeys.item(Material.EMERALD,
-                Component.text("新建场地").color(NamedTextColor.GREEN),
-                List.of(Component.text("点击后输入场地名").color(NamedTextColor.GRAY))));
+                Component.text("新建地图").color(NamedTextColor.GREEN),
+                List.of(Component.text("点击后输入地图名").color(NamedTextColor.GRAY))));
 
         holder.closeSlot = rows * 9 - 1;
         inv.setItem(holder.closeSlot, PrepareKeys.item(Material.BARRIER,

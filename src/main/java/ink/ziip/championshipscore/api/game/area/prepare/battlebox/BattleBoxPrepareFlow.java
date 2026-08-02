@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.SchematicStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StampStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
+import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxConfig;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxLayout;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
@@ -25,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * Battle Box's prepare flow: the full schematic -> stamp -> set-every-point sequence. Copy 0 is pasted at
@@ -33,9 +33,6 @@ import java.util.function.Function;
  * time, so the admin only configures copy 0. Each map definition owns its own physical world.
  */
 public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
-
-    private static final Function<ChampionshipsCore, File> SCHEMATIC =
-            plugin -> new File(new File(new File(plugin.getDataFolder(), "battlebox"), "schematics"), "arena.schem");
 
     @Override
     public @NotNull String worldName(@NotNull SetupTarget target) {
@@ -52,21 +49,29 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
     public @NotNull Location copyZeroLocation(@NotNull SetupTarget target) {
         World w = Bukkit.getWorld(target.worldName());
         if (w == null) return CCConfig.LOBBY_LOCATION;
-        return BattleBoxLayout.FIRST.toLocation(w);
+        return cfg(target).getCopyGrid().origin(0).toLocation(w);
     }
 
     @Override
     public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
+        File schematic = new File(new File(new File(new File(target.plugin().getDataFolder(),
+                "battlebox"), "schematics"), target.name()), "arena.schem");
 
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
-        steps.add(new SchematicStep(SCHEMATIC,
+        steps.add(new SchematicStep(plugin -> schematic,
                 Component.text("保存场地模板"),
                 Component.text("用 WorldEdit 选取整个场地后点击，保存为 arena.schem")));
 
-        steps.add(new StampStep(SCHEMATIC, BattleBoxLayout.GRID,
-                (a, count) -> cfg(a).setCopyCount(count)));
+        steps.add(StampStep.adaptive(plugin -> schematic,
+                (a, size) -> cfg(a).prepareCopyGrid(size),
+                (a, count) -> cfg(a).setCopyCount(count),
+                (session, world) -> {
+                    BattleBoxConfig previous = cfg(session.getTarget());
+                    ArenaPreparer.clearCopies(session.getPlugin(), world, previous.getCopyGrid(),
+                            previous.getCopyCount(), previous.getCopySize());
+                }));
 
         steps.add(new WeSelectionStep("area_pos",
                 Component.text("0 号模板边界"),

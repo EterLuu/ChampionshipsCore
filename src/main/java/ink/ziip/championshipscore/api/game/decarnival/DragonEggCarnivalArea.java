@@ -60,7 +60,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
     /** Preloads a clean arena at startup and after a full game or an internal best-of-five round. */
     public void preloadMap() {
-        loadMap(World.Environment.THE_END);
+        loadPublishedMapOrDraft(World.Environment.THE_END);
     }
 
     @Override

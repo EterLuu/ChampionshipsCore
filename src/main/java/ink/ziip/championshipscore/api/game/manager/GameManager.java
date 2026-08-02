@@ -12,6 +12,8 @@ import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoManager;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartManager;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
+import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltManager;
+import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltArea;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
@@ -62,6 +64,8 @@ public class GameManager extends BaseManager {
     private final BingoManager bingoManager;
     @Getter
     private final BuildMartManager buildMartManager;
+    @Getter
+    private final DodgeboltManager dodgeboltManager;
     /**
      * Registry mapping each game type to its area manager. Drives the generic
      * {@code join*} dispatch so adding a game only requires registering it here.
@@ -69,6 +73,8 @@ public class GameManager extends BaseManager {
     private final Map<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> areaManagers = new EnumMap<>(GameTypeEnum.class);
     /** Lazily parsed from {@link CCConfig#ENABLED_GAMES}; see {@link #getEnabledGames()}. */
     private Set<GameTypeEnum> enabledGames;
+    /** Managers that have actually been loaded, including disabled games opened through map editing. */
+    private final Set<GameTypeEnum> loadedGameManagers = EnumSet.noneOf(GameTypeEnum.class);
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -84,6 +90,7 @@ public class GameManager extends BaseManager {
         hotyCodyDuskyManager = new HotyCodyDuskyManager(plugin);
         bingoManager = new BingoManager(plugin);
         buildMartManager = new BuildMartManager(plugin);
+        dodgeboltManager = new DodgeboltManager(plugin);
 
         areaManagers.put(GameTypeEnum.Bingo, bingoManager);
         areaManagers.put(GameTypeEnum.BuildMart, buildMartManager);
@@ -96,6 +103,7 @@ public class GameManager extends BaseManager {
         areaManagers.put(GameTypeEnum.SnowballShowdown, snowballShowdownManager);
         areaManagers.put(GameTypeEnum.ParkourWarrior, parkourWarriorManager);
         areaManagers.put(GameTypeEnum.HotyCodyDusky, hotyCodyDuskyManager);
+        areaManagers.put(GameTypeEnum.Dodgebolt, dodgeboltManager);
     }
 
     /**
@@ -104,6 +112,29 @@ public class GameManager extends BaseManager {
     @Nullable
     public BaseGameInstanceManager<? extends BaseGameInstance> getAreaManager(GameTypeEnum gameTypeEnum) {
         return areaManagers.get(gameTypeEnum);
+    }
+
+    public boolean isGameManagerLoaded(@NotNull GameTypeEnum gameTypeEnum) {
+        return loadedGameManagers.contains(gameTypeEnum);
+    }
+
+    /**
+     * Loads an otherwise disabled game's manager for map preparation. The operation is idempotent so
+     * reopening its map UI cannot register worlds, listeners, or runtime instances twice.
+     *
+     * @return true when a load was started; false when the manager was already available or absent.
+     */
+    public boolean loadGameForEditing(@NotNull GameTypeEnum gameTypeEnum) {
+        return loadGameManager(gameTypeEnum);
+    }
+
+    private boolean loadGameManager(@NotNull GameTypeEnum gameTypeEnum) {
+        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
+        if (manager == null || !loadedGameManagers.add(gameTypeEnum)) return false;
+        manager.load();
+        plugin.getLogger().log(Level.INFO, Utils.formatGameLog(gameTypeEnum, "-", "加载", "完成",
+                "地图管理器已加载"));
+        return true;
     }
 
     /**
@@ -151,11 +182,11 @@ public class GameManager extends BaseManager {
 
     @Override
     public void load() {
-        for (Map.Entry<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> entry : areaManagers.entrySet()) {
-            if (isGameEnabled(entry.getKey())) {
-                entry.getValue().load();
+        for (GameTypeEnum gameType : areaManagers.keySet()) {
+            if (isGameEnabled(gameType)) {
+                loadGameManager(gameType);
             } else {
-                plugin.getLogger().log(Level.INFO, Utils.formatGameLog(entry.getKey(), "-", "加载", "跳过",
+                plugin.getLogger().log(Level.INFO, Utils.formatGameLog(gameType, "-", "加载", "跳过",
                         "游戏未启用，不加载场地与世界"));
             }
         }
@@ -165,10 +196,12 @@ public class GameManager extends BaseManager {
 
     @Override
     public void unload() {
-        for (Map.Entry<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> entry : areaManagers.entrySet()) {
-            if (isGameEnabled(entry.getKey()))
-                entry.getValue().unload();
+        for (GameTypeEnum gameType : EnumSet.copyOf(loadedGameManagers)) {
+            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            if (manager != null) manager.unload();
         }
+        loadedGameManagers.clear();
+        enabledGames = null;
 
         gameManagerHandler.unRegister();
     }
@@ -192,10 +225,35 @@ public class GameManager extends BaseManager {
         return joinTeamArea(gameTypeEnum, area, rightChampionshipTeam, leftChampionshipTeam, true);
     }
 
+    /** Starts the non-scoring final and records which finalist owns both opening arrows. */
+    public boolean joinDodgeboltArea(@NotNull String area, @NotNull ChampionshipTeam rightTeam,
+                                     @NotNull ChampionshipTeam leftTeam,
+                                     @NotNull ChampionshipTeam higherSeed, boolean showIntroduction) {
+        DodgeboltArea instance = dodgeboltManager.getArea(area);
+        if (instance == null || (!higherSeed.equals(rightTeam) && !higherSeed.equals(leftTeam))) return false;
+        instance.setFirstRoundArrowTeam(higherSeed);
+        boolean started = joinTeamArea(GameTypeEnum.Dodgebolt, area, rightTeam, leftTeam, showIntroduction);
+        if (!started) instance.setFirstRoundArrowTeam(null);
+        return started;
+    }
+
+    /** Moves every online non-finalist into the final's spectator set without strict-spectator checks. */
+    public void spectateDodgeboltFinal(@NotNull DodgeboltArea area,
+                                       @NotNull ChampionshipTeam rightTeam,
+                                       @NotNull ChampionshipTeam leftTeam) {
+        for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+            if (rightTeam.isTeamMember(player) || leftTeam.isTeamMember(player)) continue;
+            if (playerSpectatorStatus.containsKey(player.getUniqueId())) leaveSpectating(player);
+            spectateArea(player, area);
+        }
+    }
+
     public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                 @NotNull ChampionshipTeam rightChampionshipTeam,
                                 @NotNull ChampionshipTeam leftChampionshipTeam, boolean showIntroduction) {
         if (!isGameEnabled(gameTypeEnum))
+            return false;
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
             return false;
         for (UUID uuid : rightChampionshipTeam.getMembers()) {
             if (playerStatus.containsKey(uuid))
@@ -241,6 +299,8 @@ public class GameManager extends BaseManager {
                                                             @NotNull ChampionshipTeam... championshipTeams) {
         if (!isGameEnabled(gameTypeEnum))
             return false;
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
+            return false;
         for (ChampionshipTeam championshipTeam : championshipTeams) {
             if (teamStatus.containsKey(championshipTeam))
                 return false;
@@ -278,6 +338,8 @@ public class GameManager extends BaseManager {
     public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                                               List<UUID> players, boolean showIntroduction) {
         if (!isGameEnabled(gameTypeEnum))
+            return false;
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
             return false;
         for (UUID playerUUID : players) {
             if (playerStatus.containsKey(playerUUID))
@@ -322,6 +384,8 @@ public class GameManager extends BaseManager {
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                                   boolean showIntroduction) {
         if (!isGameEnabled(gameTypeEnum))
+            return false;
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
             return false;
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
             if (teamStatus.containsKey(championshipTeam))
@@ -368,6 +432,8 @@ public class GameManager extends BaseManager {
             @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
         if (!isGameEnabled(GameTypeEnum.BattleBox))
             return null;
+        if (!plugin.getPrepareSessionManager().canStart(GameTypeEnum.BattleBox, area))
+            return null;
         if (pairs.isEmpty())
             return null;
         Set<ChampionshipTeam> teams = new LinkedHashSet<>();
@@ -393,6 +459,9 @@ public class GameManager extends BaseManager {
         if (selected.size() < pairs.size())
             return null;
 
+        java.util.concurrent.CompletableFuture<Void> startGate = new java.util.concurrent.CompletableFuture<>();
+        selected.forEach(instance -> instance.coordinateStartWith(startGate));
+
         for (ChampionshipTeam team : teams) {
             for (UUID uuid : team.getMembers()) {
                 removeSpectator(uuid);
@@ -404,6 +473,7 @@ public class GameManager extends BaseManager {
             TwoVTwoVector pair = pairs.get(i);
             instance.setIntroductionEnabledForNextStart(showIntroduction);
             if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
+                startGate.complete(null);
                 instance.setIntroductionEnabledForNextStart(true);
                 return null;
             }
@@ -412,6 +482,11 @@ public class GameManager extends BaseManager {
             addPlayerStatusByTeam(pair.getTeamOne(), instance);
             addPlayerStatusByTeam(pair.getTeamTwo(), instance);
         }
+        java.util.concurrent.CompletableFuture.allOf(selected.stream()
+                .map(BattleBoxArea::getStartPreloadFuture)
+                .toArray(java.util.concurrent.CompletableFuture[]::new))
+                .whenComplete((unused, error) -> plugin.getServer().getScheduler()
+                        .runTask(plugin, () -> startGate.complete(null)));
         return List.copyOf(selected);
     }
 
@@ -429,6 +504,8 @@ public class GameManager extends BaseManager {
     public synchronized @Nullable List<ParkourTagArea> joinParkourTagInstances(
             @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
         if (!isGameEnabled(GameTypeEnum.ParkourTag))
+            return null;
+        if (!plugin.getPrepareSessionManager().canStart(GameTypeEnum.ParkourTag, area))
             return null;
         if (pairs.isEmpty())
             return null;
@@ -455,6 +532,9 @@ public class GameManager extends BaseManager {
         if (selected.size() < pairs.size())
             return null;
 
+        java.util.concurrent.CompletableFuture<Void> startGate = new java.util.concurrent.CompletableFuture<>();
+        selected.forEach(instance -> instance.coordinateStartWith(startGate));
+
         for (ChampionshipTeam team : teams) {
             for (UUID uuid : team.getMembers()) {
                 removeSpectator(uuid);
@@ -466,6 +546,7 @@ public class GameManager extends BaseManager {
             TwoVTwoVector pair = pairs.get(i);
             instance.setIntroductionEnabledForNextStart(showIntroduction);
             if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
+                startGate.complete(null);
                 instance.setIntroductionEnabledForNextStart(true);
                 return null;
             }
@@ -474,6 +555,11 @@ public class GameManager extends BaseManager {
             addPlayerStatusByTeam(pair.getTeamOne(), instance);
             addPlayerStatusByTeam(pair.getTeamTwo(), instance);
         }
+        java.util.concurrent.CompletableFuture.allOf(selected.stream()
+                .map(ParkourTagArea::getStartPreloadFuture)
+                .toArray(java.util.concurrent.CompletableFuture[]::new))
+                .whenComplete((unused, error) -> plugin.getServer().getScheduler()
+                        .runTask(plugin, () -> startGate.complete(null)));
         return List.copyOf(selected);
     }
 

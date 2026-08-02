@@ -1,8 +1,10 @@
 dont-edit-this:
-  version: 4
+  version: 5
 world-name:
 timer: 60
 copy-count: 8
+# Filled by prepare from arena.schem. Missing values keep the legacy 256-block row for old maps.
+copy-layout: {}
 area-pos1:
 area-pos2:
 wool-pos1:

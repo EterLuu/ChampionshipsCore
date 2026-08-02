@@ -192,6 +192,18 @@ public class Utils {
         return "";
     }
 
+    /**
+     * Aligns a player-captured point with the horizontal centre of the block they occupy. Height and
+     * view direction deliberately remain untouched, because spawn surfaces may be slabs or otherwise
+     * sit between whole Y coordinates.
+     */
+    public static Location centerOnBlock(@NotNull Location location) {
+        Location centered = location.clone();
+        centered.setX(location.getBlockX() + 0.5D);
+        centered.setZ(location.getBlockZ() + 0.5D);
+        return centered;
+    }
+
     public static Color hex2rgb(String hexColor) {
         try {
             return Color.fromBGR(

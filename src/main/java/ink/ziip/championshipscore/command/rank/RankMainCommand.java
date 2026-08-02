@@ -14,7 +14,7 @@ import java.util.Arrays;
 
 public class RankMainCommand extends BaseMainCommand {
     public RankMainCommand() {
-        super("rank", "查看积分与排行");
+        super("rank", "查看积分与排行", PLAYER_PERMISSION);
         addSubCommand(new PlayerBoardSubCommand());
         addSubCommand(new TeamBoardSubCommand());
         addSubCommand(new GameWeightInfoSubCommand());
@@ -24,7 +24,10 @@ public class RankMainCommand extends BaseMainCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length < 1) {
-            Player player = (Player) sender;
+            if (!(sender instanceof Player player)) {
+                sendHelp(sender, false);
+                return true;
+            }
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam != null) {
                 RankManager rankManager = plugin.getRankManager();
@@ -44,11 +47,12 @@ public class RankMainCommand extends BaseMainCommand {
             return true;
         }
 
-        BaseMainCommand subCommand = subCommandMap.get(args[0]);
+        BaseMainCommand subCommand = findSubCommand(args[0]);
         if (subCommand != null) {
             return subCommand.onCommand(sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }
 
+        sendHelp(sender, false);
         return true;
     }
 }

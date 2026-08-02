@@ -15,6 +15,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +25,25 @@ import java.util.logging.Level;
 @Getter
 public abstract class BaseGameConfig extends BaseConfigurationFile {
     protected final String configName;
+
+    /**
+     * Prepare publication metadata. A missing published flag means an existing pre-refactor map and is
+     * treated as published for backwards compatibility; newly created maps explicitly enter draft mode.
+     */
+    @ConfigOption(path = "prepare.published", nullable = true)
+    protected Boolean preparePublished;
+
+    @ConfigOption(path = "prepare.dirty", nullable = true)
+    protected Boolean prepareDirty;
+
+    @ConfigOption(path = "prepare.revision", nullable = true)
+    protected Integer prepareRevision;
+
+    @ConfigOption(path = "prepare.published-at", nullable = true)
+    protected Long preparePublishedAt;
+
+    @ConfigOption(path = "prepare.world-built", nullable = true)
+    protected Boolean prepareWorldBuilt;
 
     public BaseGameConfig(@NotNull ChampionshipsCore plugin, String configName) {
         super(plugin);
@@ -36,6 +57,7 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
      */
     @Override
     public void initializeConfiguration(Path pluginFolder) {
+        normalizeSerializedLocations(pluginFolder.resolve(getFileName()));
         super.initializeConfiguration(pluginFolder);
         checkVersion(true);
     }
@@ -54,7 +76,11 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                 field.setAccessible(true);
                 ConfigOption co = field.getDeclaredAnnotation(ConfigOption.class);
                 if (co != null) {
-                    configuration.set(co.path(), field.get(this));
+                    if (field.getType() == Location.class) {
+                        saveRawLocation(co.path(), (Location) field.get(this));
+                    } else {
+                        configuration.set(co.path(), field.get(this));
+                    }
                 }
             }
 
@@ -63,6 +89,36 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
             plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "保存",
                     "配置文件=" + getFileName() + " 保存选项失败"), exception);
         }
+    }
+
+    /** Converts Bukkit's eager Location serializer into a raw section that also loads before its world. */
+    private void normalizeSerializedLocations(@NotNull Path file) {
+        try {
+            if (!Files.isRegularFile(file)) return;
+            String original = Files.readString(file, StandardCharsets.UTF_8);
+            String normalized = original.replaceAll("(?m)^[\\t ]*==: org\\.bukkit\\.Location\\R", "");
+            if (!normalized.equals(original)) Files.writeString(file, normalized, StandardCharsets.UTF_8);
+        } catch (Exception exception) {
+            plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("GameConfig", "迁移",
+                    "配置文件=" + getFileName() + " 无法规范化 Location 格式"), exception);
+        }
+    }
+
+    private void saveRawLocation(@NotNull String path, Location location) {
+        configuration.set(path, null);
+        if (location == null) return;
+        ConfigurationSection section = configuration.createSection(path);
+        if (location.getWorld() != null) section.set("world_key", location.getWorld().getKey().toString());
+        section.set("x", location.getX());
+        section.set("y", location.getY());
+        section.set("z", location.getZ());
+        section.set("pitch", location.getPitch());
+        section.set("yaw", location.getYaw());
+    }
+
+    @Override
+    protected Object coerceLocationSection(Object value, Field field) {
+        return coerceLocationSection(value, field, false);
     }
 
     @Override
@@ -154,6 +210,10 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     @ConfigOption(path = "introduction-spawn-point", nullable = true)
     protected Location introductionSpawnPoint;
 
+    public void setIntroductionSpawnPoint(Location introductionSpawnPoint) {
+        this.introductionSpawnPoint = introductionSpawnPoint;
+    }
+
     /**
      * Rule sections broadcast one-by-one in chat during the introduction phase; each inner list is one
      * message block. Leave empty to skip the introduction.
@@ -185,4 +245,51 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     public abstract Vector getAreaPos2();
 
     public abstract Location getSpectatorSpawnPoint();
+
+    /** Existing maps without lifecycle metadata remain playable. */
+    public boolean isPreparePublished() {
+        return preparePublished == null || preparePublished;
+    }
+
+    public boolean isPrepareDirty() {
+        return Boolean.TRUE.equals(prepareDirty);
+    }
+
+    public boolean isPrepareReady() {
+        return isPreparePublished() && !isPrepareDirty();
+    }
+
+    /** Called only for a newly created map, so an incomplete map can never be started accidentally. */
+    public void beginPrepareDraft() {
+        preparePublished = false;
+        prepareDirty = true;
+        prepareWorldBuilt = false;
+        if (prepareRevision == null) prepareRevision = 0;
+        saveOptions();
+    }
+
+    /** Any guided edit invalidates the last published revision until the admin validates and publishes. */
+    public void markPrepareDirty() {
+        prepareDirty = true;
+        saveOptions();
+    }
+
+    public void markPreparePublished() {
+        preparePublished = true;
+        prepareDirty = false;
+        prepareRevision = (prepareRevision == null ? 0 : prepareRevision) + 1;
+        preparePublishedAt = System.currentTimeMillis();
+        saveOptions();
+    }
+
+    /** Missing metadata means an existing legacy map whose world was already built. */
+    public boolean isPrepareWorldBuilt() {
+        return prepareWorldBuilt == null || prepareWorldBuilt;
+    }
+
+    public void markPrepareWorldBuilt() {
+        prepareWorldBuilt = true;
+        prepareDirty = true;
+        saveOptions();
+    }
 }

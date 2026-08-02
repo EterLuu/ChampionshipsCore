@@ -10,6 +10,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 
@@ -56,6 +57,14 @@ public class GameInstanceHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Player player = event.getPlayer();
         if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
             event.setCancelled(true);
@@ -110,7 +119,7 @@ public class GameInstanceHandler extends BaseListener {
             return;
         }
         if (baseArea.isSpectator(player)) {
-            if (!baseArea.isSpectatorLocationAllowed(player.getLocation())) {
+            if (event.getTo() != null && !baseArea.isSpectatorLocationAllowed(event.getTo())) {
                 player.teleport(baseArea.getSpectatorSpawnLocation());
             }
         }

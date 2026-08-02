@@ -23,7 +23,12 @@ public class SchematicStep extends PrepareStep {
 
     public SchematicStep(@NotNull Function<ChampionshipsCore, File> fileResolver,
                          @NotNull Component name, @NotNull Component description) {
-        super("schematic", name, description, Material.STRUCTURE_BLOCK, StepCaptureType.SCHEMATIC);
+        this("schematic", fileResolver, name, description);
+    }
+
+    public SchematicStep(@NotNull String key, @NotNull Function<ChampionshipsCore, File> fileResolver,
+                         @NotNull Component name, @NotNull Component description) {
+        super(key, name, description, Material.STRUCTURE_BLOCK, StepCaptureType.SCHEMATIC);
         this.fileResolver = fileResolver;
     }
 
@@ -33,7 +38,11 @@ public class SchematicStep extends PrepareStep {
 
     @Override
     public boolean isSet(PrepareSession session) {
-        return session != null && file(session).isFile();
+        // Legacy/published maps already have a complete physical world even if their original source
+        // schematic predates per-map asset storage. New drafts set world-built=false and therefore still
+        // require the explicit schematic -> stamp sequence.
+        return session != null && (file(session).isFile()
+                || session.getTarget().config().isPrepareWorldBuilt());
     }
 
     @Override
@@ -46,6 +55,7 @@ public class SchematicStep extends PrepareStep {
         } catch (Exception e) {
             return Utils.formatAdminError("保存模板失败，请检查 WorldEdit 选区：&#fff566" + e.getMessage());
         }
+        session.markDirty();
         return Utils.formatAdminSuccess("已保存场地模板：&#fff566" + file.getName());
     }
 }

@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 2
+  version: 3
 name: "area"
 timer: 180
 spectator-spawn-point:
@@ -14,6 +14,8 @@ area-pos2:
 # copy-size = one copy's block dimensions (auto-recorded, used to derive each copy's boundary box).
 copies: 0
 copy-size:
+# Filled by prepare; old maps without these values keep the legacy 1000-block row.
+copy-layout: {}
 copy-spawn:
 # Legacy explicit per-copy spawn list (pre-prepare areas). Leave empty when using copy-spawn + copies.
 player-spawn-points: [ ]

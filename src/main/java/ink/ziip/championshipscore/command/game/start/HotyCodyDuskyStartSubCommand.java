@@ -59,10 +59,10 @@ public class HotyCodyDuskyStartSubCommand extends BaseSubCommand {
         List<String> returnList;
         if (args.length == 1) {
             returnList = plugin.getGameManager().getHotyCodyDuskyManager().getAreaNameList();
-            returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
+            returnList = filterStartsWith(returnList, args[0]);
         } else {
             returnList = plugin.getTeamManager().getTeamNameList();
-            returnList.removeIf(s -> s != null && !s.startsWith(args[args.length - 1]));
+            returnList = filterStartsWith(returnList, args[args.length - 1]);
         }
         return returnList;
     }

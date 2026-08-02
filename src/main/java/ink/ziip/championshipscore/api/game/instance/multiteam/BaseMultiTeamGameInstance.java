@@ -31,6 +31,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
 
     @Override
     public void resetBaseArea() {
+        releaseStartChunks();
         resetArea();
         gameTeams.clear();
         gamePlayers.clear();
@@ -47,7 +48,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
             gamePlayers.addAll(championshipTeam.getMembers());
         }
 
-        startGamePreparation();
+        startGamePreparationAfterPreload();
         return true;
     }
 
@@ -60,7 +61,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
 
         gamePlayers.addAll(players);
 
-        startGamePreparation();
+        startGamePreparationAfterPreload();
         return true;
     }
 

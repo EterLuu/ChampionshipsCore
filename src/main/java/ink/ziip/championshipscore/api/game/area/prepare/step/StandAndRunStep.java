@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
+import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -41,8 +42,8 @@ public class StandAndRunStep extends PrepareStep {
 
     @Override
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
-        setter.accept(session.getTarget(), player.getLocation());
-        session.getTarget().config().saveOptions();
+        setter.accept(session.getTarget(), Utils.centerOnBlock(player.getLocation()));
+        session.markDirty();
         return doneMessage;
     }
 }

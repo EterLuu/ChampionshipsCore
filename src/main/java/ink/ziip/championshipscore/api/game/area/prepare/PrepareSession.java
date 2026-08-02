@@ -1,8 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
-import ink.ziip.championshipscore.api.game.setup.AreaBackedSetupTarget;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import org.jetbrains.annotations.NotNull;
@@ -27,11 +25,6 @@ public class PrepareSession {
     private boolean stamped;
 
     public PrepareSession(@NotNull ChampionshipsCore plugin, @NotNull GameTypeEnum gameType,
-                          @NotNull String areaName, @NotNull BaseGameInstance area, @NotNull PrepareFlowDefinition flow) {
-        this(plugin, gameType, areaName, new AreaBackedSetupTarget(plugin, gameType, areaName, area), flow);
-    }
-
-    public PrepareSession(@NotNull ChampionshipsCore plugin, @NotNull GameTypeEnum gameType,
                           @NotNull String areaName, @NotNull SetupTarget target, @NotNull PrepareFlowDefinition flow) {
         this.plugin = plugin;
         this.gameType = gameType;
@@ -39,6 +32,7 @@ public class PrepareSession {
         this.target = target;
         this.flow = flow;
         this.steps = flow.buildSteps(target);
+        this.stamped = target.config().isPrepareWorldBuilt();
     }
 
     public ChampionshipsCore getPlugin() {
@@ -63,6 +57,11 @@ public class PrepareSession {
 
     public List<PrepareStep> getSteps() {
         return steps;
+    }
+
+    /** True when at least one actual step needs a WorldEdit selection. */
+    public boolean requiresWorldEdit() {
+        return steps.stream().anyMatch(PrepareStep::requiresWorldEdit);
     }
 
     public @Nullable PrepareStep step(@NotNull String key) {
@@ -118,5 +117,9 @@ public class PrepareSession {
             if (step.captureType() != StepCaptureType.CONFIRM_WORLD && step.isSet(this)) n++;
         }
         return n;
+    }
+
+    public void markDirty() {
+        target.config().markPrepareDirty();
     }
 }

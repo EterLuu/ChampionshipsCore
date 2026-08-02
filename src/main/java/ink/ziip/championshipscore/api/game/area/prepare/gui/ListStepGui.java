@@ -61,8 +61,8 @@ public final class ListStepGui {
     }
 
     private static void refresh(@NotNull Inventory inv, @NotNull PrepareSession session, @NotNull PrepareStep step) {
-        inv.setItem(ADD_SLOT, item(Material.LIME_WOOL, Component.text("添加当前点位"), NamedTextColor.GREEN,
-                List.of(Component.text("站到目标位置后点击").color(NamedTextColor.GRAY))));
+        inv.setItem(ADD_SLOT, item(Material.LIME_WOOL, step.listAddLabel(), NamedTextColor.GREEN,
+                List.of(step.listAddHint().color(NamedTextColor.GRAY))));
         inv.setItem(CLEAR_SLOT, item(Material.RED_WOOL, Component.text("清空列表"), NamedTextColor.RED,
                 List.of(Component.text("移除已添加的全部点位").color(NamedTextColor.GRAY))));
         inv.setItem(INFO_SLOT, item(Material.BOOK, Component.text("当前点位数：" + step.listCount(session)), NamedTextColor.AQUA,

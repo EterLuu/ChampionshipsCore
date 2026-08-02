@@ -13,7 +13,7 @@ import ink.ziip.championshipscore.command.game.start.tntrun.TNTRunStartMainComma
 public class GameStartMainCommand extends BaseMainCommand {
 
     public GameStartMainCommand() {
-        super("start", "开始游戏");
+        super("start", "直接启动单局（不创建正式赛程）");
         addGameSubCommand(GameTypeEnum.Bingo, new BingoStartMainCommand());
         addGameSubCommand(GameTypeEnum.BuildMart, new BuildMartStartMainCommand());
         addGameSubCommand(GameTypeEnum.BattleBox, new BattleBoxStartSubCommand());
@@ -25,5 +25,6 @@ public class GameStartMainCommand extends BaseMainCommand {
         addGameSubCommand(GameTypeEnum.SnowballShowdown, new SnowBallStartMainCommand());
         addGameSubCommand(GameTypeEnum.ParkourWarrior, new ParkourWarriorStartMainCommand());
         addGameSubCommand(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyStartSubCommand());
+        addGameSubCommand(GameTypeEnum.Dodgebolt, new DodgeboltStartSubCommand());
     }
 }

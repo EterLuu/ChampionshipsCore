@@ -11,17 +11,24 @@ import org.bukkit.util.Vector;
  */
 public final class RingArenaGrid implements ArenaGrid {
     private final Vector center;
-    private final int spacing;
+    private final int spacingX;
+    private final int spacingZ;
 
     public RingArenaGrid(Vector center, int spacing) {
+        this(center, spacing, spacing);
+    }
+
+    public RingArenaGrid(Vector center, int spacingX, int spacingZ) {
         this.center = center.clone();
-        this.spacing = spacing;
+        this.spacingX = spacingX;
+        this.spacingZ = spacingZ;
     }
 
     @Override
     public Vector origin(int index) {
         int[] cell = ringCell(index);
-        return new Vector(center.getBlockX() + cell[0] * spacing, center.getBlockY(), center.getBlockZ() + cell[1] * spacing);
+        return new Vector(center.getBlockX() + cell[0] * spacingX, center.getBlockY(),
+                center.getBlockZ() + cell[1] * spacingZ);
     }
 
     /**

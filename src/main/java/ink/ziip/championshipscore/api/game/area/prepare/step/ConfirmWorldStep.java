@@ -41,6 +41,6 @@ public class ConfirmWorldStep extends PrepareStep {
             session.setWorldConfirmed(true);
             return Utils.formatAdminSuccess("已确认游戏世界。");
         }
-        return Utils.formatAdminError("请先通过末影珍珠前往 0 号场地。");
+        return Utils.formatAdminError("请先通过末影珍珠前往目标编辑场地。");
     }
 }

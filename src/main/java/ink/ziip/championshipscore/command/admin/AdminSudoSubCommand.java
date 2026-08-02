@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.admin;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -24,23 +25,23 @@ public class AdminSudoSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        if (args.length >= 2) {
-            String[] split = Arrays.copyOfRange(args, 1, args.length);
-            String commands = String.join(" ", split);
+        String[] split = Arrays.copyOfRange(args, 1, args.length);
+        String commands = String.join(" ", split);
 
-            if (args[0].equalsIgnoreCase("all")) {
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    player.performCommand(commands);
-                }
-                return true;
+        if (args[0].equalsIgnoreCase("all")) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.performCommand(commands);
             }
+            return true;
+        }
 
-            ChampionshipTeam team = plugin.getTeamManager().getTeam(args[0]);
-            if (team != null) {
-                for (Player teamPlayer : team.getOnlinePlayers()) {
-                    teamPlayer.performCommand(commands);
-                }
-            }
+        ChampionshipTeam team = plugin.getTeamManager().getTeam(args[0]);
+        if (team == null) {
+            Utils.sendAdminError(sender, "队伍不存在：&#fff566" + args[0]);
+            return true;
+        }
+        for (Player teamPlayer : team.getOnlinePlayers()) {
+            teamPlayer.performCommand(commands);
         }
 
         return true;
@@ -51,8 +52,7 @@ public class AdminSudoSubCommand extends BaseSubCommand {
         if (args.length == 1) {
             List<String> returnList = plugin.getTeamManager().getTeamNameList();
             returnList.add("all");
-            returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
-            return returnList;
+            return filterStartsWith(returnList, args[0]);
         }
         return Collections.emptyList();
     }

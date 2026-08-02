@@ -15,7 +15,7 @@ import java.util.List;
 
 public class DragonEggCarnivalStartSubCommand extends BaseSubCommand {
     public DragonEggCarnivalStartSubCommand() {
-        super("dragoncarnival", "开始龙蛋嘉年华（两队对战）", "/cc game start dragoncarnival <场地> <队伍1> <队伍2>");
+        super("dragoneggcarnival", "开始龙蛋狂欢（两队对战）", "/cc game start dragoneggcarnival <场地> <队伍1> <队伍2>");
     }
 
     @Override
@@ -56,18 +56,16 @@ public class DragonEggCarnivalStartSubCommand extends BaseSubCommand {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
             List<String> returnList = plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList();
-            returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
-            return returnList;
+            return filterStartsWith(returnList, args[0]);
         }
         if (args.length == 2) {
             List<String> returnList = plugin.getTeamManager().getTeamNameList();
-            returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
-            return returnList;
+            return filterStartsWith(returnList, args[1]);
         }
         if (args.length == 3) {
             List<String> returnList = plugin.getTeamManager().getTeamNameList();
-            returnList.removeIf(s -> s != null && (s.equals(args[1]) || !s.startsWith(args[2])));
-            return returnList;
+            returnList.removeIf(s -> s != null && s.equalsIgnoreCase(args[1]));
+            return filterStartsWith(returnList, args[2]);
         }
         return Collections.emptyList();
     }

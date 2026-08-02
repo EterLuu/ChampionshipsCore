@@ -35,7 +35,7 @@ public final class BuildMartMapGeometry {
     public static @NotNull BuildMartMapGeometry from(@NotNull BuildMartConfig config) {
         BuildMartBase template = config.getBaseTemplate();
         ReplicatedSpatialLayout<BuildMartBase> bases = template == null ? null
-                : new ReplicatedSpatialLayout<>(template, BuildMartLayout.GRID, config.getBaseCount());
+                : new ReplicatedSpatialLayout<>(template, config.getBaseGrid(), config.getBaseCount());
         return new BuildMartMapGeometry(box(config.getAreaPos1(), config.getAreaPos2()),
                 config.getSpectatorSpawnPoint(), config.getHubSpawnPoint(),
                 box(config.getHubPos1(), config.getHubPos2()),

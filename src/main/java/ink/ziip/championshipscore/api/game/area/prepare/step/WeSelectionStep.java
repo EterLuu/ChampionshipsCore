@@ -49,7 +49,7 @@ public class WeSelectionStep extends PrepareStep {
             return Utils.formatAdminError("请先用 WorldEdit 选取两个端点。");
         }
         setter.accept(session.getTarget(), selection);
-        session.getTarget().config().saveOptions();
+        session.markDirty();
         return doneMessage;
     }
 }

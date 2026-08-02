@@ -50,6 +50,11 @@ public abstract class PrepareStep {
         return captureType;
     }
 
+    /** Whether this step needs the WorldEdit selection wand supplied by prepare mode. */
+    public boolean requiresWorldEdit() {
+        return captureType == StepCaptureType.SCHEMATIC || captureType == StepCaptureType.WE_SELECTION;
+    }
+
     /**
      * Whether this step is already satisfied. {@code session} may be {@code null} when previewing an area
      * in the list GUI (before entering prepare mode); session-only steps should return {@code false} then.
@@ -83,5 +88,15 @@ public abstract class PrepareStep {
     /** Current entry count of a {@link StepCaptureType#LIST} step (for display). */
     public int listCount(@NotNull PrepareSession session) {
         return 0;
+    }
+
+    /** Label shown by the list editor's add button. Custom list steps can describe non-location data. */
+    public @NotNull Component listAddLabel() {
+        return Component.text("添加当前点位");
+    }
+
+    /** Hint shown below the list editor's add button. */
+    public @NotNull Component listAddHint() {
+        return Component.text("站到目标位置后点击");
     }
 }

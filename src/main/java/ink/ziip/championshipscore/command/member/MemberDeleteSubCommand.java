@@ -14,7 +14,7 @@ import java.util.List;
 
 public class MemberDeleteSubCommand extends BaseSubCommand {
     public MemberDeleteSubCommand() {
-        super("delete", "从队伍移除成员", "/cc member delete <队伍ID> <玩家>");
+        super("delete", "从队伍移除成员", "/cc team member delete <队伍ID> <玩家>");
     }
 
     @Override
@@ -53,8 +53,7 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
             List<String> returnList = plugin.getTeamManager().getTeamNameList();
-            returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
-            return returnList;
+            return filterStartsWith(returnList, args[0]);
         }
 
         if (args.length == 2) {
@@ -62,8 +61,7 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
             if (championshipTeam == null)
                 return Collections.emptyList();
             List<String> returnList = championshipTeam.getTeamMemberNameList();
-            returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
-            return returnList;
+            return filterStartsWith(returnList, args[1]);
         }
         return Collections.emptyList();
     }
