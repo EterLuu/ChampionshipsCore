@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -26,7 +28,7 @@ import java.util.Set;
 public final class TagFilterLoader {
     private static final String DIR = "bingo/tags";
     private static final String RESOURCE_DIR = "bingo/tags";
-    private static final String[] BUNDLED = {"tedious", "starter_kit"};
+    private static final String[] BUNDLED = {"tedious"};
 
     private TagFilterLoader() {
     }
@@ -48,7 +50,7 @@ public final class TagFilterLoader {
                         tagToIds.computeIfAbsent(tag, k -> new ArrayList<>()).addAll(values);
                     }
                 } catch (Exception e) {
-                    plugin.getLogger().warning("解析标签 bingo/tags/" + file.getName() + " 失败: " + e.getMessage());
+                    plugin.getLogger().warning(gameLog("解析标签 bingo/tags/" + file.getName() + " 失败 | " + e.getMessage()));
                 }
             }
         }
@@ -66,8 +68,8 @@ public final class TagFilterLoader {
         TagFilters filters = TagFilters.build(tagToIds, excluded, caps);
         TagFilters.set(filters);
         if (!tagToIds.isEmpty() || !excluded.isEmpty() || !caps.isEmpty()) {
-            plugin.getLogger().info("[Bingo] 标签层已载入：标签 " + tagToIds.keySet()
-                    + "，排除 " + excluded + "，上限 " + caps);
+            plugin.getLogger().info(gameLog("已加载标签=" + tagToIds.keySet()
+                    + " 排除=" + excluded + " 上限=" + caps));
         }
         return filters;
     }
@@ -75,7 +77,7 @@ public final class TagFilterLoader {
     private static void ensureBundled(JavaPlugin plugin) {
         File dir = dir(plugin);
         if (!dir.exists() && !dir.mkdirs()) {
-            plugin.getLogger().warning("无法创建 bingo/tags 目录 " + dir.getPath());
+            plugin.getLogger().warning(gameLog("无法创建目录=" + dir.getPath()));
             return;
         }
         for (String name : BUNDLED) {
@@ -84,14 +86,18 @@ public final class TagFilterLoader {
             try (InputStream in = plugin.getResource(RESOURCE_DIR + "/" + name + ".yml")) {
                 if (in == null) continue;
                 Files.copy(in, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                plugin.getLogger().info("已生成 bingo/tags/" + name + ".yml");
+                plugin.getLogger().info(gameLog("已生成 bingo/tags/" + name + ".yml"));
             } catch (IOException e) {
-                plugin.getLogger().warning("无法写出 bingo/tags/" + name + ".yml: " + e.getMessage());
+                plugin.getLogger().warning(gameLog("无法写出 bingo/tags/" + name + ".yml | " + e.getMessage()));
             }
         }
     }
 
     private static File dir(JavaPlugin plugin) {
         return new File(plugin.getDataFolder(), DIR);
+    }
+
+    private static String gameLog(String message) {
+        return Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "标签", message);
     }
 }

@@ -115,17 +115,20 @@ public final class MessageService {
     }
 
     private YamlConfiguration load(String locale) {
+        // The bundled jar resource is the base; on-disk values win for any key present in both, and any
+        // key that exists only in the jar (e.g. one added in a newer jar that the on-disk file predates,
+        // or one the server owner deleted) is filled in. ensureBundled already persists new keys to disk,
+        // but this overlay also covers the in-memory case so a missing key never resolves to its raw path.
+        YamlConfiguration base = loadResource("bingo/lang/" + locale + ".yml");
         File file = new File(plugin.getDataFolder(), "bingo/lang/" + locale + ".yml");
         if (file.exists()) {
-            return YamlConfiguration.loadConfiguration(file);
+            YamlConfiguration disk = YamlConfiguration.loadConfiguration(file);
+            for (String key : disk.getKeys(true)) {
+                if (disk.isConfigurationSection(key)) continue;
+                base.set(key, disk.get(key));
+            }
         }
-        try (InputStream in = plugin.getResource("bingo/lang/" + locale + ".yml")) {
-            if (in == null) return new YamlConfiguration();
-            return YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            log.warning("[BingoLang] Failed to load bundled lang " + locale + ": " + e.getMessage());
-            return new YamlConfiguration();
-        }
+        return base;
     }
 
     private void ensureBundledLangFiles() {
@@ -135,13 +138,62 @@ public final class MessageService {
         ensureBundled("bingo/lang/en_US.yml", new File(dir, "en_US.yml"));
     }
 
+    /**
+     * Makes sure {@code dest} exists and carries every bundled key, without clobbering values the server
+     * owner has edited. The bundled jar resource is the base; on-disk values win for any key present in
+     * both, and any key that exists only in the bundle is filled in. The file is rewritten only when it
+     * is missing or actually gained keys, so a fully-up-to-date, unedited file is left byte-for-byte
+     * alone (the owner's formatting and comments survive).
+     */
     private void ensureBundled(String resourcePath, File dest) {
-        if (dest.exists()) return;
-        try (InputStream in = plugin.getResource(resourcePath)) {
-            if (in == null) return;
-            Files.copy(in, dest.toPath());
-        } catch (IOException e) {
-            log.warning("[BingoLang] Failed to write " + dest.getName() + ": " + e.getMessage());
+        YamlConfiguration bundled = loadResource(resourcePath);
+        if (dest.exists()) {
+            YamlConfiguration disk = YamlConfiguration.loadConfiguration(dest);
+            int before = countLeaves(disk);
+            mergeDefaults(bundled, disk);
+            if (countLeaves(disk) == before) return; // no new keys - leave the file untouched
+            try {
+                disk.save(dest);
+            } catch (IOException e) {
+                log.warning("[BingoLang] Failed to write " + dest.getName() + ": " + e.getMessage());
+            }
+        } else {
+            try {
+                dest.getParentFile().mkdirs();
+                bundled.save(dest);
+            } catch (IOException e) {
+                log.warning("[BingoLang] Failed to write " + dest.getName() + ": " + e.getMessage());
+            }
         }
+    }
+
+    /** Loads a bundled jar resource as a {@link YamlConfiguration}; empty (with a warning) on failure. */
+    private YamlConfiguration loadResource(String resourcePath) {
+        YamlConfiguration yaml = new YamlConfiguration();
+        try (InputStream in = plugin.getResource(resourcePath)) {
+            if (in == null) return yaml;
+            yaml.loadFromString(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            log.warning("[BingoLang] Failed to load bundled " + resourcePath + ": " + e.getMessage());
+        }
+        return yaml;
+    }
+
+    /** Fills {@code dest} with any leaf key missing from it, recursing through nested sections. */
+    private static void mergeDefaults(YamlConfiguration defaults, YamlConfiguration dest) {
+        for (String key : defaults.getKeys(true)) {
+            if (defaults.isConfigurationSection(key)) continue;
+            if (!dest.contains(key)) {
+                dest.set(key, defaults.get(key));
+            }
+        }
+    }
+
+    private static int countLeaves(YamlConfiguration yaml) {
+        int count = 0;
+        for (String key : yaml.getKeys(true)) {
+            if (!yaml.isConfigurationSection(key)) count++;
+        }
+        return count;
     }
 }

@@ -19,18 +19,25 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Location;
 import org.bukkit.projectiles.ProjectileSource;
+
+import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
 
 import java.util.UUID;
 
 /**
  * Per-area bingo listener: defers item/statistic progress checks on inventory events (pickup, craft,
  * click) to the next tick (inventory events fire before the item lands), forwards advancement-done
- * events, and enforces friendly-fire-off between teammates while the round runs.
+ * events, and keeps same-team friendly fire off during a round. The first-3-minutes PvP grace is
+ * enforced at the world level via {@code world.setPVP} (see {@link BingoArea}), not here.
  */
 @Getter
 @Setter
@@ -77,14 +84,78 @@ public class BingoHandler extends BaseListener {
 
     @EventHandler
     public void onAdvancement(PlayerAdvancementDoneEvent event) {
-        if (!running()) return;
+        // Silence the vanilla "made the advancement" chat broadcast for anything earned outside a running
+        // round (e.g. the kit-granted advancements at round start). The bingo world's
+        // SHOW_ADVANCEMENT_MESSAGES gamerule already suppresses this; null the message too as a fallback.
+        if (!running()) {
+            event.message(null);
+            return;
+        }
         Player player = event.getPlayer();
         if (!bingoArea.notAreaPlayer(player)) {
             bingoArea.onAdvancement(player, event.getAdvancement());
         }
     }
 
+    // Kit-granted advancements (Suit Up, Getting an Upgrade, Sky's the Limit) would pop an on-screen
+    // toast at round start when the kit is handed out, and again on the first inventory change during
+    // play (the kit items remain, so the next inventory_changed re-grants them). The chat broadcast is
+    // suppressed via the SHOW_ADVANCEMENT_MESSAGES gamerule; the toast needs the criterion grant itself
+    // cancelled. These advancements are also kept off the card by BingoStarterKit#trivialises, so
+    // cancelling their grant affects no card task.
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onCriterionGrant(PlayerAdvancementCriterionGrantEvent event) {
+        if (bingoArea == null) return;
+        Player player = event.getPlayer();
+        if (bingoArea.notAreaPlayer(player)) return;
+        GameStageEnum stage = bingoArea.getGameStageEnum();
+        // PREPARATION covers the kit hand-out at round start; PROGRESS covers the first inventory change
+        // re-granting kit advancements during play.
+        if (stage != GameStageEnum.PREPARATION && stage != GameStageEnum.PROGRESS) return;
+        NamespacedKey key = event.getAdvancement().getKey();
+        if (key != null && BingoStarterKit.conflictingAdvancementKeys().contains(key.getKey())) {
+            event.setCancelled(true);
+        }
+    }
+
+    // ── death respawn ──────────────────────────────────────────────────────────────────────────
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onRespawn(PlayerRespawnEvent event) {
+        if (bingoArea == null) return;
+        Player player = event.getPlayer();
+        if (bingoArea.notAreaPlayer(player)) return;
+        GameStageEnum stage = bingoArea.getGameStageEnum();
+        if (stage != GameStageEnum.PREPARATION && stage != GameStageEnum.PROGRESS) return;
+        // Vanilla respawns a bedless player at the main-world spawn (the lobby); redirect into the
+        // bingo world so a death mid-round doesn't drop the player out of the running game.
+        Location respawn = bingoArea.getRespawnLocation();
+        if (respawn != null && respawn.getWorld() != null) {
+            event.setRespawnLocation(respawn);
+        }
+        if (stage == GameStageEnum.PROGRESS) {
+            // KEEP_INVENTORY is on so the kit/card survive a death, but re-issue them as a safety net
+            // in case the gamerule is ever off or the items were lost. hasKit gates the kit so the
+            // non-stacking tools never duplicate.
+            FoliaScheduler.global(plugin).runEntity(player, () -> bingoArea.ensureKitAndCard(player));
+        }
+    }
+
+    // ── elytra glide ────────────────────────────────────────────────────────────────────────────
+
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onGlideToggle(EntityToggleGlideEvent event) {
+        if (!running()) return;
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (bingoArea.notAreaPlayer(player)) return;
+        // Slow Falling cancels elytra flight; drop the permanent Slow Falling while gliding and restore
+        // it when gliding ends. See BingoArea#onGlideToggle / BingoPermanentEffects.
+        bingoArea.onGlideToggle(player, event.isGliding());
+    }
+
     // ── friendly fire off ──────────────────────────────────────────────────────────────────────
+    // The first-3-minutes PvP grace is enforced at the world level (BingoArea toggles world.setPVP),
+    // so this handler only needs to keep same-team friendly fire off once PvP turns on.
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {

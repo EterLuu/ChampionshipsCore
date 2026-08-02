@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -20,7 +20,7 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
     }
 
     @Override
-    protected BaseAreaManager<DragonEggCarnivalArea> getManager() {
+    protected BaseGameInstanceManager<DragonEggCarnivalArea> getManager() {
         return plugin.getGameManager().getDragonEggCarnivalManager();
     }
 
@@ -29,7 +29,7 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
         if (area.getGameStageEnum() != GameStageEnum.PROGRESS) {
             return String.valueOf(0);
         }
-        return String.valueOf(area.getTimer() - 1);
+        return String.valueOf(area.getTimer());
     }
 
     @Override
@@ -82,7 +82,8 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
                 return String.valueOf(0);
             }
 
-            return String.valueOf(11 - dragonEggCarnivalArea.getTimer() % 10);
+            int elapsed = dragonEggCarnivalArea.getTimer();
+            return String.valueOf(10 - elapsed % 10);
         }
         if (params.startsWith("egg_spawn_countdown_")) {
             DragonEggCarnivalArea dragonEggCarnivalArea = resolveArea(params, "egg_spawn_countdown_", offlinePlayer);
@@ -93,7 +94,7 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
                 return String.valueOf(0);
             }
 
-            int time = 101 - dragonEggCarnivalArea.getTimer();
+            int time = 100 - dragonEggCarnivalArea.getTimer();
             if (time >= 0)
                 return String.valueOf(time);
             return String.valueOf(0);

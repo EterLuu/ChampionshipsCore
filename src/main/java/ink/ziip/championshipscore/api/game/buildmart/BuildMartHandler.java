@@ -4,8 +4,6 @@ import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.game.buildmart.gui.BlueprintMenuHolder;
-import ink.ziip.championshipscore.api.game.buildmart.gui.BuildMartMenu;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
@@ -19,7 +17,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
@@ -30,9 +27,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Per-area Build Mart listener. Phase 2 handles the base↔hub portals and the build-zone flight rule:
- * players may fly anywhere in their base/build area but not inside the hub. Block place/break protection,
- * resource gathering and the death/quit lifecycle are layered in by the later phases.
+ * Per-instance Build Mart listener for portals, build-zone flight, block protection, submissions, and
+ * player lifecycle events.
  */
 @Getter
 @Setter
@@ -120,82 +116,34 @@ public class BuildMartHandler extends BaseListener {
         });
     }
 
-    // ── blueprint library menu ─────────────────────────────────────────────────────────────────
+    // ── physical submit buttons ────────────────────────────────────────────────────────────────
 
-    /** Right-clicking the bound library book opens the hub blueprint menu. */
+    /**
+     * Right-clicking a team's submit button commits that plot. Normal plots submit on the first click; the
+     * golden plot needs a confirming second click (handled in the area). The interact is cancelled so the
+     * button neither fires redstone nor consumes a held block.
+     */
     @EventHandler
-    public void onInteract(PlayerInteractEvent event) {
+    public void onSubmitButton(PlayerInteractEvent event) {
         if (!running()) return;
-        Action action = event.getAction();
-        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
-        if (!BuildMartMenu.isBook(event.getItem())) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        Block clicked = event.getClickedBlock();
+        if (clicked == null) return;
         Player player = event.getPlayer();
         if (buildMartArea.notAreaPlayer(player)) return;
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (team == null) return;
+        String slotId = buildMartArea.submitSlotIdAt(team, clicked.getLocation());
+        if (slotId == null) return;
         event.setCancelled(true);
-        buildMartArea.openBlueprintMenu(player);
-    }
-
-    /**
-     * Routes clicks in the library menu; the menu itself stays read-only. Submit/refresh buttons require a
-     * confirming second click (first click arms the button, second one on the same button executes); library
-     * icons assign an order directly. Any other click disarms a pending confirmation.
-     */
-    @EventHandler
-    public void onMenuClick(InventoryClickEvent event) {
-        if (!(event.getInventory().getHolder() instanceof BlueprintMenuHolder holder)) return;
-        event.setCancelled(true);
-        if (holder.getArea() != buildMartArea) return;
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        ItemStack clicked = event.getCurrentItem();
-
-        String submitId = BuildMartMenu.submitIdOf(clicked);
-        if (submitId != null) {
-            handleConfirmable(player, holder, "SUBMIT", submitId);
-            return;
-        }
-        String refreshId = BuildMartMenu.refreshIdOf(clicked);
-        if (refreshId != null) {
-            handleConfirmable(player, holder, "REFRESH", refreshId);
-            return;
-        }
-
-        // Non-actionable click: cancel any pending confirmation before handling selection.
-        boolean wasArmed = holder.getArmed() != null;
-        if (wasArmed) {
-            holder.setArmed(null);
-            BuildMartMenu.renderActionRows(holder, buildMartArea);
-        }
-        String blueprintId = BuildMartMenu.blueprintIdOf(clicked);
-        if (blueprintId == null) return;
-        buildMartArea.selectBlueprint(player, blueprintId);
-    }
-
-    /**
-     * Two-click confirmation for a submit/refresh button: the first click arms it (re-rendered with a
-     * confirm prompt), a second click on the same button runs the action. Clicking a different button just
-     * re-arms to that one.
-     */
-    private void handleConfirmable(Player player, BlueprintMenuHolder holder, String type, String slotId) {
-        String key = type + ":" + slotId;
-        if (key.equals(holder.getArmed())) {
-            holder.setArmed(null);
-            if (type.equals("SUBMIT")) {
-                buildMartArea.submitSlot(player, slotId);
-            } else {
-                buildMartArea.refreshSlot(player, slotId);
-            }
-        } else {
-            holder.setArmed(key);
-        }
-        // Refresh the section so the confirm prompt (or its result) is reflected while the menu is open.
-        BuildMartMenu.renderActionRows(holder, buildMartArea);
+        buildMartArea.handleSubmitClick(player, slotId);
     }
 
     // ── build zone protection + validation ──────────────────────────────────────────────────────
 
     /**
      * No placement in the hub. Builds are no longer auto-validated on placement; players commit a plot
-     * explicitly via the blueprint menu's submit buttons (see {@link BuildMartArea#submitSlot}).
+     * explicitly via the physical submit buttons (see {@link BuildMartArea#submitSlot}).
      */
     @EventHandler(ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent event) {
@@ -208,9 +156,10 @@ public class BuildMartHandler extends BaseListener {
     }
 
     /**
-     * Protects reference builds from being broken and routes every other break straight into the breaker's
-     * inventory: the block emits no ground item, and its drops (computed for the held tool) are handed to the
-     * player. Overflow when the inventory is full falls back to a natural drop at the block so nothing is lost.
+     * Protects reference builds and submit buttons from being broken, and routes every other break straight
+     * into the breaker's inventory: the block emits no ground item, and its drops (computed for the held
+     * tool) are handed to the player. Overflow when the inventory is full falls back to a natural drop at the
+     * block so nothing is lost.
      */
     @EventHandler(ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
@@ -218,6 +167,10 @@ public class BuildMartHandler extends BaseListener {
         Player player = event.getPlayer();
         if (buildMartArea.notAreaPlayer(player)) return;
         Block block = event.getBlock();
+        if (buildMartArea.isSubmitButtonBlock(block.getWorld(), block.getX(), block.getY(), block.getZ())) {
+            event.setCancelled(true);
+            return;
+        }
         if (buildMartArea.isProtectedReferenceBlock(block.getWorld(), block.getX(), block.getY(), block.getZ())) {
             event.setCancelled(true);
             return;

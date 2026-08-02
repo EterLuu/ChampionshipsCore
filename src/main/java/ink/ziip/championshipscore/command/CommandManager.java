@@ -3,11 +3,13 @@ package ink.ziip.championshipscore.command;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.command.admin.AdminMainCommand;
+import ink.ziip.championshipscore.command.event.EventMainCommand;
 import ink.ziip.championshipscore.command.game.GameMainCommand;
-import ink.ziip.championshipscore.command.member.MemberMainCommand;
+import ink.ziip.championshipscore.command.map.MapMainCommand;
 import ink.ziip.championshipscore.command.rank.RankMainCommand;
 import ink.ziip.championshipscore.command.spectate.SpectateSubCommand;
 import ink.ziip.championshipscore.command.team.TeamMainCommand;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.PluginCommand;
@@ -29,8 +31,9 @@ public class CommandManager extends BaseManager {
         MainCommand mainCommand = new MainCommand();
 
         mainCommand.addSubCommand(new TeamMainCommand());
-        mainCommand.addSubCommand(new MemberMainCommand());
         mainCommand.addSubCommand(new GameMainCommand());
+        mainCommand.addSubCommand(new EventMainCommand());
+        mainCommand.addSubCommand(new MapMainCommand());
         mainCommand.addSubCommand(new SpectateSubCommand());
         mainCommand.addSubCommand(new RankMainCommand());
         mainCommand.addSubCommand(new AdminMainCommand());
@@ -53,7 +56,7 @@ public class CommandManager extends BaseManager {
 
             corePluginCommand.unregister(commandMap);
         } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "Unregister commands failed.");
+            plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("Command", "卸载", "命令注销失败"), e);
         }
     }
 }

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.arena;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
@@ -11,10 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Shared "stamp out N copies" step behind the per-game {@code prepare} commands. Pastes a single arena
+ * Shared "stamp out N copies" step behind the per-game {@code prepare} flow. Pastes a single arena
  * schematic at every {@link ArenaGrid#origin(int)} for copies {@code 0..count-1}. Pairs with
- * {@code BaseArea#saveMap} (called by each game afterwards) to persist the stamped world into the static
- * map template, so every later round just loads it — no runtime cloning.
+ * the editable world. The final publish action persists template-backed maps once after validation.
  */
 public final class ArenaPreparer {
     private ArenaPreparer() {
@@ -25,6 +25,21 @@ public final class ArenaPreparer {
         for (int i = 0; i < count; i++) {
             Vector origin = grid.origin(i);
             plugin.getWorldEditManager().pasteSchematic(world, schematic, origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
+        }
+    }
+
+    /** Removes copies from a previously persisted layout before a changed layout is stamped. */
+    public static void clearCopies(ChampionshipsCore plugin, World world, ArenaGrid grid, int count, Vector size) {
+        if (count < 1 || size == null) return;
+        try {
+            for (int i = 0; i < count; i++) {
+                Vector origin = grid.origin(i);
+                plugin.getWorldEditManager().clearCuboid(world, origin, size);
+                BoundingBox box = BoundingBox.of(origin, origin.clone().add(size));
+                world.getNearbyEntities(box, entity -> !(entity instanceof Player)).forEach(entity -> entity.remove());
+            }
+        } catch (Exception exception) {
+            throw new IllegalStateException("could not clear previous arena copies", exception);
         }
     }
 

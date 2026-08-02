@@ -15,8 +15,8 @@ import java.util.function.ToDoubleFunction;
  * out awards for zero work.
  */
 public final class BuildMartScorer {
-    /** Bonus per award rank: 1st place team = 100, 2nd = 50, 3rd = 25 (per team member). */
-    public static final int[] AWARD_POINTS = {100, 50, 25};
+    /** Bonus per award rank: 1st place team = 25, 2nd = 15, 3rd = 5 (per team member). */
+    public static final int[] AWARD_POINTS = {25, 15, 5};
 
     private BuildMartScorer() {
     }

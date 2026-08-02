@@ -2,11 +2,16 @@ package ink.ziip.championshipscore.api.game.battlebox;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
+import ink.ziip.championshipscore.api.game.arena.ArenaLayoutPlanner;
+import ink.ziip.championshipscore.api.game.arena.RowArenaGrid;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -22,14 +27,48 @@ public class BattleBoxConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 1;
+        return 5;
     }
 
     @ConfigOption(path = "name")
     private String areaName;
 
+    /** Physical map world. Empty legacy configs continue to use the historical shared world. */
+    @ConfigOption(path = "world-name", nullable = true)
+    private String worldName;
+
+    public String resolveWorldName() {
+        return worldName == null || worldName.isBlank() ? "battlebox" : worldName;
+    }
+
     @ConfigOption(path = "timer")
     private volatile int timer;
+
+    /** Number of independently runnable instances stamped from copy 0 in this map. */
+    @ConfigOption(path = "copy-count")
+    private int copyCount = 8;
+
+    @ConfigOption(path = "copy-layout.origin", nullable = true)
+    private Vector copyLayoutOrigin;
+
+    @ConfigOption(path = "copy-layout.step", nullable = true)
+    private Vector copyLayoutStep;
+
+    @ConfigOption(path = "copy-layout.size", nullable = true)
+    private Vector copySize;
+
+    public @NotNull ArenaGrid getCopyGrid() {
+        Vector origin = copyLayoutOrigin == null ? BattleBoxLayout.FIRST : copyLayoutOrigin;
+        Vector step = copyLayoutStep == null ? BattleBoxLayout.STEP : copyLayoutStep;
+        return new RowArenaGrid(origin, step);
+    }
+
+    public @NotNull ArenaGrid prepareCopyGrid(@NotNull Vector size) {
+        copyLayoutOrigin = BattleBoxLayout.FIRST.clone();
+        copyLayoutStep = ArenaLayoutPlanner.rowStep(size);
+        copySize = size.clone();
+        return getCopyGrid();
+    }
 
     @ConfigOption(path = "right-spawn-point")
     private Location rightSpawnPoint;
@@ -60,4 +99,11 @@ public class BattleBoxConfig extends BaseGameConfig {
 
     @ConfigOption(path = "potion-spawn-points")
     private List<String> potionSpawnPoints;
+
+    @Override
+    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
+                                                  @NotNull YamlConfiguration migratedConfiguration) {
+        if (oldConfiguration.getString("world-name", "").isBlank())
+            migratedConfiguration.set("world-name", "battlebox");
+    }
 }

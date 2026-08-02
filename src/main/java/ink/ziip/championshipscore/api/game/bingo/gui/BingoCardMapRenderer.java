@@ -55,7 +55,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
     }
 
     @Override
-    public void render(@NotNull MapView view, @NotNull MapCanvas canvas, @NotNull Player player) {
+    public synchronized void render(@NotNull MapView view, @NotNull MapCanvas canvas, @NotNull Player player) {
         String state = stateSignature();
         if (state.equals(lastState)) return;
 
@@ -73,7 +73,13 @@ public final class BingoCardMapRenderer extends MapRenderer {
 
         RoundOutcome outcome = round != null ? round.outcome() : null;
         if (outcome != null && outcome.winnerId() != null) {
+            // Post-game: paint the winner's lines/highlights on every card (losers see how the winner won).
             drawWinOverlay(canvas, outcome, offset, n);
+        } else {
+            // Live: scribble a stroke through each line this team has already completed, so line
+            // progress shows on the card during the round - not only on the post-game win overlay.
+            byte palette = MapColorMatcher.matchColor(teamColor.red(), teamColor.green(), teamColor.blue());
+            drawWinningLines(canvas, teamId, palette, offset, n);
         }
 
         lastState = state;

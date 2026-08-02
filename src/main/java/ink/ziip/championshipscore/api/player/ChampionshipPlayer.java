@@ -72,13 +72,17 @@ public class ChampionshipPlayer {
             return;
 
         Player current = player;
-        scheduler().runEntity(current, () -> {
-            PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
+        FoliaScheduler scheduler = scheduler();
+        scheduler.runEntity(current, () -> {
             World world = current.getWorld();
-            WorldBorder worldBorder = world.getWorldBorder();
-            packet.getModifier().writeDefaults();
-            packet.getIntegers().write(0, (int) worldBorder.getSize());
-            ProtocolLibrary.getProtocolManager().sendServerPacket(current, packet);
+            scheduler.supplyGlobal(() -> (int) world.getWorldBorder().getSize()).thenAccept(warningDistance ->
+                    scheduler.runEntity(current, () -> {
+                        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(
+                                PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
+                        packet.getModifier().writeDefaults();
+                        packet.getIntegers().write(0, warningDistance);
+                        ProtocolLibrary.getProtocolManager().sendServerPacket(current, packet);
+                    }));
         });
     }
 

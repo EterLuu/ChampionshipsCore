@@ -22,14 +22,14 @@ public class ParkourWarriorConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 1;
+        return 2;
     }
 
     @ConfigOption(path = "name")
     private String areaName;
 
     @ConfigOption(path = "timer")
-    private volatile int timer;
+    private int timer;
 
     @ConfigOption(path = "sudden-death")
     private int suddenDeath;
@@ -72,4 +72,12 @@ public class ParkourWarriorConfig extends BaseGameConfig {
 
     @ConfigOption(path = "checkpoints")
     private ConfigurationSection checkpoints;
+
+    /** Ensures newly-created maps have a mutable checkpoint root for the guided editor. */
+    public ConfigurationSection ensureCheckpoints() {
+        if (checkpoints == null) {
+            checkpoints = configuration.createSection("checkpoints");
+        }
+        return checkpoints;
+    }
 }

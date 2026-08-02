@@ -41,6 +41,14 @@ public final class FoliaScheduler {
         return runTask(ignored -> task.run());
     }
 
+    public ScheduledTask runTask(Plugin ignoredPlugin, Runnable task) {
+        return runTask(task);
+    }
+
+    public ScheduledTask runTask(Plugin ignoredPlugin, Consumer<ScheduledTask> task) {
+        return runTask(task);
+    }
+
     public ScheduledTask runTask(Consumer<ScheduledTask> task) {
         if (locationSupplier == null) {
             return server().getGlobalRegionScheduler().run(plugin, task);
@@ -50,6 +58,10 @@ public final class FoliaScheduler {
 
     public ScheduledTask runTaskLater(Runnable task, long delayTicks) {
         return runTaskLater(ignored -> task.run(), delayTicks);
+    }
+
+    public ScheduledTask runTaskLater(Plugin ignoredPlugin, Runnable task, long delayTicks) {
+        return runTaskLater(task, delayTicks);
     }
 
     public ScheduledTask runTaskLater(Consumer<ScheduledTask> task, long delayTicks) {
@@ -64,6 +76,16 @@ public final class FoliaScheduler {
         return runTaskTimer(ignored -> task.run(), delayTicks, periodTicks);
     }
 
+    public ScheduledTask runTaskTimer(
+            Plugin ignoredPlugin, Runnable task, long delayTicks, long periodTicks) {
+        return runTaskTimer(task, delayTicks, periodTicks);
+    }
+
+    public ScheduledTask runTaskTimer(
+            Plugin ignoredPlugin, Consumer<ScheduledTask> task, long delayTicks, long periodTicks) {
+        return runTaskTimer(task, delayTicks, periodTicks);
+    }
+
     public ScheduledTask runTaskTimer(Consumer<ScheduledTask> task, long delayTicks, long periodTicks) {
         if (locationSupplier == null) {
             return server().getGlobalRegionScheduler().runAtFixedRate(
@@ -75,6 +97,10 @@ public final class FoliaScheduler {
 
     public ScheduledTask runTaskAsynchronously(Runnable task) {
         return runTaskAsynchronously(ignored -> task.run());
+    }
+
+    public ScheduledTask runTaskAsynchronously(Plugin ignoredPlugin, Runnable task) {
+        return runTaskAsynchronously(task);
     }
 
     public ScheduledTask runTaskAsynchronously(Consumer<ScheduledTask> task) {
@@ -105,9 +131,26 @@ public final class FoliaScheduler {
         return future;
     }
 
+    public <T> CompletableFuture<T> supplyAsync(Supplier<T> supplier) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        server().getAsyncScheduler().runNow(plugin, ignored -> {
+            try {
+                future.complete(supplier.get());
+            } catch (Throwable throwable) {
+                future.completeExceptionally(throwable);
+            }
+        });
+        return future;
+    }
+
     public ScheduledTask runTaskLaterAsynchronously(Runnable task, long delayTicks) {
         return server().getAsyncScheduler().runDelayed(
                 plugin, ignored -> task.run(), ticksToMillis(delayTicks), TimeUnit.MILLISECONDS);
+    }
+
+    public ScheduledTask runTaskLaterAsynchronously(
+            Plugin ignoredPlugin, Runnable task, long delayTicks) {
+        return runTaskLaterAsynchronously(task, delayTicks);
     }
 
     public ScheduledTask runTaskTimerAsynchronously(Runnable task, long delayTicks, long periodTicks) {
@@ -117,6 +160,11 @@ public final class FoliaScheduler {
                 ticksToMillis(delayTicks),
                 ticksToMillis(periodTicks),
                 TimeUnit.MILLISECONDS);
+    }
+
+    public ScheduledTask runTaskTimerAsynchronously(
+            Plugin ignoredPlugin, Runnable task, long delayTicks, long periodTicks) {
+        return runTaskTimerAsynchronously(task, delayTicks, periodTicks);
     }
 
     public void runEntity(Entity entity, Runnable task) {

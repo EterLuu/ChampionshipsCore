@@ -38,6 +38,9 @@ public abstract class BaseConfigurationFile {
     @Getter
     protected YamlConfiguration configuration;
     protected Path configurationPath;
+    /** Base directory {@link #getFileName()} resolves against; remembered so version migration can
+     *  re-initialize from the same root (game configs carry a folder prefix in their file name). */
+    protected Path configurationBasePath;
     // True while loading the bundled resource template (see loadDefaultOptions); null placeholders in
     // the template are expected, so "missing field" warnings are suppressed until the real file loads.
     protected boolean loadingDefaults = false;
@@ -48,6 +51,7 @@ public abstract class BaseConfigurationFile {
      * @param pluginFolder the plugin folder path
      */
     public void initializeConfiguration(Path pluginFolder) {
+        this.configurationBasePath = pluginFolder;
         loadDefaultOptions();
 
         configurationPath = saveDefaultConfigurationFile(pluginFolder);
@@ -58,7 +62,8 @@ public abstract class BaseConfigurationFile {
 
             loadFileOptions();
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file.");
+            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "加载",
+                    "配置文件=" + getFileName() + " 加载失败"), exception);
         }
     }
 
@@ -90,11 +95,13 @@ public abstract class BaseConfigurationFile {
 
                     Files.write(ret, data);
                 } else {
-                    plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file. ", getResourceName());
+                    plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "写出",
+                            "缺少内置资源=" + getResourceName()));
                 }
             }
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file. ", exception);
+            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "写出",
+                    "配置文件=" + getFileName() + " 写出失败"), exception);
         }
         return ret;
     }
@@ -116,7 +123,8 @@ public abstract class BaseConfigurationFile {
 
             configuration.save(configurationPath.toFile());
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration option. ", exception);
+            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "保存",
+                    "配置文件=" + getFileName() + " 保存选项失败"), exception);
         }
     }
 
@@ -204,17 +212,20 @@ public abstract class BaseConfigurationFile {
                     value = coerceLocationSection(value, field);
 
                     if (value == null && !loadingDefaults && !configOption.nullable())
-                        plugin.getLogger().log(Level.SEVERE, "Warning, null value found: " + configOption.path() + "/" + getFileName());
+                        plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "校验",
+                                "配置文件=" + getFileName() + " 路径=" + configOption.path() + " 值为空"));
 
                     if (value != null) {
                         if (value instanceof String)
                             value = Utils.translateColorCodes((String) value);
                         field.set(null, value);
                     } else if (!configOption.nullable() && !loadingDefaults) {
-                        plugin.getLogger().log(Level.SEVERE, "Failed to find configuration file. " + configOption.path() + "/" + getFileName());
+                        plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "加载",
+                                "配置文件=" + getFileName() + " 缺少路径=" + configOption.path()));
                     }
                 } catch (Exception exception) {
-                    plugin.getLogger().log(Level.SEVERE, "Failed to load configuration file. ", exception);
+                    plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "加载",
+                            "配置文件=" + getFileName() + " 路径=" + configOption.path() + " 加载失败"), exception);
                 }
             }
         }
@@ -227,13 +238,39 @@ public abstract class BaseConfigurationFile {
      * {@link #loadFromConfiguration} and {@link ink.ziip.championshipscore.api.game.config.BaseGameConfig#loadFromConfiguration}.
      */
     protected Object coerceLocationSection(Object value, Field field) {
+        return coerceLocationSection(value, field, true);
+    }
+
+    /**
+     * Converts a raw location section while allowing map configs to defer world resolution until their
+     * template world has been loaded. Global configuration still validates unresolved worlds immediately.
+     */
+    protected Object coerceLocationSection(Object value, Field field, boolean reportMissingWorld) {
         if (value instanceof ConfigurationSection && field.getType() == Location.class) {
             ConfigurationSection section = (ConfigurationSection) value;
             World world = null;
+            String worldIdentifier = null;
             if (section.contains("world_key")) {
-                world = plugin.getServer().getWorld(NamespacedKey.fromString(section.getString("world_key")));
+                worldIdentifier = section.getString("world_key");
+                world = plugin.getServer().getWorld(NamespacedKey.fromString(worldIdentifier));
             } else if (section.contains("world")) {
-                world = plugin.getServer().getWorld(section.getString("world"));
+                worldIdentifier = section.getString("world");
+                world = plugin.getServer().getWorld(worldIdentifier);
+            }
+            if (world == null && worldIdentifier != null && !loadingDefaults && reportMissingWorld) {
+                // A world was configured but couldn't be resolved. Usually a stale world_key (e.g.
+                // minecraft:world after the 1.21.5+ migration to minecraft:overworld) or a typo. Warn
+                // loudly at load time instead of letting it surface later as a cryptic
+                // "Target world cannot be null" on every join/death teleport to this location.
+                String label = field.getName();
+                ConfigOption co = field.getAnnotation(ConfigOption.class);
+                if (co != null && !co.path().isEmpty()) label = co.path();
+                List<String> loadedWorlds = plugin.getServer().getWorlds().stream()
+                        .map(w -> w.getKey().toString())
+                        .collect(Collectors.toList());
+                plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "世界",
+                        "配置文件=" + getFileName() + " 路径=" + label + " 世界=" + worldIdentifier
+                                + " 不存在；已加载世界=" + loadedWorlds + "，相关传送将失败"));
             }
             value = new Location(world, section.getDouble("x"), section.getDouble("y"), section.getDouble("z"),
                     (float) section.getDouble("yaw"), (float) section.getDouble("pitch"));
@@ -249,17 +286,22 @@ public abstract class BaseConfigurationFile {
     public void checkVersion(boolean autoUpgrade) {
         outdated = configuration.getInt("dont-edit-this.version", -1) < getLatestVersion();
         if (outdated && autoUpgrade) {
-            plugin.getLogger().info(String.format("Upgrading the file %s from %d to %d", getFileName(), configuration.getInt("dont-edit-this.version", -1), getLatestVersion()));
+            plugin.getLogger().info(Utils.formatModuleLog("Config", "迁移",
+                    String.format("配置文件=%s 版本=%d -> %d", getFileName(),
+                            configuration.getInt("dont-edit-this.version", -1), getLatestVersion())));
 
             Path outdatedPath = configurationPath.getParent();
-            String outdatedFileName = getFileName() + ".outdated";
+            String simpleFileName = configurationPath.getFileName().toString();
+            String outdatedFileName = simpleFileName + ".outdated";
             int counter = 1;
             while (outdatedPath.resolve(outdatedFileName).toFile().exists()) {
-                outdatedFileName = getFileName() + ".outdated" + counter;
+                outdatedFileName = simpleFileName + ".outdated" + counter;
                 counter++;
             }
-            if (outdatedPath.resolve(getFileName()).toFile().renameTo(outdatedPath.resolve(outdatedFileName).toFile())) {
-                initializeConfiguration(outdatedPath);
+            if (configurationPath.toFile().renameTo(outdatedPath.resolve(outdatedFileName).toFile())) {
+                // Re-create the fresh template from the same base root used originally: game config
+                // file names include their folder prefix, so the parent directory alone is wrong.
+                initializeConfiguration(configurationBasePath != null ? configurationBasePath : outdatedPath);
 
                 try {
                     YamlConfiguration outdatedConfiguration = YamlConfiguration.loadConfiguration(outdatedPath.resolve(outdatedFileName).toFile());
@@ -267,12 +309,15 @@ public abstract class BaseConfigurationFile {
                     loadFromOutdatedConfiguration(outdatedConfiguration);
 
                     outdated = false;
-                    plugin.getLogger().info(String.format("Upgrade of file %s completed ", getFileName()));
+                    plugin.getLogger().info(Utils.formatModuleLog("Config", "迁移",
+                            "配置文件=" + getFileName() + " 迁移完成"));
                 } catch (Exception exception) {
-                    plugin.getLogger().log(Level.WARNING, "Failed to load configuration ", exception);
+                    plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("Config", "迁移",
+                            "配置文件=" + getFileName() + " 旧版本读取失败"), exception);
                 }
             } else
-                plugin.getLogger().log(Level.WARNING, String.format("Failed to rename the old configuration '%s' to '%s'", getFileName(), outdatedFileName));
+                plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("Config", "迁移",
+                        "配置文件=" + getFileName() + " 无法重命名为 " + outdatedFileName));
         }
     }
 
@@ -291,7 +336,8 @@ public abstract class BaseConfigurationFile {
             // Reload options from the file
             loadFileOptions();
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save configuration file. ", exception);
+            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "保存",
+                    "配置文件=" + getFileName() + " 保存失败"), exception);
         }
     }
 

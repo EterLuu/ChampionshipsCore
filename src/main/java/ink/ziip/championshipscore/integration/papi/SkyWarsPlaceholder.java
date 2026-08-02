@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -20,7 +20,7 @@ public class SkyWarsPlaceholder extends BaseGamePlaceholder<SkyWarsTeamArea> {
     }
 
     @Override
-    protected BaseAreaManager<SkyWarsTeamArea> getManager() {
+    protected BaseGameInstanceManager<SkyWarsTeamArea> getManager() {
         return plugin.getGameManager().getSkyWarsManager();
     }
 

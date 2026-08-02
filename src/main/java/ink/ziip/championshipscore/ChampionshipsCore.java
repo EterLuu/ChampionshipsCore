@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore;
 
+import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
@@ -8,6 +9,7 @@ import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.api.vote.VoteManager;
 import ink.ziip.championshipscore.integration.papi.PlaceholderManager;
 import ink.ziip.championshipscore.util.glow.GlowingEntities;
+import ink.ziip.championshipscore.util.Utils;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
@@ -43,6 +45,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private PlaceholderManager placeholderManager;
     private VoteManager voteManager;
     private ScheduleManager scheduleManager;
+    private PrepareSessionManager prepareSessionManager;
 
     @Override
     public void onEnable() {
@@ -50,29 +53,29 @@ public final class ChampionshipsCore extends JavaPlugin {
         loaded = true;
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) {
-            getLogger().warning("Could not find PlaceholderAPI!");
+            getLogger().warning(Utils.formatModuleLog("Bootstrap", "依赖", "缺少 PlaceholderAPI，插件已停用"));
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (Bukkit.getPluginManager().getPlugin("ProtocolLib") == null) {
-            getLogger().warning("Could not find ProtocolLib!");
+            getLogger().warning(Utils.formatModuleLog("Bootstrap", "依赖", "缺少 ProtocolLib，插件已停用"));
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
-        if (Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") == null) {
-            getLogger().warning("Could not find FastAsyncWorldEdit!");
-            Bukkit.getPluginManager().disablePlugin(this);
-            return;
-        }
-
         configurationManager = new ConfigurationManager(this);
         databaseManager = new DatabaseManager(this);
         playerManager = new PlayerManager(this);
         listenerManager = new ListenerManager(this);
         commandManager = new CommandManager(this);
         teamManager = new TeamManager(this);
-        worldEditManager = new WorldEditManager(this);
+        if (Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")) {
+            worldEditManager = new WorldEditManager(this);
+        } else {
+            getLogger().warning(Utils.formatModuleLog("Bootstrap", "可选依赖",
+                    "FastAsyncWorldEdit 不可用；游戏运行保持启用，需要 WorldEdit 的地图编辑功能已关闭"));
+        }
         gameManager = new GameManager(this);
+        prepareSessionManager = new PrepareSessionManager(this);
         rankManager = new RankManager(this);
         worldManager = new WorldManager(this);
         glowingEntities = new GlowingEntities(this);
@@ -90,39 +93,48 @@ public final class ChampionshipsCore extends JavaPlugin {
         teamManager.load();
         rankManager.load();
 
-        worldEditManager.load();
+        if (worldEditManager != null) worldEditManager.load();
 
         gameManager.load();
+
+        prepareSessionManager.load();
 
         commandManager.load();
         placeholderManager.load();
         voteManager.load();
         scheduleManager.load();
 
-        getLogger().log(Level.INFO, CCConfig.MODE);
+        getLogger().log(Level.INFO, Utils.formatModuleLog("Bootstrap", "启动", "模式=" + CCConfig.MODE));
     }
 
     @Override
     public void onDisable() {
         loaded = false;
-        // Plugin shutdown logic
-        gameManager.unload();
-        rankManager.unload();
+        // Stop producers first so Folia region tasks cannot race managers or the database while
+        // their backing state is being torn down.
+        if (scheduleManager != null) scheduleManager.unload();
+        if (voteManager != null) voteManager.unload();
+        if (listenerManager != null) listenerManager.unload();
+        if (prepareSessionManager != null) prepareSessionManager.unload();
+        if (gameManager != null) gameManager.unload();
+        if (rankManager != null) rankManager.unload();
 
-        listenerManager.unload();
-        playerManager.unload();
-        teamManager.unload();
-        commandManager.unload();
+        if (placeholderManager != null) placeholderManager.unload();
+        if (glowingEntities != null) glowingEntities.disable();
 
-        worldEditManager.unload();
-        worldManager.unload();
+        if (commandManager != null) commandManager.unload();
+        if (playerManager != null) playerManager.unload();
+        if (teamManager != null) teamManager.unload();
 
-        configurationManager.unload();
-        databaseManager.unload();
-        placeholderManager.unload();
-        voteManager.unload();
-        scheduleManager.unload();
-        glowingEntities.disable();
+        if (worldEditManager != null) worldEditManager.unload();
+        if (worldManager != null) worldManager.unload();
+
+        if (databaseManager != null) databaseManager.unload();
+        if (configurationManager != null) configurationManager.unload();
+    }
+
+    public boolean hasWorldEdit() {
+        return worldEditManager != null;
     }
 
     public @NotNull Path getFolder() {

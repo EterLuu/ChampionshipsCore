@@ -5,14 +5,15 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
-import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 import java.util.*;
 
@@ -25,7 +26,7 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
     private volatile int timer;
     @Getter
     private volatile boolean enabled;
-    private int completedAreaNum;
+    private volatile int completedAreaNum;
     private volatile ScheduledTask firstStartTask;
     private volatile ScheduledTask startTask;
 
@@ -48,11 +49,7 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         }
     }
 
-    public void startHotyCodyDusky() {
-        scheduler.runTask(this::startHotyCodyDuskyOnGlobalRegion);
-    }
-
-    private synchronized void startHotyCodyDuskyOnGlobalRegion() {
+    public synchronized void startHotyCodyDusky() {
         if (enabled) {
             endSchedule();
             return;
@@ -65,9 +62,10 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         timer = 10;
         subRound = 0;
         completedAreaNum = 0;
-        firstStartTask = scheduler.runTaskTimer(() -> {
+        firstStartTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
+            plugin.getScheduleManager().showRoundPreparationCountdown(GameTypeEnum.HotyCodyDusky, 1, timer);
 
             if (timer == 10) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.HOTY_CODY_DUSKY));
@@ -75,13 +73,6 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
 
             if (timer == 5) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.HOTY_CODY_DUSKY_POINTS));
-            }
-
-            if (timer < 5 && timer > 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-            if (timer == 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
             }
 
             if (timer == 0) {
@@ -106,10 +97,10 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
 
         handler.register();
 
-        arrangeHotyCodyDuskyRounds();
+        arrangeHotyCodyDuskyRounds(true);
     }
 
-    private void arrangeHotyCodyDuskyRounds() {
+    private void arrangeHotyCodyDuskyRounds(boolean showIntroduction) {
         List<List<UUID>> areaTeams = new ArrayList<>();
         areaTeams.add(new ArrayList<>());
         areaTeams.add(new ArrayList<>());
@@ -141,7 +132,8 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
 
             HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = plugin.getGameManager().getHotyCodyDuskyManager().getArea(name);
             if (hotyCodyDuskyTeamArea != null) {
-                plugin.getGameManager().joinSingleTeamAreaForPlayers(GameTypeEnum.HotyCodyDusky, name, areaPlayerList.next());
+                plugin.getGameManager().joinSingleTeamAreaForPlayers(
+                        GameTypeEnum.HotyCodyDusky, name, areaPlayerList.next(), showIntroduction);
             }
         }
     }
@@ -155,12 +147,11 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         enabled = false;
 
         Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
-        Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
+        Utils.sendTitleToAllPlayers(MessageConfig.GAME_ROUND_END_TITLE.replace("%game%", GameTypeEnum.HotyCodyDusky.toString()),
+                MessageConfig.GAME_ROUND_END_SUBTITLE, 60);
         if (plugin.isLoaded()) {
-            scheduler.runTaskLaterAsynchronously(() -> {
-                scheduler.runTaskAsynchronously(task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(GameTypeEnum.HotyCodyDusky)));
-                Utils.sendMessageToAllPlayers(plugin.getRankManager().getTeamRankString());
-            }, 40L);
+            scheduler.runTaskLater(plugin,
+                    () -> plugin.getRankManager().broadcastFinalRankings(GameTypeEnum.HotyCodyDusky), 40L);
         }
         handler.unRegister();
         Utils.changeLevelForAllPlayers(0);
@@ -180,24 +171,18 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
         timer = 30;
-        startTask = scheduler.runTaskTimer(() -> {
+        startTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
+            plugin.getScheduleManager().showRoundPreparationCountdown(GameTypeEnum.HotyCodyDusky, subRound, timer);
 
             if (timer == 30) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.NEXT_ROUND_SOON));
             }
 
-            if (timer < 5 && timer > 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-            if (timer == 1) {
-                Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-            }
-
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(0);
-                arrangeHotyCodyDuskyRounds();
+                arrangeHotyCodyDuskyRounds(false);
                 if (startTask != null)
                     startTask.cancel();
             }
@@ -215,20 +200,20 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
     }
 
     public void addAllSpectatorsToArea() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam == null) {
-                Utils.performCommand(player, "spec");
+        scheduler.runTask(() -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+                if (championshipTeam == null) Utils.performCommand(player, "spec");
             }
-        }
+        });
     }
 
     public void removeAllSpectatorsFromArea() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam == null) {
-                Utils.performCommand(player, "cc spectate leave");
+        scheduler.runTask(() -> {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+                if (championshipTeam == null) Utils.performCommand(player, "cc spectate leave");
             }
-        }
+        });
     }
 }

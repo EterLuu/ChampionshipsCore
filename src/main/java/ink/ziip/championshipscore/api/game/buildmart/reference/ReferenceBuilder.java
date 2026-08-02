@@ -69,7 +69,10 @@ public final class ReferenceBuilder {
                 for (BlueprintBlock block : blocks) {
                     Block actual = world.getBlockAt(
                             baseX + block.getX(), baseY + block.getY(), baseZ + block.getZ());
-                    if (actual.getBlockData().matches(block.getBlockData())) {
+                    boolean covered = world.getBlockAt(
+                            baseX + block.getX(), baseY + block.getY() + 1, baseZ + block.getZ())
+                            .getType().isOccluding();
+                    if (BuildMartBlueprint.blockMatches(block.getBlockData(), actual.getBlockData(), covered)) {
                         localMatched++;
                     }
                 }

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>minebingo modelled teams as a fixed enum carrying an {@code id()} and {@code textColor()}; CC
  * teams are created at runtime from the database, so these are derived here instead. The id is the
  * team name (CC's {@link ChampionshipTeam} equals/hashCode are keyed on the name, so it is unique and
- * stable); the colour is parsed from the team's {@code #RRGGBB} colour code.
+ * stable); the colour is parsed from the team's raw {@code #RRGGBB} colour value.
  */
 public final class BingoTeamAdapter {
     private BingoTeamAdapter() {

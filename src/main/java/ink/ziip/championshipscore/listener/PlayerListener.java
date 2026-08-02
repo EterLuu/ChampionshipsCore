@@ -14,6 +14,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,6 +24,9 @@ import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class PlayerListener extends BaseListener {
     protected PlayerListener(ChampionshipsCore plugin) {
@@ -94,10 +98,21 @@ public class PlayerListener extends BaseListener {
         playerManager.getPlayer(player).updatePlayer();
         playerManager.updatePlayer(player);
 
-        plugin.getServer().recipeIterator().forEachRemaining(recipe -> {
-            if (recipe instanceof Keyed keyedRecipe) {
-                player.discoverRecipe(keyedRecipe.getKey());
-            }
+        // Let normal join/teleport notices finish first, then restore a recent result that may have
+        // been missed while this player was disconnected.
+        FoliaScheduler.global(plugin).runEntityLater(player, () -> {
+            if (player.isOnline())
+                plugin.getRankManager().replayRecentRankingSummary(player);
+        }, 40L);
+
+        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
+        scheduler.runTask(() -> {
+            List<NamespacedKey> recipeKeys = new ArrayList<>();
+            plugin.getServer().recipeIterator().forEachRemaining(recipe -> {
+                if (recipe instanceof Keyed keyedRecipe)
+                    recipeKeys.add(keyedRecipe.getKey());
+            });
+            scheduler.runEntity(player, () -> recipeKeys.forEach(player::discoverRecipe));
         });
     }
 

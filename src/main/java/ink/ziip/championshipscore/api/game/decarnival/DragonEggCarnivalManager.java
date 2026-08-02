@@ -1,14 +1,14 @@
 package ink.ziip.championshipscore.api.game.decarnival;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.World;
 import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 
 import java.io.File;
 
-public class DragonEggCarnivalManager extends BaseAreaManager<DragonEggCarnivalArea> {
+public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggCarnivalArea> {
 
     public DragonEggCarnivalManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -25,7 +25,9 @@ public class DragonEggCarnivalManager extends BaseAreaManager<DragonEggCarnivalA
             if (areaList != null) {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
-                    areas.put(name, new DragonEggCarnivalArea(plugin, new DragonEggCarnivalConfig(plugin, name), false, name));
+                    DragonEggCarnivalArea area = new DragonEggCarnivalArea(plugin, new DragonEggCarnivalConfig(plugin, name), false, name);
+                    areas.put(name, area);
+                    area.preloadMap();
                 }
             }
         });
@@ -46,7 +48,8 @@ public class DragonEggCarnivalManager extends BaseAreaManager<DragonEggCarnivalA
         if (areas.containsKey(name))
             return false;
 
-        plugin.getWorldManager().createEmptyWorld("decarnival_" + name, World.Environment.THE_END);
+        if (!plugin.getWorldManager().loadWorld("decarnival_" + name, World.Environment.THE_END, false))
+            return false;
 
         DragonEggCarnivalConfig dragonEggCarnivalConfig = new DragonEggCarnivalConfig(plugin, name);
         dragonEggCarnivalConfig.initializeConfiguration(plugin.getFolder());
@@ -68,7 +71,6 @@ public class DragonEggCarnivalManager extends BaseAreaManager<DragonEggCarnivalA
             return false;
         }
 
-        dragonEggCarnivalArea.saveMap(World.Environment.THE_END);
-        return true;
+        return dragonEggCarnivalArea.saveMap(World.Environment.THE_END);
     }
 }

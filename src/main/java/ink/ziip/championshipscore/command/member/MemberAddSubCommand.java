@@ -14,7 +14,7 @@ import java.util.List;
 
 public class MemberAddSubCommand extends BaseSubCommand {
     public MemberAddSubCommand() {
-        super("add", "向队伍添加成员", "/cc member add <队伍ID> <玩家>");
+        super("add", "向队伍添加成员", "/cc team member add <队伍ID> <玩家>");
     }
 
     @Override
@@ -28,20 +28,20 @@ public class MemberAddSubCommand extends BaseSubCommand {
             if (championshipTeam == null) {
                 String message = MessageConfig.MEMBER_ADDED_FAILED
                         .replace("%team%", args[0])
-                        .replace("%player%", args[1])
+                        .replace("%player%", Utils.formatPlayerName(args[1]))
                         .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
                 sender.sendMessage(message);
                 return true;
             }
             if (plugin.getTeamManager().addTeamMember(args[1], championshipTeam)) {
                 String message = MessageConfig.MEMBER_SUCCESSFULLY_ADDED
-                        .replace("%team%", args[0])
-                        .replace("%player%", args[1]);
+                        .replace("%team%", championshipTeam.getColoredName())
+                        .replace("%player%", Utils.formatPlayerNameOnly(args[1]));
                 sender.sendMessage(message);
             } else {
                 String message = MessageConfig.MEMBER_ADDED_FAILED
                         .replace("%team%", args[0])
-                        .replace("%player%", args[1])
+                        .replace("%player%", Utils.formatPlayerName(args[1]))
                         .replace("%reason%", MessageConfig.REASON_MEMBER_ALREADY_EXIST);
                 sender.sendMessage(message);
             }
@@ -53,14 +53,12 @@ public class MemberAddSubCommand extends BaseSubCommand {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
             List<String> returnList = plugin.getTeamManager().getTeamNameList();
-            returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
-            return returnList;
+            return filterStartsWith(returnList, args[0]);
         }
 
         if (args.length == 2) {
             List<String> returnList = Utils.getOnlinePlayerNames();
-            returnList.removeIf(s -> s != null && !s.startsWith(args[1]));
-            return returnList;
+            return filterStartsWith(returnList, args[1]);
         }
         return Collections.emptyList();
     }

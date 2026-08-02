@@ -44,15 +44,6 @@ public class TeamBuildState {
         return list != null && index < list.size() ? list.get(index) : null;
     }
 
-    /** First empty normal slot, or {@code null} if all three are occupied. */
-    @Nullable
-    public synchronized BuildSlot firstFreeNormalSlot() {
-        for (BuildSlot slot : normalSlots) {
-            if (slot.isEmpty()) return slot;
-        }
-        return null;
-    }
-
     /** Records a completed build's stars and bumps the completed counter. */
     public synchronized void recordCompletion(int stars) {
         completedCount++;

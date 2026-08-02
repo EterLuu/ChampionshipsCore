@@ -9,6 +9,7 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.WrappedDataValue;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -123,7 +124,8 @@ public class GlowingEntities implements Listener {
         try {
             protocolManager.sendServerPacket(receiver, packet);
         } catch (Exception e) {
-            plugin.getLogger().warning("Failed to send glow metadata packet: " + e.getMessage());
+            plugin.getLogger().warning(Utils.formatModuleLog("Glow", "数据包",
+                    "发光元数据发送失败 | " + e.getMessage()));
         }
     }
 

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.entry.GameStatusEntry;
 import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
+import ink.ziip.championshipscore.util.Utils;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ public class RankDaoImpl implements RankDao {
                 return playerPointEntries;
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("查询玩家积分", exception);
             return Collections.emptyList();
         }
     }
@@ -90,7 +91,7 @@ public class RankDaoImpl implements RankDao {
                 return playerPointEntries;
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("查询队伍积分", exception);
             return Collections.emptyList();
         }
     }
@@ -126,7 +127,9 @@ public class RankDaoImpl implements RankDao {
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
-                            plugin.getLogger().log(Level.INFO, "Player points added: " + username + ", " + teamName + ", " + gameName + ", " + areaName + ", " + points);
+                            plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("Database", "积分",
+                                    "玩家=" + username + " 队伍=" + teamName + " 游戏=" + gameName
+                                            + " 场地=" + areaName + " 变更=" + points));
                             generatedKeys.getInt(1);
                         } else {
                         }
@@ -135,7 +138,7 @@ public class RankDaoImpl implements RankDao {
                 }
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("写入玩家积分", exception);
         }
     }
 
@@ -162,7 +165,7 @@ public class RankDaoImpl implements RankDao {
                 return gameStatusEntries;
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("查询游戏状态", exception);
             return Collections.emptyList();
         }
     }
@@ -183,7 +186,7 @@ public class RankDaoImpl implements RankDao {
                 return -1;
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("查询游戏顺序", exception);
             return -1;
         }
     }
@@ -210,7 +213,7 @@ public class RankDaoImpl implements RankDao {
                 }
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("新增游戏状态", exception);
         }
     }
 
@@ -226,7 +229,7 @@ public class RankDaoImpl implements RankDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("删除游戏状态", exception);
         }
     }
 
@@ -243,7 +246,7 @@ public class RankDaoImpl implements RankDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("作废玩家积分", exception);
         }
     }
 
@@ -260,7 +263,28 @@ public class RankDaoImpl implements RankDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("作废队伍积分", exception);
         }
+    }
+
+    @Override
+    public void deleteGamePoints(GameTypeEnum gameTypeEnum) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    UPDATE `player_points`
+                    SET `valid`=0
+                    WHERE `game`=?
+                    """)) {
+                statement.setString(1, gameTypeEnum.name());
+                statement.executeUpdate();
+            }
+        } catch (SQLException exception) {
+            logFailure("作废游戏积分", exception);
+        }
+    }
+
+    private void logFailure(String operation, SQLException exception) {
+        plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Database", "积分",
+                "操作=" + operation + " 失败"), exception);
     }
 }

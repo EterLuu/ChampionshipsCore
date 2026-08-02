@@ -1,10 +1,10 @@
 package ink.ziip.championshipscore.api.game.battlebox;
 
-import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
 import ink.ziip.championshipscore.util.Utils;
-import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -15,13 +15,9 @@ import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * One team-vs-team Battle Box match running in a single stamped arena copy. All geometry is the configured
@@ -35,54 +31,31 @@ public class BattleBoxMatch {
     private final int copyIndex;
     private final ChampionshipTeam right;
     private final ChampionshipTeam left;
-
-    private final Location rightSpawn;
-    private final Location leftSpawn;
-    private final Location rightPreSpawn;
-    private final Location leftPreSpawn;
-    private final Location spectatorSpawn;
-
-    /** Inclusive wool-floor corners (where blocks may be placed/broken and wool is counted). */
-    private final Vector woolMin;
-    private final Vector woolMax;
-    /** Inclusive overall arena bounds for this copy (in-bounds / item cleanup). */
-    private final Vector areaMin;
-    private final Vector areaMax;
-
-    private final List<Location> potionLocations = new ArrayList<>();
+    private final BattleBoxGeometry geometry;
 
     /** True once a team has reached 9 wool (or the match is otherwise settled); its players are frozen. */
-    private final AtomicBoolean finished = new AtomicBoolean();
+    @Setter
+    private volatile boolean finished;
 
     public BattleBoxMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left, BattleBoxConfig config) {
+        this(copyIndex, right, left, new ReplicatedSpatialLayout<>(BattleBoxGeometry.from(config),
+                config.getCopyGrid(), config.getCopyCount()).geometry(copyIndex));
+    }
+
+    public BattleBoxMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left,
+                          BattleBoxGeometry geometry) {
         this.copyIndex = copyIndex;
         this.right = right;
         this.left = left;
-        Vector d = BattleBoxLayout.delta(copyIndex);
-
-        this.rightSpawn = shift(config.getRightSpawnPoint(), d);
-        this.leftSpawn = shift(config.getLeftSpawnPoint(), d);
-        this.rightPreSpawn = shift(config.getRightPreSpawnPoint(), d);
-        this.leftPreSpawn = shift(config.getLeftPreSpawnPoint(), d);
-        this.spectatorSpawn = shift(config.getSpectatorSpawnPoint(), d);
-
-        this.woolMin = Vector.getMinimum(config.getWoolPos1(), config.getWoolPos2()).add(d);
-        this.woolMax = Vector.getMaximum(config.getWoolPos1(), config.getWoolPos2()).add(d);
-        this.areaMin = Vector.getMinimum(config.getAreaPos1(), config.getAreaPos2()).add(d);
-        this.areaMax = Vector.getMaximum(config.getAreaPos1(), config.getAreaPos2()).add(d);
-
-        if (config.getPotionSpawnPoints() != null) {
-            for (String raw : config.getPotionSpawnPoints()) {
-                Location location = Utils.getLocation(raw);
-                if (location != null) potionLocations.add(location.add(d));
-            }
-        }
+        this.geometry = geometry;
     }
 
-    @Nullable
-    private static Location shift(@Nullable Location location, Vector delta) {
-        return location == null ? null : location.clone().add(delta);
-    }
+    public Location getRightSpawn() { return geometry.getRightSpawn(); }
+    public Location getLeftSpawn() { return geometry.getLeftSpawn(); }
+    public Location getRightPreSpawn() { return geometry.getRightPreSpawn(); }
+    public Location getLeftPreSpawn() { return geometry.getLeftPreSpawn(); }
+    public Location getSpectatorSpawn() { return geometry.getSpectatorSpawn(); }
+    public List<Location> getPotionLocations() { return geometry.getPotionSpawns(); }
 
     /** True when {@code player} belongs to either team in this match. */
     public boolean contains(Player player) {
@@ -100,77 +73,76 @@ public class BattleBoxMatch {
     }
 
     public boolean isInWool(Vector point) {
-        return point.isInAABB(woolMin, woolMax);
+        return geometry.isInWool(point);
     }
 
     public boolean isInArea(Vector point) {
-        return point.isInAABB(areaMin, areaMax);
+        return geometry.contains(point);
     }
 
     public BoundingBox getAreaBox() {
-        return BoundingBox.of(areaMin, areaMax.clone().add(new Vector(1, 1, 1)));
+        return geometry.boundaryBox();
     }
 
     private World world() {
-        return rightSpawn == null ? null : rightSpawn.getWorld();
+        return geometry.getRightSpawn() == null ? null : geometry.getRightSpawn().getWorld();
     }
 
-    /** Counts blocks of each material, scheduling each cell on its owning Folia region. */
-    public CompletableFuture<HashMap<Material, Integer>> countWoolAsync(ChampionshipsCore plugin) {
-        ConcurrentHashMap<Material, Integer> blockCount = new ConcurrentHashMap<>();
+    /** Location whose Folia region owns the complete 3x3 wool objective. */
+    public Location getWoolOwner() {
         World world = world();
-        if (world == null) return CompletableFuture.completedFuture(new HashMap<>());
-        List<CompletableFuture<Void>> reads = new ArrayList<>();
-        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
+        if (world == null) return geometry.getSpectatorSpawn();
+        Vector min = geometry.getWoolMin();
+        Vector max = geometry.getWoolMax();
+        return new Location(world,
+                (min.getX() + max.getX()) / 2.0,
+                (min.getY() + max.getY()) / 2.0,
+                (min.getZ() + max.getZ()) / 2.0);
+    }
+
+    /** Counts blocks of each material inside this match's wool floor. */
+    public HashMap<Material, Integer> countWool() {
+        HashMap<Material, Integer> blockCount = new HashMap<>();
+        World world = world();
+        if (world == null) return blockCount;
+        Vector woolMin = geometry.getWoolMin();
+        Vector woolMax = geometry.getWoolMax();
         for (int x = woolMin.getBlockX(); x <= woolMax.getBlockX(); x++) {
             for (int y = woolMin.getBlockY(); y <= woolMax.getBlockY(); y++) {
                 for (int z = woolMin.getBlockZ(); z <= woolMax.getBlockZ(); z++) {
-                    int blockX = x;
-                    int blockY = y;
-                    int blockZ = z;
-                    Location owner = new Location(world, blockX, blockY, blockZ);
-                    reads.add(scheduler.runAtLocationFuture(owner, () -> {
-                        Material material = world.getBlockAt(blockX, blockY, blockZ).getType();
-                        blockCount.merge(material, 1, Integer::sum);
-                    }));
+                    Material material = world.getBlockAt(x, y, z).getType();
+                    blockCount.put(material, blockCount.getOrDefault(material, 0) + 1);
                 }
             }
         }
-        return CompletableFuture.allOf(reads.toArray(CompletableFuture[]::new))
-                .thenApply(ignored -> new HashMap<>(blockCount));
+        return blockCount;
     }
 
-    /** Fills this match's wool floor, scheduling each cell on its owning Folia region. */
-    public CompletableFuture<Void> resetWoolAsync(ChampionshipsCore plugin, Material material) {
+    /** Fills this match's wool floor with {@code material}. */
+    public void resetWool(Material material) {
         World world = world();
-        if (world == null) return CompletableFuture.completedFuture(null);
-        List<CompletableFuture<Void>> writes = new ArrayList<>();
-        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
+        if (world == null) return;
+        Vector woolMin = geometry.getWoolMin();
+        Vector woolMax = geometry.getWoolMax();
         for (int x = woolMin.getBlockX(); x <= woolMax.getBlockX(); x++) {
             for (int y = woolMin.getBlockY(); y <= woolMax.getBlockY(); y++) {
                 for (int z = woolMin.getBlockZ(); z <= woolMax.getBlockZ(); z++) {
-                    int blockX = x;
-                    int blockY = y;
-                    int blockZ = z;
-                    Location owner = new Location(world, blockX, blockY, blockZ);
-                    writes.add(scheduler.runAtLocationFuture(owner, () -> {
-                        Block block = world.getBlockAt(blockX, blockY, blockZ);
-                        block.setType(material);
-                        BlockState state = block.getState();
-                        state.setType(material);
-                        state.update();
-                    }));
+                    Block block = world.getBlockAt(x, y, z);
+                    block.setType(material);
+                    BlockState state = block.getState();
+                    state.setType(material);
+                    state.update();
                 }
             }
         }
-        return CompletableFuture.allOf(writes.toArray(CompletableFuture[]::new));
     }
 
     /** Resets the centre to a neutral colour avoiding both teams' wool colours, like the original single match. */
-    public CompletableFuture<Void> resetCenterWoolAsync(ChampionshipsCore plugin) {
+    public void resetCenterWool() {
         Material material = Material.WHITE_WOOL;
         if (right.getWool().getType() != material && left.getWool().getType() != material) {
-            return resetWoolAsync(plugin, material);
+            resetWool(material);
+            return;
         }
         for (String color : Utils.getColorNames()) {
             if (!color.equalsIgnoreCase(right.getColorName()) && !color.equalsIgnoreCase(left.getColorName())) {
@@ -181,14 +153,6 @@ public class BattleBoxMatch {
                 }
             }
         }
-        return resetWoolAsync(plugin, material);
-    }
-
-    public boolean isFinished() {
-        return finished.get();
-    }
-
-    public boolean tryFinish() {
-        return finished.compareAndSet(false, true);
+        resetWool(material);
     }
 }

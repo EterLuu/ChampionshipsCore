@@ -1,8 +1,8 @@
 dont-edit-this:
-  version: 1
+  version: 3
 name: "area"
-# Round duration in seconds.
-timer: 1200
+# Round duration in seconds (10 minutes per the bingo design doc).
+timer: 600
 # Preparation countdown before the round starts, in seconds.
 prepare-time: 10
 # Card width (3 or 5). A 5-wide card has 12 lines (5 rows + 5 cols + 2 diagonals).
@@ -12,16 +12,50 @@ spectator-spawn-point:
 # area-pos is unused for bingo (whole-world play) but kept for the config contract.
 area-pos1:
 area-pos2:
-# Players are randomly scattered into a ring around the bingo world spawn at round start.
-scatter-ring-radius: 1000
-scatter-ring-jitter: 300
+# Players are randomly placed within a disc of this radius (blocks) around the bingo world spawn at round start.
+scatter-radius: 6
 scatter-max-tries: 32
-# Points by completion rank: 1st team to complete a cell=50, 2nd=40, 3rd=30, 4th=20, 5th=10,
-# and the last value is the floor for the 6th team and beyond (=5).
-points-per-rank: [ 50, 40, 30, 20, 10, 5 ]
+# 永久药水效果：开局赋予、整局保持、结束随重置清除。每项 "效果:等级"，等级为游戏内显示等级(1=I,8=VIII)，
+# 可省略(默认 I)。效果名为 vanilla PotionEffectType 键(night_vision, jump_boost, slow_falling, speed, haste, ...)。
+# 缓降(slow_falling)会在玩家鞘翅滑翔时自动移除(它会抵消滑翔)，滑翔结束后恢复。
+permanent-effects:
+  - "night_vision:1"
+  - "jump_boost:8"
+  - "slow_falling:1"
+# Points by completion rank: 1st team to complete a cell=60, 2nd=50, 3rd=40, 4th=30, 5th=20,
+# and the last value is the floor for the 6th team and beyond (=10). The completing player earns these.
+points-per-rank: [ 60, 50, 40, 30, 20, 10 ]
 # Line bonuses are per-team and independent of other teams (each team can earn all 12 lines).
-# First `line-bonus-major-count` lines each award `line-bonus`; the rest award `line-bonus-minor`.
-# Default: first 4 lines = 200 each, remaining 8 lines = 100 each.
-line-bonus: 200
+# First `line-bonus-major-count` lines each award `line-bonus` per team member; the rest award `line-bonus-minor`.
+# Per the design doc: first 4 lines = 50/member, remaining 8 lines = 25/member.
+line-bonus: 50
 line-bonus-major-count: 4
-line-bonus-minor: 100
+line-bonus-minor: 25
+
+# ── 规则介绍阶段（introduction）────────────────────────────
+# 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
+# 规则文案（rules，每个子列表为一段，支持 & 颜色码与 &#RRGGBB 十六进制颜色），期间可以自由参观
+# 场地；结束后传送到正式准备点位，读秒后开始游戏。
+# 将 introduction-spawn-point 留空或把 rules 设为 [] 即可跳过该阶段。
+introduction-spawn-point:
+rules:
+  - - "&#696969==========&r &#ff6b26[&d宾果&#ff6b26] &#696969==========&r"
+    - "&#fff566鞘翅就位！飞速收集，宾果时间到！"
+    - "&#ededed一局定胜负，所有队伍同在一个世界（10 分钟）"
+    - "&#ededed开局人手一张宾果卡，目标全员相同"
+    - "&#ededed收集卡片上的物品、成就与数据目标"
+    - "&#ededed卡片默认为地图样式，右键可切换菜单样式"
+    - "&#ededed全队分工合作，比比谁的连线更多"
+  - - "&#696969==========&r &#fff566积分规则 &#696969==========&r"
+    - "&#ededed每格前五个达成者：&#fff56660/50/40/30/20 分"
+    - "&#ededed第六个及以后达成：&#fff56610 分"
+    - "&#ededed共 12 条连线（5 横 5 竖 2 斜）"
+    - "&#ededed前 4 条连线：队内全员 &#fff566+50 分"
+    - "&#ededed之后的每条连线：队内全员 &#fff566+25 分"
+  - - "&#696969==========&r &#fff566小提示 &#696969==========&r"
+    - "&#fff566初始装备：皮套面包、鞘翅、效率3石工具"
+    - "&#ededed铁剑（锋利2）与指南针"
+    - "&#ededed左键指南针打开菜单，可传送至队友"
+    - "&#ededed永久夜视、跳跃提升与缓降"
+    - "&#ededed世界为原版普通难度，死亡不掉落"
+    - "&#ededed开局时间 9000，昼夜会正常流逝"

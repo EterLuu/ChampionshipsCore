@@ -17,6 +17,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.TaskDisplayMode;
 import ink.ziip.championshipscore.api.game.bingo.task.TaskGenerator;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * One active bingo round: a generated task layout shared by every team, each tracked on the shared
@@ -51,13 +53,13 @@ public final class BingoRound {
     private final List<ChampionshipTeam> teams;
 
     /** The live card-map item per team, kept so it can be re-issued when a player loses theirs. */
-    private final Map<ChampionshipTeam, ItemStack> teamMapItems = new HashMap<>();
+    private final Map<ChampionshipTeam, ItemStack> teamMapItems = new ConcurrentHashMap<>();
 
     /** statistic baselines: player -> (statistic -> value at the moment tracking began). */
-    private final Map<UUID, Map<StatisticHandle, Integer>> statBaselines = new HashMap<>();
+    private final Map<UUID, Map<StatisticHandle, Integer>> statBaselines = new ConcurrentHashMap<>();
 
     /** Set once when the round ends so the renderer can paint the win-state overlay; null while running. */
-    private RoundOutcome outcome;
+    private volatile RoundOutcome outcome;
 
     /** Points scoring state. */
     private final int[] itemPoints;
@@ -67,6 +69,10 @@ public final class BingoRound {
     private final Map<ChampionshipTeam, Integer> scores = new HashMap<>();
     private final Map<ChampionshipTeam, Integer> awardedLines = new HashMap<>();
     private int lastScoreDelta;
+    /** Cell points earned by the completing player in the most recent completion (by claim rank). */
+    private int lastCellDelta;
+    /** Per-member line bonus triggered by the most recent completion; caller credits every team member. */
+    private int lastLineDelta;
 
     /**
      * @param itemPoints points per claim rank (index 0 = first team to claim a cell), never null.
@@ -105,33 +111,33 @@ public final class BingoRound {
         return new BingoCard(size, copy);
     }
 
-    public synchronized CardSize size() {
+    public CardSize size() {
         return size;
     }
 
-    public synchronized CardDisplayInfo displayInfo() {
+    public CardDisplayInfo displayInfo() {
         return displayInfo;
     }
 
     /** The distinct task data on the card. */
-    public synchronized List<GameTask> layout() {
+    public List<GameTask> layout() {
         return layout;
     }
 
     /** Every team shares one board. */
-    public synchronized Optional<BingoCard> cardFor(ChampionshipTeam team) {
+    public Optional<BingoCard> cardFor(ChampionshipTeam team) {
         return Optional.of(card);
     }
 
-    public synchronized BingoCard card() {
+    public BingoCard card() {
         return card;
     }
 
-    public synchronized void setMapItem(ChampionshipTeam team, ItemStack item) {
+    public void setMapItem(ChampionshipTeam team, ItemStack item) {
         teamMapItems.put(team, item);
     }
 
-    public synchronized Optional<ItemStack> mapItem(ChampionshipTeam team) {
+    public Optional<ItemStack> mapItem(ChampionshipTeam team) {
         return Optional.ofNullable(teamMapItems.get(team));
     }
 
@@ -144,11 +150,11 @@ public final class BingoRound {
         return card.completedIndices(BingoTeamAdapter.id(team));
     }
 
-    public synchronized void setOutcome(RoundOutcome outcome) {
+    public void setOutcome(RoundOutcome outcome) {
         this.outcome = outcome;
     }
 
-    public synchronized RoundOutcome outcome() {
+    public RoundOutcome outcome() {
         return outcome;
     }
 
@@ -156,12 +162,12 @@ public final class BingoRound {
         return card.getCompleteCount(BingoTeamAdapter.id(team));
     }
 
-    public synchronized int taskCount() {
+    public int taskCount() {
         return layout.size();
     }
 
     /** The playable teams competing this round. */
-    public synchronized List<ChampionshipTeam> teams() {
+    public List<ChampionshipTeam> teams() {
         return teams;
     }
 
@@ -191,47 +197,69 @@ public final class BingoRound {
         return scores.getOrDefault(team, 0);
     }
 
-    /** Points gained in the most recent completion (for the broadcast). */
-    public synchronized int lastScoreDelta() {
-        return lastScoreDelta;
+    /** Teams ranked by score descending, ties broken by earliest last-completion time. */
+    public synchronized List<ChampionshipTeam> rankedTeams() {
+        List<ChampionshipTeam> sorted = new ArrayList<>(teams);
+        sorted.sort((a, b) -> {
+            int diff = scores.getOrDefault(b, 0) - scores.getOrDefault(a, 0);
+            if (diff != 0) return diff;
+            return Long.compare(lastCompletionTime(a), lastCompletionTime(b));
+        });
+        return sorted;
     }
 
     /** Team with the highest score; ties broken by earliest last-completion time. Null if all zero. */
     public synchronized ChampionshipTeam resolveTopScore() {
-        ChampionshipTeam best = null;
-        int bestScore = -1;
-        long bestTime = Long.MAX_VALUE;
-        for (ChampionshipTeam team : teams) {
-            int s = scores.getOrDefault(team, 0);
-            long time = lastCompletionTime(team);
-            if (s > bestScore || (s == bestScore && time < bestTime)) {
-                best = team;
-                bestScore = s;
-                bestTime = time;
-            }
+        for (ChampionshipTeam team : rankedTeams()) {
+            if (scores.getOrDefault(team, 0) > 0) return team;
         }
-        return bestScore <= 0 ? null : best;
+        return null;
     }
 
-    /** Awards points for completing {@code task} and for any newly-earned lines. Sets {@link #lastScoreDelta}. */
+    /**
+     * Awards points for completing {@code task} and for any newly-earned lines. Splits the delta into a
+     * per-player cell portion ({@link #lastCellDelta}, by claim rank) and a per-member line bonus
+     * ({@link #lastLineDelta}); the caller credits each accordingly - the completing player gets the cell
+     * points, every team member gets the line bonus. The team-score tracker mirrors
+     * {@code BaseGameInstance#getTeamPoints} (cell once + line bonus × team size) so winner resolution
+     * stays consistent with the sum-of-members ranking.
+     */
     private void awardPoints(ChampionshipTeam team, GameTask task) {
-        lastScoreDelta = 0;
+        lastCellDelta = 0;
+        lastLineDelta = 0;
 
         int rank = task.claimRank(BingoTeamAdapter.id(team));
         if (rank >= 0) {
-            lastScoreDelta += rank < itemPoints.length ? itemPoints[rank] : itemPoints[itemPoints.length - 1];
+            lastCellDelta = rank < itemPoints.length ? itemPoints[rank] : itemPoints[itemPoints.length - 1];
         }
 
         int totalLines = countCompletedLines(team);
         int prevLines = awardedLines.getOrDefault(team, 0);
         if (totalLines > prevLines) {
             for (int i = prevLines; i < totalLines; i++) {
-                lastScoreDelta += (i < lineBonusMajorCount) ? lineBonus : lineBonusMinor;
+                lastLineDelta += (i < lineBonusMajorCount) ? lineBonus : lineBonusMinor;
             }
             awardedLines.put(team, totalLines);
         }
 
-        scores.merge(team, lastScoreDelta, Integer::sum);
+        lastScoreDelta = lastCellDelta + lastLineDelta;
+        int teamSize = Math.max(1, team.getMembers().size());
+        scores.merge(team, lastCellDelta + lastLineDelta * teamSize, Integer::sum);
+    }
+
+    /** Points gained in the most recent completion (cell + one share of line bonus), for the broadcast. */
+    public synchronized int lastScoreDelta() {
+        return lastScoreDelta;
+    }
+
+    /** Cell points the completing player earned in the most recent completion (credited to that player). */
+    public synchronized int lastCellDelta() {
+        return lastCellDelta;
+    }
+
+    /** Per-member line bonus triggered by the most recent completion (credited to every team member). */
+    public synchronized int lastLineDelta() {
+        return lastLineDelta;
     }
 
     // ── round-start setup ────────────────────────────────────────────────────────────────────
@@ -241,6 +269,22 @@ public final class BingoRound {
         java.util.Iterator<Advancement> it = org.bukkit.Bukkit.advancementIterator();
         while (it.hasNext()) revokeAdvancement(player, it.next());
 
+        Map<StatisticHandle, Integer> baselines = statBaselines.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>());
+        for (GameTask task : card.getTasks()) {
+            if (task.data.getType() == TaskData.TaskType.STATISTIC) {
+                StatisticHandle h = ((StatisticTask) task.data).statistic();
+                baselines.putIfAbsent(h, readStatistic(player, h));
+            }
+        }
+    }
+
+    /**
+     * Snapshots statistic baselines for a participant <em>without</em> revoking advancements - used when
+     * a player reconnects mid-round, where their earned advancements and card progress must be preserved.
+     * Only baselines statistics that don't already have one, so a participant who was online at round
+     * start (already prepared) is left untouched.
+     */
+    public synchronized void ensureStatBaselines(Player player) {
         Map<StatisticHandle, Integer> baselines = statBaselines.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>());
         for (GameTask task : card.getTasks()) {
             if (task.data.getType() == TaskData.TaskType.STATISTIC) {
@@ -416,7 +460,7 @@ public final class BingoRound {
     }
 
     private GameTask.Completion completion(Player player, ChampionshipTeam team, long gameTime) {
-        Component name = Component.text(player.getName());
+        Component name = Utils.toComponent(Utils.formatPlayerName(player));
         return new GameTask.Completion(player.getUniqueId(), name,
                 BingoTeamAdapter.color(team), BingoTeamAdapter.id(team), gameTime);
     }

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.buildmart;
 
+import ink.ziip.championshipscore.api.game.spatial.SpatialTransform;
+import ink.ziip.championshipscore.api.game.spatial.SpatialTemplate;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Location;
@@ -13,16 +15,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Geometry of one team's base, parsed from a {@code bases.<teamId>} config sub-section. A base holds the
- * team spawn, the portal region that sends players to the hub, and the build plots. Each build plot is a
- * pair of anchors: a {@code reference} anchor where the ghost reference build is pasted, and a
- * {@code build} anchor where the player replicates it (the validation origin).
+ * Geometry of one team's base, derived from the configured {@code base} template. A base holds the team
+ * spawn, the portal region that sends players to the hub, and the build plots. Each build plot has a
+ * reference anchor, a player build anchor, and a submission button.
  *
- * <p>All fields are optional so a partially-configured base still loads; callers must null-check the
- * pieces they use. Phase 2 only relies on {@link #getSpawn()} and {@link #getPortalToHub()}.
+ * <p>All fields are optional so an unfinished setup can still load. A game starts only after the template
+ * is complete.
  */
 @Getter
-public class BuildMartBase {
+public class BuildMartBase implements SpatialTemplate<BuildMartBase> {
     private final int teamId;
     @Nullable
     private final Location spawn;
@@ -34,10 +35,16 @@ public class BuildMartBase {
     private final List<Location> normalBuildAnchors = new ArrayList<>();
     private final List<Location> normalReferenceAnchors = new ArrayList<>();
 
+    /** Per-plot normal submit-button block coords (null-padded so index = plot number, 0-based). */
+    private final List<Location> normalSubmitAnchors = new ArrayList<>();
+
     @Nullable
     private final Location goldenBuildAnchor;
     @Nullable
     private final Location goldenReferenceAnchor;
+    /** The golden plot's submit-button block coord. */
+    @Nullable
+    private final Location goldenSubmitAnchor;
 
     public BuildMartBase(int teamId, ConfigurationSection section) {
         this.teamId = teamId;
@@ -49,27 +56,34 @@ public class BuildMartBase {
             Location ref = loc(section, "normal-ref-" + i);
             if (build != null) normalBuildAnchors.add(build);
             if (ref != null) normalReferenceAnchors.add(ref);
+            // Always add (null-padded) so the list index lines up with the plot number.
+            normalSubmitAnchors.add(loc(section, "normal-submit-" + i));
         }
 
         this.goldenBuildAnchor = loc(section, "golden-plot");
         this.goldenReferenceAnchor = loc(section, "golden-ref");
+        this.goldenSubmitAnchor = loc(section, "golden-submit");
     }
 
     /** Copy constructor that shifts every anchor of {@code template} by {@code delta} for a new seat. */
-    private BuildMartBase(int teamId, @NotNull BuildMartBase template, @NotNull Vector delta) {
+    private BuildMartBase(int teamId, @NotNull BuildMartBase template, @NotNull SpatialTransform transform) {
         this.teamId = teamId;
-        this.spawn = shift(template.spawn, delta);
-        this.portalToHub = shift(template.portalToHub, delta);
+        this.spawn = transform.apply(template.spawn);
+        this.portalToHub = transform.apply(template.portalToHub);
         for (Location anchor : template.normalBuildAnchors) {
-            Location shifted = shift(anchor, delta);
+            Location shifted = transform.apply(anchor);
             if (shifted != null) normalBuildAnchors.add(shifted);
         }
         for (Location anchor : template.normalReferenceAnchors) {
-            Location shifted = shift(anchor, delta);
+            Location shifted = transform.apply(anchor);
             if (shifted != null) normalReferenceAnchors.add(shifted);
         }
-        this.goldenBuildAnchor = shift(template.goldenBuildAnchor, delta);
-        this.goldenReferenceAnchor = shift(template.goldenReferenceAnchor, delta);
+        for (Location anchor : template.normalSubmitAnchors) {
+            normalSubmitAnchors.add(transform.apply(anchor)); // keep null-padded alignment
+        }
+        this.goldenBuildAnchor = transform.apply(template.goldenBuildAnchor);
+        this.goldenReferenceAnchor = transform.apply(template.goldenReferenceAnchor);
+        this.goldenSubmitAnchor = transform.apply(template.goldenSubmitAnchor);
     }
 
     /**
@@ -77,18 +91,22 @@ public class BuildMartBase {
      * {@code delta} and re-keyed to {@code seat}. Used to derive every seat's geometry from one configured
      * template; see {@link BuildMartLayout}.
      */
-    public BuildMartBase translated(int seat, @NotNull Vector delta) {
-        return new BuildMartBase(seat, this, delta);
+    @Override
+    public @NotNull BuildMartBase transform(@NotNull SpatialTransform transform) {
+        return new BuildMartBase(teamId, this, transform);
     }
 
-    @Nullable
-    private static Location shift(@Nullable Location location, @NotNull Vector delta) {
-        return location == null ? null : location.clone().add(delta);
+    /** Re-keys already transformed geometry to the participating team's seat. */
+    public @NotNull BuildMartBase forSeat(int seat) {
+        return new BuildMartBase(seat, this, SpatialTransform.IDENTITY);
     }
 
-    @Nullable
-    private static BoundingBox shift(@Nullable BoundingBox box, @NotNull Vector delta) {
-        return box == null ? null : box.clone().shift(delta);
+    /** All geometry required by the live Build Mart rules has been captured for this base template. */
+    public boolean isComplete() {
+        return spawn != null && portalToHub != null
+                && normalBuildAnchors.size() == 3 && normalReferenceAnchors.size() == 3
+                && normalSubmitAnchors.size() == 3 && normalSubmitAnchors.stream().allMatch(java.util.Objects::nonNull)
+                && goldenBuildAnchor != null && goldenReferenceAnchor != null && goldenSubmitAnchor != null;
     }
 
     @Nullable

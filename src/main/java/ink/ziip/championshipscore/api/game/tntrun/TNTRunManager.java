@@ -1,14 +1,14 @@
 package ink.ziip.championshipscore.api.game.tntrun;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.World;
 import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 
 import java.io.File;
 
-public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
+public class TNTRunManager extends BaseGameInstanceManager<TNTRunTeamArea> {
 
     public TNTRunManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -25,7 +25,9 @@ public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
             if (areaList != null) {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
-                    areas.put(name, new TNTRunTeamArea(plugin, new TNTRunConfig(plugin, name), false, name));
+                    TNTRunTeamArea area = new TNTRunTeamArea(plugin, new TNTRunConfig(plugin, name), false, name);
+                    areas.put(name, area);
+                    area.preloadMap();
                 }
             }
         });
@@ -46,7 +48,8 @@ public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
         if (areas.containsKey(name))
             return false;
 
-        plugin.getWorldManager().createEmptyWorld("tntrun_" + name, World.Environment.NORMAL);
+        if (!plugin.getWorldManager().loadWorld("tntrun_" + name, World.Environment.NORMAL, false))
+            return false;
 
         TNTRunConfig tntRunConfig = new TNTRunConfig(plugin, name);
         tntRunConfig.initializeConfiguration(plugin.getFolder());
@@ -68,7 +71,6 @@ public class TNTRunManager extends BaseAreaManager<TNTRunTeamArea> {
             return false;
         }
 
-        tntRunArea.saveMap(World.Environment.NORMAL);
-        return true;
+        return tntRunArea.saveMap(World.Environment.NORMAL);
     }
 }

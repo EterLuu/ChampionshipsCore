@@ -16,6 +16,10 @@ public class AdminVoteEndSubCommand extends BaseSubCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (args.length != 0) {
+            sendUsage(sender);
+            return true;
+        }
         plugin.getVoteManager().endVote();
         return true;
     }

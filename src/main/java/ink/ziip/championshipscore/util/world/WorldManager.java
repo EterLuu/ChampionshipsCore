@@ -2,19 +2,24 @@ package ink.ziip.championshipscore.util.world;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.util.Utils;
 import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.SpawnCategory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
@@ -24,7 +29,12 @@ import java.util.logging.Level;
  * @author lukasvdgaag
  */
 public class WorldManager extends BaseManager {
-    private File dimensionsContainer;
+    public static final String BINGO_OVERWORLD = "bingo";
+    public static final String BINGO_NETHER = "bingo_nether";
+    public static final String BINGO_END = "bingo_the_end";
+    private static final Set<String> BINGO_WORLD_NAMES =
+            Set.of(BINGO_OVERWORLD, BINGO_NETHER, BINGO_END);
+    private volatile File dimensionsContainer;
 
     public WorldManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -32,12 +42,33 @@ public class WorldManager extends BaseManager {
 
     @Override
     public void load() {
-        dimensionsContainer = Bukkit.getWorlds().getFirst().getWorldFolder().getParentFile();
+        World lobby = CCConfig.LOBBY_LOCATION == null ? null : CCConfig.LOBBY_LOCATION.getWorld();
+        if (lobby == null && !Bukkit.getWorlds().isEmpty())
+            lobby = Bukkit.getWorlds().get(0);
+        if (lobby == null) {
+            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "大厅", "大厅世界未加载"));
+            return;
+        }
+        dimensionsContainer = lobby.getWorldFolder().getParentFile();
+
+        // The lobby is Paper's normal level-name world. CC configures it but never creates/unloads it.
+        // WorldGuard remains responsible for its protected regions and the dedicated PvP region.
+        lobby.setDifficulty(Difficulty.PEACEFUL);
+        lobby.setSpawnFlags(false, true);
+        lobby.setAutoSave(true);
+        lobby.setGameRule(GameRules.SPAWN_MOBS, true);
+        lobby.setGameRule(GameRules.PVP, true);
+        lobby.setGameRule(GameRules.SEND_COMMAND_FEEDBACK, false);
+        lobby.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+        plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("WorldManager", "大厅",
+                "世界=" + lobby.getName() + " 类型=服务端管理 naturalMonsters=" + lobby.getAllowMonsters()
+                        + " naturalAnimals=" + lobby.getAllowAnimals()
+                        + " spawnMobs=" + lobby.getGameRuleValue(GameRules.SPAWN_MOBS)));
     }
 
     @Override
     public void unload() {
-
+        // The main lobby is server-owned and must stay loaded.
     }
 
     /**
@@ -48,10 +79,10 @@ public class WorldManager extends BaseManager {
      * parent of every world dimension. Must be called on the main thread.
      */
     public File getDimensionsContainer() {
-        if (dimensionsContainer == null) {
+        File container = dimensionsContainer;
+        if (container == null)
             throw new IllegalStateException("WorldManager has not been loaded");
-        }
-        return dimensionsContainer;
+        return container;
     }
 
     /**
@@ -66,18 +97,23 @@ public class WorldManager extends BaseManager {
 
     public void createEmptyWorld(String name, World.Environment environment) {
         FoliaScheduler.global(plugin).runGlobalFuture(() -> {
-            if (Bukkit.getWorld(name) == null) {
+            if (Bukkit.getWorld(name) == null)
                 loadWorldNow(name, environment, false);
-            }
         });
     }
 
-    /** Schedules world creation on the global region. */
-    public void loadWorld(String worldName, World.Environment environment, boolean readOnly) {
-        loadWorldAsync(worldName, environment, readOnly);
+    /**
+     * Loads an arena world with the standard minigame profile. Existing chunks are preserved; new
+     * chunks are void. Natural mob/animal spawning is disabled, while entities deliberately spawned
+     * by game code or stored in the map remain available.
+     *
+     * @return true when the world was loaded successfully
+     */
+    public boolean loadWorld(String worldName, World.Environment environment, boolean readOnly) {
+        return loadWorldNow(worldName, environment, readOnly);
     }
 
-    private void loadWorldNow(String worldName, World.Environment environment, boolean readOnly) {
+    private boolean loadWorldNow(String worldName, World.Environment environment, boolean readOnly) {
         WorldCreator worldCreator = new WorldCreator(worldName);
         worldCreator.environment(environment);
         worldCreator.generateStructures(false);
@@ -85,16 +121,17 @@ public class WorldManager extends BaseManager {
 
         World world = worldCreator.createWorld();
 
-        if (world == null)
-            throw new IllegalStateException("Could not create or load world " + worldName);
+        if (world == null) {
+            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "加载",
+                    "小游戏世界=" + worldName + " 加载失败"));
+            return false;
+        }
 
         world.setDifficulty(org.bukkit.Difficulty.NORMAL);
-        world.setSpawnFlags(true, true);
+        world.setSpawnFlags(false, false);
         world.setStorm(false);
         world.setThundering(false);
         world.setWeatherDuration(Integer.MAX_VALUE);
-        world.setTicksPerSpawns(SpawnCategory.ANIMAL, 1);
-        world.setTicksPerSpawns(SpawnCategory.MONSTER, 1);
         world.setAutoSave(!readOnly);
 
         world.setGameRule(GameRules.PVP, true);
@@ -104,91 +141,201 @@ public class WorldManager extends BaseManager {
         world.setGameRule(GameRules.SHOW_DEATH_MESSAGES, false);
         world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
         world.setGameRule(GameRules.ADVANCE_TIME, false);
+        plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("WorldManager", "加载",
+                "小游戏世界=" + worldName + " 生成器=虚空 naturalMonsters=" + world.getAllowMonsters()
+                        + " naturalAnimals=" + world.getAllowAnimals()
+                        + " spawnMobs=" + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
+        return true;
     }
 
-    public void copyWorldFiles(File source, File target) {
-        List<String> ignore = List.of("uid.dat", "session.dat", "session.lock");
-        if (ignore.contains(source.getName())) {
-            return;
+    /** Creates and configures a world on the global region. */
+    public CompletableFuture<Boolean> loadWorldAsync(
+            String worldName, World.Environment environment, boolean readOnly) {
+        return FoliaScheduler.global(plugin).supplyGlobal(() -> loadWorldNow(worldName, environment, readOnly));
+    }
+
+    /**
+     * Loads one Bingo dimension with vanilla terrain and survival spawning. Bingo cards explicitly
+     * include animal and hostile-mob objectives, so it intentionally does not use the arena profile.
+     */
+    public boolean loadBingoWorld(String worldName, World.Environment environment) {
+        World world = Bukkit.getWorld(worldName);
+        if (world == null) {
+            WorldCreator creator = new WorldCreator(worldName);
+            creator.environment(environment);
+            world = creator.createWorld();
         }
-        if (!source.exists()) {
-            plugin.getLogger().warning("World template does not exist; loading an empty world: " + source);
-            return;
+        if (world == null) {
+            plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "世界",
+                    "世界=" + worldName + " 加载失败"));
+            return false;
         }
 
+        world.setDifficulty(Difficulty.NORMAL);
+        world.setSpawnFlags(true, true);
+        world.setAutoSave(true);
+        world.setGameRule(GameRules.SPAWN_MOBS, true);
+        world.setGameRule(GameRules.MOB_GRIEFING, true);
+        world.setGameRule(GameRules.SPECTATORS_GENERATE_CHUNKS, false);
+        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+        world.setGameRule(GameRules.SHOW_DEATH_MESSAGES, false);
+        world.setGameRule(GameRules.KEEP_INVENTORY, true);
+        world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
+        world.setGameRule(GameRules.PVP, true);
+        world.setGameRule(GameRules.ADVANCE_TIME, true);
+        plugin.getLogger().log(Level.INFO, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "世界",
+                "世界=" + worldName + " 环境=" + environment
+                        + " naturalMonsters=" + world.getAllowMonsters()
+                        + " naturalAnimals=" + world.getAllowAnimals()
+                        + " spawnMobs=" + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
+        return true;
+    }
+
+    public CompletableFuture<Boolean> loadBingoWorldAsync(String worldName, World.Environment environment) {
+        return FoliaScheduler.global(plugin).supplyGlobal(() -> loadBingoWorld(worldName, environment));
+    }
+
+    public static boolean isBingoWorldName(String name) {
+        return name != null && BINGO_WORLD_NAMES.contains(name);
+    }
+
+    public static boolean isBingoWorld(World world) {
+        return world != null && isBingoWorldName(world.getName());
+    }
+
+    public static World.Environment getBingoEnvironment(String worldName) {
+        if (BINGO_OVERWORLD.equals(worldName))
+            return World.Environment.NORMAL;
+        if (BINGO_NETHER.equals(worldName))
+            return World.Environment.NETHER;
+        if (BINGO_END.equals(worldName))
+            return World.Environment.THE_END;
+        return null;
+    }
+
+    /** Resolves the server-owned main world without relying on a hard-coded world name. */
+    public World getMainWorld() {
+        World lobby = CCConfig.LOBBY_LOCATION == null ? null : CCConfig.LOBBY_LOCATION.getWorld();
+        if (lobby != null)
+            return lobby;
+        return Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
+    }
+
+    public boolean isMainWorld(World world) {
+        World mainWorld = getMainWorld();
+        return world != null && mainWorld != null && world.getUID().equals(mainWorld.getUID());
+    }
+
+    public List<String> getLoadedWorldNames() {
+        List<String> names = new ArrayList<>();
+        for (World world : Bukkit.getWorlds())
+            names.add(world.getName());
+        Collections.sort(names);
+        return names;
+    }
+
+    /**
+     * Returns worlds known either to Bukkit or to the MC 26.1 custom-dimension directory. Built-in
+     * dimension folders belong to the server's main level and are not separate Bukkit worlds.
+     */
+    public List<String> getStoredWorldNames() {
+        Set<String> names = new LinkedHashSet<>(getLoadedWorldNames());
+        File[] folders = getDimensionsContainer().listFiles(File::isDirectory);
+        if (folders != null) {
+            Set<String> builtInDimensions = Set.of("overworld", "the_nether", "the_end");
+            for (File folder : folders) {
+                if (!builtInDimensions.contains(folder.getName()))
+                    names.add(folder.getName());
+            }
+        }
+        List<String> sorted = new ArrayList<>(names);
+        Collections.sort(sorted);
+        return sorted;
+    }
+
+    public static boolean isValidWorldName(String worldName) {
+        return worldName != null && worldName.matches("[A-Za-z0-9_-]+");
+    }
+
+    public boolean copyWorldFiles(File source, File target) {
         try {
+            List<String> ignore = List.of("uid.dat", "session.dat", "session.lock");
+            if (ignore.contains(source.getName()))
+                return true;
+            if (!source.exists())
+                throw new FileNotFoundException(source.getPath());
+
             if (source.isDirectory()) {
-                if (target.exists() && !target.isDirectory()) {
-                    throw new IOException("Copy target is not a directory: " + target);
-                }
-                if (!target.exists() && !target.mkdirs()) {
-                    throw new IOException("Could not create directory: " + target);
-                }
+                if (!target.isDirectory() && !target.mkdirs())
+                    throw new IOException("无法创建目标目录 " + target.getPath());
                 String[] files = source.list();
-                if (files == null) {
-                    throw new IOException("Could not list directory: " + source);
-                }
+                if (files == null)
+                    throw new IOException("无法读取源目录 " + source.getPath());
                 for (String file : files) {
                     File srcFile = new File(source, file);
                     File destFile = new File(target, file);
-                    copyWorldFiles(srcFile, destFile);
+                    if (!copyWorldFiles(srcFile, destFile))
+                        return false;
                 }
             } else {
                 File parent = target.getParentFile();
-                if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                    throw new IOException("Could not create directory: " + parent);
-                }
+                if (parent != null && !parent.exists() && !parent.mkdirs())
+                    throw new IOException("无法创建目标目录 " + parent.getPath());
                 Files.copy(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
+            return true;
+        } catch (FileNotFoundException e) {
+            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "复制",
+                    "源文件不存在=" + source.getPath() + " 目标=" + target.getPath()), e);
         } catch (IOException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to copy world as required!", e);
-            throw new IllegalStateException("Failed to copy world from " + source + " to " + target, e);
+            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "复制",
+                    "世界文件复制失败，源=" + source.getPath() + " 目标=" + target.getPath()), e);
         }
+        return false;
     }
 
     public void deleteWorld(String name, boolean removeFile) {
         deleteWorldAsync(name, removeFile);
     }
 
-    /** Unloads a world only after all of its players have completed an async teleport. */
-    public CompletableFuture<Void> unloadWorldAsync(String worldName, boolean save) {
-        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
-        return scheduler.supplyGlobal(() -> {
+    public boolean unloadWorld(String worldName, boolean save) {
+        World world = plugin.getServer().getWorld(worldName);
+
+        if (world == null || isMainWorld(world))
+            return false;
+        unloadWorldAsync(worldName, save);
+        return true;
+    }
+
+    /** Unloads only after every resident player has completed an async lobby teleport. */
+    public CompletableFuture<Boolean> unloadWorldAsync(String worldName, boolean save) {
+        FoliaScheduler global = FoliaScheduler.global(plugin);
+        return global.supplyGlobal(() -> {
             World world = plugin.getServer().getWorld(worldName);
-            if (world == null) {
-                return List.<CompletableFuture<Boolean>>of();
-            }
+            if (world == null || isMainWorld(world))
+                return null;
             List<CompletableFuture<Boolean>> teleports = new ArrayList<>();
-            for (Player player : world.getPlayers()) {
+            for (Player player : new ArrayList<>(world.getPlayers()))
                 teleports.add(player.teleportAsync(CCConfig.LOBBY_LOCATION));
-            }
             return teleports;
-        }).thenCompose(teleports ->
-            CompletableFuture.allOf(teleports.toArray(CompletableFuture[]::new))
-                    .thenCompose(done -> scheduler.runGlobalFuture(() -> {
+        }).thenCompose(teleports -> {
+            if (teleports == null)
+                return CompletableFuture.completedFuture(false);
+            return CompletableFuture.allOf(teleports.toArray(CompletableFuture[]::new))
+                    .thenCompose(ignored -> global.supplyGlobal(() -> {
                         World loaded = plugin.getServer().getWorld(worldName);
-                        if (loaded != null && !plugin.getServer().unloadWorld(loaded, save)) {
-                            throw new IllegalStateException("Could not unload world " + worldName);
-                        }
-                    })));
+                        return loaded == null || plugin.getServer().unloadWorld(loaded, save);
+                    }));
+        });
     }
 
     public CompletableFuture<Void> deleteWorldAsync(String worldName, boolean removeFiles) {
-        CompletableFuture<Void> unloaded = unloadWorldAsync(worldName, false);
-        if (!removeFiles) {
-            return unloaded;
-        }
-        return unloaded.thenCompose(ignored -> FoliaScheduler.global(plugin).runAsyncFuture(
-                () -> deleteWorldFiles(getWorldFolder(worldName))));
-    }
-
-    /** Creates/configures a world on the global region, as required by Folia. */
-    public CompletableFuture<Void> loadWorldAsync(String worldName, World.Environment environment, boolean readOnly) {
-        return FoliaScheduler.global(plugin).runGlobalFuture(() -> loadWorldNow(worldName, environment, readOnly));
-    }
-
-    public void unloadWorld(String worldName, boolean save) {
-        unloadWorldAsync(worldName, save);
+        return unloadWorldAsync(worldName, false).thenCompose(ignored -> {
+            if (!removeFiles)
+                return CompletableFuture.completedFuture(null);
+            return FoliaScheduler.global(plugin).runAsyncFuture(
+                    () -> deleteWorldFiles(getWorldFolder(worldName)));
+        });
     }
 
     public void deleteWorldFiles(File path) {
@@ -198,14 +345,12 @@ public class WorldManager extends BaseManager {
                 for (File file : files) {
                     if (file.isDirectory()) {
                         deleteWorldFiles(file);
-                    } else if (!file.delete()) {
-                        throw new IllegalStateException("Could not delete world file " + file);
-                    }
+                    } else if (!file.delete())
+                        throw new IllegalStateException("无法删除世界文件 " + file);
                 }
             }
         }
-        if (path.exists() && !path.delete()) {
-            throw new IllegalStateException("Could not delete world path " + path);
-        }
+        if (path.exists() && !path.delete())
+            throw new IllegalStateException("无法删除世界目录 " + path);
     }
 }

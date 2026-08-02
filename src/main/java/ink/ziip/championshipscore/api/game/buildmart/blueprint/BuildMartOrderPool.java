@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.api.game.buildmart.blueprint;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 
 import java.io.File;
@@ -11,9 +13,10 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * The loaded set of blueprints split into the normal pool (1–6 stars, drawn into the hub library) and the
- * golden pool (7+ stars, surfaced one at a time on the golden timer). Blueprints live in
- * {@code plugin/buildmart/blueprints/*.yml}.
+ * The loaded set of blueprints split into the normal pool (1–5 stars, drawn for the per-plot auto-assignment)
+ * and the golden pool (exactly 7 stars, surfaced one at a time on the golden timer). Blueprints live in
+ * {@code plugin/buildmart/blueprints/*.yml}. Blueprints whose star rating is outside {1..5, 7} are skipped
+ * with a warning at load time.
  */
 public class BuildMartOrderPool {
     /** Star rating at or above which a blueprint is treated as golden. */
@@ -34,15 +37,19 @@ public class BuildMartOrderPool {
                 BuildMartBlueprint blueprint = BuildMartBlueprint.load(plugin, file);
                 if (blueprint == null) continue;
                 pool.byId.put(blueprint.getId(), blueprint);
-                if (blueprint.getStars() >= GOLDEN_STAR_THRESHOLD) {
+                int stars = blueprint.getStars();
+                if (stars == GOLDEN_STAR_THRESHOLD) {
                     pool.golden.add(blueprint);
-                } else {
+                } else if (stars >= 1 && stars <= 5) {
                     pool.normal.add(blueprint);
+                } else {
+                    plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "加载", "蓝图",
+                            "蓝图=" + blueprint.getId() + " 星级=" + stars + " 不在普通 1-5/黄金 7 范围，已跳过"));
                 }
             }
         }
-        plugin.getLogger().info("[BuildMart] 已加载 " + pool.normal.size() + " 个普通蓝图，"
-                + pool.golden.size() + " 个黄金蓝图。");
+        plugin.getLogger().info(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "加载", "蓝图",
+                "普通=" + pool.normal.size() + " 黄金=" + pool.golden.size()));
         return pool;
     }
 
@@ -79,7 +86,7 @@ public class BuildMartOrderPool {
         return picked;
     }
 
-    /** Lower stars → higher weight, so common builds dominate the library. */
+    /** Lower stars → higher weight, so common builds dominate the auto-assignment draws. */
     private static int weight(BuildMartBlueprint blueprint) {
         return Math.max(1, GOLDEN_STAR_THRESHOLD - blueprint.getStars());
     }

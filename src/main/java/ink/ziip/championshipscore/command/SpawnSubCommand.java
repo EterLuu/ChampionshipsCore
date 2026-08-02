@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -13,18 +14,30 @@ import java.util.List;
 
 public class SpawnSubCommand extends BaseSubCommand {
     public SpawnSubCommand() {
-        super("spawn", "传送回大厅出生点", "/cc spawn");
+        super("spawn", "回到大厅（游戏或观战期间不可用）", "/cc spawn", PLAYER_PERMISSION);
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (sender instanceof Player player) {
-            Location location = player.getLocation();
-            if (location.getWorld() != null && CCConfig.LOBBY_LOCATION.getWorld() != null && location.getWorld().getName().equals(CCConfig.LOBBY_LOCATION.getWorld().getName())) {
-                player.teleportAsync(CCConfig.LOBBY_LOCATION);
-            }
-
+        if (args.length != 0) {
+            sendUsage(sender);
+            return true;
         }
+        if (!(sender instanceof Player player)) {
+            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            return true;
+        }
+        if (plugin.getGameManager().getBasePlayerArea(player.getUniqueId()) != null
+                || plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId()) != null) {
+            player.sendMessage("&#bababa[&#ff6b26大厅&#bababa] &#ededed正在游戏或观战，不能返回大厅");
+            return true;
+        }
+        Location lobby = CCConfig.LOBBY_LOCATION;
+        if (lobby == null || lobby.getWorld() == null) {
+            Utils.sendAdminError(sender, "大厅出生点尚未配置");
+            return true;
+        }
+        player.teleportAsync(lobby);
 
         return true;
     }

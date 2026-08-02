@@ -1,15 +1,16 @@
 package ink.ziip.championshipscore.api.game.parkourtag;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
+import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
+import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import net.kyori.adventure.text.format.TextDecoration;
 import lombok.Getter;
 import org.bukkit.*;
@@ -22,83 +23,112 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 /**
- * Parkour Tag arena hosting several independent team-vs-team matches in parallel, one per stamped arena copy
- * (see {@link ParkourTagLayout}). Like Battle Box it now extends {@link BaseSingleTeamArea} (a team-list
- * area) instead of the two-team {@code BaseTeamArea}, and a {@link ParkourTagMatch} list carries the per-copy
- * geometry and live state (chasers, survive times). The championship's Swiss scheduler feeds one round's
- * pairings in via {@link #tryStartMatches(List)}. Chaser-rotation state stays in {@link ParkourTagManager}
- * (keyed per team/player, not per area), so it is untouched.
+ * One independently runnable Parkour Tag instance, permanently bound to one stamped map copy. Chaser
+ * rotation remains map/game-wide state in {@link ParkourTagManager}; this object owns one two-team run.
  */
-public class ParkourTagArea extends BaseSingleTeamArea {
+public class ParkourTagArea extends BasePairedGameInstance {
     @Getter
     private volatile int timer;
     private volatile ScheduledTask startGamePreparationTask;
     private volatile ScheduledTask startGameProgressTask;
 
-    private final List<ParkourTagMatch> matches = new CopyOnWriteArrayList<>();
-    private final Map<UUID, ParkourTagMatch> matchByPlayer = new ConcurrentHashMap<>();
+    @Getter
+    private final int copyIndex;
+    private volatile ParkourTagMatch match;
+    // Teams that have spent their once-per-round wind charge this round; cleared on each preparation.
+    private final Set<ChampionshipTeam> windChargeUsedTeams = ConcurrentHashMap.newKeySet();
 
     public ParkourTagArea(ChampionshipsCore plugin, ParkourTagConfig parkourTagConfig) {
+        this(plugin, parkourTagConfig, 0, true);
+    }
+
+    ParkourTagArea(ChampionshipsCore plugin, ParkourTagConfig parkourTagConfig, int copyIndex,
+                   boolean initializeConfig) {
         super(plugin, GameTypeEnum.ParkourTag, new ParkourTagHandler(plugin), parkourTagConfig);
 
-        getGameConfig().initializeConfiguration(plugin.getFolder());
+        if (initializeConfig) {
+            getGameConfig().initializeConfiguration(plugin.getFolder());
+        }
+        this.copyIndex = copyIndex;
         getGameHandler().setParkourTagArea(this);
         getGameHandler().register();
 
         setGameStageEnum(GameStageEnum.WAITING);
     }
 
-    public synchronized boolean tryStartMatches(@NotNull List<TwoVTwoVector> pairs) {
+    @Override
+    public boolean tryStartGame(ChampionshipTeam right, ChampionshipTeam left) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return false;
-        setGameStageEnum(GameStageEnum.LOADING);
-
-        matches.clear();
-        matchByPlayer.clear();
-        int copyIndex = 0;
-        for (TwoVTwoVector pair : pairs) {
-            ParkourTagMatch match = new ParkourTagMatch(copyIndex, pair.getTeamOne(), pair.getTeamTwo(), getGameConfig());
-            matches.add(match);
-            gameTeams.add(pair.getTeamOne());
-            gameTeams.add(pair.getTeamTwo());
-            gamePlayers.addAll(pair.getTeamOne().getMembers());
-            gamePlayers.addAll(pair.getTeamTwo().getMembers());
-            for (UUID uuid : pair.getTeamOne().getMembers()) matchByPlayer.put(uuid, match);
-            for (UUID uuid : pair.getTeamTwo().getMembers()) matchByPlayer.put(uuid, match);
-            copyIndex++;
+        ParkourTagGeometry geometry;
+        try {
+            geometry = configuredGeometry();
+        } catch (RuntimeException exception) {
+            logGame(Level.WARNING, "启动", "地图配置尚未完成，无法创建实例几何");
+            return false;
         }
+        if (getGameConfig().getTimer() <= 0 || copyIndex >= getGameConfig().getCopyCount()
+                || geometry.getRightPreSpawn() == null || geometry.getLeftPreSpawn() == null
+                || geometry.getSpectatorSpawn() == null
+                || geometry.getLeftZone().getChaserSpawn() == null
+                || geometry.getRightZone().getChaserSpawn() == null
+                || geometry.getLeftZone().getEscapeeSpawns().isEmpty()
+                || geometry.getRightZone().getEscapeeSpawns().isEmpty()) {
+            logGame(Level.WARNING, "启动", "地图配置尚未完成，无法开始游戏");
+            return false;
+        }
+        match = new ParkourTagMatch(copyIndex, right, left, geometry);
+        return super.tryStartGame(right, left);
+    }
 
-        startGamePreparation();
-        return true;
+    private ParkourTagGeometry configuredGeometry() {
+        return configuredGeometry(copyIndex);
+    }
+
+    private ParkourTagGeometry configuredGeometry(int index) {
+        return new ReplicatedSpatialLayout<>(ParkourTagGeometry.from(getGameConfig()),
+                getGameConfig().getCopyGrid(), getGameConfig().getCopyCount()).geometry(index);
+    }
+
+    @Override
+    protected Collection<Location> getStartPreloadLocations() {
+        if (match == null) return List.of();
+        List<Location> locations = new ArrayList<>();
+        locations.add(match.getRightPreSpawn());
+        locations.add(match.getLeftPreSpawn());
+        locations.add(match.getSpectatorSpawn());
+        locations.add(match.getLeftAreaChaserSpawn());
+        locations.add(match.getRightAreaChaserSpawn());
+        locations.addAll(match.getLeftAreaEscapeeSpawns());
+        locations.addAll(match.getRightAreaEscapeeSpawns());
+        return locations;
     }
 
     @Nullable
     public ParkourTagMatch matchOf(@NotNull Player player) {
-        return matchByPlayer.get(player.getUniqueId());
+        return match != null && match.contains(player) ? match : null;
     }
 
     @Nullable
     public ParkourTagMatch matchAt(@NotNull Location location) {
-        for (ParkourTagMatch match : matches) {
-            if (match.isInArea(location)) return match;
-        }
-        return null;
+        return match != null && match.isInArea(location) ? match : null;
     }
 
     private int elapsed() {
@@ -108,8 +138,8 @@ public class ParkourTagArea extends BaseSingleTeamArea {
     @Override
     public void resetArea() {
         cleanDroppedItems();
-        matches.clear();
-        matchByPlayer.clear();
+        match = null;
+        windChargeUsedTeams.clear();
         startGamePreparationTask = null;
         startGameProgressTask = null;
     }
@@ -118,8 +148,18 @@ public class ParkourTagArea extends BaseSingleTeamArea {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
+
+        windChargeUsedTeams.clear();
+
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        for (ParkourTagMatch match : matches) {
+        if (match != null) {
             match.getRight().teleportAllPlayers(match.getRightPreSpawn());
             match.getLeft().teleportAllPlayers(match.getLeftPreSpawn());
         }
@@ -130,17 +170,18 @@ public class ParkourTagArea extends BaseSingleTeamArea {
         createBossBar("chaser", MessageConfig.PARKOUR_TAG_BOSS_BAR_CHASER, BarColor.RED, BarStyle.SOLID);
         createBossBar("escaper", MessageConfig.PARKOUR_TAG_BOSS_BAR_ESCAPER, BarColor.WHITE, BarStyle.SOLID);
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_TAG_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE, MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.PARKOUR_TAG_START_PREPARATION,
+                MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE, MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
 
         timer = 20;
-        startGamePreparationTask = scheduler.runTaskTimer(() -> {
-            changeLevelForAllGamePlayers(timer);
+        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -148,55 +189,33 @@ public class ParkourTagArea extends BaseSingleTeamArea {
     }
 
     protected void startGameProgress() {
-        for (ParkourTagMatch match : matches) {
+        if (match != null) {
             assignChasers(match);
-        }
-
-        timer = getGameConfig().getTimer() + 5;
-
-        for (ParkourTagMatch match : matches) {
             spawnMatch(match);
         }
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_TAG_GAME_START_SOON);
-        sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_GAME_START_SOON_TITLE, MessageConfig.PARKOUR_TAG_GAME_START_SOON_SUBTITLE);
-
         resetPlayerHealthFoodEffectLevelInventory();
 
-        for (ParkourTagMatch match : matches) {
+        if (match != null) {
             giveItemToMatch(match);
         }
 
-        setGameStageEnum(GameStageEnum.PROGRESS);
+        startFinalCountdown(MessageConfig.PARKOUR_TAG_GAME_START_SOON_TITLE,
+                MessageConfig.PARKOUR_TAG_GAME_START_TITLE, MessageConfig.PARKOUR_TAG_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
 
-        startGameProgressTask = scheduler.runTaskTimer(() -> {
-            if (timer > getGameConfig().getTimer()) {
-                String countDown = MessageConfig.PARKOUR_TAG_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
-                sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-
-            if (timer == getGameConfig().getTimer()) {
-                for (ParkourTagMatch match : matches) updateAndAnnounce(match);
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_TAG_GAME_START);
-                sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_GAME_START_TITLE, MessageConfig.PARKOUR_TAG_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-            }
-
+    private void beginGameProgress() {
+        if (match != null) updateAndAnnounce(match);
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
             changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGameSpectators(MessageConfig.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
-
-            if (timer == 0) {
-                changeLevelForAllGamePlayers(timer);
-                for (ParkourTagMatch match : matches) updateAndAnnounce(match);
-                endGame();
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-            }
-
-            timer--;
-        }, 0, 20L);
+            updateSpectatorTimerBossBar(MessageConfig.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
+        }, () -> {
+            if (match != null) updateAndAnnounce(match);
+            endGame();
+        });
     }
 
     /** Assigns each team's chaser for a match (honouring a prep-time choice), rotating via the manager. */
@@ -209,7 +228,7 @@ public class ParkourTagArea extends BaseSingleTeamArea {
             Player player = Bukkit.getPlayer(match.getRightAreaChaser());
             if (player != null) addBossBarPlayer("chaser", player);
             match.getRight().sendMessageToAll(message
-                    .replace("%player%", match.getRight().getColoredColor() + playerManager.getPlayerName(match.getRightAreaChaser()))
+                    .replace("%player%", Utils.formatPlayerName(match.getRightAreaChaser()))
                     .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - manager.getChaserTimes(match.getRightAreaChaser()) - 1)));
         }
         if (match.getLeftAreaChaser() == null) {
@@ -217,7 +236,7 @@ public class ParkourTagArea extends BaseSingleTeamArea {
             Player player = Bukkit.getPlayer(match.getLeftAreaChaser());
             if (player != null) addBossBarPlayer("chaser", player);
             match.getLeft().sendMessageToAll(message
-                    .replace("%player%", match.getLeft().getColoredColor() + playerManager.getPlayerName(match.getLeftAreaChaser()))
+                    .replace("%player%", Utils.formatPlayerName(match.getLeftAreaChaser()))
                     .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - manager.getChaserTimes(match.getLeftAreaChaser()) - 1)));
         }
 
@@ -259,38 +278,43 @@ public class ParkourTagArea extends BaseSingleTeamArea {
 
     @Override
     public Location getSpectatorSpawnLocation() {
-        if (ThreadLocalRandom.current().nextInt(2) == 0)
-            return getGameConfig().getLeftAreaChaserSpawnPoint();
-        return getGameConfig().getRightAreaChaserSpawnPoint();
+        if (match != null) {
+            return match.getSpectatorSpawn();
+        }
+        Location configured = ThreadLocalRandom.current().nextInt(2) == 0
+                ? getGameConfig().getLeftAreaChaserSpawnPoint()
+                : getGameConfig().getRightAreaChaserSpawnPoint();
+        return getGameConfig().getCopyGrid().transform(copyIndex).apply(configured);
     }
 
     @Override
-    public synchronized void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
+    public void endGame() {
+        if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
-
-        setGameStageEnum(GameStageEnum.END);
 
         if (startGamePreparationTask != null)
             startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
-        for (ParkourTagMatch match : matches) {
-            calculatePoints(match);
-        }
+        if (match != null) calculatePoints(match);
         addPlayerPointsToDatabase();
 
         cleanInventoryForAllGamePlayers();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.PARKOUR_TAG_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.PARKOUR_TAG_GAME_END_TITLE, MessageConfig.PARKOUR_TAG_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.PARKOUR_TAG_GAME_END_TITLE, MessageConfig.PARKOUR_TAG_GAME_END_SUBTITLE);
+
+        setGameStageEnum(GameStageEnum.END);
 
         teleportAllPlayers(getLobbyLocation());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        ChampionshipTeam right = getRightChampionshipTeam();
+        ChampionshipTeam left = getLeftChampionshipTeam();
+        if (right != null && left != null) {
+            Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(right, left, this));
+        }
 
         resetGame();
     }
@@ -343,6 +367,7 @@ public class ParkourTagArea extends BaseSingleTeamArea {
                 .replace("%rival_points%", String.valueOf(getTeamPoints(left)));
         right.sendMessageToAll(message);
         left.sendMessageToAll(message);
+        sendMessageToAllSpectators(message);
     }
 
     private void addPlayerPointsToTeamEscapees(ParkourTagMatch match, ChampionshipTeam team, int points) {
@@ -352,59 +377,50 @@ public class ParkourTagArea extends BaseSingleTeamArea {
         }
     }
 
-    @Override
-    public void addPlayerPointsToDatabase() {
-        for (Map.Entry<UUID, Double> entry : playerPoints.entrySet()) {
-            if (entry.getValue() == 0)
-                continue;
-            ParkourTagMatch match = matchByPlayer.get(entry.getKey());
-            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(entry.getKey());
-            ChampionshipTeam rival = null;
-            if (match != null && team != null) {
-                rival = team.equals(match.getRight()) ? match.getLeft()
-                        : team.equals(match.getLeft()) ? match.getRight() : null;
-            }
-            plugin.getRankManager().addPlayerPoints(entry.getKey(), rival, gameTypeEnum, gameConfig.getAreaName(), entry.getValue());
-        }
-    }
-
     private void giveItemToMatch(ParkourTagMatch match) {
-        ItemStack feather = new ItemStack(Material.POTION);
-        PotionMeta featherMeta = (PotionMeta) feather.getItemMeta();
+        ItemStack feather = new ItemStack(Material.FEATHER);
+        ItemMeta featherMeta = feather.getItemMeta();
         if (featherMeta != null) {
-            featherMeta.addCustomEffect(new PotionEffect(PotionEffectType.SPEED, 600, 2), true);
             featherMeta.displayName(Utils.toComponent(MessageConfig.PARKOUR_TAG_KITS_FEATHER)
                     .decoration(TextDecoration.ITALIC, false));
             feather.setItemMeta(featherMeta);
         }
 
         Player rightChaser = match.getRightAreaChaserPlayer();
-        if (rightChaser != null) {
-            scheduler.runEntity(rightChaser, () -> rightChaser.getInventory().setItem(0, feather.clone()));
-        }
+        if (rightChaser != null) FoliaScheduler.global(plugin).runEntity(rightChaser,
+                () -> rightChaser.getInventory().setItem(0, feather.clone()));
         Player leftChaser = match.getLeftAreaChaserPlayer();
-        if (leftChaser != null) {
-            scheduler.runEntity(leftChaser, () -> leftChaser.getInventory().setItem(0, feather.clone()));
+        if (leftChaser != null) FoliaScheduler.global(plugin).runEntity(leftChaser,
+                () -> leftChaser.getInventory().setItem(0, feather.clone()));
+
+        ItemStack enderEye = new ItemStack(Material.ENDER_EYE);
+        ItemMeta enderEyeMeta = enderEye.getItemMeta();
+        if (enderEyeMeta != null) {
+            enderEyeMeta.displayName(Utils.toComponent(MessageConfig.PARKOUR_TAG_KITS_ENDER_EYE)
+                    .decoration(TextDecoration.ITALIC, false));
+            enderEye.setItemMeta(enderEyeMeta);
         }
 
-        ItemStack clock = new ItemStack(Material.CLOCK);
-        ItemMeta clockMeta = clock.getItemMeta();
-        if (clockMeta != null) {
-            clockMeta.displayName(Utils.toComponent(MessageConfig.PARKOUR_TAG_KITS_CLOCK)
+        ItemStack windCharge = new ItemStack(Material.WIND_CHARGE);
+        ItemMeta windChargeMeta = windCharge.getItemMeta();
+        if (windChargeMeta != null) {
+            windChargeMeta.displayName(Utils.toComponent(MessageConfig.PARKOUR_TAG_KITS_WIND_CHARGE)
                     .decoration(TextDecoration.ITALIC, false));
-            clock.setItemMeta(clockMeta);
+            windCharge.setItemMeta(windChargeMeta);
         }
 
         int glowTicks = getGameConfig().getTimer() * 20 + 100;
         for (Player player : match.getRightAreaEscapees()) {
-            scheduler.runEntity(player, () -> {
-                player.getInventory().setItem(0, clock.clone());
+            FoliaScheduler.global(plugin).runEntity(player, () -> {
+                player.getInventory().setItem(0, enderEye.clone());
+                player.getInventory().setItem(1, windCharge.clone());
                 player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, glowTicks, 0));
             });
         }
         for (Player player : match.getLeftAreaEscapees()) {
-            scheduler.runEntity(player, () -> {
-                player.getInventory().setItem(0, clock.clone());
+            FoliaScheduler.global(plugin).runEntity(player, () -> {
+                player.getInventory().setItem(0, enderEye.clone());
+                player.getInventory().setItem(1, windCharge.clone());
                 player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, glowTicks, 0));
             });
         }
@@ -413,7 +429,7 @@ public class ParkourTagArea extends BaseSingleTeamArea {
     // ── handler-facing logic (routed to the player's match) ──────────────────────────────────────
 
     /** Prep-time chaser pick from a sign click; validates rotation and records it on the player's match. */
-    public synchronized void chooseChaser(@NotNull Player player) {
+    public void chooseChaser(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         ParkourTagMatch match = matchOf(player);
         if (match == null) return;
@@ -425,7 +441,7 @@ public class ParkourTagArea extends BaseSingleTeamArea {
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (team == null) return;
         String message = MessageConfig.PARKOUR_TAG_BECOME_CHASER
-                .replace("%player%", player.getName())
+                .replace("%player%", Utils.formatPlayerName(player))
                 .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - manager.getChaserTimes(uuid)));
         if (team.equals(match.getRight())) {
             match.setRightAreaChaser(uuid);
@@ -436,14 +452,14 @@ public class ParkourTagArea extends BaseSingleTeamArea {
         }
     }
 
-    /** Clock use: glows the opposing chaser and cooldowns the user's team's escapee clocks. */
-    public void useClock(@NotNull Player player) {
+    /** Ender eye use: glows the opposing chaser and cooldowns the user's team's escapee ender eyes. */
+    public void useEnderEye(@NotNull Player player) {
         ParkourTagMatch match = matchOf(player);
         if (match == null) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team == null) return;
-        if (!plugin.getGameManager().getParkourTagManager().canUseClock(team)) {
-            player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_CLOCK_FAILED);
+        if (!plugin.getGameManager().getParkourTagManager().canUseEnderEye(team)) {
+            player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_ENDER_EYE_FAILED);
             return;
         }
 
@@ -451,26 +467,64 @@ public class ParkourTagArea extends BaseSingleTeamArea {
         if (team.equals(match.getRight())) {
             chaser = match.getLeftAreaChaserPlayer();
             for (Player escapee : match.getLeftAreaEscapees()) {
-                scheduler.runEntity(escapee, () -> {
-                    escapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_CLOCK);
-                    escapee.setCooldown(Material.CLOCK, 200);
+                FoliaScheduler.global(plugin).runEntity(escapee, () -> {
+                    escapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_ENDER_EYE);
+                    escapee.setCooldown(Material.ENDER_EYE, 200);
                 });
             }
         } else if (team.equals(match.getLeft())) {
             chaser = match.getRightAreaChaserPlayer();
             for (Player escapee : match.getRightAreaEscapees()) {
-                scheduler.runEntity(escapee, () -> {
-                    escapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_CLOCK);
-                    escapee.setCooldown(Material.CLOCK, 200);
+                FoliaScheduler.global(plugin).runEntity(escapee, () -> {
+                    escapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_ENDER_EYE);
+                    escapee.setCooldown(Material.ENDER_EYE, 200);
                 });
             }
         }
         if (chaser != null) {
             Player target = chaser;
-            scheduler.runEntity(target,
+            FoliaScheduler.global(plugin).runEntity(target,
                     () -> target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 60, 0)));
         }
-        plugin.getGameManager().getParkourTagManager().setClockUsedTimes(team);
+        plugin.getGameManager().getParkourTagManager().setEnderEyeUsedTimes(team);
+    }
+
+    /** Wind charge use: levitates the opposing chaser for 1.5s. Once per team per round. */
+    public void useWindCharge(@NotNull Player player) {
+        ParkourTagMatch match = matchOf(player);
+        if (match == null) return;
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (team == null) return;
+        if (windChargeUsedTeams.contains(team)) {
+            player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_WIND_CHARGE_FAILED);
+            return;
+        }
+
+        Player chaser = null;
+        List<Player> teamEscapees = null;
+        if (team.equals(match.getRight())) {
+            chaser = match.getLeftAreaChaserPlayer();
+            teamEscapees = match.getLeftAreaEscapees();
+        } else if (team.equals(match.getLeft())) {
+            chaser = match.getRightAreaChaserPlayer();
+            teamEscapees = match.getRightAreaEscapees();
+        }
+
+        if (chaser != null) {
+            Player target = chaser;
+            FoliaScheduler.global(plugin).runEntity(target,
+                    () -> target.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 30, 0)));
+        }
+        if (teamEscapees != null) {
+            for (Player escapee : teamEscapees) {
+                FoliaScheduler.global(plugin).runEntity(escapee, () -> {
+                    escapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_WIND_CHARGE);
+                    ItemStack slot1 = escapee.getInventory().getItem(1);
+                    if (slot1 != null && slot1.getType() == Material.WIND_CHARGE) slot1.setAmount(0);
+                });
+            }
+        }
+        windChargeUsedTeams.add(team);
     }
 
     /** Resolves player-vs-player damage. Returns true if the event should be cancelled. */
@@ -486,13 +540,14 @@ public class ParkourTagArea extends BaseSingleTeamArea {
         if (victimTeam.equals(assailantTeam)) return false;
 
         if (assailant.getUniqueId().equals(match.getLeftAreaChaser()) || assailant.getUniqueId().equals(match.getRightAreaChaser())) {
-            scheduler.runEntity(victim, () -> victim.setGameMode(GameMode.SPECTATOR));
-            assailant.playSound(assailant, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
+            FoliaScheduler.global(plugin).runEntity(victim, () -> victim.setGameMode(GameMode.SPECTATOR));
+            FoliaScheduler.global(plugin).runEntity(assailant,
+                    () -> assailant.playSound(assailant, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F));
             addPlayerPoints(assailant.getUniqueId(), 6);
 
             String message = MessageConfig.PARKOUR_TAG_CATCH_PLAYER
-                    .replace("%player%", victimTeam.getColoredColor() + victim.getName())
-                    .replace("%chaser%", assailantTeam.getColoredColor() + assailant.getName());
+                    .replace("%player%", Utils.formatPlayerName(victim))
+                    .replace("%chaser%", Utils.formatPlayerName(assailant));
             sendMessageToChaserArea(match, assailant.getUniqueId(), message);
 
             match.getPlayerSurviveTimes().put(victim.getUniqueId(), elapsed());
@@ -526,20 +581,20 @@ public class ParkourTagArea extends BaseSingleTeamArea {
     }
 
     private void sendMessageToRightArea(ParkourTagMatch match, String message) {
-        for (Player player : match.getRightAreaEscapees()) {
+        for (Player player : match.getRightAreaEscapees())
             scheduler.runEntity(player, () -> player.sendMessage(message));
-        }
         Player chaser = match.getRightAreaChaserPlayer();
-        if (chaser != null) scheduler.runEntity(chaser, () -> chaser.sendMessage(message));
+        if (chaser != null)
+            scheduler.runEntity(chaser, () -> chaser.sendMessage(message));
         sendMessageToAllSpectators(message);
     }
 
     private void sendMessageToLeftArea(ParkourTagMatch match, String message) {
-        for (Player player : match.getLeftAreaEscapees()) {
+        for (Player player : match.getLeftAreaEscapees())
             scheduler.runEntity(player, () -> player.sendMessage(message));
-        }
         Player chaser = match.getLeftAreaChaserPlayer();
-        if (chaser != null) scheduler.runEntity(chaser, () -> chaser.sendMessage(message));
+        if (chaser != null)
+            scheduler.runEntity(chaser, () -> chaser.sendMessage(message));
         sendMessageToAllSpectators(message);
     }
 
@@ -567,12 +622,11 @@ public class ParkourTagArea extends BaseSingleTeamArea {
 
     @Override
     public void cleanDroppedItems() {
-        for (ParkourTagMatch match : matches) {
-            World world = match.getSpectatorSpawn() != null ? match.getSpectatorSpawn().getWorld() : null;
-            if (world == null) continue;
-            cleanEntities(world, match.getLeftAreaBox(), Item.class);
-            cleanEntities(world, match.getRightAreaBox(), Item.class);
-        }
+        if (match == null) return;
+        World world = match.getSpectatorSpawn() != null ? match.getSpectatorSpawn().getWorld() : null;
+        if (world == null) return;
+        cleanEntities(world, match.getLeftAreaBox(), Item.class);
+        cleanEntities(world, match.getRightAreaBox(), Item.class);
     }
 
     @Override
@@ -580,7 +634,19 @@ public class ParkourTagArea extends BaseSingleTeamArea {
         if (location == null || location.getWorld() == null
                 || !location.getWorld().getName().equals(getWorldName()))
             return true;
-        return matchAt(location) == null;
+        ParkourTagGeometry geometry = match == null ? configuredGeometry() : match.getGeometry();
+        return !geometry.contains(location);
+    }
+
+    @Override
+    public boolean isSpectatorLocationAllowed(@NotNull Location location) {
+        if (location.getWorld() == null || !location.getWorld().getName().equals(getWorldName()))
+            return false;
+        for (int index = 0; index < getGameConfig().getCopyCount(); index++) {
+            if (configuredGeometry(index).contains(location))
+                return true;
+        }
+        return false;
     }
 
     @Override
@@ -593,7 +659,8 @@ public class ParkourTagArea extends BaseSingleTeamArea {
         if (notAreaPlayer(player) || getGameStageEnum() != GameStageEnum.PROGRESS)
             return;
         if (!isChaser(player)) {
-            sendMessageToAllGamePlayers(MessageConfig.PARKOUR_TAG_PLAYER_LEAVE.replace("%player%", player.getName()));
+            sendMessageToAllGamePlayers(MessageConfig.PARKOUR_TAG_PLAYER_LEAVE
+                    .replace("%player%", Utils.formatPlayerName(player)));
             handleEscapeeQuit(player);
         }
     }
@@ -610,28 +677,36 @@ public class ParkourTagArea extends BaseSingleTeamArea {
         }
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS && isChaser(player)) {
-            scheduler.runEntity(player, () -> player.setGameMode(GameMode.ADVENTURE));
+            FoliaScheduler.global(plugin).runEntity(player, () -> player.setGameMode(GameMode.ADVENTURE));
             return;
         }
 
-        player.teleportAsync(getSpectatorSpawnLocation());
-        scheduler.runEntity(player, () -> player.setGameMode(GameMode.SPECTATOR));
+        teleportAndSetGameMode(player, getSpectatorSpawnLocation(), GameMode.SPECTATOR);
     }
 
     private void teleportPlayerToPreSpawnLocation(Player player) {
+        // During the rule-introduction phase everyone roams from the introduction spawn point.
+        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
+        if (isIntroductionPhase() && introductionSpawnPoint != null) {
+            teleportAndSetGameMode(player, introductionSpawnPoint, GameMode.ADVENTURE);
+            return;
+        }
         ParkourTagMatch match = matchOf(player);
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (match != null && team != null) {
             Location target = team.equals(match.getRight()) ? match.getRightPreSpawn()
                     : team.equals(match.getLeft()) ? match.getLeftPreSpawn() : null;
             if (target != null) {
-                player.teleportAsync(target);
-                scheduler.runEntity(player, () -> player.setGameMode(GameMode.ADVENTURE));
+                teleportAndSetGameMode(player, target, GameMode.ADVENTURE);
                 return;
             }
         }
-        player.teleportAsync(getSpectatorSpawnLocation());
-        scheduler.runEntity(player, () -> player.setGameMode(GameMode.SPECTATOR));
+        teleportAndSetGameMode(player, getSpectatorSpawnLocation(), GameMode.SPECTATOR);
+    }
+
+    private void teleportAndSetGameMode(Player player, Location destination, GameMode gameMode) {
+        player.teleportAsync(destination).thenRun(() -> FoliaScheduler.global(plugin).runEntity(player,
+                () -> player.setGameMode(gameMode)));
     }
 
     @Override
@@ -646,6 +721,6 @@ public class ParkourTagArea extends BaseSingleTeamArea {
 
     @Override
     public String getWorldName() {
-        return "parkourtag";
+        return getGameConfig().resolveWorldName();
     }
 }

@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -19,7 +19,7 @@ public class TNTRunPlaceholder extends BaseGamePlaceholder<TNTRunTeamArea> {
     }
 
     @Override
-    protected BaseAreaManager<TNTRunTeamArea> getManager() {
+    protected BaseGameInstanceManager<TNTRunTeamArea> getManager() {
         return plugin.getGameManager().getTntRunManager();
     }
 
@@ -39,11 +39,11 @@ public class TNTRunPlaceholder extends BaseGamePlaceholder<TNTRunTeamArea> {
 
             int timer = tntRunTeamArea.getTimer();
             if (timer >= 120)
-                return String.valueOf(timer - 120 + 1);
+                return String.valueOf(timer - 120);
             if (timer >= 60)
-                return String.valueOf(timer - 60 + 1);
+                return String.valueOf(timer - 60);
             if (timer >= 20)
-                return String.valueOf(timer - 20 + 1);
+                return String.valueOf(timer - 20);
 
             return String.valueOf(0);
         }

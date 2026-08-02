@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 1
+  version: 2
 name: area
 area-pos1:
 area-pos2:
@@ -9,3 +9,25 @@ spectator-spawn-point:
 left-spawn-points: [ ]
 right-spawn-points: [ ]
 kits: [ ]
+
+# ── 规则介绍阶段（introduction）────────────────────────────
+# 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
+# 规则文案（rules，每个子列表为一段，支持 & 颜色码与 &#RRGGBB 十六进制颜色），期间可以自由参观
+# 场地；结束后传送到正式准备点位，读秒后开始游戏。
+# 将 introduction-spawn-point 留空或把 rules 设为 [] 即可跳过该阶段。
+introduction-spawn-point:
+rules:
+  - - "&#696969==========&r &#fff566[&d龙蛋狂欢&#fff566] &#696969==========&r"
+    - "&#fff566龙蛋即将孵化，末影龙大战一触即发！"
+    - "&#ededed两队对抗，守护祭坛中央的龙蛋"
+    - "&#ededed龙蛋孵化后，&#ff6b26击杀末影龙&#ededed即可赢下一局"
+    - "&#ededed先赢下 &#fff5663 局&#ededed 的队伍获得最终胜利"
+    - "&#ededed龙蛋落入虚空会在祭坛中央重新生成"
+    - "&#ededed战斗中会随机获得小道具，善用它们"
+  - - "&#696969==========&r &#fff566积分规则 &#696969==========&r"
+    - "&#ededed每局击杀末影龙的队伍赢下该局"
+    - "&#ededed先赢 3 局的队伍夺冠，戴上&#fff566金头盔&#ededed！"
+  - - "&#696969==========&r &#fff566小提示 &#696969==========&r"
+    - "&#fff566一人抢蛋、众人掩护，别单打独斗"
+    - "&#ededed留意龙蛋的位置变化，及时转火"
+    - "&#ededed攻守转换要快，抢到节奏就压上去"

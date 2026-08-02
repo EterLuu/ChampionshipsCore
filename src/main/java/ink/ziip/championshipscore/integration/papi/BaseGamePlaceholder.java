@@ -1,8 +1,8 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.Nullable;
@@ -14,12 +14,12 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <T> the concrete area type handled by this expansion
  */
-public abstract class BaseGamePlaceholder<T extends BaseArea> extends BasePlaceholder {
+public abstract class BaseGamePlaceholder<T extends BaseGameInstance> extends BasePlaceholder {
     public BaseGamePlaceholder(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
     }
 
-    protected abstract BaseAreaManager<T> getManager();
+    protected abstract BaseGameInstanceManager<T> getManager();
 
     /**
      * Resolve an area from the name embedded after {@code prefix} in {@code params},
@@ -36,12 +36,18 @@ public abstract class BaseGamePlaceholder<T extends BaseArea> extends BasePlaceh
      * requesting player's current area. Returns {@code null} if neither resolves.
      */
     @Nullable
+    @SuppressWarnings("unchecked")
     protected T resolveAreaByName(String areaName, OfflinePlayer offlinePlayer) {
-        T area = getManager().getArea(areaName);
-        if (area == null) {
-            area = getManager().getArea(plugin.getGameManager().getPlayerCurrentAreaName(offlinePlayer.getUniqueId()));
+        BaseGameInstance current = plugin.getGameManager().getBasePlayerArea(offlinePlayer.getUniqueId());
+        if (current != null) {
+            String currentMapName = current.getGameConfig().getConfigName();
+            T currentMapTemplate = getManager().getArea(currentMapName);
+            if (currentMapTemplate != null && currentMapTemplate.getClass().isInstance(current)
+                    && (areaName.equals(currentMapName) || getManager().getArea(areaName) == null)) {
+                return (T) current;
+            }
         }
-        return area;
+        return getManager().getArea(areaName);
     }
 
     @Override
@@ -59,11 +65,11 @@ public abstract class BaseGamePlaceholder<T extends BaseArea> extends BasePlaceh
 
     /**
      * Render the {@code area_timer_} placeholder for a resolved area. Defaults to the
-     * remaining countdown ({@code timer + 1}); games with bespoke timer semantics may
+     * exact game timer; games with bespoke timer semantics may
      * override this.
      */
     protected String areaTimer(T area) {
-        return String.valueOf(area.getTimer() + 1);
+        return String.valueOf(area.getTimer());
     }
 
     /**

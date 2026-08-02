@@ -1,17 +1,24 @@
 package ink.ziip.championshipscore.util;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
+import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,6 +34,9 @@ import java.util.regex.Pattern;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
+    private static final Pattern EXPLICIT_HEX_COLOR = Pattern.compile("&#([a-fA-F0-9]{6})");
+    private static final Pattern LEGACY_HEX_COLOR = Pattern.compile("(?<!&)#([a-fA-F0-9]{6})");
+
     private Utils() {
     }
 
@@ -39,23 +49,26 @@ public class Utils {
         }
     }
 
+    /** Translates the preferred {@code &#RRGGBB} syntax and the legacy {@code #RRGGBB} syntax. */
     public static String translateColorCodes(String message) {
-        Pattern pattern = Pattern.compile("#[a-fA-F0-9]{6}");
-        Matcher matcher = pattern.matcher(message);
-        while (matcher.find()) {
-            String hexCode = message.substring(matcher.start(), matcher.end());
-            String replaceSharp = hexCode.replace('#', 'x');
-
-            char[] ch = replaceSharp.toCharArray();
-            StringBuilder builder = new StringBuilder();
-            for (char c : ch) {
-                builder.append("&").append(c);
-            }
-
-            message = message.replace(hexCode, builder.toString());
-            matcher = pattern.matcher(message);
-        }
+        message = expandHexColors(message, EXPLICIT_HEX_COLOR);
+        message = expandHexColors(message, LEGACY_HEX_COLOR);
         return translateAmpersandCodes(message);
+    }
+
+    private static String expandHexColors(String message, Pattern pattern) {
+        Matcher matcher = pattern.matcher(message);
+        StringBuffer expanded = new StringBuffer();
+        while (matcher.find()) {
+            String hex = matcher.group(1);
+            StringBuilder replacement = new StringBuilder("&x");
+            for (char digit : hex.toCharArray()) {
+                replacement.append('&').append(digit);
+            }
+            matcher.appendReplacement(expanded, Matcher.quoteReplacement(replacement.toString()));
+        }
+        matcher.appendTail(expanded);
+        return expanded.toString();
     }
 
     /** The color/format code characters accepted after {@code &}, including {@code x} for hex sequences. */
@@ -93,6 +106,51 @@ public class Utils {
         return players;
     }
 
+    /** Neutral player name followed by the player's coloured team, matching the server chat identity. */
+    public static String formatPlayerName(@NotNull Player player) {
+        ChampionshipTeam team = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
+        return formatPlayerName(player.getName(), team);
+    }
+
+    /** Offline-safe player identity for messages which only have a UUID. */
+    public static String formatPlayerName(@NotNull UUID uuid) {
+        ChampionshipsCore plugin = ChampionshipsCore.getInstance();
+        return formatPlayerName(plugin.getPlayerManager().getPlayerName(uuid),
+                plugin.getTeamManager().getTeamByPlayer(uuid));
+    }
+
+    /** Resolves a possibly offline player's team without creating or changing player data. */
+    public static String formatPlayerName(@NotNull String name) {
+        ChampionshipsCore plugin = ChampionshipsCore.getInstance();
+        Player online = Bukkit.getPlayerExact(name);
+        ChampionshipTeam team = online == null ? null : plugin.getTeamManager().getTeamByPlayer(online);
+        if (team == null) {
+            for (ChampionshipTeam candidate : plugin.getTeamManager().getTeamList()) {
+                boolean member = candidate.getMembers().stream()
+                        .map(plugin.getPlayerManager()::getPlayerName)
+                        .anyMatch(name::equalsIgnoreCase);
+                if (member) {
+                    team = candidate;
+                    break;
+                }
+            }
+        }
+        return formatPlayerName(name, team);
+    }
+
+    /** Formats a known player/team pair without applying the team colour to the player's name. */
+    public static String formatPlayerName(@NotNull String name, @Nullable ChampionshipTeam team) {
+        String identity = "&f" + name;
+        if (team != null)
+            identity += " &7<" + team.getColoredName() + "&7>";
+        return translateColorCodes(identity);
+    }
+
+    /** Neutral player name for messages which already display the team separately. */
+    public static String formatPlayerNameOnly(@NotNull String name) {
+        return translateColorCodes("&f" + name);
+    }
+
     public static Location getLocation(String content) {
         String[] str = content.split(":", 6);
         return new Location(Bukkit.getWorld(str[0]),
@@ -101,6 +159,23 @@ public class Utils {
                 Double.parseDouble(str[3]),
                 Float.parseFloat(str[4]),
                 Float.parseFloat(str[5]));
+    }
+
+    /**
+     * Reads a Location stored as a raw config section (world/world_key + x/y/z/yaw/pitch) without the
+     * '==: Location' marker Bukkit uses to auto-deserialize. The world may be unresolved at load time;
+     * it is left null rather than throwing (teleports will then fail with a clear "world is null").
+     */
+    public static Location getLocation(ConfigurationSection section) {
+        if (section == null) return null;
+        World world = null;
+        if (section.contains("world_key")) {
+            world = Bukkit.getWorld(NamespacedKey.fromString(section.getString("world_key")));
+        } else if (section.contains("world")) {
+            world = Bukkit.getWorld(section.getString("world"));
+        }
+        return new Location(world, section.getDouble("x"), section.getDouble("y"), section.getDouble("z"),
+                (float) section.getDouble("yaw"), (float) section.getDouble("pitch"));
     }
 
     public static String getLocationConfigString(Location location) {
@@ -117,6 +192,18 @@ public class Utils {
                     ":" +
                     location.getPitch();
         return "";
+    }
+
+    /**
+     * Aligns a player-captured point with the horizontal centre of the block they occupy. Height and
+     * view direction deliberately remain untouched, because spawn surfaces may be slabs or otherwise
+     * sit between whole Y coordinates.
+     */
+    public static Location centerOnBlock(@NotNull Location location) {
+        Location centered = location.clone();
+        centered.setX(location.getBlockX() + 0.5D);
+        centered.setZ(location.getBlockZ() + 0.5D);
+        return centered;
     }
 
     public static Color hex2rgb(String hexColor) {
@@ -173,6 +260,10 @@ public class Utils {
         return currentTime.format(formatter);
     }
 
+    public static String formatPoints(double points) {
+        return BigDecimal.valueOf(points).setScale(0, RoundingMode.HALF_UP).toPlainString();
+    }
+
     public static String getMessage(List<String> messages) {
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -184,32 +275,79 @@ public class Utils {
     }
 
     public static void playSoundToAllPlayers(Sound sound, float volume, float pitch) {
-        forEachOnlinePlayer(player -> {
-            onEntity(player, () -> player.playSound(player.getLocation(), sound, volume, pitch));
-        });
+        forEachOnlinePlayer(player -> onEntity(player,
+                () -> player.playSound(player.getLocation(), sound, volume, pitch)));
     }
 
     public static void sendMessageToAllPlayers(String message) {
-        forEachOnlinePlayer(player -> {
-            onEntity(player, () -> player.sendMessage(message));
-        });
+        forEachOnlinePlayer(player -> onEntity(player, () -> player.sendMessage(message)));
+    }
+
+    public static void sendAdminSuccess(CommandSender sender, String message) {
+        sendTo(sender, formatAdminSuccess(message));
+    }
+
+    public static void sendAdminInfo(CommandSender sender, String message) {
+        sendTo(sender, formatAdminInfo(message));
+    }
+
+    public static void sendAdminError(CommandSender sender, String message) {
+        sendTo(sender, formatAdminError(message));
+    }
+
+    public static String formatAdminSuccess(String message) {
+        return translateColorCodes("&#bababa[&#fff566管理&#bababa] &#ededed" + message);
+    }
+
+    public static String formatAdminInfo(String message) {
+        return translateColorCodes("&#bababa[&#fff566管理&#bababa] &#bababa" + message);
+    }
+
+    public static String formatAdminError(String message) {
+        return translateColorCodes("&#bababa[&#ff6b26管理&#bababa] &#ededed" + message);
+    }
+
+    public static String formatGameLog(GameTypeEnum gameType, String area, String stage,
+                                       String event, String message) {
+        String game = gameType == null ? "-" : gameType.toString();
+        return "[游戏:" + plainLogValue(game) + "] [场地:" + plainLogValue(area) + "] [阶段:"
+                + plainLogValue(stage) + "] [事件:" + plainLogValue(event) + "] " + plainLogValue(message);
+    }
+
+    public static String formatModuleLog(String module, String event, String message) {
+        return "[模块:" + plainLogValue(module) + "] [事件:" + plainLogValue(event) + "] "
+                + plainLogValue(message);
+    }
+
+    private static String plainLogValue(String value) {
+        if (value == null || value.isBlank()) return "-";
+        return stripColorCodes(translateColorCodes(value));
+    }
+
+    public static void sendActionBar(Player player, String message) {
+        Component component = LegacyComponentSerializer.legacySection()
+                .deserialize(translateColorCodes(message));
+        onEntity(player, () -> player.sendActionBar(component));
+    }
+
+    public static void sendActionBarToAllPlayers(String message) {
+        forEachOnlinePlayer(player -> sendActionBar(player, message));
     }
 
     public static void changeLevelForAllPlayers(int level) {
-        forEachOnlinePlayer(player -> {
-            onEntity(player, () -> player.setLevel(Math.abs(level)));
-        });
+        forEachOnlinePlayer(player -> onEntity(player, () -> player.setLevel(Math.abs(level))));
     }
 
     public static void sendTitleToAllPlayers(String title, String subtitle) {
-        Component titleComponent = LegacyComponentSerializer.legacySection().deserialize(title);
-        Component subtitleComponent = LegacyComponentSerializer.legacySection().deserialize(subtitle);
-        // No fade in/out; stay 20 ticks.
-        Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO);
+        sendTitleToAllPlayers(title, subtitle, 20);
+    }
+
+    public static void sendTitleToAllPlayers(String title, String subtitle, int stayTicks) {
+        Component titleComponent = LegacyComponentSerializer.legacySection().deserialize(translateColorCodes(title));
+        Component subtitleComponent = LegacyComponentSerializer.legacySection().deserialize(translateColorCodes(subtitle));
+        Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofMillis(stayTicks * 50L), Duration.ZERO);
         Title titleMessage = Title.title(titleComponent, subtitleComponent, times);
-        forEachOnlinePlayer(player -> {
-            onEntity(player, () -> player.showTitle(titleMessage));
-        });
+        forEachOnlinePlayer(player -> onEntity(player, () -> player.showTitle(titleMessage)));
     }
 
     public static void runForPlayer(Player player, Runnable action) {
@@ -220,18 +358,26 @@ public class Utils {
         onEntity(player, () -> player.performCommand(command));
     }
 
+    private static void sendTo(CommandSender sender, String message) {
+        ChampionshipsCore plugin = ChampionshipsCore.getInstance();
+        if (sender instanceof Player player) {
+            onEntity(player, () -> player.sendMessage(message));
+        } else if (plugin != null && plugin.isEnabled()) {
+            FoliaScheduler.global(plugin).runTask(() -> sender.sendMessage(message));
+        } else {
+            sender.sendMessage(message);
+        }
+    }
+
     private static void onEntity(Player player, Runnable action) {
         ChampionshipsCore plugin = ChampionshipsCore.getInstance();
-        if (plugin != null && plugin.isEnabled()) {
+        if (plugin != null && plugin.isEnabled())
             FoliaScheduler.global(plugin).runEntity(player, action);
-        }
     }
 
     private static void forEachOnlinePlayer(Consumer<Player> action) {
         ChampionshipsCore plugin = ChampionshipsCore.getInstance();
-        if (plugin != null && plugin.isEnabled()) {
-            FoliaScheduler.global(plugin).runTask(() ->
-                    Bukkit.getOnlinePlayers().forEach(action));
-        }
+        if (plugin != null && plugin.isEnabled())
+            FoliaScheduler.global(plugin).runTask(() -> Bukkit.getOnlinePlayers().forEach(action));
     }
 }

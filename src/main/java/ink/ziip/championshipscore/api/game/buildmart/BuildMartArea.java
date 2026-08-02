@@ -2,11 +2,9 @@ package ink.ziip.championshipscore.api.game.buildmart;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartOrderPool;
-import ink.ziip.championshipscore.api.game.buildmart.gui.BuildMartMenu;
-import ink.ziip.championshipscore.api.game.buildmart.library.BlueprintLibrary;
 import ink.ziip.championshipscore.api.game.buildmart.reference.ReferenceBuilder;
 import ink.ziip.championshipscore.api.game.buildmart.state.BuildSlot;
 import ink.ziip.championshipscore.api.game.buildmart.state.TeamBuildState;
@@ -30,36 +28,41 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 /**
- * Build Mart arena: every team builds in its own base inside a pre-built static world (copied from
- * {@code plugin/maps/buildmart}). Players gather materials from the central resource market (the hub),
- * pick blueprints from the hub library, and replicate them on their base build plots for dynamic,
- * time-scaled points.
- *
- * <p>Phase 1 implements only the area lifecycle (waiting → preparation → progress → end) so the area can
- * be created and a round can be started/ended. Blueprints, portals, flight, scoring and the end awards
- * are layered in by the later phases.
+ * Build Mart game instance: every team builds in its own base inside a prepared static world. Players
+ * gather materials from the central resource market, receive random blueprints on their plots, and
+ * replicate them for time-scaled points.
  */
-public class BuildMartArea extends BaseSingleTeamArea {
+public class BuildMartArea extends BaseMultiTeamGameInstance {
     @Getter
     private volatile int timer;
 
-    @Getter
-    private volatile BlueprintLibrary blueprintLibrary;
-    private BlueprintRefreshScheduler blueprintRefreshScheduler;
     private GoldenBlueprintScheduler goldenBlueprintScheduler;
 
     /** The golden order currently live in the hub display (and assigned to every team's golden slot). */
     @Getter
     private volatile BuildMartBlueprint currentGolden;
+
+    /** Round id, bumped each progress start so stale delayed auto-refresh tasks bail out. */
+    private volatile int roundId;
+
+    /** Seconds after a normal build completes before a fresh blueprint is auto-assigned to its plot. */
+    private static final int AUTO_REFRESH_SECONDS = 5;
+
+    /** Per-player timestamp of the first golden submit click, for the two-click confirmation. */
+    private final Map<UUID, Long> goldenArmedAt = new ConcurrentHashMap<>();
+    /** Window within which a second golden click confirms the submit. */
+    private static final long GOLDEN_CONFIRM_WINDOW_MILLIS = 5000L;
 
     /** Live per-team build state, keyed by team. Populated at progress start, cleared on reset. */
     private final Map<ChampionshipTeam, TeamBuildState> teamStates = new ConcurrentHashMap<>();
@@ -67,7 +70,6 @@ public class BuildMartArea extends BaseSingleTeamArea {
     private final Map<ChampionshipTeam, Integer> seatByTeam = new ConcurrentHashMap<>();
     /** Parsed base geometry cached by seat, so the move handler doesn't re-derive it per step. */
     private final Map<Integer, BuildMartBase> baseCache = new ConcurrentHashMap<>();
-    /** Cross-chunk reads/writes which must finish before the arena world is reset. */
     private final java.util.Set<CompletableFuture<?>> pendingWorldOperations = ConcurrentHashMap.newKeySet();
 
     private volatile ScheduledTask startGamePreparationTask;
@@ -76,12 +78,57 @@ public class BuildMartArea extends BaseSingleTeamArea {
     public BuildMartArea(ChampionshipsCore plugin, BuildMartConfig buildMartConfig) {
         super(plugin, GameTypeEnum.BuildMart, new BuildMartHandler(plugin), buildMartConfig);
 
-        getGameConfig().initializeConfiguration(plugin.getFolder());
-
         getGameHandler().setBuildMartArea(this);
-        // loadMap copies the static world from plugin/maps/buildmart, (re)registers the handler and
-        // leaves the area in WAITING; falls back to an empty void world if no template is present yet.
+    }
+
+    /** Preloads a clean arena at startup and immediately after each completed game. */
+    public void preloadMap() {
         loadMap(World.Environment.NORMAL);
+    }
+
+    /** Makes a newly created, not-yet-templated map editable by prepare without deleting its world. */
+    public void initializeForSetup() {
+        getGameHandler().register();
+        setGameStageEnum(GameStageEnum.WAITING);
+    }
+
+    @Override
+    public boolean tryStartGame(List<ChampionshipTeam> teams) {
+        return canStartConfiguredMap(teams.size()) && super.tryStartGame(teams);
+    }
+
+    @Override
+    public boolean tryStartGame(List<ChampionshipTeam> teams, List<UUID> players) {
+        return canStartConfiguredMap(teams.size()) && super.tryStartGame(teams, players);
+    }
+
+    private boolean canStartConfiguredMap(int teamCount) {
+        BuildMartMapGeometry geometry = getGameConfig().resolveMapGeometry();
+        BuildMartBase base = getGameConfig().getBaseTemplate();
+        boolean configured = getGameStageEnum() == GameStageEnum.WAITING
+                && teamCount > 0 && teamCount <= getGameConfig().getBaseCount()
+                && getGameConfig().getTimer() > 0 && getGameConfig().getPrepareTime() >= 0
+                && geometry.getBoundary() != null && geometry.getHub() != null
+                && geometry.getHubReturn() != null && geometry.getHubSpawn() != null
+                && geometry.getGoldenDisplay() != null
+                && base != null && base.isComplete();
+        if (!configured)
+            logGame(Level.WARNING, "启动", "地图配置尚未完成或队伍数量超出 base-count，无法开始游戏");
+        return configured;
+    }
+
+    @Override
+    protected Collection<Location> getStartPreloadLocations() {
+        List<Location> locations = new ArrayList<>();
+        locations.add(getSpectatorSpawnLocation());
+        if (getGameConfig().getHubSpawnPoint() != null)
+            locations.add(getGameConfig().getHubSpawnPoint());
+        int count = Math.min(gameTeams.size(), getGameConfig().getBaseCount());
+        for (int seat = 0; seat < count; seat++) {
+            BuildMartBase base = getGameConfig().getSeatBase(seat);
+            if (base != null && base.getSpawn() != null) locations.add(base.getSpawn());
+        }
+        return locations;
     }
 
     @Override
@@ -92,9 +139,10 @@ public class BuildMartArea extends BaseSingleTeamArea {
         seatByTeam.clear();
         baseCache.clear();
         currentGolden = null;
+        goldenArmedAt.clear();
 
         // Rebuild the arena from the template for the next round (also wipes dropped items / placed blocks).
-        loadMap(World.Environment.NORMAL);
+        preloadMap();
     }
 
     /** Live build state for a team, or {@code null} outside a round / for non-participants. */
@@ -119,22 +167,31 @@ public class BuildMartArea extends BaseSingleTeamArea {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
+
         teleportAllPlayers(getSpectatorSpawnLocation());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BUILD_MART_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.BUILD_MART_START_PREPARATION_TITLE, MessageConfig.BUILD_MART_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.BUILD_MART_START_PREPARATION,
+                MessageConfig.BUILD_MART_START_PREPARATION_TITLE, MessageConfig.BUILD_MART_START_PREPARATION_SUBTITLE);
 
         timer = getGameConfig().getPrepareTime();
         startGamePreparationTask = scheduler.runTaskTimer(() -> {
-            changeLevelForAllGamePlayers(timer);
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -144,7 +201,7 @@ public class BuildMartArea extends BaseSingleTeamArea {
     protected void startGameProgress() {
         World world = Bukkit.getWorld(getWorldName());
         if (world == null) {
-            plugin.getLogger().warning("[BuildMart] 世界 " + getWorldName() + " 不存在，无法开始游戏。");
+            logGame(Level.WARNING, "世界", "世界=" + getWorldName() + " 不存在，无法开始");
             endGame();
             return;
         }
@@ -152,9 +209,7 @@ public class BuildMartArea extends BaseSingleTeamArea {
         resetPlayerHealthFoodEffectLevelInventory();
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
-        // Enter PROGRESS up front so the scheduled callbacks (golden rotation) run on the first spawn.
-        setGameStageEnum(GameStageEnum.PROGRESS);
-        timer = getGameConfig().getTimer();
+        roundId++;
 
         // Assign each participating team a seat (grid position) and derive its base from the template.
         teamStates.clear();
@@ -171,52 +226,38 @@ public class BuildMartArea extends BaseSingleTeamArea {
 
         // Send every team to its own base; teams without a configured base fall back to the hub spawn.
         teleportTeamsToBases();
-        giveBlueprintBookToAll();
 
-        // Seed the hub blueprint library and start its periodic re-roll.
-        BuildMartOrderPool pool = plugin.getGameManager().getBuildMartManager().getOrderPool();
-        blueprintLibrary = new BlueprintLibrary(pool);
-        blueprintLibrary.refresh();
-        blueprintRefreshScheduler = new BlueprintRefreshScheduler(plugin,
-                getGameConfig().getLibraryRefreshSeconds(), this::onLibraryRefresh, this::getSpectatorSpawnLocation);
-        blueprintRefreshScheduler.start();
+        // Auto-assign a random normal blueprint to each team's three plots and paste its reference build.
+        assignInitialNormalBlueprints();
+        rotateGoldenBlueprint(false);
 
-        // Spawn the first golden order, then rotate it on the golden window.
-        rotateGoldenBlueprint();
+        startFinalCountdown(MessageConfig.BUILD_MART_START_PREPARATION_TITLE,
+                MessageConfig.BUILD_MART_GAME_START_TITLE, MessageConfig.BUILD_MART_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
+
+    private void beginGameProgress() {
         goldenBlueprintScheduler = new GoldenBlueprintScheduler(plugin,
-                getGameConfig().getGoldenRefreshSeconds(), this::rotateGoldenBlueprint, this::getSpectatorSpawnLocation);
+                getGameConfig().getGoldenRefreshSeconds(), this::rotateGoldenBlueprint,
+                getGameConfig()::getGoldenDisplayPoint);
         goldenBlueprintScheduler.start();
-
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BUILD_MART_GAME_START);
-        sendTitleToAllGamePlayers(MessageConfig.BUILD_MART_GAME_START_TITLE, MessageConfig.BUILD_MART_GAME_START_SUBTITLE);
-
         createTimerBossBar();
 
-        startGameProgressTask = scheduler.runTaskTimer(() -> {
-            sendActionBarToAllGameSpectators(MessageConfig.BUILD_MART_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
+            updateSpectatorTimerBossBar(MessageConfig.BUILD_MART_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
             updateTimerBossBar();
-
-            if (timer <= 0) {
-                endGame();
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        }, this::endGame);
     }
 
     private static final String TIMER_BOSS_BAR = "buildmart-timer";
 
-    /** Creates the shared timer boss bar and shows it to all participants and spectators. */
+    /** Creates the detailed Build Mart timer for participants; spectators use the shared timer bar. */
     private void createTimerBossBar() {
         createBossBar(TIMER_BOSS_BAR, bossBarTitle(), BarColor.YELLOW, BarStyle.SOLID);
         for (UUID uuid : gamePlayers) {
             addBossBarPlayer(TIMER_BOSS_BAR, Bukkit.getPlayer(uuid));
-        }
-        for (Player spectator : getOnlineSpectators()) {
-            addBossBarPlayer(TIMER_BOSS_BAR, spectator);
         }
     }
 
@@ -241,60 +282,133 @@ public class BuildMartArea extends BaseSingleTeamArea {
         return period - (elapsed % period);
     }
 
-    /** Gives every participant the bound library book (used to open the hub blueprint menu). */
-    private void giveBlueprintBookToAll() {
-        for (UUID uuid : gamePlayers) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                scheduler.runEntity(player, () -> player.getInventory().addItem(BuildMartMenu.createBook()));
+    /**
+     * Resolves the submit slot ({@code N0/N1/N2/G}) whose physical submit button sits at {@code clicked},
+     * for {@code team}'s base, or {@code null} if the clicked block isn't one of this team's submit buttons.
+     */
+    @org.jetbrains.annotations.Nullable
+    public String submitSlotIdAt(ChampionshipTeam team, Location clicked) {
+        if (clicked == null || clicked.getWorld() == null) return null;
+        Integer seat = seatOf(team);
+        if (seat == null) return null;
+        BuildMartBase base = baseCache.get(seat);
+        if (base == null) return null;
+        List<Location> submits = base.getNormalSubmitAnchors();
+        for (int i = 0; i < submits.size(); i++) {
+            if (sameBlock(submits.get(i), clicked)) return "N" + i;
+        }
+        if (sameBlock(base.getGoldenSubmitAnchor(), clicked)) return "G";
+        return null;
+    }
+
+    /** True when the block at {@code worldX/Y/Z} is any team's submit button (protected from breaking). */
+    public boolean isSubmitButtonBlock(World world, int worldX, int worldY, int worldZ) {
+        for (TeamBuildState state : teamStates.values()) {
+            Integer seat = seatOf(state.getTeam());
+            BuildMartBase base = seat == null ? null : baseCache.get(seat);
+            if (base == null) continue;
+            for (Location loc : base.getNormalSubmitAnchors()) {
+                if (sameBlock(loc, world, worldX, worldY, worldZ)) return true;
+            }
+            if (sameBlock(base.getGoldenSubmitAnchor(), world, worldX, worldY, worldZ)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Handles a submit-button click routed by the handler: normal plots submit on the first click; the
+     * golden plot needs a second confirming click within {@link #GOLDEN_CONFIRM_WINDOW_MILLIS} (the first
+     * click just arms and prompts).
+     */
+    public void handleSubmitClick(Player player, String slotId) {
+        if (slotId.equals("G")) {
+            UUID id = player.getUniqueId();
+            Long armedAt = goldenArmedAt.get(id);
+            long now = System.currentTimeMillis();
+            if (armedAt != null && now - armedAt < GOLDEN_CONFIRM_WINDOW_MILLIS) {
+                goldenArmedAt.remove(id);
+                submitSlot(player, "G");
+            } else {
+                goldenArmedAt.put(id, now);
+                playerManager.getPlayer(id).sendMessage(MessageConfig.BUILD_MART_GOLDEN_SUBMIT_CONFIRM);
+            }
+        } else {
+            submitSlot(player, slotId);
+        }
+    }
+
+    /** Whether {@code a} and {@code b} are the same block (same world + block coords). */
+    private static boolean sameBlock(Location a, Location b) {
+        if (a == null || a.getWorld() == null || b == null || b.getWorld() == null) return false;
+        if (!a.getWorld().equals(b.getWorld())) return false;
+        return a.getBlockX() == b.getBlockX() && a.getBlockY() == b.getBlockY() && a.getBlockZ() == b.getBlockZ();
+    }
+
+    /** Whether {@code a} is the block at {@code worldX/Y/Z} in {@code world}. */
+    private static boolean sameBlock(Location a, World world, int worldX, int worldY, int worldZ) {
+        if (a == null || a.getWorld() == null || world == null) return false;
+        if (!a.getWorld().equals(world)) return false;
+        return a.getBlockX() == worldX && a.getBlockY() == worldY && a.getBlockZ() == worldZ;
+    }
+
+    /**
+     * Auto-assigns a distinct random normal blueprint to each of every team's three plots and pastes its
+     * reference build. Called once at round start so every blueprint area shows a build from the off.
+     */
+    private void assignInitialNormalBlueprints() {
+        BuildMartOrderPool pool = plugin.getGameManager().getBuildMartManager().getOrderPool();
+        if (pool == null) return;
+        for (TeamBuildState state : teamStates.values()) {
+            ChampionshipTeam team = state.getTeam();
+            List<BuildMartBlueprint> drawn = pool.drawNormal(state.getNormalSlots().size());
+            for (int i = 0; i < drawn.size() && i < state.getNormalSlots().size(); i++) {
+                BuildSlot slot = state.getNormalSlots().get(i);
+                if (slot.getReferenceAnchor() == null) continue;
+                BuildMartBlueprint blueprint = drawn.get(i);
+                slot.setBlueprint(blueprint);
+                pasteBlueprint(blueprint, slot.getReferenceAnchor());
+                team.sendMessageToAll(MessageConfig.BUILD_MART_BLUEPRINT_AUTO_REFRESHED
+                        .replace("%blueprint%", blueprint.getDisplayName())
+                        .replace("%stars%", String.valueOf(blueprint.getStars())));
             }
         }
     }
 
-    /** Opens the hub library menu for a player (called from the handler on book right-click). */
-    public void openBlueprintMenu(Player player) {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS || blueprintLibrary == null) return;
-        if (notAreaPlayer(player)) return;
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (team == null) return;
-        BuildMartMenu.open(player, this, team);
-    }
-
     /**
-     * Assigns the chosen library blueprint to the player's team's first free normal slot and pastes its
-     * reference build. No-ops (with feedback) when nothing is free or the order has rolled off the board.
+     * Schedules a fresh random normal blueprint onto {@code slot} {@link #AUTO_REFRESH_SECONDS} after a
+     * completion, pasting its reference. Bails silently if the round ended, the slot was reassigned, or the
+     * slot has since been filled.
      */
-    public synchronized void selectBlueprint(Player player, String blueprintId) {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS || blueprintLibrary == null) return;
-        if (notAreaPlayer(player)) return;
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (team == null) return;
-        TeamBuildState state = teamStates.get(team);
-        if (state == null) return;
+    private void scheduleAutoRefresh(ChampionshipTeam team, BuildSlot slot) {
+        final int scheduledRound = roundId;
+        scheduler.runTaskLater(() -> {
+            if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
+            if (roundId != scheduledRound) return;
+            TeamBuildState state = teamStates.get(team);
+            if (state == null || !state.getNormalSlots().contains(slot)) return;
+            if (!slot.isEmpty()) return;
+            BuildMartBlueprint next = drawRandomNormal();
+            if (next == null) return;
+            slot.setBlueprint(next);
+            if (slot.getReferenceAnchor() != null) pasteBlueprint(next, slot.getReferenceAnchor());
+            team.sendMessageToAll(MessageConfig.BUILD_MART_BLUEPRINT_AUTO_REFRESHED
+                    .replace("%blueprint%", next.getDisplayName())
+                    .replace("%stars%", String.valueOf(next.getStars())));
+        }, AUTO_REFRESH_SECONDS * 20L);
+    }
 
-        BuildMartBlueprint blueprint = blueprintLibrary.currentById(blueprintId);
-        if (blueprint == null) return;
-
-        BuildSlot slot = state.firstFreeNormalSlot();
-        if (slot == null) {
-            playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_NO_FREE_SLOT);
-            return;
-        }
-        slot.setBlueprint(blueprint);
-        if (slot.getReferenceAnchor() != null) {
-            Location reference = slot.getReferenceAnchor();
-            pasteBlueprint(blueprint, reference);
-        }
-        player.closeInventory();
-        team.sendMessageToAll(MessageConfig.BUILD_MART_BLUEPRINT_SELECTED
-                .replace("%blueprint%", blueprint.getDisplayName())
-                .replace("%stars%", String.valueOf(blueprint.getStars())));
+    /** Draws a single random normal blueprint from the shared pool, or {@code null} when empty. */
+    private BuildMartBlueprint drawRandomNormal() {
+        BuildMartOrderPool pool = plugin.getGameManager().getBuildMartManager().getOrderPool();
+        if (pool == null) return null;
+        List<BuildMartBlueprint> drawn = pool.drawNormal(1);
+        return drawn.isEmpty() ? null : drawn.get(0);
     }
 
     /**
-     * Submits one of the caller's team's build plots for validation (from the blueprint menu). The plot is
-     * settled and scored only when it fully matches the blueprint; otherwise the player is told how many
-     * blocks still differ. {@code slotId} is {@code N0/N1/N2} for a normal plot or {@code G} for golden.
+     * Submits one of the caller's team's build plots for validation (from a physical submit button). The
+     * plot is settled and scored only when it fully matches the blueprint; otherwise the player is told how
+     * many blocks still differ. {@code slotId} is {@code N0/N1/N2} for a normal plot or {@code G} for golden.
      */
     public synchronized void submitSlot(Player player, String slotId) {
         if (getGameStageEnum() != GameStageEnum.PROGRESS || player == null || slotId == null) return;
@@ -303,6 +417,12 @@ public class BuildMartArea extends BaseSingleTeamArea {
         if (team == null) return;
         TeamBuildState state = teamStates.get(team);
         if (state == null) return;
+
+        // Last 10 seconds: no submissions accepted.
+        if (timer <= 10) {
+            playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_SUBMIT_LOCKED);
+            return;
+        }
 
         boolean golden = slotId.equals("G");
         BuildSlot slot;
@@ -328,95 +448,31 @@ public class BuildMartArea extends BaseSingleTeamArea {
         Location buildAnchor = slot.getBuildAnchor();
         track(ReferenceBuilder.countMatchingAsync(plugin, blueprint, buildAnchor)).thenAccept(matched -> {
             slot.setLastMatched(matched);
-            if (matched >= blueprint.blockCount()) {
-                scheduler.runEntity(player, () -> player.closeInventory());
-                synchronized (this) {
-                    if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
-                    if (slot.getBlueprint() != blueprint) return;
-                    if (golden) completeGoldenBuild(team, state, slot, blueprint);
-                    else completeNormalBuild(team, state, slot, blueprint);
+            synchronized (this) {
+                if (getGameStageEnum() != GameStageEnum.PROGRESS || slot.getBlueprint() != blueprint)
+                    return;
+                if (matched >= blueprint.blockCount()) {
+                    if (golden)
+                        completeGoldenBuild(team, state, slot, blueprint);
+                    else
+                        completeNormalBuild(team, state, slot, blueprint);
+                } else if (golden) {
+                    clearBlueprint(blueprint, buildAnchor);
+                    playerManager.getPlayer(player.getUniqueId()).sendMessage(
+                            MessageConfig.BUILD_MART_GOLDEN_SUBMIT_FAILED
+                                    .replace("%blueprint%", blueprint.getDisplayName()));
+                } else {
+                    playerManager.getPlayer(player.getUniqueId()).sendMessage(
+                            MessageConfig.BUILD_MART_SUBMIT_INCOMPLETE
+                                    .replace("%blueprint%", blueprint.getDisplayName())
+                                    .replace("%matched%", String.valueOf(matched))
+                                    .replace("%total%", String.valueOf(blueprint.blockCount())));
                 }
-            } else {
-                playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_SUBMIT_INCOMPLETE
-                        .replace("%blueprint%", blueprint.getDisplayName())
-                        .replace("%matched%", String.valueOf(matched))
-                        .replace("%total%", String.valueOf(blueprint.blockCount())));
             }
         }).exceptionally(throwable -> {
-            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Failed to validate Build Mart slot", throwable);
+            plugin.getLogger().log(Level.SEVERE, "Failed to validate Build Mart slot", throwable);
             return null;
         });
-    }
-
-    /**
-     * Refreshes one normal build slot's blueprint (menu "刷新" button). Each slot may be refreshed once per
-     * game: the old reference build and any partial player build in the zone are wiped, then a fresh normal
-     * order is drawn and its reference pasted. No-op for golden/empty slots or once the single refresh has
-     * been spent (the player is told so). {@code slotId} is {@code N0/N1/N2}.
-     */
-    public synchronized void refreshSlot(Player player, String slotId) {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS || player == null || slotId == null) return;
-        if (notAreaPlayer(player)) return;
-        if (!slotId.startsWith("N")) return;
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (team == null) return;
-        TeamBuildState state = teamStates.get(team);
-        if (state == null) return;
-
-        int index;
-        try {
-            index = Integer.parseInt(slotId.substring(1));
-        } catch (NumberFormatException e) {
-            return;
-        }
-        List<BuildSlot> normals = state.getNormalSlots();
-        if (index < 0 || index >= normals.size()) return;
-        BuildSlot slot = normals.get(index);
-
-        BuildMartBlueprint old = slot.getBlueprint();
-        if (old == null) return; // nothing assigned to refresh
-        if (slot.isRefreshUsed()) {
-            playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_REFRESH_USED);
-            return;
-        }
-
-        BuildMartBlueprint next = drawDifferentNormal(old);
-        if (next == null) return;
-
-        // Wipe the old reference and any partial build in the zone, then assign + paste the new order.
-        if (slot.getBuildAnchor() != null) {
-            Location build = slot.getBuildAnchor();
-            clearBlueprint(old, build);
-        }
-        if (slot.getReferenceAnchor() != null) {
-            Location reference = slot.getReferenceAnchor();
-            clearBlueprint(old, reference);
-        }
-        slot.setBlueprint(next);
-        slot.setRefreshUsed(true);
-        slot.setLastMatched(0);
-        if (slot.getReferenceAnchor() != null) {
-            Location reference = slot.getReferenceAnchor();
-            pasteBlueprint(next, reference);
-        }
-
-        team.sendMessageToAll(MessageConfig.BUILD_MART_BLUEPRINT_REFRESHED
-                .replace("%blueprint%", next.getDisplayName())
-                .replace("%stars%", String.valueOf(next.getStars())));
-    }
-
-    /** Draws a normal order different from {@code exclude} where possible (retries a few times). */
-    private BuildMartBlueprint drawDifferentNormal(BuildMartBlueprint exclude) {
-        BuildMartOrderPool pool = plugin.getGameManager().getBuildMartManager().getOrderPool();
-        if (pool == null) return null;
-        BuildMartBlueprint pick = null;
-        for (int attempt = 0; attempt < 5; attempt++) {
-            List<BuildMartBlueprint> drawn = pool.drawNormal(1);
-            if (drawn.isEmpty()) return null;
-            pick = drawn.get(0);
-            if (!pick.getId().equals(exclude.getId())) return pick;
-        }
-        return pick; // pool has effectively one order; hand back what we drew
     }
 
     private void completeNormalBuild(ChampionshipTeam team, TeamBuildState state, BuildSlot slot, BuildMartBlueprint blueprint) {
@@ -424,16 +480,11 @@ public class BuildMartArea extends BaseSingleTeamArea {
         addPlayerPointsToAllTeamMembers(team, points);
         state.recordCompletion(blueprint.getStars());
 
-        // Clear the player's copy and the reference build; the slot is now free to re-select.
-        if (slot.getBuildAnchor() != null) {
-            Location build = slot.getBuildAnchor();
-            clearBlueprint(blueprint, build);
-        }
-        if (slot.getReferenceAnchor() != null) {
-            Location reference = slot.getReferenceAnchor();
-            clearBlueprint(blueprint, reference);
-        }
+        // Clear the player's copy and the reference; a fresh blueprint auto-appears shortly.
+        if (slot.getBuildAnchor() != null) clearBlueprint(blueprint, slot.getBuildAnchor());
+        if (slot.getReferenceAnchor() != null) clearBlueprint(blueprint, slot.getReferenceAnchor());
         slot.clear();
+        scheduleAutoRefresh(team, slot);
 
         sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_BUILD_COMPLETED
                 .replace("%team%", team.getColoredName())
@@ -449,7 +500,11 @@ public class BuildMartArea extends BaseSingleTeamArea {
      * pool is empty.
      */
     private void rotateGoldenBlueprint() {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
+        rotateGoldenBlueprint(true);
+    }
+
+    private void rotateGoldenBlueprint(boolean announce) {
+        if (announce && getGameStageEnum() != GameStageEnum.PROGRESS) return;
         expireCurrentGolden();
 
         BuildMartBlueprint next = plugin.getGameManager().getBuildMartManager().getOrderPool().randomGolden();
@@ -463,8 +518,10 @@ public class BuildMartArea extends BaseSingleTeamArea {
         if (display != null) {
             pasteBlueprint(next, display);
         }
-        sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_REFRESHED);
-        playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1F, 1F);
+        if (announce) {
+            sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_REFRESHED);
+            playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1F, 1F);
+        }
     }
 
     /** Penalises unfinished golden builds: clears their zones, the team slots, and the hub display. */
@@ -475,9 +532,7 @@ public class BuildMartArea extends BaseSingleTeamArea {
             BuildSlot golden = state.getGoldenSlot();
             if (golden.getBlueprint() != null) {
                 if (golden.getBuildAnchor() != null) {
-                    BuildMartBlueprint blueprint = golden.getBlueprint();
-                    Location anchor = golden.getBuildAnchor();
-                    clearBlueprint(blueprint, anchor);
+                    clearBlueprint(golden.getBlueprint(), golden.getBuildAnchor());
                 }
                 golden.clear();
                 anyUnfinished = true;
@@ -485,8 +540,7 @@ public class BuildMartArea extends BaseSingleTeamArea {
         }
         Location display = getGameConfig().getGoldenDisplayPoint();
         if (display != null) {
-            BuildMartBlueprint golden = currentGolden;
-            clearBlueprint(golden, display);
+            clearBlueprint(currentGolden, display);
         }
         if (anyUnfinished) {
             sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_EXPIRED);
@@ -499,10 +553,7 @@ public class BuildMartArea extends BaseSingleTeamArea {
         addPlayerPointsToAllTeamMembers(team, points);
         state.recordCompletion(blueprint.getStars());
 
-        if (slot.getBuildAnchor() != null) {
-            Location build = slot.getBuildAnchor();
-            clearBlueprint(blueprint, build);
-        }
+        if (slot.getBuildAnchor() != null) clearBlueprint(blueprint, slot.getBuildAnchor());
         // Clear only this team's golden slot so they can't re-score; other teams keep building it.
         slot.clear();
 
@@ -556,15 +607,14 @@ public class BuildMartArea extends BaseSingleTeamArea {
     /**
      * Final settlement: awards proportional points for every unfinished build (normal + golden), then
      * hands out the three end-of-game awards (entrepreneur / chef / quality assurance) to the top three
-     * teams on each metric, +100/+50/+25 per member.
+     * teams on each metric, +25/+15/+5 per member.
      */
     private CompletableFuture<Void> settleIncompleteBuildsAsync() {
         List<CompletableFuture<Void>> scores = new ArrayList<>();
         for (TeamBuildState state : teamStates.values()) {
             ChampionshipTeam team = state.getTeam();
-            for (BuildSlot slot : state.getNormalSlots()) {
+            for (BuildSlot slot : state.getNormalSlots())
                 scores.add(scoreIncompleteAsync(team, slot));
-            }
             scores.add(scoreIncompleteAsync(team, state.getGoldenSlot()));
         }
         return CompletableFuture.allOf(scores.toArray(CompletableFuture[]::new));
@@ -574,17 +624,20 @@ public class BuildMartArea extends BaseSingleTeamArea {
     private CompletableFuture<Void> scoreIncompleteAsync(ChampionshipTeam team, BuildSlot slot) {
         BuildMartBlueprint blueprint = slot.getBlueprint();
         Location anchor = slot.getBuildAnchor();
-        if (blueprint == null || anchor == null) return CompletableFuture.completedFuture(null);
+        if (blueprint == null || anchor == null)
+            return CompletableFuture.completedFuture(null);
         return ReferenceBuilder.countMatchingAsync(plugin, blueprint, anchor).thenAccept(matched -> {
             slot.setLastMatched(matched);
             double ratio = blueprint.blockCount() == 0 ? 1.0 : (double) matched / blueprint.blockCount();
-            if (ratio <= 0) return;
+            if (ratio <= 0)
+                return;
             int points = (int) Math.round(pointsForCompletion(blueprint.getStars()) * ratio);
-            if (points > 0) addPlayerPointsToAllTeamMembers(team, points);
+            if (points > 0)
+                addPlayerPointsToAllTeamMembers(team, points);
         });
     }
 
-    /** Gives the {@code +100/+50/+25} award bonus to the top three teams of a ranking and announces #1. */
+    /** Gives the {@code +25/+15/+5} award bonus to the top three teams of a ranking and announces #1. */
     private void awardAndAnnounce(List<TeamBuildState> ranking, String awardMessage) {
         for (int i = 0; i < ranking.size() && i < BuildMartScorer.AWARD_POINTS.length; i++) {
             addPlayerPointsToAllTeamMembers(ranking.get(i).getTeam(), BuildMartScorer.AWARD_POINTS[i]);
@@ -592,13 +645,6 @@ public class BuildMartArea extends BaseSingleTeamArea {
         if (!ranking.isEmpty()) {
             sendMessageToAllGamePlayers(awardMessage.replace("%team%", ranking.get(0).getTeam().getColoredName()));
         }
-    }
-
-    /** Re-rolls the hub library and announces it; selected builds are untouched. */
-    private void onLibraryRefresh() {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS || blueprintLibrary == null) return;
-        blueprintLibrary.refresh();
-        sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_LIBRARY_REFRESHED);
     }
 
     /** Teleports each participating team to its seat's base spawn (hub spawn if unconfigured). */
@@ -629,10 +675,11 @@ public class BuildMartArea extends BaseSingleTeamArea {
 
     @Override
     public boolean notInArea(Location location) {
-        Location spawn = getSpectatorSpawnLocation();
-        if (location == null || location.getWorld() == null || spawn == null || spawn.getWorld() == null)
-            return false;
-        return !location.getWorld().getName().equals(spawn.getWorld().getName());
+        if (location == null || location.getWorld() == null
+                || !location.getWorld().getName().equals(getWorldName()))
+            return true;
+        org.bukkit.util.BoundingBox boundary = getGameConfig().resolveMapGeometry().getBoundary();
+        return boundary != null && !boundary.contains(location.toVector());
     }
 
     @Override
@@ -646,8 +693,6 @@ public class BuildMartArea extends BaseSingleTeamArea {
             startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
-        if (blueprintRefreshScheduler != null)
-            blueprintRefreshScheduler.stop();
         if (goldenBlueprintScheduler != null)
             goldenBlueprintScheduler.stop();
 
@@ -656,8 +701,7 @@ public class BuildMartArea extends BaseSingleTeamArea {
 
         cleanInventoryForAllGamePlayers();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BUILD_MART_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.BUILD_MART_GAME_END_TITLE, MessageConfig.BUILD_MART_GAME_END_SUBTITLE);
+        announceGameEnd(MessageConfig.BUILD_MART_GAME_END_TITLE, MessageConfig.BUILD_MART_GAME_END_SUBTITLE);
 
         teleportAllPlayers(CCConfig.LOBBY_LOCATION);
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -669,21 +713,15 @@ public class BuildMartArea extends BaseSingleTeamArea {
     }
 
     private synchronized void finishEndGame(Throwable throwable) {
-        if (throwable != null) {
-            plugin.getLogger().log(java.util.logging.Level.SEVERE,
-                    "Failed to settle Build Mart arena " + getGameConfig().getAreaName(), throwable);
-        }
-
-        awardAndAnnounce(BuildMartScorer.rankByEntrepreneur(teamStates.values()), MessageConfig.BUILD_MART_AWARD_ENTREPRENEUR);
+        if (throwable != null)
+            plugin.getLogger().log(Level.SEVERE, "Failed to settle Build Mart arena", throwable);
+        awardAndAnnounce(BuildMartScorer.rankByEntrepreneur(teamStates.values()),
+                MessageConfig.BUILD_MART_AWARD_ENTREPRENEUR);
         awardAndAnnounce(BuildMartScorer.rankByChef(teamStates.values()), MessageConfig.BUILD_MART_AWARD_CHEF);
         awardAndAnnounce(BuildMartScorer.rankByQuality(teamStates.values()), MessageConfig.BUILD_MART_AWARD_QUALITY);
-
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
-
-        sendMessageToAllGamePlayers(getPlayerPointsRank());
         sendMessageToAllGamePlayers(getTeamPointsRank());
         addPlayerPointsToDatabase();
-
+        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
         resetGame();
     }
 
@@ -702,22 +740,21 @@ public class BuildMartArea extends BaseSingleTeamArea {
     }
 
     private CompletableFuture<Void> waitForPendingWorldOperations() {
-        CompletableFuture<?>[] snapshot = pendingWorldOperations.toArray(CompletableFuture[]::new);
-        return CompletableFuture.allOf(snapshot);
+        return CompletableFuture.allOf(pendingWorldOperations.toArray(CompletableFuture[]::new));
     }
 
     /** Clears any build-zone flight permission so players don't keep flying back in the lobby. */
     private void disableFlightForAllGamePlayers() {
         for (java.util.UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
+            if (player != null)
                 scheduler.runEntity(player, () -> {
-                    if (player.getGameMode() != GameMode.CREATIVE && player.getGameMode() != GameMode.SPECTATOR) {
+                    if (player.getGameMode() != GameMode.CREATIVE
+                            && player.getGameMode() != GameMode.SPECTATOR) {
                         player.setFlying(false);
                         player.setAllowFlight(false);
                     }
                 });
-            }
         }
     }
 
@@ -725,7 +762,7 @@ public class BuildMartArea extends BaseSingleTeamArea {
     public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
         Player player = event.getEntity();
         if (notAreaPlayer(player)) return;
-        // No drops in Build Mart; respawn at the hub with a fresh inventory + library book.
+        // No drops in Build Mart; respawn at the hub with a fresh inventory.
         event.setDroppedExp(0);
         event.getDrops().clear();
         scheduler.runEntity(player, () -> {
@@ -733,9 +770,6 @@ public class BuildMartArea extends BaseSingleTeamArea {
             Location hub = getGameConfig().getHubSpawnPoint();
             if (hub != null) player.teleportAsync(hub);
             player.getInventory().clear();
-            if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-                player.getInventory().addItem(BuildMartMenu.createBook());
-            }
         });
     }
 
@@ -759,6 +793,6 @@ public class BuildMartArea extends BaseSingleTeamArea {
 
     @Override
     public String getWorldName() {
-        return "buildmart";
+        return getGameConfig().resolveWorldName();
     }
 }

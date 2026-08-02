@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,14 +32,9 @@ public class LeaderboardPlaceholder extends BasePlaceholder {
                 int num = Integer.parseInt(params.replace("player_", ""));
 
                 Map.Entry<UUID, Double> playerEntry = rankManager.getPlayerLeaderboard().get(num - 1);
-                String name = plugin.getPlayerManager().getPlayerName(playerEntry.getKey());
-                if (name == null)
-                    return MessageConfig.PLACEHOLDER_NONE;
-
-                return MessageConfig.RANK_PLAYER_BOARD_ROW
-                        .replace("%player_rank%. ", "")
-                        .replace("%player%", name)
-                        .replace("%player_point%", String.valueOf(playerEntry.getValue()));
+                return MessageConfig.RANK_PLAYER_BOARD_ENTRY
+                        .replace("%player%", Utils.formatPlayerName(playerEntry.getKey()))
+                        .replace("%player_point%", Utils.formatPoints(playerEntry.getValue()));
             } catch (Exception ignored) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
@@ -48,10 +44,9 @@ public class LeaderboardPlaceholder extends BasePlaceholder {
                 int num = Integer.parseInt(params.replace("team_", ""));
 
                 Map.Entry<ChampionshipTeam, Double> teamEntry = rankManager.getTeamLeaderboard().get(num - 1);
-                return MessageConfig.RANK_TEAM_BOARD_ROW
-                        .replace("%team_rank%. ", "")
+                return MessageConfig.RANK_TEAM_BOARD_ENTRY
                         .replace("%team%", teamEntry.getKey().getColoredName())
-                        .replace("%team_point%", String.valueOf(teamEntry.getValue()));
+                        .replace("%team_point%", Utils.formatPoints(teamEntry.getValue()));
             } catch (Exception ignored) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }

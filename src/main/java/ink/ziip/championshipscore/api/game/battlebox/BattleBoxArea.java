@@ -1,14 +1,16 @@
 package ink.ziip.championshipscore.api.game.battlebox;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
+import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
+import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
+import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.game.battlebox.BBWeaponKitEnum;
-import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.entity.Item;
@@ -23,43 +25,45 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 
 /**
- * Battle Box arena hosting several independent team-vs-team matches in parallel, one per stamped arena copy
- * (see {@link BattleBoxLayout}). It extends {@link BaseSingleTeamArea} (a team-list area): the area owns all
- * participating teams for the round and a {@link BattleBoxMatch} list provides the per-copy geometry, win
- * detection and freezing.
- * The championship's Swiss scheduler feeds one round's pairings in via {@link #tryStartMatches(List)}.
+ * One independently runnable Battle Box instance, permanently bound to one stamped map copy. Parallelism
+ * belongs to {@link BattleBoxManager}; this object owns exactly one two-team run at a time.
  */
-public class BattleBoxArea extends BaseSingleTeamArea {
+public class BattleBoxArea extends BasePairedGameInstance {
     @Getter
     private volatile int timer;
     private volatile ScheduledTask startGamePreparationTask;
     private volatile ScheduledTask startGameProgressTask;
     private volatile ScheduledTask woolCheckerTask;
 
-    private final List<BattleBoxMatch> matches = new CopyOnWriteArrayList<>();
-    private final Map<UUID, BattleBoxMatch> matchByPlayer = new ConcurrentHashMap<>();
+    @Getter
+    private final int copyIndex;
+    private volatile BattleBoxMatch match;
     private final ConcurrentHashMap<UUID, BBWeaponKitEnum> playerWeaponKit = new ConcurrentHashMap<>();
-    private final AtomicBoolean woolCheckInProgress = new AtomicBoolean();
 
     public BattleBoxArea(ChampionshipsCore plugin, BattleBoxConfig battleBoxConfig) {
+        this(plugin, battleBoxConfig, 0, true);
+    }
+
+    BattleBoxArea(ChampionshipsCore plugin, BattleBoxConfig battleBoxConfig, int copyIndex,
+                  boolean initializeConfig) {
         super(plugin, GameTypeEnum.BattleBox, new BattleBoxHandler(plugin), battleBoxConfig);
 
-        getGameConfig().initializeConfiguration(plugin.getFolder());
+        if (initializeConfig) {
+            getGameConfig().initializeConfiguration(plugin.getFolder());
+        }
+        this.copyIndex = copyIndex;
         getGameHandler().setBattleBoxArea(this);
 
         getGameHandler().register();
@@ -67,49 +71,65 @@ public class BattleBoxArea extends BaseSingleTeamArea {
         setGameStageEnum(GameStageEnum.WAITING);
     }
 
-    /**
-     * Starts a round of parallel matches from {@code pairs} (each a team-vs-team pairing). Pair {@code i}
-     * runs in arena copy {@code i}, so {@code prepare} must have stamped at least {@code pairs.size()} copies.
-     */
-    public synchronized boolean tryStartMatches(@NotNull List<TwoVTwoVector> pairs) {
+    @Override
+    public boolean tryStartGame(ChampionshipTeam right, ChampionshipTeam left) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return false;
-        setGameStageEnum(GameStageEnum.LOADING);
-
-        matches.clear();
-        matchByPlayer.clear();
-        int copyIndex = 0;
-        for (TwoVTwoVector pair : pairs) {
-            BattleBoxMatch match = new BattleBoxMatch(copyIndex, pair.getTeamOne(), pair.getTeamTwo(), getGameConfig());
-            matches.add(match);
-            gameTeams.add(pair.getTeamOne());
-            gameTeams.add(pair.getTeamTwo());
-            gamePlayers.addAll(pair.getTeamOne().getMembers());
-            gamePlayers.addAll(pair.getTeamTwo().getMembers());
-            for (UUID uuid : pair.getTeamOne().getMembers()) matchByPlayer.put(uuid, match);
-            for (UUID uuid : pair.getTeamTwo().getMembers()) matchByPlayer.put(uuid, match);
-            copyIndex++;
+        BattleBoxGeometry geometry;
+        try {
+            geometry = configuredGeometry();
+        } catch (RuntimeException exception) {
+            logGame(Level.WARNING, "启动", "地图配置尚未完成，无法创建实例几何");
+            return false;
         }
+        if (getGameConfig().getTimer() <= 0 || copyIndex >= getGameConfig().getCopyCount()
+                || geometry.getRightSpawn() == null || geometry.getLeftSpawn() == null
+                || geometry.getRightPreSpawn() == null || geometry.getLeftPreSpawn() == null
+                || geometry.getSpectatorSpawn() == null) {
+            logGame(Level.WARNING, "启动", "地图配置尚未完成，无法开始游戏");
+            return false;
+        }
+        match = new BattleBoxMatch(copyIndex, right, left, geometry);
+        return super.tryStartGame(right, left);
+    }
 
-        startGamePreparation();
-        return true;
+    private BattleBoxGeometry configuredGeometry() {
+        return configuredGeometry(copyIndex);
+    }
+
+    private BattleBoxGeometry configuredGeometry(int index) {
+        return new ReplicatedSpatialLayout<>(BattleBoxGeometry.from(getGameConfig()),
+                getGameConfig().getCopyGrid(), getGameConfig().getCopyCount()).geometry(index);
+    }
+
+    @Override
+    protected Collection<Location> getStartPreloadLocations() {
+        if (match == null) return List.of();
+        List<Location> locations = new ArrayList<>();
+        locations.add(match.getRightPreSpawn());
+        locations.add(match.getLeftPreSpawn());
+        locations.add(match.getRightSpawn());
+        locations.add(match.getLeftSpawn());
+        locations.add(match.getSpectatorSpawn());
+        locations.addAll(match.getPotionLocations());
+        return locations;
     }
 
     /** The match a player belongs to this round, or {@code null} for non-participants. */
     @Nullable
     public BattleBoxMatch matchOf(@NotNull Player player) {
-        return matchByPlayer.get(player.getUniqueId());
+        return match != null && match.contains(player) ? match : null;
     }
 
     @Override
     public void resetArea() {
-        for (BattleBoxMatch match : matches) {
-            match.resetWoolAsync(plugin, Material.WHITE_WOOL);
-        }
+        BattleBoxMatch previousMatch = match;
+        if (previousMatch != null)
+            scheduler.runAtLocation(previousMatch.getWoolOwner(),
+                    () -> previousMatch.resetWool(Material.WHITE_WOOL));
         cleanDroppedItems();
 
-        matches.clear();
-        matchByPlayer.clear();
+        match = null;
         playerWeaponKit.clear();
 
         startGamePreparationTask = null;
@@ -121,27 +141,37 @@ public class BattleBoxArea extends BaseSingleTeamArea {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Rule-introduction phase (if configured): gather players at the introduction spawn point and
+        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        startGameIntroduction(this::startFormalPreparation);
+    }
+
+    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    private void startFormalPreparation() {
+
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        for (BattleBoxMatch match : matches) {
+        if (match != null) {
             match.getRight().teleportAllPlayers(match.getRightPreSpawn());
             match.getLeft().teleportAllPlayers(match.getLeftPreSpawn());
-            match.resetCenterWoolAsync(plugin);
+            BattleBoxMatch activeMatch = match;
+            scheduler.runAtLocation(activeMatch.getWoolOwner(), activeMatch::resetCenterWool);
         }
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_START_PREPARATION);
-        sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_START_PREPARATION_TITLE, MessageConfig.BATTLE_BOX_START_PREPARATION_SUBTITLE);
+        announceGamePreparation(MessageConfig.BATTLE_BOX_START_PREPARATION,
+                MessageConfig.BATTLE_BOX_START_PREPARATION_TITLE, MessageConfig.BATTLE_BOX_START_PREPARATION_SUBTITLE);
 
         timer = 20;
-        startGamePreparationTask = scheduler.runTaskTimer(() -> {
-            changeLevelForAllGamePlayers(timer);
+        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+            showPreparationCountdown(timer);
 
             if (timer == 0) {
-                startGameProgress();
                 if (startGamePreparationTask != null)
                     startGamePreparationTask.cancel();
+                startGameProgress();
+                return;
             }
 
             timer--;
@@ -151,13 +181,8 @@ public class BattleBoxArea extends BaseSingleTeamArea {
     protected void startGameProgress() {
         summonPotions();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_START_SOON);
-        sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_START_SOON_TITLE, MessageConfig.BATTLE_BOX_GAME_START_SOON_SUBTITLE);
-
-        timer = getGameConfig().getTimer() + 5;
-
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
-        for (BattleBoxMatch match : matches) {
+        if (match != null) {
             match.getRight().teleportAllPlayers(match.getRightSpawn());
             match.getLeft().teleportAllPlayers(match.getLeftSpawn());
         }
@@ -167,81 +192,47 @@ public class BattleBoxArea extends BaseSingleTeamArea {
 
         giveItemToAllGamePlayers();
 
-        setGameStageEnum(GameStageEnum.PROGRESS);
+        startFinalCountdown(MessageConfig.BATTLE_BOX_GAME_START_SOON_TITLE,
+                MessageConfig.BATTLE_BOX_GAME_START_TITLE, MessageConfig.BATTLE_BOX_GAME_START_SUBTITLE,
+                this::beginGameProgress);
+    }
 
-        startGameProgressTask = scheduler.runTaskTimer(() -> {
-            if (timer > getGameConfig().getTimer()) {
-                String countDown = MessageConfig.BATTLE_BOX_COUNT_DOWN
-                        .replace("%time%", String.valueOf(timer - getGameConfig().getTimer()));
-                sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_START_SOON_SUBTITLE, countDown);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
-            }
-
-            if (timer == getGameConfig().getTimer()) {
-                sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_START);
-                sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_START_TITLE, MessageConfig.BATTLE_BOX_GAME_START_SUBTITLE);
-                playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
-            }
-
+    private void beginGameProgress() {
+        startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
+            timer = seconds;
             changeLevelForAllGamePlayers(timer);
-            sendActionBarToAllGameSpectators(MessageConfig.BATTLE_BOX_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
+            updateSpectatorTimerBossBar(MessageConfig.BATTLE_BOX_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
+        }, this::endGame);
 
-            if (timer == 0) {
-                if (startGameProgressTask != null)
-                    startGameProgressTask.cancel();
-            }
+        BattleBoxMatch activeMatch = match;
+        if (activeMatch == null) return;
+        woolCheckerTask = FoliaScheduler.region(plugin, activeMatch::getWoolOwner).runTaskTimer(plugin, () -> {
+            if (getGameStageEnum() != GameStageEnum.PROGRESS)
+                return;
 
-            timer--;
-        }, 0, 20L);
-
-        woolCheckerTask = scheduler.runTaskTimer(() -> {
-            if (timer == -1) {
+            if (match != activeMatch || activeMatch.isFinished())
+                return;
+            HashMap<Material, Integer> blockCount = activeMatch.countWool();
+            int rightWool = blockCount.getOrDefault(activeMatch.getRight().getWool().getType(), 0);
+            int leftWool = blockCount.getOrDefault(activeMatch.getLeft().getWool().getType(), 0);
+            if (rightWool == 9 || leftWool == 9) {
+                finishMatch();
                 changeLevelForAllGamePlayers(0);
                 endGame();
                 if (woolCheckerTask != null)
                     woolCheckerTask.cancel();
-                return;
             }
-
-            if (getGameStageEnum() != GameStageEnum.PROGRESS)
-                return;
-
-            checkMatchWoolAsync();
         }, 0, 1L);
     }
 
-    private void checkMatchWoolAsync() {
-        if (!woolCheckInProgress.compareAndSet(false, true)) return;
-        List<CompletableFuture<Void>> checks = new ArrayList<>();
-        for (BattleBoxMatch match : List.copyOf(matches)) {
-            if (match.isFinished()) continue;
-            checks.add(match.countWoolAsync(plugin).thenAccept(blockCount -> {
-                if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
-                int rightWool = blockCount.getOrDefault(match.getRight().getWool().getType(), 0);
-                int leftWool = blockCount.getOrDefault(match.getLeft().getWool().getType(), 0);
-                if (rightWool == 9 || leftWool == 9) finishMatch(match);
-            }));
-        }
-        CompletableFuture.allOf(checks.toArray(CompletableFuture[]::new)).whenComplete((ignored, throwable) -> {
-            woolCheckInProgress.set(false);
-            if (throwable != null) {
-                plugin.getLogger().log(java.util.logging.Level.SEVERE, "Failed to check Battle Box wool", throwable);
-                return;
-            }
-            if (getGameStageEnum() == GameStageEnum.PROGRESS && !matches.isEmpty()
-                    && matches.stream().allMatch(BattleBoxMatch::isFinished)) {
-                changeLevelForAllGamePlayers(0);
-                endGame();
-            }
-        });
-    }
-
     /** Freezes a settled match: its players go spectator at their copy's viewpoint; scoring waits for end. */
-    private void finishMatch(BattleBoxMatch match) {
-        if (!match.tryFinish()) return;
+    private void finishMatch() {
+        if (match == null) return;
+        match.setFinished(true);
         for (ChampionshipTeam team : List.of(match.getRight(), match.getLeft())) {
             for (Player player : team.getOnlinePlayers()) {
-                scheduler.runEntity(player, () -> {
+                FoliaScheduler.global(plugin).runEntity(player, () -> {
                     player.setGameMode(GameMode.SPECTATOR);
                     if (match.getSpectatorSpawn() != null)
                         player.teleportAsync(match.getSpectatorSpawn());
@@ -255,7 +246,6 @@ public class BattleBoxArea extends BaseSingleTeamArea {
     public synchronized void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
-
         setGameStageEnum(GameStageEnum.END);
 
         if (startGamePreparationTask != null)
@@ -265,30 +255,39 @@ public class BattleBoxArea extends BaseSingleTeamArea {
         if (woolCheckerTask != null)
             woolCheckerTask.cancel();
 
-        sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BATTLE_BOX_GAME_END);
-        sendTitleToAllGamePlayers(MessageConfig.BATTLE_BOX_GAME_END_TITLE, MessageConfig.BATTLE_BOX_GAME_END_SUBTITLE);
+        BattleBoxMatch activeMatch = match;
+        if (activeMatch == null) {
+            finishEndGame(null, new HashMap<>());
+            return;
+        }
+        FoliaScheduler.global(plugin).supplyAtLocation(activeMatch.getWoolOwner(), activeMatch::countWool)
+                .whenComplete((blockCount, error) -> scheduler.runTask(() -> {
+                    if (error != null) {
+                        plugin.getLogger().log(Level.WARNING, "Failed to read Battle Box wool state", error);
+                        finishEndGame(activeMatch, new HashMap<>());
+                    } else {
+                        finishEndGame(activeMatch, blockCount);
+                    }
+                }));
+    }
+
+    private void finishEndGame(@Nullable BattleBoxMatch activeMatch,
+                               HashMap<Material, Integer> blockCount) {
+        if (activeMatch != null) calculatePoints(activeMatch, blockCount);
+        addPlayerPointsToDatabase();
+
+        announceGameEnd(MessageConfig.BATTLE_BOX_GAME_END_TITLE, MessageConfig.BATTLE_BOX_GAME_END_SUBTITLE);
 
         teleportAllPlayers(getLobbyLocation());
         resetPlayerHealthFoodEffectLevelInventory();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        List<CompletableFuture<HashMap<Material, Integer>>> counts = new ArrayList<>();
-        for (BattleBoxMatch match : List.copyOf(matches)) {
-            counts.add(match.countWoolAsync(plugin).exceptionally(throwable -> {
-                plugin.getLogger().log(java.util.logging.Level.SEVERE, "Failed to settle Battle Box match", throwable);
-                return new HashMap<>();
-            }));
+        ChampionshipTeam right = getRightChampionshipTeam();
+        ChampionshipTeam left = getLeftChampionshipTeam();
+        if (right != null && left != null) {
+            Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(right, left, this));
         }
-        CompletableFuture.allOf(counts.toArray(CompletableFuture[]::new))
-                .thenRun(() -> scheduler.runTask(() -> finishEndGame(counts)));
-    }
 
-    private synchronized void finishEndGame(List<CompletableFuture<HashMap<Material, Integer>>> counts) {
-        for (int i = 0; i < matches.size(); i++) {
-            calculatePoints(matches.get(i), counts.get(i).join());
-        }
-        addPlayerPointsToDatabase();
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
         resetGame();
     }
 
@@ -327,18 +326,7 @@ public class BattleBoxArea extends BaseSingleTeamArea {
     private void messageMatch(BattleBoxMatch match, String message) {
         match.getRight().sendMessageToAll(message);
         match.getLeft().sendMessageToAll(message);
-    }
-
-    @Override
-    public void addPlayerPointsToDatabase() {
-        for (Map.Entry<UUID, Double> entry : playerPoints.entrySet()) {
-            if (entry.getValue() == 0)
-                continue;
-            BattleBoxMatch match = matchByPlayer.get(entry.getKey());
-            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(entry.getKey());
-            ChampionshipTeam rival = match == null ? null : match.rivalOf(team);
-            plugin.getRankManager().addPlayerPoints(entry.getKey(), rival, gameTypeEnum, gameConfig.getAreaName(), entry.getValue());
-        }
+        sendMessageToAllSpectators(message);
     }
 
     @Override
@@ -357,8 +345,8 @@ public class BattleBoxArea extends BaseSingleTeamArea {
                     event.deathMessage(null);
                     killer.playSound(killer, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
                     sendMessageToAllGamePlayers(MessageConfig.BATTLE_BOX_KILL_PLAYER
-                            .replace("%player%", playerTeam.getColoredColor() + player.getName())
-                            .replace("%killer%", killerTeam.getColoredColor() + killer.getName()));
+                            .replace("%player%", Utils.formatPlayerName(player))
+                            .replace("%killer%", Utils.formatPlayerName(killer)));
                 }
             }
         }
@@ -366,10 +354,11 @@ public class BattleBoxArea extends BaseSingleTeamArea {
         BattleBoxMatch match = matchOf(player);
         Location respawn = match != null && match.getSpectatorSpawn() != null
                 ? match.getSpectatorSpawn() : getSpectatorSpawnLocation();
-        scheduler.runEntity(player, () -> {
+        FoliaScheduler.global(plugin).runEntity(player, () -> {
             event.getEntity().spigot().respawn();
-            event.getEntity().teleportAsync(respawn);
-            event.getEntity().setGameMode(GameMode.SPECTATOR);
+            event.getEntity().teleportAsync(respawn).thenRun(() ->
+                    FoliaScheduler.global(plugin).runEntity(player,
+                            () -> player.setGameMode(GameMode.SPECTATOR)));
         });
 
         event.getDrops().clear();
@@ -384,7 +373,7 @@ public class BattleBoxArea extends BaseSingleTeamArea {
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team != null) {
             sendMessageToAllGamePlayers(MessageConfig.BATTLE_BOX_PLAYER_LEAVE
-                    .replace("%player%", team.getColoredColor() + player.getName()));
+                    .replace("%player%", Utils.formatPlayerName(player)));
         }
     }
 
@@ -399,36 +388,46 @@ public class BattleBoxArea extends BaseSingleTeamArea {
             return;
         }
 
-        player.teleportAsync(getSpectatorSpawnLocation());
-        scheduler.runEntity(player, () -> player.setGameMode(GameMode.SPECTATOR));
+        teleportAndSetGameMode(player, getSpectatorSpawnLocation(), GameMode.SPECTATOR);
     }
 
     private void teleportPlayerToPreSpawnLocation(Player player) {
+        // During the rule-introduction phase everyone roams from the introduction spawn point.
+        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
+        if (isIntroductionPhase() && introductionSpawnPoint != null) {
+            teleportAndSetGameMode(player, introductionSpawnPoint, GameMode.ADVENTURE);
+            return;
+        }
         BattleBoxMatch match = matchOf(player);
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (match != null && team != null) {
             Location target = team.equals(match.getRight()) ? match.getRightPreSpawn()
                     : team.equals(match.getLeft()) ? match.getLeftPreSpawn() : null;
             if (target != null) {
-                player.teleportAsync(target);
-                scheduler.runEntity(player, () -> player.setGameMode(GameMode.ADVENTURE));
+                teleportAndSetGameMode(player, target, GameMode.ADVENTURE);
                 return;
             }
         }
-        player.teleportAsync(getSpectatorSpawnLocation());
-        scheduler.runEntity(player, () -> player.setGameMode(GameMode.SPECTATOR));
+        teleportAndSetGameMode(player, getSpectatorSpawnLocation(), GameMode.SPECTATOR);
+    }
+
+    private void teleportAndSetGameMode(Player player, Location destination, GameMode gameMode) {
+        player.teleportAsync(destination).thenRun(() -> FoliaScheduler.global(plugin).runEntity(player,
+                () -> player.setGameMode(gameMode)));
     }
 
     private void giveItemToAllGamePlayers() {
-        for (UUID uuid : gamePlayers) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                scheduler.runEntity(player, () -> setWeaponKit(player));
+        if (match == null) return;
+        for (ChampionshipTeam team : List.of(match.getRight(), match.getLeft())) {
+            for (UUID uuid : team.getMembers()) {
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null)
+                    FoliaScheduler.global(plugin).runEntity(player, () -> setWeaponKit(player));
             }
         }
     }
 
-    public synchronized boolean setPlayerWeaponKit(@NotNull Player player, @NotNull BBWeaponKitEnum type) {
+    public boolean setPlayerWeaponKit(@NotNull Player player, @NotNull BBWeaponKitEnum type) {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
         if (championshipTeam == null)
             return false;
@@ -445,7 +444,7 @@ public class BattleBoxArea extends BaseSingleTeamArea {
         return playerWeaponKit.get(player.getUniqueId());
     }
 
-    public synchronized BBWeaponKitEnum getPlayerWeaponKit(@NotNull Player player) {
+    public BBWeaponKitEnum getPlayerWeaponKit(@NotNull Player player) {
         BBWeaponKitEnum bbWeaponKitEnum = playerWeaponKit.get(player.getUniqueId());
         if (bbWeaponKitEnum != null)
             return bbWeaponKitEnum;
@@ -517,34 +516,30 @@ public class BattleBoxArea extends BaseSingleTeamArea {
     }
 
     private void summonPotions() {
-        for (BattleBoxMatch match : matches) {
-            for (Location location : match.getPotionLocations()) {
-                World world = location.getWorld();
-                if (world == null)
-                    continue;
-                ItemStack item = new ItemStack(Material.SPLASH_POTION);
-                PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
-                if (potionMeta != null) {
-                    potionMeta.setBasePotionType(PotionType.STRONG_HARMING);
-                    item.setItemMeta(potionMeta);
-                    ItemStack potion = item.clone();
-                    scheduler.runAtLocation(location, () -> {
-                        Item dropped = world.dropItem(location, potion);
-                        dropped.setGlowing(true);
-                    });
-                }
+        if (match == null) return;
+        for (Location location : match.getPotionLocations()) {
+            World world = location.getWorld();
+            if (world == null)
+                continue;
+            ItemStack item = new ItemStack(Material.SPLASH_POTION);
+            PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
+            if (potionMeta != null) {
+                potionMeta.setBasePotionType(PotionType.STRONG_HARMING);
+                item.setItemMeta(potionMeta);
+                scheduler.runAtLocation(location, () -> {
+                    Item dropped = world.dropItem(location, item);
+                    dropped.setGlowing(true);
+                });
             }
         }
     }
 
     @Override
     public void cleanDroppedItems() {
-        for (BattleBoxMatch match : matches) {
-            World world = match.getSpectatorSpawn() != null ? match.getSpectatorSpawn().getWorld() : null;
-            if (world == null)
-                continue;
-            cleanEntities(world, match.getAreaBox(), Item.class);
-        }
+        BattleBoxGeometry geometry = match == null ? configuredGeometry() : match.getGeometry();
+        World world = geometry.getSpectatorSpawn() == null ? null : geometry.getSpectatorSpawn().getWorld();
+        if (world == null) return;
+        cleanEntities(world, geometry.boundaryBox(), Item.class);
     }
 
     @Override
@@ -552,17 +547,24 @@ public class BattleBoxArea extends BaseSingleTeamArea {
         if (location == null || location.getWorld() == null
                 || !location.getWorld().getName().equals(getWorldName()))
             return true;
-        Vector point = location.toVector();
-        for (BattleBoxMatch match : matches) {
-            if (match.isInArea(point))
-                return false;
+        BattleBoxGeometry geometry = match == null ? configuredGeometry() : match.getGeometry();
+        return !geometry.contains(location.toVector());
+    }
+
+    @Override
+    public boolean isSpectatorLocationAllowed(@NotNull Location location) {
+        if (location.getWorld() == null || !location.getWorld().getName().equals(getWorldName()))
+            return false;
+        for (int index = 0; index < getGameConfig().getCopyCount(); index++) {
+            if (configuredGeometry(index).contains(location.toVector()))
+                return true;
         }
-        return true;
+        return false;
     }
 
     @Override
     public Location getSpectatorSpawnLocation() {
-        return getGameConfig().getSpectatorSpawnPoint();
+        return (match == null ? configuredGeometry() : match.getGeometry()).getSpectatorSpawn();
     }
 
     @Override
@@ -577,6 +579,6 @@ public class BattleBoxArea extends BaseSingleTeamArea {
 
     @Override
     public String getWorldName() {
-        return "battlebox";
+        return getGameConfig().resolveWorldName();
     }
 }

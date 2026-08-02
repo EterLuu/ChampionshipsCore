@@ -7,18 +7,25 @@ import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
-import org.bukkit.entity.Player;
 import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import org.bukkit.Bukkit;
+import org.bukkit.Sound;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
+import org.bukkit.entity.Player;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class VoteManager extends BaseManager {
+    private static final int VOTE_DURATION_SECONDS = 120;
     private final Map<UUID, GameTypeEnum> playerVotes = new ConcurrentHashMap<>();
+    private final Map<UUID, BossBar> voteBars = new ConcurrentHashMap<>();
     private final FoliaScheduler scheduler;
     private final RankManager rankManager;
-    private volatile ScheduledTask voteTask;
+    private ScheduledTask voteTask;
     private volatile int timer;
     private volatile boolean vote;
 
@@ -29,7 +36,11 @@ public class VoteManager extends BaseManager {
         vote = false;
     }
 
-    public synchronized void startVote() {
+    public void startVote() {
+        scheduler.runTask(this::startVoteNow);
+    }
+
+    private synchronized void startVoteNow() {
         if (vote)
             return;
 
@@ -37,42 +48,79 @@ public class VoteManager extends BaseManager {
 
         vote = true;
 
-        timer = 120;
+        timer = VOTE_DURATION_SECONDS;
 
         Utils.sendMessageToAllPlayers(MessageConfig.VOTE_START_VOTE);
         Utils.sendTitleToAllPlayers(MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
+        Utils.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_PLING, 0.8F, 1.2F);
 
-        voteTask = scheduler.runTaskTimer(() -> {
+        updateVoteBars();
 
-            Utils.changeLevelForAllPlayers(timer);
-            Utils.sendTitleToAllPlayers(MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
-
-            Map<GameTypeEnum, Integer> votes = new HashMap<>();
-            for (GameTypeEnum gameTypeEnum : playerVotes.values()) {
-                votes.put(gameTypeEnum, votes.getOrDefault(gameTypeEnum, 0) + 1);
-            }
-
-            if (timer == 0) {
-                Utils.changeLevelForAllPlayers(timer);
-                endVote();
-                if (voteTask != null)
-                    voteTask.cancel();
+        voteTask = scheduler.runTaskTimer(plugin, () -> {
+            updateVoteBars();
+            if (timer <= 0) {
+                endVoteNow();
+                return;
             }
 
             timer--;
         }, 0, 20L);
     }
 
-    public synchronized void endVote() {
+    private void updateVoteBars() {
+        int eligiblePlayers = 0;
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (plugin.getTeamManager().getTeamByPlayer(player) != null)
+                eligiblePlayers++;
+        }
+
+        String time = String.format(Locale.ROOT, "%d:%02d", Math.max(0, timer) / 60, Math.max(0, timer) % 60);
+        double progress = Math.max(0D, Math.min(1D, timer / (double) VOTE_DURATION_SECONDS));
+        Set<UUID> onlinePlayers = new HashSet<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            UUID uuid = player.getUniqueId();
+            onlinePlayers.add(uuid);
+
+            BossBar voteBar = voteBars.computeIfAbsent(uuid,
+                    ignored -> Bukkit.createBossBar("", BarColor.PURPLE, BarStyle.SEGMENTED_12));
+            voteBar.addPlayer(player);
+            String selectedGame = Optional.ofNullable(playerVotes.get(uuid))
+                    .map(GameTypeEnum::toString)
+                    .orElse(MessageConfig.VOTE_NOT_VOTED);
+            voteBar.setTitle(Utils.translateColorCodes(MessageConfig.VOTE_BOSS_BAR
+                    .replace("%time%", time)
+                    .replace("%votes%", String.valueOf(playerVotes.size()))
+                    .replace("%players%", String.valueOf(eligiblePlayers))
+                    .replace("%vote%", selectedGame)));
+            voteBar.setProgress(progress);
+        }
+
+        voteBars.entrySet().removeIf(entry -> {
+            if (onlinePlayers.contains(entry.getKey()))
+                return false;
+            entry.getValue().removeAll();
+            return true;
+        });
+    }
+
+    private void removeVoteBars() {
+        voteBars.values().forEach(BossBar::removeAll);
+        voteBars.clear();
+    }
+
+    public void endVote() {
+        scheduler.runTask(this::endVoteNow);
+    }
+
+    private synchronized void endVoteNow() {
         if (!vote)
             return;
         vote = false;
         if (voteTask != null) {
             voteTask.cancel();
-            Utils.changeLevelForAllPlayers(0);
+            voteTask = null;
         }
-
-        Utils.sendMessageToAllPlayers(MessageConfig.VOTE_END_VOTE);
+        removeVoteBars();
 
         Map<GameTypeEnum, Integer> votes = new HashMap<>();
         for (GameTypeEnum gameTypeEnum : playerVotes.values()) {
@@ -87,10 +135,12 @@ public class VoteManager extends BaseManager {
 
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append(MessageConfig.VOTE_VOTE_BOARD_BAR).append("\n");
+        stringBuilder.append(MessageConfig.VOTE_END_VOTE).append("\n");
 
         int i = 1;
         for (Map.Entry<GameTypeEnum, Integer> entry : list) {
+            if (i > 3)
+                break;
             String row = MessageConfig.VOTE_VOTE_BOARD_ROW
                     .replace("%game_rank%", String.valueOf(i))
                     .replace("%game%", entry.getKey().toString())
@@ -100,7 +150,19 @@ public class VoteManager extends BaseManager {
             i++;
         }
 
-        Utils.sendMessageToAllPlayers(stringBuilder.toString());
+        if (list.isEmpty()) {
+            stringBuilder.append("&#ededed  本轮没有有效投票");
+            Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE, "&#ededed本轮没有有效投票", 40);
+        } else {
+            Map.Entry<GameTypeEnum, Integer> winner = list.get(0);
+            Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE,
+                    MessageConfig.VOTE_END_VOTE_SUBTITLE
+                            .replace("%game%", winner.getKey().toString())
+                            .replace("%votes%", String.valueOf(winner.getValue())), 60);
+        }
+
+        Utils.sendMessageToAllPlayers(Utils.translateColorCodes(stringBuilder.toString()));
+        Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8F, 1F);
 
         playerVotes.clear();
     }
@@ -135,13 +197,15 @@ public class VoteManager extends BaseManager {
             return;
         }
 
-        if (gameTypeEnum == null) {
+        if (gameTypeEnum == null || gameTypeEnum == GameTypeEnum.Dodgebolt
+                || !plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
             player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
             return;
         }
 
         playerVotes.put(player.getUniqueId(), gameTypeEnum);
-        player.sendMessage(MessageConfig.VOTE_PLAYER_VOTE.replace("%game%", gameTypeEnum.toString()));
+        Utils.sendActionBar(player, MessageConfig.VOTE_PLAYER_VOTE.replace("%game%", gameTypeEnum.toString()));
+        scheduler.runTask(this::updateVoteBars);
     }
 
     @Override
@@ -151,6 +215,12 @@ public class VoteManager extends BaseManager {
 
     @Override
     public void unload() {
-        endVote();
+        vote = false;
+        if (voteTask != null) {
+            voteTask.cancel();
+            voteTask = null;
+        }
+        removeVoteBars();
+        playerVotes.clear();
     }
 }

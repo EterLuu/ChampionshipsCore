@@ -41,8 +41,7 @@ public class TNTRunStartAllSubCommand extends BaseSubCommand {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
             List<String> returnList = plugin.getGameManager().getTntRunManager().getAreaNameList();
-            returnList.removeIf(s -> s != null && !s.startsWith(args[0]));
-            return returnList;
+            return filterStartsWith(returnList, args[0]);
         }
 
         return Collections.emptyList();

@@ -1,11 +1,17 @@
 dont-edit-this:
-  version: 1
+  version: 5
 name: "area"
+world-name:
 # Round duration in seconds. Default 12 minutes.
 timer: 720
 # Preparation countdown before the round starts, in seconds.
 prepare-time: 10
-# Optional bounding box of the whole arena (hub + bases). Used for dropped-item cleanup.
+# Number of internal team bases stamped from the single base template.
+base-count: 8
+# Filled by prepare from hub.schem/base.schem. Missing values keep the legacy 500-block ring.
+copy-layout: {}
+# Bounding box of the whole arena (hub + bases). This is the gameplay zone used for player/spectator
+# boundary checks and must be configured before the map can start.
 area-pos1:
 area-pos2:
 # Optional explicit spectator viewpoint; defaults to the hub spawn / world spawn when unset.
@@ -23,15 +29,39 @@ golden-display-point:
 # Portal debounce (ms) so players don't bounce back and forth across a portal region.
 portal-cooldown-millis: 1000
 # Single base TEMPLATE geometry (seat 0). Every team's base is a same-orientation copy of this template,
-# translated onto a fixed grid (see BuildMartLayout). Stamp the map first with:
-#   /cc game area buildmart prepare <area> <teams>
-# then stand inside the seat-0 base (pasted at 0,100,500) and configure each key with:
-#   /cc game area buildmart set <area> base <key>
-# keys: spawn, portal-pos1, portal-pos2, normal-plot-1..3, normal-ref-1..3, golden-plot, golden-ref
+# translated onto the chunk-aligned grid calculated by prepare. Configure all keys against seat 0.
+# keys: spawn, portal-pos1, portal-pos2, normal-plot-1..3, normal-ref-1..3, normal-submit-1..3,
+#       golden-plot, golden-ref, golden-submit
+# Note: normal-submit-1..3 / golden-submit capture a WorldEdit SINGLE-BLOCK selection — select the submit
+# button block itself (//pos1 + //pos2 on the same block) before running set. All other base keys capture
+# your standing position (the plot/reference origin).
 base: {}
-# How often (seconds) the normal blueprint library re-rolls its selectable list.
-library-refresh-seconds: 90
 # How often (seconds) the golden blueprint is swapped; it stays live for this whole window.
 golden-refresh-seconds: 120
-# How often (seconds) the hub resource zones are reset back to their template state.
-resource-reset-seconds: 60
+
+# ── 规则介绍阶段（introduction）────────────────────────────
+# 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
+# 规则文案（rules，每个子列表为一段，支持 & 颜色码与 &#RRGGBB 十六进制颜色），期间可以自由参观
+# 场地；结束后传送到正式准备点位，读秒后开始游戏。
+# 将 introduction-spawn-point 留空或把 rules 设为 [] 即可跳过该阶段。
+introduction-spawn-point:
+rules:
+  - - "&#696969==========&r &#ff6b26[&e建材集市&#ff6b26] &#696969==========&r"
+    - "&#fff566建筑师们，限时 12 分钟的速建大赛开工啦！"
+    - "&#ededed一局定胜负，所有队伍同在一个世界"
+    - "&#ededed各队基地有 3 个普通建筑区、1 个黄金建筑区"
+    - "&#ededed和工具作业区，传送门通往共享的资源仓库"
+    - "&#ededed去资源仓库采集方块，回建筑区复原蓝图建筑"
+    - "&#ededed只能在采集区/建筑区破坏，只能在建筑区放置"
+  - - "&#696969==========&r &#fff566积分规则 &#696969==========&r"
+    - "&#ededed复原得分 = 难度星级 × 时段倍率："
+    - "&#ededed0-4 分钟每星 &#fff56610 分&#ededed / 4-8 分钟 &#fff56615 分&#ededed / 8-12 分钟 &#fff56620 分"
+    - "&#ededed最后 10 秒无法提交；未完建筑按比例给分"
+    - "&#ededed数量最多/总星最多/平均星最高三项评比，"
+    - "&#ededed前三队伍每人 &#fff566+25 / +15 / +5 分"
+  - - "&#696969==========&r &#fff566小提示 &#696969==========&r"
+    - "&#fff566普通蓝图 1-5 星随机刷新，交满才清空刷新"
+    - "&#ededed黄金蓝图固定在资源仓库大厅中央，7 星"
+    - "&#ededed黄金提交需连点两次，失败直接清空重头来"
+    - "&#ededed黄金蓝图每 2 分钟刷新，只认当前这一张"
+    - "&#ededed材料不返还，采集前先规划好用量"

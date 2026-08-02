@@ -2,7 +2,7 @@
 
 ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综合赛事核心插件。它负责队伍与选手管理、比赛场地、游戏生命周期、积分排行、自动赛程、投票、观战、聊天分组和 PlaceholderAPI 变量。
 
-| 正式名称 | 命令标识 | 源码枚举 |
+| 正式名称 | 命令标识 | 配置名称 |
 | --- | --- | --- |
 | 火热宾果（Bingo But Hot） | `bingo` | `Bingo` |
 | 匹配赛建（Build Match） | `buildmart` | `BuildMart` |
@@ -15,27 +15,30 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 | 雪球乱斗（Snowball Showdown） | `snowball` | `SnowballShowdown` |
 | 龙蛋狂欢（Dragon Egg Carnival） | `dragoneggcarnival` | `DragonEggCarnival` |
 | 烫手鳕鱼（Hoty Cody Dusky） | `hotycodydusky` | `HotyCodyDusky` |
+| 躲避箭（Dodgebolt） | `dodgebolt` | `Dodgebolt` |
 
 ## 游戏介绍
 
 ### 火热宾果（Bingo But Hot）
 
-所有队伍被分散传送到同一套主世界、下界和末地，在默认 20 分钟内完成 5×5 任务卡。任务可以是获得物品或药水、达成统计目标或完成进度；副手地图和菜单用于查看卡片。
+所有队伍会被分散到同一套主世界、下界和末地，在默认 10 分钟内完成 5×5 任务卡。任务包括获得物品或药水、达成统计目标和完成进度。玩家可右键副手地图，在地图和菜单两种卡片样式间切换。
 
 - 同一格可由不同队伍分别完成，不会因首支队伍完成而锁定。
-- 单格按完成先后默认依次获得 50、40、30、20、10、5 分；超出列表后不再获得该项名次分。
-- 连成横、竖或对角线会获得连线奖励，默认前 4 条各 200 分，其余各 100 分。
+- 单格按完成先后默认依次获得 60、50、40、30、20、10 分；第六名以后仍获得 10 分。单格分数归完成任务的玩家。
+- 连成横、竖或对角线时，前 4 条线为全队每人 50 分，之后每条线为全队每人 25 分。
 - 按总分排名；同分时，较早达到该分数的队伍优先。
+- 开局会发放队伍色护甲、鞘翅、食物、工具、武器和指南针；左键指南针可以传送到在线队友身边。
+- 默认拥有夜视、跳跃提升和缓降，死亡不掉落物品。前三分钟关闭 PvP，此后仍禁止攻击队友。
 
 ### 匹配赛建（Build Match）
 
-各队从公共资源大厅收集方块，在自己的三个普通建造位和一个金色建造位复刻参考建筑。默认比赛 12 分钟、准备 10 秒；普通蓝图库每 90 秒刷新，金色蓝图每 120 秒刷新，资源区每 60 秒重置。
+各队从公共资源大厅收集方块，在自己的三个普通建造位和一个金色建造位复刻参考建筑。默认比赛 12 分钟、准备 10 秒，金色蓝图每 120 秒刷新。
 
-- 普通建造位通过菜单选图，每个建造位可主动换图一次。
-- 提交时逐方块检查，只有与蓝图完全一致才算完成；得分为蓝图星级乘以当前阶段的每星分值，比赛前、中、后三段默认分别为 10、15、20 分。
-- 金色蓝图轮换时，尚未完成的金色建造会被清空。
+- 三个普通建造位开局自动获得不同的随机蓝图；完成后清空，并在 5 秒后自动补充新蓝图。
+- 点击建造位旁的提交按钮后逐方块检查，只有与蓝图完全一致才算完成；得分为蓝图星级乘以当前阶段的每星分值，比赛前、中、后三段默认分别为 10、15、20 分。最后 10 秒停止接受提交。
+- 金色蓝图需要在 5 秒内连续点击两次确认提交；未完成时提交或蓝图轮换都会清空当前金色建造，材料不会返还。
 - 时间结束时，未完成建筑按完成比例结算。
-- 总星数、完成建筑数和平均星级三个奖项分别给前三名队伍的每名成员加 100、50、25 分。
+- 总星数、完成建筑数和平均星级三个奖项分别给前三名队伍的每名成员加 25、15、5 分。
 
 ### 斗战方框（Battle Box）
 
@@ -46,12 +49,14 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 
 ### 跑酷追击（Parkour Tag）
 
-每场对局由两支队伍参加，并在左右两个镜像区域同时进行：每队选择一名追逐者，追捕对方的逃生者。默认每小局 60 秒，追逐者碰触逃生者即完成抓捕；逃生者可使用时钟令对方追逐者发光 3 秒，冷却 10 秒。
+每场对局由两支队伍参加，并在左右两个镜像区域同时进行：每队选择一名追逐者，追捕对方的逃生者。默认每小局 60 秒，追逐者碰触逃生者即完成抓捕。
 
 - 未被全员抓获时，每名存活逃生者获得 20 分。
 - 每名逃生者按存活时长，每满 10 秒获得 2 分。
+- 追逐者每抓到一名逃生者获得 6 分。
 - 追逐者抓完全部对手后按剩余时间获得递减分数。
 - 存活总时长较长的一方获胜，每名成员另得 30 分。
+- 逃生者可用末影之眼令对方追逐者发光 3 秒，并可全队共享一次风弹，使追逐者浮空 1.5 秒；追逐者可用羽毛获得 6 秒速度 II。
 
 ### 跑路战士（Runaway Warrior）
 
@@ -61,11 +66,12 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 
 ### 空岛乱斗（Sky Brawl）
 
-各队从玻璃笼和队伍出生岛进入空岛生存战。默认时长 240 秒，场地支持边界收缩，并会在后期关闭生命恢复。
+各队从玻璃笼和队伍出生岛进入空岛生存战。默认时长 16 分钟；开局 2 分钟后，每支队伍的出生岛会出现可骑乘的乐魂，开局 5 分钟后安全区域开始收缩，最后阶段关闭生命恢复。
 
 - 击杀一名对手获得 40 分。
 - 每有一名玩家被淘汰，所有仍存活玩家各得 10 分；整支队伍被淘汰时，所有存活玩家再各得 2 分。
 - 比赛结束时仍存活的玩家各得 50 分。
+- 玩家死亡后，携带物品会保存在死亡位置的箱子中。
 
 ### 去到另一边（Try Get To The Other Side）
 
@@ -99,6 +105,12 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 
 若比赛进行到 100 秒仍无人夺蛋，龙蛋消失并生成 60 点生命值的末影龙，同时发放决战物品；击杀末影龙的一方赢下该局。每局结束后地图会重载，率先取得 3 个小局胜场的队伍成为最终胜者。
 
+### 躲避箭（Dodgebolt）
+
+这是一场不计积分的五局三胜制决赛。箭命中玩家即淘汰；每次射击结束后，箭会刷新到对方半场。第一局由排名更高的队伍获得两支箭，之后每局双方各获得一支箭。
+
+参赛者只能在本队半场活动；淘汰与累计射箭会令平台逐层收缩。有队伍率先取得 3 局胜利时产生冠军。决赛支持暂停、恢复、重开小局、裁判淘汰、强制判胜和终止。
+
 ## 运行要求
 
 - Java 25
@@ -106,11 +118,12 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 - MariaDB 或 MySQL
 - ProtocolLib 5.4.0
 - PlaceholderAPI 2.12.2
-- FastAsyncWorldEdit 2.15.0
+- FastAsyncWorldEdit 2.15.0（可选，仅 Paper 地图编辑/蓝图工作流需要）
 - PhantomWorlds（可选软依赖）
 
-ProtocolLib、PlaceholderAPI 或 FastAsyncWorldEdit 缺失时，ChampionshipsCore 会在启动阶段自行禁用。
-Folia 部署时，这三个硬依赖也必须使用同时支持 Folia 和 26.1.2 的构建。
+ProtocolLib 或 PlaceholderAPI 缺失时，ChampionshipsCore 会在启动阶段自行禁用。
+FastAsyncWorldEdit 是可选软依赖：缺失时全部游戏仍可运行，但需要 WorldEdit 的地图编辑和蓝图导出会明确停用。
+FAWE 2.15.0 尚未提供可用于生产的 Folia 支持，因此 Folia 部署不要安装该版本；Paper 部署仍可使用它完成地图准备。
 
 ## 构建与安装
 
@@ -118,7 +131,7 @@ Folia 部署时，这三个硬依赖也必须使用同时支持 Folia 和 26.1.2
 mvn clean package
 ```
 
-构建产物位于 `target/`。将插件本体和三个必需依赖放入服务端的 `plugins/` 目录，然后启动一次服务端生成配置。
+构建产物位于 `target/`。将插件本体、ProtocolLib 和 PlaceholderAPI 放入服务端的 `plugins/` 目录；Paper 如需地图编辑，再安装 FastAsyncWorldEdit。
 
 推荐的首次部署顺序：
 
@@ -143,6 +156,7 @@ mvn clean package
 | `whitelist` | 赛事白名单 |
 | `weighted-score` | 是否启用加权积分 |
 | `strict-spectator-rule` | 是否阻止参赛队员自由观战 |
+| `enabled-games` | 本次赛事启用的游戏；未启用的游戏不会加载，也不会出现在相关命令中 |
 | `database.type` | `MARIADB` 使用 MariaDB 驱动，其他值使用 MySQL 驱动 |
 | `database.address` / `port` | 数据库地址和端口 |
 | `database.name` | 数据库名称 |
@@ -157,7 +171,13 @@ mvn clean package
 /cc admin reload
 ```
 
+`enabled-games` 使用文首“配置名称”一列中的名称，不区分大小写；设为 `[]` 会关闭所有游戏。
+
 场地配置和游戏专属配置分别位于对应游戏目录。火热宾果还使用 `bingo/config.yml`、`cards/`、`tags/`、`tierlists/` 和语言文件；匹配赛建使用 `buildmart/blueprints/` 中的蓝图。
+
+Bingo 的场地文件还可通过 `permanent-effects` 调整常驻效果，格式为 `效果:等级`，例如 `night_vision:1`、`jump_boost:8`。缓降会在鞘翅滑翔时暂时关闭，落地后自动恢复。
+
+空岛乱斗场地通过 `variant` 选择规则方案。保留默认值 `inline` 时，计时、边界、计分和介绍文本均读取场地 YAML；填写其他名称时，插件会读取 `skywars/variants/<名称>.yml`。首次启动会生成可复制修改的 `default.yml`。
 
 ## 权限
 
@@ -190,22 +210,23 @@ mvn clean package
 | 命令 | 说明 |
 | --- | --- |
 | `/cc spawn` | 传送回 `lobby.location` |
-| `/cc vote <游戏枚举>` | 在投票开放期间投票 |
+| `/cc vote <配置名称>` | 在投票开放期间投票 |
 | `/cc spectate <游戏> <场地>` | 观战指定场地 |
 | `/cc spectate leave` | 退出观战并返回大厅 |
 | `/cc rank playerboard` | 查看个人积分榜 |
 | `/cc rank teamboard` | 查看队伍积分榜 |
 | `/cc rank info` | 查看各游戏的积分权重 |
+| `/cc rank recap` | 重看最近一次游戏结算和总榜 |
 
-`/cc vote` 接收 Java 枚举名而不是小写命令标识，常用值包括 `Bingo`、`BuildMart`、`BattleBox`、`ParkourTag`、`ParkourWarrior`、`SkyWars`、`TGTTOS`、`TNTRun`、`SnowballShowdown` 和 `HotyCodyDusky`。枚举名区分大小写；`DragonEggCarnival` 会被拒绝。
+`/cc vote` 使用文首“配置名称”一列中的值并区分大小写；`DragonEggCarnival` 和 `Dodgebolt` 不参与投票。
 
-观战游戏标识为：`bingo`、`buildmart`、`battlebox`、`parkourtag`、`parkourwarrior`、`skywars`、`tgttos`、`tntrun`、`snowball`、`dragoneggcarnival`、`hotycodydusky`。
+观战游戏标识为：`bingo`、`buildmart`、`battlebox`、`parkourtag`、`parkourwarrior`、`skywars`、`tgttos`、`tntrun`、`snowball`、`dragoneggcarnival`、`hotycodydusky`、`dodgebolt`。
 
 ## 队伍与成员管理
 
 ### 创建队伍
 
-实际命令格式为：
+命令格式：
 
 ```text
 /cc team add <内部队伍名> <颜色名> <聊天颜色代码>
@@ -227,7 +248,7 @@ light_gray cyan purple blue brown green red black
 
 第三个参数用于生成队伍彩色名称和消息，可以使用 `&` 颜色代码。队伍内部名称和颜色名都应保持唯一，否则可能与主计分板队伍冲突。
 
-> 命令内置帮助目前把三个参数显示为“队伍ID、名称、颜色”，但源码实际按“内部队伍名、颜色名、颜色代码”处理；请以上述格式为准。数据库数字 ID 会自动生成，不需要手工输入。
+数据库数字 ID 会自动生成，不需要手工输入。
 
 ### 添加队员
 
@@ -265,6 +286,7 @@ light_gray cyan purple blue brown green red black
 | 两队对战 | `/cc game start battlebox <场地> <队伍1> <队伍2>` |
 | 两队对战 | `/cc game start parkourtag <场地> <队伍1> <队伍2>` |
 | 两队对战 | `/cc game start dragoncarnival <场地> <队伍1> <队伍2>` |
+| 两队决赛 | `/cc game start dodgebolt <场地> <队伍1> <队伍2>` |
 | 所有队伍 | `/cc game start bingo all <场地>` |
 | 所有队伍 | `/cc game start buildmart all <场地>` |
 | 所有队伍 | `/cc game start skywars all <场地>` |
@@ -288,6 +310,17 @@ light_gray cyan purple blue brown green red black
 | `/cc admin teleport spectators` | 将观众传送到管理员位置 |
 | `/cc admin vote start` | 开始 120 秒投票 |
 | `/cc admin vote end` | 提前结束投票并公布结果 |
+| `/cc admin dodgebolt pause\|resume\|restart-round\|stop <场地>` | 暂停、恢复、重开小局或终止躲避箭决赛 |
+| `/cc admin dodgebolt eliminate <场地> <玩家>` | 裁判直接判定选手出局 |
+| `/cc admin dodgebolt force-win <场地> <队伍>` | 裁判直接指定决赛冠军 |
+| `/cc admin world list` | 查看已加载及磁盘上尚未加载的世界 |
+| `/cc admin world create <世界> [normal\|nether\|the_end]` | 创建世界，或加载已有世界 |
+| `/cc admin world teleport <世界>` | 传送到世界出生点并开启飞行 |
+| `/cc admin world unload <世界>` | 保存并卸载世界，不删除世界文件 |
+
+主大厅世界不能卸载。世界名只允许字母、数字、下划线和连字符；`create` 未指定环境时使用 `normal`。普通小游戏世界使用虚空生成器，Bingo 的 `bingo`、`bingo_nether` 和 `bingo_the_end` 三个世界则使用原版地形。
+
+新的地图准备界面通过 `/cc map edit <配置名称>` 打开。躲避箭向导会记录比赛区、观赛区、双方活动/射箭区、可收缩平台、玩家出生点与箭刷新点，发布时会验证必需点位并保存地图快照。
 
 ## 创建场地：通用流程
 
@@ -322,7 +355,7 @@ light_gray cyan purple blue brown green red black
 
 ### 场地参数
 
-下表列出命令实际会处理的参数。表中“当前位置”表示执行命令时玩家的坐标和朝向，“WE 选区”表示当前 WorldEdit 选区。
+下表列出可设置的场地参数。表中“当前位置”表示执行命令时玩家的坐标和朝向，“WE 选区”表示当前 WorldEdit 选区。
 
 | 游戏 | 参数 | 设置方式 |
 | --- | --- | --- |
@@ -359,7 +392,9 @@ light_gray cyan purple blue brown green red black
 | 跑路战士 | `spectator-spawn-point`、`player-spawn-point` | 当前位置 |
 | 跑路战士 | `area-pos` | WE 选区 |
 
-部分命令的 Tab 补全还会显示 `name`、`timer`、`area-type`，但当前命令实现不会写入这些值。需要修改时请编辑对应场地 YAML，再执行 `/cc admin reload`。
+`name`、`timer` 和 `area-type` 不能通过场地设置命令修改；需要调整时请编辑对应场地 YAML，再执行 `/cc admin reload`。
+
+每个场地都可配置赛前规则介绍。设置 `introduction-spawn-point` 和 `rules` 后，玩家会先在介绍点停留 45 秒，聊天框按段显示玩法和计分规则，再进入正常准备阶段。将介绍点留空或把 `rules` 设为 `[]` 即可跳过。
 
 ### 跑路战士检查点
 
@@ -382,6 +417,16 @@ light_gray cyan purple blue brown green red black
 ## 模板化场地流程
 
 斗战方框、跑酷追击和 TNT飞跃可以把一个完整场地保存为 schematic，再一次生成多份副本以支持并行比赛。`<份数>` 至少应等于同一轮的并发对局数；两队制比赛通常需要 `队伍数 / 2` 份。
+
+斗战方框和跑酷追击提供游戏内准备向导，Bingo 也可用向导创建场地并设置观众点：
+
+```text
+/cc game area battlebox prepare
+/cc game area parkourtag prepare
+/cc game area bingo prepare
+```
+
+命令会先让管理员选择已有场地或创建新场地，然后把所需步骤放入快捷栏。按物品说明依次确认世界、保存模板、生成副本和记录点位即可；范围类步骤需使用随附的 WorldEdit 木斧选择区域。末影珍珠用于返回 0 号场地，屏障用于退出并恢复原背包。若模板和点位已经配置好，也可用 `prepare <场地> <份数>` 直接重新生成斗战方框或跑酷追击副本。
 
 ### 斗战方框（Battle Box）
 
@@ -470,11 +515,15 @@ schematic 保存为 `battlebox/schematics/arena.schem`。`prepare` 会粘贴副�
 /cc game area buildmart set main base normal-ref-1
 /cc game area buildmart set main base normal-ref-2
 /cc game area buildmart set main base normal-ref-3
+/cc game area buildmart set main base normal-submit-1
+/cc game area buildmart set main base normal-submit-2
+/cc game area buildmart set main base normal-submit-3
 /cc game area buildmart set main base golden-plot
 /cc game area buildmart set main base golden-ref
+/cc game area buildmart set main base golden-submit
 ```
 
-`normal-plot-*` 是普通蓝图建造锚点，`normal-ref-*` 是对应参考模型锚点；`golden-plot` 和 `golden-ref` 用于金色蓝图。
+`normal-plot-*` 是普通蓝图建造锚点，`normal-ref-*` 是对应参考模型锚点；`golden-plot` 和 `golden-ref` 用于金色蓝图。四个 `submit` 参数需要用 WorldEdit 选中对应的单个提交按钮方块，其余参数记录玩家当前位置。
 
 ### 创建蓝图
 
@@ -484,7 +533,7 @@ schematic 保存为 `battlebox/schematics/arena.schem`。`prepare` 会粘贴副�
 /cc game area buildmart blueprint create <蓝图名> <星级>
 ```
 
-插件会忽略空气，把方块保存为相对选区最小角的偏移，并立即重载蓝图库。单个蓝图最多导出 20,000 个非空气方块。蓝图文件位于 `buildmart/blueprints/<名称>.yml`；目录为空时会写出三个示例蓝图。
+插件会忽略空气，把方块保存为相对选区最小角的偏移，并立即重载蓝图库。蓝图的长、宽、高均不能超过 7 格。蓝图文件位于 `buildmart/blueprints/<名称>.yml`；目录为空时会写出三个示例蓝图。
 
 匹配赛建场地 YAML 还可调整：
 
@@ -492,10 +541,12 @@ schematic 保存为 `battlebox/schematics/arena.schem`。`prepare` 会粘贴副�
 | --- | ---: | --- |
 | `timer` | 720 秒 | 比赛时长 |
 | `prepare-time` | 10 秒 | 开赛准备倒计时 |
-| `library-refresh-seconds` | 90 秒 | 普通蓝图库刷新间隔 |
+| `world-name` | 场地创建时生成 | 该场地使用的独立世界 |
+| `base-count` | 8 | 地图中已生成的队伍基地数量；`prepare` 会按输入队伍数更新 |
 | `golden-refresh-seconds` | 120 秒 | 金色蓝图刷新间隔 |
-| `resource-reset-seconds` | 60 秒 | 大厅资源区重置间隔 |
 | `portal-cooldown-millis` | 1000 毫秒 | 传送门防抖冷却 |
+| `introduction-spawn-point` | 空 | 规则介绍阶段的玩家位置；留空则跳过 |
+| `rules` | 三段内置说明 | 开赛前分段发送的规则文本；设为 `[]` 可跳过介绍阶段 |
 
 ## 比赛流程
 
@@ -516,7 +567,7 @@ schematic 保存为 `battlebox/schematics/arena.schem`。`prepare` 会粘贴副�
 ### 正式赛事建议流程
 
 1. `/cc admin vote start` 开放下一项目投票。
-2. 玩家使用 `/cc vote <游戏枚举>` 投票。
+2. 玩家使用 `/cc vote <配置名称>` 投票。
 3. `/cc admin vote end` 公布结果。
 4. 管理员执行 `/cc admin schedule <游戏>` 启动自动赛程。
 5. 调度器广播项目介绍和积分规则，进行 10 秒倒计时。
@@ -528,6 +579,7 @@ schematic 保存为 `battlebox/schematics/arena.schem`。`prepare` 会粘贴副�
 | 命令 | 行为 |
 | --- | --- |
 | `/cc admin schedule battlebox` | 生成两两配对，进行 9 个小轮，并行使用已生成的场地副本 |
+| `/cc admin schedule bingo` | 在 `bingo` 场地进行 1 轮全队 Bingo |
 | `/cc admin schedule parkourtag` | 生成两两配对，进行 9 个小轮，并行使用已生成的场地副本 |
 | `/cc admin schedule snowball` | 在 `area1` 进行 3 轮雪球乱斗 |
 | `/cc admin schedule skywars` | 在 `area2` 进行 1 轮空岛乱斗 |
@@ -536,19 +588,20 @@ schematic 保存为 `battlebox/schematics/arena.schem`。`prepare` 会粘贴副�
 | `/cc admin schedule parkourwarrior` | 在 `area1` 进行 1 轮跑路战士 |
 | `/cc admin schedule hotycodydusky` | 将各队成员打散到 4 个场地，进行 3 轮 |
 | `/cc admin schedule dragoneggcarnival <队伍1> <队伍2>` | 在 `area1` 对指定两队进行龙蛋狂欢调度 |
-| `/cc admin schedule reset` | 清空已记录的总轮次/游戏顺序 |
+| `/cc admin schedule reset <确认参数>` | 清空已记录的总轮次/游戏顺序 |
+| `/cc admin schedule delete <确认参数>` | 停止最近开始的调度游戏，并撤销该轮成绩 |
 
 调度器使用注意事项：
 
 - 同一个调度命令在该项目已启用时再次执行，会结束该项目的调度，而不是重复开始。
 - Battle Box 和 Parkour Tag 要求队伍总数为偶数，并要求提前生成足够的并行副本。
 - 雪球乱斗、TNT飞跃、跑路战士和龙蛋狂欢必须存在名为 `area1` 的场地；空岛乱斗必须存在 `area2`。
-- Battle Box 和 Parkour Tag 使用对应管理器找到的第一个场地；正式服建议各自只保留一个正式赛场。TGTTOS 会依次使用所有已加载场地。
-- Hoty Cody Dusky 按最多 4 个场地分配玩家，当前调度器要等 4 个场地都完成才会推进下一轮，因此正式赛应准备 4 个可用场地。
+- Battle Box 和 Parkour Tag 按名称排序使用第一个场地；正式服建议各自只保留一个正式赛场。TGTTOS 会依次使用所有已加载场地。
+- Hoty Cody Dusky 每轮固定等待 4 个场地结束，因此正式赛必须准备 4 个可用场地。
 - 单人/全队项目会在一轮结束事件到来后自动进入下一轮。
-- `schedule reset` 只重置赛事轮次/游戏顺序，不会删除队伍、积分、地图或场地配置。
-- 当前调度命令不包含火热宾果和匹配赛建；这两个游戏请使用手动的 `game start ... all` 命令。
-- 龙蛋狂欢命令内置 usage 未显示两个队伍参数，但实际必须提供。
+- `schedule reset` 只重置赛事轮次/游戏顺序，不会删除队伍、积分、地图或场地配置；确认参数可填写任意非空内容。
+- 匹配赛建不接入自动调度，请使用 `game start buildmart all <场地>` 手动开赛。
+- `schedule delete` 会删除最近一轮的积分记录，准备重赛前请先确认当前轮次；确认参数可填写任意非空内容。
 
 ## 投票、积分与观战
 
@@ -584,8 +637,8 @@ schematic 保存为 `battlebox/schematics/arena.schem`。`prepare` 会粘贴副�
 | `%schedule_round_total%` | 当前赛事总轮次 |
 | `%schedule_round_points%` | 下一轮积分倍率 |
 | `%schedule_round_[游戏]%` | 指定游戏的小轮次 |
-| `%vote_can_vote_[游戏枚举]%` | 游戏当前是否可投 |
-| `%vote_vote_nums_[游戏枚举]%` | 当前票数 |
+| `%vote_can_vote_[配置名称]%` | 游戏当前是否可投 |
+| `%vote_vote_nums_[配置名称]%` | 当前票数 |
 | `%vote_player_vote%` | 当前玩家的选择 |
 
 ### 游戏通用变量
@@ -597,7 +650,19 @@ schematic 保存为 `battlebox/schematics/arena.schem`。`prepare` 会粘贴副�
 %<游戏前缀>_area_timer_[场地]%
 ```
 
-游戏前缀包括 `battlebox`、`parkourtag`、`tntrun`、`skywars`、`tgttos`、`snowball`、`decarnival`、`parkourwarrior` 和 `hotycodydusky`。此外还有存活人数、队伍、对手、角色、击杀、检查点等游戏专属变量，可直接参考 `integration/papi/` 下对应 Placeholder 类。
+游戏前缀包括 `battlebox`、`parkourtag`、`tntrun`、`skywars`、`tgttos`、`snowball`、`decarnival`、`parkourwarrior` 和 `hotycodydusky`。各游戏还提供存活人数、队伍、对手、角色、击杀和检查点等专属变量。
+
+### 火热宾果
+
+| Placeholder | 含义 |
+| --- | --- |
+| `%bingo_current_time%` | 当前玩家所在 Bingo 场地的剩余时间 |
+| `%bingo_current_time_[场地]%` | 指定场地的剩余时间 |
+| `%bingo_current_tasks_team%` | 当前玩家所属队伍已完成的任务数 |
+| `%bingo_current_tasks_team_[场地]%` | 当前玩家所属队伍在指定场地完成的任务数 |
+| `%bingo_area_rank_1_[场地]%` 至 `%bingo_area_rank_4_[场地]%` | 指定场地第 1 至 4 名队伍及其分数 |
+
+Bingo 同样支持通用的 `%bingo_area_status_[场地]%` 和 `%bingo_area_timer_[场地]%`。
 
 ## 数据目录
 
@@ -619,6 +684,9 @@ plugins/ChampionshipsCore/
 │   └── schematics/
 │       ├── hub.schem
 │       └── base.schem
+├── skywars/
+│   └── variants/
+│       └── default.yml
 └── bingo/
     ├── areas/
     ├── cards/

@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.object.game;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 public enum GameTypeEnum {
-    Bingo, ParkourTag, BattleBox, TNTRun, SnowballShowdown, SkyWars, TGTTOS, DragonEggCarnival, AdvancementCC, ParkourWarrior, HotyCodyDusky, BuildMart;
+    Bingo, ParkourTag, BattleBox, TNTRun, SnowballShowdown, SkyWars, TGTTOS, DragonEggCarnival, AdvancementCC, ParkourWarrior, HotyCodyDusky, BuildMart, Dodgebolt;
 
     @Override
     public String toString() {
@@ -29,6 +29,8 @@ public enum GameTypeEnum {
             return MessageConfig.GAME_HOTY_CODY_DUSKY;
         if (this == BuildMart)
             return MessageConfig.GAME_BUILD_MART;
+        if (this == Dodgebolt)
+            return MessageConfig.GAME_DODGEBOLT;
 
         return "Unknown";
     }

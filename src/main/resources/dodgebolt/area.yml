@@ -1,0 +1,42 @@
+dont-edit-this:
+  version: 3
+name: "area"
+area-pos1:
+area-pos2:
+spectator-area-pos1:
+spectator-area-pos2:
+platform-pos1:
+platform-pos2:
+right-area-pos1:
+right-area-pos2:
+left-area-pos1:
+left-area-pos2:
+right-shoot-pos1:
+right-shoot-pos2:
+left-shoot-pos1:
+left-shoot-pos2:
+right-spawn-points: [ ]
+left-spawn-points: [ ]
+right-arrow-spawn-point:
+left-arrow-spawn-point:
+spectator-spawn-point:
+round-restart-delay: 10
+shots-per-shrink: 6
+max-shrink-levels: 8
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
+introduction-spawn-point:
+rules:
+  -
+    - "&#bababa━━━━━━━━ &#fff566&l躲避箭 &#bababa━━━━━━━━"
+    - "&#ededed总积分前两名进行五局三胜决赛；将对方全队淘汰即可赢下一局。"
+  -
+    - "&#ededed箭命中一次即淘汰。每次射击结束后，箭都会消失并刷新到对方半场。"
+    - "&#ededed第一局由积分更高的队伍获得两箭，之后每局双方各获得一箭。"
+  -
+    - "&#ededed双方不能越过中央分界；淘汰与累计射箭会令平台逐层收缩。"
+    - "&#ff6b26先取得 3 局胜利的队伍成为 S²CC 冠军。"

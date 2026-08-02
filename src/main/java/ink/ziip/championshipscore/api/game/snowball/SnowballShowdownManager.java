@@ -1,24 +1,26 @@
 package ink.ziip.championshipscore.api.game.snowball;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 
 import java.io.File;
 
-public class SnowballShowdownManager extends BaseAreaManager<SnowballShowdownTeamArea> {
+public class SnowballShowdownManager extends BaseGameInstanceManager<SnowballShowdownTeamArea> {
     public SnowballShowdownManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
     }
 
     @Override
     public void load() {
-        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
+        if (!loadArenaWorld("snowball"))
+            return;
+
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "snowball");
         areasFolder.mkdirs();
 
-        scheduler.runTask(task -> {
+        FoliaScheduler.global(plugin).runTask(task -> {
             String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
             if (areaList != null) {
                 for (String file : areaList) {

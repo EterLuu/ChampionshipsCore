@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
@@ -41,7 +43,7 @@ public final class TaskPoolSpec {
                     case ITEM -> {
                         Material m = Material.valueOf(e.key());
                         if (!m.isItem()) {
-                            Bukkit.getLogger().warning("[Bingo] 跳过非物品任务项: ITEM '" + e.key() + "'");
+                            Bukkit.getLogger().warning(gameLog("非物品 ITEM=" + e.key() + "，已跳过"));
                         } else {
                             b.item(m, e.count(), difficulty, e.dimension(), e.category());
                         }
@@ -63,7 +65,7 @@ public final class TaskPoolSpec {
                             }
                         }
                         if (form == null || !valid) {
-                            Bukkit.getLogger().warning("[Bingo] 跳过无效药水任务项: '" + e.key() + "'");
+                            Bukkit.getLogger().warning(gameLog("无效药水任务=" + e.key() + "，已跳过"));
                         } else {
                             b.potion(form, effect, e.count(), difficulty, e.dimension(), e.category());
                         }
@@ -73,7 +75,7 @@ public final class TaskPoolSpec {
                     case CRAFT -> {
                         Material m = Material.valueOf(e.key());
                         if (!m.isItem()) {
-                            Bukkit.getLogger().warning("[Bingo] 跳过非物品任务项: CRAFT '" + e.key() + "'");
+                            Bukkit.getLogger().warning(gameLog("非物品 CRAFT=" + e.key() + "，已跳过"));
                         } else {
                             b.craft(m, e.count(), difficulty, e.dimension(), e.category());
                         }
@@ -93,7 +95,7 @@ public final class TaskPoolSpec {
                             }
                         }
                         if (items.isEmpty()) {
-                            Bukkit.getLogger().warning("[Bingo] 跳过无有效成员的 one_of 任务");
+                            Bukkit.getLogger().warning(gameLog("one_of 任务没有有效成员，已跳过"));
                         } else {
                             Material display = null;
                             if (e.key() != null && !e.key().isBlank()) {
@@ -108,7 +110,7 @@ public final class TaskPoolSpec {
                     }
                 }
             } catch (IllegalArgumentException ex) {
-                Bukkit.getLogger().warning("[Bingo] 跳过无效任务项: " + e.kind() + " '" + e.key() + "'");
+                Bukkit.getLogger().warning(gameLog("无效任务=" + e.kind() + "/" + e.key() + "，已跳过"));
             }
         }
         return b.build();
@@ -116,6 +118,10 @@ public final class TaskPoolSpec {
 
     public static Collector collector() {
         return new Collector();
+    }
+
+    private static String gameLog(String message) {
+        return Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "卡池", message);
     }
 
     /** Fluent spec collector that mirrors {@link TaskPool.Builder}; kept for migration tools. */

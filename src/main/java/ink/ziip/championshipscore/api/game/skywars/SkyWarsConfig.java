@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,11 +24,18 @@ public class SkyWarsConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 2;
+        return 4;
     }
 
     @ConfigOption(path = "name")
     private String areaName;
+
+    /** Named rules profile. Flat v3 fields remain the compatibility source while variants are introduced. */
+    @ConfigOption(path = "variant")
+    private String variantId = "inline";
+
+    @ConfigOption(path = "prepare-time")
+    private int prepareTime = 10;
 
     @ConfigOption(path = "timer")
     private volatile int timer;
@@ -70,4 +78,42 @@ public class SkyWarsConfig extends BaseGameConfig {
 
     @ConfigOption(path = "time.disable-health-regain")
     private Integer timeDisableHealthRegain;
+
+    @ConfigOption(path = "time.spawn-happy-ghast", nullable = true)
+    private Integer spawnHappyGhast;
+
+    @ConfigOption(path = "scoring.kill")
+    private int killPoints = 40;
+
+    @ConfigOption(path = "scoring.survive")
+    private int survivalPoints = 50;
+
+    @ConfigOption(path = "scoring.player-elimination-survival")
+    private int playerEliminationSurvivalPoints = 10;
+
+    @ConfigOption(path = "scoring.team-elimination-survival")
+    private int teamEliminationSurvivalPoints = 2;
+
+    public @NotNull SkyWarsVariant resolveVariant() {
+        return resolveInlineVariant();
+    }
+
+    public @NotNull SkyWarsVariant resolveInlineVariant() {
+        return SkyWarsVariant.from(this);
+    }
+
+    public @NotNull SkyWarsMapGeometry resolveMapGeometry() {
+        return SkyWarsMapGeometry.from(this);
+    }
+
+    @Override
+    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
+                                                  @NotNull YamlConfiguration migratedConfiguration) {
+        // An absent schedule historically meant "do not shrink". It must not inherit the bundled
+        // large-map schedule merely because a newer template introduced that default.
+        if (!oldConfiguration.contains("shrink-time"))
+            migratedConfiguration.set("shrink-time", List.of());
+        if (!oldConfiguration.contains("time.spawn-happy-ghast"))
+            migratedConfiguration.set("time.spawn-happy-ghast", null);
+    }
 }

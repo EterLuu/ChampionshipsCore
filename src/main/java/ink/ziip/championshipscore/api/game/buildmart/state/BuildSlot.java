@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * One build plot of a team's base: the assigned blueprint (if any) plus the build/reference anchors the
  * blueprint is pasted and validated against. A slot is empty when no blueprint is assigned; completing
- * (or, for golden, expiring) a blueprint clears it back to empty so a new order can be picked.
+ * (or, for golden, expiring) a blueprint clears it back to empty so a fresh order can be assigned.
  */
 @Getter
 public class BuildSlot {
@@ -23,12 +23,6 @@ public class BuildSlot {
     @Setter
     @Nullable
     private volatile BuildMartBlueprint blueprint;
-
-    /** Whether this slot's single per-game blueprint refresh has been spent. Survives {@link #clear()}. */
-    @Setter
-    private volatile boolean refreshUsed;
-
-    /** Last region-safe validation snapshot used by the inventory UI. */
     @Setter
     private volatile int lastMatched;
 
@@ -39,11 +33,11 @@ public class BuildSlot {
         this.referenceAnchor = referenceAnchor;
     }
 
-    public synchronized boolean isEmpty() {
+    public boolean isEmpty() {
         return blueprint == null;
     }
 
-    public synchronized void clear() {
+    public void clear() {
         this.blueprint = null;
         this.lastMatched = 0;
     }

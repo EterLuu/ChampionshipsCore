@@ -2,8 +2,9 @@ package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyTeamArea;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,7 +19,7 @@ public class HotyCodyDuskyPlaceholder extends BaseGamePlaceholder<HotyCodyDuskyT
     }
 
     @Override
-    protected BaseAreaManager<HotyCodyDuskyTeamArea> getManager() {
+    protected BaseGameInstanceManager<HotyCodyDuskyTeamArea> getManager() {
         return plugin.getGameManager().getHotyCodyDuskyManager();
     }
 
@@ -48,11 +49,7 @@ public class HotyCodyDuskyPlaceholder extends BaseGamePlaceholder<HotyCodyDuskyT
             }
             if (hotyCodyDuskyTeamArea.getCodyHolder() == null)
                 return MessageConfig.PLACEHOLDER_NONE;
-            String name = ChampionshipsCore.getInstance().getPlayerManager().getPlayerName(hotyCodyDuskyTeamArea.getCodyHolder());
-            if (name != null)
-                return name;
-            else
-                return MessageConfig.PLACEHOLDER_NONE;
+            return Utils.formatPlayerName(hotyCodyDuskyTeamArea.getCodyHolder());
         }
 
         // Placeholder is unknown by the Expansion

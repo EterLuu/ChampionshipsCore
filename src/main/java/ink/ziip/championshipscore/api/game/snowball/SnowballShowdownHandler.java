@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Setter;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -94,13 +95,6 @@ public class SnowballShowdownHandler extends BaseListener {
                 return;
             }
 
-            if (snowballShowdownTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                if (snowballShowdownTeamArea.getTimer() >= snowballShowdownTeamArea.getGameConfig().getTimer()) {
-                    event.setCancelled(true);
-                    return;
-                }
-            }
-
             if (event.getDamager() instanceof Snowball) {
                 Projectile projectile = (Projectile) event.getDamager();
                 ProjectileSource projectileSource = projectile.getShooter();
@@ -146,7 +140,8 @@ public class SnowballShowdownHandler extends BaseListener {
                 }
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
                 if (championshipTeam != null) {
-                    snowballShowdownTeamArea.sendMessageToAllGamePlayers(MessageConfig.SNOWBALL_PLAYER_DEATH_BY_VOID.replace("%player%", championshipTeam.getColoredColor() + player.getName()));
+                    snowballShowdownTeamArea.sendMessageToAllGamePlayers(MessageConfig.SNOWBALL_PLAYER_DEATH_BY_VOID
+                            .replace("%player%", Utils.formatPlayerName(player)));
                 }
                 snowballShowdownTeamArea.respawnPlayer(player);
             }
@@ -203,9 +198,6 @@ public class SnowballShowdownHandler extends BaseListener {
             return;
         }
 
-        if (snowballShowdownTeamArea.getTimer() >= snowballShowdownTeamArea.getGameConfig().getTimer()) {
-            event.setCancelled(true);
-        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

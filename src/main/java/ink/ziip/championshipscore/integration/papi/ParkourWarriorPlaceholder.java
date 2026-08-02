@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorTeamArea;
 import ink.ziip.championshipscore.api.object.game.parkourwarrior.PKWCheckPointTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -20,7 +20,7 @@ public class ParkourWarriorPlaceholder extends BaseGamePlaceholder<ParkourWarrio
     }
 
     @Override
-    protected BaseAreaManager<ParkourWarriorTeamArea> getManager() {
+    protected BaseGameInstanceManager<ParkourWarriorTeamArea> getManager() {
         return plugin.getGameManager().getParkourWarriorManager();
     }
 

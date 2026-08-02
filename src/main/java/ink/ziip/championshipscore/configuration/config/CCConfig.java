@@ -18,8 +18,12 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 9;
+        return 10;
     }
+
+    // Games
+    @ConfigOption(path = "enabled-games")
+    public static List<String> ENABLED_GAMES;
 
     // Mode
     @ConfigOption(path = "mode")

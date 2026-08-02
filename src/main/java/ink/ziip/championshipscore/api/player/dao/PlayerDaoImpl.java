@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.player.dao;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
+import ink.ziip.championshipscore.util.Utils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,7 +26,7 @@ public class PlayerDaoImpl implements PlayerDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed ", exception);
+            logFailure("新增玩家", exception);
         }
     }
 
@@ -51,7 +52,7 @@ public class PlayerDaoImpl implements PlayerDao {
                 return null;
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("按 UUID 查询玩家", exception);
             return null;
         }
     }
@@ -78,7 +79,7 @@ public class PlayerDaoImpl implements PlayerDao {
                 return null;
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("按名称查询玩家", exception);
             return null;
         }
     }
@@ -95,7 +96,12 @@ public class PlayerDaoImpl implements PlayerDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Database query failed", exception);
+            logFailure("删除玩家", exception);
         }
+    }
+
+    private void logFailure(String operation, SQLException exception) {
+        plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Database", "玩家",
+                "操作=" + operation + " 失败"), exception);
     }
 }

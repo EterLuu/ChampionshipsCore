@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.bingo.gui;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.game.area.BaseArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.bingo.BingoArea;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
@@ -30,7 +30,7 @@ public final class CardItemListener extends BaseListener {
 
     /** The bingo round the player is currently in, or null. */
     private BingoArea bingoAreaOf(Player player) {
-        BaseArea area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
+        BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
         return area instanceof BingoArea bingoArea ? bingoArea : null;
     }
 

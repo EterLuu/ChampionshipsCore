@@ -7,10 +7,16 @@ authors: [ Eter Lu, LettuceIce ]
 depend:
   - ProtocolLib
   - PlaceholderAPI
-  - FastAsyncWorldEdit
 softdepend:
-  - PhantomWorlds
+  - FastAsyncWorldEdit
 commands:
   cc:
     description: Core command.
     usage: /<command>
+permissions:
+  cc.player:
+    description: Player-facing ChampionshipsCore commands.
+    default: false
+  cc.admin:
+    description: ChampionshipsCore event and administration commands.
+    default: op

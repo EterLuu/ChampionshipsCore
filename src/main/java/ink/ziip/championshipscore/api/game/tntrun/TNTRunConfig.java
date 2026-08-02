@@ -2,6 +2,9 @@ package ink.ziip.championshipscore.api.game.tntrun;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
+import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
+import ink.ziip.championshipscore.api.game.arena.ArenaLayoutPlanner;
+import ink.ziip.championshipscore.api.game.arena.RowArenaGrid;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.util.Utils;
@@ -28,7 +31,7 @@ public class TNTRunConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 1;
+        return 3;
     }
 
     @ConfigOption(path = "name")
@@ -67,6 +70,25 @@ public class TNTRunConfig extends BaseGameConfig {
     @ConfigOption(path = "copy-size", nullable = true)
     private Vector copySize;
 
+    @ConfigOption(path = "copy-layout.origin", nullable = true)
+    private Vector copyLayoutOrigin;
+
+    @ConfigOption(path = "copy-layout.step", nullable = true)
+    private Vector copyLayoutStep;
+
+    public ArenaGrid getCopyGrid() {
+        Vector origin = copyLayoutOrigin == null ? TNTRunLayout.FIRST : copyLayoutOrigin;
+        Vector step = copyLayoutStep == null ? TNTRunLayout.STEP : copyLayoutStep;
+        return new RowArenaGrid(origin, step);
+    }
+
+    public ArenaGrid prepareCopyGrid(Vector size) {
+        copyLayoutOrigin = TNTRunLayout.FIRST.clone();
+        copyLayoutStep = ArenaLayoutPlanner.rowStep(size);
+        copySize = size.clone();
+        return getCopyGrid();
+    }
+
     /**
      * Per-copy bounding boxes (one tight box per sub-arena), derived from the grid + {@link #copySize}.
      * Empty when not prepared (legacy areas fall back to the single {@code area-pos} box). Used so each
@@ -74,7 +96,7 @@ public class TNTRunConfig extends BaseGameConfig {
      */
     public List<BoundingBox> getCopyBoxes() {
         if (copies <= 0 || copySize == null) return Collections.emptyList();
-        return ArenaPreparer.copyBoxes(TNTRunLayout.GRID, copies, copySize);
+        return ArenaPreparer.copyBoxes(getCopyGrid(), copies, copySize);
     }
 
     /**
@@ -86,7 +108,7 @@ public class TNTRunConfig extends BaseGameConfig {
         if (copySpawn != null && copies > 0) {
             List<String> derived = new ArrayList<>();
             for (int i = 0; i < copies; i++) {
-                derived.add(Utils.getLocationConfigString(copySpawn.clone().add(TNTRunLayout.delta(i))));
+                derived.add(Utils.getLocationConfigString(copySpawn.clone().add(getCopyGrid().delta(i))));
             }
             return derived;
         }

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -13,30 +14,39 @@ import java.util.List;
 
 public class VoteSubCommand extends BaseSubCommand {
     public VoteSubCommand() {
-        super("vote", "为下一个游戏投票", "/cc vote <游戏>");
+        super("vote", "为下一个游戏投票", "/cc vote <游戏>", PLAYER_PERMISSION);
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        if (!(sender instanceof Player player)) {
+            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            return true;
+        }
         if (args.length != 1) {
             sendUsage(sender);
             return true;
         }
         if (args.length == 1) {
             GameTypeEnum gameTypeEnum = null;
-            try {
-                gameTypeEnum = GameTypeEnum.valueOf(args[0]);
-            } catch (Exception ignored) {
+            for (GameTypeEnum candidate : GameTypeEnum.values()) {
+                if (candidate.name().equalsIgnoreCase(args[0])) {
+                    gameTypeEnum = candidate;
+                    break;
+                }
+            }
+            if (gameTypeEnum == null) {
                 sender.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
                 return true;
             }
 
-            if (gameTypeEnum == GameTypeEnum.DragonEggCarnival) {
+            if (gameTypeEnum == GameTypeEnum.DragonEggCarnival || gameTypeEnum == GameTypeEnum.Dodgebolt
+                    || !plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
                 sender.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
                 return true;
             }
 
-            plugin.getVoteManager().vote((Player) sender, gameTypeEnum);
+            plugin.getVoteManager().vote(player, gameTypeEnum);
         }
 
         return true;
@@ -45,9 +55,15 @@ public class VoteSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         List<String> returnList = new ArrayList<>();
-        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
-            returnList.add(gameTypeEnum.name());
+        if (args.length == 1) {
+            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+                if (plugin.getGameManager().isGameEnabled(gameTypeEnum)
+                        && gameTypeEnum != GameTypeEnum.DragonEggCarnival
+                        && gameTypeEnum != GameTypeEnum.Dodgebolt) {
+                    returnList.add(gameTypeEnum.name());
+                }
+            }
         }
-        return returnList;
+        return filterStartsWith(returnList, args.length == 1 ? args[0] : "");
     }
 }
