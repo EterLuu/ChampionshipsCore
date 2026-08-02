@@ -105,68 +105,68 @@ public final class BingoRound {
         return new BingoCard(size, copy);
     }
 
-    public CardSize size() {
+    public synchronized CardSize size() {
         return size;
     }
 
-    public CardDisplayInfo displayInfo() {
+    public synchronized CardDisplayInfo displayInfo() {
         return displayInfo;
     }
 
     /** The distinct task data on the card. */
-    public List<GameTask> layout() {
+    public synchronized List<GameTask> layout() {
         return layout;
     }
 
     /** Every team shares one board. */
-    public Optional<BingoCard> cardFor(ChampionshipTeam team) {
+    public synchronized Optional<BingoCard> cardFor(ChampionshipTeam team) {
         return Optional.of(card);
     }
 
-    public BingoCard card() {
+    public synchronized BingoCard card() {
         return card;
     }
 
-    public void setMapItem(ChampionshipTeam team, ItemStack item) {
+    public synchronized void setMapItem(ChampionshipTeam team, ItemStack item) {
         teamMapItems.put(team, item);
     }
 
-    public Optional<ItemStack> mapItem(ChampionshipTeam team) {
+    public synchronized Optional<ItemStack> mapItem(ChampionshipTeam team) {
         return Optional.ofNullable(teamMapItems.get(team));
     }
 
-    public int countCompletedLines(ChampionshipTeam team) {
+    public synchronized int countCompletedLines(ChampionshipTeam team) {
         return card.countCompletedLines(BingoTeamAdapter.id(team));
     }
 
     /** Grid indices of cells the team has completed on the shared card. */
-    public int[] completedIndices(ChampionshipTeam team) {
+    public synchronized int[] completedIndices(ChampionshipTeam team) {
         return card.completedIndices(BingoTeamAdapter.id(team));
     }
 
-    public void setOutcome(RoundOutcome outcome) {
+    public synchronized void setOutcome(RoundOutcome outcome) {
         this.outcome = outcome;
     }
 
-    public RoundOutcome outcome() {
+    public synchronized RoundOutcome outcome() {
         return outcome;
     }
 
-    public int completedCount(ChampionshipTeam team) {
+    public synchronized int completedCount(ChampionshipTeam team) {
         return card.getCompleteCount(BingoTeamAdapter.id(team));
     }
 
-    public int taskCount() {
+    public synchronized int taskCount() {
         return layout.size();
     }
 
     /** The playable teams competing this round. */
-    public List<ChampionshipTeam> teams() {
+    public synchronized List<ChampionshipTeam> teams() {
         return teams;
     }
 
     /** True once every cell on the board has been claimed by at least one team. */
-    public boolean boardFullyClaimed() {
+    public synchronized boolean boardFullyClaimed() {
         for (GameTask task : card.getTasks()) {
             if (!task.isCompleted()) return false;
         }
@@ -177,7 +177,7 @@ public final class BingoRound {
      * Game-time (seconds) at which the team reached its current completed count. Used to break "same
      * completed count" ties: earlier wins. A team with no completions returns {@link Long#MAX_VALUE}.
      */
-    public long lastCompletionTime(ChampionshipTeam team) {
+    public synchronized long lastCompletionTime(ChampionshipTeam team) {
         String teamId = BingoTeamAdapter.id(team);
         long last = -1L;
         for (GameTask task : card.getTasks()) {
@@ -187,17 +187,17 @@ public final class BingoRound {
     }
 
     /** Current score for the team. */
-    public int score(ChampionshipTeam team) {
+    public synchronized int score(ChampionshipTeam team) {
         return scores.getOrDefault(team, 0);
     }
 
     /** Points gained in the most recent completion (for the broadcast). */
-    public int lastScoreDelta() {
+    public synchronized int lastScoreDelta() {
         return lastScoreDelta;
     }
 
     /** Team with the highest score; ties broken by earliest last-completion time. Null if all zero. */
-    public ChampionshipTeam resolveTopScore() {
+    public synchronized ChampionshipTeam resolveTopScore() {
         ChampionshipTeam best = null;
         int bestScore = -1;
         long bestTime = Long.MAX_VALUE;
@@ -237,7 +237,7 @@ public final class BingoRound {
     // ── round-start setup ────────────────────────────────────────────────────────────────────
 
     /** Revokes all advancements and snapshots statistic baselines for a round participant. */
-    public void prepareParticipant(Player player, ChampionshipTeam team) {
+    public synchronized void prepareParticipant(Player player, ChampionshipTeam team) {
         java.util.Iterator<Advancement> it = org.bukkit.Bukkit.advancementIterator();
         while (it.hasNext()) revokeAdvancement(player, it.next());
 
@@ -251,7 +251,7 @@ public final class BingoRound {
     }
 
     /** Resets to zero the typed BLOCK/ITEM/ENTITY sub-statistics tracked by the card. */
-    public void resetCardStatistics(Player player, ChampionshipTeam team) {
+    public synchronized void resetCardStatistics(Player player, ChampionshipTeam team) {
         for (GameTask task : card.getTasks()) {
             if (task.data.getType() != TaskData.TaskType.STATISTIC) continue;
             StatisticHandle h = ((StatisticTask) task.data).statistic();
@@ -326,7 +326,7 @@ public final class BingoRound {
     // ── completion attempts ────────────────────────────────────────────────────────────────
 
     /** @return the task just completed for this team by collecting this item, if any. */
-    public Optional<GameTask> tryCompleteItem(Player player, ChampionshipTeam team, org.bukkit.Material itemType, int heldAmount, long gameTime) {
+    public synchronized Optional<GameTask> tryCompleteItem(Player player, ChampionshipTeam team, org.bukkit.Material itemType, int heldAmount, long gameTime) {
         String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = card.getTasks();
         for (GameTask task : tasks) {
@@ -356,7 +356,7 @@ public final class BingoRound {
      * @return the task just completed for this team by holding a potion of the given form+effect, if
      * any. {@code effect} is the base effect key (strong/long variants already collapsed by the caller).
      */
-    public Optional<GameTask> tryCompletePotion(Player player, ChampionshipTeam team, org.bukkit.Material material,
+    public synchronized Optional<GameTask> tryCompletePotion(Player player, ChampionshipTeam team, org.bukkit.Material material,
                                                 String effect, int heldAmount, long gameTime) {
         String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = card.getTasks();
@@ -373,7 +373,7 @@ public final class BingoRound {
         return Optional.empty();
     }
 
-    public Optional<GameTask> tryCompleteAdvancement(Player player, ChampionshipTeam team, Advancement advancement, long gameTime) {
+    public synchronized Optional<GameTask> tryCompleteAdvancement(Player player, ChampionshipTeam team, Advancement advancement, long gameTime) {
         String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = card.getTasks();
         for (GameTask task : tasks) {
@@ -390,7 +390,7 @@ public final class BingoRound {
     }
 
     /** Checks all statistic tasks for this player against current values vs baseline. */
-    public List<GameTask> tryCompleteStatistics(Player player, ChampionshipTeam team, long gameTime) {
+    public synchronized List<GameTask> tryCompleteStatistics(Player player, ChampionshipTeam team, long gameTime) {
         String teamId = BingoTeamAdapter.id(team);
         List<GameTask> completed = new ArrayList<>();
         List<GameTask> tasks = card.getTasks();

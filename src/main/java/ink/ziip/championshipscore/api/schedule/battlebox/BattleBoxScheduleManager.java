@@ -12,27 +12,27 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitScheduler;
-import org.bukkit.scheduler.BukkitTask;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 import java.util.*;
 
 public class BattleBoxScheduleManager extends BaseManager {
-    private final BukkitScheduler scheduler;
+    private final FoliaScheduler scheduler;
     private final BattleBoxScheduleHandler handler;
     private final List<Set<TwoVTwoVector>> rounds = new ArrayList<>();
     @Getter
-    private int subRound;
-    private int timer;
+    private volatile int subRound;
+    private volatile int timer;
     @Getter
-    private boolean enabled;
-    private BukkitTask firstStartTask;
-    private BukkitTask startTask;
+    private volatile boolean enabled;
+    private volatile ScheduledTask firstStartTask;
+    private volatile ScheduledTask startTask;
 
     public BattleBoxScheduleManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
         handler = new BattleBoxScheduleHandler(championshipsCore, this);
-        scheduler = championshipsCore.getServer().getScheduler();
+        scheduler = FoliaScheduler.global(championshipsCore);
         subRound = 0;
     }
 
@@ -84,6 +84,10 @@ public class BattleBoxScheduleManager extends BaseManager {
     }
 
     public void startBattleBox() {
+        scheduler.runTask(this::startBattleBoxOnGlobalRegion);
+    }
+
+    private synchronized void startBattleBoxOnGlobalRegion() {
         if (enabled) {
             endSchedule();
             return;
@@ -98,7 +102,7 @@ public class BattleBoxScheduleManager extends BaseManager {
 
         cycleGeneratePairs();
 
-        firstStartTask = scheduler.runTaskTimer(plugin, () -> {
+        firstStartTask = scheduler.runTaskTimer(() -> {
 
             Utils.changeLevelForAllPlayers(timer);
 
@@ -128,7 +132,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         }, 0, 20L);
     }
 
-    public void startBattleBoxRound() {
+    public synchronized void startBattleBoxRound() {
         if (!enabled)
             return;
 
@@ -159,7 +163,7 @@ public class BattleBoxScheduleManager extends BaseManager {
             plugin.getLogger().warning(Utils.stripColorCodes(GameTypeEnum.BattleBox + " round " + subRound + " failed to start in area " + areaName));
     }
 
-    public void endSchedule() {
+    public synchronized void endSchedule() {
         if (firstStartTask != null)
             firstStartTask.cancel();
         if (startTask != null)
@@ -170,8 +174,8 @@ public class BattleBoxScheduleManager extends BaseManager {
         Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
         Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
         if (plugin.isLoaded()) {
-            scheduler.runTaskLaterAsynchronously(plugin, () -> {
-                scheduler.runTaskAsynchronously(plugin, task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(GameTypeEnum.BattleBox)));
+            scheduler.runTaskLaterAsynchronously(() -> {
+                scheduler.runTaskAsynchronously(task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(GameTypeEnum.BattleBox)));
                 Utils.sendMessageToAllPlayers(plugin.getRankManager().getTeamRankString());
             }, 40L);
         }
@@ -180,7 +184,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         rounds.clear();
     }
 
-    public void nextBattleBoxRound() {
+    public synchronized void nextBattleBoxRound() {
         if (!enabled)
             return;
 
@@ -193,7 +197,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
         timer = 30;
-        startTask = scheduler.runTaskTimer(plugin, () -> {
+        startTask = scheduler.runTaskTimer(() -> {
 
             Utils.changeLevelForAllPlayers(timer);
 
@@ -227,7 +231,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam == null) {
-                player.performCommand("spec");
+                Utils.performCommand(player, "spec");
             }
         }
     }
@@ -236,7 +240,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam == null) {
-                player.performCommand("cc spectate leave");
+                Utils.performCommand(player, "cc spectate leave");
             }
         }
     }

@@ -8,28 +8,28 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitScheduler;
-import org.bukkit.scheduler.BukkitTask;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class VoteManager extends BaseManager {
     private final Map<UUID, GameTypeEnum> playerVotes = new ConcurrentHashMap<>();
-    private final BukkitScheduler scheduler;
+    private final FoliaScheduler scheduler;
     private final RankManager rankManager;
-    private BukkitTask voteTask;
-    private int timer;
-    private boolean vote;
+    private volatile ScheduledTask voteTask;
+    private volatile int timer;
+    private volatile boolean vote;
 
     public VoteManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
-        scheduler = championshipsCore.getServer().getScheduler();
+        scheduler = FoliaScheduler.global(championshipsCore);
         rankManager = championshipsCore.getRankManager();
         vote = false;
     }
 
-    public void startVote() {
+    public synchronized void startVote() {
         if (vote)
             return;
 
@@ -42,7 +42,7 @@ public class VoteManager extends BaseManager {
         Utils.sendMessageToAllPlayers(MessageConfig.VOTE_START_VOTE);
         Utils.sendTitleToAllPlayers(MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
 
-        voteTask = scheduler.runTaskTimer(plugin, () -> {
+        voteTask = scheduler.runTaskTimer(() -> {
 
             Utils.changeLevelForAllPlayers(timer);
             Utils.sendTitleToAllPlayers(MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
@@ -63,7 +63,7 @@ public class VoteManager extends BaseManager {
         }, 0, 20L);
     }
 
-    public void endVote() {
+    public synchronized void endVote() {
         if (!vote)
             return;
         vote = false;

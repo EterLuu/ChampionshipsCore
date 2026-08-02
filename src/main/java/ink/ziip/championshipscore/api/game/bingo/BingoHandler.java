@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -46,7 +48,7 @@ public class BingoHandler extends BaseListener {
     /** Inventory events fire before the item lands; re-scan one tick later once the inventory settles. */
     private void scheduleProgressCheck(Player player) {
         if (player == null || bingoArea == null) return;
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> bingoArea.checkPlayerProgress(player), 1L);
+        FoliaScheduler.global(plugin).runEntityLater(player, () -> bingoArea.checkPlayerProgress(player), 1L);
     }
 
     @EventHandler

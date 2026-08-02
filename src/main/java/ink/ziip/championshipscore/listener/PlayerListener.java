@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -71,7 +72,9 @@ public class PlayerListener extends BaseListener {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getUniqueId());
         String name = event.getName();
 
-        if (Bukkit.getOnlinePlayers().size() >= CCConfig.MAX_PLAYERS) {
+        int onlinePlayers = FoliaScheduler.global(plugin)
+                .supplyGlobal(() -> Bukkit.getOnlinePlayers().size()).join();
+        if (onlinePlayers >= CCConfig.MAX_PLAYERS) {
             if (CCConfig.WHITELIST.contains(name))
                 return;
 

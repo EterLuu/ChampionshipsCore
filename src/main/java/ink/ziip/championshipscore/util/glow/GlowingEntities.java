@@ -88,16 +88,25 @@ public class GlowingEntities implements Listener {
 
     /** Makes {@code entity} glow for {@code receiver} only, in the entity's scoreboard-team colour. */
     public void setGlowing(@NotNull Entity entity, @NotNull Player receiver) {
-        glowing.computeIfAbsent(receiver.getUniqueId(), k -> ConcurrentHashMap.newKeySet())
-                .add(entity.getEntityId());
-        sendFlags(receiver, entity, true);
+        entity.getScheduler().execute(plugin, () -> {
+            int entityId = entity.getEntityId();
+            byte flags = baseFlags(entity);
+            glowing.computeIfAbsent(receiver.getUniqueId(), k -> ConcurrentHashMap.newKeySet()).add(entityId);
+            receiver.getScheduler().execute(plugin,
+                    () -> sendFlags(receiver, entityId, flags, true), null, 1L);
+        }, null, 1L);
     }
 
     /** Stops {@code entity} from glowing for {@code receiver}. */
     public void unsetGlowing(@NotNull Entity entity, @NotNull Player receiver) {
-        Set<Integer> ids = glowing.get(receiver.getUniqueId());
-        if (ids != null) ids.remove(entity.getEntityId());
-        sendFlags(receiver, entity, false);
+        entity.getScheduler().execute(plugin, () -> {
+            int entityId = entity.getEntityId();
+            byte flags = baseFlags(entity);
+            Set<Integer> ids = glowing.get(receiver.getUniqueId());
+            if (ids != null) ids.remove(entityId);
+            receiver.getScheduler().execute(plugin,
+                    () -> sendFlags(receiver, entityId, flags, false), null, 1L);
+        }, null, 1L);
     }
 
     /**
@@ -105,11 +114,10 @@ public class GlowingEntities implements Listener {
      * rather than waiting for the next server-driven metadata update. The injection listener is idempotent,
      * so it doesn't matter that this packet also passes through it.
      */
-    private void sendFlags(Player receiver, Entity entity, boolean glow) {
-        byte flags = baseFlags(entity);
+    private void sendFlags(Player receiver, int entityId, byte flags, boolean glow) {
         if (glow) flags |= GLOWING_FLAG;
         PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA);
-        packet.getIntegers().write(0, entity.getEntityId());
+        packet.getIntegers().write(0, entityId);
         WrappedDataValue value = new WrappedDataValue(SHARED_FLAGS_INDEX, byteSerializer(), flags);
         packet.getDataValueCollectionModifier().write(0, List.of(value));
         try {

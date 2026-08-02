@@ -2,6 +2,7 @@ name: ChampionshipsCore
 version: '${project.version}'
 main: ink.ziip.championshipscore.ChampionshipsCore
 api-version: '26.1'
+folia-supported: true
 authors: [ Eter Lu, LettuceIce ]
 depend:
   - ProtocolLib

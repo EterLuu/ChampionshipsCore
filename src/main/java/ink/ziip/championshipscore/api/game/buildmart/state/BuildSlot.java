@@ -22,11 +22,15 @@ public class BuildSlot {
 
     @Setter
     @Nullable
-    private BuildMartBlueprint blueprint;
+    private volatile BuildMartBlueprint blueprint;
 
     /** Whether this slot's single per-game blueprint refresh has been spent. Survives {@link #clear()}. */
     @Setter
-    private boolean refreshUsed;
+    private volatile boolean refreshUsed;
+
+    /** Last region-safe validation snapshot used by the inventory UI. */
+    @Setter
+    private volatile int lastMatched;
 
     public BuildSlot(int index, boolean golden, @Nullable Location buildAnchor, @Nullable Location referenceAnchor) {
         this.index = index;
@@ -35,11 +39,12 @@ public class BuildSlot {
         this.referenceAnchor = referenceAnchor;
     }
 
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return blueprint == null;
     }
 
-    public void clear() {
+    public synchronized void clear() {
         this.blueprint = null;
+        this.lastMatched = 0;
     }
 }

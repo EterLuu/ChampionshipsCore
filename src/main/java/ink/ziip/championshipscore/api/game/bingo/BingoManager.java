@@ -14,11 +14,13 @@ import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import ink.ziip.championshipscore.api.game.bingo.world.BingoWorldManager;
 import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.scheduler.BukkitScheduler;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.InputStream;
@@ -55,16 +57,18 @@ public class BingoManager extends BaseAreaManager<BingoArea> {
         registerGlobal(new CardMenuListener());
         cardItemListener = new CardItemListener(plugin);
         cardItemListener.register();
-        registerGlobal(new PortalListener("bingo"));
+        PortalListener portalListener = new PortalListener(plugin, "bingo");
+        registerGlobal(portalListener);
 
-        BukkitScheduler scheduler = plugin.getServer().getScheduler();
+        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
         // Defer pool/atlas init and area scan to the first tick, when advancements, recipes and the map
         // palette are all available.
-        scheduler.runTask(plugin, task -> {
+        scheduler.runTask(task -> {
             // Bingo is whole-world exploration: ensure the persistent survival worlds (overworld +
             // nether + end, normal terrain) exist, creating them once if missing.
             bingoWorldManager = new BingoWorldManager(plugin);
             bingoWorldManager.ensureWorlds();
+            portalListener.refreshWorlds();
 
             TierlistLoader.load(plugin, config.getString("cards.tierlist", "default"));
             TagFilterLoader.load(plugin, config);
@@ -117,6 +121,10 @@ public class BingoManager extends BaseAreaManager<BingoArea> {
     private void registerGlobal(Listener listener) {
         Bukkit.getPluginManager().registerEvents(listener, plugin);
         globalListeners.add(listener);
+    }
+
+    public @Nullable World getBingoOverworld() {
+        return bingoWorldManager == null ? null : bingoWorldManager.overworld();
     }
 
     @Override

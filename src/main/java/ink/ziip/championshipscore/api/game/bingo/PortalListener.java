@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
+import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -11,6 +13,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Portal-link listener for the bingo game world. Vanilla/Paper resolve nether/end return portals to
@@ -25,14 +31,28 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
  */
 public final class PortalListener implements Listener {
 
+    private final ChampionshipsCore plugin;
     private final String overworldName;
     private final String netherName;
     private final String endName;
+    private volatile World overworld;
+    private volatile World nether;
+    private volatile World theEnd;
+    private volatile Location overworldSpawn;
 
-    public PortalListener(String baseWorldName) {
+    public PortalListener(ChampionshipsCore plugin, String baseWorldName) {
+        this.plugin = plugin;
         this.overworldName = baseWorldName;
         this.netherName = baseWorldName + "_nether";
         this.endName = baseWorldName + "_the_end";
+    }
+
+    /** Refreshes the persistent dimension references; called on the global region after world creation. */
+    public void refreshWorlds() {
+        overworld = Bukkit.getWorld(overworldName);
+        nether = Bukkit.getWorld(netherName);
+        theEnd = Bukkit.getWorld(endName);
+        overworldSpawn = overworld == null ? null : overworld.getSpawnLocation();
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -41,6 +61,19 @@ public final class PortalListener implements Listener {
 
         Target t = computeTarget(e.getFrom(), e.getCause());
         if (t == null || t.to == null) return;
+
+        if (t.prepareEndPlatform) {
+            e.setCancelled(true);
+            org.bukkit.entity.Player player = e.getPlayer();
+            ensureEndEntryPlatform(t.to.getWorld()).thenRun(() ->
+                    FoliaScheduler.global(plugin).runEntity(player, () -> player.teleportAsync(t.to)))
+                    .exceptionally(throwable -> {
+                        plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                                "Failed to prepare Bingo end platform", throwable);
+                        return null;
+                    });
+            return;
+        }
 
         e.setTo(t.to);
         e.setSearchRadius(t.searchRadius);
@@ -54,6 +87,19 @@ public final class PortalListener implements Listener {
 
         Target t = computeTarget(e.getFrom(), null);
         if (t == null || t.to == null) return;
+
+        if (t.prepareEndPlatform) {
+            e.setCancelled(true);
+            org.bukkit.entity.Entity entity = e.getEntity();
+            ensureEndEntryPlatform(t.to.getWorld()).thenRun(() ->
+                    FoliaScheduler.global(plugin).runEntity(entity, () -> entity.teleportAsync(t.to)))
+                    .exceptionally(throwable -> {
+                        plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                                "Failed to prepare Bingo end platform", throwable);
+                        return null;
+                    });
+            return;
+        }
 
         e.setTo(t.to);
         e.setSearchRadius(t.searchRadius);
@@ -79,9 +125,6 @@ public final class PortalListener implements Listener {
     private Target computeTarget(Location from, TeleportCause cause) {
         if (from == null || from.getWorld() == null) return null;
 
-        World overworld = Bukkit.getWorld(overworldName);
-        World nether = Bukkit.getWorld(netherName);
-        World theEnd = Bukkit.getWorld(endName);
         World.Environment env = from.getWorld().getEnvironment();
 
         if (env == World.Environment.NORMAL) {
@@ -94,8 +137,7 @@ public final class PortalListener implements Listener {
             }
             if (cause == TeleportCause.END_PORTAL || cause == TeleportCause.END_GATEWAY) {
                 if (theEnd == null) return null;
-                ensureEndEntryPlatform(theEnd);
-                return new Target(new Location(theEnd, 100.5, 49.0, 0.5, 90f, 0f), 0, 0);
+                return new Target(new Location(theEnd, 100.5, 49.0, 0.5, 90f, 0f), 0, 0, true);
             }
             return null;
         }
@@ -109,8 +151,9 @@ public final class PortalListener implements Listener {
         }
 
         if (env == World.Environment.THE_END) {
-            if (overworld == null) return null;
-            return new Target(overworld.getSpawnLocation(), 0, 0);
+            Location spawn = overworldSpawn;
+            if (overworld == null || spawn == null) return null;
+            return new Target(spawn.clone(), 0, 0);
         }
 
         return null;
@@ -124,36 +167,50 @@ public final class PortalListener implements Listener {
         return new Location(world, x, cy, z);
     }
 
-    private void ensureEndEntryPlatform(World endWorld) {
-        if (endWorld == null) return;
+    private CompletableFuture<Void> ensureEndEntryPlatform(World endWorld) {
+        if (endWorld == null) return CompletableFuture.completedFuture(null);
         final int cx = 100;
         final int cy = 48;
         final int cz = 0;
 
+        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
+        List<CompletableFuture<Void>> changes = new ArrayList<>();
         for (int x = cx - 2; x <= cx + 2; x++) {
             for (int z = cz - 2; z <= cz + 2; z++) {
-                endWorld.getBlockAt(x, cy, z).setType(Material.OBSIDIAN, false);
+                Location blockLocation = new Location(endWorld, x, cy, z);
+                changes.add(scheduler.runAtLocationFuture(blockLocation,
+                        () -> blockLocation.getBlock().setType(Material.OBSIDIAN, false)));
             }
         }
         for (int y = cy + 1; y <= cy + 4; y++) {
             for (int x = cx - 2; x <= cx + 2; x++) {
                 for (int z = cz - 2; z <= cz + 2; z++) {
-                    Block air = endWorld.getBlockAt(x, y, z);
-                    if (air.getType().isSolid()) air.setType(Material.AIR, false);
+                    Location blockLocation = new Location(endWorld, x, y, z);
+                    changes.add(scheduler.runAtLocationFuture(blockLocation, () -> {
+                        Block air = blockLocation.getBlock();
+                        if (air.getType().isSolid()) air.setType(Material.AIR, false);
+                    }));
                 }
             }
         }
+        return CompletableFuture.allOf(changes.toArray(CompletableFuture[]::new));
     }
 
     private static final class Target {
         final Location to;
         final int searchRadius;
         final int creationRadius;
+        final boolean prepareEndPlatform;
 
         Target(Location to, int searchRadius, int creationRadius) {
+            this(to, searchRadius, creationRadius, false);
+        }
+
+        Target(Location to, int searchRadius, int creationRadius, boolean prepareEndPlatform) {
             this.to = to;
             this.searchRadius = searchRadius;
             this.creationRadius = creationRadius;
+            this.prepareEndPlatform = prepareEndPlatform;
         }
     }
 }

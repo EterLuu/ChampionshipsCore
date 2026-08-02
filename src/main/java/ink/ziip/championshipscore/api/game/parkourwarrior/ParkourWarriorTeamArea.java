@@ -24,26 +24,27 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
-    private final Map<UUID, Location> playerSpawnLocations = new HashMap<>();
-    private final Map<UUID, Integer> playerLastSubCheckpoint = new HashMap<>();
-    private final Map<UUID, PKWCheckpoint> playerLastCheckpoint = new HashMap<>();
-    private final Map<UUID, Map<PKWCheckpoint, Integer>> playerCheckpointProgress = new HashMap<>();
+    private final Map<UUID, Location> playerSpawnLocations = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> playerLastSubCheckpoint = new ConcurrentHashMap<>();
+    private final Map<UUID, PKWCheckpoint> playerLastCheckpoint = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<PKWCheckpoint, Integer>> playerCheckpointProgress = new ConcurrentHashMap<>();
     private final List<PKWCheckpoint> checkpoints = new ArrayList<>();
-    private final Map<ChampionshipTeam, Double> gamePointsMultiplier = new HashMap<>();
+    private final Map<ChampionshipTeam, Double> gamePointsMultiplier = new ConcurrentHashMap<>();
 
     @Getter
-    private int timer;
-    private BukkitTask startGamePreparationTask;
-    private BukkitTask startGameProgressTask;
+    private volatile int timer;
+    private volatile ScheduledTask startGamePreparationTask;
+    private volatile ScheduledTask startGameProgressTask;
 
     public ParkourWarriorTeamArea(ChampionshipsCore plugin, ParkourWarriorConfig parkourWarriorConfig) {
         super(plugin, GameTypeEnum.ParkourWarrior, new ParkourWarriorHandler(plugin), parkourWarriorConfig);
@@ -224,7 +225,8 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
                             player.setGameMode(GameMode.SPECTATOR);
 
                             if (championshipTeam != null) {
-                                gamePointsMultiplier.put(championshipTeam, gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + checkpoint.getPointMultiplier(getGameConfig()));
+                                gamePointsMultiplier.merge(championshipTeam,
+                                        checkpoint.getPointMultiplier(getGameConfig()), Double::sum);
                             }
 
                             sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED.replace("%player%", player.getName()));
@@ -297,10 +299,10 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         Location location = pkwCheckpoint.getSpawn();
         playerSpawnLocations.put(uuid, location);
         playerLastSubCheckpoint.put(uuid, -1);
-        playerLastCheckpoint.put(uuid, null);
+        playerLastCheckpoint.remove(uuid);
 
         player.getInventory().remove(Material.BARRIER);
-        player.teleport(location);
+        player.teleportAsync(location);
     }
 
     public void giveBackToolToPlayer(Player player) {
@@ -383,10 +385,10 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         for (UUID uuid : getGamePlayers()) {
-            playerLastCheckpoint.put(uuid, null);
+            playerLastCheckpoint.remove(uuid);
             playerSpawnLocations.put(uuid, getGameConfig().getPlayerSpawnPoint());
             playerLastSubCheckpoint.put(uuid, 0);
-            playerCheckpointProgress.put(uuid, new HashMap<>());
+            playerCheckpointProgress.put(uuid, new ConcurrentHashMap<>());
         }
 
         teleportAllPlayers(getGameConfig().getPlayerSpawnPoint());
@@ -409,7 +411,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.PARKOUR_WARRIOR_START_PREPARATION_TITLE, MessageConfig.PARKOUR_WARRIOR_START_PREPARATION_SUBTITLE);
 
         timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(() -> {
             changeLevelForAllGamePlayers(timer);
 
             if (timer == 0) {
@@ -437,7 +439,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
 
         setGameStageEnum(GameStageEnum.PROGRESS);
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(() -> {
 
             if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.PARKOUR_WARRIOR_COUNT_DOWN
@@ -476,7 +478,8 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
             if (player != null) {
                 ChampionshipTeam championshipTeam = championshipPlayer.getChampionshipTeam();
                 if (championshipTeam != null) {
-                    championshipPlayer.getPlayer().getInventory().setBoots(championshipTeam.getBoots());
+                    scheduler.runEntity(player,
+                            () -> player.getInventory().setBoots(championshipTeam.getBoots()));
                 }
             }
         }
@@ -490,10 +493,10 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
 
                 if (playerTeam != null) {
                     if (!playerTeam.equals(onlinePlayerTeam)) {
-                        player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                        hidePlayer(player, onlinePlayer);
                     }
                 } else {
-                    player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                    hidePlayer(player, onlinePlayer);
                 }
             }
         }
@@ -502,7 +505,7 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
     public void showOnlinePlayers(Player player) {
         if (player != null) {
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                player.showPlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                showPlayer(player, onlinePlayer);
             }
         }
     }
@@ -518,16 +521,16 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
 
                 if (playerTeam != null) {
                     if (!playerTeam.equals(onlinePlayerTeam)) {
-                        player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                        hidePlayer(player, onlinePlayer);
                     }
                 } else {
-                    player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                    hidePlayer(player, onlinePlayer);
                 }
             }
         } else {
             // Spectator
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                player.showPlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                showPlayer(player, onlinePlayer);
             }
         }
 
@@ -538,21 +541,30 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
 
                 if (playerTeam != null) {
                     if (!playerTeam.equals(onlinePlayerTeam)) {
-                        player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                        hidePlayer(player, onlinePlayer);
                     }
                 } else {
-                    onlinePlayer.hidePlayer(ChampionshipsCore.getInstance(), player);
+                    hidePlayer(onlinePlayer, player);
                 }
             } else {
-                onlinePlayer.showPlayer(ChampionshipsCore.getInstance(), player);
+                showPlayer(onlinePlayer, player);
             }
         }
     }
 
+    private void hidePlayer(Player viewer, Player target) {
+        scheduler.runEntity(viewer, () -> viewer.hidePlayer(plugin, target));
+    }
+
+    private void showPlayer(Player viewer, Player target) {
+        scheduler.runEntity(viewer, () -> viewer.showPlayer(plugin, target));
+    }
+
     @Override
-    public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+    public synchronized void endGame() {
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
+        setGameStageEnum(GameStageEnum.END);
 
         if (startGamePreparationTask != null)
             startGamePreparationTask.cancel();
@@ -576,8 +588,6 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
             }
         }
 
-        setGameStageEnum(GameStageEnum.END);
-
         teleportAllPlayers(CCConfig.LOBBY_LOCATION);
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -598,13 +608,13 @@ public class ParkourWarriorTeamArea extends BaseSingleTeamArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                player.teleport(location);
+                player.teleportAsync(location);
             }
         }
     }
 
     public void teleportPlayerToSpawnPoint(Player player, boolean broadcast) {
-        player.teleport(playerSpawnLocations.getOrDefault(player.getUniqueId(), getGameConfig().getPlayerSpawnPoint()));
+        player.teleportAsync(playerSpawnLocations.getOrDefault(player.getUniqueId(), getGameConfig().getPlayerSpawnPoint()));
         if (broadcast) {
             String name = player.getName();
             sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_FALL_INTO_VOID.replace("%player%", name));

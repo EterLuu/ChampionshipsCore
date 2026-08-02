@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.command.admin;
 
+import ink.ziip.championshipscore.util.Utils;
+
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import org.bukkit.Bukkit;
@@ -30,7 +32,7 @@ public class AdminSudoSubCommand extends BaseSubCommand {
 
             if (args[0].equalsIgnoreCase("all")) {
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    player.performCommand(commands);
+                    Utils.performCommand(player, commands);
                 }
                 return true;
             }
@@ -38,7 +40,7 @@ public class AdminSudoSubCommand extends BaseSubCommand {
             ChampionshipTeam team = plugin.getTeamManager().getTeam(args[0]);
             if (team != null) {
                 for (Player teamPlayer : team.getOnlinePlayers()) {
-                    teamPlayer.performCommand(commands);
+                    Utils.performCommand(teamPlayer, commands);
                 }
             }
         }

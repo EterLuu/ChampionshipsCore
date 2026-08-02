@@ -29,7 +29,7 @@ public class ParkourWarriorConfig extends BaseGameConfig {
     private String areaName;
 
     @ConfigOption(path = "timer")
-    private int timer;
+    private volatile int timer;
 
     @ConfigOption(path = "sudden-death")
     private int suddenDeath;

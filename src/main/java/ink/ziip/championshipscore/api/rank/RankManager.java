@@ -17,14 +17,15 @@ import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitScheduler;
-import org.bukkit.scheduler.BukkitTask;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RankManager extends BaseManager {
     private static final Map<ChampionshipTeam, Double> teamPoints = new ConcurrentHashMap<>();
@@ -37,16 +38,17 @@ public class RankManager extends BaseManager {
     private final RankDaoImpl rankDao = new RankDaoImpl();
     private final TeamDaoImpl teamDao = new TeamDaoImpl();
     private final PlayerDaoImpl playerDao = new PlayerDaoImpl();
-    private final BukkitScheduler scheduler = Bukkit.getScheduler();
+    private final FoliaScheduler scheduler = FoliaScheduler.global(plugin);
+    private final AtomicBoolean updating = new AtomicBoolean();
     @Getter
-    private List<Map.Entry<ChampionshipTeam, Double>> teamLeaderboard = new ArrayList<>();
+    private volatile List<Map.Entry<ChampionshipTeam, Double>> teamLeaderboard = List.of();
     @Getter
-    private List<Map.Entry<UUID, Double>> playerLeaderboard = new ArrayList<>();
+    private volatile List<Map.Entry<UUID, Double>> playerLeaderboard = List.of();
     @Getter
-    private String teamRankString;
+    private volatile String teamRankString = "";
     @Getter
-    private String playerRankString = "";
-    private BukkitTask updateTask;
+    private volatile String playerRankString = "";
+    private volatile ScheduledTask updateTask;
 
     public RankManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -54,10 +56,17 @@ public class RankManager extends BaseManager {
 
     @Override
     public void load() {
-        updateTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
-            updateGameOrder();
-            updatePlayerPoint();
-            updateTeamPoints();
+        updateTask = scheduler.runTaskTimerAsynchronously(() -> {
+            if (!updating.compareAndSet(false, true)) return;
+            try {
+                updateGameOrder();
+                updateTeamPoints();
+                updatePlayerPoint();
+            } catch (Throwable throwable) {
+                plugin.getLogger().log(java.util.logging.Level.SEVERE, "Failed to refresh rankings", throwable);
+            } finally {
+                updating.set(false);
+            }
         }, 0, 100L);
     }
 
@@ -100,122 +109,107 @@ public class RankManager extends BaseManager {
     }
 
     private void updateTeamPoints() {
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
-                gameTotalPoints.put(gameTypeEnum, 0D);
-            }
+        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+            gameTotalPoints.put(gameTypeEnum, 0D);
+        }
 
-            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                teamPoints.put(championshipTeam, plugin.getRankManager().getTeamPoints(championshipTeam));
-            }
-            for (ChampionshipTeam championshipTeam : teamPoints.keySet()) {
-                if (!plugin.getTeamManager().getTeamList().contains(championshipTeam))
-                    teamPoints.remove(championshipTeam);
-            }
+        List<ChampionshipTeam> teams = plugin.getTeamManager().getTeamList();
+        for (ChampionshipTeam championshipTeam : teams) {
+            teamPoints.put(championshipTeam, getTeamPoints(championshipTeam));
+        }
+        teamPoints.keySet().removeIf(team -> !teams.contains(team));
 
-            ArrayList<Map.Entry<ChampionshipTeam, Double>> list;
-            list = new ArrayList<>(teamPoints.entrySet());
-            list.sort(Map.Entry.comparingByValue());
+        ArrayList<Map.Entry<ChampionshipTeam, Double>> list;
+        list = new ArrayList<>(teamPoints.entrySet());
+        list.sort(Map.Entry.comparingByValue());
 
-            Collections.reverse(list);
+        Collections.reverse(list);
 
-            StringBuilder stringBuilder = new StringBuilder();
+        StringBuilder stringBuilder = new StringBuilder();
 
-            stringBuilder.append(MessageConfig.RANK_TEAM_BOARD_BAR).append("\n");
+        stringBuilder.append(MessageConfig.RANK_TEAM_BOARD_BAR).append("\n");
 
-            int i = 1;
-            for (Map.Entry<ChampionshipTeam, Double> entry : list) {
-                String row = MessageConfig.RANK_TEAM_BOARD_ROW
-                        .replace("%team_rank%", String.valueOf(i))
-                        .replace("%team%", entry.getKey().getColoredName())
-                        .replace("%team_point%", String.valueOf(entry.getValue()));
+        teamRank.clear();
+        int i = 1;
+        for (Map.Entry<ChampionshipTeam, Double> entry : list) {
+            String row = MessageConfig.RANK_TEAM_BOARD_ROW
+                    .replace("%team_rank%", String.valueOf(i))
+                    .replace("%team%", entry.getKey().getColoredName())
+                    .replace("%team_point%", String.valueOf(entry.getValue()));
 
-                stringBuilder.append(row).append("\n");
+            stringBuilder.append(row).append("\n");
 
-                teamRank.put(entry.getKey(), i);
-                i++;
-            }
+            teamRank.put(entry.getKey(), i);
+            i++;
+        }
 
-            teamLeaderboard = list;
-            teamRankString = stringBuilder.toString();
-        });
+        teamLeaderboard = List.copyOf(list);
+        teamRankString = stringBuilder.toString();
     }
 
     private void updatePlayerPoint() {
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(championshipTeam.getId())) {
-                    UUID uuid = teamMemberEntry.getUuid();
-                    playerPoints.put(uuid, getPlayerPoints(uuid));
-                }
+        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+            for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(championshipTeam.getId())) {
+                UUID uuid = teamMemberEntry.getUuid();
+                playerPoints.put(uuid, getPlayerPoints(uuid));
             }
-            for (UUID uuid : playerPoints.keySet()) {
-                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
-                if (championshipTeam == null)
-                    playerPoints.remove(uuid);
+        }
+        playerPoints.keySet().removeIf(uuid -> plugin.getTeamManager().getTeamByPlayer(uuid) == null);
+
+        ArrayList<Map.Entry<UUID, Double>> list;
+        list = new ArrayList<>(playerPoints.entrySet());
+        list.sort(Map.Entry.comparingByValue());
+
+        Collections.reverse(list);
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(MessageConfig.RANK_PLAYER_BOARD_BAR).append("\n");
+
+        playerRank.clear();
+        int i = 1;
+        for (Map.Entry<UUID, Double> entry : list) {
+            String username = plugin.getPlayerManager().getPlayerName(entry.getKey());
+            if (username != null) {
+                String row = MessageConfig.RANK_PLAYER_BOARD_ROW
+                        .replace("%player_rank%", String.valueOf(i))
+                        .replace("%player%", username)
+                        .replace("%player_point%", String.valueOf(entry.getValue()));
+
+                if (i <= 10) stringBuilder.append(row).append("\n");
+
+                playerRank.put(entry.getKey(), i);
+                i++;
             }
+        }
+        playerRankString = stringBuilder.toString();
 
-            ArrayList<Map.Entry<UUID, Double>> list;
-            list = new ArrayList<>(playerPoints.entrySet());
-            list.sort(Map.Entry.comparingByValue());
+        playerLeaderboard = List.copyOf(list);
 
-            Collections.reverse(list);
+        for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
+            try {
+                BigDecimal totalNum = BigDecimal.valueOf(15000D).setScale(4, RoundingMode.HALF_UP);
+                BigDecimal weight = totalNum.divide(BigDecimal.valueOf(gameTotalPoints.get(gameTypeEnum)), RoundingMode.HALF_UP);
 
-            StringBuilder stringBuilder = new StringBuilder();
-
-            stringBuilder.append(MessageConfig.RANK_PLAYER_BOARD_BAR).append("\n");
-
-            int i = 1;
-            for (Map.Entry<UUID, Double> entry : list) {
-                String username = plugin.getPlayerManager().getPlayerName(entry.getKey());
-                if (username != null) {
-                    String row = MessageConfig.RANK_PLAYER_BOARD_ROW
-                            .replace("%player_rank%", String.valueOf(i))
-                            .replace("%player%", username)
-                            .replace("%player_point%", String.valueOf(entry.getValue()));
-
-                    stringBuilder.append(row).append("\n");
-
-                    playerRank.put(entry.getKey(), i);
-                    i++;
-                }
-                if (i == 11) {
-                    playerRankString = stringBuilder.toString();
-                    break;
-                }
-            }
-            if (i <= 11)
-                playerRankString = stringBuilder.toString();
-
-            playerLeaderboard = list;
-
-            for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
-                try {
-                    BigDecimal totalNum = BigDecimal.valueOf(15000D).setScale(4, RoundingMode.HALF_UP);
-                    BigDecimal weight = totalNum.divide(BigDecimal.valueOf(gameTotalPoints.get(gameTypeEnum)), RoundingMode.HALF_UP);
-
-                    if (weight.compareTo(BigDecimal.ZERO) != 0)
-                        gameWeight.put(gameTypeEnum, weight);
-                    else
-                        gameWeight.put(gameTypeEnum, BigDecimal.ONE);
-                } catch (Exception ignored) {
+                if (weight.compareTo(BigDecimal.ZERO) != 0)
+                    gameWeight.put(gameTypeEnum, weight);
+                else
                     gameWeight.put(gameTypeEnum, BigDecimal.ONE);
-                }
-
+            } catch (Exception ignored) {
+                gameWeight.put(gameTypeEnum, BigDecimal.ONE);
             }
-        });
+        }
     }
 
     private void updateGameOrder() {
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            for (GameStatusEntry gameStatusEntry : rankDao.getGameStatusList()) {
-                gameOrder.put(gameStatusEntry.getGame(), gameStatusEntry.getOrder());
-            }
-        });
+        gameOrder.clear();
+        for (GameStatusEntry gameStatusEntry : rankDao.getGameStatusList()) {
+            gameOrder.put(gameStatusEntry.getGame(), gameStatusEntry.getOrder());
+        }
     }
 
     public void addGameOrder(GameTypeEnum gameTypeEnum, int order) {
-        scheduler.runTaskAsynchronously(plugin, () -> {
+        scheduler.runTaskAsynchronously(() -> {
             if (rankDao.getGameStatusOrder(gameTypeEnum) != -1)
                 return;
 
@@ -236,7 +230,7 @@ public class RankManager extends BaseManager {
     }
 
     public void resetGameOrder() {
-        scheduler.runTaskAsynchronously(plugin, () -> {
+        scheduler.runTaskAsynchronously(() -> {
             for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
                 rankDao.deleteGameStatus(gameTypeEnum);
             }
@@ -268,7 +262,7 @@ public class RankManager extends BaseManager {
                     .build();
 
             if (plugin.isLoaded()) {
-                scheduler.runTaskAsynchronously(plugin, () -> rankDao.addPlayerPoint(playerPointEntry));
+                scheduler.runTaskAsynchronously(() -> rankDao.addPlayerPoint(playerPointEntry));
             } else {
                 rankDao.addPlayerPoint(playerPointEntry);
             }

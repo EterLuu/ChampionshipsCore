@@ -46,13 +46,13 @@ public class ParkourTagMatch {
     private final Vector rightAreaMax;
 
     @Setter
-    private UUID rightAreaChaser;
+    private volatile UUID rightAreaChaser;
     @Setter
-    private UUID leftAreaChaser;
+    private volatile UUID leftAreaChaser;
     @Setter
-    private int rightTeamSurviveTime = -1;
+    private volatile int rightTeamSurviveTime = -1;
     @Setter
-    private int leftTeamSurviveTime = -1;
+    private volatile int leftTeamSurviveTime = -1;
     private final Map<UUID, Integer> playerSurviveTimes = new ConcurrentHashMap<>();
 
     public ParkourTagMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left, ParkourTagConfig config) {
@@ -204,7 +204,7 @@ public class ParkourTagMatch {
      * Recomputes whether either team has now been fully caught, stamping its survive time at {@code elapsed}
      * seconds. Returns the teams that became fully caught on THIS call (for the coordinator to announce).
      */
-    public List<ChampionshipTeam> updateTeamSurviveTimes(int elapsed) {
+    public synchronized List<ChampionshipTeam> updateTeamSurviveTimes(int elapsed) {
         List<ChampionshipTeam> newlyCaught = new ArrayList<>();
         int rightSurvivor = right.getMembers().size() - 1;
         int leftSurvivor = left.getMembers().size() - 1;

@@ -3,16 +3,19 @@ package ink.ziip.championshipscore.util.world;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.SpawnCategory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 /**
@@ -21,6 +24,7 @@ import java.util.logging.Level;
  * @author lukasvdgaag
  */
 public class WorldManager extends BaseManager {
+    private File dimensionsContainer;
 
     public WorldManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -28,7 +32,7 @@ public class WorldManager extends BaseManager {
 
     @Override
     public void load() {
-
+        dimensionsContainer = Bukkit.getWorlds().getFirst().getWorldFolder().getParentFile();
     }
 
     @Override
@@ -44,7 +48,10 @@ public class WorldManager extends BaseManager {
      * parent of every world dimension. Must be called on the main thread.
      */
     public File getDimensionsContainer() {
-        return Bukkit.getWorlds().get(0).getWorldFolder().getParentFile();
+        if (dimensionsContainer == null) {
+            throw new IllegalStateException("WorldManager has not been loaded");
+        }
+        return dimensionsContainer;
     }
 
     /**
@@ -58,13 +65,19 @@ public class WorldManager extends BaseManager {
     }
 
     public void createEmptyWorld(String name, World.Environment environment) {
-        if (org.bukkit.Bukkit.getWorld(name) == null) {
-            loadWorld(name, environment, false);
-            Bukkit.getWorld(name);
-        }
+        FoliaScheduler.global(plugin).runGlobalFuture(() -> {
+            if (Bukkit.getWorld(name) == null) {
+                loadWorldNow(name, environment, false);
+            }
+        });
     }
 
+    /** Schedules world creation on the global region. */
     public void loadWorld(String worldName, World.Environment environment, boolean readOnly) {
+        loadWorldAsync(worldName, environment, readOnly);
+    }
+
+    private void loadWorldNow(String worldName, World.Environment environment, boolean readOnly) {
         WorldCreator worldCreator = new WorldCreator(worldName);
         worldCreator.environment(environment);
         worldCreator.generateStructures(false);
@@ -73,7 +86,7 @@ public class WorldManager extends BaseManager {
         World world = worldCreator.createWorld();
 
         if (world == null)
-            return;
+            throw new IllegalStateException("Could not create or load world " + worldName);
 
         world.setDifficulty(org.bukkit.Difficulty.NORMAL);
         world.setSpawnFlags(true, true);
@@ -94,57 +107,88 @@ public class WorldManager extends BaseManager {
     }
 
     public void copyWorldFiles(File source, File target) {
+        List<String> ignore = List.of("uid.dat", "session.dat", "session.lock");
+        if (ignore.contains(source.getName())) {
+            return;
+        }
+        if (!source.exists()) {
+            plugin.getLogger().warning("World template does not exist; loading an empty world: " + source);
+            return;
+        }
+
         try {
-            List<String> ignore = List.of("uid.dat", "session.dat", "session.lock");
-            if (!ignore.contains(source.getName())) {
-                if (source.isDirectory()) {
-                    if ((!target.exists()) &&
-                            (target.mkdirs())) {
-                        String[] files = source.list();
-                        if (files != null) {
-                            for (String file : files) {
-                                File srcFile = new File(source, file);
-                                File destFile = new File(target, file);
-                                copyWorldFiles(srcFile, destFile);
-                            }
-                        }
-                    }
-                } else {
-                    java.io.InputStream in = new java.io.FileInputStream(source);
-                    OutputStream out = new java.io.FileOutputStream(target);
-                    byte[] buffer = new byte['Ѐ'];
-                    int length;
-                    while ((length = in.read(buffer)) > 0)
-                        out.write(buffer, 0, length);
-                    in.close();
-                    out.close();
+            if (source.isDirectory()) {
+                if (target.exists() && !target.isDirectory()) {
+                    throw new IOException("Copy target is not a directory: " + target);
                 }
+                if (!target.exists() && !target.mkdirs()) {
+                    throw new IOException("Could not create directory: " + target);
+                }
+                String[] files = source.list();
+                if (files == null) {
+                    throw new IOException("Could not list directory: " + source);
+                }
+                for (String file : files) {
+                    File srcFile = new File(source, file);
+                    File destFile = new File(target, file);
+                    copyWorldFiles(srcFile, destFile);
+                }
+            } else {
+                File parent = target.getParentFile();
+                if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                    throw new IOException("Could not create directory: " + parent);
+                }
+                Files.copy(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
-        } catch (FileNotFoundException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to copy world as required! - file not found.", e);
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to copy world as required!", e);
+            throw new IllegalStateException("Failed to copy world from " + source + " to " + target, e);
         }
     }
 
     public void deleteWorld(String name, boolean removeFile) {
-        unloadWorld(name, false);
+        deleteWorldAsync(name, removeFile);
+    }
 
-        if (removeFile) {
-            File target = getWorldFolder(name);
-            deleteWorldFiles(target);
+    /** Unloads a world only after all of its players have completed an async teleport. */
+    public CompletableFuture<Void> unloadWorldAsync(String worldName, boolean save) {
+        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
+        return scheduler.supplyGlobal(() -> {
+            World world = plugin.getServer().getWorld(worldName);
+            if (world == null) {
+                return List.<CompletableFuture<Boolean>>of();
+            }
+            List<CompletableFuture<Boolean>> teleports = new ArrayList<>();
+            for (Player player : world.getPlayers()) {
+                teleports.add(player.teleportAsync(CCConfig.LOBBY_LOCATION));
+            }
+            return teleports;
+        }).thenCompose(teleports ->
+            CompletableFuture.allOf(teleports.toArray(CompletableFuture[]::new))
+                    .thenCompose(done -> scheduler.runGlobalFuture(() -> {
+                        World loaded = plugin.getServer().getWorld(worldName);
+                        if (loaded != null && !plugin.getServer().unloadWorld(loaded, save)) {
+                            throw new IllegalStateException("Could not unload world " + worldName);
+                        }
+                    })));
+    }
+
+    public CompletableFuture<Void> deleteWorldAsync(String worldName, boolean removeFiles) {
+        CompletableFuture<Void> unloaded = unloadWorldAsync(worldName, false);
+        if (!removeFiles) {
+            return unloaded;
         }
+        return unloaded.thenCompose(ignored -> FoliaScheduler.global(plugin).runAsyncFuture(
+                () -> deleteWorldFiles(getWorldFolder(worldName))));
+    }
+
+    /** Creates/configures a world on the global region, as required by Folia. */
+    public CompletableFuture<Void> loadWorldAsync(String worldName, World.Environment environment, boolean readOnly) {
+        return FoliaScheduler.global(plugin).runGlobalFuture(() -> loadWorldNow(worldName, environment, readOnly));
     }
 
     public void unloadWorld(String worldName, boolean save) {
-        World world = plugin.getServer().getWorld(worldName);
-
-        if (world != null) {
-            for (Player player : world.getPlayers()) {
-                player.teleport(CCConfig.LOBBY_LOCATION);
-            }
-            plugin.getServer().unloadWorld(world, save);
-        }
+        unloadWorldAsync(worldName, save);
     }
 
     public void deleteWorldFiles(File path) {
@@ -154,12 +198,14 @@ public class WorldManager extends BaseManager {
                 for (File file : files) {
                     if (file.isDirectory()) {
                         deleteWorldFiles(file);
-                    } else {
-                        file.delete();
+                    } else if (!file.delete()) {
+                        throw new IllegalStateException("Could not delete world file " + file);
                     }
                 }
             }
         }
-        path.delete();
+        if (path.exists() && !path.delete()) {
+            throw new IllegalStateException("Could not delete world path " + path);
+        }
     }
 }

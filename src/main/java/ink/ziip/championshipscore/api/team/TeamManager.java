@@ -10,7 +10,7 @@ import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitScheduler;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TeamManager extends BaseManager {
     private static final ConcurrentHashMap<String, ChampionshipTeam> cachedTeams = new ConcurrentHashMap<>();
     private static final TeamDaoImpl teamDaoImpl = new TeamDaoImpl();
-    private final BukkitScheduler scheduler;
+    private final FoliaScheduler scheduler;
     private static Scoreboard scoreboard = null;
 
     public TeamManager(ChampionshipsCore championshipsCore) {
@@ -31,76 +31,54 @@ public class TeamManager extends BaseManager {
         ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
         if (scoreboardManager != null)
             scoreboard = scoreboardManager.getMainScoreboard();
-        scheduler = championshipsCore.getServer().getScheduler();
+        scheduler = FoliaScheduler.global(championshipsCore);
     }
 
-    private void addTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members) {
+    private void addTeam(LoadedTeam loadedTeam) {
         synchronized (cachedTeams) {
+            String name = loadedTeam.name();
             if (cachedTeams.containsKey(name)) return;
-
-            Team team = scoreboard.getTeam(colorName);
-            if (team != null) {
-                team.unregister();
-            }
-            team = scoreboard.registerNewTeam(colorName);
-
-            try {
-                team.color(Utils.toNamedTextColor(colorName));
-            } catch (Exception ignored) {
-            }
-
-            for (UUID uuid : members) {
-                String playerName = plugin.getPlayerManager().getPlayerName(uuid);
-                if (playerName != null) {
-                    team.addEntry(playerName);
-                }
-            }
-
-            ChampionshipTeam championshipTeam = new ChampionshipTeam(id, name, colorName, colorCode, members, team);
+            Team team = registerScoreboardTeam(loadedTeam.colorName(), loadedTeam.memberNames().values());
+            ChampionshipTeam championshipTeam = new ChampionshipTeam(loadedTeam.id(), name,
+                    loadedTeam.colorName(), loadedTeam.colorCode(), loadedTeam.memberNames().keySet(), team);
             cachedTeams.put(name, championshipTeam);
         }
     }
 
-    public boolean addTeam(@NotNull String name, @NotNull String colorName, @NotNull String colorCode) {
+    public synchronized boolean addTeam(@NotNull String name, @NotNull String colorName, @NotNull String colorCode) {
         synchronized (cachedTeams) {
             if (cachedTeams.containsKey(name)) return false;
 
             if (Arrays.stream(Utils.getColorNames()).noneMatch(colorName::equalsIgnoreCase)) return false;
 
             int id = teamDaoImpl.addTeam(name, colorName, colorCode);
-
-            Team team = scoreboard.getTeam(colorName);
-            if (team != null) {
-                team.unregister();
-            }
-            team = scoreboard.registerNewTeam(colorName);
-
-            try {
-                team.color(Utils.toNamedTextColor(colorName));
-            } catch (Exception ignored) {
-            }
-
-            ChampionshipTeam championshipTeam = new ChampionshipTeam(id, name, colorName, colorCode, team);
+            ChampionshipTeam championshipTeam = new ChampionshipTeam(id, name, colorName, colorCode, null);
             cachedTeams.put(name, championshipTeam);
+            scheduler.runTask(() -> championshipTeam.setScoreboardTeam(
+                    registerScoreboardTeam(colorName, List.of())));
             return true;
         }
     }
 
     @Override
     public void load() {
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            for (Team team : scoreboard.getTeams()) {
-                team.unregister();
-            }
-
+        scheduler.runTaskAsynchronously(() -> {
+            List<LoadedTeam> loadedTeams = new ArrayList<>();
             for (TeamEntry teamEntry : teamDaoImpl.getTeamList()) {
                 int teamId = teamEntry.getId();
-                Set<UUID> uuids = new HashSet<>();
+                Map<UUID, String> members = new HashMap<>();
                 for (TeamMemberEntry teamMemberEntry : teamDaoImpl.getTeamMembers(teamId)) {
-                    uuids.add(teamMemberEntry.getUuid());
+                    members.put(teamMemberEntry.getUuid(), teamMemberEntry.getUsername());
                 }
-                addTeam(teamId, teamEntry.getName(), teamEntry.getColorName(), teamEntry.getColorCode(), uuids);
+                loadedTeams.add(new LoadedTeam(teamId, teamEntry.getName(), teamEntry.getColorName(),
+                        teamEntry.getColorCode(), Map.copyOf(members)));
             }
+            scheduler.runTask(() -> {
+                for (Team team : scoreboard.getTeams()) {
+                    team.unregister();
+                }
+                loadedTeams.forEach(this::addTeam);
+            });
         });
     }
 
@@ -122,18 +100,23 @@ public class TeamManager extends BaseManager {
         return cachedTeams.getOrDefault(name, null);
     }
 
-    public boolean deleteTeam(@NotNull String name) {
+    public synchronized boolean deleteTeam(@NotNull String name) {
         ChampionshipTeam championshipTeam = cachedTeams.get(name);
+        if (championshipTeam == null)
+            return false;
 
         if (plugin.getGameManager().getTeamCurrenArea(championshipTeam) != null)
             return false;
 
         championshipTeam = cachedTeams.remove(name);
         if (championshipTeam == null) return false;
-        championshipTeam.getTeam().unregister();
+        Team scoreboardTeam = championshipTeam.getTeam();
+        if (scoreboardTeam != null) {
+            scheduler.runTask(scoreboardTeam::unregister);
+        }
         int id = championshipTeam.getId();
 
-        scheduler.runTaskAsynchronously(plugin, () -> {
+        scheduler.runTaskAsynchronously(() -> {
             teamDaoImpl.deleteTeam(id);
             teamDaoImpl.deleteTeamMembers(id);
         });
@@ -161,7 +144,7 @@ public class TeamManager extends BaseManager {
         return getTeamByPlayer(offlinePlayer.getUniqueId());
     }
 
-    private boolean addTeamMember(@NotNull UUID uuid, @NotNull String username, String teamName) {
+    private synchronized boolean addTeamMember(@NotNull UUID uuid, @NotNull String username, String teamName) {
         ChampionshipTeam championshipTeam = getTeam(teamName);
         if (championshipTeam == null) return false;
 
@@ -173,10 +156,13 @@ public class TeamManager extends BaseManager {
             }
         }
 
-        championshipTeam.getTeam().addEntry(username);
         championshipTeam.addMember(uuid);
+        scheduler.runTask(() -> {
+            Team scoreboardTeam = championshipTeam.getTeam();
+            if (scoreboardTeam != null) scoreboardTeam.addEntry(username);
+        });
 
-        scheduler.runTaskAsynchronously(plugin, () -> teamDaoImpl.addTeamMember(championshipTeam.getId(), uuid, username));
+        scheduler.runTaskAsynchronously(() -> teamDaoImpl.addTeamMember(championshipTeam.getId(), uuid, username));
 
         Player player = Bukkit.getPlayer(uuid);
         if (player != null)
@@ -194,13 +180,17 @@ public class TeamManager extends BaseManager {
         return addTeamMember(username, championshipTeam.getName());
     }
 
-    private boolean deleteTeamMember(@NotNull UUID uuid, @NotNull ChampionshipTeam championshipTeam) {
+    private synchronized boolean deleteTeamMember(@NotNull UUID uuid, @NotNull ChampionshipTeam championshipTeam) {
         if (championshipTeam.deleteMember(uuid)) {
             String username = plugin.getPlayerManager().getPlayerName(uuid);
-            if (username != null)
-                championshipTeam.getTeam().removeEntry(username);
+            if (username != null) {
+                scheduler.runTask(() -> {
+                    Team scoreboardTeam = championshipTeam.getTeam();
+                    if (scoreboardTeam != null) scoreboardTeam.removeEntry(username);
+                });
+            }
 
-            scheduler.runTaskAsynchronously(plugin, () -> teamDaoImpl.deleteTeamMember(uuid));
+            scheduler.runTaskAsynchronously(() -> teamDaoImpl.deleteTeamMember(uuid));
             return true;
         }
         return false;
@@ -233,12 +223,32 @@ public class TeamManager extends BaseManager {
     }
 
     public void setCollision(boolean collision) {
-        for (Team team : scoreboard.getTeams()) {
-            if (collision) {
-                team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.ALWAYS);
-            } else {
-                team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+        scheduler.runTask(() -> {
+            for (Team team : scoreboard.getTeams()) {
+                if (collision) {
+                    team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.ALWAYS);
+                } else {
+                    team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+                }
             }
+        });
+    }
+
+    private Team registerScoreboardTeam(String colorName, Collection<String> entries) {
+        Team team = scoreboard.getTeam(colorName);
+        if (team != null) {
+            team.unregister();
         }
+        team = scoreboard.registerNewTeam(colorName);
+        try {
+            team.color(Utils.toNamedTextColor(colorName));
+        } catch (Exception ignored) {
+        }
+        entries.forEach(team::addEntry);
+        return team;
+    }
+
+    private record LoadedTeam(int id, String name, String colorName, String colorCode,
+                              Map<UUID, String> memberNames) {
     }
 }

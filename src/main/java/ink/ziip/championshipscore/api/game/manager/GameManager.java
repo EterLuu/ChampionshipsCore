@@ -118,7 +118,7 @@ public class GameManager extends BaseManager {
         gameManagerHandler.unRegister();
     }
 
-    public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam rightChampionshipTeam, @NotNull ChampionshipTeam leftChampionshipTeam) {
+    public synchronized boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam rightChampionshipTeam, @NotNull ChampionshipTeam leftChampionshipTeam) {
         for (UUID uuid : rightChampionshipTeam.getMembers()) {
             if (playerStatus.containsKey(uuid))
                 return false;
@@ -216,7 +216,7 @@ public class GameManager extends BaseManager {
         return false;
     }
 
-    public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {
+    public synchronized boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
             if (teamStatus.containsKey(championshipTeam))
                 return false;

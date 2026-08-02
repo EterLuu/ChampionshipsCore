@@ -23,9 +23,9 @@ public class TeamBuildState {
     private final BuildSlot goldenSlot;
 
     /** Number of builds completed (normal + golden), the "chef" award metric. */
-    private int completedCount;
+    private volatile int completedCount;
     /** Sum of stars of completed builds, the "entrepreneur" award metric. */
-    private int totalStars;
+    private volatile int totalStars;
 
     public TeamBuildState(ChampionshipTeam team, @Nullable BuildMartBase base) {
         this.team = team;
@@ -46,7 +46,7 @@ public class TeamBuildState {
 
     /** First empty normal slot, or {@code null} if all three are occupied. */
     @Nullable
-    public BuildSlot firstFreeNormalSlot() {
+    public synchronized BuildSlot firstFreeNormalSlot() {
         for (BuildSlot slot : normalSlots) {
             if (slot.isEmpty()) return slot;
         }
@@ -54,13 +54,13 @@ public class TeamBuildState {
     }
 
     /** Records a completed build's stars and bumps the completed counter. */
-    public void recordCompletion(int stars) {
+    public synchronized void recordCompletion(int stars) {
         completedCount++;
         totalStars += stars;
     }
 
     /** Average stars per completed build (the "quality assurance" metric); 0 when nothing is done. */
-    public double averageStars() {
+    public synchronized double averageStars() {
         return completedCount == 0 ? 0.0 : (double) totalStars / completedCount;
     }
 }

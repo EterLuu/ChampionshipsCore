@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.single;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.area.BaseArea;
@@ -18,11 +20,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Getter
 public abstract class BaseSingleTeamArea extends BaseArea {
-    protected final List<UUID> gamePlayers = new ArrayList<>();
-    protected final List<ChampionshipTeam> gameTeams = new ArrayList<>();
+    protected final List<UUID> gamePlayers = new CopyOnWriteArrayList<>();
+    protected final List<ChampionshipTeam> gameTeams = new CopyOnWriteArrayList<>();
 
     public BaseSingleTeamArea(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum, BaseListener gameHandler, BaseGameConfig gameConfig) {
         super(plugin, gameTypeEnum, gameHandler, gameConfig);
@@ -35,7 +38,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         gamePlayers.clear();
     }
 
-    public boolean tryStartGame(List<ChampionshipTeam> championshipTeams) {
+    public synchronized boolean tryStartGame(List<ChampionshipTeam> championshipTeams) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return false;
         setGameStageEnum(GameStageEnum.LOADING);
@@ -50,7 +53,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         return true;
     }
 
-    public boolean tryStartGame(List<ChampionshipTeam> championshipTeams, List<UUID> players) {
+    public synchronized boolean tryStartGame(List<ChampionshipTeam> championshipTeams, List<UUID> players) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return false;
         setGameStageEnum(GameStageEnum.LOADING);
@@ -118,8 +121,11 @@ public abstract class BaseSingleTeamArea extends BaseArea {
     public void sendActionBarToAllGameSpectators(String message) {
         for (UUID uuid : gamePlayers) {
             ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
-            if (championshipPlayer.getPlayer() != null && championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                championshipPlayer.sendActionBar(message);
+            Player player = championshipPlayer.getPlayer();
+            if (player != null) {
+                scheduler.runEntity(player, () -> {
+                    if (player.getGameMode() == GameMode.SPECTATOR) championshipPlayer.sendActionBar(message);
+                });
             }
         }
         sendActionBarToAllSpectators(message);
@@ -154,10 +160,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                    player.setGameMode(gameMode);
-                });
+                scheduler.runEntity(player, () -> player.setGameMode(gameMode));
             }
         }
     }
@@ -167,7 +170,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                player.setHealth(health);
+                scheduler.runEntity(player, () -> player.setHealth(health));
             }
         }
     }
@@ -177,7 +180,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
-                player.setFoodLevel(level);
+                scheduler.runEntity(player, () -> player.setFoodLevel(level));
         }
     }
 
@@ -187,7 +190,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
-                player.teleport(location);
+                player.teleportAsync(location);
         }
     }
 
@@ -196,8 +199,10 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
-                for (PotionEffect potionEffect : player.getActivePotionEffects())
-                    player.removePotionEffect(potionEffect.getType());
+                scheduler.runEntity(player, () -> {
+                    for (PotionEffect potionEffect : player.getActivePotionEffects())
+                        player.removePotionEffect(potionEffect.getType());
+                });
         }
     }
 
@@ -206,7 +211,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
-                player.getInventory().clear();
+                scheduler.runEntity(player, () -> player.getInventory().clear());
         }
     }
 
@@ -215,7 +220,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
-                player.playSound(player.getLocation(), sound, volume, pitch);
+                scheduler.runEntity(player, () -> player.playSound(player.getLocation(), sound, volume, pitch));
         }
     }
 
@@ -224,7 +229,7 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
-                Utils.revokeAllAdvancements(player);
+                scheduler.runEntity(player, () -> Utils.revokeAllAdvancements(player));
         }
     }
 
@@ -242,10 +247,8 @@ public abstract class BaseSingleTeamArea extends BaseArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                player.teleport(getLobbyLocation());
-                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                    player.setGameMode(GameMode.ADVENTURE);
+                player.teleportAsync(getLobbyLocation()).thenAccept(success -> {
+                    if (success) scheduler.runEntity(player, () -> player.setGameMode(GameMode.ADVENTURE));
                 });
             }
         }

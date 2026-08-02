@@ -211,12 +211,12 @@ public class BattleBoxHandler extends BaseListener {
         Location location = player.getLocation();
         if (battleBoxArea.notInArea(location)) {
             if (battleBoxArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(battleBoxArea.getSpectatorSpawnLocation());
+                player.teleportAsync(battleBoxArea.getSpectatorSpawnLocation());
             }
             if (battleBoxArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() < -64) {
-                        player.teleport(battleBoxArea.getSpectatorSpawnLocation());
+                        player.teleportAsync(battleBoxArea.getSpectatorSpawnLocation());
                     }
                     return;
                 }

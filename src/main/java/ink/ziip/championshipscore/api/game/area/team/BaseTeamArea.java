@@ -23,9 +23,9 @@ import java.util.UUID;
 @Getter
 public abstract class BaseTeamArea extends BaseArea {
     @Nullable
-    protected ChampionshipTeam rightChampionshipTeam;
+    protected volatile ChampionshipTeam rightChampionshipTeam;
     @Nullable
-    protected ChampionshipTeam leftChampionshipTeam;
+    protected volatile ChampionshipTeam leftChampionshipTeam;
 
     public BaseTeamArea(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum, BaseListener gameHandler, BaseGameConfig gameConfig) {
         super(plugin, gameTypeEnum, gameHandler, gameConfig);
@@ -38,7 +38,7 @@ public abstract class BaseTeamArea extends BaseArea {
         leftChampionshipTeam = null;
     }
 
-    public boolean tryStartGame(ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam) {
+    public synchronized boolean tryStartGame(ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return false;
         setGameStageEnum(GameStageEnum.LOADING);
@@ -88,18 +88,18 @@ public abstract class BaseTeamArea extends BaseArea {
             for (ChampionshipPlayer championshipPlayer : rightChampionshipTeam.getOnlineCCPlayers()) {
                 Player player = championshipPlayer.getPlayer();
                 if (player != null) {
-                    if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                        championshipPlayer.sendActionBar(message);
-                    }
+                    scheduler.runEntity(player, () -> {
+                        if (player.getGameMode() == GameMode.SPECTATOR) championshipPlayer.sendActionBar(message);
+                    });
                 }
             }
         if (leftChampionshipTeam != null)
             for (ChampionshipPlayer championshipPlayer : leftChampionshipTeam.getOnlineCCPlayers()) {
                 Player player = championshipPlayer.getPlayer();
                 if (player != null) {
-                    if (championshipPlayer.getPlayer().getGameMode() == GameMode.SPECTATOR) {
-                        championshipPlayer.sendActionBar(message);
-                    }
+                    scheduler.runEntity(player, () -> {
+                        if (player.getGameMode() == GameMode.SPECTATOR) championshipPlayer.sendActionBar(message);
+                    });
                 }
             }
         sendActionBarToAllSpectators(message);
@@ -207,12 +207,12 @@ public abstract class BaseTeamArea extends BaseArea {
     public void revokeAllGamePlayersAdvancements() {
         if (rightChampionshipTeam != null) {
             for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
-                Utils.revokeAllAdvancements(player);
+                scheduler.runEntity(player, () -> Utils.revokeAllAdvancements(player));
             }
         }
         if (leftChampionshipTeam != null) {
             for (Player player : leftChampionshipTeam.getOnlinePlayers()) {
-                Utils.revokeAllAdvancements(player);
+                scheduler.runEntity(player, () -> Utils.revokeAllAdvancements(player));
             }
         }
     }

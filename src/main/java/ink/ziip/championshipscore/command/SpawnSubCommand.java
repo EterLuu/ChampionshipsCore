@@ -21,7 +21,7 @@ public class SpawnSubCommand extends BaseSubCommand {
         if (sender instanceof Player player) {
             Location location = player.getLocation();
             if (location.getWorld() != null && CCConfig.LOBBY_LOCATION.getWorld() != null && location.getWorld().getName().equals(CCConfig.LOBBY_LOCATION.getWorld().getName())) {
-                player.teleport(CCConfig.LOBBY_LOCATION);
+                player.teleportAsync(CCConfig.LOBBY_LOCATION);
             }
 
         }

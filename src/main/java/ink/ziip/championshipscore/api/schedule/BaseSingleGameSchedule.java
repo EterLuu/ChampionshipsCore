@@ -11,26 +11,26 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitScheduler;
-import org.bukkit.scheduler.BukkitTask;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
 public abstract class BaseSingleGameSchedule extends BaseManager {
-    protected final BukkitScheduler scheduler;
+    protected final FoliaScheduler scheduler;
     protected final BaseListener handler;
     protected final GameTypeEnum gameTypeEnum;
     protected final ScheduleManager scheduleManager;
     @Getter
-    protected int subRound;
-    protected int timer;
+    protected volatile int subRound;
+    protected volatile int timer;
     @Getter
-    protected boolean enabled;
-    protected BukkitTask firstStartTask;
-    protected BukkitTask startTask;
+    protected volatile boolean enabled;
+    protected volatile ScheduledTask firstStartTask;
+    protected volatile ScheduledTask startTask;
 
     public BaseSingleGameSchedule(ChampionshipsCore championshipsCore, BaseListener handler, GameTypeEnum gameTypeEnum) {
         super(championshipsCore);
         scheduleManager = plugin.getScheduleManager();
-        scheduler = plugin.getServer().getScheduler();
+        scheduler = FoliaScheduler.global(plugin);
         this.handler = handler;
         this.gameTypeEnum = gameTypeEnum;
         this.subRound = 0;
@@ -49,6 +49,10 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
     }
 
     public void startGame() {
+        scheduler.runTask(this::startGameOnGlobalRegion);
+    }
+
+    private synchronized void startGameOnGlobalRegion() {
         if (enabled) {
             endSchedule();
             return;
@@ -58,7 +62,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         enabled = true;
         timer = 10;
         subRound = 0;
-        firstStartTask = scheduler.runTaskTimer(plugin, () -> {
+        firstStartTask = scheduler.runTaskTimer(() -> {
 
             Utils.changeLevelForAllPlayers(timer);
 
@@ -88,7 +92,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         }, 0, 20L);
     }
 
-    public void startRound() {
+    public synchronized void startRound() {
         if (!enabled)
             return;
 
@@ -102,7 +106,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         plugin.getGameManager().joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea());
     }
 
-    public void endSchedule() {
+    public synchronized void endSchedule() {
         if (firstStartTask != null)
             firstStartTask.cancel();
         if (startTask != null)
@@ -113,8 +117,8 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
         Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.ROUND_END));
         if (plugin.isLoaded()) {
-            scheduler.runTaskLaterAsynchronously(plugin, () -> {
-                scheduler.runTaskAsynchronously(plugin, task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(gameTypeEnum)));
+            scheduler.runTaskLaterAsynchronously(() -> {
+                scheduler.runTaskAsynchronously(task -> Utils.sendMessageToAllPlayers(plugin.getRankManager().getGameTeamPoints(gameTypeEnum)));
                 Utils.sendMessageToAllPlayers(plugin.getRankManager().getTeamRankString());
             }, 40L);
         }
@@ -122,7 +126,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         Utils.changeLevelForAllPlayers(0);
     }
 
-    public void nextRound() {
+    public synchronized void nextRound() {
         if (!enabled)
             return;
 
@@ -135,7 +139,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
         timer = 30;
-        startTask = scheduler.runTaskTimer(plugin, () -> {
+        startTask = scheduler.runTaskTimer(() -> {
 
             Utils.changeLevelForAllPlayers(timer);
 
@@ -164,8 +168,8 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam == null) {
-                player.performCommand("cc spectate leave");
-                player.performCommand(getSpecCommand());
+                Utils.performCommand(player, "cc spectate leave");
+                Utils.performCommand(player, getSpecCommand());
             }
         }
     }
@@ -174,7 +178,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam == null) {
-                player.performCommand("cc spectate leave");
+                Utils.performCommand(player, "cc spectate leave");
             }
         }
     }

@@ -29,7 +29,7 @@ public class BattleBoxConfig extends BaseGameConfig {
     private String areaName;
 
     @ConfigOption(path = "timer")
-    private int timer;
+    private volatile int timer;
 
     @ConfigOption(path = "right-spawn-point")
     private Location rightSpawnPoint;

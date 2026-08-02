@@ -22,6 +22,7 @@ public final class BingoWorldManager {
     public static final String END = "bingo_the_end";
 
     private final ChampionshipsCore plugin;
+    private volatile World overworld;
 
     public BingoWorldManager(ChampionshipsCore plugin) {
         this.plugin = plugin;
@@ -29,13 +30,13 @@ public final class BingoWorldManager {
 
     /** Creates the bingo overworld/nether/end if they don't exist yet; loads them otherwise. Main thread. */
     public void ensureWorlds() {
-        ensureWorld(OVERWORLD, World.Environment.NORMAL);
+        overworld = ensureWorld(OVERWORLD, World.Environment.NORMAL);
         ensureWorld(NETHER, World.Environment.NETHER);
         ensureWorld(END, World.Environment.THE_END);
     }
 
     public World overworld() {
-        return Bukkit.getWorld(OVERWORLD);
+        return overworld;
     }
 
     private World ensureWorld(String name, World.Environment environment) {

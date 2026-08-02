@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.tntrun;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -43,16 +45,14 @@ public class TNTRunHandler extends BaseListener {
             if (tntRunTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() < -64) {
-                        player.teleport(getTntRunTeamArea().getSpectatorSpawnLocation());
+                        player.teleportAsync(getTntRunTeamArea().getSpectatorSpawnLocation());
                     }
                     return;
                 }
 
                 tntRunTeamArea.addDeathPlayer(player);
-                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                    player.setGameMode(GameMode.SPECTATOR);
-                });
+                FoliaScheduler.global(plugin).runEntity(player,
+                        () -> player.setGameMode(GameMode.SPECTATOR));
             }
         }
     }

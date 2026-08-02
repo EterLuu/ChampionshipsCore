@@ -140,7 +140,7 @@ public class SnowballShowdownHandler extends BaseListener {
             if (snowballShowdownTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() < -64) {
-                        player.teleport(snowballShowdownTeamArea.getSpectatorSpawnLocation());
+                        player.teleportAsync(snowballShowdownTeamArea.getSpectatorSpawnLocation());
                     }
                     return;
                 }

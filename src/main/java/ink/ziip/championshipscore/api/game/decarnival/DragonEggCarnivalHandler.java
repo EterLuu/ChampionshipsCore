@@ -89,12 +89,12 @@ public class DragonEggCarnivalHandler extends BaseListener {
         Location location = player.getLocation();
         if (dragonEggCarnivalArea.notInArea(location)) {
             if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(dragonEggCarnivalArea.getSpectatorSpawnLocation());
+                player.teleportAsync(dragonEggCarnivalArea.getSpectatorSpawnLocation());
             }
             if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() <= -64) {
-                        player.teleport(dragonEggCarnivalArea.getSpectatorSpawnLocation());
+                        player.teleportAsync(dragonEggCarnivalArea.getSpectatorSpawnLocation());
                     }
                     return;
                 } else {
@@ -179,8 +179,7 @@ public class DragonEggCarnivalHandler extends BaseListener {
                     return;
                 }
             }
-            Block dragonEgg = dragonEggCarnivalArea.getGameConfig().getDragonEggSpawnPoint().getBlock();
-            dragonEgg.setType(Material.DRAGON_EGG, true);
+            dragonEggCarnivalArea.respawnDragonEgg();
             dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_RE_SPAWN_DRAGON_EGG);
         }
     }

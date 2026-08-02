@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.util;
 
+import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -18,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -181,21 +184,21 @@ public class Utils {
     }
 
     public static void playSoundToAllPlayers(Sound sound, float volume, float pitch) {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.playSound(player.getLocation(), sound, volume, pitch);
-        }
+        forEachOnlinePlayer(player -> {
+            onEntity(player, () -> player.playSound(player.getLocation(), sound, volume, pitch));
+        });
     }
 
     public static void sendMessageToAllPlayers(String message) {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(message);
-        }
+        forEachOnlinePlayer(player -> {
+            onEntity(player, () -> player.sendMessage(message));
+        });
     }
 
     public static void changeLevelForAllPlayers(int level) {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.setLevel(Math.abs(level));
-        }
+        forEachOnlinePlayer(player -> {
+            onEntity(player, () -> player.setLevel(Math.abs(level)));
+        });
     }
 
     public static void sendTitleToAllPlayers(String title, String subtitle) {
@@ -204,8 +207,31 @@ public class Utils {
         // No fade in/out; stay 20 ticks.
         Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO);
         Title titleMessage = Title.title(titleComponent, subtitleComponent, times);
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.showTitle(titleMessage);
+        forEachOnlinePlayer(player -> {
+            onEntity(player, () -> player.showTitle(titleMessage));
+        });
+    }
+
+    public static void runForPlayer(Player player, Runnable action) {
+        onEntity(player, action);
+    }
+
+    public static void performCommand(Player player, String command) {
+        onEntity(player, () -> player.performCommand(command));
+    }
+
+    private static void onEntity(Player player, Runnable action) {
+        ChampionshipsCore plugin = ChampionshipsCore.getInstance();
+        if (plugin != null && plugin.isEnabled()) {
+            FoliaScheduler.global(plugin).runEntity(player, action);
+        }
+    }
+
+    private static void forEachOnlinePlayer(Consumer<Player> action) {
+        ChampionshipsCore plugin = ChampionshipsCore.getInstance();
+        if (plugin != null && plugin.isEnabled()) {
+            FoliaScheduler.global(plugin).runTask(() ->
+                    Bukkit.getOnlinePlayers().forEach(action));
         }
     }
 }

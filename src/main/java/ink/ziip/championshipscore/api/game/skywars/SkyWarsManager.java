@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.World;
-import org.bukkit.scheduler.BukkitScheduler;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 
 import java.io.File;
 
@@ -15,11 +15,11 @@ public class SkyWarsManager extends BaseAreaManager<SkyWarsTeamArea> {
 
     @Override
     public void load() {
-        BukkitScheduler scheduler = plugin.getServer().getScheduler();
+        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "skywars");
         areasFolder.mkdirs();
 
-        scheduler.runTask(plugin, task -> {
+        scheduler.runTask(task -> {
             String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
             if (areaList != null) {
                 for (String file : areaList) {

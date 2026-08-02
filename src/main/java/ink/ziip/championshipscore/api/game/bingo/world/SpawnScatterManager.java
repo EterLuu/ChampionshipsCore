@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.world;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import org.bukkit.Bukkit;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -13,14 +13,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 /**
  * Scatters players around a world's spawn into a ring, picking a safe top-of-surface spot per player
  * (clear of water/lava/hazards, with headroom). Ported from minebingo, with the {@code Tasks} wrapper
- * replaced by the Bukkit scheduler. Chunk loads use Paper's async chunk API so a large scatter doesn't
- * stall the main thread; the safety scan and the final teleport run back on the main thread.
+ * replaced by the Paper/Folia schedulers. Chunk loads use Paper's async chunk API; every safety scan then
+ * runs on the region that owns the candidate chunk, and player reset work follows the entity.
  */
 public final class SpawnScatterManager {
     private static final int MIN_RING_RADIUS = 8;
@@ -37,46 +38,55 @@ public final class SpawnScatterManager {
         this.plugin = plugin;
     }
 
-    private void runMain(Runnable runnable) {
-        Bukkit.getScheduler().runTask(plugin, runnable);
-    }
-
     public void performScatterAsync(World world, List<Player> players, int ringRadius, int jitter, int maxTries, Runnable onComplete) {
         if (world == null || players.isEmpty()) {
-            if (onComplete != null) onComplete.run();
+            if (onComplete != null) FoliaScheduler.global(plugin).runTask(onComplete);
             return;
         }
         int radius = Math.max(16, Math.max(MIN_RING_RADIUS, ringRadius));
         int effectiveJitter = Math.max(0, jitter);
         int tries = Math.max(8, maxTries);
-        processPlayersAsync(world, players, new ArrayList<>(), radius, effectiveJitter, tries, locations -> runMain(() -> {
-            for (int i = 0; i < players.size(); i++) {
-                Location loc = i < locations.size() ? locations.get(i) : fallbackWorldSpawn(world);
-                teleportReset(players.get(i), loc);
-            }
-            if (onComplete != null) onComplete.run();
-        }));
+        FoliaScheduler global = FoliaScheduler.global(plugin);
+        global.supplyGlobal(world::getSpawnLocation).thenAccept(worldSpawn ->
+            processPlayersAsync(world, worldSpawn, players, new ArrayList<>(), radius, effectiveJitter, tries, locations -> {
+                List<CompletableFuture<Boolean>> teleports = new ArrayList<>();
+                for (int i = 0; i < players.size(); i++) {
+                    Location loc = i < locations.size() ? locations.get(i) : worldSpawn;
+                    teleports.add(teleportReset(players.get(i), loc));
+                }
+                CompletableFuture.allOf(teleports.toArray(CompletableFuture[]::new)).thenRun(() -> {
+                    if (onComplete != null) global.runTask(onComplete);
+                });
+            }))
+        .exceptionally(throwable -> {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Failed to start Bingo scatter", throwable);
+            if (onComplete != null) global.runTask(onComplete);
+            return null;
+        });
     }
 
-    private void processPlayersAsync(World world, List<Player> players, List<Location> taken, int radius, int jitter, int tries, Consumer<List<Location>> onAllDone) {
+    private void processPlayersAsync(World world, Location worldSpawn, List<Player> players, List<Location> taken,
+                                     int radius, int jitter, int tries, Consumer<List<Location>> onAllDone) {
         int index = taken.size();
         if (index >= players.size()) {
             onAllDone.accept(taken);
             return;
         }
-        findSingleSpotAsync(world, taken, radius, jitter, tries, loc -> {
+        findSingleSpotAsync(world, worldSpawn, taken, radius, jitter, tries, loc -> {
             taken.add(loc);
-            processPlayersAsync(world, players, taken, radius, jitter, tries, onAllDone);
+            processPlayersAsync(world, worldSpawn, players, taken, radius, jitter, tries, onAllDone);
         });
     }
 
-    private void findSingleSpotAsync(World world, List<Location> taken, int radius, int jitter, int triesLeft, Consumer<Location> callback) {
+    private void findSingleSpotAsync(World world, Location worldSpawn, List<Location> taken,
+                                     int radius, int jitter, int triesLeft, Consumer<Location> callback) {
         if (triesLeft <= 0) {
-            callback.accept(fallbackWorldSpawn(world));
+            FoliaScheduler.global(plugin).runAtLocation(worldSpawn,
+                    () -> callback.accept(fallbackWorldSpawn(world, worldSpawn)));
             return;
         }
-        int cx = world.getSpawnLocation().getBlockX();
-        int cz = world.getSpawnLocation().getBlockZ();
+        int cx = worldSpawn.getBlockX();
+        int cz = worldSpawn.getBlockZ();
         Random random = ThreadLocalRandom.current();
         double angle = random.nextDouble() * Math.PI * 2.0;
         int distance = radius + (jitter <= 0 ? 0 : random.nextInt(-jitter, jitter + 1));
@@ -84,7 +94,9 @@ public final class SpawnScatterManager {
         int x = cx + (int) Math.round(Math.cos(angle) * distance);
         int z = cz + (int) Math.round(Math.sin(angle) * distance);
 
-        world.getChunkAtAsync(new Location(world, x, 0, z)).thenAccept(chunk -> runMain(() -> {
+        Location chunkLocation = new Location(world, x, 0, z);
+        world.getChunkAtAsync(chunkLocation).thenAccept(chunk ->
+                FoliaScheduler.global(plugin).runAtLocation(chunkLocation, () -> {
             Location candidate = toTopSafe(world, x, z);
             boolean valid = candidate != null;
             if (valid) {
@@ -98,10 +110,11 @@ public final class SpawnScatterManager {
             if (valid) {
                 callback.accept(candidate);
             } else {
-                findSingleSpotAsync(world, taken, radius, jitter, triesLeft - 1, callback);
+                findSingleSpotAsync(world, worldSpawn, taken, radius, jitter, triesLeft - 1, callback);
             }
         })).exceptionally(ex -> {
-            runMain(() -> callback.accept(fallbackWorldSpawn(world)));
+            FoliaScheduler.global(plugin).runAtLocation(worldSpawn,
+                    () -> callback.accept(fallbackWorldSpawn(world, worldSpawn)));
             return null;
         });
     }
@@ -149,19 +162,21 @@ public final class SpawnScatterManager {
         };
     }
 
-    private Location fallbackWorldSpawn(World world) {
-        Location spawn = world.getSpawnLocation();
+    private Location fallbackWorldSpawn(World world, Location spawn) {
         Location safe = toTopSafe(world, spawn.getBlockX(), spawn.getBlockZ());
         return safe != null ? safe : spawn.clone().add(0.5, 1.0, 0.5);
     }
 
-    private void teleportReset(Player player, Location location) {
-        try {
-            player.teleport(location);
-            player.setFallDistance(0f);
-            player.setFireTicks(0);
-        } catch (Throwable ignored) {
-        }
+    private CompletableFuture<Boolean> teleportReset(Player player, Location location) {
+        return player.teleportAsync(location).thenApply(success -> {
+            if (success) {
+                FoliaScheduler.global(plugin).runEntity(player, () -> {
+                    player.setFallDistance(0f);
+                    player.setFireTicks(0);
+                });
+            }
+            return success;
+        }).exceptionally(ignored -> false);
     }
 
     private boolean isClearSpace(Material material) {

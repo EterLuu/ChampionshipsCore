@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.tgttos;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -125,10 +127,8 @@ public class TGTTOSHandler extends BaseListener {
                 if (!tgttosTeamArea.getArrivedPlayers().contains(player.getUniqueId())) {
                     event.getEntity().remove();
                     tgttosTeamArea.playerArrivedAtEndPoint(player);
-                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                        player.setGameMode(GameMode.SPECTATOR);
-                    });
+                    FoliaScheduler.global(plugin).runEntity(player,
+                            () -> player.setGameMode(GameMode.SPECTATOR));
                 }
             }
         }
@@ -146,7 +146,7 @@ public class TGTTOSHandler extends BaseListener {
             if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() < -64) {
-                        player.teleport(tgttosTeamArea.getSpectatorSpawnLocation());
+                        player.teleportAsync(tgttosTeamArea.getSpectatorSpawnLocation());
                     }
                     return;
                 }

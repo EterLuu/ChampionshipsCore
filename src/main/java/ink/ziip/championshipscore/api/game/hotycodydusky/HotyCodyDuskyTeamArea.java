@@ -20,25 +20,26 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 
 public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
     @Getter
-    private final List<UUID> deathPlayer = new ArrayList<>();
-    private final Map<UUID, Long> playerDeadTimes = new HashMap<>();
-    private final Map<UUID, Long> playerCodyChangeTimes = new HashMap<>();
+    private final List<UUID> deathPlayer = new CopyOnWriteArrayList<>();
+    private final Map<UUID, Long> playerDeadTimes = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> playerCodyChangeTimes = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, Integer> teamDeathPlayers = new ConcurrentHashMap<>();
     @Getter
-    private int timer;
-    private BukkitTask startGamePreparationTask;
-    private BukkitTask startGameProgressTask;
+    private volatile int timer;
+    private volatile ScheduledTask startGamePreparationTask;
+    private volatile ScheduledTask startGameProgressTask;
     @Getter
-    private UUID codyHolder;
+    private volatile UUID codyHolder;
 
     public HotyCodyDuskyTeamArea(ChampionshipsCore plugin, HotyCodyDuskyConfig hotyCodyDuskyConfig) {
         super(plugin, GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyHandler(plugin), hotyCodyDuskyConfig);
@@ -57,9 +58,11 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
     }
 
     @Override
-    public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+    public synchronized void endGame() {
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
+
+        setGameStageEnum(GameStageEnum.END);
 
         if (startGamePreparationTask != null)
             startGamePreparationTask.cancel();
@@ -67,8 +70,6 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             startGameProgressTask.cancel();
 
         calculatePoints();
-
-        setGameStageEnum(GameStageEnum.END);
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.HOTY_CODY_DUSKY_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_GAME_END_TITLE, MessageConfig.HOTY_CODY_DUSKY_GAME_END_SUBTITLE);
@@ -116,6 +117,8 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
     @Override
     public void resetArea() {
         deathPlayer.clear();
+        playerDeadTimes.clear();
+        playerCodyChangeTimes.clear();
         teamDeathPlayers.clear();
         codyHolder = null;
 
@@ -156,7 +159,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_TITLE, MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE);
 
         timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(() -> {
             changeLevelForAllGamePlayers(timer);
             sendActionBarToAllGameSpectators(MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
 
@@ -182,7 +185,6 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
                 }
             } else {
                 addBossBarPlayer("escaper", player);
-                player.getInventory().setBoots(player.getInventory().getBoots());
             }
         }
 
@@ -196,7 +198,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
 
         selectCodyHolder(true);
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(() -> {
 
             if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.HOTY_CODY_DUSKY_COUNT_DOWN
@@ -226,11 +228,11 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
             if (timer % 3 == 0 && codyHolder != null) {
                 Player player = Bukkit.getPlayer(codyHolder);
                 if (player != null) {
-                    double health = player.getHealth() - 2;
-                    if (health < 0)
-                        health = 0;
-                    player.setHealth(health);
-                    player.playSound(player, Sound.ENTITY_PLAYER_HURT, 1, 1);
+                    scheduler.runEntity(player, () -> {
+                        double health = Math.max(0, player.getHealth() - 2);
+                        player.setHealth(health);
+                        player.playSound(player, Sound.ENTITY_PLAYER_HURT, 1, 1);
+                    });
                 }
             }
 
@@ -313,13 +315,15 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         if (codyHolder != null) {
             Player codyHolderPlayer = Bukkit.getPlayer(codyHolder);
             if (codyHolderPlayer != null) {
-                codyHolderPlayer.getInventory().clear();
-                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
-                if (championshipTeam != null)
-                    codyHolderPlayer.getInventory().setBoots(championshipTeam.getBoots());
-                codyHolderPlayer.playSound(codyHolderPlayer, Sound.ENTITY_ENDER_PEARL_THROW, 1, 0);
-                for (PotionEffect potionEffect : codyHolderPlayer.getActivePotionEffects())
-                    codyHolderPlayer.removePotionEffect(potionEffect.getType());
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(codyHolderPlayer);
+                scheduler.runEntity(codyHolderPlayer, () -> {
+                    codyHolderPlayer.getInventory().clear();
+                    if (championshipTeam != null)
+                        codyHolderPlayer.getInventory().setBoots(championshipTeam.getBoots());
+                    codyHolderPlayer.playSound(codyHolderPlayer, Sound.ENTITY_ENDER_PEARL_THROW, 1, 0);
+                    for (PotionEffect potionEffect : codyHolderPlayer.getActivePotionEffects())
+                        codyHolderPlayer.removePotionEffect(potionEffect.getType());
+                });
 
                 removeBossBarPlayer("chaser", codyHolderPlayer);
                 addBossBarPlayer("escaper", codyHolderPlayer);
@@ -328,34 +332,36 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         codyHolder = uuid;
         Player player = Bukkit.getPlayer(uuid);
         if (player != null) {
-            ItemStack cody = new ItemStack(Material.COD);
-            PlayerInventory inventory = player.getInventory();
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
-            if (championshipTeam != null)
-                inventory.setBoots(championshipTeam.getBoots());
-            inventory.setLeggings(cody.clone());
-            inventory.setChestplate(cody.clone());
-            inventory.setHelmet(cody.clone());
-            inventory.setItemInMainHand(cody.clone());
-            inventory.setItemInOffHand(cody.clone());
+            scheduler.runEntity(player, () -> {
+                ItemStack cody = new ItemStack(Material.COD);
+                PlayerInventory inventory = player.getInventory();
+                if (championshipTeam != null)
+                    inventory.setBoots(championshipTeam.getBoots());
+                inventory.setLeggings(cody.clone());
+                inventory.setChestplate(cody.clone());
+                inventory.setHelmet(cody.clone());
+                inventory.setItemInMainHand(cody.clone());
+                inventory.setItemInOffHand(cody.clone());
 
-            PotionEffect potionEffectBlindness = new PotionEffect(PotionEffectType.BLINDNESS, 30, 0, false, false);
-            PotionEffect potionEffectGlowing = new PotionEffect(PotionEffectType.GLOWING, getTimer() * 20, 0, false, false);
-            PotionEffect potionEffectSpeed = new PotionEffect(PotionEffectType.SPEED, getTimer() * 20, 0, false, false);
-            PotionEffect potionEffectHaste = new PotionEffect(PotionEffectType.HASTE, getTimer() * 20, 0, false, false);
-            if (!first)
-                player.addPotionEffect(potionEffectBlindness);
-            player.addPotionEffect(potionEffectGlowing);
-            player.addPotionEffect(potionEffectSpeed);
-            player.addPotionEffect(potionEffectHaste);
-            player.playSound(player, Sound.ENTITY_ENDERMAN_HURT, 1, 1);
+                PotionEffect potionEffectBlindness = new PotionEffect(PotionEffectType.BLINDNESS, 30, 0, false, false);
+                PotionEffect potionEffectGlowing = new PotionEffect(PotionEffectType.GLOWING, getTimer() * 20, 0, false, false);
+                PotionEffect potionEffectSpeed = new PotionEffect(PotionEffectType.SPEED, getTimer() * 20, 0, false, false);
+                PotionEffect potionEffectHaste = new PotionEffect(PotionEffectType.HASTE, getTimer() * 20, 0, false, false);
+                if (!first)
+                    player.addPotionEffect(potionEffectBlindness);
+                player.addPotionEffect(potionEffectGlowing);
+                player.addPotionEffect(potionEffectSpeed);
+                player.addPotionEffect(potionEffectHaste);
+                player.playSound(player, Sound.ENTITY_ENDERMAN_HURT, 1, 1);
+            });
             removeBossBarPlayer("escaper", player);
             addBossBarPlayer("chaser", player);
         }
 
     }
 
-    private void addDeathPlayer(Player player) {
+    private synchronized void addDeathPlayer(Player player) {
         removeBossBarPlayer("chaser", player);
         removeBossBarPlayer("escaper", player);
 
@@ -367,7 +373,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         }
     }
 
-    private void addDeathPlayer(UUID uuid) {
+    private synchronized void addDeathPlayer(UUID uuid) {
         if (deathPlayer.contains(uuid))
             return;
 
@@ -389,8 +395,7 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
     }
 
     private void addTeamDeathPlayer(ChampionshipTeam championshipTeam) {
-        teamDeathPlayers.put(championshipTeam, teamDeathPlayers.getOrDefault(championshipTeam, 0) + 1);
-        Integer deathPlayer = teamDeathPlayers.get(championshipTeam);
+        Integer deathPlayer = teamDeathPlayers.merge(championshipTeam, 1, Integer::sum);
         plugin.getLogger().log(Level.INFO, GameTypeEnum.HotyCodyDusky + ", " + getGameConfig().getAreaName() + ", " + "Added team " + championshipTeam.getName() + " death player, now: " + deathPlayer);
         if (deathPlayer != null) {
             if (deathPlayer == championshipTeam.getMembers().size()) {
@@ -411,17 +416,16 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         event.setDroppedExp(0);
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            scheduler.runTask(plugin, () -> {
+            scheduler.runEntity(player, () -> {
                 event.getEntity().spigot().respawn();
-                event.getEntity().teleport(getSpectatorSpawnLocation());
+                event.getEntity().teleportAsync(getGameConfig().getPlayerSpawnPoint());
             });
-            player.teleport(getGameConfig().getPlayerSpawnPoint());
             return;
         }
 
-        scheduler.runTask(plugin, () -> {
+        scheduler.runEntity(player, () -> {
             event.getEntity().spigot().respawn();
-            event.getEntity().teleport(getSpectatorSpawnLocation());
+            event.getEntity().teleportAsync(getSpectatorSpawnLocation());
             event.getEntity().setGameMode(GameMode.SPECTATOR);
         });
 
@@ -467,14 +471,11 @@ public class HotyCodyDuskyTeamArea extends BaseSingleTeamArea {
         }
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            player.teleport(getGameConfig().getPlayerSpawnPoint());
+            player.teleportAsync(getGameConfig().getPlayerSpawnPoint());
             return;
         }
 
-        player.teleport(getSpectatorSpawnLocation());
-        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-            player.setGameMode(GameMode.SPECTATOR);
-        });
+        player.teleportAsync(getSpectatorSpawnLocation());
+        scheduler.runEntity(player, () -> player.setGameMode(GameMode.SPECTATOR));
     }
 }

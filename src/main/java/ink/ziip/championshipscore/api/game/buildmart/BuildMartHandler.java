@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.buildmart;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.buildmart.gui.BlueprintMenuHolder;
@@ -110,10 +112,12 @@ public class BuildMartHandler extends BaseListener {
 
     private void triggerPortal(Player player, Location target) {
         lastPortal.put(player.getUniqueId(), System.currentTimeMillis());
-        player.teleport(target);
-        // Re-evaluate flight at the destination on the next tick (after the teleport settles).
-        plugin.getServer().getScheduler().runTaskLater(plugin, () ->
-                applyFlight(player, buildMartArea.getGameConfig(), player.getLocation()), 1L);
+        player.teleportAsync(target).thenAccept(success -> {
+            if (success) {
+                FoliaScheduler.global(plugin).runEntityLater(player,
+                        () -> applyFlight(player, buildMartArea.getGameConfig(), player.getLocation()), 1L);
+            }
+        });
     }
 
     // ── blueprint library menu ─────────────────────────────────────────────────────────────────

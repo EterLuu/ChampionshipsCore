@@ -39,27 +39,27 @@ public final class GameTask {
         this.voided = false;
     }
 
-    public void setVoided(boolean value) {
+    public synchronized void setVoided(boolean value) {
         if (isCompleted()) return;
         voided = value;
     }
 
-    public boolean isVoided() {
+    public synchronized boolean isVoided() {
         return voided;
     }
 
     /** Hides this task; never hides an already-completed task. Pass {@code false} to reveal it. */
-    public void setHidden(boolean value) {
+    public synchronized void setHidden(boolean value) {
         if (value && isCompleted()) return;
         hidden = value;
     }
 
-    public boolean isHidden() {
+    public synchronized boolean isHidden() {
         return hidden;
     }
 
     /** True once any team has completed (claimed) this task. */
-    public boolean isCompleted() {
+    public synchronized boolean isCompleted() {
         return !completions.isEmpty();
     }
 
@@ -70,7 +70,7 @@ public final class GameTask {
      *               When false, each team may complete it once independently.
      * @return true if this call newly completed the task for {@code by}'s team.
      */
-    public boolean complete(@NotNull Completion by, boolean locked) {
+    public synchronized boolean complete(@NotNull Completion by, boolean locked) {
         if (isVoided()) return false;
         if (locked && !completions.isEmpty()) return false;
         if (completions.containsKey(by.teamId())) return false;
@@ -79,12 +79,12 @@ public final class GameTask {
         return true;
     }
 
-    public boolean isCompletedByTeam(@NotNull String teamId) {
+    public synchronized boolean isCompletedByTeam(@NotNull String teamId) {
         return completions.containsKey(teamId);
     }
 
     /** Game-time the given team completed this task, or -1 if it has not. */
-    public long completedAt(@NotNull String teamId) {
+    public synchronized long completedAt(@NotNull String teamId) {
         Completion c = completions.get(teamId);
         return c == null ? -1L : c.completedAt();
     }
@@ -93,7 +93,7 @@ public final class GameTask {
      * 0-based claim rank for a team that has completed this task (0 = first team to claim it).
      * Returns -1 if this team has not completed this task.
      */
-    public int claimRank(@NotNull String teamId) {
+    public synchronized int claimRank(@NotNull String teamId) {
         int rank = 0;
         for (Map.Entry<String, Completion> entry : completions.entrySet()) {
             if (entry.getKey().equals(teamId)) return rank;
@@ -103,24 +103,24 @@ public final class GameTask {
     }
 
     /** All completions for this task in claim order (immutable snapshot). */
-    public List<Completion> allCompletions() {
+    public synchronized List<Completion> allCompletions() {
         return List.copyOf(completions.values());
     }
 
-    public GameTask copy() {
+    public synchronized GameTask copy() {
         return new GameTask(data);
     }
 
-    public TaskData.TaskType taskType() {
+    public synchronized TaskData.TaskType taskType() {
         return data.getType();
     }
 
-    public Material icon(CardDisplayInfo displayInfo) {
+    public synchronized Material icon(CardDisplayInfo displayInfo) {
         return data.getDisplayMaterial(displayInfo);
     }
 
     /** Display name from {@code viewerTeamId}'s perspective: struck-through once that team completed it. */
-    public Component getName(@Nullable String viewerTeamId) {
+    public synchronized Component getName(@Nullable String viewerTeamId) {
         if (isVoided()) {
             TextComponent.Builder b = Component.text()
                     .color(NamedTextColor.DARK_GRAY).decorate(TextDecoration.STRIKETHROUGH);
@@ -137,7 +137,7 @@ public final class GameTask {
     }
 
     /** Builds the chest-GUI item representing this task's state for the viewing team. */
-    public ItemStack toItem(CardDisplayInfo displayInfo, @Nullable String viewerTeamId) {
+    public synchronized ItemStack toItem(CardDisplayInfo displayInfo, @Nullable String viewerTeamId) {
         Material material;
         Component name;
         List<Component> lore = new ArrayList<>();

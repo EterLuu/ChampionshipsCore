@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.skywars;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -272,12 +274,12 @@ public class SkyWarsHandler extends BaseListener {
         Location location = player.getLocation();
         if (skyWarsArea.notInArea(location)) {
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(skyWarsArea.getSpectatorSpawnLocation());
+                player.teleportAsync(skyWarsArea.getSpectatorSpawnLocation());
             }
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() < -64) {
-                        player.teleport(skyWarsArea.getSpectatorSpawnLocation());
+                        player.teleportAsync(skyWarsArea.getSpectatorSpawnLocation());
                     }
                 } else {
                     UUID uuid = player.getUniqueId();
@@ -314,10 +316,8 @@ public class SkyWarsHandler extends BaseListener {
                             skyWarsArea.addDeathPlayer(player);
                         }
                     }
-                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                        player.setGameMode(GameMode.SPECTATOR);
-                    });
+                    FoliaScheduler.global(plugin).runEntity(player,
+                            () -> player.setGameMode(GameMode.SPECTATOR));
                 }
             }
         }

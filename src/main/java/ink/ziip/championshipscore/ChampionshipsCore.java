@@ -28,7 +28,7 @@ import java.util.logging.Level;
 public final class ChampionshipsCore extends JavaPlugin {
     @Getter
     private static ChampionshipsCore instance;
-    private boolean loaded;
+    private volatile boolean loaded;
     private TeamManager teamManager;
     private PlayerManager playerManager;
     private ListenerManager listenerManager;
@@ -104,6 +104,7 @@ public final class ChampionshipsCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        loaded = false;
         // Plugin shutdown logic
         gameManager.unload();
         rankManager.unload();
@@ -115,8 +116,6 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         worldEditManager.unload();
         worldManager.unload();
-
-        loaded = false;
 
         configurationManager.unload();
         databaseManager.unload();

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.manager;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
@@ -43,13 +45,10 @@ public class GameManagerHandler extends BaseListener {
             }
         }
 
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            event.getEntity().spigot().respawn();
-            player.teleport(CCConfig.LOBBY_LOCATION);
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.setGameMode(GameMode.ADVENTURE);
-            });
+        FoliaScheduler.global(plugin).runEntity(player, () -> {
+            player.spigot().respawn();
+            player.teleportAsync(CCConfig.LOBBY_LOCATION);
+            player.setGameMode(GameMode.ADVENTURE);
 
         });
     }
@@ -75,9 +74,8 @@ public class GameManagerHandler extends BaseListener {
 
         World world = player.getWorld();
         if (!world.equals(CCConfig.LOBBY_LOCATION.getWorld())) {
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.teleport(CCConfig.LOBBY_LOCATION);
+            FoliaScheduler.global(plugin).runEntity(player, () -> {
+                player.teleportAsync(CCConfig.LOBBY_LOCATION);
                 player.setGameMode(GameMode.ADVENTURE);
             });
         }

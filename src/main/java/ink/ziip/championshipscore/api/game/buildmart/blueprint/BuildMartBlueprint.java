@@ -2,10 +2,6 @@ package ink.ziip.championshipscore.api.game.buildmart.blueprint;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import lombok.Getter;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,34 +30,6 @@ public class BuildMartBlueprint {
 
     public int blockCount() {
         return blocks.size();
-    }
-
-    /**
-     * Counts how many of this blueprint's blocks are already correctly placed at {@code anchor} (the
-     * build-zone origin). Matching is exact on {@link BlockData}, so orientation/state must match. Extra
-     * blocks the player placed elsewhere are ignored.
-     */
-    public int countMatching(Location anchor) {
-        World world = anchor.getWorld();
-        if (world == null) return 0;
-        int baseX = anchor.getBlockX();
-        int baseY = anchor.getBlockY();
-        int baseZ = anchor.getBlockZ();
-        int matched = 0;
-        for (BlueprintBlock b : blocks) {
-            Block block = world.getBlockAt(baseX + b.getX(), baseY + b.getY(), baseZ + b.getZ());
-            if (block.getBlockData().matches(b.getBlockData())) {
-                matched++;
-            }
-        }
-        return matched;
-    }
-
-    /** Completion fraction in [0,1] of this blueprint built at {@code anchor}. */
-    public double completionRatio(Location anchor) {
-        int total = blockCount();
-        if (total == 0) return 1.0;
-        return (double) countMatching(anchor) / total;
     }
 
     /** Loads a blueprint from a YAML file; returns {@code null} when the file is missing/invalid. */

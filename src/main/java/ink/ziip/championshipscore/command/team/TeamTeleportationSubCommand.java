@@ -40,7 +40,7 @@ public class TeamTeleportationSubCommand extends BaseSubCommand {
                 ChampionshipTeam team = plugin.getTeamManager().getTeam(content);
                 if (team != null) {
                     for (Player teamPlayer : team.getOnlinePlayers()) {
-                        teamPlayer.teleport(location);
+                        teamPlayer.teleportAsync(location);
                     }
                 }
             }

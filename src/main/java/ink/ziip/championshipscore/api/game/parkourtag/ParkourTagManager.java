@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
-import org.bukkit.scheduler.BukkitScheduler;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 
 import java.io.File;
 import java.util.Map;
@@ -22,11 +22,11 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
 
     @Override
     public void load() {
-        BukkitScheduler scheduler = plugin.getServer().getScheduler();
+        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "parkourtag");
         areasFolder.mkdirs();
 
-        scheduler.runTask(plugin, task -> {
+        scheduler.runTask(task -> {
             String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
             if (areaList != null) {
                 for (String file : areaList) {
@@ -63,7 +63,7 @@ public class ParkourTagManager extends BaseAreaManager<ParkourTagArea> {
     }
 
     public void addChaserTimes(UUID uuid) {
-        chaserTimes.put(uuid, chaserTimes.getOrDefault(uuid, 0) + 1);
+        chaserTimes.merge(uuid, 1, Integer::sum);
     }
 
     public UUID getTeamChaser(ChampionshipTeam team) {

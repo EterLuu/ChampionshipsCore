@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.player;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.player.dao.PlayerDao;
@@ -81,7 +83,7 @@ public class PlayerManager extends BaseManager {
         cachedPlayerUUID.put(username, uuid);
         cachedPlayerName.put(uuid, username);
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        FoliaScheduler.global(plugin).runTaskAsynchronously(() -> {
             PlayerEntry playerEntry = playerDao.getPlayer(username);
             if (playerEntry == null) {
                 playerDao.addPlayer(username, uuid);

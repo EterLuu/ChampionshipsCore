@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.tntrun;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.game.area.single.BaseSingleTeamArea;
@@ -21,7 +23,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.NumberConversions;
 import org.bukkit.util.Vector;
@@ -29,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
@@ -36,13 +39,13 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     @Getter
     private final Map<UUID, Location> playerSpawnLocations = new ConcurrentHashMap<>();
     @Getter
-    private final List<UUID> deathPlayer = new ArrayList<>();
+    private final List<UUID> deathPlayer = new CopyOnWriteArrayList<>();
     @Getter
-    private int timer;
-    private BukkitTask startGamePreparationTask;
-    private BukkitTask startGameProgressTask;
-    private BukkitTask handlePlayerMoveTask;
-    private BukkitTask tntGeneratorTask;
+    private volatile int timer;
+    private volatile ScheduledTask startGamePreparationTask;
+    private volatile ScheduledTask startGameProgressTask;
+    private volatile ScheduledTask handlePlayerMoveTask;
+    private volatile ScheduledTask tntGeneratorTask;
     private int tntTimer;
 
     public TNTRunTeamArea(ChampionshipsCore plugin, TNTRunConfig tntRunConfig, boolean firstTime, String areaName) {
@@ -53,8 +56,6 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         if (!firstTime) {
             loadMap(World.Environment.NORMAL);
-            getGameHandler().register();
-            setGameStageEnum(GameStageEnum.WAITING);
         }
     }
 
@@ -68,7 +69,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         handlePlayerMoveTask = null;
         tntGeneratorTask = null;
 
-        scheduler.runTaskLater(plugin, () -> {
+        scheduler.runTaskLater(() -> {
             loadMap(World.Environment.NORMAL);
         }, 100L);
     }
@@ -84,7 +85,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         try {
             return Utils.getLocation(getGameConfig().getPlayerSpawnPoints().get(ThreadLocalRandom.current().nextInt(getGameConfig().getPlayerSpawnPoints().size())));
         } catch (Exception ignored) {
-            return getSpectatorSpawnLocation();
+            return CCConfig.LOBBY_LOCATION;
         }
     }
 
@@ -115,7 +116,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         for (UUID uuid : playerSpawnLocations.keySet()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                player.teleport(playerSpawnLocations.get(uuid));
+                player.teleportAsync(playerSpawnLocations.get(uuid));
             }
         }
 
@@ -129,7 +130,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_START_PREPARATION_TITLE, MessageConfig.TNT_RUN_START_PREPARATION_SUBTITLE);
 
         timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(() -> {
 
             if (timer < 5 && timer > 0) {
                 playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 0F);
@@ -169,7 +170,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_GAME_START_TITLE, MessageConfig.TNT_RUN_GAME_START_SUBTITLE);
         playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1, 12F);
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(() -> {
 
             changeLevelForAllGamePlayers(timer);
             sendActionBarToAllGameSpectators(MessageConfig.TNT_RUN_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
@@ -187,7 +188,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
                 tntTimer = 9;
 
-                tntGeneratorTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
+                tntGeneratorTask = scheduler.runTaskTimer(() -> {
 
                     int i = 0;
                     Iterator<String> locationIterator = getGameConfig().getPlayerSpawnPoints().iterator();
@@ -206,12 +207,12 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
                         }
 
                         final Location finalTNTLocation = tntLocation;
-                        scheduler.runTaskLater(plugin, () -> {
+                        scheduler.runAtLocationLater(finalTNTLocation, () -> {
                             World world = finalTNTLocation.getWorld();
                             if (world != null) {
                                 TNTPrimed tntPrimed = (TNTPrimed) world.spawnEntity(finalTNTLocation, EntityType.TNT);
                                 tntPrimed.setFuseTicks(200);
-                                scheduler.runTaskTimer(plugin, (task) -> {
+                                scheduler.runEntityTimer(tntPrimed, task -> {
                                     if (!tntPrimed.isValid()) {
                                         task.cancel();
                                         return;
@@ -248,10 +249,10 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         }, 0, 20L);
 
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
-        handlePlayerMoveTask = scheduler.runTaskTimerAsynchronously(plugin, () -> gamePlayersCopy.forEach(uuid -> {
+        handlePlayerMoveTask = scheduler.runTaskTimer(() -> gamePlayersCopy.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && !deathPlayer.contains(uuid)) {
-                handlePlayerMove(player);
+                scheduler.runEntity(player, () -> handlePlayerMove(player));
             }
         }), 0, 1L);
     }
@@ -264,16 +265,16 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && !deathPlayer.contains(uuid)) {
-                ItemStack elytra = new ItemStack(Material.ELYTRA);
-                elytra.addEnchantment(Enchantment.UNBREAKING, 1);
-
-                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-                if (championshipTeam != null) {
-                    player.getInventory().setChestplate(championshipTeam.getChestPlate());
-                    player.getInventory().setBoots(championshipTeam.getBoots());
-                }
-
-                player.getInventory().addItem(elytra.clone());
+                scheduler.runEntity(player, () -> {
+                    ItemStack elytra = new ItemStack(Material.ELYTRA);
+                    elytra.addEnchantment(Enchantment.UNBREAKING, 1);
+                    ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+                    if (championshipTeam != null) {
+                        player.getInventory().setChestplate(championshipTeam.getChestPlate());
+                        player.getInventory().setBoots(championshipTeam.getBoots());
+                    }
+                    player.getInventory().addItem(elytra);
+                });
             }
         }
     }
@@ -333,8 +334,9 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         if (block != null) {
             final Block destroyBlock = block;
-            scheduler.runTaskLater(plugin, () -> {
-                world.playSound(location, Sound.BLOCK_SAND_BREAK, 3, 1);
+            Location blockLocation = destroyBlock.getLocation();
+            scheduler.runAtLocationLater(blockLocation, () -> {
+                world.playSound(blockLocation, Sound.BLOCK_SAND_BREAK, 3, 1);
                 destroyBlock.setType(Material.AIR);
                 destroyBlock.getRelative(BlockFace.DOWN).setType(Material.AIR);
             }, 8);
@@ -342,9 +344,10 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
     }
 
     @Override
-    public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+    public synchronized void endGame() {
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
+        setGameStageEnum(GameStageEnum.END);
 
         if (startGamePreparationTask != null)
             startGamePreparationTask.cancel();
@@ -356,8 +359,6 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
             tntGeneratorTask.cancel();
 
         calculatePoints();
-
-        setGameStageEnum(GameStageEnum.END);
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TNT_RUN_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.TNT_RUN_GAME_END_TITLE, MessageConfig.TNT_RUN_GAME_END_SUBTITLE);
@@ -448,10 +449,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
             sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_FALL_INTO_VOID.replace("%player%", player.getName()));
             addDeathPlayer(player);
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.setGameMode(GameMode.SPECTATOR);
-            });
+            scheduler.runEntity(player, () -> player.setGameMode(GameMode.SPECTATOR));
         }
     }
 
@@ -464,10 +462,7 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
             addDeathPlayer(player);
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.setGameMode(GameMode.SPECTATOR);
-            });
+            scheduler.runEntity(player, () -> player.setGameMode(GameMode.SPECTATOR));
         }
     }
 
@@ -479,12 +474,12 @@ public class TNTRunTeamArea extends BaseSingleTeamArea {
         Location location = playerSpawnLocations.get(player.getUniqueId());
 
         if (location != null) {
-            player.teleport(location);
+            player.teleportAsync(location);
             return;
         }
 
         for (Location spawnLocations : playerSpawnLocations.values()) {
-            player.teleport(spawnLocations);
+            player.teleportAsync(spawnLocations);
             return;
         }
     }

@@ -19,25 +19,26 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class TGTTOSTeamArea extends BaseSingleTeamArea {
     @Getter
-    private final List<BlockState> blockStates = new ArrayList<>();
+    private final List<BlockState> blockStates = new CopyOnWriteArrayList<>();
     @Getter
-    private final List<UUID> arrivedPlayers = new ArrayList<>();
+    private final List<UUID> arrivedPlayers = new CopyOnWriteArrayList<>();
     private final Map<ChampionshipTeam, Integer> teamArrivedPlayers = new ConcurrentHashMap<>();
     @Getter
-    private int timer;
-    private BukkitTask startGamePreparationTask;
-    private BukkitTask startGameProgressTask;
-    private int arrivedTeamNumbers = 0;
+    private volatile int timer;
+    private volatile ScheduledTask startGamePreparationTask;
+    private volatile ScheduledTask startGameProgressTask;
+    private volatile int arrivedTeamNumbers = 0;
 
     public TGTTOSTeamArea(ChampionshipsCore plugin, TGTTOSConfig tgttosConfig) {
         super(plugin, GameTypeEnum.TGTTOS, new TGTTOSHandler(plugin), tgttosConfig);
@@ -60,8 +61,8 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         arrivedTeamNumbers = 0;
 
         for (BlockState blockState : blockStates) {
-            blockState.setType(Material.AIR);
-            blockState.update(true);
+            Location location = blockState.getLocation();
+            scheduler.runAtLocation(location, () -> location.getBlock().setType(Material.AIR));
         }
 
         blockStates.clear();
@@ -69,19 +70,11 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         World world = getSpectatorSpawnLocation().getWorld();
         Vector pos1 = getGameConfig().getAreaPos1();
         Vector pos2 = getGameConfig().getAreaPos2();
-        BoundingBox boundingBox = new BoundingBox(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
+        BoundingBox boundingBox = BoundingBox.of(pos1, pos2);
         if (world != null) {
-            for (Entity entity : world.getNearbyEntities(boundingBox)) {
-                if (entity instanceof Boat) {
-                    entity.remove();
-                }
-                if (entity instanceof Stray) {
-                    entity.remove();
-                }
-                if (entity instanceof Chicken) {
-                    entity.remove();
-                }
-            }
+            cleanEntities(world, boundingBox, Boat.class);
+            cleanEntities(world, boundingBox, Stray.class);
+            cleanEntities(world, boundingBox, Chicken.class);
         }
 
         startGamePreparationTask = null;
@@ -101,7 +94,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.TGTTOS_START_PREPARATION_TITLE, MessageConfig.TGTTOS_START_PREPARATION_SUBTITLE);
 
         timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(() -> {
             changeLevelForAllGamePlayers(timer);
 
             if (timer == 0) {
@@ -141,7 +134,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         setGameStageEnum(GameStageEnum.PROGRESS);
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(() -> {
 
             if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.TGTTOS_COUNT_DOWN
@@ -175,9 +168,10 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     }
 
     @Override
-    public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+    public synchronized void endGame() {
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
+        setGameStageEnum(GameStageEnum.END);
 
         if (startGamePreparationTask != null)
             startGamePreparationTask.cancel();
@@ -189,8 +183,6 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.TGTTOS_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.TGTTOS_GAME_END_TITLE, MessageConfig.TGTTOS_GAME_END_SUBTITLE);
-
-        setGameStageEnum(GameStageEnum.END);
 
         teleportAllPlayers(CCConfig.LOBBY_LOCATION);
 
@@ -207,7 +199,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         resetGame();
     }
 
-    public void playerArrivedAtEndPoint(Player player) {
+    public synchronized void playerArrivedAtEndPoint(Player player) {
         UUID uuid = player.getUniqueId();
         if (!arrivedPlayers.contains(uuid)) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
@@ -229,8 +221,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     }
 
     public void addTeamArrivedPlayer(ChampionshipTeam championshipTeam) {
-        teamArrivedPlayers.put(championshipTeam, teamArrivedPlayers.getOrDefault(championshipTeam, 0) + 1);
-        int arrivedPlayers = teamArrivedPlayers.get(championshipTeam);
+        int arrivedPlayers = teamArrivedPlayers.merge(championshipTeam, 1, Integer::sum);
         if (arrivedPlayers == championshipTeam.getMembers().size()) {
             if (arrivedTeamNumbers < 4) {
                 addPlayerPointsToAllTeamMembers(championshipTeam, 24 - 6 * arrivedPlayers);
@@ -247,12 +238,12 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             return;
         }
 
-        scheduler.runTask(plugin, () -> {
+        scheduler.runEntity(player, () -> {
             event.getEntity().spigot().respawn();
-            event.getEntity().teleport(getSpectatorSpawnLocation());
+            event.getEntity().teleportAsync(getSpectatorSpawnLocation());
             event.getEntity().setGameMode(GameMode.SPECTATOR);
         });
-        player.teleport(getSpectatorSpawnLocation());
+        player.teleportAsync(getSpectatorSpawnLocation());
     }
 
     @Override
@@ -267,24 +258,15 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             return;
         }
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            player.teleport(getSpectatorSpawnLocation());
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.setGameMode(GameMode.ADVENTURE);
-            });
+            player.teleportAsync(getSpectatorSpawnLocation());
+            scheduler.runEntity(player, () -> player.setGameMode(GameMode.ADVENTURE));
         }
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-            player.teleport(getSpectatorSpawnLocation());
+            player.teleportAsync(getSpectatorSpawnLocation());
             if (getGameConfig().getAreaType().equals("ROAD")) {
-                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                    player.setGameMode(GameMode.SURVIVAL);
-                });
+                scheduler.runEntity(player, () -> player.setGameMode(GameMode.SURVIVAL));
             } else {
-                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                    player.setGameMode(GameMode.ADVENTURE);
-                });
+                scheduler.runEntity(player, () -> player.setGameMode(GameMode.ADVENTURE));
             }
         }
     }
@@ -292,7 +274,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     private void giveRoadToolsToAllPlayers() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            giveRoadToolToPlayer(player);
+            if (player != null) scheduler.runEntity(player, () -> giveRoadToolToPlayer(player));
         }
     }
 
@@ -340,7 +322,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                giveBoatToPlayer(player);
+                scheduler.runEntity(player, () -> giveBoatToPlayer(player));
             }
         }
     }
@@ -353,7 +335,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
     }
 
     public void teleportPlayerToSpawnPoint(Player player) {
-        player.teleport(getSpectatorSpawnLocation());
+        player.teleportAsync(getSpectatorSpawnLocation());
     }
 
     private void teleportAllPlayerToSpawnPoints() {
@@ -363,7 +345,7 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
             if (player != null) {
                 if (!playerSpawnPointsI.hasNext())
                     playerSpawnPointsI = getGameConfig().getPlayerSpawnPoints().iterator();
-                player.teleport(Utils.getLocation(playerSpawnPointsI.next()));
+                player.teleportAsync(Utils.getLocation(playerSpawnPointsI.next()));
             }
         }
     }
@@ -373,8 +355,11 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         if (world == null)
             return;
         for (String stringLocation : getGameConfig().getMonsterSpawnPoints()) {
-            LivingEntity entity = (LivingEntity) world.spawnEntity(Utils.getLocation(stringLocation), EntityType.STRAY);
-            entity.setRemoveWhenFarAway(false);
+            Location location = Utils.getLocation(stringLocation);
+            if (location != null) scheduler.runAtLocation(location, () -> {
+                LivingEntity entity = (LivingEntity) world.spawnEntity(location, EntityType.STRAY);
+                entity.setRemoveWhenFarAway(false);
+            });
         }
     }
 
@@ -387,8 +372,11 @@ public class TGTTOSTeamArea extends BaseSingleTeamArea {
         for (UUID uuid : gamePlayers) {
             if (!chickenSpawnPointsI.hasNext())
                 chickenSpawnPointsI = getGameConfig().getChickenSpawnPoints().iterator();
-            LivingEntity entity = (LivingEntity) world.spawnEntity(Utils.getLocation(chickenSpawnPointsI.next()), EntityType.CHICKEN);
-            entity.setRemoveWhenFarAway(false);
+            Location location = Utils.getLocation(chickenSpawnPointsI.next());
+            if (location != null) scheduler.runAtLocation(location, () -> {
+                LivingEntity entity = (LivingEntity) world.spawnEntity(location, EntityType.CHICKEN);
+                entity.setRemoveWhenFarAway(false);
+            });
         }
     }
 

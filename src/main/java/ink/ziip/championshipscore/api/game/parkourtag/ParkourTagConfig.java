@@ -29,7 +29,7 @@ public class ParkourTagConfig extends BaseGameConfig {
     private String areaName;
 
     @ConfigOption(path = "timer")
-    private int timer;
+    private volatile int timer;
 
     @ConfigOption(path = "area-pos1")
     private Vector areaPos1;

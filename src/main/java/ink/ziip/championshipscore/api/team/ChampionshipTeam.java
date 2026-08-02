@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -16,9 +17,10 @@ import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ChampionshipTeam {
-    private final Set<UUID> members = new HashSet<>();
+    private final Set<UUID> members = ConcurrentHashMap.newKeySet();
     @Getter
     private int id;
     @Getter
@@ -28,7 +30,7 @@ public class ChampionshipTeam {
     @Getter
     private String colorCode;
     @Getter
-    private Team team;
+    private volatile Team team;
     private TeamDaoImpl teamDao;
 
     private ChampionshipTeam() {
@@ -54,13 +56,7 @@ public class ChampionshipTeam {
     }
 
     protected boolean addMember(@NotNull UUID uuid) {
-        synchronized (members) {
-            if (members.contains(uuid)) {
-                return false;
-            }
-            members.add(uuid);
-        }
-        return true;
+        return members.add(uuid);
     }
 
     protected boolean addMember(@NotNull Player player) {
@@ -76,6 +72,10 @@ public class ChampionshipTeam {
         for (UUID uuid : members) {
             addMember(uuid);
         }
+    }
+
+    protected void setScoreboardTeam(Team team) {
+        this.team = team;
     }
 
     protected boolean deleteMember(@NotNull UUID uuid) {
@@ -146,7 +146,9 @@ public class ChampionshipTeam {
         List<ChampionshipPlayer> list = new ArrayList<>();
         for (UUID uuid : members) {
             ChampionshipPlayer championshipPlayer = ChampionshipsCore.getInstance().getPlayerManager().getPlayer(uuid);
-            list.add(championshipPlayer);
+            if (championshipPlayer != null) {
+                list.add(championshipPlayer);
+            }
         }
         return list;
     }
@@ -171,53 +173,52 @@ public class ChampionshipTeam {
 
     public void teleportAllPlayers(Location location) {
         for (Player player : getOnlinePlayers()) {
-            player.teleport(location);
+            player.teleportAsync(location);
         }
     }
 
     public void changeLevelForAll(int level) {
         for (Player player : getOnlinePlayers()) {
-            player.setLevel(level);
+            scheduler().runEntity(player, () -> player.setLevel(level));
         }
     }
 
     public void setGameModeForAllPlayers(GameMode gameMode) {
         for (Player player : getOnlinePlayers()) {
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.setGameMode(gameMode);
-            });
+            scheduler().runEntity(player, () -> player.setGameMode(gameMode));
         }
     }
 
     public void setHealthForAllPlayers(double health) {
         for (Player player : getOnlinePlayers()) {
-            player.setHealth(health);
+            scheduler().runEntity(player, () -> player.setHealth(health));
         }
     }
 
     public void setFoodLevelForAllPlayers(int level) {
         for (Player player : getOnlinePlayers()) {
-            player.setFoodLevel(level);
+            scheduler().runEntity(player, () -> player.setFoodLevel(level));
         }
     }
 
     public void clearEffectsForAllPlayers() {
         for (Player player : getOnlinePlayers()) {
-            for (PotionEffect potionEffect : player.getActivePotionEffects())
-                player.removePotionEffect(potionEffect.getType());
+            scheduler().runEntity(player, () -> {
+                for (PotionEffect potionEffect : player.getActivePotionEffects())
+                    player.removePotionEffect(potionEffect.getType());
+            });
         }
     }
 
     public void cleanInventoryForAllPlayers() {
         for (Player player : getOnlinePlayers()) {
-            player.getInventory().clear();
+            scheduler().runEntity(player, () -> player.getInventory().clear());
         }
     }
 
     public void playSoundToAllPlayers(Sound sound, float volume, float pitch) {
         for (Player player : getOnlinePlayers()) {
-            player.playSound(player.getLocation(), sound, volume, pitch);
+            scheduler().runEntity(player, () -> player.playSound(player.getLocation(), sound, volume, pitch));
         }
     }
 
@@ -276,6 +277,10 @@ public class ChampionshipTeam {
 
     public String getColoredColor() {
         return Utils.translateColorCodes(colorCode);
+    }
+
+    private FoliaScheduler scheduler() {
+        return FoliaScheduler.global(ChampionshipsCore.getInstance());
     }
 
     @Override

@@ -19,9 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.BoundingBox;
-import org.bukkit.util.Vector;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -36,11 +34,11 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     private final Map<List<Location>, Iterator<Location>> locationIterators = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, Integer> teamShootTimes = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> playerIndividualKills = new ConcurrentHashMap<>();
-    private List<String> teamRank = new ArrayList<>();
+    private volatile List<String> teamRank = List.of();
     @Getter
-    private int timer;
-    private BukkitTask startGamePreparationTask;
-    private BukkitTask startGameProgressTask;
+    private volatile int timer;
+    private volatile ScheduledTask startGamePreparationTask;
+    private volatile ScheduledTask startGameProgressTask;
 
     public SnowballShowdownTeamArea(ChampionshipsCore plugin, SnowballShowdownConfig snowballShowdownConfig) {
         super(plugin, GameTypeEnum.SnowballShowdown, new SnowballShowdownHandler(plugin), snowballShowdownConfig);
@@ -72,23 +70,13 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         playerRespawnTime.clear();
         teamShootTimes.clear();
         playerIndividualKills.clear();
-        teamRank.clear();
+        teamRank = List.of();
         locationIterators.clear();
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
 
-        World world = getSpectatorSpawnLocation().getWorld();
-        Vector pos1 = getGameConfig().getAreaPos1();
-        Vector pos2 = getGameConfig().getAreaPos2();
-        BoundingBox boundingBox = new BoundingBox(pos1.getX(), pos1.getY(), pos1.getZ(), pos2.getX(), pos2.getY(), pos2.getZ());
-        if (world != null) {
-            for (Entity entity : world.getNearbyEntities(boundingBox)) {
-                if (entity instanceof Snowball) {
-                    entity.remove();
-                }
-            }
-        }
+        cleanEntities(Snowball.class);
     }
 
     @Override
@@ -138,7 +126,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_START_PREPARATION_TITLE, MessageConfig.SNOWBALL_START_PREPARATION_SUBTITLE);
 
         timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(() -> {
             changeLevelForAllGamePlayers(timer);
 
             if (timer == 0) {
@@ -160,7 +148,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
         setGameStageEnum(GameStageEnum.PROGRESS);
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(() -> {
 
             if (timer > getGameConfig().getTimer()) {
                 String countDown = MessageConfig.SNOWBALL_COUNT_DOWN
@@ -178,8 +166,10 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
                     playerRespawnTime.put(uuid, System.currentTimeMillis());
                     Player player = Bukkit.getPlayer(uuid);
 
-                    if (player != null)
-                        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 60, 0));
+                    if (player != null) {
+                        scheduler.runEntity(player,
+                                () -> player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 60, 0)));
+                    }
                 }
             }
 
@@ -207,9 +197,11 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         }
     }
 
-    public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+    public synchronized void endGame() {
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
+
+        setGameStageEnum(GameStageEnum.END);
 
         if (startGamePreparationTask != null)
             startGamePreparationTask.cancel();
@@ -220,8 +212,6 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
 
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.SNOWBALL_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.SNOWBALL_GAME_END_TITLE, MessageConfig.SNOWBALL_GAME_END_SUBTITLE);
-
-        setGameStageEnum(GameStageEnum.END);
 
         teleportAllPlayers(getLobbyLocation());
 
@@ -293,7 +283,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
             }
         }
 
-        scheduler.runTask(plugin, () -> {
+        scheduler.runEntity(player, () -> {
             event.getEntity().spigot().respawn();
             respawnPlayer(player);
         });
@@ -370,7 +360,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
     }
 
     private void addPlayerIndividualKills(Player player) {
-        playerIndividualKills.put(player.getUniqueId(), playerIndividualKills.getOrDefault(player.getUniqueId(), 0) + 1);
+        playerIndividualKills.merge(player.getUniqueId(), 1, Integer::sum);
     }
 
     public int getPlayerIndividualKills(Player player) {
@@ -396,11 +386,11 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
             rank.add(content);
         }
 
-        teamRank = rank;
+        teamRank = List.copyOf(rank);
     }
 
     private synchronized void addTeamShootCount(ChampionshipTeam championshipTeam) {
-        teamShootTimes.put(championshipTeam, teamShootTimes.getOrDefault(championshipTeam, 0) + 1);
+        teamShootTimes.merge(championshipTeam, 1, Integer::sum);
 
         int times = teamShootTimes.get(championshipTeam);
         if (times == 100) {
@@ -431,7 +421,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
             }
         }
 
-        scheduler.runTaskLater(plugin, () -> {
+        scheduler.runTaskLater(() -> {
             for (UUID uuid : gamePlayers) {
                 Player gamePlayer = Bukkit.getPlayer(uuid);
                 if (gamePlayer != null) {
@@ -453,13 +443,13 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
                     locationIterator = locations.iterator();
                     locationIterators.put(locations, locationIterator);
                 }
-                player.teleport(locationIterator.next());
+                player.teleportAsync(locationIterator.next());
             } else {
-                player.teleport(locations.get(ThreadLocalRandom.current().nextInt(locations.size())));
+                player.teleportAsync(locations.get(ThreadLocalRandom.current().nextInt(locations.size())));
             }
         } else {
             List<Location> randomLocations = areaLocations.get(ThreadLocalRandom.current().nextInt(areaLocations.size()));
-            player.teleport(randomLocations.get(ThreadLocalRandom.current().nextInt(randomLocations.size())));
+            player.teleportAsync(randomLocations.get(ThreadLocalRandom.current().nextInt(randomLocations.size())));
         }
     }
 
@@ -467,7 +457,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         for (UUID uuid : playerSpawnLocation.keySet()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                player.teleport(playerSpawnLocation.get(uuid));
+                player.teleportAsync(playerSpawnLocation.get(uuid));
             }
         }
     }
@@ -476,7 +466,7 @@ public class SnowballShowdownTeamArea extends BaseSingleTeamArea {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                givePlayerItem(player);
+                scheduler.runEntity(player, () -> givePlayerItem(player));
             }
         }
         teleportPlayersToSpawnLocation();

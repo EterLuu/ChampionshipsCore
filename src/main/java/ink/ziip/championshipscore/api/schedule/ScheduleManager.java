@@ -23,10 +23,10 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitScheduler;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 
 public class ScheduleManager extends BaseManager {
-    private final BukkitScheduler scheduler;
+    private final FoliaScheduler scheduler;
     @Getter
     private SnowballScheduleManager snowballScheduleManager;
     @Getter
@@ -43,11 +43,11 @@ public class ScheduleManager extends BaseManager {
     private ParkourWarriorScheduleManager parkourWarriorScheduleManager;
     @Getter
     private HotyCodyDuskyScheduleManager hotyCodyDuskyScheduleManager;
-    private int timer;
+    private volatile int timer;
 
     public ScheduleManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
-        scheduler = championshipsCore.getServer().getScheduler();
+        scheduler = FoliaScheduler.global(championshipsCore);
     }
 
     @Override
@@ -92,10 +92,15 @@ public class ScheduleManager extends BaseManager {
     }
 
     public void startDragonEggCarnival(ChampionshipTeam team, ChampionshipTeam rival) {
+        scheduler.runTask(() -> startDragonEggCarnivalOnGlobalRegion(team, rival));
+    }
+
+    private synchronized void startDragonEggCarnivalOnGlobalRegion(
+            ChampionshipTeam team, ChampionshipTeam rival) {
         plugin.getScheduleManager().addRound(GameTypeEnum.DragonEggCarnival);
         timer = 10;
         addAllSpectatorsToArea();
-        scheduler.runTaskTimer(plugin, (task) -> {
+        scheduler.runTaskTimer((task) -> {
 
             Utils.changeLevelForAllPlayers(timer);
 
@@ -128,8 +133,8 @@ public class ScheduleManager extends BaseManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam == null) {
-                player.performCommand("cc spectate leave");
-                player.performCommand("cc spectate dragoneggcarnival area1");
+                Utils.performCommand(player, "cc spectate leave");
+                Utils.performCommand(player, "cc spectate dragoneggcarnival area1");
             }
         }
     }

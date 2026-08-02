@@ -139,7 +139,7 @@ public final class BuildMartMenu {
             return empty;
         }
 
-        int matched = buildSlot.getBuildAnchor() == null ? 0 : blueprint.countMatching(buildSlot.getBuildAnchor());
+        int matched = buildSlot.getLastMatched();
         int total = blueprint.blockCount();
         ItemStack button = new ItemStack(golden ? Material.GOLD_BLOCK : Material.LIME_DYE);
         ItemMeta meta = button.getItemMeta();

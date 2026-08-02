@@ -3,8 +3,8 @@ package ink.ziip.championshipscore.api.game.battlebox;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import lombok.Getter;
-import lombok.Setter;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -19,6 +19,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * One team-vs-team Battle Box match running in a single stamped arena copy. All geometry is the configured
@@ -49,8 +52,7 @@ public class BattleBoxMatch {
     private final List<Location> potionLocations = new ArrayList<>();
 
     /** True once a team has reached 9 wool (or the match is otherwise settled); its players are frozen. */
-    @Setter
-    private boolean finished;
+    private final AtomicBoolean finished = new AtomicBoolean();
 
     public BattleBoxMatch(int copyIndex, ChampionshipTeam right, ChampionshipTeam left, BattleBoxConfig config) {
         this.copyIndex = copyIndex;
@@ -113,45 +115,62 @@ public class BattleBoxMatch {
         return rightSpawn == null ? null : rightSpawn.getWorld();
     }
 
-    /** Counts blocks of each material inside this match's wool floor. */
-    public HashMap<Material, Integer> countWool() {
-        HashMap<Material, Integer> blockCount = new HashMap<>();
+    /** Counts blocks of each material, scheduling each cell on its owning Folia region. */
+    public CompletableFuture<HashMap<Material, Integer>> countWoolAsync(ChampionshipsCore plugin) {
+        ConcurrentHashMap<Material, Integer> blockCount = new ConcurrentHashMap<>();
         World world = world();
-        if (world == null) return blockCount;
+        if (world == null) return CompletableFuture.completedFuture(new HashMap<>());
+        List<CompletableFuture<Void>> reads = new ArrayList<>();
+        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
         for (int x = woolMin.getBlockX(); x <= woolMax.getBlockX(); x++) {
             for (int y = woolMin.getBlockY(); y <= woolMax.getBlockY(); y++) {
                 for (int z = woolMin.getBlockZ(); z <= woolMax.getBlockZ(); z++) {
-                    Material material = world.getBlockAt(x, y, z).getType();
-                    blockCount.put(material, blockCount.getOrDefault(material, 0) + 1);
+                    int blockX = x;
+                    int blockY = y;
+                    int blockZ = z;
+                    Location owner = new Location(world, blockX, blockY, blockZ);
+                    reads.add(scheduler.runAtLocationFuture(owner, () -> {
+                        Material material = world.getBlockAt(blockX, blockY, blockZ).getType();
+                        blockCount.merge(material, 1, Integer::sum);
+                    }));
                 }
             }
         }
-        return blockCount;
+        return CompletableFuture.allOf(reads.toArray(CompletableFuture[]::new))
+                .thenApply(ignored -> new HashMap<>(blockCount));
     }
 
-    /** Fills this match's wool floor with {@code material}. */
-    public void resetWool(Material material) {
+    /** Fills this match's wool floor, scheduling each cell on its owning Folia region. */
+    public CompletableFuture<Void> resetWoolAsync(ChampionshipsCore plugin, Material material) {
         World world = world();
-        if (world == null) return;
+        if (world == null) return CompletableFuture.completedFuture(null);
+        List<CompletableFuture<Void>> writes = new ArrayList<>();
+        FoliaScheduler scheduler = FoliaScheduler.global(plugin);
         for (int x = woolMin.getBlockX(); x <= woolMax.getBlockX(); x++) {
             for (int y = woolMin.getBlockY(); y <= woolMax.getBlockY(); y++) {
                 for (int z = woolMin.getBlockZ(); z <= woolMax.getBlockZ(); z++) {
-                    Block block = world.getBlockAt(x, y, z);
-                    block.setType(material);
-                    BlockState state = block.getState();
-                    state.setType(material);
-                    state.update();
+                    int blockX = x;
+                    int blockY = y;
+                    int blockZ = z;
+                    Location owner = new Location(world, blockX, blockY, blockZ);
+                    writes.add(scheduler.runAtLocationFuture(owner, () -> {
+                        Block block = world.getBlockAt(blockX, blockY, blockZ);
+                        block.setType(material);
+                        BlockState state = block.getState();
+                        state.setType(material);
+                        state.update();
+                    }));
                 }
             }
         }
+        return CompletableFuture.allOf(writes.toArray(CompletableFuture[]::new));
     }
 
     /** Resets the centre to a neutral colour avoiding both teams' wool colours, like the original single match. */
-    public void resetCenterWool() {
+    public CompletableFuture<Void> resetCenterWoolAsync(ChampionshipsCore plugin) {
         Material material = Material.WHITE_WOOL;
         if (right.getWool().getType() != material && left.getWool().getType() != material) {
-            resetWool(material);
-            return;
+            return resetWoolAsync(plugin, material);
         }
         for (String color : Utils.getColorNames()) {
             if (!color.equalsIgnoreCase(right.getColorName()) && !color.equalsIgnoreCase(left.getColorName())) {
@@ -162,6 +181,14 @@ public class BattleBoxMatch {
                 }
             }
         }
-        resetWool(material);
+        return resetWoolAsync(plugin, material);
+    }
+
+    public boolean isFinished() {
+        return finished.get();
+    }
+
+    public boolean tryFinish() {
+        return finished.compareAndSet(false, true);
     }
 }

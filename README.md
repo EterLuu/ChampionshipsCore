@@ -102,7 +102,7 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 ## 运行要求
 
 - Java 25
-- Paper/Spigot 26.1.2 API 对应的服务端
+- Paper 26.1.2 或 Folia 26.1.2 服务端
 - MariaDB 或 MySQL
 - ProtocolLib 5.4.0
 - PlaceholderAPI 2.12.2
@@ -110,6 +110,7 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 - PhantomWorlds（可选软依赖）
 
 ProtocolLib、PlaceholderAPI 或 FastAsyncWorldEdit 缺失时，ChampionshipsCore 会在启动阶段自行禁用。
+Folia 部署时，这三个硬依赖也必须使用同时支持 Folia 和 26.1.2 的构建。
 
 ## 构建与安装
 

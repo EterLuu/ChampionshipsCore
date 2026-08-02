@@ -17,6 +17,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -33,7 +34,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
-import org.bukkit.scheduler.BukkitTask;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,6 +45,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 /**
  * Bingo arena: every team plays the same generated card in a pre-built static world (copied from
@@ -59,16 +63,16 @@ import java.util.UUID;
 public class BingoArea extends BaseSingleTeamArea {
     @Getter
     @Nullable
-    private BingoRound round;
+    private volatile BingoRound round;
     @Getter
-    private int timer;
-    private long roundStartMillis;
+    private volatile int timer;
+    private volatile long roundStartMillis;
 
-    private BukkitTask startGamePreparationTask;
-    private BukkitTask startGameProgressTask;
+    private volatile ScheduledTask startGamePreparationTask;
+    private volatile ScheduledTask startGameProgressTask;
 
     /** One recycled MapView per team, reused every round so the server's map-id counter stays bounded. */
-    private final Map<ChampionshipTeam, MapView> teamMapViews = new HashMap<>();
+    private final Map<ChampionshipTeam, MapView> teamMapViews = new ConcurrentHashMap<>();
 
     private final SpawnScatterManager scatterManager;
 
@@ -108,7 +112,7 @@ public class BingoArea extends BaseSingleTeamArea {
         sendTitleToAllGamePlayers(MessageConfig.BINGO_START_PREPARATION_TITLE, MessageConfig.BINGO_START_PREPARATION_SUBTITLE);
 
         timer = getGameConfig().getPrepareTime();
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+        startGamePreparationTask = scheduler.runTaskTimer(() -> {
             changeLevelForAllGamePlayers(timer);
 
             if (timer == 0) {
@@ -122,11 +126,18 @@ public class BingoArea extends BaseSingleTeamArea {
     }
 
     protected void startGameProgress() {
-        World world = Bukkit.getWorld(getWorldName());
+        FoliaScheduler global = FoliaScheduler.global(plugin);
+        World world = plugin.getGameManager().getBingoManager().getBingoOverworld();
         if (world == null) {
-            // The persistent bingo world should have been created at startup; without it we can't play.
             plugin.getLogger().warning("[Bingo] 世界 " + getWorldName() + " 不存在，无法开始游戏。");
             endGame();
+            return;
+        }
+        prepareRound(world, global);
+    }
+
+    private void prepareRound(World world, FoliaScheduler global) {
+        if (world == null) {
             return;
         }
 
@@ -143,35 +154,61 @@ public class BingoArea extends BaseSingleTeamArea {
                 getGameConfig().getLineBonus(),
                 getGameConfig().getLineBonusMajorCount(),
                 getGameConfig().getLineBonusMinor());
+        BingoRound activeRound = round;
 
+        List<CompletableFuture<Void>> mapPreparations = new ArrayList<>();
         for (ChampionshipTeam team : gameTeams) {
-            MapView view = teamMapViews.computeIfAbsent(team, t -> Bukkit.createMap(world));
-            round.cardFor(team).ifPresent(card ->
-                    round.setMapItem(team, CardMapItem.create(view, world, card, team, 0)));
+            MapView existing = teamMapViews.get(team);
+            CompletableFuture<MapView> viewFuture = existing == null
+                    ? global.supplyGlobal(() -> Bukkit.createMap(world)).thenApply(created -> {
+                        MapView raced = teamMapViews.putIfAbsent(team, created);
+                        return raced == null ? created : raced;
+                    })
+                    : CompletableFuture.completedFuture(existing);
+            mapPreparations.add(viewFuture.thenCompose(view -> global.runGlobalFuture(() ->
+                    activeRound.cardFor(team).ifPresent(card -> activeRound.setMapItem(
+                            team, CardMapItem.create(view, world, card, team, 0))))));
         }
 
-        resetPlayerHealthFoodEffectLevelInventory();
-        changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
+        CompletableFuture.allOf(mapPreparations.toArray(CompletableFuture[]::new))
+                .whenComplete((ignored, throwable) -> {
+                    if (throwable != null) {
+                        plugin.getLogger().log(Level.SEVERE, "[Bingo] 无法创建队伍地图", throwable);
+                        scheduler.runTask(this::endGame);
+                    } else if (round == activeRound && getGameStageEnum() == GameStageEnum.PREPARATION) {
+                        preparePlayersAndScatter(world, activeRound);
+                    }
+                });
+    }
 
+    private void preparePlayersAndScatter(World world, BingoRound activeRound) {
         List<Player> players = new ArrayList<>();
+        List<CompletableFuture<Void>> preparations = new ArrayList<>();
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) continue;
             players.add(player);
             ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
             if (team == null) continue;
-            // Hand out the starter kit after the inventory clear but before the card, so the card lands
-            // in a free slot rather than being blocked by kit items.
-            BingoStarterKit.give(player, team);
-            round.prepareParticipant(player, team);
-            ensureCardFor(player);
+            preparations.add(scheduler.runEntityFuture(player, () -> {
+                player.setHealth(20);
+                player.setFoodLevel(20);
+                player.setLevel(0);
+                player.setGameMode(GameMode.SURVIVAL);
+                player.getInventory().clear();
+                player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+                BingoStarterKit.give(player, team);
+                activeRound.prepareParticipant(player, team);
+                ensureCardFor(player);
+            }));
         }
 
         // Random scatter around the bingo world spawn; the round only begins once everyone is placed.
         BingoConfig config = getGameConfig();
-        scatterManager.performScatterAsync(world, players,
-                config.getScatterRingRadius(), config.getScatterRingJitter(), config.getScatterMaxTries(),
-                this::beginRunningAfterScatter);
+        CompletableFuture.allOf(preparations.toArray(CompletableFuture[]::new)).thenRun(() ->
+                scatterManager.performScatterAsync(world, players,
+                        config.getScatterRingRadius(), config.getScatterRingJitter(), config.getScatterMaxTries(),
+                        this::beginRunningAfterScatter));
     }
 
     /** Called once the async scatter has placed every participant: starts the live round + tracker. */
@@ -186,12 +223,12 @@ public class BingoArea extends BaseSingleTeamArea {
         roundStartMillis = System.currentTimeMillis();
         timer = getGameConfig().getTimer();
 
-        startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
+        startGameProgressTask = scheduler.runTaskTimer(() -> {
             if (round == null) return;
 
             for (UUID uuid : gamePlayers) {
                 Player player = Bukkit.getPlayer(uuid);
-                if (player != null) checkPlayerProgress(player);
+                if (player != null) scheduler.runEntity(player, () -> checkPlayerProgress(player));
             }
 
             sendActionBarToAllGameSpectators(MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer)));
@@ -209,7 +246,8 @@ public class BingoArea extends BaseSingleTeamArea {
 
     /** Item + statistic progress check for one player; called every tracker tick and on inventory events. */
     public void checkPlayerProgress(Player player) {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS || round == null || player == null) return;
+        BingoRound activeRound = round;
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || activeRound == null || player == null) return;
         if (notAreaPlayer(player)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team == null) return;
@@ -228,18 +266,24 @@ public class BingoArea extends BaseSingleTeamArea {
             }
         }
         for (Map.Entry<org.bukkit.Material, Integer> entry : held.entrySet()) {
-            round.tryCompleteItem(player, team, entry.getKey(), entry.getValue(), gameTime)
-                    .ifPresent(task -> announceCompletion(player, task));
+            synchronized (activeRound) {
+                activeRound.tryCompleteItem(player, team, entry.getKey(), entry.getValue(), gameTime)
+                        .ifPresent(task -> announceCompletion(player, task, activeRound));
+            }
         }
         for (Map.Entry<String, Integer> entry : heldPotions.entrySet()) {
             String[] parts = entry.getKey().split("\\|", 2);
-            round.tryCompletePotion(player, team, org.bukkit.Material.valueOf(parts[0]), parts[1],
-                            entry.getValue(), gameTime)
-                    .ifPresent(task -> announceCompletion(player, task));
+            synchronized (activeRound) {
+                activeRound.tryCompletePotion(player, team, org.bukkit.Material.valueOf(parts[0]), parts[1],
+                                entry.getValue(), gameTime)
+                        .ifPresent(task -> announceCompletion(player, task, activeRound));
+            }
         }
 
-        for (GameTask done : round.tryCompleteStatistics(player, team, gameTime)) {
-            announceCompletion(player, done);
+        synchronized (activeRound) {
+            for (GameTask done : activeRound.tryCompleteStatistics(player, team, gameTime)) {
+                announceCompletion(player, done, activeRound);
+            }
         }
     }
 
@@ -261,18 +305,20 @@ public class BingoArea extends BaseSingleTeamArea {
 
     /** Advancement progress check; called from the advancement-done event via the handler. */
     public void onAdvancement(Player player, Advancement advancement) {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS || round == null || player == null) return;
+        BingoRound activeRound = round;
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || activeRound == null || player == null) return;
         if (notAreaPlayer(player)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team == null) return;
-        round.tryCompleteAdvancement(player, team, advancement, roundSeconds())
-                .ifPresent(task -> announceCompletion(player, task));
+        synchronized (activeRound) {
+            activeRound.tryCompleteAdvancement(player, team, advancement, roundSeconds())
+                    .ifPresent(task -> announceCompletion(player, task, activeRound));
+        }
     }
 
     /** Credits the completing player with the cell's points and broadcasts the completion. */
-    private void announceCompletion(Player player, GameTask task) {
-        if (round == null) return;
-        int delta = round.lastScoreDelta();
+    private void announceCompletion(Player player, GameTask task, BingoRound activeRound) {
+        int delta = activeRound.lastScoreDelta();
         if (delta != 0) addPlayerPoints(player.getUniqueId(), delta);
 
         String taskName = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
@@ -322,7 +368,7 @@ public class BingoArea extends BaseSingleTeamArea {
         Location set = gameConfig.getSpectatorSpawnPoint();
         if (set != null) return set;
         // Default to the bingo world spawn when no explicit spectator point is configured.
-        World world = Bukkit.getWorld(getWorldName());
+        World world = plugin.getGameManager().getBingoManager().getBingoOverworld();
         return world != null ? world.getSpawnLocation() : CCConfig.LOBBY_LOCATION;
     }
 
@@ -340,9 +386,10 @@ public class BingoArea extends BaseSingleTeamArea {
     }
 
     @Override
-    public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+    public synchronized void endGame() {
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
+        setGameStageEnum(GameStageEnum.END);
 
         if (startGamePreparationTask != null)
             startGamePreparationTask.cancel();
@@ -370,8 +417,6 @@ public class BingoArea extends BaseSingleTeamArea {
         sendMessageToAllGamePlayersInActionbarAndMessage(MessageConfig.BINGO_GAME_END);
         sendTitleToAllGamePlayers(MessageConfig.BINGO_GAME_END_TITLE, MessageConfig.BINGO_GAME_END_SUBTITLE);
 
-        setGameStageEnum(GameStageEnum.END);
-
         teleportAllPlayers(CCConfig.LOBBY_LOCATION);
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
@@ -387,18 +432,24 @@ public class BingoArea extends BaseSingleTeamArea {
 
     /** Swaps every team's card-map renderer for one bound to the final outcome so the overlay paints. */
     private void forceCardMapRedraw() {
-        if (round == null) return;
-        for (ChampionshipTeam team : round.teams()) {
-            MapView view = teamMapViews.get(team);
-            if (view == null) continue;
-            round.cardFor(team).ifPresent(card -> {
-                for (org.bukkit.map.MapRenderer existing : new java.util.ArrayList<>(view.getRenderers())) {
-                    view.removeRenderer(existing);
-                }
-                view.addRenderer(new BingoCardMapRenderer(card, BingoTeamAdapter.id(team),
-                        BingoTeamAdapter.color(team), 0, round));
-            });
-        }
+        BingoRound activeRound = round;
+        if (activeRound == null) return;
+        FoliaScheduler.global(plugin).runGlobalFuture(() -> {
+            for (ChampionshipTeam team : activeRound.teams()) {
+                MapView view = teamMapViews.get(team);
+                if (view == null) continue;
+                activeRound.cardFor(team).ifPresent(card -> {
+                    for (org.bukkit.map.MapRenderer existing : new java.util.ArrayList<>(view.getRenderers())) {
+                        view.removeRenderer(existing);
+                    }
+                    view.addRenderer(new BingoCardMapRenderer(card, BingoTeamAdapter.id(team),
+                            BingoTeamAdapter.color(team), 0, activeRound));
+                });
+            }
+        }).exceptionally(throwable -> {
+            plugin.getLogger().log(Level.SEVERE, "[Bingo] 无法刷新终局地图", throwable);
+            return null;
+        });
     }
 
     @Override
@@ -406,7 +457,7 @@ public class BingoArea extends BaseSingleTeamArea {
         Player player = event.getEntity();
         if (notAreaPlayer(player)) return;
         // Survival respawn handled by vanilla; re-issue the card on the next tick after respawn.
-        scheduler.runTaskLater(plugin, () -> ensureCardFor(player), 2L);
+        scheduler.runEntityLater(player, () -> ensureCardFor(player), 2L);
     }
 
     @Override

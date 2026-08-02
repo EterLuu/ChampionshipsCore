@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.buildmart;
 
+import ink.ziip.championshipscore.util.scheduler.FoliaScheduler;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartOrderPool;
 import ink.ziip.championshipscore.api.game.manager.BaseAreaManager;
@@ -18,7 +20,7 @@ import java.nio.file.Files;
 public class BuildMartManager extends BaseAreaManager<BuildMartArea> {
     /** Shared blueprint pool (normal + golden), loaded once and read by every area's library. */
     @Getter
-    private BuildMartOrderPool orderPool = new BuildMartOrderPool();
+    private volatile BuildMartOrderPool orderPool = new BuildMartOrderPool();
 
     public BuildMartManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -30,7 +32,7 @@ public class BuildMartManager extends BaseAreaManager<BuildMartArea> {
         buildMartDir.mkdirs();
 
         // Defer the area scan to the first tick so the static world and any shared data are ready.
-        plugin.getServer().getScheduler().runTask(plugin, task -> {
+        FoliaScheduler.global(plugin).runTask(task -> {
             File blueprintsFolder = new File(buildMartDir, "blueprints");
             blueprintsFolder.mkdirs();
             copyExampleBlueprints(blueprintsFolder);
