@@ -57,21 +57,6 @@ public class TNTRunHandler extends BaseListener {
         }
     }
 
-//    @EventHandler(priority = EventPriority.LOWEST)
-//    public void onPlayerInteract(PlayerInteractEvent event) {
-//        Player player = event.getPlayer();
-//        if (tntRunTeamArea.notAreaPlayer(player)) {
-//            return;
-//        }
-//
-//        Location location = player.getLocation();
-//        if (tntRunTeamArea.notInArea(location)) {
-//            return;
-//        }
-//
-//        event.setCancelled(true);
-//    }
-
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamaged(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player) {
@@ -135,39 +120,6 @@ public class TNTRunHandler extends BaseListener {
             event.setCancelled(true);
         }
     }
-
-//    @EventHandler(priority = EventPriority.LOWEST)
-//    public void onPlayerInventoryInteract(InventoryInteractEvent event) {
-//        if (event.getWhoClicked() instanceof Player player) {
-//            if (tntRunTeamArea.notAreaPlayer(player)) {
-//                return;
-//            }
-//
-//            event.setCancelled(true);
-//        }
-//    }
-//
-//    @EventHandler(priority = EventPriority.LOWEST)
-//    public void onPlayerInventoryClick(InventoryClickEvent event) {
-//        if (event.getWhoClicked() instanceof Player player) {
-//            if (tntRunTeamArea.notAreaPlayer(player)) {
-//                return;
-//            }
-//
-//            event.setCancelled(true);
-//        }
-//    }
-//
-//    @EventHandler(priority = EventPriority.LOWEST)
-//    public void onPlayerInventoryDrag(InventoryDragEvent event) {
-//        if (event.getWhoClicked() instanceof Player player) {
-//            if (tntRunTeamArea.notAreaPlayer(player)) {
-//                return;
-//            }
-//
-//            event.setCancelled(true);
-//        }
-//    }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInventoryDrop(PlayerDropItemEvent event) {

@@ -15,13 +15,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.util.io.BukkitObjectInputStream;
-import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -86,6 +82,7 @@ public class PrepareSessionManager extends BaseManager {
         flows.put(GameTypeEnum.ParkourWarrior, new ParkourWarriorPrepareFlow());
         flows.put(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyPrepareFlow());
         flows.put(GameTypeEnum.Dodgebolt, new DodgeboltPrepareFlow());
+        flows.put(GameTypeEnum.AceRace, new AceRacePrepareFlow());
         try {
             Files.createDirectories(sessionsDir);
         } catch (IOException e) {
@@ -323,10 +320,10 @@ public class PrepareSessionManager extends BaseManager {
 
     private void saveSnapshotFile(@NotNull UUID id, @NotNull Snapshot snap) {
         YamlConfiguration y = new YamlConfiguration();
-        y.set("storage", serialize(snap.storage));
-        y.set("armor", serialize(snap.armor));
-        y.set("offhand", serialize(snap.offhand));
-        y.set("cursor", serialize(snap.cursor));
+        y.set("storage", serializeItems(snap.storage));
+        y.set("armor", serializeItems(snap.armor));
+        y.set("offhand", serializeItem(snap.offhand));
+        y.set("cursor", serializeItem(snap.cursor));
         try {
             Files.createDirectories(sessionsDir);
             y.save(sessionsDir.resolve(id + ".yml").toFile());
@@ -339,10 +336,11 @@ public class PrepareSessionManager extends BaseManager {
         Path file = sessionsDir.resolve(id + ".yml");
         if (!Files.isRegularFile(file)) return null;
         YamlConfiguration y = YamlConfiguration.loadConfiguration(file.toFile());
-        ItemStack[] storage = (ItemStack[]) deserialize(y.getString("storage"));
-        ItemStack[] armor = (ItemStack[]) deserialize(y.getString("armor"));
-        ItemStack offhand = (ItemStack) deserialize(y.getString("offhand"));
-        ItemStack cursor = (ItemStack) deserialize(y.getString("cursor"));
+        ItemStack[] storage = deserializeItems(y.getString("storage"));
+        ItemStack[] armor = deserializeItems(y.getString("armor"));
+        ItemStack offhand = deserializeItem(y.getString("offhand"));
+        ItemStack cursor = deserializeItem(y.getString("cursor"));
+        if (storage == null || armor == null) return null;
         return new Snapshot(storage, armor, offhand, cursor);
     }
 
@@ -353,23 +351,38 @@ public class PrepareSessionManager extends BaseManager {
         }
     }
 
-    private static @Nullable String serialize(@Nullable Object obj) {
-        if (obj == null) return null;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             BukkitObjectOutputStream oos = new BukkitObjectOutputStream(baos)) {
-            oos.writeObject(obj);
-            return Base64.getEncoder().encodeToString(baos.toByteArray());
-        } catch (IOException e) {
+    private static @Nullable String serializeItems(@Nullable ItemStack[] items) {
+        if (items == null) return null;
+        try {
+            return Base64.getEncoder().encodeToString(ItemStack.serializeItemsAsBytes(items));
+        } catch (RuntimeException e) {
             return null;
         }
     }
 
-    private static @Nullable Object deserialize(@Nullable String s) {
-        if (s == null) return null;
-        try (BukkitObjectInputStream ois = new BukkitObjectInputStream(
-                new ByteArrayInputStream(Base64.getDecoder().decode(s)))) {
-            return ois.readObject();
-        } catch (Exception e) {
+    private static @Nullable ItemStack[] deserializeItems(@Nullable String encoded) {
+        if (encoded == null) return null;
+        try {
+            return ItemStack.deserializeItemsFromBytes(Base64.getDecoder().decode(encoded));
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private static @Nullable String serializeItem(@Nullable ItemStack item) {
+        if (item == null) return null;
+        try {
+            return Base64.getEncoder().encodeToString(item.serializeAsBytes());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private static @Nullable ItemStack deserializeItem(@Nullable String encoded) {
+        if (encoded == null) return null;
+        try {
+            return ItemStack.deserializeBytes(Base64.getDecoder().decode(encoded));
+        } catch (RuntimeException e) {
             return null;
         }
     }

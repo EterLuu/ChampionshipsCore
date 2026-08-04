@@ -26,10 +26,4 @@ public class TeamGameEndEvent extends ChampionshipsCoreEvent {
     public BasePairedGameInstance getGameInstance() {
         return gameInstance;
     }
-
-    /** @deprecated Use {@link #getGameInstance()}. */
-    @Deprecated(forRemoval = true)
-    public BasePairedGameInstance getBaseTeamArea() {
-        return gameInstance;
-    }
 }

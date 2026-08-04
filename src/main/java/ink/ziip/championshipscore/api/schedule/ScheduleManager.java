@@ -2,7 +2,9 @@ package ink.ziip.championshipscore.api.schedule;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.schedule.battlebox.BattleBoxScheduleManager;
 import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleManager;
@@ -18,6 +20,8 @@ import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleManager;
 import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleManager;
+import ink.ziip.championshipscore.api.schedule.acerace.AceRaceScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.acerace.AceRaceScheduleManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -32,10 +36,10 @@ import org.bukkit.command.CommandSender;
 import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltArea;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ScheduleManager extends BaseManager {
+    private static final long RESULT_DISPLAY_TICKS = 200L;
     public enum EventAction {
         STARTED,
         STOPPED,
@@ -61,9 +65,13 @@ public class ScheduleManager extends BaseManager {
     private HotyCodyDuskyScheduleManager hotyCodyDuskyScheduleManager;
     @Getter
     private BingoScheduleManager bingoScheduleManager;
+    @Getter
+    private AceRaceScheduleManager aceRaceScheduleManager;
     private int timer;
     private BukkitTask dodgeboltTransitionTask;
     private BukkitTask dragonEggCarnivalTransitionTask;
+    private final Map<GameTypeEnum, Set<BaseGameInstance>> pendingEventInstances =
+            new EnumMap<>(GameTypeEnum.class);
 
     public ScheduleManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -81,6 +89,7 @@ public class ScheduleManager extends BaseManager {
         parkourWarriorScheduleManager = new ParkourWarriorScheduleManager(plugin, new ParkourWarriorScheduleHandler(plugin));
         hotyCodyDuskyScheduleManager = new HotyCodyDuskyScheduleManager(plugin);
         bingoScheduleManager = new BingoScheduleManager(plugin, new BingoScheduleHandler(plugin));
+        aceRaceScheduleManager = new AceRaceScheduleManager(plugin, new AceRaceScheduleHandler(plugin));
 
         snowballScheduleManager.load();
         skyWarsScheduleManager.load();
@@ -91,6 +100,7 @@ public class ScheduleManager extends BaseManager {
         parkourWarriorScheduleManager.load();
         hotyCodyDuskyScheduleManager.load();
         bingoScheduleManager.load();
+        aceRaceScheduleManager.load();
     }
 
     @Override
@@ -108,6 +118,7 @@ public class ScheduleManager extends BaseManager {
         parkourWarriorScheduleManager.unload();
         hotyCodyDuskyScheduleManager.unload();
         bingoScheduleManager.unload();
+        aceRaceScheduleManager.unload();
     }
 
     public void addRound(GameTypeEnum gameTypeEnum) {
@@ -122,7 +133,7 @@ public class ScheduleManager extends BaseManager {
     public boolean supportsFormalEvent(@NotNull GameTypeEnum gameTypeEnum) {
         return switch (gameTypeEnum) {
             case SnowballShowdown, SkyWars, TNTRun, TGTTOS, ParkourWarrior, BattleBox,
-                    ParkourTag, HotyCodyDusky, Bingo, DragonEggCarnival, Dodgebolt -> true;
+                    ParkourTag, HotyCodyDusky, Bingo, DragonEggCarnival, Dodgebolt, AceRace -> true;
             default -> false;
         };
     }
@@ -147,6 +158,7 @@ public class ScheduleManager extends BaseManager {
             case ParkourTag -> parkourTagScheduleManager.startParkourTag();
             case HotyCodyDusky -> hotyCodyDuskyScheduleManager.startHotyCodyDusky();
             case Bingo -> bingoScheduleManager.startGame();
+            case AceRace -> aceRaceScheduleManager.startGame();
             default -> {
                 return EventAction.UNSUPPORTED;
             }
@@ -164,14 +176,15 @@ public class ScheduleManager extends BaseManager {
         return EventAction.STARTED;
     }
 
-    /** Stops the formal schedule and leaves any actively running game instance under referee control. */
+    /** Stops the formal schedule and force-ends any actively running game instance. */
     public boolean stopFormalEvent(@NotNull GameTypeEnum gameTypeEnum) {
         if (!supportsFormalEvent(gameTypeEnum) || !isFormalEventRunning(gameTypeEnum)) return false;
         endGameSchedule(gameTypeEnum);
+        plugin.getGameManager().forceEndAreas(gameTypeEnum);
         return true;
     }
 
-    private boolean isFormalEventRunning(@NotNull GameTypeEnum gameTypeEnum) {
+    public boolean isFormalEventRunning(@NotNull GameTypeEnum gameTypeEnum) {
         return switch (gameTypeEnum) {
             case SnowballShowdown -> snowballScheduleManager.isEnabled();
             case SkyWars -> skyWarsScheduleManager.isEnabled();
@@ -182,13 +195,82 @@ public class ScheduleManager extends BaseManager {
             case ParkourTag -> parkourTagScheduleManager.isEnabled();
             case HotyCodyDusky -> hotyCodyDuskyScheduleManager.isEnabled();
             case Bingo -> bingoScheduleManager.isEnabled();
+            case AceRace -> aceRaceScheduleManager.isEnabled();
             case DragonEggCarnival -> dragonEggCarnivalTransitionTask != null;
             case Dodgebolt -> dodgeboltTransitionTask != null;
             default -> false;
         };
     }
 
-    /** Shows a lobby/round transition in the action bar only. */
+    /** Whether a completed instance belongs to a formal schedule that will assign another round. */
+    public boolean hasNextRound(@NotNull GameTypeEnum gameTypeEnum) {
+        return switch (gameTypeEnum) {
+            case SnowballShowdown -> snowballScheduleManager.hasNextRound();
+            case TNTRun -> tntRunScheduleManager.hasNextRound();
+            case TGTTOS -> tgttosScheduleManager.hasNextRound();
+            case BattleBox -> battleBoxScheduleManager.hasNextRound();
+            case ParkourTag -> parkourTagScheduleManager.hasNextRound();
+            case HotyCodyDusky -> hotyCodyDuskyScheduleManager.hasNextRound();
+            default -> false;
+        };
+    }
+
+    /** Registers an EVENT instance before its synchronous end event reaches the schedule handler. */
+    public synchronized void registerPendingEventInstance(@NotNull BaseGameInstance instance) {
+        pendingEventInstances.computeIfAbsent(instance.getGameTypeEnum(), ignored ->
+                Collections.newSetFromMap(new IdentityHashMap<>())).add(instance);
+    }
+
+    /** Special one-off events have no per-game schedule handler to close their settlement phase. */
+    public void onEventInstanceReady(@NotNull BaseGameInstance instance) {
+        GameTypeEnum gameType = instance.getGameTypeEnum();
+        if (gameType == GameTypeEnum.DragonEggCarnival || gameType == GameTypeEnum.Dodgebolt
+                || !isFormalEventRunning(gameType)) {
+            settleEventRound(gameType, false, () -> { });
+        }
+    }
+
+    /**
+     * Keeps every completed instance in its arena until the local round result, and for a final round
+     * the queued event leaderboard, has been displayed.
+     */
+    public void settleEventRound(@NotNull GameTypeEnum gameType, boolean hasNextRound,
+                                 @NotNull Runnable afterSettlement) {
+        List<BaseGameInstance> instances;
+        synchronized (this) {
+            Set<BaseGameInstance> pending = pendingEventInstances.remove(gameType);
+            instances = pending == null ? List.of() : List.copyOf(pending);
+        }
+        if (instances.isEmpty()) {
+            plugin.getLogger().warning(Utils.formatGameLog(gameType, "-", "调度", "结算",
+                    "未找到等待释放的 EVENT 实例"));
+            afterSettlement.run();
+            return;
+        }
+
+        // The arena lifecycle must not depend on the rank database. Score writes and the final
+        // leaderboard may be slow, but leaving participantStatus owned by an END instance would
+        // reject every subsequent game start. Reserve the result-display window immediately;
+        // ranking output is scheduled independently below.
+        Runnable release = () -> scheduler.runTaskLater(plugin, () -> {
+            for (BaseGameInstance instance : instances)
+                instance.completePostGame(hasNextRound);
+            afterSettlement.run();
+        }, RESULT_DISPLAY_TICKS);
+
+        if (hasNextRound) {
+            release.run();
+            return;
+        }
+
+        Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
+        Utils.sendTitleToAllPlayers(MessageConfig.GAME_ROUND_END_TITLE.replace("%game%", gameType.toString()),
+                MessageConfig.GAME_ROUND_END_SUBTITLE, 60);
+        plugin.getRankManager().broadcastFinalRankings(gameType, () -> { });
+        release.run();
+    }
+
+    /** Shows an in-arena round transition in the action bar only. */
     public void showRoundPreparationCountdown(GameTypeEnum gameType, int round, int seconds) {
         String roundValue = String.valueOf(Math.max(1, round));
         String secondsValue = String.valueOf(Math.max(0, seconds));
@@ -214,6 +296,7 @@ public class ScheduleManager extends BaseManager {
             case ParkourTag -> { if (parkourTagScheduleManager.isEnabled()) parkourTagScheduleManager.endSchedule(); }
             case HotyCodyDusky -> { if (hotyCodyDuskyScheduleManager.isEnabled()) hotyCodyDuskyScheduleManager.endSchedule(); }
             case Bingo -> { if (bingoScheduleManager.isEnabled()) bingoScheduleManager.endSchedule(); }
+            case AceRace -> { if (aceRaceScheduleManager.isEnabled()) aceRaceScheduleManager.endSchedule(); }
             case Dodgebolt -> {
                 if (dodgeboltTransitionTask != null) dodgeboltTransitionTask.cancel();
                 dodgeboltTransitionTask = null;
@@ -245,7 +328,6 @@ public class ScheduleManager extends BaseManager {
     private void startDragonEggCarnival(ChampionshipTeam team, ChampionshipTeam rival) {
         plugin.getScheduleManager().addRound(GameTypeEnum.DragonEggCarnival);
         timer = 10;
-        addAllSpectatorsToArea();
         dragonEggCarnivalTransitionTask = scheduler.runTaskTimer(plugin, () -> {
 
             Utils.changeLevelForAllPlayers(timer);
@@ -262,7 +344,8 @@ public class ScheduleManager extends BaseManager {
             }
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(0);
-                plugin.getGameManager().joinTeamArea(GameTypeEnum.DragonEggCarnival, "area1", team, rival);
+                plugin.getGameManager().joinTeamArea(GameTypeEnum.DragonEggCarnival, "area1", team, rival,
+                        true, GameRunMode.EVENT);
                 if (dragonEggCarnivalTransitionTask != null)
                     dragonEggCarnivalTransitionTask.cancel();
                 dragonEggCarnivalTransitionTask = null;
@@ -271,19 +354,16 @@ public class ScheduleManager extends BaseManager {
         }, 0, 20L);
     }
 
-    public void addAllSpectatorsToArea() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam == null) {
-                player.performCommand("cc spectate leave");
-                player.performCommand("cc spectate dragoneggcarnival area1");
-            }
-        }
-    }
-
     /** Queues finalist selection after all pending score writes and starts a non-scoring final. */
     public void requestDodgeboltFinal(String requestedArea, ChampionshipTeam requestedRight,
                                       ChampionshipTeam requestedLeft, CommandSender requester) {
+        requestDodgeboltFinal(requestedArea, requestedRight, requestedLeft, requester, false);
+    }
+
+    /** A forced final uses each finalist's online subset, but otherwise follows the formal final lifecycle. */
+    public void requestDodgeboltFinal(String requestedArea, ChampionshipTeam requestedRight,
+                                      ChampionshipTeam requestedLeft, CommandSender requester,
+                                      boolean forcePartialRoster) {
         if (!plugin.getGameManager().isGameEnabled(GameTypeEnum.Dodgebolt)) {
             Utils.sendAdminError(requester, "躲避箭未在 enabled-games 中启用");
             return;
@@ -297,11 +377,14 @@ public class ScheduleManager extends BaseManager {
             if (area == null || area.isBlank()) {
                 List<String> names = plugin.getGameManager().getDodgeboltManager().getAreaNameList();
                 names.sort(String.CASE_INSENSITIVE_ORDER);
-                if (names.isEmpty()) {
-                    Utils.sendAdminError(requester, "没有已配置的躲避箭地图");
+                area = names.stream()
+                        .filter(name -> plugin.getPrepareSessionManager()
+                                .canStart(GameTypeEnum.Dodgebolt, name))
+                        .findFirst().orElse(null);
+                if (area == null) {
+                    Utils.sendAdminError(requester, "没有已发布的躲避箭地图");
                     return;
                 }
-                area = names.getFirst();
             }
             DodgeboltArea instance = plugin.getGameManager().getDodgeboltManager().getArea(area);
             if (instance == null || !plugin.getPrepareSessionManager().canStart(GameTypeEnum.Dodgebolt, area)) {
@@ -335,16 +418,18 @@ public class ScheduleManager extends BaseManager {
             if (Double.compare(rightPoints, leftPoints) == 0) {
                 Utils.sendAdminInfo(requester, "两队积分相同，第一参数队伍将作为第一局两箭队伍");
             }
-            startDodgeboltTransition(area, instance, right, left, higherSeed, requester);
+            startDodgeboltTransition(area, instance, right, left, higherSeed, requester, forcePartialRoster);
         });
     }
 
     private void startDodgeboltTransition(String area, DodgeboltArea instance,
                                           ChampionshipTeam right, ChampionshipTeam left,
-                                          ChampionshipTeam higherSeed, CommandSender requester) {
+                                          ChampionshipTeam higherSeed, CommandSender requester,
+                                          boolean forcePartialRoster) {
         final int[] remaining = {10};
         Utils.sendAdminSuccess(requester, "躲避箭决赛已排定 &#bababa• " + right.getColoredName()
-                + " &#edededvs " + left.getColoredName() + " &#bababa• &#ededed地图 " + area);
+                + " &#edededvs " + left.getColoredName() + " &#bababa• &#ededed地图 " + area
+                + (forcePartialRoster ? " &#bababa• &#ff6b26强制阵容" : ""));
         Utils.sendMessageToAllPlayers("&#bababa━━━━━━━━ &#fff566&l躲避箭决赛 &#bababa━━━━━━━━\n"
                 + right.getColoredName() + " &#edededvs " + left.getColoredName()
                 + "\n&#ededed第一局两箭：" + higherSeed.getColoredName());
@@ -355,10 +440,13 @@ public class ScheduleManager extends BaseManager {
                 dodgeboltTransitionTask.cancel();
                 dodgeboltTransitionTask = null;
                 Utils.changeLevelForAllPlayers(0);
-                if (plugin.getGameManager().joinDodgeboltArea(area, right, left, higherSeed, true)) {
+                if (plugin.getGameManager().joinDodgeboltArea(area, right, left, higherSeed,
+                        true, forcePartialRoster, GameRunMode.EVENT)) {
                     plugin.getGameManager().spectateDodgeboltFinal(instance, right, left);
                 } else {
-                    Utils.sendAdminError(requester, "躲避箭决赛启动失败，请检查队员在线状态和场地占用");
+                    Utils.sendAdminError(requester, forcePartialRoster
+                            ? "躲避箭决赛强制启动失败，请确保每队至少有 1 名在线玩家并检查场地占用"
+                            : "躲避箭决赛启动失败，请检查队员在线状态和场地占用");
                 }
                 return;
             }
@@ -387,6 +475,8 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR);
         if (gameTypeEnum == GameTypeEnum.Bingo)
             return Utils.getMessage(ScheduleMessageConfig.BINGO);
+        if (gameTypeEnum == GameTypeEnum.AceRace)
+            return Utils.getMessage(ScheduleMessageConfig.ACE_RACE);
 
         return "";
     }
@@ -404,6 +494,8 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR_POINTS);
         if (gameTypeEnum == GameTypeEnum.Bingo)
             return Utils.getMessage(ScheduleMessageConfig.BINGO_POINTS);
+        if (gameTypeEnum == GameTypeEnum.AceRace)
+            return Utils.getMessage(ScheduleMessageConfig.ACE_RACE_POINTS);
 
         return "";
     }

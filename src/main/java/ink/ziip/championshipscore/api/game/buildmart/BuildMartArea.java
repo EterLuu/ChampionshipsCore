@@ -272,7 +272,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     }
 
     /** Seconds left in the current golden window, derived from elapsed time and the rotation period. */
-    private int goldenSecondsRemaining() {
+    public int goldenSecondsRemaining() {
         int period = Math.max(1, getGameConfig().getGoldenRefreshSeconds());
         int elapsed = Math.max(0, getGameConfig().getTimer() - timer);
         return period - (elapsed % period);
@@ -649,6 +649,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         }
     }
 
+    private Location teamBaseSpawn(ChampionshipTeam team) {
+        Integer seat = team == null ? null : seatByTeam.get(team);
+        BuildMartBase base = seat == null ? null : baseCache.get(seat);
+        Location target = base != null && base.getSpawn() != null ? base.getSpawn() : getGameConfig().getHubSpawnPoint();
+        return target != null ? target : getSpectatorSpawnLocation();
+    }
+
     @Override
     public Location getSpectatorSpawnLocation() {
         Location set = getGameConfig().getSpectatorSpawnPoint();
@@ -689,7 +696,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
         setGameStageEnum(GameStageEnum.END);
 
-        teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+        beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -700,7 +707,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     /** Clears any build-zone flight permission so players don't keep flying back in the lobby. */
@@ -735,6 +742,24 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void handlePlayerJoin(@NotNull PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (notAreaPlayer(player)) return;
+        GameStageEnum stage = getGameStageEnum();
+        if (stage == GameStageEnum.PREPARATION) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
+        }
+        if (stage == GameStageEnum.COUNTDOWN || stage == GameStageEnum.PROGRESS) {
+            Location target = teamBaseSpawn(plugin.getTeamManager().getTeamByPlayer(player));
+            player.teleport(target);
+            player.setGameMode(GameMode.SURVIVAL);
+            player.setAllowFlight(!getGameConfig().isInHub(target));
+            player.setFlying(false);
+            return;
+        }
+        player.teleport(CCConfig.LOBBY_LOCATION);
+        player.setGameMode(GameMode.ADVENTURE);
     }
 
     @Override

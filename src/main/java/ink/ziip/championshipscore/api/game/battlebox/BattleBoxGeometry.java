@@ -18,8 +18,8 @@ import java.util.List;
 public final class BattleBoxGeometry implements SpatialTemplate<BattleBoxGeometry> {
     private final Location rightSpawn;
     private final Location leftSpawn;
-    private final Location rightPreSpawn;
-    private final Location leftPreSpawn;
+    private final Location rightPrepareSpot;
+    private final Location leftPrepareSpot;
     private final Location spectatorSpawn;
     private final Vector woolMin;
     private final Vector woolMax;
@@ -27,14 +27,14 @@ public final class BattleBoxGeometry implements SpatialTemplate<BattleBoxGeometr
     private final Vector boundaryMax;
     private final List<Location> potionSpawns;
 
-    private BattleBoxGeometry(Location rightSpawn, Location leftSpawn, Location rightPreSpawn,
-                              Location leftPreSpawn, Location spectatorSpawn, Vector woolMin,
+    private BattleBoxGeometry(Location rightSpawn, Location leftSpawn, Location rightPrepareSpot,
+                              Location leftPrepareSpot, Location spectatorSpawn, Vector woolMin,
                               Vector woolMax, Vector boundaryMin, Vector boundaryMax,
                               List<Location> potionSpawns) {
         this.rightSpawn = rightSpawn;
         this.leftSpawn = leftSpawn;
-        this.rightPreSpawn = rightPreSpawn;
-        this.leftPreSpawn = leftPreSpawn;
+        this.rightPrepareSpot = rightPrepareSpot;
+        this.leftPrepareSpot = leftPrepareSpot;
         this.spectatorSpawn = spectatorSpawn;
         this.woolMin = woolMin;
         this.woolMax = woolMax;
@@ -53,7 +53,7 @@ public final class BattleBoxGeometry implements SpatialTemplate<BattleBoxGeometr
         }
         return new BattleBoxGeometry(
                 config.getRightSpawnPoint(), config.getLeftSpawnPoint(),
-                config.getRightPreSpawnPoint(), config.getLeftPreSpawnPoint(),
+                config.getRightPrepareSpot(), config.getLeftPrepareSpot(),
                 config.getSpectatorSpawnPoint(),
                 Vector.getMinimum(config.getWoolPos1(), config.getWoolPos2()),
                 Vector.getMaximum(config.getWoolPos1(), config.getWoolPos2()),
@@ -66,7 +66,7 @@ public final class BattleBoxGeometry implements SpatialTemplate<BattleBoxGeometr
         List<Location> potions = potionSpawns.stream().map(transform::apply).toList();
         return new BattleBoxGeometry(
                 transform.apply(rightSpawn), transform.apply(leftSpawn),
-                transform.apply(rightPreSpawn), transform.apply(leftPreSpawn),
+                transform.apply(rightPrepareSpot), transform.apply(leftPrepareSpot),
                 transform.apply(spectatorSpawn), transform.apply(woolMin), transform.apply(woolMax),
                 transform.apply(boundaryMin), transform.apply(boundaryMax), potions);
     }

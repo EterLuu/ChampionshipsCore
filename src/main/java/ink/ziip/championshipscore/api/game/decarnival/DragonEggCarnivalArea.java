@@ -14,9 +14,7 @@ import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.entity.EnderDragon;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -26,11 +24,16 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class DragonEggCarnivalArea extends BasePairedGameInstance {
@@ -45,6 +48,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
     @Getter
     private int leftTeamPoints;
     private Block dragonEgg;
+    private final Set<UUID> roundEntityIds = new HashSet<>();
 
     public DragonEggCarnivalArea(ChampionshipsCore plugin, DragonEggCarnivalConfig dragonEggCarnivalConfig, boolean firstTime, String areaName) {
         super(plugin, GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalHandler(plugin), dragonEggCarnivalConfig);
@@ -69,6 +73,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         rightTeamPoints = 0;
         leftTeamPoints = 0;
         dragonEgg = null;
+        roundEntityIds.clear();
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
@@ -178,6 +183,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
                     EnderDragon dragon = (EnderDragon) world.spawnEntity(location, EntityType.ENDER_DRAGON);
                     dragon.setHealth(60);
                     dragon.setPhase(EnderDragon.Phase.LEAVE_PORTAL);
+                    roundEntityIds.add(dragon.getUniqueId());
                 }
                 giveDragonItemToAllGamePlayers();
             }
@@ -201,13 +207,13 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
             removeFinalTagToGamePlayers(leftChampionshipTeam);
         }
 
-        teleportAllPlayers(getLobbyLocation());
-
         setGameStageEnum(GameStageEnum.STOPPING);
+
+        teleportAllPlayers(getSpectatorSpawnLocation());
 
         cleanInventoryForAllGamePlayers();
 
-        changeGameModelForAllGamePlayers(GameMode.SPECTATOR);
+        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         round++;
 
@@ -223,7 +229,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         if (rightTeamPoints == 3 || leftTeamPoints == 3) {
             endGame();
         } else {
-            preloadMap();
+            resetInternalRoundArena();
             sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_TITLE,
                     MessageConfig.DRAGON_EGG_CARNIVAL_GAME_RESTART_SUBTITLE);
 
@@ -242,6 +248,35 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
                 restartRemaining[0]--;
             }, 0, 20L);
         }
+    }
+
+    /** Restores only state mutated by one best-of-five round; the full world snapshot remains a match-end fallback. */
+    private void resetInternalRoundArena() {
+        World world = getGameConfig().getDragonEggSpawnPoint().getWorld();
+        if (world == null) return;
+
+        for (UUID uuid : roundEntityIds) {
+            Entity entity = world.getEntity(uuid);
+            if (entity != null) entity.remove();
+        }
+        roundEntityIds.clear();
+
+        Vector pos1 = getGameConfig().getAreaPos1();
+        Vector pos2 = getGameConfig().getAreaPos2();
+        BoundingBox bounds = new BoundingBox(
+                Math.min(pos1.getX(), pos2.getX()), Math.min(pos1.getY(), pos2.getY()),
+                Math.min(pos1.getZ(), pos2.getZ()), Math.max(pos1.getX(), pos2.getX()),
+                Math.max(pos1.getY(), pos2.getY()), Math.max(pos1.getZ(), pos2.getZ()));
+        for (Entity entity : world.getNearbyEntities(bounds)) {
+            if (entity instanceof EnderDragon || entity instanceof FallingBlock
+                    || entity instanceof Item || entity instanceof ExperienceOrb) {
+                entity.remove();
+            }
+        }
+
+        dragonEgg = getGameConfig().getDragonEggSpawnPoint().getBlock();
+        dragonEgg.setType(Material.DRAGON_EGG, false);
+        resetPlayerHealthFoodEffectLevelInventory();
     }
 
     @Override
@@ -274,7 +309,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
         setGameStageEnum(GameStageEnum.END);
 
-        teleportAllPlayers(getLobbyLocation());
+        beginPostGameSettlement();
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
@@ -284,7 +319,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
         Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
 
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     protected void calculatePoints() {
@@ -469,9 +504,8 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
     public void teleportPlayerToSpawnLocation(Player player) {
         // During the rule-introduction phase everyone roams from the introduction spawn point.
-        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
-        if (isIntroductionPhase() && introductionSpawnPoint != null) {
-            player.teleport(introductionSpawnPoint);
+        if (isIntroductionPhase()) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
             return;
         }
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);

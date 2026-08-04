@@ -19,7 +19,7 @@ public class BingoScheduleHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
         if (event.getGameInstance() instanceof BingoArea) {
-            if (scheduleManager.isEnabled()) {
+            if (event.getGameInstance().isEventRun() && scheduleManager.isEnabled()) {
                 scheduleManager.nextRound();
             }
         }

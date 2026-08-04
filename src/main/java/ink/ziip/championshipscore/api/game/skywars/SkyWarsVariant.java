@@ -15,7 +15,7 @@ public record SkyWarsVariant(@NotNull String id, @NotNull GameLifecycleSettings 
         if (id == null || id.isBlank()) id = config.getAreaName();
         if (id == null || id.isBlank()) id = "default";
         return new SkyWarsVariant(id,
-                new GameLifecycleSettings(config.getPrepareTime(), 5, config.getTimer()),
+                new GameLifecycleSettings(0, 5, config.getTimer()),
                 new GamePresentationSettings(config.getRules()),
                 new SkyWarsRules(config.isGlassCage(),
                         new SkyWarsBoundaryRules(config.getBoundaryDefaultHeight(),

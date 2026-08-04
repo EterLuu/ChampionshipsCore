@@ -1,6 +1,5 @@
 id: default
 lifecycle:
-  preparation-seconds: 10
   countdown-seconds: 5
   duration-seconds: 960
 mechanics:
@@ -24,8 +23,8 @@ mechanics:
 scoring:
   kill: 40
   survive: 50
-  player-elimination-survival: 10
-  team-elimination-survival: 2
+  player-elimination-survival: 8
+  team-elimination-survival: 4
 presentation:
   rules:
     - - "&#696969==========&r &#ff6b26[&#fff566空岛乱斗&#ff6b26] &#696969==========&r"

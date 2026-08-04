@@ -21,8 +21,4 @@ public class SnowballScheduleManager extends BaseSingleGameSchedule {
         return 3;
     }
 
-    @Override
-    public String getSpecCommand() {
-        return "cc spectate snowball " + getArea();
-    }
 }

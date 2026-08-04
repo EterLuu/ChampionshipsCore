@@ -149,11 +149,22 @@ public class DragonEggCarnivalHandler extends BaseListener {
 
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
             if (championshipTeam != null) {
+                event.getDrops().clear();
+                event.setDroppedExp(0);
                 dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_KILLED_DRAGON
                         .replace("%player%", Utils.formatPlayerName(player)));
                 dragonEggCarnivalArea.endGameInForm(championshipTeam);
             }
         }
+    }
+
+    /** The dragon is an objective, not a terrain-reset mechanic; keep its block damage out of the arena. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onDragonGrief(EntityExplodeEvent event) {
+        if (!(event.getEntity() instanceof EnderDragon)) return;
+        if (!event.getLocation().getWorld().getName().equals(dragonEggCarnivalArea.getWorldName())) return;
+        event.blockList().clear();
+        event.setYield(0);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

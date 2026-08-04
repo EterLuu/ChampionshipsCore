@@ -55,10 +55,7 @@ import java.util.logging.Level;
  * card cell is claimed when a team member collects the item, reaches the statistic, or earns the
  * advancement. Fixed points mode: completing a cell scores by claim rank, completing a line scores a
  * bonus; the round ends on the timer (or when the board is fully claimed) and is settled by score.
- *
- * <p>TODO(待确认): the spawn mechanism at round start is a placeholder — players are cycled across the
- * configured {@code player-spawn-points} in survival mode. The final mechanism is pending the user's
- * decision.
+ * Participants are scattered asynchronously around the overworld spawn before the final countdown.
  */
 public class BingoArea extends BaseMultiTeamGameInstance {
     @Getter
@@ -337,12 +334,11 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         }
 
         int delta = cellDelta + lineDelta;
-        String taskName = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
-                .serialize(task.data.getName());
-        sendMessageToAllGamePlayers(MessageConfig.BINGO_TASK_COMPLETED
+        Component message = Utils.toComponent(MessageConfig.BINGO_TASK_COMPLETED
                 .replace("%player%", Utils.formatPlayerName(player))
-                .replace("%task%", taskName)
-                .replace("%points%", String.valueOf(delta)));
+                .replace("%points%", String.valueOf(delta)))
+                .replaceText(builder -> builder.matchLiteral("%task%").replacement(task.data.getName()));
+        getOnlineParticipantSpectators().forEach(audience -> audience.sendMessage(message));
     }
 
     /**
@@ -457,15 +453,11 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         }
 
         cleanInventoryForAllGamePlayers();
-        // Release spectators (online -> lobby + ADVENTURE, offline -> dropped) so a reconnect after
-        // game end doesn't strand them in a finished game.
-        releaseAllSpectators();
-
         announceGameEnd(MessageConfig.BINGO_GAME_END_TITLE, MessageConfig.BINGO_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
-        teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+        beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -474,7 +466,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     /** Swaps every team's card-map renderer for one bound to the final outcome so the overlay paints. */

@@ -21,8 +21,4 @@ public class SkyWarsScheduleManager extends BaseSingleGameSchedule {
         return 1;
     }
 
-    @Override
-    public String getSpecCommand() {
-        return "cc spectate skywars " + getArea();
-    }
 }

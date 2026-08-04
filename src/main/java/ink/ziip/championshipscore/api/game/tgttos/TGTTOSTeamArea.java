@@ -178,7 +178,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
 
         setGameStageEnum(GameStageEnum.END);
 
-        teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+        beginPostGameSettlement();
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
@@ -189,7 +189,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     public void playerArrivedAtEndPoint(Player player) {
@@ -261,16 +261,18 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
         }
         if (getGameStageEnum() == GameStageEnum.COUNTDOWN || getGameStageEnum() == GameStageEnum.PROGRESS) {
             player.teleport(getSpectatorSpawnLocation());
-            if (getGameConfig().getAreaType().equals("ROAD")) {
-                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+            switch (getGameConfig().getAreaType()) {
+                case "BOAT" -> championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
                     player.setGameMode(GameMode.SURVIVAL);
+                    giveBoatToPlayer(player);
                 });
-            } else {
-                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                    player.setGameMode(GameMode.ADVENTURE);
+                case "ROAD" -> championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    player.setGameMode(GameMode.SURVIVAL);
+                    giveRoadToolToPlayer(player);
                 });
+                default -> championshipsCore.getServer().getScheduler().runTask(championshipsCore,
+                        () -> player.setGameMode(GameMode.ADVENTURE));
             }
         }
     }

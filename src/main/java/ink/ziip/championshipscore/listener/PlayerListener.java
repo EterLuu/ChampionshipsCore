@@ -17,7 +17,6 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -133,8 +132,4 @@ public class PlayerListener extends BaseListener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerHealedBySplashPotion(EntityRegainHealthEvent event) {
-        // TODO
-    }
 }

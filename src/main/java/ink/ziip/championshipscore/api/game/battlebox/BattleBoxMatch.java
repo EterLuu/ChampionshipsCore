@@ -52,8 +52,8 @@ public class BattleBoxMatch {
 
     public Location getRightSpawn() { return geometry.getRightSpawn(); }
     public Location getLeftSpawn() { return geometry.getLeftSpawn(); }
-    public Location getRightPreSpawn() { return geometry.getRightPreSpawn(); }
-    public Location getLeftPreSpawn() { return geometry.getLeftPreSpawn(); }
+    public Location getRightPrepareSpot() { return geometry.getRightPrepareSpot(); }
+    public Location getLeftPrepareSpot() { return geometry.getLeftPrepareSpot(); }
     public Location getSpectatorSpawn() { return geometry.getSpectatorSpawn(); }
     public List<Location> getPotionLocations() { return geometry.getPotionSpawns(); }
 

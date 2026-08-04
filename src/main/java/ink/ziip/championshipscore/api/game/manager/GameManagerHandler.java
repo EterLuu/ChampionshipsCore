@@ -13,6 +13,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -45,19 +46,37 @@ public class GameManagerHandler extends BaseListener {
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
         UUID uuid = player.getUniqueId();
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
-        if (championshipTeam != null) {
-            BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
-            if (baseArea != null) {
-                baseArea.handlePlayerDeath(event);
+        if (plugin.getGameManager().isWaitingForNextRound(uuid)) {
+            event.setKeepInventory(true);
+            event.getDrops().clear();
+            event.setDroppedExp(0);
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                player.spigot().respawn();
+                plugin.getGameManager().restoreNextRoundHold(player);
+            });
+            return;
+        }
+        BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
+        if (baseArea != null) {
+            if (baseArea.isSharedPreGameRecoveryPhase()) {
+                event.setKeepInventory(true);
+                event.setKeepLevel(true);
+                event.setDroppedExp(0);
+                event.getDrops().clear();
+                BaseGameInstance preGameArea = baseArea;
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    player.spigot().respawn();
+                    preGameArea.restoreSharedPreGameParticipant(player);
+                });
                 return;
             }
-        } else {
-            BaseGameInstance baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
-            if (baseArea != null) {
-                baseArea.handleSpectatorDeath(event);
-                return;
-            }
+            baseArea.handlePlayerDeath(event);
+            return;
+        }
+        baseArea = plugin.getGameManager().getPlayerSpectatorStatus(uuid);
+        if (baseArea != null) {
+            baseArea.handleSpectatorDeath(event);
+            return;
         }
 
         plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -79,18 +98,24 @@ public class GameManagerHandler extends BaseListener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
-        BaseGameInstance baseArea = null;
-        if (championshipTeam != null) {
-            baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
-            if (baseArea != null) {
-                baseArea.handlePlayerJoin(event);
-                return;
-            }
+        if (plugin.getGameManager().restoreNextRoundHold(player)) {
+            return;
         }
-        baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+        BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
+        if (baseArea != null) {
+            if (baseArea.restoreSharedPreGameParticipant(player))
+                return;
+            baseArea.handlePlayerJoin(event);
+            return;
+        }
+        baseArea = plugin.getGameManager().getPlayerSpectatorStatus(uuid);
         if (baseArea != null) {
             baseArea.handleSpectatorJoin(event);
+            return;
+        }
+
+        if (championshipTeam == null && plugin.getGameManager().spectateCurrentGame(player)) {
             return;
         }
 
@@ -116,18 +141,21 @@ public class GameManagerHandler extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
+    public void onTransitionDamage(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player player
+                && plugin.getGameManager().isWaitingForNextRound(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
-        BaseGameInstance baseArea = null;
-        if (championshipTeam != null) {
-            baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
-            if (baseArea != null) {
-                baseArea.handlePlayerQuit(event);
-            }
-        }
-        baseArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
+        BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
+        if (baseArea != null)
+            baseArea.handlePlayerQuit(event);
+        baseArea = plugin.getGameManager().getPlayerSpectatorStatus(uuid);
         if (baseArea != null) {
             if (!baseArea.keepSpectatorAcrossReconnect()) {
                 plugin.getGameManager().leaveSpectating(player);

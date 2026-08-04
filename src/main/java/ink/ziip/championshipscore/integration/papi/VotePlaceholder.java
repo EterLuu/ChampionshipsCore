@@ -32,10 +32,7 @@ public class VotePlaceholder extends BasePlaceholder {
                 return null;
             }
 
-            if (plugin.getRankManager().getGameOrder(gameTypeEnum) == -1) {
-                return "true";
-            }
-            return "false";
+            return String.valueOf(voteManager.canVoteFor(gameTypeEnum));
         }
         if (params.startsWith("vote_nums_")) {
             GameTypeEnum gameTypeEnum = null;
@@ -45,10 +42,16 @@ public class VotePlaceholder extends BasePlaceholder {
                 return null;
             }
 
-            int num = voteManager.getVoteNums(gameTypeEnum);
-            if (num == 0)
-                num = 1;
-            return String.valueOf(num);
+            return String.valueOf(voteManager.getVoteNums(gameTypeEnum));
+        }
+        if (params.startsWith("vote_count_")) {
+            GameTypeEnum gameTypeEnum;
+            try {
+                gameTypeEnum = GameTypeEnum.valueOf(params.replace("vote_count_", ""));
+            } catch (Exception ignored) {
+                return null;
+            }
+            return String.valueOf(voteManager.getVoteNums(gameTypeEnum));
         }
 
         /* Player required placeholders */

@@ -19,7 +19,7 @@ public class SkyWarsScheduleHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
         if (event.getGameInstance() instanceof SkyWarsTeamArea) {
-            if (scheduleManager.isEnabled()) {
+            if (event.getGameInstance().isEventRun() && scheduleManager.isEnabled()) {
                 scheduleManager.nextRound();
             }
         }

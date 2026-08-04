@@ -11,7 +11,7 @@ player-spawn-point:
 # 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
 # 规则文案（rules，每个子列表为一段，支持 & 颜色码与 &#RRGGBB 十六进制颜色），期间可以自由参观
 # 场地；结束后传送到正式准备点位，读秒后开始游戏。
-# 将 introduction-spawn-point 留空或把 rules 设为 [] 即可跳过该阶段。
+# introduction-spawn-point 留空时使用旁观出生点；把 rules 设为 [] 可跳过该阶段。
 introduction-spawn-point:
 rules:
   - - "&#696969==========&r &#ff6b26[&6烫手鳕鱼&#ff6b26] &#696969==========&r"

@@ -16,18 +16,18 @@ import java.util.List;
 /** The complete, transformable spatial configuration of one Parkour Tag game instance. */
 @Getter
 public final class ParkourTagGeometry implements SpatialTemplate<ParkourTagGeometry> {
-    private final Location rightPreSpawn;
-    private final Location leftPreSpawn;
+    private final Location rightPrepareSpot;
+    private final Location leftPrepareSpot;
     private final Location spectatorSpawn;
     private final Vector min;
     private final Vector max;
     private final ChaseZone leftZone;
     private final ChaseZone rightZone;
 
-    private ParkourTagGeometry(Location rightPreSpawn, Location leftPreSpawn, Location spectatorSpawn,
+    private ParkourTagGeometry(Location rightPrepareSpot, Location leftPrepareSpot, Location spectatorSpawn,
                                Vector min, Vector max, ChaseZone leftZone, ChaseZone rightZone) {
-        this.rightPreSpawn = rightPreSpawn;
-        this.leftPreSpawn = leftPreSpawn;
+        this.rightPrepareSpot = rightPrepareSpot;
+        this.leftPrepareSpot = leftPrepareSpot;
         this.spectatorSpawn = spectatorSpawn;
         this.min = min;
         this.max = max;
@@ -37,7 +37,7 @@ public final class ParkourTagGeometry implements SpatialTemplate<ParkourTagGeome
 
     public static @NotNull ParkourTagGeometry from(@NotNull ParkourTagConfig config) {
         return new ParkourTagGeometry(
-                config.getRightPreSpawnPoint(), config.getLeftPreSpawnPoint(),
+                config.getRightPrepareSpot(), config.getLeftPrepareSpot(),
                 config.getSpectatorSpawnPoint(),
                 Vector.getMinimum(config.getAreaPos1(), config.getAreaPos2()),
                 Vector.getMaximum(config.getAreaPos1(), config.getAreaPos2()),
@@ -64,7 +64,7 @@ public final class ParkourTagGeometry implements SpatialTemplate<ParkourTagGeome
 
     @Override
     public @NotNull ParkourTagGeometry transform(@NotNull SpatialTransform transform) {
-        return new ParkourTagGeometry(transform.apply(rightPreSpawn), transform.apply(leftPreSpawn),
+        return new ParkourTagGeometry(transform.apply(rightPrepareSpot), transform.apply(leftPrepareSpot),
                 transform.apply(spectatorSpawn), transform.apply(min), transform.apply(max),
                 leftZone.transform(transform), rightZone.transform(transform));
     }

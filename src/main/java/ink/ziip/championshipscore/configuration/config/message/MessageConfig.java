@@ -20,7 +20,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 13;
+        return 20;
     }
 
     /** Keep unrelated rank/vote copy while replacing the unified gameplay and administration copy in v11. */
@@ -28,9 +28,11 @@ public class MessageConfig extends BaseConfigurationFile {
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) {
         for (String section : List.of("command", "team", "member", "reason", "area", "spectator", "game",
                 "battlebox", "parkourtag", "skywars", "tgttos", "bingo", "buildmart", "tntrun",
-                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky"))
+                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky", "acerace"))
             outdatedConfiguration.set(section, null);
         outdatedConfiguration.set("no-permission", null);
+        outdatedConfiguration.set("vote.start-vote", null);
+        outdatedConfiguration.set("vote.start-vote-subtitle", null);
         super.loadFromOutdatedConfiguration(outdatedConfiguration);
     }
 
@@ -193,6 +195,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "rank.no-recap")
     public static String RANK_NO_RECAP;
 
+    @ConfigOption(path = "rank.game-weight-bar")
+    public static String RANK_GAME_WEIGHT_BAR;
+
+    @ConfigOption(path = "rank.game-weight-row")
+    public static String RANK_GAME_WEIGHT_ROW;
+
     // Spectator
     @ConfigOption(path = "spectator.is-player")
     public static String SPECTATOR_IS_PLAYER;
@@ -270,11 +278,8 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.dodgebolt", nullable = true)
     public static String GAME_DODGEBOLT;
 
-    @ConfigOption(path = "game.game-weight")
-    public static String GAME_GAME_WEIGHT;
-
-    @ConfigOption(path = "game.game-weight-info")
-    public static String GAME_GAME_WEIGHT_INFO;
+    @ConfigOption(path = "game.acerace", nullable = true)
+    public static String GAME_ACE_RACE;
 
     @ConfigOption(path = "game.preparation-count-down")
     public static String GAME_PREPARATION_COUNT_DOWN;
@@ -552,6 +557,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "skywars.stop-board-shrink")
     public static String SKY_WARS_STOP_BOARD_SHRINK;
 
+    @ConfigOption(path = "skywars.happy-ghast-spawned")
+    public static String SKY_WARS_HAPPY_GHAST_SPAWNED;
+
     @ConfigOption(path = "skywars.deduct-food-level")
     public static String SKY_WARS_DEDUCT_FOOD_LEVEL;
 
@@ -609,6 +617,55 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tgttos.fall-into-void")
     public static String TGTTOS_FALL_INTO_VOID;
+
+    // Ace Race
+    @ConfigOption(path = "acerace.start-preparation")
+    public static String ACE_RACE_START_PREPARATION;
+
+    @ConfigOption(path = "acerace.start-preparation-title")
+    public static String ACE_RACE_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "acerace.start-preparation-subtitle")
+    public static String ACE_RACE_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "acerace.game-start-title")
+    public static String ACE_RACE_GAME_START_TITLE;
+
+    @ConfigOption(path = "acerace.game-start-subtitle")
+    public static String ACE_RACE_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "acerace.game-end-title")
+    public static String ACE_RACE_GAME_END_TITLE;
+
+    @ConfigOption(path = "acerace.game-end-subtitle")
+    public static String ACE_RACE_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "acerace.action-bar-count-down")
+    public static String ACE_RACE_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "acerace.received-elytra")
+    public static String ACE_RACE_RECEIVED_ELYTRA;
+
+    @ConfigOption(path = "acerace.received-trident")
+    public static String ACE_RACE_RECEIVED_TRIDENT;
+
+    @ConfigOption(path = "acerace.lap-completed")
+    public static String ACE_RACE_LAP_COMPLETED;
+
+    @ConfigOption(path = "acerace.finished")
+    public static String ACE_RACE_FINISHED;
+
+    @ConfigOption(path = "acerace.returned-to-respawn-point")
+    public static String ACE_RACE_RETURNED_TO_RESPAWN_POINT;
+
+    @ConfigOption(path = "acerace.launch-pad")
+    public static String ACE_RACE_LAUNCH_PAD;
+
+    @ConfigOption(path = "acerace.jump-pad")
+    public static String ACE_RACE_JUMP_PAD;
+
+    @ConfigOption(path = "acerace.speed-boost")
+    public static String ACE_RACE_SPEED_BOOST;
 
     // Bingo
     @ConfigOption(path = "bingo.start-preparation")

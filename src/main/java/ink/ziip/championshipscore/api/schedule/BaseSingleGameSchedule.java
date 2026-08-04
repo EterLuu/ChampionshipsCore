@@ -4,14 +4,12 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.Sound;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -93,8 +91,8 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         }
 
         handler.register();
-        addAllSpectatorsToArea();
-        plugin.getGameManager().joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea());
+        plugin.getGameManager().joinSingleTeamAreaForAllTeams(
+                gameTypeEnum, getArea(), true, GameRunMode.EVENT);
     }
 
     public void endSchedule() {
@@ -105,26 +103,29 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
 
         enabled = false;
 
-        Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
-        Utils.sendTitleToAllPlayers(MessageConfig.GAME_ROUND_END_TITLE.replace("%game%", gameTypeEnum.toString()),
-                MessageConfig.GAME_ROUND_END_SUBTITLE, 60);
-        if (plugin.isLoaded()) {
-            scheduler.runTaskLater(plugin, () -> plugin.getRankManager().broadcastFinalRankings(gameTypeEnum), 40L);
-        }
         handler.unRegister();
         Utils.changeLevelForAllPlayers(0);
+        plugin.getGameManager().releaseEventSpectatorsForGame(gameTypeEnum);
     }
 
     public void nextRound() {
         if (!enabled)
             return;
 
+        boolean hasNextRound = subRound < getTotalRounds();
+        scheduleManager.settleEventRound(gameTypeEnum, hasNextRound, () -> {
+            if (!enabled)
+                return;
+            if (!hasNextRound) {
+                endSchedule();
+                return;
+            }
+            startNextRoundCountdown();
+        });
+    }
+
+    private void startNextRoundCountdown() {
         subRound++;
-        if (subRound > getTotalRounds()) {
-            endSchedule();
-            removeAllSpectatorsFromArea();
-            return;
-        }
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
         timer = 30;
@@ -139,36 +140,26 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
 
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(0);
-                plugin.getGameManager().joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea(), false);
+                boolean started = plugin.getGameManager()
+                        .joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea(), false, GameRunMode.EVENT);
                 if (startTask != null)
                     startTask.cancel();
+                if (!started) {
+                    plugin.getLogger().warning(Utils.formatGameLog(gameTypeEnum, getArea(),
+                            "调度", "中止", "下一轮启动失败，已释放轮间玩家"));
+                    endSchedule();
+                }
             }
             timer--;
         }, 0, 20L);
     }
 
-    public void addAllSpectatorsToArea() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam == null) {
-                player.performCommand("cc spectate leave");
-                player.performCommand(getSpecCommand());
-            }
-        }
-    }
-
-    public void removeAllSpectatorsFromArea() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam == null) {
-                player.performCommand("cc spectate leave");
-            }
-        }
+    public boolean hasNextRound() {
+        return enabled && subRound < getTotalRounds();
     }
 
     public abstract String getArea();
 
     public abstract int getTotalRounds();
 
-    public abstract String getSpecCommand();
 }

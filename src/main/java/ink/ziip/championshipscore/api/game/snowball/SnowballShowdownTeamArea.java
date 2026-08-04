@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameI
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -212,7 +213,7 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         setGameStageEnum(GameStageEnum.END);
 
-        teleportAllPlayers(getLobbyLocation());
+        beginPostGameSettlement();
 
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -220,7 +221,7 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     protected void calculatePoints() {
@@ -321,12 +322,17 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
             teleportPlayerToSpawnLocation(player);
+            player.setGameMode(GameMode.ADVENTURE);
             return;
         }
 
         if (getGameStageEnum() == GameStageEnum.COUNTDOWN || getGameStageEnum() == GameStageEnum.PROGRESS) {
             respawnPlayer(player);
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
         }
+        player.teleport(CCConfig.LOBBY_LOCATION);
+        player.setGameMode(GameMode.ADVENTURE);
     }
 
     public void addShoot(Player assailant, Player player) {
@@ -434,9 +440,8 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
 
     public synchronized void teleportPlayerToSpawnLocation(Player player) {
         // During the rule-introduction phase everyone roams from the introduction spawn point.
-        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
-        if (isIntroductionPhase() && introductionSpawnPoint != null) {
-            player.teleport(introductionSpawnPoint);
+        if (isIntroductionPhase()) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
             return;
         }
         List<Location> locations = playerRespawnLocations.get(player.getUniqueId());

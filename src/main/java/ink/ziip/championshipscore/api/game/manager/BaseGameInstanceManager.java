@@ -27,7 +27,7 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
         return new java.util.ArrayList<>(areas.keySet());
     }
 
-    /** All permanent runtime instances owned by this manager; one per map in the legacy default. */
+    /** All permanent runtime instances owned by this manager. Replicated-map managers include every slot. */
     public Collection<T> getRuntimeInstances() {
         return List.copyOf(areas.values());
     }
@@ -81,6 +81,12 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
             return false;
         managedWorlds.add(worldName);
         return true;
+    }
+
+    /** Updates ownership after an idle map world has been renamed by the admin world command. */
+    public void renameManagedWorld(String oldWorldName, String newWorldName) {
+        if (managedWorlds.remove(oldWorldName))
+            managedWorlds.add(newWorldName);
     }
 
     public void clearAreas() {

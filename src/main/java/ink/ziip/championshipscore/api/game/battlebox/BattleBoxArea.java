@@ -83,7 +83,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
         }
         if (getGameConfig().getTimer() <= 0 || copyIndex >= getGameConfig().getCopyCount()
                 || geometry.getRightSpawn() == null || geometry.getLeftSpawn() == null
-                || geometry.getRightPreSpawn() == null || geometry.getLeftPreSpawn() == null
+                || geometry.getRightPrepareSpot() == null || geometry.getLeftPrepareSpot() == null
                 || geometry.getSpectatorSpawn() == null) {
             logGame(Level.WARNING, "启动", "地图配置尚未完成，无法开始游戏");
             return false;
@@ -105,8 +105,8 @@ public class BattleBoxArea extends BasePairedGameInstance {
     protected Collection<Location> getStartPreloadLocations() {
         if (match == null) return List.of();
         List<Location> locations = new ArrayList<>();
-        locations.add(match.getRightPreSpawn());
-        locations.add(match.getLeftPreSpawn());
+        locations.add(match.getRightPrepareSpot());
+        locations.add(match.getLeftPrepareSpot());
         locations.add(match.getRightSpawn());
         locations.add(match.getLeftSpawn());
         locations.add(match.getSpectatorSpawn());
@@ -149,8 +149,8 @@ public class BattleBoxArea extends BasePairedGameInstance {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         if (match != null) {
-            match.getRight().teleportAllPlayers(match.getRightPreSpawn());
-            match.getLeft().teleportAllPlayers(match.getLeftPreSpawn());
+            match.getRight().teleportAllPlayers(match.getRightPrepareSpot());
+            match.getLeft().teleportAllPlayers(match.getLeftPrepareSpot());
             match.resetCenterWool();
         }
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -254,7 +254,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
 
         setGameStageEnum(GameStageEnum.END);
 
-        teleportAllPlayers(getLobbyLocation());
+        beginPostGameSettlement();
         resetPlayerHealthFoodEffectLevelInventory();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
@@ -264,7 +264,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
             Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(right, left, this));
         }
 
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     /** Settles one match: compares its wool floor, awards win/draw points and announces to its two teams. */
@@ -360,26 +360,34 @@ public class BattleBoxArea extends BasePairedGameInstance {
             return;
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            teleportPlayerToPreSpawnLocation(player);
+            teleportPlayerToPrepareSpotLocation(player);
             return;
         }
 
+        if (getGameStageEnum() == GameStageEnum.COUNTDOWN) {
+            BattleBoxMatch match = matchOf(player);
+            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+            if (match != null && team != null) {
+                player.teleport(team.equals(match.getRight()) ? match.getRightSpawn() : match.getLeftSpawn());
+                player.setGameMode(GameMode.SURVIVAL);
+                return;
+            }
+        }
         player.teleport(getSpectatorSpawnLocation());
-        scheduler.runTask(plugin, () -> player.setGameMode(GameMode.SPECTATOR));
+        player.setGameMode(getGameStageEnum() == GameStageEnum.END ? GameMode.ADVENTURE : GameMode.SPECTATOR);
     }
 
-    private void teleportPlayerToPreSpawnLocation(Player player) {
+    private void teleportPlayerToPrepareSpotLocation(Player player) {
         // During the rule-introduction phase everyone roams from the introduction spawn point.
-        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
-        if (isIntroductionPhase() && introductionSpawnPoint != null) {
-            player.teleport(introductionSpawnPoint);
+        if (isIntroductionPhase()) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
             return;
         }
         BattleBoxMatch match = matchOf(player);
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (match != null && team != null) {
-            Location target = team.equals(match.getRight()) ? match.getRightPreSpawn()
-                    : team.equals(match.getLeft()) ? match.getLeftPreSpawn() : null;
+            Location target = team.equals(match.getRight()) ? match.getRightPrepareSpot()
+                    : team.equals(match.getLeft()) ? match.getLeftPrepareSpot() : null;
             if (target != null) {
                 player.teleport(target);
                 scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));

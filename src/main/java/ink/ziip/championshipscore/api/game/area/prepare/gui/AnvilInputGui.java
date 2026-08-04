@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.MenuType;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.view.AnvilView;
@@ -85,13 +86,31 @@ public final class AnvilInputGui {
         });
     }
 
+    /** Opens a signed integer prompt. An empty input accepts the supplied default value. */
+    public static void openInteger(@NotNull Player player, @NotNull String prompt, int defaultValue,
+                                   @NotNull IntConsumer onValue) {
+        open(player, Mode.NUMBER, prompt, text -> {
+            int value = defaultValue;
+            if (!text.isBlank()) {
+                try {
+                    value = Integer.parseInt(text);
+                } catch (NumberFormatException e) {
+                    Utils.sendAdminError(player, "请输入有效整数。");
+                    return;
+                }
+            }
+            close(player);
+            onValue.accept(value);
+        });
+    }
+
     private static void open(@NotNull Player player, @NotNull Mode mode, @NotNull String prompt, @NotNull Consumer<String> callback) {
         Holder holder = new Holder(mode, callback);
-        AnvilView view = (AnvilView) player.openAnvil(null, true);
-        AnvilInventory inv = (AnvilInventory) view.getTopInventory();
+        AnvilView view = MenuType.ANVIL.create(player, Component.text(prompt));
+        player.openInventory(view);
+        AnvilInventory inv = view.getTopInventory();
         holder.inventory = inv;
         OPEN_INPUTS.put(player.getUniqueId(), holder);
-        view.setTitle(prompt);
         inv.setFirstItem(PrepareKeys.item(Material.PAPER, Component.text(prompt),
                 List.of(Component.text("在上方重命名栏输入，再点击右侧结果格确认").color(NamedTextColor.GRAY))));
         view.setMaximumRepairCost(0);

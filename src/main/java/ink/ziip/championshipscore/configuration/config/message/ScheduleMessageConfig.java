@@ -20,10 +20,10 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 3;
+        return 5;
     }
 
-    /** Version 3 is a full visual refresh; all schedule panels intentionally use the new defaults. */
+    /** Version 3 onward uses full visual-refresh templates rather than merging individual old panels. */
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) {
         loadFileOptions();
@@ -76,6 +76,12 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "parkour-warrior-points")
     public static List<String> PARKOUR_WARRIOR_POINTS;
+
+    @ConfigOption(path = "ace-race")
+    public static List<String> ACE_RACE;
+
+    @ConfigOption(path = "ace-race-points")
+    public static List<String> ACE_RACE_POINTS;
 
     @ConfigOption(path = "hoty-cody-dusky")
     public static List<String> HOTY_CODY_DUSKY;

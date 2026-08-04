@@ -3,9 +3,7 @@ package ink.ziip.championshipscore.command.spectate;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
@@ -37,11 +35,12 @@ public class SpectateSubCommand extends BaseSubCommand {
             Map.entry("parkourwarrior", GameTypeEnum.ParkourWarrior),
             Map.entry("hotycodydusky", GameTypeEnum.HotyCodyDusky),
             Map.entry("buildmart", GameTypeEnum.BuildMart),
-            Map.entry("dodgebolt", GameTypeEnum.Dodgebolt)
+            Map.entry("dodgebolt", GameTypeEnum.Dodgebolt),
+            Map.entry("acerace", GameTypeEnum.AceRace)
     );
 
     public SpectateSubCommand() {
-        super("spectate", "观战或退出观战", "/cc spectate leave | <游戏> <场地>", PLAYER_PERMISSION);
+        super("spectate", "打开观战菜单或直接选择场地", "/cc spectate [leave | <游戏> <场地>]", PLAYER_PERMISSION);
     }
 
     @Override
@@ -50,31 +49,31 @@ public class SpectateSubCommand extends BaseSubCommand {
             Utils.sendAdminError(sender, "该命令只能由玩家执行");
             return true;
         }
-        if (args.length < 1 || args.length > 2) {
+        if (args.length > 2) {
             sendUsage(sender);
             return true;
         }
-        if (CCConfig.STRICT_SPECTATOR_RULE) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (plugin.getRankManager().getRound() != 7) {
-                if (championshipTeam != null && !sender.hasPermission("cc.refuge")) {
-                    sender.sendMessage(MessageConfig.SPECTATOR_IS_PLAYER);
-                    return true;
-                }
+        if (args.length == 0) {
+            if (plugin.getGameManager().canManuallySpectate(player)) {
+                plugin.getGameManager().openSpectateMenu(player);
             }
+            return true;
+        }
+        if (args.length == 1) {
+            if (!args[0].equalsIgnoreCase("leave")) {
+                sendUsage(sender);
+                return true;
+            }
+            if (plugin.getGameManager().leaveSpectating(player)) {
+                sender.sendMessage(MessageConfig.SPECTATOR_LEAVING_AREA);
+            } else {
+                sender.sendMessage(MessageConfig.SPECTATOR_CANT_LEAVING_AREA);
+            }
+            return true;
         }
 
-        if (args.length == 1) {
-            if (args[0].equalsIgnoreCase("leave")) {
-                if (plugin.getGameManager().leaveSpectating(player)) {
-                    sender.sendMessage(MessageConfig.SPECTATOR_LEAVING_AREA);
-                } else {
-                    sender.sendMessage(MessageConfig.SPECTATOR_CANT_LEAVING_AREA);
-                }
-            } else {
-                sendUsage(sender);
-            }
-        }
+        if (!plugin.getGameManager().canManuallySpectate(player)) return true;
+
         if (args.length == 2) {
             GameTypeEnum gameTypeEnum = SPECTATABLE_GAMES.get(args[0].toLowerCase(Locale.ROOT));
             if (gameTypeEnum == null) {

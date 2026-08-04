@@ -5,6 +5,8 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 /**
  * One configurable step in a game's prepare flow (e.g. "set spectator spawn", "stamp 4 copies", "add an
  * escapee spawn"). Steps are built per-area by a {@link PrepareFlowDefinition} and bound to that area
@@ -82,6 +84,39 @@ public abstract class PrepareStep {
 
     /** Clear a {@link StepCaptureType#LIST} step. */
     public String listClear(@NotNull PrepareSession session, @NotNull Player player) {
+        return null;
+    }
+
+    /** One row shown by the safe list editor. Details are deliberately plain text for compact lore. */
+    public record ListEntry(@NotNull String title, @NotNull List<String> details) {
+        public ListEntry {
+            details = List.copyOf(details);
+        }
+    }
+
+    /** Returns the current rows for the list editor, in their configured order. */
+    public @NotNull List<ListEntry> listEntries(@NotNull PrepareSession session) {
+        return List.of();
+    }
+
+    /** Replaces one row's actual value with the player's current selection/location/item. */
+    public String listEdit(@NotNull PrepareSession session, @NotNull Player player, int index) {
+        return null;
+    }
+
+    /** Whether listEdit owns its follow-up GUI flow instead of returning immediately to the row editor. */
+    public boolean listEditHandlesNavigation() {
+        return false;
+    }
+
+    /** Moves one row to a one-based order. */
+    public String listSetOrder(@NotNull PrepareSession session, @NotNull Player player,
+                               int index, int newOrder) {
+        return null;
+    }
+
+    /** Removes exactly one row. Bulk removal is intentionally not exposed by the GUI. */
+    public String listRemove(@NotNull PrepareSession session, @NotNull Player player, int index) {
         return null;
     }
 

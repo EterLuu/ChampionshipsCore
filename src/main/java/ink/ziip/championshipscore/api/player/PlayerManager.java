@@ -38,17 +38,8 @@ public class PlayerManager extends BaseManager {
 
     }
 
-    // TODO check dead lock
     public ChampionshipPlayer addPlayer(@NotNull UUID uuid) {
-        ChampionshipPlayer championshipPlayer;
-        synchronized (cachedPlayers) {
-            if (!cachedPlayers.containsKey(uuid)) {
-                championshipPlayer = new ChampionshipPlayer(uuid);
-                cachedPlayers.putIfAbsent(uuid, championshipPlayer);
-                return championshipPlayer;
-            }
-            return getPlayer(uuid);
-        }
+        return cachedPlayers.computeIfAbsent(uuid, ChampionshipPlayer::new);
     }
 
     public void addPlayer(@NotNull Player player) {

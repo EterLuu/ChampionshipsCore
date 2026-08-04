@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -38,9 +39,9 @@ public abstract class BaseSubCommand extends BaseMainCommand {
     protected void sendUsage(@NotNull CommandSender sender) {
         if (usage == null || usage.isEmpty())
             return;
-        sender.sendMessage(MessageConfig.COMMAND_USAGE
+        sender.sendMessage(Utils.translateColorCodes(MessageConfig.COMMAND_USAGE
                 .replace("%usage%", usage)
-                .replace("%description%", description == null ? "" : description));
+                .replace("%description%", description == null ? "" : description)));
     }
 
     /** Prefix-filter a dynamic candidate list using the same case-insensitive rules as the command tree. */

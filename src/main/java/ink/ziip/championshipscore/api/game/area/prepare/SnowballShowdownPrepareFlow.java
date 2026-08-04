@@ -45,6 +45,7 @@ public final class SnowballShowdownPrepareFlow extends PrepareFlowDefinition {
         for (String lane : LANES) {
             steps.add(new ListStep("player_spawn_" + lane, Component.text("玩家出生点 " + lane),
                     Component.text("逐个添加该区域的玩家出生位置"), Material.PLAYER_HEAD,
+                    t -> laneValues(t, lane), (t, values) -> section(t).set(lane, values),
                     t -> laneValues(t, lane).isEmpty(),
                     (t, value) -> { List<String> values = laneValues(t, lane); values.add(value); section(t).set(lane, values); },
                     t -> section(t).set(lane, new ArrayList<>()), t -> laneValues(t, lane).size()));

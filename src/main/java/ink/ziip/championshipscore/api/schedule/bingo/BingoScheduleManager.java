@@ -20,8 +20,4 @@ public class BingoScheduleManager extends BaseSingleGameSchedule {
         return 1;
     }
 
-    @Override
-    public String getSpecCommand() {
-        return "cc spectate bingo bingo";
-    }
 }

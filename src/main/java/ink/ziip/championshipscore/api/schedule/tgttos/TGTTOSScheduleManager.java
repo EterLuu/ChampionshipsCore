@@ -21,8 +21,4 @@ public class TGTTOSScheduleManager extends BaseSingleGameSchedule {
         return plugin.getGameManager().getTgttosManager().getAreaNameList().size();
     }
 
-    @Override
-    public String getSpecCommand() {
-        return "cc spectate tgttos " + getArea();
-    }
 }

@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.command.game.start.skywars.SkyWarsStartMainCom
 import ink.ziip.championshipscore.command.game.start.snowball.SnowBallStartMainCommand;
 import ink.ziip.championshipscore.command.game.start.tgttos.TGTTOSStartMainCommand;
 import ink.ziip.championshipscore.command.game.start.tntrun.TNTRunStartMainCommand;
+import ink.ziip.championshipscore.command.game.start.acerace.AceRaceStartMainCommand;
 
 public class GameStartMainCommand extends BaseMainCommand {
 
@@ -26,5 +27,6 @@ public class GameStartMainCommand extends BaseMainCommand {
         addGameSubCommand(GameTypeEnum.ParkourWarrior, new ParkourWarriorStartMainCommand());
         addGameSubCommand(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyStartSubCommand());
         addGameSubCommand(GameTypeEnum.Dodgebolt, new DodgeboltStartSubCommand());
+        addGameSubCommand(GameTypeEnum.AceRace, new AceRaceStartMainCommand());
     }
 }

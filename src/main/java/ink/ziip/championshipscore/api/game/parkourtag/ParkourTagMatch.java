@@ -54,8 +54,8 @@ public class ParkourTagMatch {
         this.geometry = geometry;
     }
 
-    public Location getRightPreSpawn() { return geometry.getRightPreSpawn(); }
-    public Location getLeftPreSpawn() { return geometry.getLeftPreSpawn(); }
+    public Location getRightPrepareSpot() { return geometry.getRightPrepareSpot(); }
+    public Location getLeftPrepareSpot() { return geometry.getLeftPrepareSpot(); }
     public Location getSpectatorSpawn() { return geometry.getSpectatorSpawn(); }
     public Location getLeftAreaChaserSpawn() { return geometry.getLeftZone().getChaserSpawn(); }
     public List<Location> getLeftAreaEscapeeSpawns() { return geometry.getLeftZone().getEscapeeSpawns(); }

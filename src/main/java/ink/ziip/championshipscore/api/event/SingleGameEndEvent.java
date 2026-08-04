@@ -22,10 +22,4 @@ public class SingleGameEndEvent extends ChampionshipsCoreEvent {
     public List<ChampionshipTeam> getChampionshipTeams() {
         return championshipTeams;
     }
-
-    /** @deprecated Use {@link #getGameInstance()}. */
-    @Deprecated(forRemoval = true)
-    public BaseMultiTeamGameInstance getBaseSingleTeamArea() {
-        return gameInstance;
-    }
 }

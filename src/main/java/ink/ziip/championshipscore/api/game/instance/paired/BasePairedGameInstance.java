@@ -44,6 +44,7 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
     public boolean tryStartGame(ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return false;
+        cancelPostGameRoutingBeforeStart();
         setGameStageEnum(GameStageEnum.LOADING);
 
         this.rightChampionshipTeam = rightChampionshipTeam;
@@ -54,6 +55,8 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
 
     @Override
     public void addPlayerPointsToDatabase() {
+        if (!isEventRun())
+            return;
         for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
             if (playerPointEntry.getValue() != 0) {
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(playerPointEntry.getKey());
@@ -226,5 +229,13 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
             leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
             leftChampionshipTeam.setGameModeForAllPlayers(GameMode.ADVENTURE);
         }
+    }
+
+    @Override
+    public Collection<UUID> getParticipantUniqueIds() {
+        Set<UUID> participants = new LinkedHashSet<>();
+        if (rightChampionshipTeam != null) participants.addAll(rightChampionshipTeam.getMembers());
+        if (leftChampionshipTeam != null) participants.addAll(leftChampionshipTeam.getMembers());
+        return List.copyOf(participants);
     }
 }

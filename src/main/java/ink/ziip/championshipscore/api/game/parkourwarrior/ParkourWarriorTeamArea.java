@@ -42,7 +42,6 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     @Getter
     private int timer;
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
 
     public ParkourWarriorTeamArea(ChampionshipsCore plugin, ParkourWarriorConfig parkourWarriorConfig) {
@@ -82,8 +81,13 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         if (section == null)
             return;
 
-        Set<String> checkpoints = section.getKeys(false);
-        for (String checkpointName : checkpoints) {
+        List<String> checkpointNames = new ArrayList<>(section.getKeys(false));
+        Map<String, Integer> fallbackOrder = new HashMap<>();
+        for (int i = 0; i < checkpointNames.size(); i++) fallbackOrder.put(checkpointNames.get(i), i + 1);
+        checkpointNames.sort(Comparator.comparingInt(name -> section.getConfigurationSection(name) == null
+                ? fallbackOrder.getOrDefault(name, Integer.MAX_VALUE)
+                : section.getConfigurationSection(name).getInt("order", fallbackOrder.get(name))));
+        for (String checkpointName : checkpointNames) {
             ConfigurationSection checkpointSection = section.getConfigurationSection(checkpointName);
             List<CCSelection> subCheckpoints = new ArrayList<>();
 
@@ -420,29 +424,10 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         announceGamePreparation(MessageConfig.PARKOUR_WARRIOR_START_PREPARATION,
                 MessageConfig.PARKOUR_WARRIOR_START_PREPARATION_TITLE, MessageConfig.PARKOUR_WARRIOR_START_PREPARATION_SUBTITLE);
 
-        timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            showPreparationCountdown(timer);
-
-            if (timer == 0) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     protected void startGameProgress() {
-        teleportAllPlayerToSpawnPoints();
-
-        resetPlayerHealthFoodEffectLevelInventory();
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-
-        giveBootToAllPlayers();
-
         startFinalCountdown(MessageConfig.PARKOUR_WARRIOR_GAME_START_SOON_TITLE,
                 MessageConfig.PARKOUR_WARRIOR_GAME_START_TITLE, MessageConfig.PARKOUR_WARRIOR_GAME_START_SUBTITLE,
                 this::beginGameProgress);
@@ -550,9 +535,6 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
-
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
@@ -574,7 +556,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
         setGameStageEnum(GameStageEnum.END);
 
-        teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+        beginPostGameSettlement();
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
@@ -585,17 +567,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
 
-        resetGame();
-    }
-
-    private void teleportAllPlayerToSpawnPoints() {
-        Location location = getGameConfig().getPlayerSpawnPoint();
-        for (UUID uuid : gamePlayers) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                player.teleport(location);
-            }
-        }
+        finishPostGameAfterEndEvent();
     }
 
     public void teleportPlayerToSpawnPoint(Player player, boolean broadcast) {
@@ -609,7 +581,6 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetArea() {
-        startGamePreparationTask = null;
         startGameProgressTask = null;
     }
 
@@ -640,6 +611,20 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void handlePlayerJoin(@NotNull PlayerJoinEvent event) {
-
+        Player player = event.getPlayer();
+        if (notAreaPlayer(player)) return;
+        GameStageEnum stage = getGameStageEnum();
+        if (stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN
+                || stage == GameStageEnum.PROGRESS) {
+            player.teleport(playerSpawnLocations.getOrDefault(player.getUniqueId(),
+                    getGameConfig().getPlayerSpawnPoint()));
+            player.setGameMode(GameMode.ADVENTURE);
+            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+            if (team != null) player.getInventory().setBoots(team.getBoots());
+            if (stage == GameStageEnum.PROGRESS) hideAndShowPlayer(player);
+            return;
+        }
+        player.teleport(CCConfig.LOBBY_LOCATION);
+        player.setGameMode(GameMode.ADVENTURE);
     }
 }

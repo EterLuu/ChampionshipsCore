@@ -1,13 +1,12 @@
 dont-edit-this:
-  version: 4
+  version: 5
 name: area
 # "inline" reads rules from this map file; any other id resolves skywars/variants/<id>.yml.
 variant: inline
-prepare-time: 10
 timer: 960
 area-pos1:
 area-pos2:
-pre-spawn-point:
+boundary-center-point:
 spectator-spawn-point:
 team-spawn-points: [ ]
 glass-cage: true
@@ -34,14 +33,14 @@ time:
 scoring:
   kill: 40
   survive: 50
-  player-elimination-survival: 10
-  team-elimination-survival: 2
+  player-elimination-survival: 8
+  team-elimination-survival: 4
 
 # ── 规则介绍阶段（introduction）────────────────────────────
 # 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
 # 规则文案（rules，每个子列表为一段，支持 & 颜色码与 &#RRGGBB 十六进制颜色），期间可以自由参观
 # 场地；结束后传送到正式准备点位，读秒后开始游戏。
-# 将 introduction-spawn-point 留空或把 rules 设为 [] 即可跳过该阶段。
+# introduction-spawn-point 留空时使用旁观出生点；把 rules 设为 [] 可跳过该阶段。
 introduction-spawn-point:
 rules:
   - - "&#696969==========&r &#ff6b26[&#fff566空岛乱斗&#ff6b26] &#696969==========&r"

@@ -6,7 +6,7 @@ import org.bukkit.util.Vector;
 
 /**
  * Placement grid for Parkour Tag's parallel match copies. One arena schematic (a full two-team venue: both
- * lobby pre-spawns plus the left and right chase cages) is stamped in a row by {@code prepare}; each copy
+ * lobby prepare-spots plus the left and right chase cages) is stamped in a row by {@code prepare}; each copy
  * hosts one independent team-vs-team match. The same row drives both the offline paste and the runtime
  * per-match geometry ({@code ParkourTagMatch}): copy {@code k}'s spawns/cages/bounds are copy 0's configured
  * template shifted by {@link #delta(int)}.

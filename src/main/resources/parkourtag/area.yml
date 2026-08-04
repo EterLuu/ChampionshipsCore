@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 5
+  version: 6
 name: area
 world-name:
 timer: 60
@@ -8,8 +8,8 @@ copy-count: 8
 copy-layout: {}
 area-pos1:
 area-pos2:
-left-pre-spawn-point:
-right-pre-spawn-point:
+left-prepare-spot:
+right-prepare-spot:
 left-area:
   area-pos1:
   area-pos2:
@@ -26,7 +26,7 @@ right-area:
 # 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
 # 规则文案（rules，每个子列表为一段，支持 & 颜色码与 &#RRGGBB 十六进制颜色），期间可以自由参观
 # 场地；结束后传送到正式准备点位，读秒后开始游戏。
-# 将 introduction-spawn-point 留空或把 rules 设为 [] 即可跳过该阶段。
+# introduction-spawn-point 留空时使用旁观出生点；把 rules 设为 [] 可跳过该阶段。
 introduction-spawn-point:
 rules:
   - - "&#696969==========&r &#8a70ff[&#24abff跑酷追击&#8a70ff] &#696969==========&r"

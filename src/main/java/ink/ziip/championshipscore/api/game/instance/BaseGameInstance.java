@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.arena.ArenaChunkPreloader;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
+import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
@@ -47,6 +48,11 @@ public abstract class BaseGameInstance {
     protected final Map<String, BossBar> bossBars = new ConcurrentHashMap<>();
     private final Set<ArenaChunkPreloader.ChunkTicket> startChunkTickets = ConcurrentHashMap.newKeySet();
     private volatile CompletableFuture<Void> startPreloadFuture = CompletableFuture.completedFuture(null);
+    private boolean roundTransitionPending;
+    private boolean forceTerminalEnd;
+    private GameRunMode runMode = GameRunMode.GAME;
+    private boolean postGamePending;
+    private boolean postGameFinalizing;
     private volatile CompletableFuture<Void> coordinatedStartGate;
 
     /** Duration (seconds) of the optional rule-introduction phase preceding the normal preparation. */
@@ -59,6 +65,8 @@ public abstract class BaseGameInstance {
 
     /** Final five-second countdown, isolated from every game's live timer. */
     protected BukkitTask finalCountdownTask;
+    private static final long POST_GAME_RESULT_DISPLAY_TICKS = 200L;
+    private BukkitTask postGameRoutingTask;
 
     private static final Note BIT_C4 = Note.natural(0, Note.Tone.C);
     private static final Note BIT_C5 = Note.natural(1, Note.Tone.C);
@@ -90,6 +98,8 @@ public abstract class BaseGameInstance {
         cancelIntroduction();
         cancelFinalCountdown();
         resetBaseArea();
+        roundTransitionPending = false;
+        postGamePending = false;
         playerPoints.clear();
         clearBossBars();
 
@@ -102,6 +112,7 @@ public abstract class BaseGameInstance {
         releaseStartChunks();
         cancelIntroduction();
         cancelFinalCountdown();
+        cancelPostGameRouting();
         clearBossBars();
         getGameHandler().unRegister();
         gameInstanceHandler.unRegister();
@@ -116,8 +127,9 @@ public abstract class BaseGameInstance {
     protected final void startGamePreparationAfterPreload() {
         releaseStartChunks();
         List<Location> locations = new ArrayList<>(getStartPreloadLocations());
-        if (gameConfig.getIntroductionSpawnPoint() != null)
-            locations.add(gameConfig.getIntroductionSpawnPoint());
+        Location introductionSpawnPoint = resolveIntroductionSpawnPoint();
+        if (introductionSpawnPoint != null)
+            locations.add(introductionSpawnPoint);
         AtomicReference<Throwable> preloadError = new AtomicReference<>();
         CompletableFuture<Void> preload;
         if (locations.isEmpty()) {
@@ -197,6 +209,8 @@ public abstract class BaseGameInstance {
     }
 
     public void addPlayerPointsToDatabase() {
+        if (runMode != GameRunMode.EVENT)
+            return;
         for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
             if (playerPointEntry.getValue() != 0)
                 plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
@@ -246,6 +260,25 @@ public abstract class BaseGameInstance {
         }
     }
 
+    public GameTypeEnum getGameTypeEnum() {
+        return gameTypeEnum;
+    }
+
+    public GameRunMode getRunMode() {
+        return runMode;
+    }
+
+    public boolean isEventRun() {
+        return runMode == GameRunMode.EVENT;
+    }
+
+    /** Assigned by GameManager immediately before tryStartGame; ordinary game commands use GAME. */
+    public void prepareRunMode(@NotNull GameRunMode runMode) {
+        if (getGameStageEnum() != GameStageEnum.WAITING)
+            throw new IllegalStateException("Cannot change run mode while an instance is active");
+        this.runMode = runMode;
+    }
+
     public void setGameStageEnum(GameStageEnum gameStageEnum) {
         synchronized (this) {
             this.gameStageEnum = gameStageEnum;
@@ -262,6 +295,12 @@ public abstract class BaseGameInstance {
         setGameStageEnum(GameStageEnum.END);
         getGameHandler().unRegister();
         logGame(Level.INFO, "世界", "开始加载 " + getWorldName());
+
+        // Repair the published template and preserve the current world before reload deletes either copy.
+        if (!plugin.getWorldManager().prepareWorldForFirstLoad(getWorldName())) {
+            logGame(Level.SEVERE, "世界", "加载失败：首次加载前世界修复未完成 " + getWorldName());
+            return;
+        }
 
         File target = plugin.getWorldManager().getWorldFolder(getWorldName());
 
@@ -532,6 +571,76 @@ public abstract class BaseGameInstance {
         return CCConfig.LOBBY_LOCATION;
     }
 
+    /** Opens the result-display phase without releasing players or rebuilding the arena. */
+    protected final void beginPostGameSettlement() {
+        cancelPostGameRouting();
+        postGamePending = true;
+        roundTransitionPending = false;
+        if (isEventRun() && plugin.getScheduleManager() != null)
+            plugin.getScheduleManager().registerPendingEventInstance(this);
+    }
+
+    /** Called after the synchronous end event has given an event coordinator a chance to take ownership. */
+    protected final void finishPostGameAfterEndEvent() {
+        if (forceTerminalEnd) {
+            completePostGame(false);
+            return;
+        }
+        if (isEventRun()) {
+            plugin.getScheduleManager().onEventInstanceReady(this);
+            return;
+        }
+        postGameRoutingTask = scheduler.runTaskLater(plugin, () -> completePostGame(false),
+                POST_GAME_RESULT_DISPLAY_TICKS);
+    }
+
+    /** Releases one finished run only after its visible result phase. */
+    public final void completePostGame(boolean nextEventRound) {
+        if (!postGamePending || postGameFinalizing)
+            return;
+        postGameFinalizing = true;
+        cancelPostGameRouting();
+        roundTransitionPending = nextEventRound;
+
+        List<UUID> participantIds = List.copyOf(getParticipantUniqueIds());
+        if (nextEventRound)
+            plugin.getGameManager().holdParticipantsForNextRound(this, participantIds);
+        for (UUID uuid : participantIds) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && player.isOnline() && getLobbyLocation() != null)
+                player.teleport(getLobbyLocation());
+        }
+
+        releaseAllSpectators();
+        plugin.getGameManager().releaseInstanceParticipants(this);
+        try {
+            resetGame();
+        } finally {
+            roundTransitionPending = false;
+            postGamePending = false;
+            postGameFinalizing = false;
+            runMode = GameRunMode.GAME;
+        }
+    }
+
+    protected final void cancelPostGameRoutingBeforeStart() {
+        cancelPostGameRouting();
+        postGamePending = false;
+        postGameFinalizing = false;
+    }
+
+    private void cancelPostGameRouting() {
+        if (postGameRoutingTask != null) {
+            postGameRoutingTask.cancel();
+            postGameRoutingTask = null;
+        }
+    }
+
+    /** Available to resetArea implementations while resetGame is rebuilding the just-finished instance. */
+    protected final boolean isRoundTransitionPending() {
+        return roundTransitionPending;
+    }
+
     public boolean isIntroductionPhase() {
         return introductionPhase;
     }
@@ -546,11 +655,12 @@ public abstract class BaseGameInstance {
     }
 
     /**
-     * Runs the optional rule-introduction phase. When the area config provides an introduction spawn
-     * point and at least one rule section, every player is teleported there (still in PREPARATION
-     * stage, free to walk around inside the area) while the rule sections are broadcast one at a time
+     * Runs the optional rule-introduction phase. When the area config provides at least one rule
+     * section, every player is teleported to its introduction spawn, falling back to the spectator
+     * spawn when no dedicated point is configured. Players remain in PREPARATION and use spectator
+     * mode while the rule sections are broadcast one at a time
      * in chat over {@link #INTRODUCTION_DURATION} seconds; afterwards {@code onComplete} (the normal
-     * preparation: spawn assignment + countdown) runs. Without such config the introduction is skipped
+     * preparation: spawn assignment + countdown) runs. Without rules the introduction is skipped
      * and {@code onComplete} runs immediately.
      */
     protected void startGameIntroduction(@NotNull Runnable onComplete) {
@@ -562,15 +672,15 @@ public abstract class BaseGameInstance {
         }
 
         List<List<String>> rules = getIntroductionRules();
-        Location introductionSpawnPoint = gameConfig.getIntroductionSpawnPoint();
+        Location introductionSpawnPoint = resolveIntroductionSpawnPoint();
         if (rules == null || rules.isEmpty() || introductionSpawnPoint == null) {
             onComplete.run();
             return;
         }
 
         introductionPhase = true;
+        changeGameModelForAllGamePlayers(GameMode.SPECTATOR);
         teleportAllPlayers(introductionSpawnPoint);
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         final int sectionCount = rules.size();
         // First broadcast at t=10s (players get a moment to look around after teleporting in), then one
@@ -604,6 +714,45 @@ public abstract class BaseGameInstance {
     /** Variant-aware games override this without coupling the base lifecycle to a concrete config model. */
     protected List<List<String>> getIntroductionRules() {
         return gameConfig.getRules();
+    }
+
+    /** A dedicated viewpoint is optional; every playable map already defines a spectator spawn. */
+    private Location resolveIntroductionSpawnPoint() {
+        Location configured = gameConfig.getIntroductionSpawnPoint();
+        return configured != null ? configured : gameConfig.getSpectatorSpawnPoint();
+    }
+
+    /** True while participant deaths/reconnects must be restored by the shared pre-game lifecycle. */
+    public boolean isSharedPreGameRecoveryPhase() {
+        return getGameStageEnum() == GameStageEnum.LOADING
+                || (getGameStageEnum() == GameStageEnum.PREPARATION && introductionPhase);
+    }
+
+    /** Restores a participant who joins or respawns before game-specific preparation takes ownership. */
+    public boolean restoreSharedPreGameParticipant(@NotNull Player player) {
+        GameStageEnum stage = getGameStageEnum();
+        if (stage == GameStageEnum.LOADING) {
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setFlying(false);
+            player.setAllowFlight(false);
+            player.setFallDistance(0f);
+            player.setFireTicks(0);
+            Location lobby = getLobbyLocation();
+            if (lobby != null && lobby.getWorld() != null)
+                player.teleport(lobby);
+            return true;
+        }
+        if (stage == GameStageEnum.PREPARATION && introductionPhase) {
+            Location introductionSpawnPoint = resolveIntroductionSpawnPoint();
+            if (introductionSpawnPoint == null)
+                return false;
+            player.setGameMode(GameMode.SPECTATOR);
+            player.setFallDistance(0f);
+            player.setFireTicks(0);
+            player.teleport(introductionSpawnPoint);
+            return true;
+        }
+        return false;
     }
 
     private void broadcastRuleSection(@NotNull List<String> lines) {
@@ -753,7 +902,7 @@ public abstract class BaseGameInstance {
      * spawn point while the introduction phase runs, otherwise the given normal-preparation fallback.
      */
     public Location getPreparationTeleportLocation(@NotNull Location fallback) {
-        Location introductionSpawnPoint = gameConfig.getIntroductionSpawnPoint();
+        Location introductionSpawnPoint = resolveIntroductionSpawnPoint();
         if (introductionPhase && introductionSpawnPoint != null)
             return introductionSpawnPoint;
         return fallback;
@@ -778,28 +927,35 @@ public abstract class BaseGameInstance {
     public void handleSpectatorJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (isSpectator(player)) {
-            player.teleport(getSpectatorSpawnLocation());
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore,
-                    () -> applySpectatorGameMode(player));
+            teleportSpectatorAsync(player, getSpectatorSpawnLocation());
         }
     }
 
     public void teleportAllSpectators(@NotNull Location location) {
         for (Player player : getOnlineSpectators()) {
-            player.teleport(location);
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore,
-                    () -> applySpectatorGameMode(player));
+            teleportSpectatorAsync(player, location);
         }
     }
 
     public void addSpectator(@NotNull Player player) {
         spectators.add(player.getUniqueId());
-        player.teleport(getSpectatorSpawnLocation());
-        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-        championshipsCore.getServer().getScheduler().runTask(championshipsCore,
-                () -> applySpectatorGameMode(player));
+        teleportSpectatorAsync(player, getSpectatorSpawnLocation());
+    }
+
+    /** Loads the destination chunk without blocking the server thread, then applies spectator state. */
+    public void teleportSpectatorAsync(@NotNull Player player, @NotNull Location location) {
+        UUID uuid = player.getUniqueId();
+        player.teleportAsync(location).whenComplete((success, error) -> scheduler.runTask(plugin, () -> {
+            if (!plugin.isLoaded() || !player.isOnline() || !spectators.contains(uuid)) return;
+            if (error != null || !Boolean.TRUE.equals(success)) {
+                spectators.remove(uuid);
+                plugin.getGameManager().clearSpectatorStatus(uuid, this);
+                logGame(Level.WARNING, "旁观", "异步传送失败，已清除旁观状态 | 玩家=" + player.getName()
+                        + (error == null ? "" : " | " + error.getMessage()));
+                return;
+            }
+            applySpectatorGameMode(player);
+        }));
     }
 
     /** Applies the mode used by external spectators of this game. Most games use vanilla spectator mode. */
@@ -812,10 +968,7 @@ public abstract class BaseGameInstance {
     }
 
     public void removeAllSpectator() {
-        for (Player player : getOnlineSpectators()) {
-            removeSpectator(player);
-        }
-        spectators.clear();
+        releaseAllSpectators();
     }
 
     /**
@@ -844,20 +997,35 @@ public abstract class BaseGameInstance {
                 onlyRemoveSpectatorFromList(uuid);       // drop from set
             }
         }
-        // Clear the GameManager's spectator-status entries for the released UUIDs (covers offline
-        // spectators that leaveSpectating-on-quit would otherwise have cleared).
-        for (UUID uuid : ids) {
-            plugin.getGameManager().removeSpectator(uuid);
-        }
+        for (UUID uuid : ids)
+            plugin.getGameManager().clearSpectatorStatus(uuid, this);
+    }
+
+    /** Detaches a spectator for a transfer to another live game without an intermediate lobby teleport. */
+    public void detachSpectator(@NotNull Player player) {
+        UUID uuid = player.getUniqueId();
+        if (!spectators.remove(uuid)) return;
+        removePlayerFromBossBars(player);
+        clearSpectatorGameMode(player);
+        player.setLevel(0);
     }
 
     public void endGameFinally() {
-        cancelIntroduction();
-        cancelFinalCountdown();
-        clearBossBars();
-        removeAllSpectator();
-        removeAllPlayers();
-        endGame();
+        forceTerminalEnd = true;
+        try {
+            if (getGameStageEnum() == GameStageEnum.END && postGamePending) {
+                completePostGame(false);
+                return;
+            }
+            cancelIntroduction();
+            cancelFinalCountdown();
+            clearBossBars();
+            removeAllSpectator();
+            removeAllPlayers();
+            endGame();
+        } finally {
+            forceTerminalEnd = false;
+        }
     }
 
     public void removeSpectator(@NotNull UUID uuid) {
@@ -991,6 +1159,9 @@ public abstract class BaseGameInstance {
     public abstract String getWorldName();
 
     public abstract void removeAllPlayers();
+
+    /** Stable snapshot of every participant assigned to the current run. */
+    public abstract Collection<UUID> getParticipantUniqueIds();
 
     public abstract void startGamePreparation();
 

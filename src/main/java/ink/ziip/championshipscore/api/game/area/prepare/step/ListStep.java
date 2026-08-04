@@ -8,11 +8,15 @@ import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A list of serialized locations (e.g. {@code escapee-spawn-points}). Add appends the player's current
@@ -22,17 +26,23 @@ import java.util.function.Predicate;
 public class ListStep extends PrepareStep {
 
     private final Predicate<SetupTarget> emptyPredicate;
-    private final java.util.function.BiConsumer<SetupTarget, String> adder;
+    private final Function<SetupTarget, List<String>> getter;
+    private final BiConsumer<SetupTarget, List<String>> setter;
+    private final BiConsumer<SetupTarget, String> adder;
     private final Consumer<SetupTarget> clearer;
     private final Function<SetupTarget, Integer> counter;
 
     public ListStep(@NotNull String key, @NotNull Component name, @NotNull Component description,
                     @NotNull Material icon,
+                    @NotNull Function<SetupTarget, List<String>> getter,
+                    @NotNull BiConsumer<SetupTarget, List<String>> setter,
                     @NotNull Predicate<SetupTarget> emptyPredicate,
-                    @NotNull java.util.function.BiConsumer<SetupTarget, String> adder,
+                    @NotNull BiConsumer<SetupTarget, String> adder,
                     @NotNull Consumer<SetupTarget> clearer,
                     @NotNull Function<SetupTarget, Integer> counter) {
         super(key, name, description, icon, StepCaptureType.LIST);
+        this.getter = getter;
+        this.setter = setter;
         this.emptyPredicate = emptyPredicate;
         this.adder = adder;
         this.clearer = clearer;
@@ -61,5 +71,72 @@ public class ListStep extends PrepareStep {
     @Override
     public int listCount(@NotNull PrepareSession session) {
         return counter.apply(session.getTarget());
+    }
+
+    @Override
+    public @NotNull List<ListEntry> listEntries(@NotNull PrepareSession session) {
+        List<ListEntry> entries = new ArrayList<>();
+        List<String> values = values(session);
+        for (int i = 0; i < values.size(); i++) {
+            String value = values.get(i);
+            entries.add(new ListEntry("点位 " + (i + 1), List.of(formatLocation(value))));
+        }
+        return entries;
+    }
+
+    @Override
+    public String listEdit(@NotNull PrepareSession session, @NotNull Player player, int index) {
+        List<String> values = values(session);
+        if (index < 0 || index >= values.size()) return null;
+        values.set(index, Utils.getLocationConfigString(Utils.centerOnBlock(player.getLocation())));
+        setter.accept(session.getTarget(), values);
+        session.markDirty();
+        return Utils.formatAdminSuccess("已更新第 " + (index + 1) + " 个点位。");
+    }
+
+    @Override
+    public String listSetOrder(@NotNull PrepareSession session, @NotNull Player player,
+                               int index, int newOrder) {
+        List<String> values = values(session);
+        if (index < 0 || index >= values.size() || newOrder < 1 || newOrder > values.size())
+            return Utils.formatAdminError("序号必须在 1 到 " + values.size() + " 之间。");
+        String value = values.remove(index);
+        values.add(newOrder - 1, value);
+        setter.accept(session.getTarget(), values);
+        session.markDirty();
+        return Utils.formatAdminSuccess("已将点位调整为第 " + newOrder + " 项。");
+    }
+
+    @Override
+    public String listRemove(@NotNull PrepareSession session, @NotNull Player player, int index) {
+        List<String> values = values(session);
+        if (index < 0 || index >= values.size()) return null;
+        values.remove(index);
+        setter.accept(session.getTarget(), values);
+        session.markDirty();
+        return Utils.formatAdminSuccess("已删除第 " + (index + 1) + " 个点位。");
+    }
+
+    private List<String> values(@NotNull PrepareSession session) {
+        return values(getter.apply(session.getTarget()));
+    }
+
+    private static List<String> values(List<String> values) {
+        return values == null ? new ArrayList<>() : new ArrayList<>(values);
+    }
+
+    private static String formatLocation(String value) {
+        try {
+            Location location = Utils.getLocation(value);
+            String world = location.getWorld() == null ? "?" : location.getWorld().getName();
+            return world + " @ " + format(location.getX()) + ", " + format(location.getY()) + ", "
+                    + format(location.getZ());
+        } catch (Exception ignored) {
+            return value;
+        }
+    }
+
+    private static String format(double value) {
+        return String.format(java.util.Locale.ROOT, "%.2f", value);
     }
 }

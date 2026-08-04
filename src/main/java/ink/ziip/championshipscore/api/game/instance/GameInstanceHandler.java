@@ -31,10 +31,19 @@ public class GameInstanceHandler extends BaseListener {
         return baseArea.freezeMovementDuringCountdown() && isCountdownParticipant(player);
     }
 
+    private boolean isIntroductionParticipant(Player player) {
+        return baseArea.isIntroductionPhase() && !baseArea.notAreaPlayer(player);
+    }
+
+    private boolean isProtectedParticipant(Player player) {
+        return baseArea.isSpectator(player) || isIntroductionParticipant(player)
+                || isCountdownParticipant(player);
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDropItems(PlayerDropItemEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+        if (isProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -42,7 +51,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPlaceBlock(BlockPlaceEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+        if (isProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -50,7 +59,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerBreakBlock(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+        if (isProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -58,7 +67,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+        if (isProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -66,7 +75,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+        if (isProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -74,7 +83,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamageByBlock(EntityDamageByBlockEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+            if (isProtectedParticipant(player)) {
                 event.setCancelled(true);
             }
         }
@@ -83,12 +92,12 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamageByEntity(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+            if (isProtectedParticipant(player)) {
                 event.setCancelled(true);
             }
         }
         if (event.getDamager() instanceof Player player) {
-            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+            if (isProtectedParticipant(player)) {
                 event.setCancelled(true);
             }
         }
@@ -97,12 +106,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamaged(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
-                event.setCancelled(true);
-                return;
-            }
-            // Rule-introduction phase: participants roam the arena freely but must not get hurt.
-            if (baseArea.isIntroductionPhase() && !baseArea.notAreaPlayer(player)) {
+            if (isProtectedParticipant(player)) {
                 event.setCancelled(true);
             }
         }
@@ -118,9 +122,11 @@ public class GameInstanceHandler extends BaseListener {
             event.setCancelled(true);
             return;
         }
-        if (baseArea.isSpectator(player)) {
+        if (baseArea.isSpectator(player) || isIntroductionParticipant(player)) {
             if (event.getTo() != null && !baseArea.isSpectatorLocationAllowed(event.getTo())) {
-                player.teleport(baseArea.getSpectatorSpawnLocation());
+                player.teleport(isIntroductionParticipant(player)
+                        ? baseArea.getPreparationTeleportLocation(baseArea.getSpectatorSpawnLocation())
+                        : baseArea.getSpectatorSpawnLocation());
             }
         }
     }
@@ -128,7 +134,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+        if (isProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -136,7 +142,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPickupItem(EntityPickupItemEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+            if (isProtectedParticipant(player)) {
                 event.setCancelled(true);
             }
         }
@@ -145,7 +151,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPickupArrow(PlayerPickupArrowEvent event) {
         Player player = event.getPlayer();
-        if (baseArea.isSpectator(player) || isCountdownParticipant(player)) {
+        if (isProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }

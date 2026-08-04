@@ -27,7 +27,7 @@ public class BattleBoxConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 5;
+        return 6;
     }
 
     @ConfigOption(path = "name")
@@ -76,11 +76,11 @@ public class BattleBoxConfig extends BaseGameConfig {
     @ConfigOption(path = "left-spawn-point")
     private Location leftSpawnPoint;
 
-    @ConfigOption(path = "right-pre-spawn-point")
-    private Location rightPreSpawnPoint;
+    @ConfigOption(path = "right-prepare-spot")
+    private Location rightPrepareSpot;
 
-    @ConfigOption(path = "left-pre-spawn-point")
-    private Location leftPreSpawnPoint;
+    @ConfigOption(path = "left-prepare-spot")
+    private Location leftPrepareSpot;
 
     @ConfigOption(path = "spectator-spawn-point")
     private Location spectatorSpawnPoint;
@@ -103,6 +103,11 @@ public class BattleBoxConfig extends BaseGameConfig {
     @Override
     protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
                                                   @NotNull YamlConfiguration migratedConfiguration) {
+        if (!oldConfiguration.contains("right-prepare-spot") && oldConfiguration.contains("right-pre-spawn-point"))
+            migratedConfiguration.set("right-prepare-spot", oldConfiguration.get("right-pre-spawn-point"));
+        if (!oldConfiguration.contains("left-prepare-spot") && oldConfiguration.contains("left-pre-spawn-point"))
+            migratedConfiguration.set("left-prepare-spot", oldConfiguration.get("left-pre-spawn-point"));
+
         if (oldConfiguration.getString("world-name", "").isBlank())
             migratedConfiguration.set("world-name", "battlebox");
     }

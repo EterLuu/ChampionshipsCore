@@ -45,6 +45,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     private BukkitTask handlePlayerMoveTask;
     private BukkitTask tntGeneratorTask;
     private int tntTimer;
+    private int terrainGeneration;
 
     public TNTRunTeamArea(ChampionshipsCore plugin, TNTRunConfig tntRunConfig, boolean firstTime, String areaName) {
         super(plugin, GameTypeEnum.TNTRun, new TNTRunHandler(plugin), tntRunConfig);
@@ -78,6 +79,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetArea() {
+        terrainGeneration++;
         playerSpawnLocations.clear();
         deathPlayer.clear();
 
@@ -86,6 +88,8 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         handlePlayerMoveTask = null;
         tntGeneratorTask = null;
 
+        // Every round must start from the published template. Restoring only blocks removed by
+        // player movement misses TNT explosion damage, entities and other world state during events.
         preloadMap();
     }
 
@@ -186,8 +190,6 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
             }
         }
         addPointsToAllSurvivePlayers(offlinePlayers * 4);
-
-//        resetPlayerHealthFoodEffectLevelInventory();
 
         startFinalCountdown(MessageConfig.TNT_RUN_START_PREPARATION_TITLE,
                 MessageConfig.TNT_RUN_GAME_START_TITLE, MessageConfig.TNT_RUN_GAME_START_SUBTITLE,
@@ -355,7 +357,10 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
         if (block != null) {
             final Block destroyBlock = block;
+            final int generation = terrainGeneration;
             scheduler.runTaskLater(plugin, () -> {
+                if (generation != terrainGeneration || getGameStageEnum() != GameStageEnum.PROGRESS)
+                    return;
                 world.playSound(location, Sound.BLOCK_SAND_BREAK, 3, 1);
                 destroyBlock.setType(Material.AIR);
                 destroyBlock.getRelative(BlockFace.DOWN).setType(Material.AIR);
@@ -383,13 +388,13 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
         announceGameEnd(MessageConfig.TNT_RUN_GAME_END_TITLE, MessageConfig.TNT_RUN_GAME_END_SUBTITLE);
 
-        teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+        beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     protected void calculatePoints() {
@@ -441,7 +446,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     private void addPointsToAllSurvivePlayers() {
         for (UUID uuid : gamePlayers) {
             if (!deathPlayer.contains(uuid)) {
-                addPlayerPoints(uuid, 2);
+                addPlayerPoints(uuid, 4);
             }
         }
     }
@@ -467,13 +472,12 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         }
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
-            sendMessageToAllGamePlayers(MessageConfig.TNT_RUN_FALL_INTO_VOID
-                    .replace("%player%", Utils.formatPlayerName(player)));
             addDeathPlayer(player);
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
             championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
                 player.setGameMode(GameMode.SPECTATOR);
             });
+            return;
         }
     }
 
@@ -490,7 +494,16 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
             championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
                 player.setGameMode(GameMode.SPECTATOR);
             });
+            return;
         }
+        if (getGameStageEnum() == GameStageEnum.PREPARATION
+                || getGameStageEnum() == GameStageEnum.COUNTDOWN) {
+            teleportPlayerToSpawnPoint(player);
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
+        }
+        player.teleport(CCConfig.LOBBY_LOCATION);
+        player.setGameMode(GameMode.ADVENTURE);
     }
 
     public int getSurvivedPlayerNums() {
@@ -499,9 +512,8 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
     public void teleportPlayerToSpawnPoint(Player player) {
         // During the rule-introduction phase everyone roams from the introduction spawn point.
-        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
-        if (isIntroductionPhase() && introductionSpawnPoint != null) {
-            player.teleport(introductionSpawnPoint);
+        if (isIntroductionPhase()) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
             return;
         }
         Location location = playerSpawnLocations.get(player.getUniqueId());

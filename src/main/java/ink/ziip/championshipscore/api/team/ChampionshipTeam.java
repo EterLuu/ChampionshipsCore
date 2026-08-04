@@ -87,14 +87,6 @@ public class ChampionshipTeam {
         return deleteMember(uuid);
     }
 
-    @Deprecated
-    protected boolean deleteMember(@NotNull String name) {
-        Player player = Bukkit.getPlayer(name);
-        if (player == null)
-            return false;
-        return deleteMember(player.getUniqueId());
-    }
-
     public Set<UUID> getMembers() {
         return Set.copyOf(members);
     }

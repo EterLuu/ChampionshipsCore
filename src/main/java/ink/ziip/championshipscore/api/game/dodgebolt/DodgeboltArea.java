@@ -48,6 +48,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     private final Set<UUID> tokenItems = new HashSet<>();
     private final Set<UUID> alivePlayers = new LinkedHashSet<>();
     private final Set<UUID> eliminatedPlayers = new HashSet<>();
+    private final Set<UUID> forcedParticipants = new LinkedHashSet<>();
     private final Map<UUID, Location> pauseLocations = new HashMap<>();
     private final Map<BlockPosition, BlockData> platformSnapshot = new LinkedHashMap<>();
     private final Set<Column> activePlatformColumns = new LinkedHashSet<>();
@@ -59,6 +60,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     @Getter private int shrinkLevel;
     @Getter private int shotsThisRound;
     @Getter private boolean paused;
+    private boolean partialRoster;
     @Getter private @Nullable ChampionshipTeam champion;
 
     private int shotsSinceShrink;
@@ -92,12 +94,32 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
     @Override
     public boolean tryStartGame(ChampionshipTeam rightTeam, ChampionshipTeam leftTeam) {
+        return tryStartGame(rightTeam, leftTeam, false);
+    }
+
+    public boolean tryStartGame(ChampionshipTeam rightTeam, ChampionshipTeam leftTeam, boolean forcePartialRoster) {
         if (rightTeam.equals(leftTeam) || rightTeam.getMembers().isEmpty() || leftTeam.getMembers().isEmpty())
             return false;
-        if (rightTeam.getOnlinePlayers().size() != rightTeam.getMembers().size()
-                || leftTeam.getOnlinePlayers().size() != leftTeam.getMembers().size())
+        List<Player> rightOnline = rightTeam.getOnlinePlayers();
+        List<Player> leftOnline = leftTeam.getOnlinePlayers();
+        if (forcePartialRoster) {
+            if (rightOnline.isEmpty() || leftOnline.isEmpty()) return false;
+        } else if (rightOnline.size() != rightTeam.getMembers().size()
+                || leftOnline.size() != leftTeam.getMembers().size()) {
             return false;
-        return super.tryStartGame(rightTeam, leftTeam);
+        }
+        partialRoster = forcePartialRoster;
+        forcedParticipants.clear();
+        if (forcePartialRoster) {
+            rightOnline.forEach(player -> forcedParticipants.add(player.getUniqueId()));
+            leftOnline.forEach(player -> forcedParticipants.add(player.getUniqueId()));
+        }
+        boolean started = super.tryStartGame(rightTeam, leftTeam);
+        if (!started) {
+            partialRoster = false;
+            forcedParticipants.clear();
+        }
+        return started;
     }
 
     @Override
@@ -144,8 +166,8 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         queuedShrinkLayers = 0;
         alivePlayers.clear();
         eliminatedPlayers.clear();
-        if (rightChampionshipTeam != null) alivePlayers.addAll(rightChampionshipTeam.getMembers());
-        if (leftChampionshipTeam != null) alivePlayers.addAll(leftChampionshipTeam.getMembers());
+        addRoundPlayers(rightChampionshipTeam);
+        addRoundPlayers(leftChampionshipTeam);
 
         restoreParticipantCollisions();
         resetPlayerHealthFoodEffectLevelInventory();
@@ -423,10 +445,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         restoreParticipantCollisions();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
-        removeAllPlayers();
-        releaseAllSpectators();
+        beginPostGameSettlement();
         Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     private void queueShrink(int layers) {
@@ -570,7 +591,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         ItemMeta meta = stack.getItemMeta();
         meta.getPersistentDataContainer().set(tokenKey, PersistentDataType.STRING, UUID.randomUUID().toString());
         meta.getPersistentDataContainer().set(tokenSideKey, PersistentDataType.STRING, side.name());
-        meta.setDisplayName(Utils.translateColorCodes("&#fff566躲避箭"));
+        meta.displayName(Utils.toComponent("&#fff566躲避箭"));
         stack.setItemMeta(meta);
         Item item = location.getWorld().dropItem(location, stack);
         item.setPickupDelay(0);
@@ -596,7 +617,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             ItemMeta meta = bow.getItemMeta();
             meta.setUnbreakable(true);
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
-            meta.setDisplayName(Utils.translateColorCodes("&#fff566躲避箭之弓"));
+            meta.displayName(Utils.toComponent("&#fff566躲避箭之弓"));
             bow.setItemMeta(meta);
             player.getInventory().setItem(0, bow);
             player.getInventory().setHeldItemSlot(0);
@@ -764,6 +785,10 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         return count;
     }
 
+    public int getAliveCount(@NotNull DodgeboltSide side) {
+        return aliveCount(side);
+    }
+
     private @Nullable UUID firstOfflineAlivePlayer() {
         for (UUID uuid : alivePlayers) {
             Player player = Bukkit.getPlayer(uuid);
@@ -787,9 +812,28 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
     private List<Player> participants() {
         List<Player> players = new ArrayList<>();
-        if (rightChampionshipTeam != null) players.addAll(rightChampionshipTeam.getOnlinePlayers());
-        if (leftChampionshipTeam != null) players.addAll(leftChampionshipTeam.getOnlinePlayers());
+        if (rightChampionshipTeam != null)
+            rightChampionshipTeam.getOnlinePlayers().stream()
+                    .filter(this::isSelectedParticipant).forEach(players::add);
+        if (leftChampionshipTeam != null)
+            leftChampionshipTeam.getOnlinePlayers().stream()
+                    .filter(this::isSelectedParticipant).forEach(players::add);
         return players;
+    }
+
+    private boolean isSelectedParticipant(@NotNull Player player) {
+        return !partialRoster || forcedParticipants.contains(player.getUniqueId());
+    }
+
+    private void addRoundPlayers(@Nullable ChampionshipTeam team) {
+        if (team == null) return;
+        if (partialRoster) {
+            for (UUID uuid : team.getMembers()) {
+                if (forcedParticipants.contains(uuid)) alivePlayers.add(uuid);
+            }
+            return;
+        }
+        alivePlayers.addAll(team.getMembers());
     }
 
     private void teleportTeamsToRoundSpawns() {
@@ -801,8 +845,19 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         if (team == null || spawns == null || spawns.isEmpty()) return;
         int index = 0;
         for (Player player : team.getOnlinePlayers()) {
+            if (!isSelectedParticipant(player)) continue;
             player.teleport(Utils.getLocation(spawns.get(index++ % spawns.size())));
         }
+    }
+
+    @Override
+    public boolean notAreaPlayer(@NotNull Player player) {
+        return partialRoster ? !forcedParticipants.contains(player.getUniqueId()) : super.notAreaPlayer(player);
+    }
+
+    @Override
+    public Collection<UUID> getParticipantUniqueIds() {
+        return partialRoster ? List.copyOf(forcedParticipants) : super.getParticipantUniqueIds();
     }
 
     public void teleportParticipant(Player player) {
@@ -905,10 +960,12 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         shrinkLevel = 0;
         shotsThisRound = 0;
         paused = false;
+        partialRoster = false;
         champion = null;
         firstRoundArrowTeam = null;
         alivePlayers.clear();
         eliminatedPlayers.clear();
+        forcedParticipants.clear();
         pauseLocations.clear();
         platformSnapshot.clear();
         activePlatformColumns.clear();

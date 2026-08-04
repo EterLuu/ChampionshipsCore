@@ -1,0 +1,48 @@
+dont-edit-this:
+  version: 15
+name: area
+timer: 600
+laps: 3
+spectator-spawn-point:
+start-spawn-point:
+start-line:
+  pos1:
+  pos2:
+  fall-y: -64
+finish-line:
+  pos1:
+  pos2:
+points:
+  first-place: 500
+  placement-decrement: 10
+  minimum-finish: 80
+  bonuses:
+    first-place: 320
+    second-place: 260
+    third-place: 200
+    fourth-to-ninth: 140
+    tenth-to-fourteenth: 80
+    fifteenth-to-nineteenth: 35
+progress-points: {}
+respawn-points: []
+
+# 起点线、终点线和进度点都是 WE 水平底线及其向上延伸的垂直矩形门。
+# 按通过顺序配置进度点；选手必须依次通过全部进度点后才能由终点线完成一圈。
+# 起点线的 fall-y 负责第一进度点之前的赛段；每个进度点的 fall-y 负责通过该点后的赛段。
+# 每个进度点的 equipment 可为 none、elytra 或 trident，负责该点到下一进度点之间的道具。
+# 重生点为独立位置；选手经过其 3 格范围时保存，且每位选手每圈对每个点只保存一次。
+# 黄色带釉陶瓦：速度 III（4 秒）；黄绿色带釉陶瓦：跳跃提升 VII（2 秒）。
+# 红色羊毛：行走进入 0.1 秒、从空中进入 0.2 秒后向当前朝向弹射；橙色羊毛同规则但更强力。
+# 三叉戟为激流 I 且不可破坏；鞘翅不可破坏。通过新的进度点时自动发放或收回。
+# 红色带釉陶瓦：2 格内获得速度 VIII 与海豚的恩惠（持续 1 秒）；水中获得潮涌之力与速度 III。
+# 设置起点线时，当前位置同时作为起跑出生点；三类线均用 WorldEdit 选取水平直线。
+introduction-spawn-point:
+rules:
+  - - "&#696969==========&r &#ff6b26[&d王牌竞速&#ff6b26] &#696969==========&r"
+    - "&#ededed在限定时间内完成赛道，率先跑完全部圈数的选手排名靠前。"
+    - "&#ededed按顺序通过进度点后，正向穿过终点线才会完成当前圈数。"
+    - "&#ededed进度点负责赛段道具和摔落高度；经过重生点 3 格内会保存本圈重生位置。"
+  - - "&#696969==========&r &#fff566积分规则 &#696969==========&r"
+    - "&#ededed完赛基础分从 &#ff6b26500 分&#ededed起，每后一名减少 &#ff6b2610 分&#ededed，最低 &#ff6b2680 分&#ededed。"
+    - "&#ededed第 1/2/3 名额外获得 &#ff6b26320/260/200 分&#ededed。"
+    - "&#ededed第 4–9/10–14/15–19 名额外获得 &#ff6b26140/80/35 分&#ededed；未完赛不得分。"

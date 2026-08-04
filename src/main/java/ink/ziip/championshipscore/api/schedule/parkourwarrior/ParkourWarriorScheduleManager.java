@@ -21,8 +21,4 @@ public class ParkourWarriorScheduleManager extends BaseSingleGameSchedule {
         return 1;
     }
 
-    @Override
-    public String getSpecCommand() {
-        return "cc spectate parkourwarrior " + getArea();
-    }
 }

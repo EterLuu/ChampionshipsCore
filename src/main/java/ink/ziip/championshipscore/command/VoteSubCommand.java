@@ -14,7 +14,7 @@ import java.util.List;
 
 public class VoteSubCommand extends BaseSubCommand {
     public VoteSubCommand() {
-        super("vote", "为下一个游戏投票", "/cc vote <游戏>", PLAYER_PERMISSION);
+        super("vote", "打开投票菜单或直接投票", "/cc vote [游戏]", PLAYER_PERMISSION);
     }
 
     @Override
@@ -23,8 +23,12 @@ public class VoteSubCommand extends BaseSubCommand {
             Utils.sendAdminError(sender, "该命令只能由玩家执行");
             return true;
         }
-        if (args.length != 1) {
+        if (args.length > 1) {
             sendUsage(sender);
+            return true;
+        }
+        if (args.length == 0) {
+            plugin.getVoteManager().openVoteMenu(player);
             return true;
         }
         if (args.length == 1) {
@@ -40,12 +44,6 @@ public class VoteSubCommand extends BaseSubCommand {
                 return true;
             }
 
-            if (gameTypeEnum == GameTypeEnum.DragonEggCarnival || gameTypeEnum == GameTypeEnum.Dodgebolt
-                    || !plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
-                sender.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
-                return true;
-            }
-
             plugin.getVoteManager().vote(player, gameTypeEnum);
         }
 
@@ -57,9 +55,7 @@ public class VoteSubCommand extends BaseSubCommand {
         List<String> returnList = new ArrayList<>();
         if (args.length == 1) {
             for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
-                if (plugin.getGameManager().isGameEnabled(gameTypeEnum)
-                        && gameTypeEnum != GameTypeEnum.DragonEggCarnival
-                        && gameTypeEnum != GameTypeEnum.Dodgebolt) {
+                if (plugin.getVoteManager().canVoteFor(gameTypeEnum)) {
                     returnList.add(gameTypeEnum.name());
                 }
             }

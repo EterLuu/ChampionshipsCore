@@ -15,8 +15,8 @@ public final class CommandCatalog {
 
     private static final List<Entry> PLAYER_COMMANDS = List.of(
             new Entry("/cc spawn", "回到大厅（游戏或观战期间不可用）"),
-            new Entry("/cc vote <游戏>", "为下一个游戏投票"),
-            new Entry("/cc spectate leave | <游戏> <场地>", "退出或进入观战"),
+            new Entry("/cc vote [游戏]", "打开投票菜单或直接投票"),
+            new Entry("/cc spectate [leave | <游戏> <场地>]", "打开观战菜单或直接选择场地"),
             new Entry("/cc rank [teamboard|playerboard|info|recap]", "查看个人、队伍与结算积分")
     );
 

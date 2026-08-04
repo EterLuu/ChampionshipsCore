@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
+import ink.ziip.championshipscore.api.game.spectate.SpectateMenu;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoManager;
@@ -14,6 +15,7 @@ import ink.ziip.championshipscore.api.game.buildmart.BuildMartManager;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltManager;
 import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltArea;
+import ink.ziip.championshipscore.api.game.acerace.AceRaceManager;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
@@ -22,6 +24,7 @@ import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
+import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -29,6 +32,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +45,9 @@ public class GameManager extends BaseManager {
     private final Map<UUID, BaseGameInstance> playerSpectatorStatus = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, BaseGameInstance> teamStatus = new ConcurrentHashMap<>();
     private final Map<UUID, BaseGameInstance> playerStatus = new ConcurrentHashMap<>();
+    private final Map<UUID, RoundTransitionHold> roundTransitionHolds = new ConcurrentHashMap<>();
     private final GameManagerHandler gameManagerHandler;
+    private final SpectateMenu spectateMenu;
     @Getter
     private final BattleBoxManager battleBoxManager;
     @Getter
@@ -66,6 +72,8 @@ public class GameManager extends BaseManager {
     private final BuildMartManager buildMartManager;
     @Getter
     private final DodgeboltManager dodgeboltManager;
+    @Getter
+    private final AceRaceManager aceRaceManager;
     /**
      * Registry mapping each game type to its area manager. Drives the generic
      * {@code join*} dispatch so adding a game only requires registering it here.
@@ -73,12 +81,15 @@ public class GameManager extends BaseManager {
     private final Map<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> areaManagers = new EnumMap<>(GameTypeEnum.class);
     /** Lazily parsed from {@link CCConfig#ENABLED_GAMES}; see {@link #getEnabledGames()}. */
     private Set<GameTypeEnum> enabledGames;
+    /** Representative instance used for automatic audience routing, including gaps between formal rounds. */
+    private volatile BaseGameInstance spectatorFocus;
     /** Managers that have actually been loaded, including disabled games opened through map editing. */
     private final Set<GameTypeEnum> loadedGameManagers = EnumSet.noneOf(GameTypeEnum.class);
 
     public GameManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
         gameManagerHandler = new GameManagerHandler(championshipsCore);
+        spectateMenu = new SpectateMenu(championshipsCore, this);
         battleBoxManager = new BattleBoxManager(plugin);
         parkourTagManager = new ParkourTagManager(plugin);
         skyWarsManager = new SkyWarsManager(plugin);
@@ -91,6 +102,7 @@ public class GameManager extends BaseManager {
         bingoManager = new BingoManager(plugin);
         buildMartManager = new BuildMartManager(plugin);
         dodgeboltManager = new DodgeboltManager(plugin);
+        aceRaceManager = new AceRaceManager(plugin);
 
         areaManagers.put(GameTypeEnum.Bingo, bingoManager);
         areaManagers.put(GameTypeEnum.BuildMart, buildMartManager);
@@ -104,6 +116,7 @@ public class GameManager extends BaseManager {
         areaManagers.put(GameTypeEnum.ParkourWarrior, parkourWarriorManager);
         areaManagers.put(GameTypeEnum.HotyCodyDusky, hotyCodyDuskyManager);
         areaManagers.put(GameTypeEnum.Dodgebolt, dodgeboltManager);
+        areaManagers.put(GameTypeEnum.AceRace, aceRaceManager);
     }
 
     /**
@@ -192,16 +205,20 @@ public class GameManager extends BaseManager {
         }
 
         gameManagerHandler.register();
+        spectateMenu.start();
     }
 
     @Override
     public void unload() {
+        spectateMenu.stop();
         for (GameTypeEnum gameType : EnumSet.copyOf(loadedGameManagers)) {
             BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
             if (manager != null) manager.unload();
         }
         loadedGameManagers.clear();
         enabledGames = null;
+        spectatorFocus = null;
+        roundTransitionHolds.clear();
 
         gameManagerHandler.unRegister();
     }
@@ -229,10 +246,27 @@ public class GameManager extends BaseManager {
     public boolean joinDodgeboltArea(@NotNull String area, @NotNull ChampionshipTeam rightTeam,
                                      @NotNull ChampionshipTeam leftTeam,
                                      @NotNull ChampionshipTeam higherSeed, boolean showIntroduction) {
+        return joinDodgeboltArea(area, rightTeam, leftTeam, higherSeed, showIntroduction, false);
+    }
+
+    /** Forced starts admit each team's currently-online subset while normal finals still require full rosters. */
+    public boolean joinDodgeboltArea(@NotNull String area, @NotNull ChampionshipTeam rightTeam,
+                                     @NotNull ChampionshipTeam leftTeam,
+                                     @NotNull ChampionshipTeam higherSeed, boolean showIntroduction,
+                                     boolean forcePartialRoster) {
+        return joinDodgeboltArea(area, rightTeam, leftTeam, higherSeed, showIntroduction,
+                forcePartialRoster, GameRunMode.GAME);
+    }
+
+    public boolean joinDodgeboltArea(@NotNull String area, @NotNull ChampionshipTeam rightTeam,
+                                     @NotNull ChampionshipTeam leftTeam,
+                                     @NotNull ChampionshipTeam higherSeed, boolean showIntroduction,
+                                     boolean forcePartialRoster, @NotNull GameRunMode runMode) {
         DodgeboltArea instance = dodgeboltManager.getArea(area);
         if (instance == null || (!higherSeed.equals(rightTeam) && !higherSeed.equals(leftTeam))) return false;
         instance.setFirstRoundArrowTeam(higherSeed);
-        boolean started = joinTeamArea(GameTypeEnum.Dodgebolt, area, rightTeam, leftTeam, showIntroduction);
+        boolean started = joinTeamArea(GameTypeEnum.Dodgebolt, area, rightTeam, leftTeam,
+                showIntroduction, forcePartialRoster, runMode);
         if (!started) instance.setFirstRoundArrowTeam(null);
         return started;
     }
@@ -243,26 +277,50 @@ public class GameManager extends BaseManager {
                                        @NotNull ChampionshipTeam leftTeam) {
         for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
             if (rightTeam.isTeamMember(player) || leftTeam.isTeamMember(player)) continue;
-            if (playerSpectatorStatus.containsKey(player.getUniqueId())) leaveSpectating(player);
-            spectateArea(player, area);
+            moveSpectatorTo(player, area);
         }
+        spectatorFocus = area;
     }
 
     public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                 @NotNull ChampionshipTeam rightChampionshipTeam,
                                 @NotNull ChampionshipTeam leftChampionshipTeam, boolean showIntroduction) {
+        return joinTeamArea(gameTypeEnum, area, rightChampionshipTeam, leftChampionshipTeam,
+                showIntroduction, false, GameRunMode.GAME);
+    }
+
+    public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
+                                @NotNull ChampionshipTeam rightChampionshipTeam,
+                                @NotNull ChampionshipTeam leftChampionshipTeam, boolean showIntroduction,
+                                @NotNull GameRunMode runMode) {
+        return joinTeamArea(gameTypeEnum, area, rightChampionshipTeam, leftChampionshipTeam,
+                showIntroduction, false, runMode);
+    }
+
+    private boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
+                                 @NotNull ChampionshipTeam rightChampionshipTeam,
+                                 @NotNull ChampionshipTeam leftChampionshipTeam, boolean showIntroduction,
+                                 boolean forcePartialDodgeboltRoster, @NotNull GameRunMode runMode) {
         if (!isGameEnabled(gameTypeEnum))
             return false;
         if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
             return false;
-        for (UUID uuid : rightChampionshipTeam.getMembers()) {
-            if (playerStatus.containsKey(uuid))
+        Collection<UUID> rightParticipants = forcePartialDodgeboltRoster
+                ? rightChampionshipTeam.getOnlinePlayers().stream().map(Player::getUniqueId).toList()
+                : rightChampionshipTeam.getMembers();
+        Collection<UUID> leftParticipants = forcePartialDodgeboltRoster
+                ? leftChampionshipTeam.getOnlinePlayers().stream().map(Player::getUniqueId).toList()
+                : leftChampionshipTeam.getMembers();
+        if (rightParticipants.isEmpty() || leftParticipants.isEmpty())
+            return false;
+        for (UUID uuid : rightParticipants) {
+            if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode))
                 return false;
             if (playerSpectatorStatus.containsKey(uuid))
                 removeSpectator(uuid);
         }
-        for (UUID uuid : leftChampionshipTeam.getMembers()) {
-            if (playerStatus.containsKey(uuid))
+        for (UUID uuid : leftParticipants) {
+            if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode))
                 return false;
             if (playerSpectatorStatus.containsKey(uuid))
                 removeSpectator(uuid);
@@ -278,14 +336,28 @@ public class GameManager extends BaseManager {
         if (!(manager.getArea(area) instanceof BasePairedGameInstance teamArea))
             return false;
 
+        teamArea.prepareRunMode(runMode);
         teamArea.setIntroductionEnabledForNextStart(showIntroduction);
-        if (teamArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam)) {
+        boolean started = teamArea instanceof DodgeboltArea dodgeboltArea
+                ? dodgeboltArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam,
+                        forcePartialDodgeboltRoster)
+                : teamArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam);
+        if (started) {
             teamStatus.put(rightChampionshipTeam, teamArea);
             teamStatus.put(leftChampionshipTeam, teamArea);
-            addPlayerStatusByTeam(rightChampionshipTeam, teamArea);
-            addPlayerStatusByTeam(leftChampionshipTeam, teamArea);
+            if (forcePartialDodgeboltRoster) {
+                for (UUID uuid : teamArea.getParticipantUniqueIds()) {
+                    playerStatus.put(uuid, teamArea);
+                    roundTransitionHolds.remove(uuid);
+                }
+            } else {
+                addPlayerStatusByTeam(rightChampionshipTeam, teamArea);
+                addPlayerStatusByTeam(leftChampionshipTeam, teamArea);
+            }
+            focusSpectatorsOn(teamArea);
             return true;
         }
+        teamArea.prepareRunMode(GameRunMode.GAME);
         teamArea.setIntroductionEnabledForNextStart(true);
         return false;
     }
@@ -297,6 +369,13 @@ public class GameManager extends BaseManager {
     public synchronized boolean joinSingleTeamAreaForTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                                             boolean showIntroduction,
                                                             @NotNull ChampionshipTeam... championshipTeams) {
+        return joinSingleTeamAreaForTeams(gameTypeEnum, area, showIntroduction,
+                GameRunMode.GAME, championshipTeams);
+    }
+
+    public synchronized boolean joinSingleTeamAreaForTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
+                                                            boolean showIntroduction, @NotNull GameRunMode runMode,
+                                                            @NotNull ChampionshipTeam... championshipTeams) {
         if (!isGameEnabled(gameTypeEnum))
             return false;
         if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
@@ -304,6 +383,10 @@ public class GameManager extends BaseManager {
         for (ChampionshipTeam championshipTeam : championshipTeams) {
             if (teamStatus.containsKey(championshipTeam))
                 return false;
+            for (UUID uuid : championshipTeam.getMembers()) {
+                if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode))
+                    return false;
+            }
         }
 
         for (ChampionshipTeam championshipTeam : championshipTeams) {
@@ -318,15 +401,18 @@ public class GameManager extends BaseManager {
         if (!(manager.getArea(area) instanceof BaseMultiTeamGameInstance singleTeamArea))
             return false;
 
+        singleTeamArea.prepareRunMode(runMode);
         singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
         if (singleTeamArea.tryStartGame(List.of(championshipTeams))) {
             for (ChampionshipTeam championshipTeam : championshipTeams) {
                 teamStatus.put(championshipTeam, singleTeamArea);
                 addPlayerStatusByTeam(championshipTeam, singleTeamArea);
             }
+            focusSpectatorsOn(singleTeamArea);
             return true;
         }
 
+        singleTeamArea.prepareRunMode(GameRunMode.GAME);
         singleTeamArea.setIntroductionEnabledForNextStart(true);
         return false;
     }
@@ -337,12 +423,18 @@ public class GameManager extends BaseManager {
 
     public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                                               List<UUID> players, boolean showIntroduction) {
+        return joinSingleTeamAreaForPlayers(gameTypeEnum, area, players, showIntroduction, GameRunMode.GAME);
+    }
+
+    public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
+                                                              List<UUID> players, boolean showIntroduction,
+                                                              @NotNull GameRunMode runMode) {
         if (!isGameEnabled(gameTypeEnum))
             return false;
         if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
             return false;
         for (UUID playerUUID : players) {
-            if (playerStatus.containsKey(playerUUID))
+            if (isPlayerUnavailableForStart(playerUUID, gameTypeEnum, showIntroduction, runMode))
                 return false;
         }
 
@@ -365,14 +457,18 @@ public class GameManager extends BaseManager {
             removeSpectator(playerUUID);
         }
 
+        singleTeamArea.prepareRunMode(runMode);
         singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
         if (singleTeamArea.tryStartGame(championshipTeams.stream().toList(), players)) {
             for (UUID playerUUID : players) {
                 playerStatus.put(playerUUID, singleTeamArea);
+                roundTransitionHolds.remove(playerUUID);
             }
+            focusSpectatorsOn(singleTeamArea);
             return true;
         }
 
+        singleTeamArea.prepareRunMode(GameRunMode.GAME);
         singleTeamArea.setIntroductionEnabledForNextStart(true);
         return false;
     }
@@ -383,6 +479,11 @@ public class GameManager extends BaseManager {
 
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                                   boolean showIntroduction) {
+        return joinSingleTeamAreaForAllTeams(gameTypeEnum, area, showIntroduction, GameRunMode.GAME);
+    }
+
+    public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
+                                                  boolean showIntroduction, @NotNull GameRunMode runMode) {
         if (!isGameEnabled(gameTypeEnum))
             return false;
         if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
@@ -390,6 +491,10 @@ public class GameManager extends BaseManager {
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
             if (teamStatus.containsKey(championshipTeam))
                 return false;
+            for (UUID uuid : championshipTeam.getMembers()) {
+                if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode))
+                    return false;
+            }
         }
 
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
@@ -404,15 +509,18 @@ public class GameManager extends BaseManager {
         if (!(manager.getArea(area) instanceof BaseMultiTeamGameInstance singleTeamArea))
             return false;
 
+        singleTeamArea.prepareRunMode(runMode);
         singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
         if (singleTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 teamStatus.put(championshipTeam, singleTeamArea);
                 addPlayerStatusByTeam(championshipTeam, singleTeamArea);
             }
+            focusSpectatorsOn(singleTeamArea);
             return true;
         }
 
+        singleTeamArea.prepareRunMode(GameRunMode.GAME);
         singleTeamArea.setIntroductionEnabledForNextStart(true);
         return false;
     }
@@ -430,6 +538,12 @@ public class GameManager extends BaseManager {
     /** Returns the exact instances started for round-completion tracking, or {@code null} on failure. */
     public synchronized @Nullable List<BattleBoxArea> joinBattleBoxInstances(
             @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
+        return joinBattleBoxInstances(area, pairs, showIntroduction, GameRunMode.GAME);
+    }
+
+    public synchronized @Nullable List<BattleBoxArea> joinBattleBoxInstances(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction,
+            @NotNull GameRunMode runMode) {
         if (!isGameEnabled(GameTypeEnum.BattleBox))
             return null;
         if (!plugin.getPrepareSessionManager().canStart(GameTypeEnum.BattleBox, area))
@@ -447,7 +561,7 @@ public class GameManager extends BaseManager {
             if (teamStatus.containsKey(team))
                 return null;
             for (UUID uuid : team.getMembers()) {
-                if (playerStatus.containsKey(uuid))
+                if (isPlayerUnavailableForStart(uuid, GameTypeEnum.BattleBox, showIntroduction, runMode))
                     return null;
             }
         }
@@ -471,6 +585,7 @@ public class GameManager extends BaseManager {
         for (int i = 0; i < pairs.size(); i++) {
             BattleBoxArea instance = selected.get(i);
             TwoVTwoVector pair = pairs.get(i);
+            instance.prepareRunMode(runMode);
             instance.setIntroductionEnabledForNextStart(showIntroduction);
             if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
                 startGate.complete(null);
@@ -487,6 +602,7 @@ public class GameManager extends BaseManager {
                 .toArray(java.util.concurrent.CompletableFuture[]::new))
                 .whenComplete((unused, error) -> plugin.getServer().getScheduler()
                         .runTask(plugin, () -> startGate.complete(null)));
+        focusSpectatorsOn(selected.getFirst());
         return List.copyOf(selected);
     }
 
@@ -503,6 +619,12 @@ public class GameManager extends BaseManager {
     /** Returns the exact instances started for round-completion tracking, or {@code null} on failure. */
     public synchronized @Nullable List<ParkourTagArea> joinParkourTagInstances(
             @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
+        return joinParkourTagInstances(area, pairs, showIntroduction, GameRunMode.GAME);
+    }
+
+    public synchronized @Nullable List<ParkourTagArea> joinParkourTagInstances(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction,
+            @NotNull GameRunMode runMode) {
         if (!isGameEnabled(GameTypeEnum.ParkourTag))
             return null;
         if (!plugin.getPrepareSessionManager().canStart(GameTypeEnum.ParkourTag, area))
@@ -520,7 +642,7 @@ public class GameManager extends BaseManager {
             if (teamStatus.containsKey(team))
                 return null;
             for (UUID uuid : team.getMembers()) {
-                if (playerStatus.containsKey(uuid))
+                if (isPlayerUnavailableForStart(uuid, GameTypeEnum.ParkourTag, showIntroduction, runMode))
                     return null;
             }
         }
@@ -544,6 +666,7 @@ public class GameManager extends BaseManager {
         for (int i = 0; i < pairs.size(); i++) {
             ParkourTagArea instance = selected.get(i);
             TwoVTwoVector pair = pairs.get(i);
+            instance.prepareRunMode(runMode);
             instance.setIntroductionEnabledForNextStart(showIntroduction);
             if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
                 startGate.complete(null);
@@ -560,6 +683,7 @@ public class GameManager extends BaseManager {
                 .toArray(java.util.concurrent.CompletableFuture[]::new))
                 .whenComplete((unused, error) -> plugin.getServer().getScheduler()
                         .runTask(plugin, () -> startGate.complete(null)));
+        focusSpectatorsOn(selected.getFirst());
         return List.copyOf(selected);
     }
 
@@ -574,16 +698,84 @@ public class GameManager extends BaseManager {
         if (baseArea != null)
             return baseArea.getGameConfig().getConfigName();
 
+        RoundTransitionHold hold = roundTransitionHolds.get(uuid);
+        if (hold != null)
+            return hold.instance().getGameConfig().getConfigName();
+
         return "";
     }
 
     public BaseGameInstance getTeamCurrenArea(ChampionshipTeam championshipTeam) {
-        return teamStatus.get(championshipTeam);
+        BaseGameInstance active = teamStatus.get(championshipTeam);
+        if (active != null) return active;
+        for (UUID uuid : championshipTeam.getMembers()) {
+            RoundTransitionHold hold = roundTransitionHolds.get(uuid);
+            if (hold != null) return hold.instance();
+        }
+        return null;
     }
 
     private void addPlayerStatusByTeam(ChampionshipTeam championshipTeam, BaseGameInstance baseArea) {
         for (UUID uuid : championshipTeam.getMembers()) {
             playerStatus.put(uuid, baseArea);
+            roundTransitionHolds.remove(uuid);
+        }
+    }
+
+    private boolean isPlayerUnavailableForStart(UUID uuid, GameTypeEnum gameType, boolean showIntroduction,
+                                                GameRunMode requestedMode) {
+        if (playerStatus.containsKey(uuid)) return true;
+        RoundTransitionHold hold = roundTransitionHolds.get(uuid);
+        if (hold == null) return false;
+        return requestedMode != GameRunMode.EVENT || showIntroduction
+                || hold.mode() != GameRunMode.EVENT
+               || hold.instance().getGameTypeEnum() != gameType;
+    }
+
+    /** Marks participants as waiting while leaving them at their round-end locations. */
+    public void holdParticipantsForNextRound(@NotNull BaseGameInstance instance,
+                                             @NotNull Collection<UUID> participants) {
+        for (UUID uuid : participants) {
+            roundTransitionHolds.put(uuid, new RoundTransitionHold(instance, instance.getRunMode()));
+            Player player = org.bukkit.Bukkit.getPlayer(uuid);
+            if (player == null) continue;
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setLevel(0);
+        }
+    }
+
+    public boolean isWaitingForNextRound(@NotNull UUID uuid) {
+        return roundTransitionHolds.containsKey(uuid);
+    }
+
+    /** Restores a reconnected participant's waiting state without moving them. */
+    public boolean restoreNextRoundHold(@NotNull Player player) {
+        RoundTransitionHold hold = roundTransitionHolds.get(player.getUniqueId());
+        if (hold == null) return false;
+        player.getInventory().clear();
+        for (org.bukkit.potion.PotionEffect effect : player.getActivePotionEffects()) {
+            player.removePotionEffect(effect.getType());
+        }
+        player.setGameMode(GameMode.ADVENTURE);
+        player.setLevel(0);
+        return true;
+    }
+
+    /** Releases stranded holds when a schedule is stopped or cannot start its next round. */
+    public void releaseRoundTransitionHolds(@NotNull GameTypeEnum gameType) {
+        List<UUID> ids = roundTransitionHolds.entrySet().stream()
+                .filter(entry -> entry.getValue().instance().getGameTypeEnum() == gameType)
+                .map(Map.Entry::getKey)
+                .toList();
+        for (UUID uuid : ids) {
+            roundTransitionHolds.remove(uuid);
+            Player player = org.bukkit.Bukkit.getPlayer(uuid);
+            if (player != null && CCConfig.LOBBY_LOCATION != null
+                    && CCConfig.LOBBY_LOCATION.getWorld() != null) {
+                player.teleport(CCConfig.LOBBY_LOCATION);
+                player.setGameMode(GameMode.ADVENTURE);
+                player.setLevel(0);
+            }
         }
     }
 
@@ -594,17 +786,17 @@ public class GameManager extends BaseManager {
     }
 
     public void teamGameEndHandler(TeamGameEndEvent event) {
-        teamStatus.remove(event.getLeftChampionshipTeam());
-        teamStatus.remove(event.getRightChampionshipTeam());
-        removePlayerStatusByTeam(event.getLeftChampionshipTeam());
-        removePlayerStatusByTeam(event.getRightChampionshipTeam());
+        // Participant ownership is retained through the visible settlement phase.
     }
 
     public void singleTeamGameEndHandler(SingleGameEndEvent event) {
-        for (ChampionshipTeam championshipTeam : event.getChampionshipTeams()) {
-            teamStatus.remove(championshipTeam);
-            removePlayerStatusByTeam(championshipTeam);
-        }
+        // Participant ownership is retained through the visible settlement phase.
+    }
+
+    /** Clears only mappings owned by the instance being finalized. */
+    public void releaseInstanceParticipants(@NotNull BaseGameInstance instance) {
+        teamStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
+        playerStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
     }
 
     @Nullable
@@ -629,6 +821,156 @@ public class GameManager extends BaseManager {
         playerSpectatorStatus.put(uuid, baseArea);
         baseArea.addSpectator(player);
         return true;
+    }
+
+    /** Opens the live arena selector used by the player-facing spectate command. */
+    public void openSpectateMenu(@NotNull Player player) {
+        spectateMenu.open(player);
+    }
+
+    /** Applies the same roster restriction as the explicit spectate command. Automatic routing bypasses it. */
+    public boolean canManuallySpectate(@NotNull Player player) {
+        if (!CCConfig.STRICT_SPECTATOR_RULE) return true;
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (plugin.getRankManager().getRound() != 7 && team != null && !player.hasPermission("cc.refuge")) {
+            player.sendMessage(ink.ziip.championshipscore.configuration.config.message.MessageConfig.SPECTATOR_IS_PLAYER);
+            return false;
+        }
+        return true;
+    }
+
+    /** Active runtime instances shown by the spectator menu, including every PKT/BB copy. */
+    public List<BaseGameInstance> getSpectatableInstances() {
+        return areaManagers.entrySet().stream()
+                .filter(entry -> isGameEnabled(entry.getKey()) && loadedGameManagers.contains(entry.getKey()))
+                .flatMap(entry -> entry.getValue().getRuntimeInstances().stream()
+                        .map(instance -> (BaseGameInstance) instance))
+                .filter(this::isInstanceActivelyRunning)
+                .sorted(Comparator
+                        .comparingInt((BaseGameInstance instance) -> instance.getGameTypeEnum().ordinal())
+                        .thenComparing(instance -> instance.getGameConfig().getAreaName(),
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+                        .thenComparingInt(this::spectatorInstanceIndex))
+                .toList();
+    }
+
+    /** Selects or switches to one live arena without an intermediate lobby teleport. */
+    public synchronized boolean selectSpectatorArea(@NotNull Player player, @NotNull BaseGameInstance target) {
+        if (!isInstanceActivelyRunning(target) || playerStatus.containsKey(player.getUniqueId())) return false;
+        if (playerSpectatorStatus.get(player.getUniqueId()) == target) return true;
+        moveSpectatorTo(player, target);
+        return true;
+    }
+
+    private int spectatorInstanceIndex(@NotNull BaseGameInstance instance) {
+        if (instance instanceof ParkourTagArea parkourTag) return parkourTag.getCopyIndex();
+        if (instance instanceof BattleBoxArea battleBox) return battleBox.getCopyIndex();
+        return 0;
+    }
+
+    /** Routes an unteamed player joining mid-game to the current spectator focus. */
+    public synchronized boolean spectateCurrentGame(@NotNull Player player) {
+        if (plugin.getTeamManager().getTeamByPlayer(player) != null || playerStatus.containsKey(player.getUniqueId()))
+            return false;
+        BaseGameInstance active = getCurrentSpectatorFocus();
+        return active != null && spectateArea(player, active);
+    }
+
+    /** Releases every spectator attached to one game's instances without executing player commands. */
+    public synchronized void releaseSpectatorsForGame(@NotNull GameTypeEnum gameType) {
+        List<Map.Entry<UUID, BaseGameInstance>> entries = playerSpectatorStatus.entrySet().stream()
+                .filter(entry -> entry.getValue().getGameTypeEnum() == gameType)
+                .toList();
+        for (Map.Entry<UUID, BaseGameInstance> entry : entries) {
+            Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
+            if (player != null) entry.getValue().removeSpectator(player);
+            else entry.getValue().onlyRemoveSpectatorFromList(entry.getKey());
+            playerSpectatorStatus.remove(entry.getKey(), entry.getValue());
+        }
+        BaseGameInstance focus = spectatorFocus;
+        if (focus != null && focus.getGameTypeEnum() == gameType) spectatorFocus = null;
+        releaseRoundTransitionHolds(gameType);
+    }
+
+    /** Releases spectators attached to event-owned instances only; standalone games are untouched. */
+    public synchronized void releaseEventSpectatorsForGame(@NotNull GameTypeEnum gameType) {
+        List<Map.Entry<UUID, BaseGameInstance>> entries = playerSpectatorStatus.entrySet().stream()
+                .filter(entry -> entry.getValue().getGameTypeEnum() == gameType
+                        && entry.getValue().isEventRun())
+                .toList();
+        for (Map.Entry<UUID, BaseGameInstance> entry : entries) {
+            Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
+            if (player != null) entry.getValue().removeSpectator(player);
+            else entry.getValue().onlyRemoveSpectatorFromList(entry.getKey());
+            playerSpectatorStatus.remove(entry.getKey(), entry.getValue());
+        }
+    }
+
+    public void clearSpectatorStatus(@NotNull UUID uuid, @NotNull BaseGameInstance expected) {
+        playerSpectatorStatus.remove(uuid, expected);
+        if (spectatorFocus == expected && expected.getOnlineSpectators().isEmpty()
+                && !isInstanceAvailableForSpectating(expected)) {
+            spectatorFocus = null;
+        }
+    }
+
+    private synchronized void focusSpectatorsOn(@NotNull BaseGameInstance startedInstance) {
+        BaseGameInstance current = getCurrentSpectatorFocus();
+        BaseGameInstance target = current != null && current.getGameTypeEnum() == startedInstance.getGameTypeEnum()
+                && isInstanceActivelyRunning(current) ? current : startedInstance;
+        spectatorFocus = target;
+
+        for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
+            if (plugin.getTeamManager().getTeamByPlayer(player) != null) continue;
+            UUID uuid = player.getUniqueId();
+            BaseGameInstance previous = playerSpectatorStatus.get(uuid);
+            if (previous == target) continue;
+            moveSpectatorTo(player, target);
+        }
+    }
+
+    private void moveSpectatorTo(@NotNull Player player, @NotNull BaseGameInstance target) {
+        UUID uuid = player.getUniqueId();
+        BaseGameInstance previous = playerSpectatorStatus.get(uuid);
+        if (previous == target) return;
+        if (previous != null) previous.detachSpectator(player);
+        playerSpectatorStatus.put(uuid, target);
+        target.addSpectator(player);
+    }
+
+
+    @Nullable
+    private BaseGameInstance getCurrentSpectatorFocus() {
+        BaseGameInstance focus = spectatorFocus;
+        if (isInstanceAvailableForSpectating(focus)) return focus;
+
+        for (GameTypeEnum gameType : GameTypeEnum.values()) {
+            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            if (manager == null) continue;
+            BaseGameInstance active = manager.getRuntimeInstances().stream()
+                    .filter(this::isInstanceActivelyRunning)
+                    .sorted(Comparator.comparing(instance -> instance.getGameConfig().getConfigName(),
+                            String.CASE_INSENSITIVE_ORDER))
+                    .findFirst().orElse(null);
+            if (active != null) {
+                spectatorFocus = active;
+                return active;
+            }
+        }
+        return null;
+    }
+
+    private boolean isInstanceAvailableForSpectating(@Nullable BaseGameInstance instance) {
+        if (instance == null) return false;
+        if (isInstanceActivelyRunning(instance)) return true;
+        return instance.isEventRun() && instance.getGameStageEnum() == GameStageEnum.END;
+    }
+
+    private boolean isInstanceActivelyRunning(@NotNull BaseGameInstance instance) {
+        return switch (instance.getGameStageEnum()) {
+            case LOADING, PREPARATION, COUNTDOWN, PROGRESS -> true;
+            default -> false;
+        };
     }
 
     public boolean leaveSpectating(@NotNull Player player) {
@@ -658,4 +1000,7 @@ public class GameManager extends BaseManager {
             playerSpectatorStatus.remove(uuid);
         }
     }
+
+    private record RoundTransitionHold(BaseGameInstance instance, GameRunMode mode) {
+   }
 }

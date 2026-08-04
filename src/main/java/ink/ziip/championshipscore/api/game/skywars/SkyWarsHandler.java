@@ -274,7 +274,9 @@ public class SkyWarsHandler extends BaseListener {
         Location location = player.getLocation();
         if (skyWarsArea.notInArea(location)) {
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
-                player.teleport(skyWarsArea.getPreparationTeleportLocation(skyWarsArea.getSpectatorSpawnLocation()));
+                if (!skyWarsArea.isIntroductionPhase())
+                    skyWarsArea.teleportPlayerToAssignedTeamSpawn(player);
+                return;
             }
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {

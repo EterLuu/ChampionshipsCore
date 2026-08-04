@@ -58,6 +58,7 @@ public final class TGTTOSPrepareFlow extends PrepareFlowDefinition {
                                     java.util.function.Function<SetupTarget, List<String>> getter,
                                     java.util.function.BiConsumer<SetupTarget, List<String>> setter) {
         return new ListStep(key, Component.text(name), Component.text(desc), icon,
+                t -> values(getter.apply(t)), setter,
                 t -> values(getter.apply(t)).isEmpty(),
                 (t, value) -> { List<String> l = values(getter.apply(t)); l.add(value); setter.accept(t, l); },
                 t -> setter.accept(t, new ArrayList<>()), t -> values(getter.apply(t)).size());

@@ -16,12 +16,8 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
  * Portal-link listener for the bingo game world. Vanilla/Paper resolve nether/end return portals to
  * the server's <em>default</em> overworld (the lobby world); this rewrites portal destinations whose
  * source is the bingo world ({@code bingo} and its {@code _nether}/{@code _the_end} dimensions) back to
- * the matching bingo dimension.
- *
- * <p>TODO(待确认): this assumes the bingo arena ships sibling {@code _nether}/{@code _the_end} worlds.
- * Whether the pre-built static bingo world actually has those dimensions depends on the final world/
- * spawn setup (still pending). When the siblings don't exist the handler is a no-op, so it is safe to
- * register regardless.
+ * the matching bingo dimension. {@link ink.ziip.championshipscore.util.world.WorldManager} owns the
+ * fixed overworld/nether/end world set used here.
  */
 public final class PortalListener implements Listener {
 

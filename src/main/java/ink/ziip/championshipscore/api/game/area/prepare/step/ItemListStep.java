@@ -60,6 +60,54 @@ public final class ItemListStep extends PrepareStep {
     }
 
     @Override
+    public @NotNull List<ListEntry> listEntries(@NotNull PrepareSession session) {
+        List<ListEntry> entries = new ArrayList<>();
+        List<ItemStack> kits = cfg(session.getTarget()).getKits();
+        if (kits == null) return entries;
+        for (int i = 0; i < kits.size(); i++) {
+            ItemStack item = kits.get(i);
+            entries.add(new ListEntry("Kit " + (i + 1), List.of(
+                    item.getType().getKey().toString() + " × " + item.getAmount())));
+        }
+        return entries;
+    }
+
+    @Override
+    public String listEdit(@NotNull PrepareSession session, @NotNull Player player, int index) {
+        ItemStack held = player.getInventory().getItemInMainHand();
+        if (held.getType() == Material.AIR) return Utils.formatAdminError("请先把 Kit 物品拿在主手。 ");
+        List<ItemStack> kits = cfg(session.getTarget()).getKits();
+        if (kits == null || index < 0 || index >= kits.size()) return null;
+        kits.set(index, held.clone());
+        cfg(session.getTarget()).setKits(kits);
+        session.markDirty();
+        return Utils.formatAdminSuccess("已更新第 " + (index + 1) + " 套 Kit。");
+    }
+
+    @Override
+    public String listSetOrder(@NotNull PrepareSession session, @NotNull Player player,
+                               int index, int newOrder) {
+        List<ItemStack> kits = cfg(session.getTarget()).getKits();
+        if (kits == null || index < 0 || index >= kits.size() || newOrder < 1 || newOrder > kits.size())
+            return Utils.formatAdminError("序号必须在 1 到 " + (kits == null ? 0 : kits.size()) + " 之间。");
+        ItemStack item = kits.remove(index);
+        kits.add(newOrder - 1, item);
+        cfg(session.getTarget()).setKits(kits);
+        session.markDirty();
+        return Utils.formatAdminSuccess("已将 Kit 调整为第 " + newOrder + " 项。");
+    }
+
+    @Override
+    public String listRemove(@NotNull PrepareSession session, @NotNull Player player, int index) {
+        List<ItemStack> kits = cfg(session.getTarget()).getKits();
+        if (kits == null || index < 0 || index >= kits.size()) return null;
+        kits.remove(index);
+        cfg(session.getTarget()).setKits(kits);
+        session.markDirty();
+        return Utils.formatAdminSuccess("已删除第 " + (index + 1) + " 套 Kit。");
+    }
+
+    @Override
     public @NotNull Component listAddLabel() {
         return Component.text("添加主手 Kit");
     }

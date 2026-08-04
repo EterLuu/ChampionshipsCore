@@ -105,21 +105,21 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                 (a, loc) -> cfg(a).setLeftSpawnPoint(loc),
                 Utils.formatAdminSuccess("已设置左侧队伍出生点。")));
 
-        steps.add(new StandAndRunStep("right_pre_spawn",
-                Component.text("右侧预备点"),
+        steps.add(new StandAndRunStep("right_prepare_spot",
+                Component.text("右侧 PrepareSpot"),
                 Component.text("站到右侧队伍预备位置后点击"),
                 Material.GREEN_STAINED_GLASS,
-                a -> cfg(a).getRightPreSpawnPoint() != null,
-                (a, loc) -> cfg(a).setRightPreSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置右侧预备点。")));
+                a -> cfg(a).getRightPrepareSpot() != null,
+                (a, loc) -> cfg(a).setRightPrepareSpot(loc),
+                Utils.formatAdminSuccess("已设置右侧 PrepareSpot。")));
 
-        steps.add(new StandAndRunStep("left_pre_spawn",
-                Component.text("左侧预备点"),
+        steps.add(new StandAndRunStep("left_prepare_spot",
+                Component.text("左侧 PrepareSpot"),
                 Component.text("站到左侧队伍预备位置后点击"),
                 Material.RED_STAINED_GLASS,
-                a -> cfg(a).getLeftPreSpawnPoint() != null,
-                (a, loc) -> cfg(a).setLeftPreSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置左侧预备点。")));
+                a -> cfg(a).getLeftPrepareSpot() != null,
+                (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
+                Utils.formatAdminSuccess("已设置左侧 PrepareSpot。")));
 
         steps.add(new WeSelectionStep("wool_pos",
                 Component.text("羊毛区域"),
@@ -133,6 +133,8 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                 Component.text("药水生成点"),
                 Component.text("逐个添加药水生成位置"),
                 Material.LIME_WOOL,
+                a -> cfg(a).getPotionSpawnPoints(),
+                (a, values) -> cfg(a).setPotionSpawnPoints(values),
                 a -> {
                     List<String> l = cfg(a).getPotionSpawnPoints();
                     return l == null || l.isEmpty();

@@ -10,14 +10,14 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public final class EventStartSubCommand extends BaseSubCommand {
     public EventStartSubCommand() {
         super("start", "开始正式比赛；进行中时再次执行会紧急停止",
-                "/cc event start <游戏> [场地] [队伍1 队伍2]");
+                "/cc event start <游戏> [队伍1 队伍2] [--force]");
     }
 
     @Override
@@ -87,28 +87,22 @@ public final class EventStartSubCommand extends BaseSubCommand {
             Utils.sendAdminInfo(sender, "已通过重复 start 紧急停止躲避箭决赛准备");
             return true;
         }
-        String area = null;
+        boolean force = args.length > 1 && args[args.length - 1].equalsIgnoreCase("--force");
+        List<String> options = Arrays.asList(args).subList(1, args.length - (force ? 1 : 0));
         ChampionshipTeam right = null;
         ChampionshipTeam left = null;
-        int optionCount = args.length - 1;
-        if (optionCount == 1) {
-            area = args[1];
-        } else if (optionCount == 2) {
-            right = plugin.getTeamManager().getTeam(args[1]);
-            left = plugin.getTeamManager().getTeam(args[2]);
-        } else if (optionCount == 3) {
-            area = args[1];
-            right = plugin.getTeamManager().getTeam(args[2]);
-            left = plugin.getTeamManager().getTeam(args[3]);
-        } else if (optionCount != 0) {
+        if (options.size() == 2) {
+            right = plugin.getTeamManager().getTeam(options.get(0));
+            left = plugin.getTeamManager().getTeam(options.get(1));
+        } else if (!options.isEmpty()) {
             sendUsage(sender);
             return true;
         }
-        if ((optionCount == 2 || optionCount == 3) && (right == null || left == null || right.equals(left))) {
+        if (!options.isEmpty() && (right == null || left == null || right.equals(left))) {
             Utils.sendAdminError(sender, "请指定两支不同的有效队伍");
             return true;
         }
-        plugin.getScheduleManager().requestDodgeboltFinal(area, right, left, sender);
+        plugin.getScheduleManager().requestDodgeboltFinal(null, right, left, sender, force);
         return true;
     }
 
@@ -120,16 +114,18 @@ public final class EventStartSubCommand extends BaseSubCommand {
         GameTypeEnum game = EventCommandSupport.parse(args[0]);
         if (game == GameTypeEnum.Dodgebolt) {
             if (args.length == 2) {
-                List<String> values = new ArrayList<>(plugin.getGameManager().getDodgeboltManager().getAreaNameList());
-                values.addAll(plugin.getTeamManager().getTeamNameList());
+                List<String> values = plugin.getTeamManager().getTeamNameList();
+                values.add("--force");
                 return filterStartsWith(values, args[1]);
             }
-            if (args.length == 3)
-                return filterStartsWith(plugin.getTeamManager().getTeamNameList(), args[2]);
-            if (args.length == 4) {
+            if (args.length == 3) {
+                if (args[1].equalsIgnoreCase("--force")) return Collections.emptyList();
                 List<String> teams = plugin.getTeamManager().getTeamNameList();
-                teams.removeIf(name -> name.equalsIgnoreCase(args[2]));
-                return filterStartsWith(teams, args[3]);
+                teams.removeIf(name -> name.equalsIgnoreCase(args[1]));
+                return filterStartsWith(teams, args[2]);
+            }
+            if (args.length == 4) {
+                return filterStartsWith(List.of("--force"), args[3]);
             }
         }
         if (game == GameTypeEnum.DragonEggCarnival) {

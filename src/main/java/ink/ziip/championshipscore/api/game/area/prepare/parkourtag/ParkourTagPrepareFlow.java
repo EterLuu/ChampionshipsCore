@@ -90,21 +90,21 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                 (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
                 Utils.formatAdminSuccess("已设置旁观者出生点。")));
 
-        steps.add(new StandAndRunStep("right_pre_spawn",
-                Component.text("右侧预备点"),
+        steps.add(new StandAndRunStep("right_prepare_spot",
+                Component.text("右侧 PrepareSpot"),
                 Component.text("站到右侧队伍预备位置后点击"),
                 Material.GREEN_WOOL,
-                a -> cfg(a).getRightPreSpawnPoint() != null,
-                (a, loc) -> cfg(a).setRightPreSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置右侧预备点。")));
+                a -> cfg(a).getRightPrepareSpot() != null,
+                (a, loc) -> cfg(a).setRightPrepareSpot(loc),
+                Utils.formatAdminSuccess("已设置右侧 PrepareSpot。")));
 
-        steps.add(new StandAndRunStep("left_pre_spawn",
-                Component.text("左侧预备点"),
+        steps.add(new StandAndRunStep("left_prepare_spot",
+                Component.text("左侧 PrepareSpot"),
                 Component.text("站到左侧队伍预备位置后点击"),
                 Material.RED_WOOL,
-                a -> cfg(a).getLeftPreSpawnPoint() != null,
-                (a, loc) -> cfg(a).setLeftPreSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置左侧预备点。")));
+                a -> cfg(a).getLeftPrepareSpot() != null,
+                (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
+                Utils.formatAdminSuccess("已设置左侧 PrepareSpot。")));
 
         steps.add(new WeSelectionStep("right_area_pos",
                 Component.text("右侧场地边界"),
@@ -163,6 +163,8 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                                            java.util.function.Function<ParkourTagConfig, List<String>> getter,
                                            java.util.function.BiConsumer<ParkourTagConfig, List<String>> setter) {
         return new ListStep(key, name, desc, icon,
+                a -> getter.apply(cfg(a)),
+                (a, values) -> setter.accept(cfg(a), values),
                 a -> {
                     List<String> l = getter.apply(cfg(a));
                     return l == null || l.isEmpty();

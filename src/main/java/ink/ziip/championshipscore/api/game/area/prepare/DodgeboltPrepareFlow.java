@@ -98,6 +98,7 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
                                  java.util.function.Function<SetupTarget, List<String>> getter,
                                  java.util.function.BiConsumer<SetupTarget, List<String>> setter) {
         return new ListStep(key, Component.text(name), Component.text("逐个添加点位"), icon,
+                t -> values(getter.apply(t)), setter,
                 t -> values(getter.apply(t)).isEmpty(),
                 (t, value) -> { List<String> list = values(getter.apply(t)); list.add(value); setter.accept(t, list); },
                 t -> setter.accept(t, new ArrayList<>()), t -> values(getter.apply(t)).size());

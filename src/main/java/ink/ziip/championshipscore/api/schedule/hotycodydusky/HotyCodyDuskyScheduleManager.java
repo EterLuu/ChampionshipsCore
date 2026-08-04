@@ -4,14 +4,13 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.bukkit.Sound;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -27,6 +26,7 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
     @Getter
     private boolean enabled;
     private int completedAreaNum;
+    private int activeAreaCount;
     private BukkitTask firstStartTask;
     private BukkitTask startTask;
 
@@ -54,8 +54,6 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
             endSchedule();
             return;
         }
-
-        addAllSpectatorsToArea();
 
         plugin.getScheduleManager().addRound(GameTypeEnum.HotyCodyDusky);
         enabled = true;
@@ -97,10 +95,10 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
 
         handler.register();
 
-        arrangeHotyCodyDuskyRounds(true);
+        if (!arrangeHotyCodyDuskyRounds(true)) abortSchedule("首轮启动失败");
     }
 
-    private void arrangeHotyCodyDuskyRounds(boolean showIntroduction) {
+    private boolean arrangeHotyCodyDuskyRounds(boolean showIntroduction) {
         List<List<UUID>> areaTeams = new ArrayList<>();
         areaTeams.add(new ArrayList<>());
         areaTeams.add(new ArrayList<>());
@@ -126,16 +124,25 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         }
 
         Iterator<List<UUID>> areaPlayerList = areaTeams.iterator();
+        boolean allStarted = true;
+        int startedAreas = 0;
         for (String name : plugin.getGameManager().getHotyCodyDuskyManager().getAreaNameList()) {
             if (!areaPlayerList.hasNext())
                 break;
 
             HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = plugin.getGameManager().getHotyCodyDuskyManager().getArea(name);
             if (hotyCodyDuskyTeamArea != null) {
-                plugin.getGameManager().joinSingleTeamAreaForPlayers(
-                        GameTypeEnum.HotyCodyDusky, name, areaPlayerList.next(), showIntroduction);
+                if (!plugin.getGameManager().joinSingleTeamAreaForPlayers(
+                        GameTypeEnum.HotyCodyDusky, name, areaPlayerList.next(), showIntroduction,
+                        GameRunMode.EVENT)) {
+                    allStarted = false;
+                } else {
+                    startedAreas++;
+                }
             }
         }
+        activeAreaCount = startedAreas;
+        return allStarted && !areaPlayerList.hasNext();
     }
 
     public void endSchedule() {
@@ -146,15 +153,9 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
 
         enabled = false;
 
-        Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
-        Utils.sendTitleToAllPlayers(MessageConfig.GAME_ROUND_END_TITLE.replace("%game%", GameTypeEnum.HotyCodyDusky.toString()),
-                MessageConfig.GAME_ROUND_END_SUBTITLE, 60);
-        if (plugin.isLoaded()) {
-            scheduler.runTaskLater(plugin,
-                    () -> plugin.getRankManager().broadcastFinalRankings(GameTypeEnum.HotyCodyDusky), 40L);
-        }
         handler.unRegister();
         Utils.changeLevelForAllPlayers(0);
+        plugin.getGameManager().releaseEventSpectatorsForGame(GameTypeEnum.HotyCodyDusky);
     }
 
     public void nextHotyCodyDuskyRound() {
@@ -165,7 +166,6 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         subRound++;
         if (subRound > hotyCodyDuskyRounds) {
             endSchedule();
-            removeAllSpectatorsFromArea();
             return;
         }
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
@@ -182,7 +182,7 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
 
             if (timer == 0) {
                 Utils.changeLevelForAllPlayers(0);
-                arrangeHotyCodyDuskyRounds(false);
+                if (!arrangeHotyCodyDuskyRounds(false)) abortSchedule("下一轮启动失败");
                 if (startTask != null)
                     startTask.cancel();
             }
@@ -193,27 +193,25 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
     public synchronized void addCompletedAreaNum() {
         completedAreaNum++;
 
-        int hotyCodyDuskyAreas = 4;
-        if (completedAreaNum == hotyCodyDuskyAreas) {
-            nextHotyCodyDuskyRound();
+        if (activeAreaCount > 0 && completedAreaNum == activeAreaCount) {
+            boolean hasNextRound = hasNextRound();
+            plugin.getScheduleManager().settleEventRound(GameTypeEnum.HotyCodyDusky, hasNextRound, () -> {
+                if (!enabled) return;
+                if (hasNextRound) nextHotyCodyDuskyRound();
+                else endSchedule();
+            });
         }
     }
 
-    public void addAllSpectatorsToArea() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam == null) {
-                player.performCommand("spec");
-            }
-        }
+    public boolean hasNextRound() {
+        return enabled && subRound < hotyCodyDuskyRounds;
     }
 
-    public void removeAllSpectatorsFromArea() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam == null) {
-                player.performCommand("cc spectate leave");
-            }
-        }
+    private void abortSchedule(String reason) {
+        plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.HotyCodyDusky, "-",
+                "调度", "中止", reason));
+        endSchedule();
+        plugin.getGameManager().forceEndAreas(GameTypeEnum.HotyCodyDusky);
     }
+
 }

@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Converts true-colour sprites to Minecraft map-palette indices with a perceptual nearest-colour
- * search (CIELAB / CIE94 ΔE94), then lets the renderer write those indices directly via
- * {@link org.bukkit.map.MapCanvas#setPixel}. Palette colours are pre-converted to Lab once; per-sprite
+ * search (CIELAB / CIE94 ΔE94), then lets the renderer write the matched colours via
+ * {@link org.bukkit.map.MapCanvas#setPixelColor}. Palette colours are pre-converted to Lab once; per-sprite
  * results are cached so the per-pixel work happens once on load rather than every map tick.
  */
 final class MapColorMatcher {
@@ -36,6 +36,7 @@ final class MapColorMatcher {
     private static final int BG_B = TaskImageAtlas.SLOT_SHADE_KEEP & 0xff;
 
     private static volatile Entry[] palette;
+    private static volatile Color[] paletteColors;
     private static final Map<BufferedImage, byte[]> CACHE = new ConcurrentHashMap<>();
 
     private MapColorMatcher() {
@@ -48,6 +49,7 @@ final class MapColorMatcher {
         synchronized (MapColorMatcher.class) {
             if (palette != null) return palette;
             List<Entry> entries = new ArrayList<>(256);
+            Color[] colors = new Color[256];
             for (int i = 4; i < 256; i++) { // 0..3 are the transparent slots
                 Color c;
                 try {
@@ -56,12 +58,20 @@ final class MapColorMatcher {
                     break;
                 }
                 if (c == null || c.getAlpha() < 128) continue;
+                colors[i] = c;
                 double[] lab = rgbToLab(c.getRed(), c.getGreen(), c.getBlue());
                 double chroma = Math.hypot(lab[1], lab[2]);
                 entries.add(new Entry((byte) i, lab[0], lab[1], lab[2], chroma));
             }
+            paletteColors = colors;
             return palette = entries.toArray(new Entry[0]);
         }
+    }
+
+    static Color color(byte index) {
+        palette();
+        Color color = paletteColors[Byte.toUnsignedInt(index)];
+        return color != null ? color : new Color(0, 0, 0, 0);
     }
 
     static byte matchColor(int r, int g, int b) {

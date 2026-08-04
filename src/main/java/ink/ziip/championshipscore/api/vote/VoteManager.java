@@ -13,11 +13,13 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class VoteManager extends BaseManager {
     private static final int VOTE_DURATION_SECONDS = 120;
@@ -25,6 +27,7 @@ public class VoteManager extends BaseManager {
     private final Map<UUID, BossBar> voteBars = new ConcurrentHashMap<>();
     private final BukkitScheduler scheduler;
     private final RankManager rankManager;
+    private final VoteMenu voteMenu;
     private BukkitTask voteTask;
     private int timer;
     private boolean vote;
@@ -33,6 +36,7 @@ public class VoteManager extends BaseManager {
         super(championshipsCore);
         scheduler = championshipsCore.getServer().getScheduler();
         rankManager = championshipsCore.getRankManager();
+        voteMenu = new VoteMenu(this);
         vote = false;
     }
 
@@ -64,14 +68,10 @@ public class VoteManager extends BaseManager {
     }
 
     private void updateVoteBars() {
-        int eligiblePlayers = 0;
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (plugin.getTeamManager().getTeamByPlayer(player) != null)
-                eligiblePlayers++;
-        }
-
         String time = String.format(Locale.ROOT, "%d:%02d", Math.max(0, timer) / 60, Math.max(0, timer) % 60);
         double progress = Math.max(0D, Math.min(1D, timer / (double) VOTE_DURATION_SECONDS));
+        int totalVotes = getTotalVoteCount();
+        int eligibleVoters = getEligibleVoterCount();
         Set<UUID> onlinePlayers = new HashSet<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID uuid = player.getUniqueId();
@@ -80,13 +80,13 @@ public class VoteManager extends BaseManager {
             BossBar voteBar = voteBars.computeIfAbsent(uuid,
                     ignored -> Bukkit.createBossBar("", BarColor.PURPLE, BarStyle.SEGMENTED_12));
             voteBar.addPlayer(player);
-            String selectedGame = Optional.ofNullable(playerVotes.get(uuid))
+            String selectedGame = Optional.ofNullable(getPlayerVote(uuid))
                     .map(GameTypeEnum::toString)
                     .orElse(MessageConfig.VOTE_NOT_VOTED);
             voteBar.setTitle(Utils.translateColorCodes(MessageConfig.VOTE_BOSS_BAR
                     .replace("%time%", time)
-                    .replace("%votes%", String.valueOf(playerVotes.size()))
-                    .replace("%players%", String.valueOf(eligiblePlayers))
+                    .replace("%votes%", String.valueOf(totalVotes))
+                    .replace("%players%", String.valueOf(eligibleVoters))
                     .replace("%vote%", selectedGame)));
             voteBar.setProgress(progress);
         }
@@ -97,6 +97,7 @@ public class VoteManager extends BaseManager {
             entry.getValue().removeAll();
             return true;
         });
+        voteMenu.refreshOpenMenus();
     }
 
     private void removeVoteBars() {
@@ -113,17 +114,20 @@ public class VoteManager extends BaseManager {
             voteTask = null;
         }
         removeVoteBars();
+        voteMenu.closeAll();
 
-        Map<GameTypeEnum, Integer> votes = new HashMap<>();
+        playerVotes.entrySet().removeIf(entry -> plugin.getTeamManager().getTeamByPlayer(entry.getKey()) == null
+                || !canVoteFor(entry.getValue()));
+
+        Map<GameTypeEnum, Integer> votes = new EnumMap<>(GameTypeEnum.class);
         for (GameTypeEnum gameTypeEnum : playerVotes.values()) {
             votes.put(gameTypeEnum, votes.getOrDefault(gameTypeEnum, 0) + 1);
         }
 
         ArrayList<Map.Entry<GameTypeEnum, Integer>> list;
         list = new ArrayList<>(votes.entrySet());
-        list.sort(Map.Entry.comparingByValue());
-
-        Collections.reverse(list);
+        list.sort(Comparator.<Map.Entry<GameTypeEnum, Integer>>comparingInt(Map.Entry::getValue)
+                .reversed().thenComparing(entry -> entry.getKey().name()));
 
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -146,7 +150,15 @@ public class VoteManager extends BaseManager {
             stringBuilder.append("&#ededed  本轮没有有效投票");
             Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE, "&#ededed本轮没有有效投票", 40);
         } else {
-            Map.Entry<GameTypeEnum, Integer> winner = list.get(0);
+            int highestVotes = list.getFirst().getValue();
+            List<Map.Entry<GameTypeEnum, Integer>> tied = list.stream()
+                    .filter(entry -> entry.getValue() == highestVotes)
+                    .toList();
+            Map.Entry<GameTypeEnum, Integer> winner = tied.get(ThreadLocalRandom.current().nextInt(tied.size()));
+            if (tied.size() > 1) {
+                stringBuilder.append("&#ededed  最高票并列，随机选中 &#fff566")
+                        .append(winner.getKey()).append("\n");
+            }
             Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE,
                     MessageConfig.VOTE_END_VOTE_SUBTITLE
                             .replace("%game%", winner.getKey().toString())
@@ -160,13 +172,18 @@ public class VoteManager extends BaseManager {
     }
 
     public GameTypeEnum getPlayerVote(Player player) {
-        return playerVotes.getOrDefault(player.getUniqueId(), null);
+        return getPlayerVote(player.getUniqueId());
+    }
+
+    GameTypeEnum getPlayerVote(UUID uuid) {
+        GameTypeEnum gameType = playerVotes.get(uuid);
+        return isValidVote(uuid, gameType) ? gameType : null;
     }
 
     public int getVoteNums(GameTypeEnum gameTypeEnum) {
         int i = 0;
-        for (GameTypeEnum voted : playerVotes.values()) {
-            if (gameTypeEnum == voted)
+        for (Map.Entry<UUID, GameTypeEnum> entry : playerVotes.entrySet()) {
+            if (gameTypeEnum == entry.getValue() && isValidVote(entry.getKey(), entry.getValue()))
                 i++;
         }
         return i;
@@ -184,14 +201,16 @@ public class VoteManager extends BaseManager {
             return;
         }
 
-        if (rankManager.getGameOrder(gameTypeEnum) != -1) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ALREADY_PLAYED);
+        if (gameTypeEnum == null || gameTypeEnum == GameTypeEnum.Dodgebolt
+                || gameTypeEnum == GameTypeEnum.DragonEggCarnival
+                || !plugin.getGameManager().isGameEnabled(gameTypeEnum)
+                || !hasPublishedArea(gameTypeEnum)) {
+            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
             return;
         }
 
-        if (gameTypeEnum == null || gameTypeEnum == GameTypeEnum.Dodgebolt
-                || !plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
+        if (rankManager.getGameOrder(gameTypeEnum) != -1) {
+            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ALREADY_PLAYED);
             return;
         }
 
@@ -200,9 +219,67 @@ public class VoteManager extends BaseManager {
         updateVoteBars();
     }
 
+    public void openVoteMenu(Player player) {
+        if (!vote) {
+            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_TIME);
+            return;
+        }
+        if (plugin.getTeamManager().getTeamByPlayer(player) == null) {
+            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_PLAYER);
+            return;
+        }
+        voteMenu.open(player);
+    }
+
+    public boolean isVoting() {
+        return vote;
+    }
+
+    int getRemainingSeconds() {
+        return timer;
+    }
+
+    int getTotalVoteCount() {
+        int votes = 0;
+        for (Map.Entry<UUID, GameTypeEnum> entry : playerVotes.entrySet()) {
+            if (isValidVote(entry.getKey(), entry.getValue())) votes++;
+        }
+        return votes;
+    }
+
+    int getEligibleVoterCount() {
+        Set<UUID> players = new HashSet<>();
+        for (ChampionshipTeam team : plugin.getTeamManager().getTeamList()) {
+            players.addAll(team.getMembers());
+        }
+        return players.size();
+    }
+
+    public boolean canVoteFor(GameTypeEnum gameTypeEnum) {
+        return gameTypeEnum != null
+                && gameTypeEnum != GameTypeEnum.Dodgebolt
+                && gameTypeEnum != GameTypeEnum.DragonEggCarnival
+                && plugin.getGameManager().isGameEnabled(gameTypeEnum)
+                && rankManager.getGameOrder(gameTypeEnum) == -1
+                && hasPublishedArea(gameTypeEnum);
+    }
+
+    private boolean hasPublishedArea(GameTypeEnum gameTypeEnum) {
+        var manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
+        if (manager == null) return false;
+        return manager.getAreaNameList().stream()
+                .anyMatch(area -> plugin.getPrepareSessionManager().canStart(gameTypeEnum, area));
+    }
+
+    private boolean isValidVote(UUID uuid, GameTypeEnum gameTypeEnum) {
+        return gameTypeEnum != null
+                && plugin.getTeamManager().getTeamByPlayer(uuid) != null
+                && canVoteFor(gameTypeEnum);
+    }
+
     @Override
     public void load() {
-
+        Bukkit.getPluginManager().registerEvents(voteMenu, plugin);
     }
 
     @Override
@@ -213,6 +290,8 @@ public class VoteManager extends BaseManager {
             voteTask = null;
         }
         removeVoteBars();
+        voteMenu.closeAll();
+        HandlerList.unregisterAll(voteMenu);
         playerVotes.clear();
     }
 }

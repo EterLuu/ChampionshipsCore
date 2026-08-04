@@ -48,7 +48,7 @@ public final class CardItemListener extends BaseListener {
 
         if (a == Action.RIGHT_CLICK_BLOCK) {
             Block block = event.getClickedBlock();
-            if (block != null && block.getType().isInteractable()) return;
+            if (block != null && isInteractable(block)) return;
         }
         if (event.getHand() == EquipmentSlot.HAND
                 && isOffhandWeapon(event.getPlayer().getInventory().getItemInOffHand().getType())) return;
@@ -74,6 +74,12 @@ public final class CardItemListener extends BaseListener {
             case SHIELD, TRIDENT, BOW, CROSSBOW -> true;
             default -> false;
         };
+    }
+
+    /** Bukkit currently deprecates this predicate without exposing an equivalent replacement. */
+    @SuppressWarnings("deprecation")
+    private static boolean isInteractable(Block block) {
+        return block.getType().isInteractable();
     }
 
     /** The card map is a bound tool, not loot — players cannot drop it. */

@@ -324,7 +324,15 @@ public class RankManager extends BaseManager {
 
     /** Refreshes caches after all prior score writes and broadcasts a six-line round summary. */
     public void broadcastFinalRankings(GameTypeEnum gameTypeEnum) {
-        if (!isScoringGame(gameTypeEnum)) return;
+        broadcastFinalRankings(gameTypeEnum, () -> { });
+    }
+
+    /** Runs the callback on the main thread after the final ranking has actually been shown. */
+    public void broadcastFinalRankings(GameTypeEnum gameTypeEnum, @NotNull Runnable afterBroadcast) {
+        if (!isScoringGame(gameTypeEnum)) {
+            scheduler.runTask(plugin, afterBroadcast);
+            return;
+        }
         enqueueRankTask(() -> {
             refreshRankingsNow();
             List<Map.Entry<ChampionshipTeam, Double>> gameLeaderboard = getGameTeamLeaderboard(gameTypeEnum);
@@ -345,6 +353,7 @@ public class RankManager extends BaseManager {
                 Utils.playSoundToAllPlayers(org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 0.8F, 1.1F);
                 scheduler.runTaskLater(plugin, () -> Utils.sendActionBarToAllPlayers(
                         "&#bababa聊天被顶掉？ &#ededed/cc rank recap &#bababa可重看本次结算"), 60L);
+                afterBroadcast.run();
             });
         });
     }
@@ -543,10 +552,10 @@ public class RankManager extends BaseManager {
     public String getGameWeightInfo() {
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append(MessageConfig.GAME_GAME_WEIGHT).append("\n");
+        stringBuilder.append(MessageConfig.RANK_GAME_WEIGHT_BAR).append("\n");
 
         for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
-            String row = MessageConfig.GAME_GAME_WEIGHT_INFO
+            String row = MessageConfig.RANK_GAME_WEIGHT_ROW
                     .replace("%game%", gameTypeEnum.toString())
                     .replace("%weight%", String.valueOf(getGameWeight(gameTypeEnum)))
                     .replace("%total_point%", Utils.formatPoints(gameTotalPoints.getOrDefault(gameTypeEnum, 0D)));

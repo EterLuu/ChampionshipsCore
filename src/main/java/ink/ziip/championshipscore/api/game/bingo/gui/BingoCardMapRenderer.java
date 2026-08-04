@@ -166,14 +166,14 @@ public final class BingoCardMapRenderer extends MapRenderer {
                         || dy < lo + thickness || dy >= hi - thickness;
                 if (!onRing) continue;
                 if (segments == 1) {
-                    canvas.setPixel(ox + dx, oy + dy, idx[0]);
+                    setPixel(canvas, ox + dx, oy + dy, idx[0]);
                     continue;
                 }
                 double ang = Math.atan2((oy + dy) - cy, (ox + dx) - cx);
                 double norm = (ang + Math.PI / 2) / (2 * Math.PI);
                 norm -= Math.floor(norm);
                 int seg = (int) (norm * segments) % segments;
-                if (seg < filled) canvas.setPixel(ox + dx, oy + dy, idx[seg]);
+                if (seg < filled) setPixel(canvas, ox + dx, oy + dy, idx[seg]);
             }
         }
     }
@@ -183,7 +183,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
         byte dark = MapColorMatcher.matchColor(74, 74, 78);
         for (int dy = inset; dy < size - inset; dy++) {
             for (int dx = inset; dx < size - inset; dx++) {
-                canvas.setPixel(ox + dx, oy + dy, dark);
+                setPixel(canvas, ox + dx, oy + dy, dark);
             }
         }
     }
@@ -233,7 +233,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
                     for (int col = 0; col < GLYPH_W; col++) {
                         if ((glyph[row] & (1 << (GLYPH_W - 1 - col))) == 0) continue;
                         int px = gx + col + dx, py = startY + row + dy;
-                        if (px >= 0 && px < 128 && py >= 0 && py < 128) canvas.setPixel(px, py, colour);
+                        if (px >= 0 && px < 128 && py >= 0 && py < 128) setPixel(canvas, px, py, colour);
                     }
                 }
             }
@@ -247,7 +247,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
             for (int ix = 0; ix < w; ix++) {
                 byte index = indices[iy * w + ix];
                 if (index == MapColorMatcher.TRANSPARENT) continue;
-                canvas.setPixel(x + ix, y + iy, index);
+                setPixel(canvas, x + ix, y + iy, index);
             }
         }
     }
@@ -264,7 +264,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
                 if (px < clipX || px >= clipX + clipW) continue;
                 byte index = indices[iy * w + ix];
                 if (index == MapColorMatcher.TRANSPARENT) continue;
-                canvas.setPixel(px, py, index);
+                setPixel(canvas, px, py, index);
             }
         }
     }
@@ -339,7 +339,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
                 int px = cx + dx;
                 if (px < 0 || px >= 128) continue;
                 if (dx * dx + dy * dy > r * r + r) continue;
-                canvas.setPixel(px, py, palette);
+                setPixel(canvas, px, py, palette);
             }
         }
     }
@@ -361,13 +361,13 @@ public final class BingoCardMapRenderer extends MapRenderer {
                 boolean onRing = dx < 1 + halo || dx >= size - 1 - halo
                         || dy < 1 + halo || dy >= size - 1 - halo;
                 if (!onRing) continue;
-                canvas.setPixel(ox + dx, oy + dy, palette);
+                setPixel(canvas, ox + dx, oy + dy, palette);
             }
         }
         for (int dy = 1 + halo; dy < size - 1 - halo; dy++) {
             for (int dx = 1 + halo; dx < size - 1 - halo; dx++) {
                 if (((dx - dy) % 5 + 5) % 5 != 0) continue;
-                canvas.setPixel(ox + dx, oy + dy, palette);
+                setPixel(canvas, ox + dx, oy + dy, palette);
             }
         }
     }
@@ -385,5 +385,9 @@ public final class BingoCardMapRenderer extends MapRenderer {
             if (o.winnerId() != null) sb.append(':').append(o.winnerId());
         }
         return sb.toString();
+    }
+
+    private static void setPixel(MapCanvas canvas, int x, int y, byte palette) {
+        canvas.setPixelColor(x, y, MapColorMatcher.color(palette));
     }
 }

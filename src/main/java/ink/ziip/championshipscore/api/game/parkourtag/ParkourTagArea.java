@@ -84,7 +84,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
             return false;
         }
         if (getGameConfig().getTimer() <= 0 || copyIndex >= getGameConfig().getCopyCount()
-                || geometry.getRightPreSpawn() == null || geometry.getLeftPreSpawn() == null
+                || geometry.getRightPrepareSpot() == null || geometry.getLeftPrepareSpot() == null
                 || geometry.getSpectatorSpawn() == null
                 || geometry.getLeftZone().getChaserSpawn() == null
                 || geometry.getRightZone().getChaserSpawn() == null
@@ -110,8 +110,8 @@ public class ParkourTagArea extends BasePairedGameInstance {
     protected Collection<Location> getStartPreloadLocations() {
         if (match == null) return List.of();
         List<Location> locations = new ArrayList<>();
-        locations.add(match.getRightPreSpawn());
-        locations.add(match.getLeftPreSpawn());
+        locations.add(match.getRightPrepareSpot());
+        locations.add(match.getLeftPrepareSpot());
         locations.add(match.getSpectatorSpawn());
         locations.add(match.getLeftAreaChaserSpawn());
         locations.add(match.getRightAreaChaserSpawn());
@@ -159,8 +159,8 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         if (match != null) {
-            match.getRight().teleportAllPlayers(match.getRightPreSpawn());
-            match.getLeft().teleportAllPlayers(match.getLeftPreSpawn());
+            match.getRight().teleportAllPlayers(match.getRightPrepareSpot());
+            match.getLeft().teleportAllPlayers(match.getLeftPrepareSpot());
         }
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
@@ -305,7 +305,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
         setGameStageEnum(GameStageEnum.END);
 
-        teleportAllPlayers(getLobbyLocation());
+        beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -315,7 +315,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
             Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(right, left, this));
         }
 
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     /** Settles one match's points (survivors, chaser clears, longest-survival bonus) and announces them. */
@@ -652,31 +652,47 @@ public class ParkourTagArea extends BasePairedGameInstance {
             return;
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            teleportPlayerToPreSpawnLocation(player);
+            teleportPlayerToPrepareSpotLocation(player);
             return;
         }
 
+        if (getGameStageEnum() == GameStageEnum.COUNTDOWN && match != null) {
+            if (match.isChaser(player)) {
+                player.teleport(player.getUniqueId().equals(match.getRightAreaChaser())
+                        ? match.getRightAreaChaserSpawn() : match.getLeftAreaChaserSpawn());
+            } else if (match.getRight().getMembers().contains(player.getUniqueId())) {
+                List<Location> spawns = match.getLeftAreaEscapeeSpawns();
+                if (!spawns.isEmpty()) player.teleport(spawns.get(0));
+            } else {
+                List<Location> spawns = match.getRightAreaEscapeeSpawns();
+                if (!spawns.isEmpty()) player.teleport(spawns.get(0));
+            }
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
+        }
         if (getGameStageEnum() == GameStageEnum.PROGRESS && isChaser(player)) {
+            player.teleport(player.getUniqueId().equals(match.getRightAreaChaser())
+                    ? match.getRightAreaChaserSpawn() : match.getLeftAreaChaserSpawn());
             scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
             return;
         }
 
         player.teleport(getSpectatorSpawnLocation());
-        scheduler.runTask(plugin, () -> player.setGameMode(GameMode.SPECTATOR));
+        scheduler.runTask(plugin, () -> player.setGameMode(
+                getGameStageEnum() == GameStageEnum.END ? GameMode.ADVENTURE : GameMode.SPECTATOR));
     }
 
-    private void teleportPlayerToPreSpawnLocation(Player player) {
+    private void teleportPlayerToPrepareSpotLocation(Player player) {
         // During the rule-introduction phase everyone roams from the introduction spawn point.
-        Location introductionSpawnPoint = getGameConfig().getIntroductionSpawnPoint();
-        if (isIntroductionPhase() && introductionSpawnPoint != null) {
-            player.teleport(introductionSpawnPoint);
+        if (isIntroductionPhase()) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
             return;
         }
         ParkourTagMatch match = matchOf(player);
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (match != null && team != null) {
-            Location target = team.equals(match.getRight()) ? match.getRightPreSpawn()
-                    : team.equals(match.getLeft()) ? match.getLeftPreSpawn() : null;
+            Location target = team.equals(match.getRight()) ? match.getRightPrepareSpot()
+                    : team.equals(match.getLeft()) ? match.getLeftPrepareSpot() : null;
             if (target != null) {
                 player.teleport(target);
                 scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));

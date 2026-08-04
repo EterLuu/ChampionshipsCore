@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.area.prepare;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.AceRaceEquipmentGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AreaListGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
@@ -58,6 +59,18 @@ public class PrepareListener extends BaseListener {
             ListStepGui.handleClick(manager, event, player, h);
             return;
         }
+        if (holder instanceof ListStepGui.EntryHolder h) {
+            ListStepGui.handleEntryClick(manager, event, player, h);
+            return;
+        }
+        if (holder instanceof ListStepGui.EditHolder h) {
+            ListStepGui.handleEditClick(manager, event, player, h);
+            return;
+        }
+        if (holder instanceof AceRaceEquipmentGui.Holder h) {
+            AceRaceEquipmentGui.handleClick(manager, event, player, h);
+            return;
+        }
         if (holder instanceof StepMenuGui.Holder h) {
             StepMenuGui.handleClick(manager, event, player, h);
             return;
@@ -96,6 +109,8 @@ public class PrepareListener extends BaseListener {
         }
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
         if (holder instanceof AreaListGui.Holder || holder instanceof ListStepGui.Holder
+                || holder instanceof ListStepGui.EntryHolder || holder instanceof ListStepGui.EditHolder
+                || holder instanceof AceRaceEquipmentGui.Holder
                 || holder instanceof StepMenuGui.Holder) {
             event.setCancelled(true);
             return;
@@ -114,6 +129,8 @@ public class PrepareListener extends BaseListener {
         if (item == null || !PrepareKeys.isPrepareItem(item)) return;
         // Block vanilla use (throw / place / etc.) of prepare items; right-click also triggers the step.
         event.setCancelled(true);
+        event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+        event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
         Action a = event.getAction();
         if (a != Action.RIGHT_CLICK_AIR && a != Action.RIGHT_CLICK_BLOCK) return;
         String stepKey = PrepareKeys.stepKeyOf(item);

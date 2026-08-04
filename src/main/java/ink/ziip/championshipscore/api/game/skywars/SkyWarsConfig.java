@@ -24,7 +24,7 @@ public class SkyWarsConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 4;
+        return 5;
     }
 
     @ConfigOption(path = "name")
@@ -33,9 +33,6 @@ public class SkyWarsConfig extends BaseGameConfig {
     /** Named rules profile. Flat v3 fields remain the compatibility source while variants are introduced. */
     @ConfigOption(path = "variant")
     private String variantId = "inline";
-
-    @ConfigOption(path = "prepare-time")
-    private int prepareTime = 10;
 
     @ConfigOption(path = "timer")
     private int timer;
@@ -46,11 +43,11 @@ public class SkyWarsConfig extends BaseGameConfig {
     @ConfigOption(path = "area-pos2")
     private Vector areaPos2;
 
-    @ConfigOption(path = "pre-spawn-point")
-    private Location preSpawnPoint;
-
     @ConfigOption(path = "spectator-spawn-point")
     private Location spectatorSpawnPoint;
+
+    @ConfigOption(path = "boundary-center-point")
+    private Location boundaryCenterPoint;
 
     @ConfigOption(path = "team-spawn-points")
     private List<String> teamSpawnPoints;
@@ -89,10 +86,10 @@ public class SkyWarsConfig extends BaseGameConfig {
     private int survivalPoints = 50;
 
     @ConfigOption(path = "scoring.player-elimination-survival")
-    private int playerEliminationSurvivalPoints = 10;
+    private int playerEliminationSurvivalPoints = 8;
 
     @ConfigOption(path = "scoring.team-elimination-survival")
-    private int teamEliminationSurvivalPoints = 2;
+    private int teamEliminationSurvivalPoints = 4;
 
     public @NotNull SkyWarsVariant resolveVariant() {
         return resolveInlineVariant();
@@ -109,6 +106,9 @@ public class SkyWarsConfig extends BaseGameConfig {
     @Override
     protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
                                                   @NotNull YamlConfiguration migratedConfiguration) {
+        if (!oldConfiguration.contains("boundary-center-point") && oldConfiguration.contains("pre-spawn-point"))
+            migratedConfiguration.set("boundary-center-point", oldConfiguration.get("pre-spawn-point"));
+
         // An absent schedule historically meant "do not shrink". It must not inherit the bundled
         // large-map schedule merely because a newer template introduced that default.
         if (!oldConfiguration.contains("shrink-time"))

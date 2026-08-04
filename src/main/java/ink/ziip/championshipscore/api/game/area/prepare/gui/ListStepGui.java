@@ -18,22 +18,25 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Sub-GUI for a {@link ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType#LIST} step: add the
- * player's current location, clear the list, see the current count, or go back. Opened on top of the
- * prepare-mode inventory; the prepare inventory is refreshed after each add/clear so the step's lore badge
- * stays in sync.
- */
+/** Safe list editor: add, inspect, edit, reorder, or remove one configured row at a time. */
 public final class ListStepGui {
-    private ListStepGui() {
-    }
-
     private static final int ADD_SLOT = 0;
-    private static final int CLEAR_SLOT = 1;
+    private static final int VIEW_SLOT = 1;
     private static final int INFO_SLOT = 4;
     private static final int BACK_SLOT = 8;
+
+    private static final int ENTRY_FIRST_SLOT = 0;
+    private static final int ENTRY_LAST_SLOT = 44;
+    private static final int ENTRY_PAGE_SIZE = 45;
+    private static final int PREVIOUS_SLOT = 45;
+    private static final int ENTRY_BACK_SLOT = 49;
+    private static final int NEXT_SLOT = 53;
+
+    private ListStepGui() {
+    }
 
     public static final class Holder implements InventoryHolder {
         final String stepKey;
@@ -49,11 +52,46 @@ public final class ListStepGui {
         }
     }
 
+    public static final class EntryHolder implements InventoryHolder {
+        final PrepareSession session;
+        final String stepKey;
+        int page;
+        Inventory inventory;
+
+        EntryHolder(@NotNull PrepareSession session, @NotNull String stepKey) {
+            this.session = session;
+            this.stepKey = stepKey;
+        }
+
+        @Override
+        public @NotNull Inventory getInventory() {
+            return inventory;
+        }
+    }
+
+    public static final class EditHolder implements InventoryHolder {
+        final PrepareSession session;
+        final String stepKey;
+        final int index;
+        Inventory inventory;
+
+        EditHolder(@NotNull PrepareSession session, @NotNull String stepKey, int index) {
+            this.session = session;
+            this.stepKey = stepKey;
+            this.index = index;
+        }
+
+        @Override
+        public @NotNull Inventory getInventory() {
+            return inventory;
+        }
+    }
+
     public static void open(@NotNull PrepareSessionManager manager, @NotNull Player player,
                             @NotNull PrepareSession session, @NotNull PrepareStep step) {
         Holder holder = new Holder(step.key());
         Inventory inv = Bukkit.createInventory(holder, 9,
-                Component.text("点位列表：" + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
+                Component.text("点位管理：" + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
                         .decoration(TextDecoration.ITALIC, false));
         holder.inventory = inv;
         refresh(inv, session, step);
@@ -63,9 +101,9 @@ public final class ListStepGui {
     private static void refresh(@NotNull Inventory inv, @NotNull PrepareSession session, @NotNull PrepareStep step) {
         inv.setItem(ADD_SLOT, item(Material.LIME_WOOL, step.listAddLabel(), NamedTextColor.GREEN,
                 List.of(step.listAddHint().color(NamedTextColor.GRAY))));
-        inv.setItem(CLEAR_SLOT, item(Material.RED_WOOL, Component.text("清空列表"), NamedTextColor.RED,
-                List.of(Component.text("移除已添加的全部点位").color(NamedTextColor.GRAY))));
-        inv.setItem(INFO_SLOT, item(Material.BOOK, Component.text("当前点位数：" + step.listCount(session)), NamedTextColor.AQUA,
+        inv.setItem(VIEW_SLOT, item(Material.BOOK, Component.text("查看已设置列表"), NamedTextColor.AQUA,
+                List.of(Component.text("逐项编辑序号、实际信息或删除").color(NamedTextColor.GRAY))));
+        inv.setItem(INFO_SLOT, item(Material.PAPER, Component.text("当前点位数：" + step.listCount(session)), NamedTextColor.WHITE,
                 List.of(Component.text(step.isSet(session) ? "已设置" : "未设置").color(NamedTextColor.GRAY))));
         inv.setItem(BACK_SLOT, item(Material.ARROW, Component.text("返回"), NamedTextColor.WHITE,
                 List.of(Component.text("回到 prepare 物品栏").color(NamedTextColor.GRAY))));
@@ -86,24 +124,18 @@ public final class ListStepGui {
             player.closeInventory();
             return;
         }
-        int slot = event.getRawSlot();
-        switch (slot) {
+        switch (event.getRawSlot()) {
             case ADD_SLOT -> {
                 if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
                     Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
                     return;
                 }
-                String m = step.listAdd(session, player);
-                if (m != null) player.sendMessage(m);
+                String message = step.listAdd(session, player);
+                if (message != null) player.sendMessage(message);
                 refresh(top, session, step);
                 PrepareModeInventory.refresh(player, session);
             }
-            case CLEAR_SLOT -> {
-                String m = step.listClear(session, player);
-                if (m != null) player.sendMessage(m);
-                refresh(top, session, step);
-                PrepareModeInventory.refresh(player, session);
-            }
+            case VIEW_SLOT -> openEntries(player, session, step);
             case BACK_SLOT -> {
                 player.closeInventory();
                 PrepareModeInventory.refresh(player, session);
@@ -113,12 +145,154 @@ public final class ListStepGui {
         }
     }
 
-    private static ItemStack item(Material mat, Component name, NamedTextColor nameColor, List<Component> lore) {
-        ItemStack is = new ItemStack(mat);
-        is.editMeta(meta -> {
-            meta.displayName(name.color(nameColor).decoration(TextDecoration.ITALIC, false));
+    private static void openEntries(@NotNull Player player, @NotNull PrepareSession session,
+                                    @NotNull PrepareStep step) {
+        EntryHolder holder = new EntryHolder(session, step.key());
+        holder.inventory = Bukkit.createInventory(holder, 54,
+                Component.text("已设置列表：" + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
+                        .decoration(TextDecoration.ITALIC, false));
+        refreshEntries(holder, step);
+        player.openInventory(holder.inventory);
+    }
+
+    private static void refreshEntries(@NotNull EntryHolder holder, @NotNull PrepareStep step) {
+        Inventory inv = holder.inventory;
+        inv.clear();
+        List<PrepareStep.ListEntry> entries = step.listEntries(holder.session);
+        int pageCount = Math.max(1, (entries.size() + ENTRY_PAGE_SIZE - 1) / ENTRY_PAGE_SIZE);
+        holder.page = Math.max(0, Math.min(holder.page, pageCount - 1));
+        int first = holder.page * ENTRY_PAGE_SIZE;
+        for (int slot = ENTRY_FIRST_SLOT; slot <= ENTRY_LAST_SLOT; slot++) {
+            int index = first + slot;
+            if (index < entries.size()) {
+                PrepareStep.ListEntry entry = entries.get(index);
+                List<Component> lore = new ArrayList<>();
+                for (String detail : entry.details()) lore.add(Component.text(detail).color(NamedTextColor.GRAY));
+                lore.add(Component.text("点击编辑此项").color(NamedTextColor.AQUA));
+                inv.setItem(slot, item(Material.PAPER, Component.text(entry.title()), NamedTextColor.WHITE, lore));
+            } else {
+                inv.setItem(slot, filler());
+            }
+        }
+        inv.setItem(PREVIOUS_SLOT, holder.page > 0
+                ? item(Material.ARROW, Component.text("上一页"), NamedTextColor.WHITE,
+                List.of(Component.text("第 " + holder.page + " 页").color(NamedTextColor.GRAY)))
+                : filler());
+        inv.setItem(ENTRY_BACK_SLOT, item(Material.BARRIER, Component.text("返回点位管理"), NamedTextColor.RED,
+                List.of()));
+        inv.setItem(NEXT_SLOT, holder.page + 1 < pageCount
+                ? item(Material.ARROW, Component.text("下一页"), NamedTextColor.WHITE,
+                List.of(Component.text("第 " + (holder.page + 2) + " / " + pageCount + " 页").color(NamedTextColor.GRAY)))
+                : filler());
+    }
+
+    public static void handleEntryClick(@NotNull PrepareSessionManager manager,
+                                        @NotNull InventoryClickEvent event, @NotNull Player player,
+                                        @NotNull EntryHolder holder) {
+        event.setCancelled(true);
+        if (event.getClickedInventory() != event.getView().getTopInventory()) return;
+        PrepareSession session = manager.getSession(player);
+        if (session == null || session != holder.session) {
+            player.closeInventory();
+            return;
+        }
+        PrepareStep step = session.step(holder.stepKey);
+        if (step == null) {
+            player.closeInventory();
+            return;
+        }
+        int slot = event.getRawSlot();
+        if (slot == PREVIOUS_SLOT) {
+            if (holder.page > 0) {
+                holder.page--;
+                refreshEntries(holder, step);
+            }
+            return;
+        }
+        if (slot == NEXT_SLOT) {
+            int pageCount = Math.max(1, (step.listEntries(session).size() + ENTRY_PAGE_SIZE - 1) / ENTRY_PAGE_SIZE);
+            if (holder.page + 1 < pageCount) {
+                holder.page++;
+                refreshEntries(holder, step);
+            }
+            return;
+        }
+        if (slot == ENTRY_BACK_SLOT) {
+            open(manager, player, session, step);
+            return;
+        }
+        if (slot < ENTRY_FIRST_SLOT || slot > ENTRY_LAST_SLOT) return;
+        int index = holder.page * ENTRY_PAGE_SIZE + slot;
+        if (index < step.listEntries(session).size()) openEdit(player, session, step, index);
+    }
+
+    public static void openEdit(@NotNull Player player, @NotNull PrepareSession session,
+                                @NotNull PrepareStep step, int index) {
+        EditHolder holder = new EditHolder(session, step.key(), index);
+        holder.inventory = Bukkit.createInventory(holder, 9,
+                Component.text("编辑点位 #" + (index + 1)).decoration(TextDecoration.ITALIC, false));
+        holder.inventory.setItem(0, item(Material.NAME_TAG, Component.text("编辑序号"), NamedTextColor.YELLOW,
+                List.of(Component.text("调整此项在列表中的顺序").color(NamedTextColor.GRAY))));
+        holder.inventory.setItem(4, item(Material.COMPASS, Component.text("编辑实际信息"), NamedTextColor.AQUA,
+                List.of(Component.text("使用当前位置/当前选区覆盖").color(NamedTextColor.GRAY))));
+        holder.inventory.setItem(6, item(Material.RED_WOOL, Component.text("删除此项"), NamedTextColor.RED,
+                List.of(Component.text("只删除当前这一项").color(NamedTextColor.GRAY))));
+        holder.inventory.setItem(8, item(Material.ARROW, Component.text("返回列表"), NamedTextColor.WHITE, List.of()));
+        player.openInventory(holder.inventory);
+    }
+
+    public static void handleEditClick(@NotNull PrepareSessionManager manager,
+                                       @NotNull InventoryClickEvent event, @NotNull Player player,
+                                       @NotNull EditHolder holder) {
+        event.setCancelled(true);
+        if (event.getClickedInventory() != event.getView().getTopInventory()) return;
+        PrepareSession session = manager.getSession(player);
+        if (session == null || session != holder.session) {
+            player.closeInventory();
+            return;
+        }
+        PrepareStep step = session.step(holder.stepKey);
+        if (step == null) {
+            player.closeInventory();
+            return;
+        }
+        switch (event.getRawSlot()) {
+            case 0 -> AnvilInputGui.openInteger(player, "输入新序号", holder.index + 1, value -> {
+                String message = step.listSetOrder(session, player, holder.index, value);
+                if (message != null) player.sendMessage(message);
+                openEntries(player, session, step);
+            });
+            case 4 -> {
+                if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
+                    Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
+                    return;
+                }
+                String message = step.listEdit(session, player, holder.index);
+                if (message != null) player.sendMessage(message);
+                if (!step.listEditHandlesNavigation()) openEdit(player, session, step, holder.index);
+            }
+            case 6 -> {
+                String message = step.listRemove(session, player, holder.index);
+                if (message != null) player.sendMessage(message);
+                openEntries(player, session, step);
+            }
+            case 8 -> openEntries(player, session, step);
+            default -> {
+            }
+        }
+    }
+
+    private static ItemStack item(@NotNull Material mat, @NotNull Component name,
+                                  @NotNull NamedTextColor color, @NotNull List<Component> lore) {
+        ItemStack stack = new ItemStack(mat);
+        stack.editMeta(meta -> {
+            meta.displayName(name.color(color).decoration(TextDecoration.ITALIC, false));
             meta.lore(lore.stream().map(c -> c.decoration(TextDecoration.ITALIC, false)).toList());
         });
-        return is;
+        return stack;
+    }
+
+    private static ItemStack filler() {
+        return item(Material.GRAY_STAINED_GLASS_PANE, Component.text(" "), NamedTextColor.DARK_GRAY, List.of());
     }
 }

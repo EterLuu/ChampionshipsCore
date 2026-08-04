@@ -279,8 +279,9 @@ public class Utils {
     }
 
     public static void sendMessageToAllPlayers(String message) {
+        String translated = translateColorCodes(message);
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(message);
+            player.sendMessage(translated);
         }
     }
 

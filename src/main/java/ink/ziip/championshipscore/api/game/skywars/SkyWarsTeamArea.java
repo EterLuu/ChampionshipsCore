@@ -51,7 +51,6 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     private final Map<ChampionshipTeam, HappyGhast> teamHappyGhasts = new HashMap<>();
     @Getter
     private int timer;
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     private BukkitTask borderCheckTask;
     private double radius;
@@ -71,7 +70,6 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         teamSpawnLocations.clear();
         teamHappyGhasts.clear();
 
-        startGamePreparationTask = null;
         startGameProgressTask = null;
         borderCheckTask = null;
 
@@ -88,7 +86,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public Location getSpectatorSpawnLocation() {
-        return mapGeometry().getSpectatorSpawn();
+        return mapGeometry().getBoundaryCenter();
     }
 
     public SkyWarsTeamArea(ChampionshipsCore plugin, SkyWarsConfig skyWarsConfig, boolean firstTime, String areaName) {
@@ -184,8 +182,8 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        teleportAllPlayers(mapGeometry().getPreparationSpawn());
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+        assignTeamSpawnPoints();
+        teleportAllPlayersToAssignedTeamSpawns();
 
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -202,25 +200,10 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                 boundary.middleHeight()
         );
 
-        timer = variant().lifecycle().preparationSeconds();
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            // changeLevelForAllGamePlayers(timer);
-            showPreparationCountdown(timer);
-
-            if (timer == 0) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     protected void startGameProgress() {
-        teleportAllTeamPlayersToSpawnPoints();
-
         int offlinePlayers = 0;
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
@@ -265,7 +248,6 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         int duration = variant().lifecycle().durationSeconds();
         startGameProgressTask = startRemainingTimer(duration, seconds -> {
             timer = seconds;
-            // changeLevelForAllGamePlayers(timer);
             String timerMessage = MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer));
             sendActionBarToActiveGamePlayers(timerMessage);
             updateSpectatorTimerBossBar(timerMessage, timer, duration);
@@ -279,7 +261,10 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
             Integer spawnHappyGhastTime = variant().rules().spawnHappyGhastAtRemainingSeconds();
             if (spawnHappyGhastTime != null && timer == spawnHappyGhastTime) {
-                spawnTeamHappyGhasts();
+                if (spawnTeamHappyGhasts() > 0) {
+                    sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_HAPPY_GHAST_SPAWNED);
+                    playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1, 1.2F);
+                }
             }
 
             for (SkyWarsShrink skyWarsShrink : shrinkTimes) {
@@ -329,7 +314,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     protected void startBorderShrink() {
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
         borderCheckTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
-            Location center = mapGeometry().getPreparationSpawn();
+            Location center = mapGeometry().getBoundaryCenter();
 
             for (UUID uuid : gamePlayersCopy) {
                 Player player = Bukkit.getPlayer(uuid);
@@ -374,7 +359,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
     private void setParticles(Player player, boolean byAngle) {
         scheduler.runTaskAsynchronously(plugin, () -> {
-            Location center = mapGeometry().getPreparationSpawn();
+            Location center = mapGeometry().getBoundaryCenter();
             Location location = player.getLocation();
             World world = location.getWorld();
 
@@ -431,9 +416,6 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
-
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
         if (borderCheckTask != null)
@@ -448,13 +430,13 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
         announceGameEnd(MessageConfig.SKY_WARS_GAME_END_TITLE, MessageConfig.SKY_WARS_GAME_END_SUBTITLE);
 
-        teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+        beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     protected void calculatePoints() {
@@ -516,9 +498,11 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
             scheduler.runTask(plugin, () -> {
                 event.getEntity().spigot().respawn();
-                event.getEntity().teleport(getSpectatorSpawnLocation());
+                if (!restoreSharedPreGameParticipant(event.getEntity())) {
+                    teleportPlayerToAssignedTeamSpawn(event.getEntity());
+                    event.getEntity().setGameMode(GameMode.ADVENTURE);
+                }
             });
-            player.teleport(getPreparationTeleportLocation(mapGeometry().getPreparationSpawn()));
             return;
         }
 
@@ -618,20 +602,30 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         }
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            player.teleport(getPreparationTeleportLocation(mapGeometry().getPreparationSpawn()));
+            if (!restoreSharedPreGameParticipant(player)) {
+                teleportPlayerToAssignedTeamSpawn(player);
+                player.setGameMode(GameMode.ADVENTURE);
+            }
             return;
         }
 
+        if ((getGameStageEnum() == GameStageEnum.COUNTDOWN || getGameStageEnum() == GameStageEnum.PROGRESS)
+                && !deathPlayer.contains(player.getUniqueId())) {
+            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+            Location spawn = team == null ? null : teamSpawnLocations.get(team);
+            if (spawn != null) {
+                player.teleport(spawn);
+                player.setGameMode(GameMode.SURVIVAL);
+                return;
+            }
+        }
         player.teleport(getSpectatorSpawnLocation());
-        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-            player.setGameMode(GameMode.SPECTATOR);
-        });
+        player.setGameMode(getGameStageEnum() == GameStageEnum.END ? GameMode.ADVENTURE : GameMode.SPECTATOR);
     }
 
     public int getPlayerBoarderDistance(Player player) {
         Location location = player.getLocation();
-        Location center = getSpectatorSpawnLocation();
+        Location center = mapGeometry().getBoundaryCenter();
         double distance = Math.hypot(center.getX() - location.getX(), center.getZ() - location.getZ());
         return (int) Math.abs(radius - distance);
     }
@@ -686,33 +680,42 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         return gameTeams.size() - i;
     }
 
-    private void teleportAllTeamPlayersToSpawnPoints() {
+    private void assignTeamSpawnPoints() {
         Iterator<String> spawnPointsI = mapGeometry().getTeamSpawns().iterator();
 
         Collections.shuffle(gameTeams);
 
         for (ChampionshipTeam championshipTeam : gameTeams) {
-            Location location;
-            if (spawnPointsI.hasNext()) {
-                location = Utils.getLocation(spawnPointsI.next());
-                for (int i = 0; i < championshipTeam.getOnlinePlayers().size(); i++) {
-                    Player player = championshipTeam.getOnlinePlayers().get(i);
-                    if (player != null) {
-                        Location spawnLocation = location.clone();
-                        spawnLocation.setX(spawnLocation.getX() + (i % 2 == 0 ? -1 : 1));
-                        spawnLocation.setZ(spawnLocation.getZ() + (i < 2 ? -1 : 1));
-                        player.teleport(spawnLocation);
-                    }
-                }
-            } else {
+            if (!spawnPointsI.hasNext()) {
                 spawnPointsI = mapGeometry().getTeamSpawns().iterator();
-                location = Utils.getLocation(spawnPointsI.next());
-                championshipTeam.teleportAllPlayers(location);
             }
+            Location location = Utils.getLocation(spawnPointsI.next());
             // Record the raw spawn point (without player offsets) so the team's
             // happy ghast can be spawned exactly here later in the game.
             teamSpawnLocations.put(championshipTeam, location.clone());
         }
+    }
+
+    private void teleportAllPlayersToAssignedTeamSpawns() {
+        for (ChampionshipTeam team : gameTeams) {
+            Location location = teamSpawnLocations.get(team);
+            if (location == null) continue;
+            List<Player> onlinePlayers = team.getOnlinePlayers();
+            for (int i = 0; i < onlinePlayers.size(); i++) {
+                Player player = onlinePlayers.get(i);
+                Location spawn = location.clone();
+                spawn.setX(spawn.getX() + (i % 2 == 0 ? -1 : 1));
+                spawn.setZ(spawn.getZ() + (i < 2 ? -1 : 1));
+                player.teleport(spawn);
+            }
+        }
+    }
+
+    public void teleportPlayerToAssignedTeamSpawn(@NotNull Player player) {
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        Location assigned = team == null ? null : teamSpawnLocations.get(team);
+        Location fallback = assigned == null ? getSpectatorSpawnLocation() : assigned;
+        player.teleport(getPreparationTeleportLocation(fallback));
     }
 
     /**
@@ -723,7 +726,8 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
      * and gravity is only applied inside travel(), which NoAI skips - so it
      * neither falls nor drifts away. 50 HP.
      */
-    private void spawnTeamHappyGhasts() {
+    private int spawnTeamHappyGhasts() {
+        int spawned = 0;
         for (Map.Entry<ChampionshipTeam, Location> entry : teamSpawnLocations.entrySet()) {
             ChampionshipTeam team = entry.getKey();
             if (teamDeathPlayers.getOrDefault(team, 0) >= team.getMembers().size()) {
@@ -773,7 +777,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             }
 
             logGame(Level.INFO, "实体", "队伍=" + team.getName() + " 已生成快乐恶魂，挽具=" + team.getColorName());
+            spawned++;
         }
+        return spawned;
     }
 
     public boolean isTeamHappyGhast(HappyGhast happyGhast) {
@@ -842,32 +848,12 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     }
 
     private void giveItemToAllGamePlayers() {
-//        ItemStack bread = new ItemStack(Material.BREAD);
-//        bread.setAmount(8);
-//
-//        ItemStack sword = new ItemStack(Material.IRON_SWORD);
-//        ItemStack pickaxe = new ItemStack(Material.IRON_PICKAXE);
-//        pickaxe.addEnchantment(Enchants.get(EnchantmentKeys.EFFICIENCY), 3);
-//        ItemStack bow = new ItemStack(Material.BOW);
-//        ItemStack arrows = new ItemStack(Material.ARROW);
-//        arrows.setAmount(4);
-//        ItemStack chestPlate = new ItemStack(Material.IRON_CHESTPLATE);
-
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
                 PlayerInventory inventory = player.getInventory();
-//                inventory.addItem(bread.clone());
-//                inventory.addItem(sword.clone());
-//                inventory.addItem(pickaxe.clone());
-//                inventory.addItem(bow.clone());
-//                inventory.addItem(arrows.clone());
-//                inventory.setChestplate(chestPlate);
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
                 if (championshipTeam != null) {
-//                    inventory.addItem(championshipTeam.getConcrete());
-//                    inventory.addItem(championshipTeam.getConcrete());
-//                    inventory.setLeggings(championshipTeam.getLeggings());
                     inventory.setBoots(championshipTeam.getBoots());
                 }
             }

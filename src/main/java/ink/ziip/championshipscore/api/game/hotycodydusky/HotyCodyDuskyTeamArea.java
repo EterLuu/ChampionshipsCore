@@ -74,13 +74,13 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         announceGameEnd(MessageConfig.HOTY_CODY_DUSKY_GAME_END_TITLE,
                 MessageConfig.HOTY_CODY_DUSKY_GAME_END_SUBTITLE);
 
-        teleportAllPlayers(CCConfig.LOBBY_LOCATION);
+        beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
 
         Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
-        resetGame();
+        finishPostGameAfterEndEvent();
     }
 
     protected void calculatePoints() {
@@ -462,13 +462,16 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
             player.teleport(getPreparationTeleportLocation(getGameConfig().getPlayerSpawnPoint()));
+            player.setGameMode(GameMode.ADVENTURE);
             return;
         }
 
+        if (getGameStageEnum() == GameStageEnum.COUNTDOWN) {
+            player.teleport(getGameConfig().getPlayerSpawnPoint());
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
+        }
         player.teleport(getSpectatorSpawnLocation());
-        ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-        championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-            player.setGameMode(GameMode.SPECTATOR);
-        });
+        player.setGameMode(getGameStageEnum() == GameStageEnum.END ? GameMode.ADVENTURE : GameMode.SPECTATOR);
     }
 }

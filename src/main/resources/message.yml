@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 13
+  version: 19
 no-permission: "&#bababa[&#ff6b26管理&#bababa] &#ededed权限不足"
 prefix: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r"
 server-full: "服务器已经满人！"
@@ -59,6 +59,8 @@ rank:
   final-board-bar: "&#bababa━━━━━━━━ &#8a70ff&l%game% &#fff566最终积分 &#bababa━━━━━━━━"
   final-recap-hint: "&#bababa  完整总榜 &#ededed/cc rank teamboard &#bababa• 重看 &#ededed/cc rank recap"
   no-recap: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r &#ededed目前没有可重看的结算。"
+  game-weight-bar: "&#bababa━━━━━━━━ &#fff566&l游戏权重 &#bababa━━━━━━━━"
+  game-weight-row: "&#ededed  %game%  &#fff566×%weight% &#bababa• &#ff6b26%total_point% 原始分"
 spectator:
   is-player: "&#bababa[&#ff6b26旁观&#bababa] &#ededed参赛玩家不能进入旁观模式"
   leaving-area: "&#bababa[&#fff566旁观&#bababa] &#ededed已退出旁观模式"
@@ -86,8 +88,7 @@ game:
   bingo: "宾果"
   buildmart: "建材集市"
   dodgebolt: "躲避箭"
-  game-weight: "&#ededed====== &#31e061S²&#dbffe5&#e42d3eCC &#fff566游戏权值 &#696969| &#e42d3eRIA &#edededx &#24abffTRIALHAMMER &#edededx &dINF&r &#ededed======"
-  game-weight-info: "&r  &#ededed%game%. &#24abff%weight%&#696969（&6%total_point%&#696969）"
+  acerace: "王牌竞速"
   preparation-count-down: "&#fff566%game% &#bababa• &#ededed准备 &#ff6b26%time%s"
   round-preparation-title: "&#fff566&l第 %round% 轮准备"
   round-preparation-subtitle: "&#ededed将在 &#ff6b26%time%s &#ededed后进入场地"
@@ -185,6 +186,7 @@ skywars:
   whole-team-was-killed: "&#bababa[&#fff566空岛乱斗&#bababa] %team% &#ff6b26全队出局"
   board-shrink: "&#bababa[&#fff566空岛乱斗&#bababa] &#ff6b26边界开始收缩"
   stop-board-shrink: "&#bababa[&#fff566空岛乱斗&#bababa] &#ededed边界收缩完成"
+  happy-ghast-spawned: "&#bababa[&#fff566空岛乱斗&#bababa] &#ededed各存活队伍的快乐恶魂已在出生岛生成"
   deduct-food-level: "&#bababa[&#fff566空岛乱斗&#bababa] &#ff6b26生存阶段 &#bababa• &#ededed生命将持续流失"
   out-of-border: "&#fff566空岛乱斗 &#bababa• &#ff6b26返回边界内"
 tgttos:
@@ -205,6 +207,23 @@ tgttos:
   arrived-at-end-point: "&#bababa[&#fff566去到另一边&#bababa] &#ededed%player% &#ff6b26到达终点"
   team-arrived-at-end-point: "&#bababa[&#fff566去到另一边&#bababa] %team% &#fff566全员到达"
   fall-into-void: "&#fff566去到另一边 &#bababa• &#696969已返回起点"
+acerace:
+  start-preparation: "&#bababa[&#fff566王牌竞速&#bababa] &#ededed起跑线就位，确认赛道"
+  start-preparation-title: "&#fff566&l王牌竞速"
+  start-preparation-subtitle: "&#ededed确认赛道 &#bababa• &#ff6b26准备起跑"
+  game-start-title: "&#ff6b26&l王牌竞速"
+  game-start-subtitle: "&#fff566&l立即出发"
+  game-end-title: "&#fff566&l王牌竞速"
+  game-end-subtitle: "&#ededed本场结束 &#bababa• &#ff6b26积分结算中"
+  action-bar-count-down: "&#fff566王牌竞速 &#bababa• &#ededed剩余 &#ff6b26%time%s"
+  received-elytra: "&#fff566王牌竞速 &#bababa• &#ededed获得了 &#ff6b26鞘翅"
+  received-trident: "&#fff566王牌竞速 &#bababa• &#ededed获得了 &#ff6b26激流三叉戟"
+  lap-completed: "&#bababa[&#fff566王牌竞速&#bababa] &#ededed%player% &#fff566完成第 %lap%/%total% 圈"
+  finished: "&#bababa[&#fff566王牌竞速&#bababa] &#ededed%player% &#ff6b26第 %place% 名完成比赛"
+  returned-to-respawn-point: "&#fff566王牌竞速 &#bababa• &#696969已返回最近重生点"
+  launch-pad: "&#fff566王牌竞速 &#bababa• &#ff6b26发射！"
+  jump-pad: "&#fff566王牌竞速 &#bababa• &#ff6b26跳跃！"
+  speed-boost: "&#fff566王牌竞速 &#bababa• &#ff6b26加速！"
 bingo:
   start-preparation: "&#bababa[&#fff566宾果&#bababa] &#ededed确认分工，准备探索"
   start-preparation-title: "&#fff566&l宾果"
@@ -318,7 +337,7 @@ dodgebolt:
   resumed-title: "&#fff566&l比赛恢复"
   resumed-subtitle: "&#ededed决赛继续"
   round-restarted: "&#bababa[&#fff566躲避箭&#bababa] &#ededed管理员已重开当前小局"
-  champion: "&#bababa━━━━━━━━ &#fff566&lS²CC 冠军 &#bababa━━━━━━━━\n%team% &#ededed赢得躲避箭决赛 &#bababa• &#ff6b26%score%"
+  champion: "&#bababa━━━━━━━━ &#fff566&lS³CC 冠军 &#bababa━━━━━━━━\n%team% &#ededed赢得躲避箭决赛 &#bababa• &#ff6b26%score%"
   champion-title: "&#fff566&l冠军诞生"
   champion-subtitle: "%team% &#bababa• &#ff6b26%score%"
   stopped: "&#bababa[&#ff6b26躲避箭&#bababa] &#ededed决赛已由管理员终止，本场不产生冠军"
@@ -404,9 +423,9 @@ placeholder:
   waiting-start: "等待游戏开始"
   game-end: "比赛已结束"
 vote:
-  start-vote: "&#bababa━━━━━━━━ &#8a70ff&l游戏投票 &#bababa━━━━━━━━\n&#ededed为下一项游戏投票：&#fff566/cc vote <游戏>\n&#ededed候选游戏可用 Tab 补全查看，限时 &#ff6b26120 秒&#ededed。"
+  start-vote: "&#bababa━━━━━━━━ &#8a70ff&l游戏投票 &#bababa━━━━━━━━\n&#ededed打开菜单：&#fff566/cc vote &#bababa• &#ededed或直接输入：&#fff566/cc vote <游戏>\n&#ededed限时 &#ff6b26120 秒&#ededed。"
   start-vote-title: "&#8a70ff&l游戏投票"
-  start-vote-subtitle: "&#ededed输入 &#fff566/cc vote <游戏>"
+  start-vote-subtitle: "&#ededed打开 &#fff566/cc vote"
   end-vote: "&#bababa━━━━━━━━ &#fff566&l投票结果 &#bababa━━━━━━━━"
   end-vote-title: "&#fff566&l投票结束"
   end-vote-subtitle: "&#ededed最高票：&#8a70ff%game% &#bababa• &#ff6b26%votes% 票"

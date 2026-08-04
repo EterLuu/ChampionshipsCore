@@ -6,6 +6,8 @@ public class AdminWorldMainCommand extends BaseMainCommand {
     public AdminWorldMainCommand() {
         super("world", "世界管理");
         addSubCommand(new WorldCreateSubCommand());
+        addSubCommand(new WorldRenameSubCommand());
+        addSubCommand(new WorldDeleteSubCommand());
         addSubCommand(new WorldUnloadSubCommand());
         addSubCommand(new WorldTeleportSubCommand());
         addSubCommand(new WorldListSubCommand());

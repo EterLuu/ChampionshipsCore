@@ -40,6 +40,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     public boolean tryStartGame(List<ChampionshipTeam> championshipTeams) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return false;
+        cancelPostGameRoutingBeforeStart();
         setGameStageEnum(GameStageEnum.LOADING);
 
         gameTeams.addAll(championshipTeams);
@@ -55,6 +56,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     public boolean tryStartGame(List<ChampionshipTeam> championshipTeams, List<UUID> players) {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             return false;
+        cancelPostGameRoutingBeforeStart();
         setGameStageEnum(GameStageEnum.LOADING);
 
         gameTeams.addAll(championshipTeams);
@@ -264,5 +266,10 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
                 });
             }
         }
+    }
+
+    @Override
+    public Collection<UUID> getParticipantUniqueIds() {
+        return List.copyOf(gamePlayers);
     }
 }

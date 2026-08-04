@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
@@ -88,6 +89,67 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         } catch (Exception exception) {
             plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "保存",
                     "配置文件=" + getFileName() + " 保存选项失败"), exception);
+        }
+    }
+
+    /**
+     * Rebinds this map definition from one physical world to another. Map worlds contain a mixture
+     * of raw Location sections and legacy string-serialized locations, so both representations must
+     * move together with the {@code world-name} field.
+     *
+     * @return whether this configuration owned {@code oldWorldName} and was saved successfully
+     */
+    public boolean renameWorldReferences(@NotNull String oldWorldName, @NotNull World oldWorld,
+                                         @NotNull World newWorld) {
+        if (configuration == null || configurationPath == null
+                || !oldWorldName.equals(configuration.getString("world-name"))) {
+            return false;
+        }
+
+        configuration.set("world-name", newWorld.getName());
+        rewriteWorldReferences(configuration, oldWorldName, oldWorld.getKey().toString(),
+                newWorld.getName(), newWorld.getKey().toString());
+        try {
+            configuration.save(configurationPath.toFile());
+            loadFileOptions();
+            return true;
+        } catch (Exception exception) {
+            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "重命名世界",
+                    "配置文件=" + getFileName() + " 无法更新世界=" + oldWorldName
+                            + " -> " + newWorld.getName()), exception);
+            return false;
+        }
+    }
+
+    /** True when this map's physical world name is configurable rather than derived by game code. */
+    public boolean ownsNamedWorld(@NotNull String worldName) {
+        return configuration != null && worldName.equals(configuration.getString("world-name"));
+    }
+
+    private static void rewriteWorldReferences(@NotNull ConfigurationSection section,
+                                               @NotNull String oldWorldName, @NotNull String oldWorldKey,
+                                               @NotNull String newWorldName, @NotNull String newWorldKey) {
+        for (String key : section.getKeys(false)) {
+            Object value = section.get(key);
+            if (value instanceof ConfigurationSection child) {
+                rewriteWorldReferences(child, oldWorldName, oldWorldKey, newWorldName, newWorldKey);
+            } else if ("world".equals(key) && oldWorldName.equals(value)) {
+                section.set(key, newWorldName);
+            } else if ("world_key".equals(key) && oldWorldKey.equals(value)) {
+                section.set(key, newWorldKey);
+            } else if (value instanceof List<?> values) {
+                List<Object> rewritten = new ArrayList<>(values.size());
+                boolean changed = false;
+                for (Object entry : values) {
+                    Object replacement = entry;
+                    if (entry instanceof String string && string.startsWith(oldWorldName + ":")) {
+                        replacement = newWorldName + string.substring(oldWorldName.length());
+                        changed = true;
+                    }
+                    rewritten.add(replacement);
+                }
+                if (changed) section.set(key, rewritten);
+            }
         }
     }
 
@@ -205,7 +267,7 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
     /**
      * Spawn point of the optional rule-introduction phase: players gather here for the 45s rules
-     * broadcast, then move to the normal preparation spawn. Leave empty to skip the introduction.
+     * broadcast, then move to the normal preparation spawn. When empty, the spectator spawn is used.
      */
     @ConfigOption(path = "introduction-spawn-point", nullable = true)
     protected Location introductionSpawnPoint;

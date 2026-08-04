@@ -18,7 +18,7 @@ public class BattleBoxScheduleHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(TeamGameEndEvent event) {
         if (event.getGameInstance() instanceof BattleBoxArea battleBoxArea) {
-            if (scheduleManager.isEnabled()) {
+            if (battleBoxArea.isEventRun() && scheduleManager.isEnabled()) {
                 scheduleManager.onInstanceComplete(battleBoxArea);
             }
         }

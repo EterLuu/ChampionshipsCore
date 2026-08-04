@@ -77,7 +77,7 @@ public final class SkyWarsVariantRegistry implements GameVariantRegistry<SkyWars
             Integer ghast = yaml.contains("mechanics.spawn-happy-ghast-at-remaining-seconds")
                     ? yaml.getInt("mechanics.spawn-happy-ghast-at-remaining-seconds") : null;
             SkyWarsVariant variant = new SkyWarsVariant(id,
-                    new GameLifecycleSettings(yaml.getInt("lifecycle.preparation-seconds", 10),
+                    new GameLifecycleSettings(0,
                             yaml.getInt("lifecycle.countdown-seconds", 5),
                             yaml.getInt("lifecycle.duration-seconds")),
                     new GamePresentationSettings(readRuleSections(yaml)),
