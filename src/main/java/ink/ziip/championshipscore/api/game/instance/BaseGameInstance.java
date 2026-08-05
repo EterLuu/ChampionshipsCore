@@ -201,7 +201,11 @@ public abstract class BaseGameInstance {
     protected void logGame(Level level, String event, String message) {
         String area = gameConfig == null || gameConfig.getAreaName() == null ? "-" : gameConfig.getAreaName();
         String stage = gameStageEnum == null ? "-" : gameStageEnum.name();
-        plugin.getLogger().log(level, Utils.formatGameLog(gameTypeEnum, area, stage, event, message));
+        String formatted = Utils.formatGameLog(gameTypeEnum, area, stage, event, message);
+        boolean importantFlow = Level.INFO.equals(level) && "流程".equals(event)
+                && (message.startsWith("游戏开始") || message.startsWith("游戏结束"));
+        if (importantFlow && plugin.getLogManager() != null) plugin.getLogManager().important(formatted);
+        else plugin.getLogger().log(level, formatted);
     }
 
     private String formatPointChange(double points) {
@@ -342,6 +346,12 @@ public abstract class BaseGameInstance {
      */
     public final void loadPublishedMapOrDraft(World.Environment environment) {
         getGameConfig().initializeConfiguration(plugin.getFolder());
+        if (getGameConfig().isWorldBindingPending()) {
+            getGameHandler().register();
+            setGameStageEnum(GameStageEnum.WAITING);
+            logGame(Level.INFO, "世界", "地图草稿尚未绑定世界，等待 prepare 设置");
+            return;
+        }
         File template = new File(new File(plugin.getDataFolder(), "maps"), getWorldName());
         if (getGameConfig().isPrepareReady() && template.isDirectory()) {
             loadMap(environment);

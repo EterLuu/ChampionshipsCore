@@ -40,6 +40,30 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
     public abstract boolean addArea(String name);
 
     /**
+     * Registers a map against an already loaded physical world. Map editing must never create worlds;
+     * callers are expected to create/load the world through the admin world command first.
+     */
+    public boolean addArea(String name, String worldName) {
+        // Fixed-world games do not create a world in addArea; retain their established registration path.
+        return addArea(name);
+    }
+
+    /** Removes only the map definition/runtime objects. The physical world is deliberately retained. */
+    public boolean deleteArea(String name) {
+        T representative = areas.get(name);
+        if (representative == null || !canEditMap(name)) return false;
+        try {
+            java.nio.file.Files.deleteIfExists(plugin.getFolder().resolve(representative.getGameConfig().getFileName()));
+            representative.dispose();
+            areas.remove(name, representative);
+            return true;
+        } catch (java.io.IOException exception) {
+            plugin.getLogger().warning("无法删除地图配置 " + name + " | " + exception.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Returns the map-definition surface used by prepare. Runtime instances remain an implementation
      * detail of the game manager and are not retained by the prepare session.
      */
@@ -59,6 +83,22 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
                 .filter(instance -> worldName.equals(instance.getWorldName()))
                 .allMatch(instance -> instance.getGameStageEnum()
                         == ink.ziip.championshipscore.api.object.stage.GameStageEnum.WAITING);
+    }
+
+    protected boolean isWorldAlreadyMapped(String worldName) {
+        return areas.values().stream().anyMatch(instance -> worldName.equals(instance.getWorldName()));
+    }
+
+    public boolean bindMapWorld(String name, World world) {
+        T representative = areas.get(name);
+        if (representative == null || !canEditMap(name)) return false;
+        boolean usedByOtherMap = areas.entrySet().stream()
+                .anyMatch(entry -> !entry.getKey().equals(name)
+                        && world.getName().equals(entry.getValue().getWorldName()));
+        if (usedByOtherMap) return false;
+        representative.getGameConfig().bindConfiguredWorld(world.getName());
+        representative.getGameConfig().saveOptions();
+        return world.getName().equals(representative.getWorldName());
     }
 
     /** Temporary storage bridge while template persistence is moved fully out of GameInstance. */

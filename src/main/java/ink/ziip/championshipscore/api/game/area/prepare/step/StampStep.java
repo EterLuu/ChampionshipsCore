@@ -34,6 +34,7 @@ public class StampStep extends PrepareStep {
     private final BiConsumer<SetupTarget, Vector> sizeWriter;
     private final BiConsumer<PrepareSession, World> preStampCleaner;
     private final int maxCount;
+    private final boolean keepSourceCopy;
 
     public StampStep(@NotNull Function<ChampionshipsCore, File> fileResolver, @NotNull ArenaGrid grid,
                      @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter) {
@@ -51,6 +52,15 @@ public class StampStep extends PrepareStep {
                       BiConsumer<SetupTarget, Vector> sizeWriter,
                       BiConsumer<PrepareSession, World> preStampCleaner,
                       int maxCount, boolean ignored) {
+        this(fileResolver, gridResolver, copyCountWriter, sizeWriter, preStampCleaner, maxCount, false, ignored);
+    }
+
+    private StampStep(@NotNull Function<ChampionshipsCore, File> fileResolver,
+                      @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
+                      @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
+                      BiConsumer<SetupTarget, Vector> sizeWriter,
+                      BiConsumer<PrepareSession, World> preStampCleaner,
+                      int maxCount, boolean keepSourceCopy, boolean ignored) {
         super("stamp",
                 Component.text("盖章生成多份地图"),
                 Component.text("输入份数后粘贴 N 份场地并固化为模板"),
@@ -62,6 +72,7 @@ public class StampStep extends PrepareStep {
         this.sizeWriter = sizeWriter;
         this.preStampCleaner = preStampCleaner;
         this.maxCount = maxCount;
+        this.keepSourceCopy = keepSourceCopy;
     }
 
     public StampStep(@NotNull Function<ChampionshipsCore, File> fileResolver, @NotNull ArenaGrid grid,
@@ -81,6 +92,13 @@ public class StampStep extends PrepareStep {
                                      @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter) {
         return new StampStep(fileResolver, gridResolver, copyCountWriter, null, null,
                 Integer.MAX_VALUE, true);
+    }
+
+    public static StampStep adaptiveKeepingSource(@NotNull Function<ChampionshipsCore, File> fileResolver,
+                                                   @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
+                                                   @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter) {
+        return new StampStep(fileResolver, gridResolver, copyCountWriter, null, null,
+                Integer.MAX_VALUE, true, true);
     }
 
     public static StampStep adaptive(@NotNull Function<ChampionshipsCore, File> fileResolver,
@@ -121,7 +139,10 @@ public class StampStep extends PrepareStep {
             Vector size = session.getPlugin().getWorldEditManager().getSchematicDimensions(file);
             if (preStampCleaner != null) preStampCleaner.accept(session, world);
             resolvedGrid = gridResolver.apply(session.getTarget(), size);
-            ArenaPreparer.stampCopies(session.getPlugin(), world, file, resolvedGrid, count);
+            if (keepSourceCopy)
+                ArenaPreparer.stampAdditionalCopies(session.getPlugin(), world, file, resolvedGrid, count);
+            else
+                ArenaPreparer.stampCopies(session.getPlugin(), world, file, resolvedGrid, count);
             if (sizeWriter != null) sizeWriter.accept(session.getTarget(), size);
         } catch (Exception e) {
             return Utils.formatAdminError("生成场地失败：&#fff566" + e.getMessage());
@@ -133,6 +154,9 @@ public class StampStep extends PrepareStep {
         Bukkit.getScheduler().runTask(session.getPlugin(), () -> player.teleport(dest));
         session.setWorldConfirmed(true);
         session.setStamped(true);
-        return Utils.formatAdminSuccess("已生成 &#fff566" + count + " &#ededed份场地；完成点位后请验证并发布。");
+        return Utils.formatAdminSuccess(keepSourceCopy
+                ? "场地总数已设为 &#fff566" + count + "&#ededed；保留 0 号原图并生成了 &#fff566"
+                    + Math.max(0, count - 1) + " &#ededed个副本。"
+                : "已生成 &#fff566" + count + " &#ededed份场地；完成点位后请验证并发布。");
     }
 }

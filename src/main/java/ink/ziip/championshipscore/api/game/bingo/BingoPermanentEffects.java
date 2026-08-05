@@ -1,8 +1,8 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
+import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
-import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.Player;
@@ -77,7 +77,7 @@ public final class BingoPermanentEffects {
 
             PotionEffectType type = Registry.EFFECT.get(NamespacedKey.minecraft(name));
             if (type == null) {
-                Bukkit.getLogger().warning(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "配置",
+                ChampionshipsCore.getInstance().getLogger().warning(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "配置",
                         "未知常驻药水效果=" + raw + "，已跳过"));
                 continue;
             }

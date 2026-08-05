@@ -48,9 +48,10 @@ import java.util.UUID;
 
 /** A lap race with ordered progress gates and independent proximity-based respawn points. */
 public class AceRaceArea extends BaseMultiTeamGameInstance {
-    private static final long WALK_ON_LAUNCH_DELAY_TICKS = 2L;
-    private static final long AIRBORNE_LAUNCH_DELAY_TICKS = 4L;
-    private static final double INTERMEDIATE_RIPTIDE_EXTRA_MULTIPLIER = 0.25D;
+    private static final long LAUNCH_PAD_DELAY_TICKS = 2L;
+    private static final int JUMP_BOOST_DURATION_TICKS = 14;
+    private static final int RED_SPEED_DURATION_TICKS = 16;
+    private static final double RIPTIDE_EXTRA_MULTIPLIER = 0.10D;
     private static final int SPEED_STATION_RADIUS = 2;
     private static final int WATER_SPEED_STATION_RADIUS = 4;
     private static final double SPEED_STATION_RADIUS_SQUARED = SPEED_STATION_RADIUS * SPEED_STATION_RADIUS;
@@ -68,7 +69,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private final Map<UUID, Set<Integer>> capturedRespawnPoints = new HashMap<>();
     private final Map<UUID, Integer> activeFallHeights = new HashMap<>();
     private final Map<UUID, Location> lastMoveLocations = new HashMap<>();
-    private final Map<UUID, Boolean> lastGroundedStates = new HashMap<>();
     /** A player must leave the start line before a finish-line crossing can count for the race. */
     private final Set<UUID> startLineArmed = new HashSet<>();
     private final Map<UUID, TrackFeatureContact> featureContacts = new HashMap<>();
@@ -157,7 +157,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         capturedRespawnPoints.clear();
         activeFallHeights.clear();
         lastMoveLocations.clear();
-        lastGroundedStates.clear();
         startLineArmed.clear();
         featureContacts.clear();
         progressTask = null;
@@ -196,7 +195,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             capturedRespawnPoints.put(uuid, new HashSet<>());
             activeFallHeights.put(uuid, getGameConfig().getStartFallY());
             lastMoveLocations.put(uuid, start.clone());
-            lastGroundedStates.put(uuid, true);
         }
         startFinalCountdown(GameTypeEnum.AceRace.toString(), MessageConfig.ACE_RACE_GAME_START_TITLE,
                 MessageConfig.ACE_RACE_GAME_START_SUBTITLE, this::beginGameProgress);
@@ -220,9 +218,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         Location current = player.getLocation();
         Location previous = lastMoveLocations.put(uuid, current.clone());
         if (previous == null) previous = current;
-        boolean enteredFromAir = !lastGroundedStates.getOrDefault(uuid, player.isOnGround())
-                || !player.isOnGround();
-        lastGroundedStates.put(uuid, player.isOnGround());
         // Apply stations before fall recovery as well: a fast jump into a water ring may cross the
         // station before the next movement event that would otherwise refresh its short effect.
         handleEnvironmentalEffects(player);
@@ -230,7 +225,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             returnToLatestRespawnPoint(player);
             return;
         }
-        handleTrackBlockFeature(player, enteredFromAir);
+        handleTrackBlockFeature(player);
 
         handleProgressPoint(player, previous, current);
         handleRespawnPoints(player, previous, current);
@@ -316,16 +311,16 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             return startSpawn != null && finishLine.crossedTowardReferenceSide(previous, current, startSpawn);
         }
         if (finishLine.side(startCenter) != 0)
-            return finishLine.crossedFromReferenceSide(previous, current, startCenter);
+            return finishLine.crossedTowardReferenceSide(previous, current, startCenter);
         Location finishCenter = finishLine.center(world);
-        Vector forward = finishCenter.toVector().subtract(startCenter.toVector());
-        forward.setY(0D);
+        Vector towardStart = startCenter.toVector().subtract(finishCenter.toVector());
+        towardStart.setY(0D);
         Vector movement = current.toVector().subtract(previous.toVector());
         movement.setY(0D);
-        return forward.lengthSquared() > 0.0001D && movement.dot(forward) > 0D;
+        return towardStart.lengthSquared() > 0.0001D && movement.dot(towardStart) > 0D;
     }
 
-    private void handleTrackBlockFeature(@NotNull Player player, boolean enteredFromAir) {
+    private void handleTrackBlockFeature(@NotNull Player player) {
         Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
         Material material = block.getType();
         if (!isTrackFeature(material)) {
@@ -344,14 +339,15 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 Utils.sendActionBar(player, MessageConfig.ACE_RACE_SPEED_BOOST);
             }
             case LIME_GLAZED_TERRACOTTA -> {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 20, 6, true, false, false));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST,
+                        JUMP_BOOST_DURATION_TICKS, 6, true, false, false));
                 player.playSound(player.getLocation(), Sound.BLOCK_SLIME_BLOCK_FALL, 0.8F, 1.2F);
                 Utils.sendActionBar(player, MessageConfig.ACE_RACE_JUMP_PAD);
             }
-            case RED_WOOL -> scheduleLaunchPlayer(player, material, 2D, 0.8D, 1.1F,
-                    launchDelayTicks(enteredFromAir));
+            case RED_WOOL -> scheduleLaunchPlayer(player, material, 2.05D, 0.75D, 1.1F,
+                    LAUNCH_PAD_DELAY_TICKS);
             case ORANGE_WOOL -> scheduleLaunchPlayer(player, material, 4D, 1.5D, 1.35F,
-                    launchDelayTicks(enteredFromAir));
+                    LAUNCH_PAD_DELAY_TICKS);
             default -> {
             }
         }
@@ -368,14 +364,20 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         return material == Material.RED_WOOL || material == Material.ORANGE_WOOL;
     }
 
-    public boolean shouldSuppressLaunchPadJump(@NotNull Player player, @NotNull Location jumpOrigin) {
+    public void suppressLaunchPadJump(@NotNull Player player, @NotNull Location jumpOrigin) {
         if (getGameStageEnum() != GameStageEnum.PROGRESS || notAreaPlayer(player)
-                || finishedPlayers.contains(player.getUniqueId())) return false;
-        return isLaunchPad(jumpOrigin.getBlock().getRelative(BlockFace.DOWN).getType());
-    }
+                || finishedPlayers.contains(player.getUniqueId())
+                || !isLaunchPad(jumpOrigin.getBlock().getRelative(BlockFace.DOWN).getType())) return;
 
-    private static long launchDelayTicks(boolean enteredFromAir) {
-        return enteredFromAir ? AIRBORNE_LAUNCH_DELAY_TICKS : WALK_ON_LAUNCH_DELAY_TICKS;
+        // Cancelling PlayerJumpEvent makes Paper move the player back to the jump origin. Around a
+        // delayed pad launch that correction looks like the pad has pulled the player backwards.
+        // Remove only vanilla's upward jump motion; the scheduled pad task will replace the whole
+        // velocity with its fixed launch vector, so ordinary jump momentum still cannot stack.
+        Vector velocity = player.getVelocity();
+        if (velocity.getY() > 0D) {
+            velocity.setY(0D);
+            player.setVelocity(velocity);
+        }
     }
 
     private void refreshEnvironmentalEffects() {
@@ -395,8 +397,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                     WATER_SPEED_STATION_RADIUS, WATER_SPEED_STATION_RADIUS_SQUARED);
         }
         if (nearSpeedStation) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20, 7, true, false, false));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE, 20, 0, true, false, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED,
+                    RED_SPEED_DURATION_TICKS, 7, true, false, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE,
+                    RED_SPEED_DURATION_TICKS, 0, true, false, false));
         }
         if (player.isInWater()) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.CONDUIT_POWER, 20, 0, true, false, false));
@@ -479,9 +483,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 || finishedPlayers.contains(player.getUniqueId())) return;
         if (event.getItem().getEnchantmentLevel(Enchants.get(EnchantmentKeys.RIPTIDE)) != 1) return;
 
-        // Paper fires this event immediately before adding the vanilla riptide vector. Adding 25%
-        // here makes Riptide I travel halfway between the vanilla level I and level II impulses.
-        Vector extraVelocity = event.getVelocity().multiply(INTERMEDIATE_RIPTIDE_EXTRA_MULTIPLIER);
+        // Paper fires this event immediately before adding the vanilla riptide vector. Keep only a
+        // small course-specific lift above vanilla Riptide I so the boost does not overshoot rings.
+        Vector extraVelocity = event.getVelocity().multiply(RIPTIDE_EXTRA_MULTIPLIER);
         player.setVelocity(player.getVelocity().add(extraVelocity));
     }
 
@@ -630,7 +634,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         player.teleport(destination);
         player.setFallDistance(0F);
         lastMoveLocations.put(player.getUniqueId(), destination.clone());
-        lastGroundedStates.put(player.getUniqueId(), true);
         Utils.sendActionBar(player, MessageConfig.ACE_RACE_RETURNED_TO_RESPAWN_POINT);
     }
 
@@ -816,6 +819,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     @Override
     public String getWorldName() {
-        return "acerace";
+        return gameConfig.resolveConfiguredWorld("acerace");
     }
 }

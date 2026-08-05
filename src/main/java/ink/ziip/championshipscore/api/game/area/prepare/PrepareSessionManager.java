@@ -116,20 +116,39 @@ public class PrepareSessionManager extends BaseManager {
         AreaListGui.open(this, player, gameType);
     }
 
-    /** Called after the anvil confirms a new area name: create it via the manager then enter the session. */
+    /** Creates only an unbound draft definition; world selection is an explicit, editable prepare step. */
     public void createAndEnter(@NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String name) {
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
         if (mgr == null) {
             Utils.sendAdminError(player, "该游戏不可用");
             return;
         }
-        if (!mgr.addArea(name)) {
-            Utils.sendAdminError(player, "场地 &#fff566" + name + " &#ededed已存在");
+        if (!mgr.addArea(name, "")) {
+            Utils.sendAdminError(player, "无法创建地图草稿；请确认名称未被占用");
             return;
         }
         var target = mgr.getSetupTarget(gameType, name);
+        if (target != null && gameType != GameTypeEnum.Bingo) {
+            target.config().bindConfiguredWorld("");
+            target.config().saveOptions();
+        }
         if (target != null) target.config().beginPrepareDraft();
         enterSession(player, gameType, name);
+    }
+
+    public boolean deleteArea(@NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String name) {
+        BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
+        if (mgr == null || mapLocks.containsKey(lockKey(gameType, name))) {
+            Utils.sendAdminError(player, "地图正在编辑或游戏管理器不可用，无法删除");
+            return false;
+        }
+        if (!mgr.deleteArea(name)) {
+            Utils.sendAdminError(player, "地图正在运行或删除配置失败；物理世界未作任何改动");
+            return false;
+        }
+        Utils.sendAdminSuccess(player, "已删除地图配置 &#fff566" + name
+                + " &#696969• &#ededed物理世界保留，请按需使用 /cc admin world delete");
+        return true;
     }
 
     public void enterSession(@NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String areaName) {

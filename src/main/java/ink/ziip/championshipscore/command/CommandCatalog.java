@@ -21,7 +21,7 @@ public final class CommandCatalog {
     );
 
     private static final List<Entry> ADMIN_COMMANDS = List.of(
-            new Entry("/cc team add|delete|info|tphere ...", "管理队伍与队伍传送"),
+            new Entry("/cc team add|delete|info|list|tphere ...", "管理队伍、查看名单与队伍传送"),
             new Entry("/cc team member add|delete <队伍> <玩家>", "管理队伍成员"),
             new Entry("/cc game start <游戏> ...", "直接启动单局，不创建正式赛程"),
             new Entry("/cc event start <游戏> [参数]", "开始正式比赛；同一赛事进行中时再次执行会紧急停止"),

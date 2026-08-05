@@ -561,6 +561,6 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     }
 
     public String getWorldName() {
-        return "tntrun_" + gameConfig.getAreaName();
+        return gameConfig.resolveConfiguredWorld("tntrun_" + gameConfig.getAreaName());
     }
 }

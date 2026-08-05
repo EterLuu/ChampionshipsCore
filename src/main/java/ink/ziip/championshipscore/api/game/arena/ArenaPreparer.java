@@ -22,9 +22,35 @@ public final class ArenaPreparer {
 
     /** Pastes {@code count} copies of {@code schematic} into {@code world} along {@code grid}. Main thread. */
     public static void stampCopies(ChampionshipsCore plugin, World world, File schematic, ArenaGrid grid, int count) throws IOException {
-        for (int i = 0; i < count; i++) {
+        stampCopies(plugin, world, schematic, grid, count, 0);
+    }
+
+    /** Keeps copy 0 as the hand-built source and pastes only copies {@code 1..count-1}. */
+    public static void stampAdditionalCopies(ChampionshipsCore plugin, World world, File schematic,
+                                             ArenaGrid grid, int count) throws IOException {
+        stampCopies(plugin, world, schematic, grid, count, 1);
+    }
+
+    private static void stampCopies(ChampionshipsCore plugin, World world, File schematic,
+                                    ArenaGrid grid, int count, int firstCopy) throws IOException {
+        Vector size = plugin.getWorldEditManager().getSchematicDimensions(schematic);
+        validateNonOverlappingCopies(grid, count, size);
+        for (int i = firstCopy; i < count; i++) {
             Vector origin = grid.origin(i);
             plugin.getWorldEditManager().pasteSchematic(world, schematic, origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
+        }
+    }
+
+    /** Refuses an invalid grid before the first block is changed. */
+    public static void validateNonOverlappingCopies(ArenaGrid grid, int count, Vector size) {
+        List<BoundingBox> boxes = copyBoxes(grid, count, size);
+        for (int left = 0; left < boxes.size(); left++) {
+            for (int right = left + 1; right < boxes.size(); right++) {
+                if (boxes.get(left).overlaps(boxes.get(right))) {
+                    throw new IllegalArgumentException("副本 " + left + " 与副本 " + right
+                            + " 的生成范围重叠，请增大复制间距");
+                }
+            }
         }
     }
 

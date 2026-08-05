@@ -45,14 +45,16 @@ public class TNTRunManager extends BaseGameInstanceManager<TNTRunTeamArea> {
 
     @Override
     public boolean addArea(String name) {
-        if (areas.containsKey(name))
-            return false;
+        return false;
+    }
 
-        plugin.getWorldManager().createEmptyWorld("tntrun_" + name, World.Environment.NORMAL);
-
+    @Override
+    public boolean addArea(String name, String worldName) {
+        if (areas.containsKey(name)) return false;
         TNTRunConfig tntRunConfig = new TNTRunConfig(plugin, name);
         tntRunConfig.initializeConfiguration(plugin.getFolder());
         tntRunConfig.setAreaName(name);
+        tntRunConfig.bindConfiguredWorld("");
         tntRunConfig.saveOptions();
 
         TNTRunTeamArea tntRunArea = new TNTRunTeamArea(plugin, tntRunConfig, true, name);

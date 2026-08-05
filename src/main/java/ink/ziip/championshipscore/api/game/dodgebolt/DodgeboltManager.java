@@ -38,11 +38,15 @@ public final class DodgeboltManager extends BaseGameInstanceManager<DodgeboltAre
 
     @Override
     public boolean addArea(String name) {
+        return false;
+    }
+    @Override
+    public boolean addArea(String name, String worldName) {
         if (areas.containsKey(name)) return false;
-        plugin.getWorldManager().createEmptyWorld("dodgebolt_" + name, World.Environment.NORMAL);
         DodgeboltConfig config = new DodgeboltConfig(plugin, name);
         config.initializeConfiguration(plugin.getFolder());
         config.setAreaName(name);
+        config.bindConfiguredWorld("");
         config.saveOptions();
         DodgeboltArea area = new DodgeboltArea(plugin, config, true, name);
         areas.put(name, area);

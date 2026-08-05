@@ -49,7 +49,7 @@ public class BingoPrepareFlow extends PrepareFlowDefinition {
     public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         ConfirmWorldStep confirm = new ConfirmWorldStep(
                 player -> WorldManager.isBingoWorld(player.getWorld()),
-                WorldManager.BINGO_OVERWORLD);
+                WorldManager.BINGO_OVERWORLD, false);
 
         StandAndRunStep spectator = new StandAndRunStep(
                 "spectator_spawn",

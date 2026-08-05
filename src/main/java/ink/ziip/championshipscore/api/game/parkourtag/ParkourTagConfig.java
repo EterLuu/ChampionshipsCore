@@ -3,7 +3,6 @@ package ink.ziip.championshipscore.api.game.parkourtag;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
-import ink.ziip.championshipscore.api.game.arena.ArenaLayoutPlanner;
 import ink.ziip.championshipscore.api.game.arena.RowArenaGrid;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
@@ -64,8 +63,13 @@ public class ParkourTagConfig extends BaseGameConfig {
     }
 
     public @NotNull ArenaGrid prepareCopyGrid(@NotNull Vector size) {
-        copyLayoutOrigin = ParkourTagLayout.FIRST.clone();
-        copyLayoutStep = ArenaLayoutPlanner.rowStep(size);
+        copyLayoutOrigin = areaPos1 == null || areaPos2 == null
+                ? ParkourTagLayout.FIRST.clone()
+                : Vector.getMinimum(areaPos1, areaPos2);
+        // A PKT copy is a complete two-track match unit. Keep the established 512-block pitch even
+        // when the captured schematic itself is much narrower; adjacent match infrastructure extends
+        // beyond the tight clipboard footprint and must not be packed by the generic adaptive planner.
+        copyLayoutStep = ParkourTagLayout.STEP.clone();
         copySize = size.clone();
         return getCopyGrid();
     }

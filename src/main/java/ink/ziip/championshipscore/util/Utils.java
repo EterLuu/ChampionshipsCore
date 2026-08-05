@@ -312,13 +312,12 @@ public class Utils {
     public static String formatGameLog(GameTypeEnum gameType, String area, String stage,
                                        String event, String message) {
         String game = gameType == null ? "-" : gameType.toString();
-        return "[游戏:" + plainLogValue(game) + "] [场地:" + plainLogValue(area) + "] [阶段:"
-                + plainLogValue(stage) + "] [事件:" + plainLogValue(event) + "] " + plainLogValue(message);
+        return "[" + plainLogValue(game) + " - " + plainLogValue(area) + "] "
+                + plainLogValue(stage) + " · " + plainLogValue(event) + " | " + plainLogValue(message);
     }
 
     public static String formatModuleLog(String module, String event, String message) {
-        return "[模块:" + plainLogValue(module) + "] [事件:" + plainLogValue(event) + "] "
-                + plainLogValue(message);
+        return "[" + plainLogValue(module) + "] " + plainLogValue(event) + " | " + plainLogValue(message);
     }
 
     private static String plainLogValue(String value) {

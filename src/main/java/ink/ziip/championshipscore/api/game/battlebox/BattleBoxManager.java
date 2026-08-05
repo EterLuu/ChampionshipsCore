@@ -40,8 +40,14 @@ public class BattleBoxManager extends BaseGameInstanceManager<BattleBoxArea> {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
                     File configFile = new File(areasFolder, file);
-                    String worldName = YamlConfiguration.loadConfiguration(configFile)
-                            .getString("world-name", "battlebox");
+                    YamlConfiguration raw = YamlConfiguration.loadConfiguration(configFile);
+                    String worldName = raw.getString("world-name", "battlebox");
+                    if (raw.contains("world-name") && (worldName == null || worldName.isBlank())) {
+                        BattleBoxConfig config = new BattleBoxConfig(plugin, name);
+                        config.initializeConfiguration(plugin.getFolder());
+                        createInstances(name, config);
+                        continue;
+                    }
                     if (worldName == null || worldName.isBlank()) worldName = "battlebox";
                     if (!loadedWorlds.add(worldName)) {
                         plugin.getLogger().severe("BattleBox 地图 " + name + " 与其他配置共用世界 "
@@ -72,18 +78,37 @@ public class BattleBoxManager extends BaseGameInstanceManager<BattleBoxArea> {
 
     @Override
     public boolean addArea(String name) {
-        if (areas.containsKey(name))
-            return false;
+        return false;
+    }
 
-        String worldName = MapWorldNames.forMap("battlebox", name);
-        if (!loadArenaWorld(worldName)) return false;
+    @Override
+    public boolean addArea(String name, String worldName) {
+        if (areas.containsKey(name)) return false;
         BattleBoxConfig battleBoxConfig = new BattleBoxConfig(plugin, name);
         battleBoxConfig.initializeConfiguration(plugin.getFolder());
         battleBoxConfig.setAreaName(name);
-        battleBoxConfig.setWorldName(worldName);
+        battleBoxConfig.setWorldName("");
         battleBoxConfig.saveOptions();
 
         createInstances(name, battleBoxConfig);
+        return true;
+    }
+
+    @Override
+    public synchronized boolean deleteArea(String name) {
+        List<BattleBoxArea> instances = instancesByMap.get(name);
+        if (instances == null || !canEditMap(name)) return false;
+        BattleBoxArea representative = areas.get(name);
+        if (representative == null) return false;
+        try {
+            java.nio.file.Files.deleteIfExists(plugin.getFolder().resolve(representative.getGameConfig().getFileName()));
+        } catch (java.io.IOException exception) {
+            plugin.getLogger().warning("无法删除 BattleBox 地图配置 " + name + " | " + exception.getMessage());
+            return false;
+        }
+        instances.forEach(BattleBoxArea::dispose);
+        instancesByMap.remove(name);
+        areas.remove(name);
         return true;
     }
 

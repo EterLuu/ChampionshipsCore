@@ -4,19 +4,23 @@ name: area
 world-name:
 timer: 60
 copy-count: 8
-# Filled by prepare from arena.schem. Missing values keep the legacy 512-block row for old maps.
+# Filled by prepare from arena.schem. PKT always keeps a 512-block pitch between complete two-track match units.
 copy-layout: {}
 area-pos1:
 area-pos2:
-left-prepare-spot:
-right-prepare-spot:
+# One match copy contains two mirrored tracks running simultaneously:
+# slot A chases on right-area while slot B escapes; slot B chases on left-area while slot A escapes.
+left-prepare-spot:  # slot B team preparation point
+right-prepare-spot: # slot A team preparation point
 left-area:
+  # Track 2: slot B chaser versus slot A escapees
   area-pos1:
   area-pos2:
   chaser-spawn-point:
   escapee-spawn-points: [ ]
 spectator-spawn-point:
 right-area:
+  # Track 1: slot A chaser versus slot B escapees
   area-pos1:
   area-pos2:
   chaser-spawn-point:

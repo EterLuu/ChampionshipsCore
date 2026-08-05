@@ -871,6 +871,6 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     }
 
     public String getWorldName() {
-        return "skywars_" + gameConfig.getAreaName();
+        return gameConfig.resolveConfiguredWorld("skywars_" + gameConfig.getAreaName());
     }
 }

@@ -135,7 +135,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public String getWorldName() {
-        return gameConfig.getAreaName();
+        return gameConfig.resolveConfiguredWorld(gameConfig.getAreaName());
     }
 
     @Override

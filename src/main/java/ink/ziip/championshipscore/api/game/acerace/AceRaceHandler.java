@@ -99,8 +99,6 @@ public class AceRaceHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerJump(PlayerJumpEvent event) {
-        if (aceRaceArea.shouldSuppressLaunchPadJump(event.getPlayer(), event.getFrom())) {
-            event.setCancelled(true);
-        }
+        aceRaceArea.suppressLaunchPadJump(event.getPlayer(), event.getFrom());
     }
 }

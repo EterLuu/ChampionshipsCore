@@ -392,6 +392,6 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public String getWorldName() {
-        return "tgttos";
+        return gameConfig.resolveConfiguredWorld("tgttos");
     }
 }

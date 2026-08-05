@@ -10,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,6 +20,11 @@ import java.util.Collections;
 import java.util.List;
 
 public class WorldDeleteSubCommand extends BaseSubCommand {
+    private static final long CONFIRM_WINDOW_MILLIS = 30_000L;
+    private final java.util.Map<java.util.UUID, PendingDelete> pendingDeletes = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private record PendingDelete(String worldName, long expiresAt) {}
+
     public WorldDeleteSubCommand() {
         super("delete", "永久删除未被地图配置引用的世界", "/cc admin world delete <世界> confirm");
     }
@@ -26,12 +32,17 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
-        if (args.length != 2 || !"confirm".equalsIgnoreCase(args[1])) {
+        if (args.length < 1 || args.length > 2) {
             sendUsage(sender);
             return true;
         }
 
         String worldName = args[0];
+        boolean confirmedArgument = args.length == 2 && "confirm".equalsIgnoreCase(args[1]);
+        if (args.length == 2 && !confirmedArgument) {
+            sendUsage(sender);
+            return true;
+        }
         WorldManager worldManager = plugin.getWorldManager();
         World world = Bukkit.getWorld(worldName);
         File worldFolder = worldManager.getWorldFolder(worldName);
@@ -56,6 +67,25 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
             return true;
         }
 
+        if (sender instanceof Player player) {
+            PendingDelete pending = pendingDeletes.get(player.getUniqueId());
+            boolean confirmed = confirmedArgument && pending != null
+                    && pending.worldName().equalsIgnoreCase(worldName)
+                    && pending.expiresAt() >= System.currentTimeMillis();
+            if (!confirmed) {
+                pendingDeletes.put(player.getUniqueId(),
+                        new PendingDelete(worldName, System.currentTimeMillis() + CONFIRM_WINDOW_MILLIS));
+                Utils.sendAdminError(player, "危险操作：将永久删除世界 &#fff566" + worldName
+                        + "&#ededed。请在 30 秒内再次执行 &#fff566/cc admin world delete "
+                        + worldName + " confirm");
+                return true;
+            }
+            pendingDeletes.remove(player.getUniqueId());
+        } else if (!confirmedArgument) {
+            sendUsage(sender);
+            return true;
+        }
+
         int movedPlayers = world == null ? 0 : world.getPlayerCount();
         if (world != null && !worldManager.unloadWorld(worldName, false)) {
             Utils.sendAdminError(sender, "世界 &#fff566" + worldName + " &#ededed卸载失败 &#696969• 请检查控制台");
@@ -75,18 +105,19 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                 @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            List<String> worlds = deletableWorlds();
+            List<String> worlds = allKnownWorlds();
             return filterStartsWith(worlds, args[0]);
         }
         if (args.length == 2) return filterStartsWith(List.of("confirm"), args[1]);
         return Collections.emptyList();
     }
 
-    private List<String> deletableWorlds() {
+    private List<String> allKnownWorlds() {
         WorldManager worldManager = plugin.getWorldManager();
-        List<String> worlds = new ArrayList<>(worldManager.getStoredWorldNames());
-        worlds.removeIf(name -> WorldManager.isBingoWorldName(name) || findMapOwner(name) != null || isMainWorld(name));
-        return worlds;
+        java.util.Set<String> allWorlds = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        allWorlds.addAll(worldManager.getStoredWorldNames());
+        Bukkit.getWorlds().forEach(world -> allWorlds.add(world.getName()));
+        return new ArrayList<>(allWorlds);
     }
 
     private boolean isMainWorld(String name) {

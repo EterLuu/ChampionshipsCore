@@ -13,6 +13,7 @@ import ink.ziip.championshipscore.util.Utils;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
+import ink.ziip.championshipscore.logging.CCLogManager;
 import ink.ziip.championshipscore.command.CommandManager;
 import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -46,11 +47,13 @@ public final class ChampionshipsCore extends JavaPlugin {
     private VoteManager voteManager;
     private ScheduleManager scheduleManager;
     private PrepareSessionManager prepareSessionManager;
+    private CCLogManager logManager;
 
     @Override
     public void onEnable() {
         instance = this;
         loaded = true;
+        logManager = CCLogManager.install(this);
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) {
             getLogger().warning(Utils.formatModuleLog("Bootstrap", "依赖", "缺少 PlaceholderAPI，插件已停用"));
@@ -105,7 +108,9 @@ public final class ChampionshipsCore extends JavaPlugin {
         voteManager.load();
         scheduleManager.load();
 
-        getLogger().log(Level.INFO, Utils.formatModuleLog("Bootstrap", "启动", "模式=" + CCConfig.MODE));
+        String readyMessage = Utils.formatModuleLog("Bootstrap", "启动", "加载完成 | 模式=" + CCConfig.MODE);
+        if (logManager != null) logManager.important(readyMessage);
+        else getLogger().log(Level.INFO, readyMessage);
     }
 
     @Override
@@ -131,6 +136,12 @@ public final class ChampionshipsCore extends JavaPlugin {
         voteManager.unload();
         scheduleManager.unload();
         glowingEntities.disable();
+
+        if (logManager != null) {
+            logManager.important(Utils.formatModuleLog("Bootstrap", "停止", "插件已安全卸载"));
+            logManager.close();
+            logManager = null;
+        }
     }
 
     public @NotNull Path getFolder() {

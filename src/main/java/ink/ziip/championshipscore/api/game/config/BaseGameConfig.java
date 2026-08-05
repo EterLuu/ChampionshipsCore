@@ -126,6 +126,31 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         return configuration != null && worldName.equals(configuration.getString("world-name"));
     }
 
+    /** Stores/reads the physical world binding for map types that historically derived it from the map id. */
+    public void bindConfiguredWorld(@NotNull String worldName) {
+        configuration.set("world-name", worldName);
+        for (Field field : getConfigFields()) {
+            ConfigOption option = field.getDeclaredAnnotation(ConfigOption.class);
+            if (option == null || !"world-name".equals(option.path()) || field.getType() != String.class) continue;
+            try {
+                field.setAccessible(true);
+                field.set(this, worldName);
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("无法绑定地图世界", exception);
+            }
+        }
+    }
+
+    public @NotNull String resolveConfiguredWorld(@NotNull String legacyWorldName) {
+        String configured = configuration == null ? null : configuration.getString("world-name");
+        return configured == null || configured.isBlank() ? legacyWorldName : configured;
+    }
+
+    public boolean isWorldBindingPending() {
+        return configuration != null && configuration.contains("world-name")
+                && configuration.getString("world-name", "").isBlank();
+    }
+
     private static void rewriteWorldReferences(@NotNull ConfigurationSection section,
                                                @NotNull String oldWorldName, @NotNull String oldWorldKey,
                                                @NotNull String newWorldName, @NotNull String newWorldKey) {

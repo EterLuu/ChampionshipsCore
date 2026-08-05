@@ -16,6 +16,16 @@ public record MapSetupTarget(@NotNull ChampionshipsCore plugin, @NotNull GameTyp
                              @NotNull String worldName,
                              @NotNull BaseGameInstanceManager<?> manager) implements SetupTarget {
     @Override
+    public @NotNull String worldName() {
+        return config.resolveConfiguredWorld(worldName);
+    }
+
+    @Override
+    public boolean bindWorld(@NotNull World world) {
+        return manager.bindMapWorld(name, world);
+    }
+
+    @Override
     public boolean canSaveMap() {
         return manager.canEditMap(name);
     }

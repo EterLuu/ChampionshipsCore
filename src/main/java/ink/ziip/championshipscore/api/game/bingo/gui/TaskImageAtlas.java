@@ -4,10 +4,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.papermc.paper.advancement.AdvancementDisplay;
+import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.key.Key;
-import org.bukkit.Bukkit;
 import org.bukkit.Statistic;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,11 +100,11 @@ public final class TaskImageAtlas {
             advancementFrameGoal = read(RES + "advancement_frame_goal.png");
             advancementFrameChallenge = read(RES + "advancement_frame_challenge.png");
             loaded = true;
-            Bukkit.getLogger().info(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "图集",
+            ChampionshipsCore.getInstance().getLogger().info(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "图集",
                     "已加载任务图像=" + SPRITES.size()));
         } catch (Exception ex) {
             failed = true;
-            Bukkit.getLogger().warning(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "图集",
+            ChampionshipsCore.getInstance().getLogger().warning(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "图集",
                     "任务图集加载失败 | " + ex.getMessage()));
         }
     }

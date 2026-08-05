@@ -18,6 +18,9 @@ public interface SetupTarget {
 
     @NotNull String worldName();
 
+    /** Binds or rebinds this map definition to an already loaded world. */
+    boolean bindWorld(@NotNull World world);
+
     boolean canSaveMap();
 
     boolean saveMap(@NotNull World.Environment environment);

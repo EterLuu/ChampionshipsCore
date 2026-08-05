@@ -12,22 +12,27 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Predicate;
 
 /**
- * The "go to the correct world, then confirm" step. Clicking it marks the session world-confirmed only if
- * the player is currently in the right world (per the supplied predicate); otherwise it prompts them to go
- * there (the teleport control item is the way in). State is session-only, so {@link #isSet} returns false
- * when previewing without a session.
+ * Binds the map to the editor's current, already loaded world. Bingo uses the fixed-world constructor.
  */
 public class ConfirmWorldStep extends PrepareStep {
 
     private final Predicate<Player> inCorrectWorld;
+    private final boolean allowRebind;
 
     public ConfirmWorldStep(@NotNull Predicate<Player> inCorrectWorld, @NotNull String worldName) {
+        this(inCorrectWorld, worldName, true);
+    }
+
+    public ConfirmWorldStep(@NotNull Predicate<Player> inCorrectWorld, @NotNull String worldName,
+                            boolean allowRebind) {
         super("confirm_world",
-                Component.text("确认所在世界"),
-                Component.text("前往 " + worldName + " 世界后点击此项确认"),
+                Component.text(allowRebind ? "绑定当前世界" : "确认所在世界"),
+                Component.text(allowRebind ? "点击绑定或更换为当前所在世界"
+                        : "前往 " + worldName + " 世界后点击此项确认"),
                 Material.COMPASS,
                 StepCaptureType.CONFIRM_WORLD);
         this.inCorrectWorld = inCorrectWorld;
+        this.allowRebind = allowRebind;
     }
 
     @Override
@@ -37,6 +42,12 @@ public class ConfirmWorldStep extends PrepareStep {
 
     @Override
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
+        if (allowRebind) {
+            if (!session.getTarget().bindWorld(player.getWorld()))
+                return Utils.formatAdminError("当前世界已被其他地图使用，或地图正在运行，无法绑定。");
+            session.setWorldConfirmed(true);
+            return Utils.formatAdminSuccess("已绑定地图世界：&#fff566" + player.getWorld().getName());
+        }
         if (inCorrectWorld.test(player)) {
             session.setWorldConfirmed(true);
             return Utils.formatAdminSuccess("已确认游戏世界。");

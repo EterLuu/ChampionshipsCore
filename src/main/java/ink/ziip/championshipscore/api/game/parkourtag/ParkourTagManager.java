@@ -45,8 +45,14 @@ public class ParkourTagManager extends BaseGameInstanceManager<ParkourTagArea> {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
                     File configFile = new File(areasFolder, file);
-                    String worldName = YamlConfiguration.loadConfiguration(configFile)
-                            .getString("world-name", "parkourtag");
+                    YamlConfiguration raw = YamlConfiguration.loadConfiguration(configFile);
+                    String worldName = raw.getString("world-name", "parkourtag");
+                    if (raw.contains("world-name") && (worldName == null || worldName.isBlank())) {
+                        ParkourTagConfig config = new ParkourTagConfig(plugin, name);
+                        config.initializeConfiguration(plugin.getFolder());
+                        createInstances(name, config);
+                        continue;
+                    }
                     if (worldName == null || worldName.isBlank()) worldName = "parkourtag";
                     if (!loadedWorlds.add(worldName)) {
                         plugin.getLogger().severe("ParkourTag 地图 " + name + " 与其他配置共用世界 "
@@ -77,18 +83,37 @@ public class ParkourTagManager extends BaseGameInstanceManager<ParkourTagArea> {
 
     @Override
     public boolean addArea(String name) {
-        if (areas.containsKey(name))
-            return false;
+        return false;
+    }
 
-        String worldName = MapWorldNames.forMap("parkourtag", name);
-        if (!loadArenaWorld(worldName)) return false;
+    @Override
+    public boolean addArea(String name, String worldName) {
+        if (areas.containsKey(name)) return false;
         ParkourTagConfig parkourTagConfig = new ParkourTagConfig(plugin, name);
         parkourTagConfig.initializeConfiguration(plugin.getFolder());
         parkourTagConfig.setAreaName(name);
-        parkourTagConfig.setWorldName(worldName);
+        parkourTagConfig.setWorldName("");
         parkourTagConfig.saveOptions();
 
         createInstances(name, parkourTagConfig);
+        return true;
+    }
+
+    @Override
+    public synchronized boolean deleteArea(String name) {
+        List<ParkourTagArea> instances = instancesByMap.get(name);
+        if (instances == null || !canEditMap(name)) return false;
+        ParkourTagArea representative = areas.get(name);
+        if (representative == null) return false;
+        try {
+            java.nio.file.Files.deleteIfExists(plugin.getFolder().resolve(representative.getGameConfig().getFileName()));
+        } catch (java.io.IOException exception) {
+            plugin.getLogger().warning("无法删除 ParkourTag 地图配置 " + name + " | " + exception.getMessage());
+            return false;
+        }
+        instances.forEach(ParkourTagArea::dispose);
+        instancesByMap.remove(name);
+        areas.remove(name);
         return true;
     }
 

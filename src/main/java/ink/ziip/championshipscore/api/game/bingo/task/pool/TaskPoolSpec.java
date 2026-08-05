@@ -1,8 +1,8 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
+import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
 import org.bukkit.entity.EntityType;
@@ -43,7 +43,7 @@ public final class TaskPoolSpec {
                     case ITEM -> {
                         Material m = Material.valueOf(e.key());
                         if (!m.isItem()) {
-                            Bukkit.getLogger().warning(gameLog("非物品 ITEM=" + e.key() + "，已跳过"));
+                            ChampionshipsCore.getInstance().getLogger().warning(gameLog("非物品 ITEM=" + e.key() + "，已跳过"));
                         } else {
                             b.item(m, e.count(), difficulty, e.dimension(), e.category());
                         }
@@ -65,7 +65,7 @@ public final class TaskPoolSpec {
                             }
                         }
                         if (form == null || !valid) {
-                            Bukkit.getLogger().warning(gameLog("无效药水任务=" + e.key() + "，已跳过"));
+                            ChampionshipsCore.getInstance().getLogger().warning(gameLog("无效药水任务=" + e.key() + "，已跳过"));
                         } else {
                             b.potion(form, effect, e.count(), difficulty, e.dimension(), e.category());
                         }
@@ -75,7 +75,7 @@ public final class TaskPoolSpec {
                     case CRAFT -> {
                         Material m = Material.valueOf(e.key());
                         if (!m.isItem()) {
-                            Bukkit.getLogger().warning(gameLog("非物品 CRAFT=" + e.key() + "，已跳过"));
+                            ChampionshipsCore.getInstance().getLogger().warning(gameLog("非物品 CRAFT=" + e.key() + "，已跳过"));
                         } else {
                             b.craft(m, e.count(), difficulty, e.dimension(), e.category());
                         }
@@ -95,7 +95,7 @@ public final class TaskPoolSpec {
                             }
                         }
                         if (items.isEmpty()) {
-                            Bukkit.getLogger().warning(gameLog("one_of 任务没有有效成员，已跳过"));
+                            ChampionshipsCore.getInstance().getLogger().warning(gameLog("one_of 任务没有有效成员，已跳过"));
                         } else {
                             Material display = null;
                             if (e.key() != null && !e.key().isBlank()) {
@@ -110,7 +110,7 @@ public final class TaskPoolSpec {
                     }
                 }
             } catch (IllegalArgumentException ex) {
-                Bukkit.getLogger().warning(gameLog("无效任务=" + e.kind() + "/" + e.key() + "，已跳过"));
+                ChampionshipsCore.getInstance().getLogger().warning(gameLog("无效任务=" + e.kind() + "/" + e.key() + "，已跳过"));
             }
         }
         return b.build();

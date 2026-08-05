@@ -940,7 +940,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     }
 
     @Override public Location getSpectatorSpawnLocation() { return getGameConfig().getSpectatorSpawnPoint(); }
-    @Override public String getWorldName() { return "dodgebolt_" + getGameConfig().getAreaName(); }
+    @Override public String getWorldName() { return getGameConfig().resolveConfiguredWorld("dodgebolt_" + getGameConfig().getAreaName()); }
     @Override public DodgeboltConfig getGameConfig() { return (DodgeboltConfig) gameConfig; }
     @Override public DodgeboltHandler getGameHandler() { return (DodgeboltHandler) gameHandler; }
     @Override public void addPlayerPointsToDatabase() { }

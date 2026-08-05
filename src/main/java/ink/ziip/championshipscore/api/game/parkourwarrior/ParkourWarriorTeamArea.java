@@ -596,7 +596,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public String getWorldName() {
-        return "parkourwarrior";
+        return gameConfig.resolveConfiguredWorld("parkourwarrior");
     }
 
     @Override

@@ -115,6 +115,11 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+        if (event.getTo() != null && event.getTo().getY() < -50
+                && isIntroductionParticipant(player)) {
+            player.teleport(baseArea.getPreparationTeleportLocation(baseArea.getSpectatorSpawnLocation()));
+            return;
+        }
         if (isCountdownMovementFrozen(player)
                 && (event.getFrom().getX() != event.getTo().getX()
                 || event.getFrom().getY() != event.getTo().getY()

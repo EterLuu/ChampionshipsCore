@@ -35,6 +35,8 @@ public abstract class PrepareFlowDefinition {
     /** Required-step validation shared by preview, validate and publish. */
     public @NotNull List<String> validate(@NotNull PrepareSession session) {
         List<String> errors = new ArrayList<>();
+        if (session.getTarget().config().isWorldBindingPending() || !session.isWorldConfirmed())
+            errors.add("绑定当前世界");
         for (PrepareStep step : session.getSteps()) {
             if (step.captureType() != StepCaptureType.CONFIRM_WORLD && !step.isSet(session))
                 errors.add(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer

@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +58,11 @@ public class MemberAddSubCommand extends BaseSubCommand {
         }
 
         if (args.length == 2) {
-            List<String> returnList = Utils.getOnlinePlayerNames();
+            List<String> returnList = plugin.getServer().getOnlinePlayers().stream()
+                    .filter(player -> plugin.getTeamManager().getTeamByPlayer(player) == null)
+                    .map(Player::getName)
+                    .sorted(String.CASE_INSENSITIVE_ORDER)
+                    .toList();
             return filterStartsWith(returnList, args[1]);
         }
         return Collections.emptyList();

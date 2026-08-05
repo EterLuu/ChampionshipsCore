@@ -33,6 +33,8 @@ public final class AreaListGui {
     public static final class Holder implements InventoryHolder {
         private final GameTypeEnum gameType;
         private final Map<Integer, String> slotToArea = new HashMap<>();
+        private String deleteConfirmation;
+        private long deleteConfirmationExpiresAt;
         private int newSlot = -1;
         private int closeSlot = -1;
         private Inventory inventory;
@@ -83,7 +85,8 @@ public final class AreaListGui {
                                     ? "✅ 已发布" : "⚠ 草稿 / 有未发布修改").color(
                                     target != null && target.config().isPrepareReady()
                                             ? NamedTextColor.GREEN : NamedTextColor.YELLOW),
-                            Component.text("点击进入编辑").color(NamedTextColor.AQUA)));
+                            Component.text("左键进入编辑").color(NamedTextColor.AQUA),
+                            Component.text("右键删除地图配置（保留世界）").color(NamedTextColor.RED)));
             inv.setItem(slot, item);
             holder.slotToArea.put(slot, name);
             slot++;
@@ -111,6 +114,20 @@ public final class AreaListGui {
 
         String areaName = holder.slotToArea.get(slot);
         if (areaName != null) {
+            if (event.isRightClick()) {
+                if (!areaName.equals(holder.deleteConfirmation)
+                        || holder.deleteConfirmationExpiresAt < System.currentTimeMillis()) {
+                    holder.deleteConfirmation = areaName;
+                    holder.deleteConfirmationExpiresAt = System.currentTimeMillis() + 30_000L;
+                    player.sendMessage(Component.text("请在 30 秒内再次右键该地图确认删除配置；物理世界不会删除")
+                            .color(NamedTextColor.RED));
+                    return;
+                }
+                if (manager.deleteArea(player, holder.gameType, areaName)) {
+                    open(manager, player, holder.gameType);
+                }
+                return;
+            }
             player.closeInventory();
             manager.enterSession(player, holder.gameType, areaName);
             return;

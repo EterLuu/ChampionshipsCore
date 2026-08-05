@@ -49,14 +49,16 @@ public class SkyWarsManager extends BaseGameInstanceManager<SkyWarsTeamArea> {
 
     @Override
     public boolean addArea(String name) {
-        if (areas.containsKey(name))
-            return false;
+        return false;
+    }
 
-        plugin.getWorldManager().createEmptyWorld("skywars_" + name, World.Environment.NORMAL);
-
+    @Override
+    public boolean addArea(String name, String worldName) {
+        if (areas.containsKey(name)) return false;
         SkyWarsConfig skyWarsConfig = new SkyWarsConfig(plugin, name);
         skyWarsConfig.initializeConfiguration(plugin.getFolder());
         skyWarsConfig.setAreaName(name);
+        skyWarsConfig.bindConfiguredWorld("");
         skyWarsConfig.saveOptions();
 
         SkyWarsTeamArea skyWarsArea = new SkyWarsTeamArea(plugin, skyWarsConfig, true, name, variantRegistry);

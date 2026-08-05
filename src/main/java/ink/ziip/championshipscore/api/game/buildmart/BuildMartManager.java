@@ -51,8 +51,16 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
                 for (String file : areaList) {
                     String name = file.substring(0, file.length() - 4);
                     File configFile = new File(areasFolder, file);
-                    String worldName = YamlConfiguration.loadConfiguration(configFile)
-                            .getString("world-name", "buildmart");
+                    YamlConfiguration raw = YamlConfiguration.loadConfiguration(configFile);
+                    String worldName = raw.getString("world-name", "buildmart");
+                    if (raw.contains("world-name") && (worldName == null || worldName.isBlank())) {
+                        BuildMartConfig config = new BuildMartConfig(plugin, name);
+                        config.initializeConfiguration(plugin.getFolder());
+                        BuildMartArea area = new BuildMartArea(plugin, config);
+                        areas.put(name, area);
+                        area.initializeForSetup();
+                        continue;
+                    }
                     if (worldName == null || worldName.isBlank()) worldName = "buildmart";
                     if (!loadedWorlds.add(worldName)) {
                         plugin.getLogger().severe("BuildMart 地图 " + name + " 与其他配置共用世界 "
@@ -113,15 +121,16 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
 
     @Override
     public boolean addArea(String name) {
-        if (areas.containsKey(name))
-            return false;
+        return false;
+    }
 
-        String worldName = MapWorldNames.forMap("buildmart", name);
-        if (!loadArenaWorld(worldName)) return false;
+    @Override
+    public boolean addArea(String name, String worldName) {
+        if (areas.containsKey(name)) return false;
         BuildMartConfig buildMartConfig = new BuildMartConfig(plugin, name);
         buildMartConfig.initializeConfiguration(plugin.getFolder());
         buildMartConfig.setAreaName(name);
-        buildMartConfig.setWorldName(worldName);
+        buildMartConfig.setWorldName("");
         buildMartConfig.saveOptions();
 
         BuildMartArea newArea = new BuildMartArea(plugin, buildMartConfig);

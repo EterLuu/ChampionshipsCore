@@ -1,7 +1,7 @@
 dont-edit-this:
   version: 15
 name: area
-timer: 600
+timer: 720
 laps: 3
 spectator-spawn-point:
 start-spawn-point:

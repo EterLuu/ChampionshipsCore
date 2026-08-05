@@ -45,14 +45,16 @@ public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggC
 
     @Override
     public boolean addArea(String name) {
-        if (areas.containsKey(name))
-            return false;
+        return false;
+    }
 
-        plugin.getWorldManager().createEmptyWorld("decarnival_" + name, World.Environment.THE_END);
-
+    @Override
+    public boolean addArea(String name, String worldName) {
+        if (areas.containsKey(name)) return false;
         DragonEggCarnivalConfig dragonEggCarnivalConfig = new DragonEggCarnivalConfig(plugin, name);
         dragonEggCarnivalConfig.initializeConfiguration(plugin.getFolder());
         dragonEggCarnivalConfig.setAreaName(name);
+        dragonEggCarnivalConfig.bindConfiguredWorld("");
         dragonEggCarnivalConfig.saveOptions();
 
         DragonEggCarnivalArea dragonEggCarnivalArea = new DragonEggCarnivalArea(plugin, dragonEggCarnivalConfig, true, name);
