@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Per-game definition of the prepare flow: which world the player must be in, where "copy 0" is (the
@@ -49,10 +50,10 @@ public abstract class PrepareFlowDefinition {
      * Publish the edited physical map. Persistent maps only flush their loaded world; template maps
      * override this to snapshot and reload through the map storage bridge.
      */
-    public boolean publish(@NotNull PrepareSession session) {
+    public @NotNull CompletableFuture<Boolean> publish(@NotNull PrepareSession session) {
         org.bukkit.World world = org.bukkit.Bukkit.getWorld(session.getTarget().worldName());
-        if (world == null) return false;
+        if (world == null) return CompletableFuture.completedFuture(false);
         world.save();
-        return true;
+        return CompletableFuture.completedFuture(true);
     }
 }

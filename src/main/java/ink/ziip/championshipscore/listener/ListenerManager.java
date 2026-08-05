@@ -21,7 +21,13 @@ public class ListenerManager extends BaseManager {
 
     @Override
     public void unload() {
-        playerListener.unRegister();
-        protectionListener.unRegister();
+        if (playerListener != null) {
+            playerListener.unRegister();
+            playerListener = null;
+        }
+        if (protectionListener != null) {
+            protectionListener.unRegister();
+            protectionListener = null;
+        }
     }
 }

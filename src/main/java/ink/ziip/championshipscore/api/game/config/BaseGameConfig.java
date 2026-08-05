@@ -237,6 +237,7 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
                     // Locations may be stored as a raw section (no '==' marker); rebuild them.
                     value = coerceLocationSection(value, field);
+                    value = coerceNumericValue(value, field.getType());
 
                     if (value != null) {
                         if (value instanceof String)
@@ -253,6 +254,18 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                 }
             }
         }
+    }
+
+    /** Bukkit YAML chooses the narrowest numeric wrapper; reflection requires the declared wrapper exactly. */
+    private static Object coerceNumericValue(Object value, Class<?> targetType) {
+        if (!(value instanceof Number number)) return value;
+        if (targetType == byte.class || targetType == Byte.class) return number.byteValue();
+        if (targetType == short.class || targetType == Short.class) return number.shortValue();
+        if (targetType == int.class || targetType == Integer.class) return number.intValue();
+        if (targetType == long.class || targetType == Long.class) return number.longValue();
+        if (targetType == float.class || targetType == Float.class) return number.floatValue();
+        if (targetType == double.class || targetType == Double.class) return number.doubleValue();
+        return value;
     }
 
     @Override

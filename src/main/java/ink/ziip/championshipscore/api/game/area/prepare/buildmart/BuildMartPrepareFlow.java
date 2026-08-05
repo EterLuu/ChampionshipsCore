@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /** Unified Build Mart flow: hub/base assets, physical build, global geometry and copy-0 base template. */
 public class BuildMartPrepareFlow extends PrepareFlowDefinition {
@@ -78,7 +79,7 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
         return steps;
     }
 
-    @Override public boolean publish(@NotNull PrepareSession session) {
+    @Override public @NotNull CompletableFuture<Boolean> publish(@NotNull PrepareSession session) {
         return session.getTarget().saveMap(World.Environment.NORMAL);
     }
 

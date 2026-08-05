@@ -108,11 +108,33 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public Location getSpectatorSpawnLocation() {
-        try {
-            return Utils.getLocation(getGameConfig().getPlayerSpawnPoints().get(ThreadLocalRandom.current().nextInt(getGameConfig().getPlayerSpawnPoints().size())));
-        } catch (Exception ignored) {
-            return getSpectatorSpawnLocation();
+        List<Location> validSpawns = new ArrayList<>();
+        List<String> configuredSpawns = getGameConfig().getPlayerSpawnPoints();
+        if (configuredSpawns != null) {
+            for (String configuredSpawn : configuredSpawns) {
+                try {
+                    Location location = Utils.getLocation(configuredSpawn);
+                    if (location != null && location.getWorld() != null) validSpawns.add(location);
+                } catch (RuntimeException ignored) {
+                    // A malformed entry must not prevent the remaining entries or safe fallbacks from working.
+                }
+            }
         }
+        if (!validSpawns.isEmpty())
+            return validSpawns.get(ThreadLocalRandom.current().nextInt(validSpawns.size()));
+
+        Location configuredSpectatorSpawn = getGameConfig().getSpectatorSpawnPoint();
+        if (configuredSpectatorSpawn != null && configuredSpectatorSpawn.getWorld() != null)
+            return configuredSpectatorSpawn;
+
+        World arenaWorld = Bukkit.getWorld(getWorldName());
+        if (arenaWorld != null) return arenaWorld.getSpawnLocation();
+
+        if (CCConfig.LOBBY_LOCATION != null && CCConfig.LOBBY_LOCATION.getWorld() != null)
+            return CCConfig.LOBBY_LOCATION;
+
+        throw new IllegalStateException("TNTRun has no valid spectator spawn for map "
+                + getGameConfig().getConfigName());
     }
 
     @Override

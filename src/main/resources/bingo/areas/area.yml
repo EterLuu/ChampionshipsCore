@@ -1,6 +1,12 @@
 dont-edit-this:
-  version: 3
+  version: 4
 name: "area"
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
 # Round duration in seconds (10 minutes per the bingo design doc).
 timer: 600
 # Preparation countdown before the round starts, in seconds.

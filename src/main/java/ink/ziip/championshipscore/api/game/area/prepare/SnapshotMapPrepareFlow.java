@@ -8,6 +8,8 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Common prepare behavior for one independently editable map world. The world itself is the source of
  * truth while editing; publish snapshots it into the map store. These maps must not expose schematic
@@ -44,7 +46,7 @@ public abstract class SnapshotMapPrepareFlow extends PrepareFlowDefinition {
     }
 
     @Override
-    public boolean publish(@NotNull PrepareSession session) {
+    public @NotNull CompletableFuture<Boolean> publish(@NotNull PrepareSession session) {
         return session.getTarget().saveMap(environment);
     }
 }

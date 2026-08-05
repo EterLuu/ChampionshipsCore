@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
+import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.rank.RankManager;
@@ -18,6 +19,7 @@ import ink.ziip.championshipscore.command.CommandManager;
 import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.DatabaseManager;
+import lombok.AccessLevel;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,6 +27,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 import java.util.logging.Level;
 
 @Getter
@@ -48,6 +53,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     private ScheduleManager scheduleManager;
     private PrepareSessionManager prepareSessionManager;
     private CCLogManager logManager;
+    @Getter(AccessLevel.NONE)
+    private final Set<BaseManager> startedManagers = Collections.newSetFromMap(new IdentityHashMap<>());
 
     @Override
     public void onEnable() {
@@ -86,25 +93,25 @@ public final class ChampionshipsCore extends JavaPlugin {
         scheduleManager = new ScheduleManager(this);
 
         // Plugin startup logic
-        configurationManager.load();
-        databaseManager.load();
-        listenerManager.load();
-        worldManager.load();
+        loadManager(configurationManager);
+        loadManager(databaseManager);
+        loadManager(listenerManager);
+        loadManager(worldManager);
 
-        playerManager.load();
-        teamManager.load();
-        rankManager.load();
+        loadManager(playerManager);
+        loadManager(teamManager);
+        loadManager(rankManager);
 
-        worldEditManager.load();
+        loadManager(worldEditManager);
 
-        gameManager.load();
+        loadManager(gameManager);
 
-        prepareSessionManager.load();
+        loadManager(prepareSessionManager);
 
-        commandManager.load();
-        placeholderManager.load();
-        voteManager.load();
-        scheduleManager.load();
+        loadManager(commandManager);
+        loadManager(placeholderManager);
+        loadManager(voteManager);
+        loadManager(scheduleManager);
 
         String readyMessage = Utils.formatModuleLog("Bootstrap", "启动", "加载完成 | 模式=" + CCConfig.MODE);
         if (logManager != null) logManager.important(readyMessage);
@@ -114,31 +121,42 @@ public final class ChampionshipsCore extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        if (gameManager != null) gameManager.unload();
-        if (prepareSessionManager != null) prepareSessionManager.unload();
-        if (rankManager != null) rankManager.unload();
+        unloadManager(gameManager);
+        unloadManager(prepareSessionManager);
+        unloadManager(rankManager);
 
-        if (listenerManager != null) listenerManager.unload();
-        if (playerManager != null) playerManager.unload();
-        if (teamManager != null) teamManager.unload();
-        if (commandManager != null) commandManager.unload();
+        unloadManager(listenerManager);
+        unloadManager(playerManager);
+        unloadManager(teamManager);
+        unloadManager(commandManager);
 
-        if (worldEditManager != null) worldEditManager.unload();
-        if (worldManager != null) worldManager.unload();
+        unloadManager(worldEditManager);
+        unloadManager(worldManager);
 
         loaded = false;
 
-        if (configurationManager != null) configurationManager.unload();
-        if (databaseManager != null) databaseManager.unload();
-        if (placeholderManager != null) placeholderManager.unload();
-        if (voteManager != null) voteManager.unload();
-        if (scheduleManager != null) scheduleManager.unload();
+        unloadManager(configurationManager);
+        unloadManager(databaseManager);
+        unloadManager(placeholderManager);
+        unloadManager(voteManager);
+        unloadManager(scheduleManager);
         if (glowingEntities != null) glowingEntities.disable();
 
         if (logManager != null) {
             logManager.important(Utils.formatModuleLog("Bootstrap", "停止", "插件已安全卸载"));
             logManager.close();
             logManager = null;
+        }
+    }
+
+    private void loadManager(@NotNull BaseManager manager) {
+        startedManagers.add(manager);
+        manager.load();
+    }
+
+    private void unloadManager(BaseManager manager) {
+        if (manager != null && startedManagers.remove(manager)) {
+            manager.unload();
         }
     }
 

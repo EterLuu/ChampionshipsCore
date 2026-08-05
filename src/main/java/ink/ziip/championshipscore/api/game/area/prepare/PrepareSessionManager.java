@@ -239,20 +239,38 @@ public class PrepareSessionManager extends BaseManager {
                     return;
                 }
                 Utils.sendAdminInfo(player, "正在发布地图，请稍候……");
-                if (!session.getFlow().publish(session)) {
-                    Utils.sendAdminError(player, "地图发布失败，请查看控制台日志；草稿仍保持锁定状态");
-                    return;
-                }
-                session.getTarget().config().markPreparePublished();
-                Location destination = session.getFlow().copyZeroLocation(session.getTarget());
-                if (destination != null && destination.getWorld() != null) player.teleport(destination);
-                PrepareModeInventory.refresh(player, session);
-                Utils.sendAdminSuccess(player, "地图已发布 &#696969• &#edededrevision &#fff566"
-                        + session.getTarget().config().getPrepareRevision());
+                UUID playerId = player.getUniqueId();
+                session.getFlow().publish(session).whenComplete((published, error) -> {
+                    Runnable completion = () -> completePublish(playerId, session,
+                            error == null && Boolean.TRUE.equals(published));
+                    if (Bukkit.isPrimaryThread()) completion.run();
+                    else if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin, completion);
+                });
             }
             default -> {
             }
         }
+    }
+
+    private void completePublish(UUID playerId, PrepareSession session, boolean published) {
+        if (published)
+            session.getTarget().config().markPreparePublished();
+
+        Player player = Bukkit.getPlayer(playerId);
+        if (player == null || sessions.get(playerId) != session)
+            return;
+        if (!published) {
+            Utils.sendAdminError(player, "地图发布失败，请查看控制台日志；草稿仍保持锁定状态");
+            PrepareModeInventory.refresh(player, session);
+            return;
+        }
+
+        Location destination = session.getFlow().copyZeroLocation(session.getTarget());
+        if (destination != null && destination.getWorld() != null)
+            player.teleport(destination);
+        PrepareModeInventory.refresh(player, session);
+        Utils.sendAdminSuccess(player, "地图已发布 &#696969• &#edededrevision &#fff566"
+                + session.getTarget().config().getPrepareRevision());
     }
 
     /** Game-start guard: a locked, dirty, or explicitly unpublished map cannot be selected. */

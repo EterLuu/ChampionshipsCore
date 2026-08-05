@@ -7,6 +7,8 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * A map definition being edited. It owns configuration and world identity while its manager resolves the
  * current representative instance used for idle checks and template persistence.
@@ -30,8 +32,10 @@ public record MapSetupTarget(@NotNull ChampionshipsCore plugin, @NotNull GameTyp
     }
 
     @Override
-    public boolean saveMap(@NotNull World.Environment environment) {
+    public @NotNull CompletableFuture<Boolean> saveMap(@NotNull World.Environment environment) {
         ink.ziip.championshipscore.api.game.instance.BaseGameInstance representative = manager.getArea(name);
-        return representative != null && representative.saveMap(environment);
+        return representative == null
+                ? CompletableFuture.completedFuture(false)
+                : representative.saveMap(environment);
     }
 }

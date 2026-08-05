@@ -6,6 +6,8 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.CompletableFuture;
+
 /** The map/configuration surface editable by setup, independent of a running game instance. */
 public interface SetupTarget {
     @NotNull ChampionshipsCore plugin();
@@ -23,5 +25,5 @@ public interface SetupTarget {
 
     boolean canSaveMap();
 
-    boolean saveMap(@NotNull World.Environment environment);
+    @NotNull CompletableFuture<Boolean> saveMap(@NotNull World.Environment environment);
 }

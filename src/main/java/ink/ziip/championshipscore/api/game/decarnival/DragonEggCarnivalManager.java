@@ -4,6 +4,8 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.World;
+
+import java.util.concurrent.CompletableFuture;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
@@ -63,13 +65,13 @@ public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggC
         return true;
     }
 
-    public boolean saveArea(String name) {
+    public CompletableFuture<Boolean> saveArea(String name) {
         DragonEggCarnivalArea dragonEggCarnivalArea = areas.get(name);
         if (dragonEggCarnivalArea == null)
-            return false;
+            return CompletableFuture.completedFuture(false);
 
         if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.WAITING) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
 
         return dragonEggCarnivalArea.saveMap(World.Environment.THE_END);

@@ -34,7 +34,9 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 
 public abstract class BaseGameInstance {
@@ -54,6 +56,9 @@ public abstract class BaseGameInstance {
     private boolean postGamePending;
     private boolean postGameFinalizing;
     private volatile CompletableFuture<Void> coordinatedStartGate;
+    private CompletableFuture<Boolean> activeMapLoad = CompletableFuture.completedFuture(true);
+    private long mapLoadGeneration;
+    private volatile boolean disposed;
 
     /** Duration (seconds) of the optional rule-introduction phase preceding the normal preparation. */
     protected static final int INTRODUCTION_DURATION = 45;
@@ -109,6 +114,10 @@ public abstract class BaseGameInstance {
 
     /** Permanently releases listeners and UI owned by this instance when its manager unloads it. */
     public void dispose() {
+        disposed = true;
+        mapLoadGeneration++;
+        if (!activeMapLoad.isDone())
+            activeMapLoad.complete(false);
         releaseStartChunks();
         cancelIntroduction();
         cancelFinalCountdown();
@@ -262,9 +271,18 @@ public abstract class BaseGameInstance {
         }
     }
 
-    public void loadMap(World.Environment environment) {
-        if (!plugin.isLoaded())
-            return;
+    public CompletableFuture<Boolean> loadMap(World.Environment environment) {
+        if (!Bukkit.isPrimaryThread())
+            return runOnMain(() -> loadMap(environment));
+        if (disposed || !plugin.isLoaded() || !plugin.isEnabled())
+            return CompletableFuture.completedFuture(false);
+        if (!activeMapLoad.isDone())
+            return activeMapLoad;
+
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        activeMapLoad = result;
+        long generation = ++mapLoadGeneration;
+        long startedAt = System.nanoTime();
 
         clearBossBars();
         teleportAllSpectators(getLobbyLocation());
@@ -276,40 +294,69 @@ public abstract class BaseGameInstance {
         // Repair the published template and preserve the current world before reload deletes either copy.
         if (!plugin.getWorldManager().prepareWorldForFirstLoad(getWorldName())) {
             logGame(Level.SEVERE, "世界", "加载失败：首次加载前世界修复未完成 " + getWorldName());
-            return;
+            result.complete(false);
+            return result;
         }
 
         File target = plugin.getWorldManager().getWorldFolder(getWorldName());
-
-        // If already has a same world, delete it.
-        if (target.isDirectory()) {
-            String[] list = target.list();
-            if (list != null && list.length > 0) {
-                plugin.getWorldManager().deleteWorld(getWorldName(), true);
-            }
+        World loadedWorld = plugin.getServer().getWorld(getWorldName());
+        if (loadedWorld != null && !plugin.getWorldManager().unloadWorld(getWorldName(), false)) {
+            logGame(Level.SEVERE, "世界", "加载失败：Bukkit 无法卸载 " + getWorldName());
+            result.complete(false);
+            return result;
         }
+        long unloadedAt = System.nanoTime();
 
         File maps = new File(plugin.getDataFolder(), "maps");
         File source = new File(maps, getWorldName());
+        runAsyncFileOperation(() -> replaceWorldFiles(source, target))
+                .thenCompose(filesReady -> runOnMain(() -> CompletableFuture.completedFuture(
+                        finishMapLoad(environment, generation, startedAt, unloadedAt, filesReady))))
+                .whenComplete((success, error) -> {
+                    if (error != null)
+                        logGame(Level.SEVERE, "世界", "加载任务异常 " + getWorldName() + " | " + error.getMessage());
+                    result.complete(error == null && Boolean.TRUE.equals(success));
+                });
+        return result;
+    }
 
-        // Copy world files to destination
-        if (!plugin.getWorldManager().copyWorldFiles(source, target)) {
-            logGame(Level.SEVERE, "世界", "加载失败：无法从地图模板复制 " + getWorldName());
-            return;
+    private boolean finishMapLoad(World.Environment environment, long generation, long startedAt,
+                                  long unloadedAt, boolean filesReady) {
+        if (disposed || generation != mapLoadGeneration || !plugin.isLoaded() || !plugin.isEnabled())
+            return false;
+        if (!filesReady) {
+            logGame(Level.SEVERE, "世界", "加载失败：无法异步重建地图文件 " + getWorldName());
+            return false;
         }
-
-        // Load world
+        long filesReadyAt = System.nanoTime();
         if (!plugin.getWorldManager().loadWorld(getWorldName(), environment, false)) {
             logGame(Level.SEVERE, "世界", "加载失败：Bukkit 无法加载 " + getWorldName());
-            return;
+            return false;
         }
 
         getGameConfig().initializeConfiguration(plugin.getFolder());
         getGameHandler().register();
         setGameStageEnum(GameStageEnum.WAITING);
-        logGame(Level.INFO, "世界", "加载完成 " + getWorldName());
-
+        long finishedAt = System.nanoTime();
+        logGame(Level.INFO, "世界", "加载完成 " + getWorldName()
+                + " | 主线程卸载=" + elapsedMillis(startedAt, unloadedAt) + "ms"
+                + " 异步文件=" + elapsedMillis(unloadedAt, filesReadyAt) + "ms"
+                + " 主线程加载=" + elapsedMillis(filesReadyAt, finishedAt) + "ms");
         teleportAllSpectators(getSpectatorSpawnLocation());
+        return true;
+    }
+
+    private boolean replaceWorldFiles(File source, File target) {
+        if (target.exists() && !plugin.getWorldManager().deleteWorldFiles(target))
+            return false;
+        if (plugin.getWorldManager().copyWorldFiles(source, target))
+            return true;
+        plugin.getWorldManager().deleteWorldFiles(target);
+        return false;
+    }
+
+    private long elapsedMillis(long startedAt, long finishedAt) {
+        return java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(finishedAt - startedAt);
     }
 
     /**
@@ -317,28 +364,28 @@ public abstract class BaseGameInstance {
      * prepare publishes their first revision, so reopening the server must keep their editable draft
      * world instead of deleting it and then failing a template copy.
      */
-    public final void loadPublishedMapOrDraft(World.Environment environment) {
+    public final CompletableFuture<Boolean> loadPublishedMapOrDraft(World.Environment environment) {
+        if (!Bukkit.isPrimaryThread())
+            return runOnMain(() -> loadPublishedMapOrDraft(environment));
         getGameConfig().initializeConfiguration(plugin.getFolder());
         if (getGameConfig().isWorldBindingPending()) {
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
             logGame(Level.INFO, "世界", "地图草稿尚未绑定世界，等待 prepare 设置");
-            return;
+            return CompletableFuture.completedFuture(true);
         }
         File template = new File(new File(plugin.getDataFolder(), "maps"), getWorldName());
-        if (getGameConfig().isPrepareReady() && template.isDirectory()) {
-            loadMap(environment);
-            return;
-        }
+        if (getGameConfig().isPrepareReady() && template.isDirectory())
+            return loadMap(environment);
 
         if (getGameConfig().isPrepareReady()) {
             getGameConfig().beginPrepareDraft();
             logGame(Level.SEVERE, "世界", "已发布地图缺少模板，已降为草稿并禁止开赛：" + template.getPath());
         }
-        loadDraftWorld(environment);
+        return CompletableFuture.completedFuture(loadDraftWorld(environment));
     }
 
-    private void loadDraftWorld(World.Environment environment) {
+    private boolean loadDraftWorld(World.Environment environment) {
         clearBossBars();
         teleportAllSpectators(getLobbyLocation());
         setGameStageEnum(GameStageEnum.END);
@@ -347,12 +394,13 @@ public abstract class BaseGameInstance {
 
         if (!plugin.getWorldManager().loadWorld(getWorldName(), environment, false)) {
             logGame(Level.SEVERE, "世界", "草稿世界加载失败：" + getWorldName());
-            return;
+            return false;
         }
 
         getGameHandler().register();
         setGameStageEnum(GameStageEnum.WAITING);
         logGame(Level.INFO, "世界", "草稿世界已就绪，等待 prepare 发布");
+        return true;
     }
 
     /** True only when every instance backed by this same world is idle and the map can be reloaded safely. */
@@ -368,10 +416,12 @@ public abstract class BaseGameInstance {
                 .allMatch(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING);
     }
 
-    public boolean saveMap(World.Environment environment) {
+    public CompletableFuture<Boolean> saveMap(World.Environment environment) {
+        if (!Bukkit.isPrimaryThread())
+            return runOnMain(() -> saveMap(environment));
         if (!canSaveMap()) {
             logGame(Level.WARNING, "世界", "保存被拒绝：同一地图仍有运行中的游戏实例");
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
 
         setGameStageEnum(GameStageEnum.END);
@@ -382,14 +432,18 @@ public abstract class BaseGameInstance {
         if (editWorld == null) {
             setGameStageEnum(GameStageEnum.WAITING);
             logGame(Level.WARNING, "世界", "保存失败：世界未加载 " + getWorldName());
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
         for (Player player : editWorld.getPlayers()) {
             player.teleport(CCConfig.LOBBY_LOCATION);
         }
 
         // Unload world but not remove files
-        plugin.getWorldManager().unloadWorld(getWorldName(), true);
+        if (!plugin.getWorldManager().unloadWorld(getWorldName(), true)) {
+            setGameStageEnum(GameStageEnum.WAITING);
+            logGame(Level.SEVERE, "世界", "保存失败：Bukkit 无法卸载 " + getWorldName());
+            return CompletableFuture.completedFuture(false);
+        }
 
         File dataDirectory = new File(plugin.getDataFolder(), "maps");
         File target = new File(dataDirectory, getWorldName());
@@ -398,12 +452,29 @@ public abstract class BaseGameInstance {
         File staging = new File(dataDirectory, transaction + "-staging");
         File backup = new File(dataDirectory, transaction + "-previous");
 
-        // Copy first, then swap directories. The last published template is not touched until a complete
-        // staging copy exists; if either move fails, restore it and keep the editable world intact.
+        return runAsyncFileOperation(() -> stagePublishedTemplate(source, target, staging, backup))
+                .thenCompose(staged -> runOnMain(() -> {
+                    if (!staged) {
+                        boolean draftLoaded = loadDraftWorld(environment);
+                        if (!draftLoaded)
+                            logGame(Level.SEVERE, "世界", "发布失败后编辑世界也无法重新加载 " + getWorldName());
+                        return CompletableFuture.completedFuture(false);
+                    }
+                    return loadMap(environment).thenCompose(loaded -> {
+                        if (loaded)
+                            return runAsyncFileOperation(() -> {
+                                if (backup.exists() && !plugin.getWorldManager().deleteWorldFiles(backup))
+                                    logGame(Level.WARNING, "世界", "发布成功，但旧 revision 清理失败 " + backup.getPath());
+                                return true;
+                            });
+                        return rollbackPublishedTemplate(environment, source, target, backup);
+                    });
+                }));
+    }
+
+    private boolean stagePublishedTemplate(File source, File target, File staging, File backup) {
         if (!plugin.getWorldManager().copyWorldFiles(source, staging)) {
             plugin.getWorldManager().deleteWorldFiles(staging);
-            plugin.getWorldManager().loadWorld(getWorldName(), environment, false);
-            setGameStageEnum(GameStageEnum.WAITING);
             logGame(Level.SEVERE, "世界", "发布失败：无法写入暂存模板，旧版本未改变 " + getWorldName());
             return false;
         }
@@ -419,35 +490,90 @@ public abstract class BaseGameInstance {
             } catch (Exception rollback) {
                 logGame(Level.SEVERE, "世界", "发布回滚失败：" + rollback.getMessage());
             }
-            plugin.getWorldManager().loadWorld(getWorldName(), environment, false);
-            setGameStageEnum(GameStageEnum.WAITING);
             logGame(Level.SEVERE, "世界", "发布失败：模板切换失败，编辑世界已保留 | "
                     + exception.getMessage());
             return false;
         }
-        plugin.getWorldManager().deleteWorldFiles(source);
+        if (!plugin.getWorldManager().deleteWorldFiles(source))
+            logGame(Level.WARNING, "世界", "新模板已切换，但编辑世界目录清理不完整 " + source.getPath());
+        return true;
+    }
 
-        loadMap(environment);
-        boolean loaded = getGameStageEnum() == GameStageEnum.WAITING
-                && plugin.getServer().getWorld(getWorldName()) != null;
-        if (loaded) {
-            plugin.getWorldManager().deleteWorldFiles(backup);
-            return true;
+    private CompletableFuture<Boolean> rollbackPublishedTemplate(World.Environment environment,
+                                                                  File source, File target, File backup) {
+        if (!backup.exists())
+            return CompletableFuture.completedFuture(false);
+        World loadedWorld = plugin.getServer().getWorld(getWorldName());
+        if (loadedWorld != null && !plugin.getWorldManager().unloadWorld(getWorldName(), false)) {
+            logGame(Level.SEVERE, "世界", "新 revision 加载失败且无法卸载残留世界，未执行文件回滚");
+            return CompletableFuture.completedFuture(false);
         }
-
-        // A complete previous revision exists: put it back if the new snapshot cannot be reloaded.
-        if (backup.exists()) {
-            plugin.getWorldManager().deleteWorld(getWorldName(), true);
-            plugin.getWorldManager().deleteWorldFiles(target);
+        return runAsyncFileOperation(() -> {
+            if (!plugin.getWorldManager().deleteWorldFiles(source)
+                    || !plugin.getWorldManager().deleteWorldFiles(target))
+                return false;
             try {
                 java.nio.file.Files.move(backup.toPath(), target.toPath());
-                loadMap(environment);
-                logGame(Level.SEVERE, "世界", "新 revision 加载失败，已回滚到上一发布版本");
-            } catch (Exception rollback) {
-                logGame(Level.SEVERE, "世界", "新 revision 加载失败且回滚失败：" + rollback.getMessage());
+                return true;
+            } catch (Exception exception) {
+                logGame(Level.SEVERE, "世界", "新 revision 加载失败且回滚失败：" + exception.getMessage());
+                return false;
             }
+        }).thenCompose(restored -> runOnMain(() -> {
+            if (!restored)
+                return CompletableFuture.completedFuture(false);
+            return loadMap(environment).thenApply(ignored -> {
+                logGame(Level.SEVERE, "世界", "新 revision 加载失败，已回滚到上一发布版本");
+                return false;
+            });
+        }));
+    }
+
+    private CompletableFuture<Boolean> runAsyncFileOperation(BooleanSupplier operation) {
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        if (disposed || !plugin.isLoaded() || !plugin.isEnabled()) {
+            result.complete(false);
+            return result;
         }
-        return false;
+        try {
+            scheduler.runTaskAsynchronously(plugin, () -> {
+                try {
+                    result.complete(operation.getAsBoolean());
+                } catch (Throwable throwable) {
+                    logGame(Level.SEVERE, "世界", "异步文件任务异常 | " + throwable.getMessage());
+                    result.complete(false);
+                }
+            });
+        } catch (RuntimeException exception) {
+            logGame(Level.SEVERE, "世界", "无法提交异步文件任务 | " + exception.getMessage());
+            result.complete(false);
+        }
+        return result;
+    }
+
+    private CompletableFuture<Boolean> runOnMain(Supplier<CompletableFuture<Boolean>> operation) {
+        if (Bukkit.isPrimaryThread())
+            return operation.get();
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        if (disposed || !plugin.isLoaded() || !plugin.isEnabled()) {
+            result.complete(false);
+            return result;
+        }
+        try {
+            scheduler.runTask(plugin, () -> {
+                try {
+                    operation.get().whenComplete((success, error) -> {
+                        if (error != null) result.completeExceptionally(error);
+                        else result.complete(success);
+                    });
+                } catch (Throwable throwable) {
+                    result.completeExceptionally(throwable);
+                }
+            });
+        } catch (RuntimeException exception) {
+            result.complete(false);
+        }
+        return result;
     }
 
     private BossBar createBossBar(String title, BarColor color, BarStyle style) {

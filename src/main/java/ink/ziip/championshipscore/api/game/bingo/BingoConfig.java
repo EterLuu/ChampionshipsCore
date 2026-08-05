@@ -28,7 +28,7 @@ public class BingoConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 3;
+        return 4;
     }
 
     @ConfigOption(path = "name")

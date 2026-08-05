@@ -84,10 +84,15 @@ public class DatabaseManager extends BaseManager {
 
         try (Connection connection = dataSource.getConnection()) {
             try (Statement statement = connection.createStatement()) {
-                InputStream schema = plugin.getResource("database/schema.sql");
-                if (schema != null) {
-                    for (String executeStatement : new String(schema.readAllBytes(), StandardCharsets.UTF_8).split(";")) {
-                        statement.execute(executeStatement);
+                try (InputStream schema = plugin.getResource("database/schema.sql")) {
+                    if (schema == null) {
+                        throw new IOException("Missing database/schema.sql");
+                    }
+                    for (String rawStatement : new String(schema.readAllBytes(), StandardCharsets.UTF_8).split(";")) {
+                        String executeStatement = rawStatement.trim();
+                        if (!executeStatement.isEmpty()) {
+                            statement.execute(executeStatement);
+                        }
                     }
                 }
                 ensurePointTransactionSchema(connection);

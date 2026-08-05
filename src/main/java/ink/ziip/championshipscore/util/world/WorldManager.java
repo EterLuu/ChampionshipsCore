@@ -467,7 +467,7 @@ public class WorldManager extends BaseManager {
             } else {
                 try (java.io.InputStream in = new java.io.FileInputStream(source);
                      OutputStream out = new java.io.FileOutputStream(target)) {
-                    byte[] buffer = new byte[4096];
+                    byte[] buffer = new byte[64 * 1024];
                     int length;
                     while ((length = in.read(buffer)) > 0)
                         out.write(buffer, 0, length);

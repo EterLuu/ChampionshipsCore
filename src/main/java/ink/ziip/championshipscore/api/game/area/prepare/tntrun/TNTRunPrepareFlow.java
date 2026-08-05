@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /** Unified prepare flow for TNT Run's one match with several load-balancing arena copies. */
 public class TNTRunPrepareFlow extends PrepareFlowDefinition {
@@ -71,7 +72,7 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
     }
 
     @Override
-    public boolean publish(@NotNull PrepareSession session) {
+    public @NotNull CompletableFuture<Boolean> publish(@NotNull PrepareSession session) {
         return session.getTarget().saveMap(World.Environment.NORMAL);
     }
 

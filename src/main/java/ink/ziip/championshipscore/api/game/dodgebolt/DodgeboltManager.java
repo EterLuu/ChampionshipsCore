@@ -5,6 +5,8 @@ import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import org.bukkit.World;
 
+import java.util.concurrent.CompletableFuture;
+
 import java.io.File;
 
 public final class DodgeboltManager extends BaseGameInstanceManager<DodgeboltArea> {
@@ -53,9 +55,10 @@ public final class DodgeboltManager extends BaseGameInstanceManager<DodgeboltAre
         return true;
     }
 
-    public boolean saveArea(String name) {
+    public CompletableFuture<Boolean> saveArea(String name) {
         DodgeboltArea area = areas.get(name);
-        return area != null && area.getGameStageEnum() == GameStageEnum.WAITING
-                && area.saveMap(World.Environment.NORMAL);
+        return area == null || area.getGameStageEnum() != GameStageEnum.WAITING
+                ? CompletableFuture.completedFuture(false)
+                : area.saveMap(World.Environment.NORMAL);
     }
 }
