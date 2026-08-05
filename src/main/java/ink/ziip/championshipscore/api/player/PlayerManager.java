@@ -35,7 +35,9 @@ public class PlayerManager extends BaseManager {
 
     @Override
     public void unload() {
-
+        cachedPlayers.clear();
+        cachedPlayerUUID.clear();
+        cachedPlayerName.clear();
     }
 
     public ChampionshipPlayer addPlayer(@NotNull UUID uuid) {

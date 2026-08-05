@@ -1,7 +1,6 @@
 package ink.ziip.championshipscore.api.game.parkourtag;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.config.MapWorldNames;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -153,6 +152,12 @@ public class ParkourTagManager extends BaseGameInstanceManager<ParkourTagArea> {
 
     public void addChaserTimes(UUID uuid) {
         chaserTimes.put(uuid, chaserTimes.getOrDefault(uuid, 0) + 1);
+    }
+
+    /** Starts a new event with independent chaser quotas and Ender Eye cooldowns. */
+    public void resetEventState() {
+        chaserTimes.clear();
+        enderEyeUsedTimes.clear();
     }
 
     public UUID getTeamChaser(ChampionshipTeam team) {

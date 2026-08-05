@@ -774,6 +774,6 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     @Override
     public String getWorldName() {
-        return getGameConfig().resolveWorldName();
+        return getGameConfig().getConfiguredWorld();
     }
 }

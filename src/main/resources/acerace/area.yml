@@ -1,6 +1,13 @@
 dont-edit-this:
-  version: 15
+  version: 16
 name: area
+world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
 timer: 720
 laps: 3
 spectator-spawn-point:

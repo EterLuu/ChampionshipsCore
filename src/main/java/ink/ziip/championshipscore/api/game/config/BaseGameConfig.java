@@ -27,23 +27,20 @@ import java.util.logging.Level;
 public abstract class BaseGameConfig extends BaseConfigurationFile {
     protected final String configName;
 
-    /**
-     * Prepare publication metadata. A missing published flag means an existing pre-refactor map and is
-     * treated as published for backwards compatibility; newly created maps explicitly enter draft mode.
-     */
-    @ConfigOption(path = "prepare.published", nullable = true)
+    /** Prepare publication metadata stored explicitly in every current map configuration. */
+    @ConfigOption(path = "prepare.published")
     protected Boolean preparePublished;
 
-    @ConfigOption(path = "prepare.dirty", nullable = true)
+    @ConfigOption(path = "prepare.dirty")
     protected Boolean prepareDirty;
 
-    @ConfigOption(path = "prepare.revision", nullable = true)
+    @ConfigOption(path = "prepare.revision")
     protected Integer prepareRevision;
 
     @ConfigOption(path = "prepare.published-at", nullable = true)
     protected Long preparePublishedAt;
 
-    @ConfigOption(path = "prepare.world-built", nullable = true)
+    @ConfigOption(path = "prepare.world-built")
     protected Boolean prepareWorldBuilt;
 
     public BaseGameConfig(@NotNull ChampionshipsCore plugin, String configName) {
@@ -53,8 +50,8 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
     /**
      * Game map configs load through this method rather than {@code BaseConfigurationManager}, so the
-     * version check would never run for them. Migrate outdated files here: the old file is renamed to
-     * {@code *.outdated} and its values are copied onto the latest bundled template.
+     * version check would never run for them. Migrate outdated files here by updating the current file
+     * in place from the latest bundled template while preserving user-owned values.
      */
     @Override
     public void initializeConfiguration(Path pluginFolder) {
@@ -141,9 +138,8 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         }
     }
 
-    public @NotNull String resolveConfiguredWorld(@NotNull String legacyWorldName) {
-        String configured = configuration == null ? null : configuration.getString("world-name");
-        return configured == null || configured.isBlank() ? legacyWorldName : configured;
+    public @NotNull String getConfiguredWorld() {
+        return configuration == null ? "" : configuration.getString("world-name", "");
     }
 
     public boolean isWorldBindingPending() {
@@ -333,9 +329,8 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
     public abstract Location getSpectatorSpawnPoint();
 
-    /** Existing maps without lifecycle metadata remain playable. */
     public boolean isPreparePublished() {
-        return preparePublished == null || preparePublished;
+        return Boolean.TRUE.equals(preparePublished);
     }
 
     public boolean isPrepareDirty() {
@@ -369,9 +364,8 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         saveOptions();
     }
 
-    /** Missing metadata means an existing legacy map whose world was already built. */
     public boolean isPrepareWorldBuilt() {
-        return prepareWorldBuilt == null || prepareWorldBuilt;
+        return Boolean.TRUE.equals(prepareWorldBuilt);
     }
 
     public void markPrepareWorldBuilt() {

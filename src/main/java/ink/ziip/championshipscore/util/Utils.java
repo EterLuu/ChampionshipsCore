@@ -9,8 +9,6 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.advancement.Advancement;
-import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
@@ -21,8 +19,6 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -36,15 +32,6 @@ public class Utils {
     private static final Pattern LEGACY_HEX_COLOR = Pattern.compile("(?<!&)#([a-fA-F0-9]{6})");
 
     private Utils() {
-    }
-
-    public static void revokeAllAdvancements(Player player) {
-        Iterator<Advancement> advancements = Bukkit.getServer().advancementIterator();
-        while (advancements.hasNext()) {
-            AdvancementProgress progress = player.getAdvancementProgress(advancements.next());
-            for (String s : progress.getAwardedCriteria())
-                progress.revokeCriteria(s);
-        }
     }
 
     /** Translates the preferred {@code &#RRGGBB} syntax and the legacy {@code #RRGGBB} syntax. */
@@ -94,14 +81,6 @@ public class Utils {
     /** Colour-translates a legacy string and parses it into an Adventure component. */
     public static Component toComponent(String message) {
         return LegacyComponentSerializer.legacySection().deserialize(translateColorCodes(message));
-    }
-
-    public static List<String> getOnlinePlayerNames() {
-        List<String> players = new ArrayList<>();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            players.add(player.getName());
-        }
-        return players;
     }
 
     /** Neutral player name followed by the player's coloured team, matching the server chat identity. */

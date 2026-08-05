@@ -188,8 +188,6 @@ card:
   completed_by: "&7Completed by: "
   completed_at: "&7Completed at: &f{0}"
   occupied_by: "&7Claimed by another team"
-  voided: "&8Voided"
-  hidden: "&8&l???"
 compass:
   item_name: "{0} &fTeleport Compass"
   item_hint: "&7Right-click to open the teammate teleport menu"

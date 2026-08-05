@@ -1,7 +1,13 @@
 dont-edit-this:
-  version: 6
+  version: 7
 name: area
 world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
 timer: 60
 copy-count: 8
 # Filled by prepare from arena.schem. PKT always keeps a 512-block pitch between complete two-track match units.

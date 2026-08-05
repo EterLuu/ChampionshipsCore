@@ -6,7 +6,6 @@ import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameI
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -216,10 +215,10 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
 
     public void addTeamArrivedPlayer(ChampionshipTeam championshipTeam) {
         teamArrivedPlayers.put(championshipTeam, teamArrivedPlayers.getOrDefault(championshipTeam, 0) + 1);
-        int arrivedPlayers = teamArrivedPlayers.get(championshipTeam);
-        if (arrivedPlayers == championshipTeam.getMembers().size()) {
+        int finishedPlayerCount = teamArrivedPlayers.get(championshipTeam);
+        if (finishedPlayerCount == championshipTeam.getMembers().size()) {
             if (arrivedTeamNumbers < 4) {
-                addPlayerPointsToAllTeamMembers(championshipTeam, 24 - 6 * arrivedPlayers);
+                addPlayerPointsToAllTeamMembers(championshipTeam, 24 - 6 * arrivedTeamNumbers);
                 sendMessageToAllGamePlayers(MessageConfig.TGTTOS_TEAM_ARRIVED_AT_POINT.replace("%team%", championshipTeam.getColoredName()));
             }
             arrivedTeamNumbers++;
@@ -392,6 +391,6 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public String getWorldName() {
-        return gameConfig.resolveConfiguredWorld("tgttos");
+        return gameConfig.getConfiguredWorld();
     }
 }

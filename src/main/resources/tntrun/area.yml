@@ -1,9 +1,16 @@
 dont-edit-this:
-  version: 3
+  version: 4
 name: "area"
+world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
 timer: 180
 spectator-spawn-point:
-# Legacy single play-area box (pre-prepare areas only). Prepared maps ignore this and derive one tight box
+# Aggregate play-area box for maps that do not define per-copy boxes. Prepared maps derive one tight box
 # per copy from copy-size + the copy grid, so each sub-arena bounds its own players.
 area-pos1:
 area-pos2:
@@ -14,11 +21,11 @@ area-pos2:
 # copy-size = one copy's block dimensions (auto-recorded, used to derive each copy's boundary box).
 copies: 0
 copy-size:
-# Filled by prepare; old maps without these values keep the legacy 1000-block row.
+# Filled by prepare.
 copy-layout: {}
 copy-spawn:
-# Legacy explicit per-copy spawn list (pre-prepare areas). Leave empty when using copy-spawn + copies.
-player-spawn-points: [ ]
+# Optional explicit per-copy spawns. Leave empty when using copy-spawn + copies.
+spawn-points: [ ]
 
 # ── 规则介绍阶段（introduction）────────────────────────────
 # 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的

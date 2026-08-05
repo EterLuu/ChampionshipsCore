@@ -90,7 +90,6 @@ public class PrepareSessionManager extends BaseManager {
         }
         listener = new PrepareListener(plugin, this);
         listener.register();
-        auditArchivedLegacyAreas();
     }
 
     @Override
@@ -277,26 +276,6 @@ public class PrepareSessionManager extends BaseManager {
 
     private static String lockKey(GameTypeEnum gameType, String mapName) {
         return gameType.name() + "\u0000" + mapName.toLowerCase(java.util.Locale.ROOT);
-    }
-
-    /** Reports legacy manual Area files that are retained for rollback but excluded from every scan. */
-    private void auditArchivedLegacyAreas() {
-        for (String game : java.util.List.of("battlebox", "parkourtag")) {
-            Path archive = plugin.getFolder().resolve(game).resolve("_archived_manual_areas");
-            if (!Files.isDirectory(archive)) continue;
-            try (var files = Files.list(archive)) {
-                long count = files.filter(path -> path.getFileName().toString().toLowerCase(java.util.Locale.ROOT)
-                        .endsWith(".yml")).count();
-                if (count > 0) {
-                    plugin.getLogger().info(Utils.formatModuleLog("Prepare", "旧场地审计",
-                            "游戏=" + game + " 归档配置=" + count
-                                    + " 状态=已隔离未加载，未删除磁盘数据"));
-                }
-            } catch (IOException e) {
-                plugin.getLogger().warning(Utils.formatModuleLog("Prepare", "旧场地审计",
-                        "无法读取 " + archive + " | " + e.getMessage()));
-            }
-        }
     }
 
     // ── inventory snapshot (in-memory + disk) ────────────────────────────────────────────────

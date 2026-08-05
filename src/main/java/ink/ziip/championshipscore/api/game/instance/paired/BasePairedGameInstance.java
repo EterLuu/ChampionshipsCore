@@ -6,9 +6,7 @@ import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
-import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.GameMode;
 import org.bukkit.Instrument;
@@ -203,20 +201,6 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
             }
         }
         return true;
-    }
-
-    @Override
-    public void revokeAllGamePlayersAdvancements() {
-        if (rightChampionshipTeam != null) {
-            for (Player player : rightChampionshipTeam.getOnlinePlayers()) {
-                Utils.revokeAllAdvancements(player);
-            }
-        }
-        if (leftChampionshipTeam != null) {
-            for (Player player : leftChampionshipTeam.getOnlinePlayers()) {
-                Utils.revokeAllAdvancements(player);
-            }
-        }
     }
 
     @Override

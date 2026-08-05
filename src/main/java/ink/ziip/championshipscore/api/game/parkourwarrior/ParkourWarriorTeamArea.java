@@ -519,7 +519,9 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
                 if (playerTeam != null) {
                     if (!playerTeam.equals(onlinePlayerTeam)) {
-                        player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
+                        onlinePlayer.hidePlayer(ChampionshipsCore.getInstance(), player);
+                    } else {
+                        onlinePlayer.showPlayer(ChampionshipsCore.getInstance(), player);
                     }
                 } else {
                     onlinePlayer.hidePlayer(ChampionshipsCore.getInstance(), player);
@@ -596,7 +598,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public String getWorldName() {
-        return gameConfig.resolveConfiguredWorld("parkourwarrior");
+        return gameConfig.getConfiguredWorld();
     }
 
     @Override

@@ -67,20 +67,6 @@ public final class TaskPoolLoader {
         });
     }
 
-    public static List<String> availableCards(JavaPlugin plugin) {
-        ensureDefaultCard(plugin);
-        File dir = cardsDir(plugin);
-        File[] files = dir.listFiles((ignored, name) -> name.toLowerCase(Locale.ROOT).endsWith(".yml"));
-        if (files == null || files.length == 0) return List.of(DEFAULT_CARD);
-        List<String> names = new ArrayList<>();
-        for (File file : files) {
-            String fileName = file.getName();
-            names.add(fileName.substring(0, fileName.length() - ".yml".length()));
-        }
-        names.sort(String.CASE_INSENSITIVE_ORDER);
-        return names;
-    }
-
     public static File cardFile(JavaPlugin plugin, String name) {
         return new File(cardsDir(plugin), normalizeName(name) + ".yml");
     }

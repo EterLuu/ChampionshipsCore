@@ -12,6 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PlayerPointEntry {
     private int id;
+    private UUID transactionId;
     private UUID uuid;
     private String username;
     private int teamId;

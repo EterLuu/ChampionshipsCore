@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * A {@link TaskData} placed on a card, plus its mutable completion/void state. Renders straight to a
+ * A {@link TaskData} placed on a card plus its mutable completion state. Renders straight to a
  * Paper {@link ItemStack} — the card menu is read-only and tracks tasks by slot index.
  */
 public final class GameTask {
@@ -30,32 +30,8 @@ public final class GameTask {
     public TaskData data;
     /** Completion per team id, in completion order. Empty until at least one team finishes the task. */
     private final java.util.LinkedHashMap<String, Completion> completions = new java.util.LinkedHashMap<>();
-    private boolean voided;
-    /** BLIND remix carryover: the task is hidden (shown as bedrock) until revealed or completed. */
-    private boolean hidden;
-
     public GameTask(@NotNull TaskData data) {
         this.data = data;
-        this.voided = false;
-    }
-
-    public void setVoided(boolean value) {
-        if (isCompleted()) return;
-        voided = value;
-    }
-
-    public boolean isVoided() {
-        return voided;
-    }
-
-    /** Hides this task; never hides an already-completed task. Pass {@code false} to reveal it. */
-    public void setHidden(boolean value) {
-        if (value && isCompleted()) return;
-        hidden = value;
-    }
-
-    public boolean isHidden() {
-        return hidden;
     }
 
     /** True once any team has completed (claimed) this task. */
@@ -71,11 +47,9 @@ public final class GameTask {
      * @return true if this call newly completed the task for {@code by}'s team.
      */
     public boolean complete(@NotNull Completion by, boolean locked) {
-        if (isVoided()) return false;
         if (locked && !completions.isEmpty()) return false;
         if (completions.containsKey(by.teamId())) return false;
         completions.put(by.teamId(), by);
-        hidden = false; // completing a task reveals it
         return true;
     }
 
@@ -121,14 +95,7 @@ public final class GameTask {
 
     /** Display name from {@code viewerTeamId}'s perspective: struck-through once that team completed it. */
     public Component getName(@Nullable String viewerTeamId) {
-        if (isVoided()) {
-            TextComponent.Builder b = Component.text()
-                    .color(NamedTextColor.DARK_GRAY).decorate(TextDecoration.STRIKETHROUGH);
-            b.append(Component.text("A").decorate(TextDecoration.OBFUSCATED));
-            b.append(data.getName().color(NamedTextColor.DARK_GRAY));
-            b.append(Component.text("A").decorate(TextDecoration.OBFUSCATED));
-            return b.build();
-        } else if (viewerTeamId != null && isCompletedByTeam(viewerTeamId)) {
+        if (viewerTeamId != null && isCompletedByTeam(viewerTeamId)) {
             return Component.text().color(NamedTextColor.GRAY)
                     .decorate(TextDecoration.STRIKETHROUGH)
                     .append(data.getName()).build();
@@ -146,17 +113,7 @@ public final class GameTask {
         Completion own = viewerTeamId == null ? null : completions.get(viewerTeamId);
         MessageService msg = MessageService.global();
         boolean anyCompleted = isCompleted();
-        if (isHidden()) {
-            // Hidden cell: reveal nothing about the task — not even its name or count.
-            material = Material.BEDROCK;
-            name = msg.component("card.hidden");
-            glow = false;
-        } else if (isVoided()) {
-            name = getName(viewerTeamId);
-            material = Material.STRUCTURE_VOID;
-            lore.add(msg.component("card.voided"));
-            glow = true;
-        } else if (own != null) {
+        if (own != null) {
             name = getName(viewerTeamId);
             material = Material.BARRIER;
             lore.add(Component.text()
@@ -206,7 +163,7 @@ public final class GameTask {
         if (!material.isItem()) material = Material.PAPER;
         ItemStack stack = new ItemStack(material);
         boolean lockedByOther = displayInfo.locksTasks() && isCompleted() && own == null;
-        boolean active = !isHidden() && own == null && !isVoided() && !lockedByOther;
+        boolean active = own == null && !lockedByOther;
         boolean statistic = data.getType() == TaskData.TaskType.STATISTIC;
         int required = Math.max(1, data.getRequiredAmount());
         if (active) {

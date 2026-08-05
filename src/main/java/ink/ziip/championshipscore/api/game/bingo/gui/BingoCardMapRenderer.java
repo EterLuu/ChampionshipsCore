@@ -86,10 +86,6 @@ public final class BingoCardMapRenderer extends MapRenderer {
     }
 
     private void drawTask(MapCanvas canvas, GameTask task, int gridX, int gridY) {
-        if (task.isHidden()) {
-            drawHidden(canvas, gridX, gridY);
-            return;
-        }
         Key key = task.data.getDisplayMaterial(CardDisplayInfo.DEFAULT).key();
         int x = gridX * 24 + 4;
         int y = gridY * 24 + 4;
@@ -174,16 +170,6 @@ public final class BingoCardMapRenderer extends MapRenderer {
                 norm -= Math.floor(norm);
                 int seg = (int) (norm * segments) % segments;
                 if (seg < filled) setPixel(canvas, ox + dx, oy + dy, idx[seg]);
-            }
-        }
-    }
-
-    private static void drawHidden(MapCanvas canvas, int gridX, int gridY) {
-        final int ox = gridX * 24 + 4, oy = gridY * 24 + 4, size = 24, inset = 1;
-        byte dark = MapColorMatcher.matchColor(74, 74, 78);
-        for (int dy = inset; dy < size - inset; dy++) {
-            for (int dx = inset; dx < size - inset; dx++) {
-                setPixel(canvas, ox + dx, oy + dy, dark);
             }
         }
     }
@@ -375,7 +361,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
     private String stateSignature() {
         StringBuilder sb = new StringBuilder(card.getTasks().size() * 2 + 16);
         for (GameTask task : card.getTasks()) {
-            sb.append(task.isHidden() ? 'h' : task.isVoided() ? 'v' : task.isCompletedByTeam(teamId) ? 'x' : '.');
+            sb.append(task.isCompletedByTeam(teamId) ? 'x' : '.');
             int n = task.allCompletions().size();
             sb.append((char) ('0' + Math.min(n, 9)));
         }

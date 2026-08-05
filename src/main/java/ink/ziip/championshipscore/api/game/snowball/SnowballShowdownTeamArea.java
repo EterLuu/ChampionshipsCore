@@ -519,6 +519,6 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public String getWorldName() {
-        return gameConfig.resolveConfiguredWorld("snowball");
+        return gameConfig.getConfiguredWorld();
     }
 }

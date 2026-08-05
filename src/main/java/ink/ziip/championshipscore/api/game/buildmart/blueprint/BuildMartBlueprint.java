@@ -167,8 +167,4 @@ public class BuildMartBlueprint {
         return new BuildMartBlueprint(id, displayName, stars, blocks);
     }
 
-    /** Convenience: the literal star glyphs for display, e.g. {@code ★★★}. */
-    public String starString() {
-        return "★".repeat(Math.max(0, stars));
-    }
 }

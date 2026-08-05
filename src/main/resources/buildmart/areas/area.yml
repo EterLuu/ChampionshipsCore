@@ -1,14 +1,20 @@
 dont-edit-this:
-  version: 5
+  version: 6
 name: "area"
 world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
 # Round duration in seconds. Default 12 minutes.
 timer: 720
 # Preparation countdown before the round starts, in seconds.
 prepare-time: 10
 # Number of internal team bases stamped from the single base template.
 base-count: 8
-# Filled by prepare from hub.schem/base.schem. Missing values keep the legacy 500-block ring.
+# Filled by prepare from hub.schem/base.schem.
 copy-layout: {}
 # Bounding box of the whole arena (hub + bases). This is the gameplay zone used for player/spectator
 # boundary checks and must be configured before the map can start.

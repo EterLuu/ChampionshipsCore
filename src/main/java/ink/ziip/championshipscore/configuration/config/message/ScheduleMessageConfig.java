@@ -26,7 +26,7 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
     /** Version 3 onward uses full visual-refresh templates rather than merging individual old panels. */
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) {
-        loadFileOptions();
+        super.loadFromOutdatedConfiguration(new YamlConfiguration());
     }
 
     @ConfigOption(path = "parkour-tag")

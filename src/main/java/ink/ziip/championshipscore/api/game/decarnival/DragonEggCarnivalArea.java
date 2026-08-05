@@ -661,7 +661,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
     }
 
     public String getWorldName() {
-        return gameConfig.resolveConfiguredWorld("decarnival_" + gameConfig.getAreaName());
+        return gameConfig.getConfiguredWorld();
     }
 
     @Override

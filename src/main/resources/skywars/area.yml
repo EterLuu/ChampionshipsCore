@@ -1,6 +1,13 @@
 dont-edit-this:
-  version: 5
+  version: 6
 name: area
+world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
 # "inline" reads rules from this map file; any other id resolves skywars/variants/<id>.yml.
 variant: inline
 timer: 960

@@ -1,9 +1,15 @@
 dont-edit-this:
-  version: 6
+  version: 7
 world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
 timer: 60
 copy-count: 8
-# Filled by prepare from arena.schem. Missing values keep the legacy 256-block row for old maps.
+# Filled by prepare from arena.schem.
 copy-layout: {}
 area-pos1:
 area-pos2:

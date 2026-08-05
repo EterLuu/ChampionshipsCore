@@ -231,33 +231,6 @@ public abstract class BaseGameInstance {
         return points;
     }
 
-    public String getPlayerPointsRank() {
-        ArrayList<Map.Entry<UUID, Double>> list;
-        list = new ArrayList<>(playerPoints.entrySet());
-        list.sort(Map.Entry.comparingByValue());
-
-        Collections.reverse(list);
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append(MessageConfig.GAME_BOARD_BAR
-                        .replace("%game%", gameTypeEnum.toString()))
-                .append("\n");
-
-        int i = 1;
-        for (Map.Entry<UUID, Double> entry : list) {
-            String row = MessageConfig.RANK_PLAYER_BOARD_ROW
-                    .replace("%player_rank%", String.valueOf(i))
-                    .replace("%player%", Utils.formatPlayerName(entry.getKey()))
-                    .replace("%player_point%", Utils.formatPoints(entry.getValue()));
-
-            stringBuilder.append(row).append("\n");
-            i++;
-        }
-
-        return stringBuilder.toString();
-    }
-
     public GameStageEnum getGameStageEnum() {
         synchronized (this) {
             return this.gameStageEnum;
@@ -646,11 +619,6 @@ public abstract class BaseGameInstance {
         }
     }
 
-    /** Available to resetArea implementations while resetGame is rebuilding the just-finished instance. */
-    protected final boolean isRoundTransitionPending() {
-        return roundTransitionPending;
-    }
-
     public boolean isIntroductionPhase() {
         return introductionPhase;
     }
@@ -782,11 +750,6 @@ public abstract class BaseGameInstance {
         sendActionBarToAllGamePlayers(MessageConfig.GAME_PREPARATION_COUNT_DOWN
                 .replace("%game%", gameTypeEnum.toString())
                 .replace("%time%", String.valueOf(Math.max(0, seconds))));
-    }
-
-    protected void announceGameStartSoon(String title, String subtitle) {
-        sendActionBarToAllGamePlayers(subtitle);
-        sendTitleToAllGamePlayers(title, subtitle);
     }
 
     /** Runs the default five-second final countdown. */
@@ -1188,8 +1151,6 @@ public abstract class BaseGameInstance {
     public abstract void changeGameModelForAllGamePlayers(GameMode gameMode);
 
     public abstract void setHealthForAllGamePlayers(double health);
-
-    public abstract void revokeAllGamePlayersAdvancements();
 
     public abstract void setFoodLevelForAllGamePlayers(int level);
 

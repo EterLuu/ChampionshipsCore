@@ -6,7 +6,6 @@ import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameI
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -38,6 +37,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
     private int timer;
     private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
+    private BukkitTask codySelectionTask;
     @Getter
     private UUID codyHolder;
 
@@ -66,6 +66,10 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
             startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
+        if (codySelectionTask != null) {
+            codySelectionTask.cancel();
+            codySelectionTask = null;
+        }
 
         calculatePoints();
 
@@ -84,19 +88,20 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
     }
 
     protected void calculatePoints() {
-        List<Map.Entry<UUID, Long>> sortedEntries = new ArrayList<>(playerDeadTimes.entrySet());
-        Long time = System.currentTimeMillis();
+        long time = System.currentTimeMillis();
         List<UUID> alivePlayers = new ArrayList<>(gamePlayers);
         alivePlayers.removeAll(deathPlayer);
         for (UUID uuid : alivePlayers) {
             playerDeadTimes.put(uuid, time);
         }
+        List<Map.Entry<UUID, Long>> sortedEntries = new ArrayList<>(playerDeadTimes.entrySet());
         sortedEntries.sort((entry1, entry2) -> Long.compare(entry2.getValue(), entry1.getValue()));
         int rank = 0;
-        long curTime = System.currentTimeMillis();
+        Long previousTime = null;
         for (Map.Entry<UUID, Long> entry : sortedEntries) {
-            if (entry.getValue() < curTime) {
+            if (!entry.getValue().equals(previousTime)) {
                 rank++;
+                previousTime = entry.getValue();
             }
 
             if (rank == 1) {
@@ -116,8 +121,14 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
     @Override
     public void resetArea() {
         deathPlayer.clear();
+        playerDeadTimes.clear();
+        playerCodyChangeTimes.clear();
         teamDeathPlayers.clear();
         codyHolder = null;
+        if (codySelectionTask != null) {
+            codySelectionTask.cancel();
+            codySelectionTask = null;
+        }
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
@@ -135,7 +146,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public String getWorldName() {
-        return gameConfig.resolveConfiguredWorld(gameConfig.getAreaName());
+        return gameConfig.getConfiguredWorld();
     }
 
     @Override
@@ -192,7 +203,6 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                 }
             } else {
                 addBossBarPlayer("escaper", player);
-                player.getInventory().setBoots(player.getInventory().getBoots());
             }
         }
 
@@ -272,10 +282,26 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
             return;
         }
 
-        UUID holder = alivePlayers.get(new Random().nextInt(alivePlayers.size()));
-        while (!changeCodyHolder(holder, first)) {
-            holder = alivePlayers.get(new Random().nextInt(alivePlayers.size()));
+        long now = System.currentTimeMillis();
+        List<UUID> eligible = alivePlayers.stream()
+                .filter(uuid -> !uuid.equals(codyHolder))
+                .filter(uuid -> now - playerCodyChangeTimes.getOrDefault(uuid, 0L) >= 1500L)
+                .toList();
+        if (eligible.isEmpty()) {
+            long remainingMillis = alivePlayers.stream()
+                    .mapToLong(uuid -> Math.max(1L,
+                            1500L - (now - playerCodyChangeTimes.getOrDefault(uuid, 0L))))
+                    .min().orElse(50L);
+            if (codySelectionTask != null) codySelectionTask.cancel();
+            long delayTicks = Math.max(1L, (remainingMillis + 49L) / 50L);
+            codySelectionTask = scheduler.runTaskLater(plugin, () -> {
+                codySelectionTask = null;
+                selectCodyHolder(first);
+            }, delayTicks);
+            return;
         }
+        UUID holder = eligible.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(eligible.size()));
+        if (!changeCodyHolder(holder, first)) return;
         addPlayerPoints(holder, 10);
     }
 
@@ -307,7 +333,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
             Player codyHolderPlayer = Bukkit.getPlayer(codyHolder);
             if (codyHolderPlayer != null) {
                 codyHolderPlayer.getInventory().clear();
-                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(codyHolder);
                 if (championshipTeam != null)
                     codyHolderPlayer.getInventory().setBoots(championshipTeam.getBoots());
                 codyHolderPlayer.playSound(codyHolderPlayer, Sound.ENTITY_ENDER_PEARL_THROW, 1, 0);

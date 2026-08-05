@@ -8,7 +8,6 @@ import ink.ziip.championshipscore.api.game.arena.RowArenaGrid;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.util.Utils;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
@@ -31,7 +30,7 @@ public class TNTRunConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 3;
+        return 4;
     }
 
     @ConfigOption(path = "name")
@@ -49,14 +48,9 @@ public class TNTRunConfig extends BaseGameConfig {
     @ConfigOption(path = "spectator-spawn-point")
     private Location spectatorSpawnPoint;
 
-    /**
-     * Legacy explicit list of per-copy spawn points (one per hand-built map copy). Kept only as a fallback
-     * for areas configured before the prepare/template model; new areas leave it empty and use
-     * {@link #copySpawn} + {@link #copies}. Read via {@link #getPlayerSpawnPoints()}, never the raw field.
-     */
-    @Getter(AccessLevel.NONE)
-    @ConfigOption(path = "player-spawn-points")
-    private List<String> playerSpawnPoints;
+    /** Optional explicit per-copy spawns; when empty, stamped copies derive them from copy 0. */
+    @ConfigOption(path = "spawn-points")
+    private List<String> spawnPoints;
 
     /** Copy-0 spawn point; every copy's spawn is this shifted by {@link TNTRunLayout#delta(int)}. */
     @ConfigOption(path = "copy-spawn", nullable = true)
@@ -91,7 +85,7 @@ public class TNTRunConfig extends BaseGameConfig {
 
     /**
      * Per-copy bounding boxes (one tight box per sub-arena), derived from the grid + {@link #copySize}.
-     * Empty when not prepared (legacy areas fall back to the single {@code area-pos} box). Used so each
+     * Empty when the map uses its configured aggregate {@code area-pos} box. Used so each
      * copy's players are bounded by their own sub-arena rather than one box spanning the gaps.
      */
     public List<BoundingBox> getCopyBoxes() {
@@ -101,8 +95,8 @@ public class TNTRunConfig extends BaseGameConfig {
 
     /**
      * Effective per-copy spawn points the game spreads players across. When the prepare/template fields
-     * ({@link #copySpawn} + {@link #copies}) are set they are derived from the grid; otherwise this falls
-     * back to the legacy hand-configured {@link #playerSpawnPoints} list.
+     * ({@link #copySpawn} + {@link #copies}) are set they are derived from the grid; otherwise explicit
+     * {@link #spawnPoints} are used.
      */
     public List<String> getPlayerSpawnPoints() {
         if (copySpawn != null && copies > 0) {
@@ -112,6 +106,6 @@ public class TNTRunConfig extends BaseGameConfig {
             }
             return derived;
         }
-        return playerSpawnPoints;
+        return spawnPoints;
     }
 }

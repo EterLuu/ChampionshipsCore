@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS `team_members`
 CREATE TABLE IF NOT EXISTS `player_points`
 (
     `id`       INTEGER            NOT NULL AUTO_INCREMENT,
+    `transactionId` VARCHAR(36)   NULL,
     `uuid`     VARCHAR(255)       NOT NULL,
     `username` VARCHAR(255)       NOT NULL,
     `teamId`   INTEGER            NOT NULL,
@@ -47,7 +48,8 @@ CREATE TABLE IF NOT EXISTS `player_points`
     `time`     VARCHAR(255)       NOT NULL,
     `valid`    INTEGER            NOT NULL DEFAULT 1,
 
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_player_points_transaction_id` (`transactionId`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

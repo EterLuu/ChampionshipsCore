@@ -9,7 +9,6 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -233,15 +232,6 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
                 player.playNote(player.getLocation(), instrument, note);
-        }
-    }
-
-    @Override
-    public void revokeAllGamePlayersAdvancements() {
-        for (UUID uuid : gamePlayers) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null)
-                Utils.revokeAllAdvancements(player);
         }
     }
 

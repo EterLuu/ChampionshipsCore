@@ -137,14 +137,6 @@ public class GameInstanceHandler extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerDropItem(PlayerDropItemEvent event) {
-        Player player = event.getPlayer();
-        if (isProtectedParticipant(player)) {
-            event.setCancelled(true);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPickupItem(EntityPickupItemEvent event) {
         if (event.getEntity() instanceof Player player) {
             if (isProtectedParticipant(player)) {

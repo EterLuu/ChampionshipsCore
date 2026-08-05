@@ -34,19 +34,15 @@ public class BuildMartConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 5;
+        return 6;
     }
 
     @ConfigOption(path = "name")
     private String areaName;
 
-    /** Physical map world. Empty legacy configs continue to use the historical world. */
+    /** Bound by the prepare flow before publication; blank in a new draft template. */
     @ConfigOption(path = "world-name", nullable = true)
     private String worldName;
-
-    public String resolveWorldName() {
-        return worldName == null || worldName.isBlank() ? "buildmart" : worldName;
-    }
 
     /** Round duration in seconds. Default 12 minutes. */
     @ConfigOption(path = "timer")

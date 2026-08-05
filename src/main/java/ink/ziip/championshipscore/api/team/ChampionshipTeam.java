@@ -266,10 +266,6 @@ public class ChampionshipTeam {
         return Utils.translateColorCodes(colorCode + name);
     }
 
-    public String getColoredColor() {
-        return Utils.translateColorCodes(colorCode);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == this)

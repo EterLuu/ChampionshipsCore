@@ -532,8 +532,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     /**
      * In-bounds means inside some copy's own box. With the prepare/template model each stamped copy is a
      * self-contained sub-arena, so the play area is the set of per-copy boxes (not one box spanning the
-     * void gaps between them) — fixing the old single-{@code area-pos} limitation. Legacy areas without a
-     * stamped grid fall back to the inherited single-box check.
+     * void gaps between them). Maps without per-copy boxes use their configured aggregate area boundary.
      */
     @Override
     public boolean notInArea(Location location) {
@@ -561,6 +560,6 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     }
 
     public String getWorldName() {
-        return gameConfig.resolveConfiguredWorld("tntrun_" + gameConfig.getAreaName());
+        return gameConfig.getConfiguredWorld();
     }
 }

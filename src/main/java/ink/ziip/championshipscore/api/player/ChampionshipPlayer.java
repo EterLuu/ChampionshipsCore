@@ -10,7 +10,6 @@ import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.util.Utils;
-import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -26,31 +25,17 @@ import java.util.UUID;
 public class ChampionshipPlayer {
     @NotNull
     private final UUID playerUUID;
-    @Nullable
-    @Getter
-    private Player player;
-    @Nullable
-    private OfflinePlayer offlinePlayer;
-
     protected ChampionshipPlayer(@NotNull UUID uuid) {
         this.playerUUID = uuid;
-
-        Player player = Bukkit.getPlayer(uuid);
-        if (player != null)
-            this.player = player;
-
-        this.offlinePlayer = Bukkit.getOfflinePlayer(uuid);
     }
 
-    public void updatePlayer() {
-        Player player = Bukkit.getPlayer(playerUUID);
-        if (player != null)
-            this.player = player;
-
-        this.offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
+    @Nullable
+    public Player getPlayer() {
+        return Bukkit.getPlayer(playerUUID);
     }
 
     public void sendActionBar(String content) {
+        Player player = getPlayer();
         if (player == null)
             return;
         ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
@@ -67,6 +52,7 @@ public class ChampionshipPlayer {
     }
 
     public void setRedScreen() {
+        Player player = getPlayer();
         PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
 
         if (player == null)
@@ -82,6 +68,7 @@ public class ChampionshipPlayer {
     }
 
     public void removeRedScreen() {
+        Player player = getPlayer();
         if (player == null)
             return;
 
@@ -93,24 +80,28 @@ public class ChampionshipPlayer {
     }
 
     public void sendMessage(String content) {
+        Player player = getPlayer();
         if (player == null)
             return;
         player.sendMessage(Utils.translateColorCodes(setPlaceholders(content)));
     }
 
     public void setLevel(int level) {
+        Player player = getPlayer();
         if (player == null)
             return;
         player.setLevel(level);
     }
 
     public void playSound(Sound sound, float volume, float pitch) {
+        Player player = getPlayer();
         if (player == null)
             return;
         player.playSound(player.getLocation(), sound, volume, pitch);
     }
 
     public void sendTitle(String title, String subTitle) {
+        Player player = getPlayer();
         if (player == null)
             return;
         // legacySection() decodes the §-prefixed codes (incl. §x hex) that translateColorCodes emits.
@@ -124,15 +115,13 @@ public class ChampionshipPlayer {
     }
 
     private String setPlaceholders(String content) {
-        if (offlinePlayer == null)
-            return "";
-
-        // Using offlinePlayer to avoid issues
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
         return Utils.translateColorCodes(PlaceholderAPI.setPlaceholders(offlinePlayer, content));
     }
 
     @Nullable
     public ChampionshipTeam getChampionshipTeam() {
+        Player player = getPlayer();
         if (player == null)
             return null;
         return ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);

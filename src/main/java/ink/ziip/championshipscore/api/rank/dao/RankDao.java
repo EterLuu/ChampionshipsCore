@@ -13,7 +13,7 @@ public interface RankDao {
 
     List<PlayerPointEntry> getTeamPlayerPoints(int teamId);
 
-    void addPlayerPoint(PlayerPointEntry playerPointEntry);
+    boolean addPlayerPoint(PlayerPointEntry playerPointEntry);
 
     List<GameStatusEntry> getGameStatusList();
 

@@ -16,7 +16,6 @@ import ink.ziip.championshipscore.api.object.game.skywars.SkyWarsShrink;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -871,6 +870,6 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     }
 
     public String getWorldName() {
-        return gameConfig.resolveConfiguredWorld("skywars_" + gameConfig.getAreaName());
+        return gameConfig.getConfiguredWorld();
     }
 }

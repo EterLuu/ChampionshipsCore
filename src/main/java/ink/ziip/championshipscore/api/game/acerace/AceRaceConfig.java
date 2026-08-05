@@ -90,7 +90,7 @@ public class AceRaceConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 15;
+        return 16;
     }
 
     @Override

@@ -19,7 +19,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
 public class PlayerListener extends BaseListener {
@@ -59,13 +58,6 @@ public class PlayerListener extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        PlayerManager playerManager = ChampionshipsCore.getInstance().getPlayerManager();
-        playerManager.getPlayer(player).updatePlayer();
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent event) {
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getUniqueId());
         String name = event.getName();
@@ -87,7 +79,7 @@ public class PlayerListener extends BaseListener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         PlayerManager playerManager = ChampionshipsCore.getInstance().getPlayerManager();
-        playerManager.getPlayer(player).updatePlayer();
+        playerManager.getPlayer(player);
         playerManager.updatePlayer(player);
 
         // Let normal join/teleport notices finish first, then restore a recent result that may have

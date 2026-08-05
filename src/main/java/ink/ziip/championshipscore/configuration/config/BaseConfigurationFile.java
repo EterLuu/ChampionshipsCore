@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -38,9 +39,6 @@ public abstract class BaseConfigurationFile {
     @Getter
     protected YamlConfiguration configuration;
     protected Path configurationPath;
-    /** Base directory {@link #getFileName()} resolves against; remembered so version migration can
-     *  re-initialize from the same root (game configs carry a folder prefix in their file name). */
-    protected Path configurationBasePath;
     // True while loading the bundled resource template (see loadDefaultOptions); null placeholders in
     // the template are expected, so "missing field" warnings are suppressed until the real file loads.
     protected boolean loadingDefaults = false;
@@ -51,7 +49,6 @@ public abstract class BaseConfigurationFile {
      * @param pluginFolder the plugin folder path
      */
     public void initializeConfiguration(Path pluginFolder) {
-        this.configurationBasePath = pluginFolder;
         loadDefaultOptions();
 
         configurationPath = saveDefaultConfigurationFile(pluginFolder);
@@ -290,34 +287,22 @@ public abstract class BaseConfigurationFile {
                     String.format("配置文件=%s 版本=%d -> %d", getFileName(),
                             configuration.getInt("dont-edit-this.version", -1), getLatestVersion())));
 
-            Path outdatedPath = configurationPath.getParent();
-            String simpleFileName = configurationPath.getFileName().toString();
-            String outdatedFileName = simpleFileName + ".outdated";
-            int counter = 1;
-            while (outdatedPath.resolve(outdatedFileName).toFile().exists()) {
-                outdatedFileName = simpleFileName + ".outdated" + counter;
-                counter++;
-            }
-            if (configurationPath.toFile().renameTo(outdatedPath.resolve(outdatedFileName).toFile())) {
-                // Re-create the fresh template from the same base root used originally: game config
-                // file names include their folder prefix, so the parent directory alone is wrong.
-                initializeConfiguration(configurationBasePath != null ? configurationBasePath : outdatedPath);
-
-                try {
-                    YamlConfiguration outdatedConfiguration = YamlConfiguration.loadConfiguration(outdatedPath.resolve(outdatedFileName).toFile());
-
-                    loadFromOutdatedConfiguration(outdatedConfiguration);
-
-                    outdated = false;
-                    plugin.getLogger().info(Utils.formatModuleLog("Config", "迁移",
-                            "配置文件=" + getFileName() + " 迁移完成"));
-                } catch (Exception exception) {
-                    plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("Config", "迁移",
-                            "配置文件=" + getFileName() + " 旧版本读取失败"), exception);
-                }
-            } else
+            YamlConfiguration previousConfiguration = configuration;
+            try (InputStream resource = plugin.getResource(getResourceName())) {
+                if (resource == null)
+                    throw new IOException("Missing configuration resource " + getResourceName());
+                configuration = YamlConfiguration.loadConfiguration(
+                        new InputStreamReader(resource, java.nio.charset.StandardCharsets.UTF_8));
+                configuration.options().indent(2);
+                loadFromOutdatedConfiguration(previousConfiguration);
+                outdated = false;
+                plugin.getLogger().info(Utils.formatModuleLog("Config", "迁移",
+                        "配置文件=" + getFileName() + " 已原位更新完成"));
+            } catch (Exception exception) {
+                configuration = previousConfiguration;
                 plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("Config", "迁移",
-                        "配置文件=" + getFileName() + " 无法重命名为 " + outdatedFileName));
+                        "配置文件=" + getFileName() + " 原位更新失败"), exception);
+            }
         }
     }
 

@@ -71,8 +71,7 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
     public SetupTarget getSetupTarget(GameTypeEnum gameType, String name) {
         T representative = areas.get(name);
         if (representative == null) return null;
-        return new MapSetupTarget(plugin, gameType, name, representative.getGameConfig(),
-                representative.getWorldName(), this);
+        return new MapSetupTarget(plugin, gameType, name, representative.getGameConfig(), this);
     }
 
     public boolean canEditMap(String name) {
@@ -85,10 +84,6 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
                         == ink.ziip.championshipscore.api.object.stage.GameStageEnum.WAITING);
     }
 
-    protected boolean isWorldAlreadyMapped(String worldName) {
-        return areas.values().stream().anyMatch(instance -> worldName.equals(instance.getWorldName()));
-    }
-
     public boolean bindMapWorld(String name, World world) {
         T representative = areas.get(name);
         if (representative == null || !canEditMap(name)) return false;
@@ -99,12 +94,6 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
         representative.getGameConfig().bindConfiguredWorld(world.getName());
         representative.getGameConfig().saveOptions();
         return world.getName().equals(representative.getWorldName());
-    }
-
-    /** Temporary storage bridge while template persistence is moved fully out of GameInstance. */
-    public boolean saveSetupMap(String name, World.Environment environment) {
-        T representative = areas.get(name);
-        return representative != null && representative.saveMap(environment);
     }
 
     /** Loads and takes ownership of a void arena world for this enabled game. */

@@ -687,24 +687,6 @@ public class GameManager extends BaseManager {
         return List.copyOf(selected);
     }
 
-    public String getPlayerCurrentAreaName(UUID uuid) {
-        BaseGameInstance baseArea = playerStatus.get(uuid);
-
-        if (baseArea != null)
-            return baseArea.getGameConfig().getConfigName();
-
-        baseArea = playerSpectatorStatus.get(uuid);
-
-        if (baseArea != null)
-            return baseArea.getGameConfig().getConfigName();
-
-        RoundTransitionHold hold = roundTransitionHolds.get(uuid);
-        if (hold != null)
-            return hold.instance().getGameConfig().getConfigName();
-
-        return "";
-    }
-
     public BaseGameInstance getTeamCurrenArea(ChampionshipTeam championshipTeam) {
         BaseGameInstance active = teamStatus.get(championshipTeam);
         if (active != null) return active;
@@ -759,30 +741,6 @@ public class GameManager extends BaseManager {
         player.setGameMode(GameMode.ADVENTURE);
         player.setLevel(0);
         return true;
-    }
-
-    /** Releases stranded holds when a schedule is stopped or cannot start its next round. */
-    public void releaseRoundTransitionHolds(@NotNull GameTypeEnum gameType) {
-        List<UUID> ids = roundTransitionHolds.entrySet().stream()
-                .filter(entry -> entry.getValue().instance().getGameTypeEnum() == gameType)
-                .map(Map.Entry::getKey)
-                .toList();
-        for (UUID uuid : ids) {
-            roundTransitionHolds.remove(uuid);
-            Player player = org.bukkit.Bukkit.getPlayer(uuid);
-            if (player != null && CCConfig.LOBBY_LOCATION != null
-                    && CCConfig.LOBBY_LOCATION.getWorld() != null) {
-                player.teleport(CCConfig.LOBBY_LOCATION);
-                player.setGameMode(GameMode.ADVENTURE);
-                player.setLevel(0);
-            }
-        }
-    }
-
-    public void removePlayerStatusByTeam(ChampionshipTeam championshipTeam) {
-        for (UUID uuid : championshipTeam.getMembers()) {
-            playerStatus.remove(uuid);
-        }
     }
 
     public void teamGameEndHandler(TeamGameEndEvent event) {
@@ -874,22 +832,6 @@ public class GameManager extends BaseManager {
             return false;
         BaseGameInstance active = getCurrentSpectatorFocus();
         return active != null && spectateArea(player, active);
-    }
-
-    /** Releases every spectator attached to one game's instances without executing player commands. */
-    public synchronized void releaseSpectatorsForGame(@NotNull GameTypeEnum gameType) {
-        List<Map.Entry<UUID, BaseGameInstance>> entries = playerSpectatorStatus.entrySet().stream()
-                .filter(entry -> entry.getValue().getGameTypeEnum() == gameType)
-                .toList();
-        for (Map.Entry<UUID, BaseGameInstance> entry : entries) {
-            Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
-            if (player != null) entry.getValue().removeSpectator(player);
-            else entry.getValue().onlyRemoveSpectatorFromList(entry.getKey());
-            playerSpectatorStatus.remove(entry.getKey(), entry.getValue());
-        }
-        BaseGameInstance focus = spectatorFocus;
-        if (focus != null && focus.getGameTypeEnum() == gameType) spectatorFocus = null;
-        releaseRoundTransitionHolds(gameType);
     }
 
     /** Releases spectators attached to event-owned instances only; standalone games are untouched. */

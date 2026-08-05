@@ -16,6 +16,7 @@ public class DatabaseManager extends BaseManager {
     private static final String DATA_POOL_NAME = "ChampionshipsCoreHikariPool";
     private String driverClass;
     private HikariDataSource dataSource;
+    private volatile boolean shuttingDown;
 
     public DatabaseManager(@NotNull ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -23,6 +24,7 @@ public class DatabaseManager extends BaseManager {
 
     @Override
     public void load() {
+        shuttingDown = false;
         if (CCConfig.DATABASE_TYPE.equals("MARIADB")) {
             this.driverClass = "org.mariadb.jdbc.Driver";
             // The pool holds connections open for their whole lifetime, so the driver's
@@ -47,6 +49,7 @@ public class DatabaseManager extends BaseManager {
 
     @Override
     public void unload() {
+        shuttingDown = true;
         if (dataSource != null) {
             if (!dataSource.isClosed()) {
                 dataSource.close();
@@ -55,6 +58,8 @@ public class DatabaseManager extends BaseManager {
     }
 
     public void initialize() throws IllegalStateException {
+        if (shuttingDown)
+            throw new IllegalStateException("Database is shutting down");
         dataSource = new HikariDataSource();
 
         dataSource.setPoolName(DATA_POOL_NAME);
@@ -85,11 +90,43 @@ public class DatabaseManager extends BaseManager {
                         statement.execute(executeStatement);
                     }
                 }
+                ensurePointTransactionSchema(connection);
             } catch (SQLException | IOException e) {
                 throw new IllegalStateException("Failed to create database tables.", e);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to establish a connection to the MySQL database.", e);
+        }
+    }
+
+    private void ensurePointTransactionSchema(@NotNull Connection connection) throws SQLException {
+        DatabaseMetaData metadata = connection.getMetaData();
+        boolean hasColumn;
+        try (ResultSet columns = metadata.getColumns(connection.getCatalog(), null,
+                "player_points", "transactionId")) {
+            hasColumn = columns.next();
+        }
+        if (!hasColumn) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("ALTER TABLE `player_points` ADD COLUMN `transactionId` VARCHAR(36) NULL AFTER `id`");
+            }
+        }
+
+        boolean hasUniqueIndex = false;
+        try (ResultSet indexes = metadata.getIndexInfo(connection.getCatalog(), null,
+                "player_points", true, false)) {
+            while (indexes.next()) {
+                if ("uq_player_points_transaction_id".equalsIgnoreCase(indexes.getString("INDEX_NAME"))) {
+                    hasUniqueIndex = true;
+                    break;
+                }
+            }
+        }
+        if (!hasUniqueIndex) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("ALTER TABLE `player_points` ADD UNIQUE INDEX "
+                        + "`uq_player_points_transaction_id` (`transactionId`)");
+            }
         }
     }
 
@@ -113,6 +150,10 @@ public class DatabaseManager extends BaseManager {
     }
 
     public Connection getConnection() throws SQLException {
+        if (shuttingDown)
+            throw new SQLException("ChampionshipsCore database is shutting down");
+        if (dataSource == null)
+            throw new SQLException("ChampionshipsCore database has not been initialized");
         if (!dataSource.isClosed())
             return dataSource.getConnection();
 

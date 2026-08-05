@@ -112,11 +112,6 @@ public class WorldManager extends BaseManager {
         return new File(getDimensionsContainer(), folder);
     }
 
-    public void createEmptyWorld(String name, World.Environment environment) {
-        if (Bukkit.getWorld(name) == null)
-            loadWorld(name, environment, false);
-    }
-
     /**
      * Loads an arena world with the standard minigame profile. Existing chunks are preserved; new
      * chunks are void. Natural mob/animal spawning is disabled, while entities deliberately spawned

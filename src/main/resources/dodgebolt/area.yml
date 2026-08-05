@@ -1,6 +1,7 @@
 dont-edit-this:
-  version: 3
+  version: 4
 name: "area"
+world-name:
 area-pos1:
 area-pos2:
 spectator-area-pos1:

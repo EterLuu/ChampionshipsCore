@@ -13,7 +13,6 @@ import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Firework;
@@ -940,7 +939,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     }
 
     @Override public Location getSpectatorSpawnLocation() { return getGameConfig().getSpectatorSpawnPoint(); }
-    @Override public String getWorldName() { return getGameConfig().resolveConfiguredWorld("dodgebolt_" + getGameConfig().getAreaName()); }
+    @Override public String getWorldName() { return getGameConfig().getConfiguredWorld(); }
     @Override public DodgeboltConfig getGameConfig() { return (DodgeboltConfig) gameConfig; }
     @Override public DodgeboltHandler getGameHandler() { return (DodgeboltHandler) gameHandler; }
     @Override public void addPlayerPointsToDatabase() { }

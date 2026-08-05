@@ -48,6 +48,7 @@ public class RankManager extends BaseManager {
     private final Queue<Runnable> rankTaskQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean rankTaskRunning = new AtomicBoolean();
     private final AtomicBoolean periodicRefreshPending = new AtomicBoolean();
+    private final PendingPointTransactionStore pendingPointTransactions;
     @Getter
     private List<Map.Entry<ChampionshipTeam, Double>> teamLeaderboard = new ArrayList<>();
     @Getter
@@ -62,10 +63,19 @@ public class RankManager extends BaseManager {
 
     public RankManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
+        pendingPointTransactions = new PendingPointTransactionStore(championshipsCore);
     }
 
     @Override
     public void load() {
+        List<PlayerPointEntry> pendingEntries = pendingPointTransactions.load();
+        for (PlayerPointEntry entry : pendingEntries) {
+            enqueueRankTask(() -> commitPointTransaction(entry));
+        }
+        if (!pendingEntries.isEmpty()) {
+            plugin.getLogger().info(Utils.formatModuleLog("Rank", "暂存事务",
+                    "恢复待提交积分事务=" + pendingEntries.size()));
+        }
         updateTask = scheduler.runTaskTimer(plugin, this::queuePeriodicRefresh, 0, 100L);
     }
 
@@ -103,18 +113,27 @@ public class RankManager extends BaseManager {
         return 0D;
     }
 
-    public void deleteTeamGamePoints(@NotNull ChampionshipTeam championshipTeam, GameTypeEnum gameType) {
-        enqueueRankTask(() -> rankDao.deleteTeamPoints(championshipTeam.getId(), gameType));
-    }
-
     private void updateTeamPoints() {
         gameTotalPoints.clear();
         for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             gameTotalPoints.put(gameTypeEnum, 0D);
         }
 
+        Map<ChampionshipTeam, List<PlayerPointEntry>> entriesByTeam = new HashMap<>();
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-            teamPoints.put(championshipTeam, getTeamPoints(championshipTeam));
+            List<PlayerPointEntry> entries = rankDao.getTeamPlayerPoints(championshipTeam.getId());
+            entriesByTeam.put(championshipTeam, entries);
+            for (PlayerPointEntry entry : entries) {
+                if (entry.getValid() == 1 && isScoringGame(entry.getGame())) {
+                    addTeamTotalPoints(entry.getGame(), entry.getPoints());
+                }
+            }
+        }
+
+        updateGameWeights();
+
+        for (Map.Entry<ChampionshipTeam, List<PlayerPointEntry>> entry : entriesByTeam.entrySet()) {
+            teamPoints.put(entry.getKey(), calculateTeamPoints(entry.getValue()));
         }
         for (ChampionshipTeam championshipTeam : teamPoints.keySet()) {
             if (!plugin.getTeamManager().getTeamList().contains(championshipTeam))
@@ -192,6 +211,10 @@ public class RankManager extends BaseManager {
 
         playerLeaderboard = list;
 
+    }
+
+    /** Rebuilds game weights from the complete raw-score snapshot before weighted team totals are calculated. */
+    private void updateGameWeights() {
         gameWeight.clear();
         for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             try {
@@ -280,6 +303,7 @@ public class RankManager extends BaseManager {
             return;
         if (championshipTeam != null) {
             PlayerPointEntry playerPointEntry = PlayerPointEntry.builder()
+                    .transactionId(UUID.randomUUID())
                     .uuid(playerEntry.getUuid())
                     .username(playerEntry.getName())
                     .teamId(championshipTeam.getId())
@@ -293,11 +317,18 @@ public class RankManager extends BaseManager {
                     .time(Utils.getCurrentTimeString())
                     .build();
 
-            if (plugin.isLoaded()) {
-                enqueueRankTask(() -> rankDao.addPlayerPoint(playerPointEntry));
-            } else {
-                rankDao.addPlayerPoint(playerPointEntry);
+            if (!pendingPointTransactions.stage(playerPointEntry)) {
+                plugin.getLogger().severe(Utils.formatModuleLog("Rank", "暂存事务",
+                        "积分未入队：无法持久化事务=" + playerPointEntry.getTransactionId()));
+                return;
             }
+            enqueueRankTask(() -> commitPointTransaction(playerPointEntry));
+        }
+    }
+
+    private void commitPointTransaction(@NotNull PlayerPointEntry entry) {
+        if (rankDao.addPlayerPoint(entry)) {
+            pendingPointTransactions.complete(entry.getTransactionId());
         }
     }
 
@@ -461,16 +492,13 @@ public class RankManager extends BaseManager {
         gameTotalPoints.put(gameTypeEnum, prevPoints + points);
     }
 
-    private double getTeamPoints(ChampionshipTeam championshipTeam) {
-        List<PlayerPointEntry> playerPointEntries = rankDao.getTeamPlayerPoints(championshipTeam.getId());
-
+    private double calculateTeamPoints(List<PlayerPointEntry> playerPointEntries) {
         double points = 0;
         for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
             for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                 if (playerPointEntry.getValid() == 1 && playerPointEntry.getGame() == gameTypeEnum) {
                     if (CCConfig.WEIGHTED_SCORE) {
-                        addTeamTotalPoints(playerPointEntry.getGame(), playerPointEntry.getPoints());
                         points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * getGameWeight(gameTypeEnum);
                     } else
                         points += playerPointEntry.getPoints();
@@ -504,7 +532,7 @@ public class RankManager extends BaseManager {
 
         double points = 0;
         for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-            if (playerPointEntry.getGame() == gameTypeEnum) {
+            if (playerPointEntry.getValid() == 1 && playerPointEntry.getGame() == gameTypeEnum) {
                 points += playerPointEntry.getPoints();
             }
         }

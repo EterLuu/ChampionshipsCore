@@ -8,16 +8,15 @@ import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A map definition being edited. It owns configuration and world identity; the manager is used only as a
- * transition bridge for idle checks and template persistence, never as the setup target itself.
+ * A map definition being edited. It owns configuration and world identity while its manager resolves the
+ * current representative instance used for idle checks and template persistence.
  */
 public record MapSetupTarget(@NotNull ChampionshipsCore plugin, @NotNull GameTypeEnum gameType,
                              @NotNull String name, @NotNull BaseGameConfig config,
-                             @NotNull String worldName,
                              @NotNull BaseGameInstanceManager<?> manager) implements SetupTarget {
     @Override
     public @NotNull String worldName() {
-        return config.resolveConfiguredWorld(worldName);
+        return config.getConfiguredWorld();
     }
 
     @Override
@@ -32,6 +31,7 @@ public record MapSetupTarget(@NotNull ChampionshipsCore plugin, @NotNull GameTyp
 
     @Override
     public boolean saveMap(@NotNull World.Environment environment) {
-        return manager.saveSetupMap(name, environment);
+        ink.ziip.championshipscore.api.game.instance.BaseGameInstance representative = manager.getArea(name);
+        return representative != null && representative.saveMap(environment);
     }
 }

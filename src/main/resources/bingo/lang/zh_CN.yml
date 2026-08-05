@@ -189,8 +189,6 @@ card:
   completed_by: "&7完成者："
   completed_at: "&7完成时间：&f{0}"
   occupied_by: "&7已被占据"
-  voided: "&8已作废"
-  hidden: "&8&l？？？"
 compass:
   item_name: "{0} &f传送罗盘"
   item_hint: "&7右键打开队友传送菜单"

@@ -82,32 +82,6 @@ public final class BingoCard {
         return lines;
     }
 
-    /**
-     * Geometry of every line (rows, columns, both diagonals) as arrays of cell indices, independent of
-     * any team's progress. Used by stalemate detection to test which lines a team could still complete.
-     */
-    public List<int[]> allLines() {
-        List<int[]> lines = new ArrayList<>();
-        int n = size.size;
-        for (int y = 0; y < n; y++) {
-            int[] row = new int[n];
-            for (int x = 0; x < n; x++) row[x] = n * y + x;
-            lines.add(row);
-        }
-        for (int x = 0; x < n; x++) {
-            int[] col = new int[n];
-            for (int y = 0; y < n; y++) col[y] = n * y + x;
-            lines.add(col);
-        }
-        int[] diag1 = new int[n];
-        for (int i = 0; i < n; i++) diag1[i] = i * (n + 1);
-        lines.add(diag1);
-        int[] diag2 = new int[n];
-        for (int i = 0; i < n; i++) diag2[i] = (i + 1) * (n - 1);
-        lines.add(diag2);
-        return lines;
-    }
-
     /** Grid indices of cells the team has completed. Used for non-line win highlighting. */
     public int[] completedIndices(@NotNull String teamId) {
         int[] tmp = new int[tasks.size()];

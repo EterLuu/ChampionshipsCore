@@ -231,10 +231,6 @@ public class VoteManager extends BaseManager {
         voteMenu.open(player);
     }
 
-    public boolean isVoting() {
-        return vote;
-    }
-
     int getRemainingSeconds() {
         return timer;
     }

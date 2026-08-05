@@ -1,6 +1,13 @@
 dont-edit-this:
-  version: 2
+  version: 3
 name: area
+world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
 timer: 240
 area-pos1:
 area-pos2:

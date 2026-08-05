@@ -58,6 +58,8 @@
                     <artifactSet>
                         <includes>
                             <include>org.mariadb.jdbc:*</include>
+                            <include>com.mysql:mysql-connector-j</include>
+                            <include>com.google.protobuf:protobuf-java</include>
                             <include>com.zaxxer:*</include>
                             <include>com.github.stefvanschie.inventoryframework:*</include>
                         </includes>
@@ -72,14 +74,21 @@
                             <shadedPattern>ink.ziip.championshipscore.libs.org.mariadb.jdbc</shadedPattern>
                         </relocation>
                         <relocation>
-                            <pattern>com.mysql.jdbc</pattern>
-                            <shadedPattern>ink.ziip.championshipscore.libs.com.mysql.jdbc</shadedPattern>
+                            <pattern>com.mysql</pattern>
+                            <shadedPattern>ink.ziip.championshipscore.libs.com.mysql</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.google.protobuf</pattern>
+                            <shadedPattern>ink.ziip.championshipscore.libs.com.google.protobuf</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>com.github.stefvanschie.inventoryframework</pattern>
                             <shadedPattern>ink.ziip.championshipscore.libs.inventoryframework</shadedPattern>
                         </relocation>
                     </relocations>
+                    <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                    </transformers>
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>
@@ -100,7 +109,7 @@
                             </excludes>
                         </filter>
                         <filter>
-                            <artifact>>com.mysql.jdbc:*</artifact>
+                            <artifact>com.mysql:mysql-connector-j</artifact>
                             <excludes>
                                 <exclude>META-INF/MANIFEST.MF</exclude>
                             </excludes>

@@ -24,7 +24,7 @@ public class SkyWarsConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 5;
+        return 6;
     }
 
     @ConfigOption(path = "name")

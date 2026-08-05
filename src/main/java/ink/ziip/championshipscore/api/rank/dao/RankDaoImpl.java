@@ -97,11 +97,12 @@ public class RankDaoImpl implements RankDao {
     }
 
     @Override
-    public void addPlayerPoint(PlayerPointEntry playerPointEntry) {
+    public boolean addPlayerPoint(PlayerPointEntry playerPointEntry) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
-                    INSERT INTO `player_points` (`uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?);
+                    INSERT INTO `player_points` (`transactionId`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                    ON DUPLICATE KEY UPDATE `transactionId`=VALUES(`transactionId`);
                     """, Statement.RETURN_GENERATED_KEYS)) {
                 int teamId = playerPointEntry.getTeamId();
                 int rivalID = playerPointEntry.getRivalId();
@@ -111,17 +112,18 @@ public class RankDaoImpl implements RankDao {
                 String gameName = playerPointEntry.getGame().name();
                 String areaName = playerPointEntry.getArea();
                 double points = playerPointEntry.getPoints();
-                statement.setString(1, playerPointEntry.getUuid().toString());
-                statement.setString(2, username);
-                statement.setInt(3, teamId);
-                statement.setString(4, teamName);
-                statement.setInt(5, rivalID);
-                statement.setString(6, rivalName);
-                statement.setString(7, gameName);
-                statement.setString(8, areaName);
-                statement.setString(9, playerPointEntry.getRound());
-                statement.setDouble(10, points);
-                statement.setString(11, playerPointEntry.getTime());
+                statement.setString(1, playerPointEntry.getTransactionId().toString());
+                statement.setString(2, playerPointEntry.getUuid().toString());
+                statement.setString(3, username);
+                statement.setInt(4, teamId);
+                statement.setString(5, teamName);
+                statement.setInt(6, rivalID);
+                statement.setString(7, rivalName);
+                statement.setString(8, gameName);
+                statement.setString(9, areaName);
+                statement.setString(10, playerPointEntry.getRound());
+                statement.setDouble(11, points);
+                statement.setString(12, playerPointEntry.getTime());
 
                 int affectedRows = statement.executeUpdate();
                 if (affectedRows > 0) {
@@ -136,9 +138,11 @@ public class RankDaoImpl implements RankDao {
                     }
                 } else {
                 }
+                return true;
             }
         } catch (SQLException exception) {
             logFailure("写入玩家积分", exception);
+            return false;
         }
     }
 

@@ -55,18 +55,16 @@ public final class ChampionshipsCore extends JavaPlugin {
         loaded = true;
         logManager = CCLogManager.install(this);
 
-        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) {
-            getLogger().warning(Utils.formatModuleLog("Bootstrap", "依赖", "缺少 PlaceholderAPI，插件已停用"));
-            Bukkit.getPluginManager().disablePlugin(this);
-            return;
-        }
-        if (Bukkit.getPluginManager().getPlugin("ProtocolLib") == null) {
-            getLogger().warning(Utils.formatModuleLog("Bootstrap", "依赖", "缺少 ProtocolLib，插件已停用"));
-            Bukkit.getPluginManager().disablePlugin(this);
-            return;
-        }
-        if (Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") == null) {
-            getLogger().warning(Utils.formatModuleLog("Bootstrap", "依赖", "缺少 FastAsyncWorldEdit，插件已停用"));
+        java.util.List<String> missingDependencies = java.util.stream.Stream.of(
+                        "PlaceholderAPI", "ProtocolLib", "FastAsyncWorldEdit")
+                .filter(name -> Bukkit.getPluginManager().getPlugin(name) == null)
+                .toList();
+        if (!missingDependencies.isEmpty()) {
+            loaded = false;
+            String message = Utils.formatModuleLog("Bootstrap", "依赖",
+                    "缺少必要插件=" + String.join(", ", missingDependencies) + "，ChampionshipsCore 已关闭");
+            if (logManager != null) logManager.important(message);
+            else getLogger().severe(message);
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -116,26 +114,26 @@ public final class ChampionshipsCore extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        gameManager.unload();
-        prepareSessionManager.unload();
-        rankManager.unload();
+        if (gameManager != null) gameManager.unload();
+        if (prepareSessionManager != null) prepareSessionManager.unload();
+        if (rankManager != null) rankManager.unload();
 
-        listenerManager.unload();
-        playerManager.unload();
-        teamManager.unload();
-        commandManager.unload();
+        if (listenerManager != null) listenerManager.unload();
+        if (playerManager != null) playerManager.unload();
+        if (teamManager != null) teamManager.unload();
+        if (commandManager != null) commandManager.unload();
 
-        worldEditManager.unload();
-        worldManager.unload();
+        if (worldEditManager != null) worldEditManager.unload();
+        if (worldManager != null) worldManager.unload();
 
         loaded = false;
 
-        configurationManager.unload();
-        databaseManager.unload();
-        placeholderManager.unload();
-        voteManager.unload();
-        scheduleManager.unload();
-        glowingEntities.disable();
+        if (configurationManager != null) configurationManager.unload();
+        if (databaseManager != null) databaseManager.unload();
+        if (placeholderManager != null) placeholderManager.unload();
+        if (voteManager != null) voteManager.unload();
+        if (scheduleManager != null) scheduleManager.unload();
+        if (glowingEntities != null) glowingEntities.disable();
 
         if (logManager != null) {
             logManager.important(Utils.formatModuleLog("Bootstrap", "停止", "插件已安全卸载"));

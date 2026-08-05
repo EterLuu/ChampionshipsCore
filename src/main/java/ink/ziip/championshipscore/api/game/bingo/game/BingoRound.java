@@ -161,10 +161,6 @@ public final class BingoRound {
         return card.getCompleteCount(BingoTeamAdapter.id(team));
     }
 
-    public int taskCount() {
-        return layout.size();
-    }
-
     /** The playable teams competing this round. */
     public List<ChampionshipTeam> teams() {
         return teams;
@@ -293,23 +289,6 @@ public final class BingoRound {
         }
     }
 
-    /** Resets to zero the typed BLOCK/ITEM/ENTITY sub-statistics tracked by the card. */
-    public void resetCardStatistics(Player player, ChampionshipTeam team) {
-        for (GameTask task : card.getTasks()) {
-            if (task.data.getType() != TaskData.TaskType.STATISTIC) continue;
-            StatisticHandle h = ((StatisticTask) task.data).statistic();
-            try {
-                if (h.hasMaterial()) {
-                    player.setStatistic(h.statisticType(), h.itemType(), 0);
-                    org.bukkit.Material variant = oreVariant(h.itemType());
-                    if (variant != null) player.setStatistic(h.statisticType(), variant, 0);
-                } else if (h.hasEntity()) {
-                    player.setStatistic(h.statisticType(), h.entityType(), 0);
-                }
-            } catch (Throwable ignored) {}
-        }
-    }
-
     private static void revokeAdvancement(Player player, Advancement advancement) {
         if (advancement == null) return;
         AdvancementProgress progress = player.getAdvancementProgress(advancement);
@@ -373,7 +352,7 @@ public final class BingoRound {
         String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = card.getTasks();
         for (GameTask task : tasks) {
-            if (task.isCompletedByTeam(teamId) || task.isVoided()) continue;
+            if (task.isCompletedByTeam(teamId)) continue;
             boolean match;
             int need;
             if (task.data instanceof ItemTask data) {
@@ -404,7 +383,7 @@ public final class BingoRound {
         String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = card.getTasks();
         for (GameTask task : tasks) {
-            if (task.isCompletedByTeam(teamId) || task.isVoided()) continue;
+            if (task.isCompletedByTeam(teamId)) continue;
             if (!(task.data instanceof PotionTask pt)) continue;
             if (pt.form().material == material && pt.effect().equals(effect) && heldAmount >= pt.count()) {
                 if (task.complete(completion(player, team, gameTime), LOCKS_TASKS)) {
@@ -420,7 +399,7 @@ public final class BingoRound {
         String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = card.getTasks();
         for (GameTask task : tasks) {
-            if (task.isCompletedByTeam(teamId) || task.isVoided() || task.taskType() != TaskData.TaskType.ADVANCEMENT) continue;
+            if (task.isCompletedByTeam(teamId) || task.taskType() != TaskData.TaskType.ADVANCEMENT) continue;
             AdvancementTask data = (AdvancementTask) task.data;
             if (data.advancement() != null && data.advancement().key().equals(advancement.key())) {
                 if (task.complete(completion(player, team, gameTime), LOCKS_TASKS)) {
@@ -438,7 +417,7 @@ public final class BingoRound {
         List<GameTask> completed = new ArrayList<>();
         List<GameTask> tasks = card.getTasks();
         for (GameTask task : tasks) {
-            if (task.isCompletedByTeam(teamId) || task.isVoided() || task.taskType() != TaskData.TaskType.STATISTIC) continue;
+            if (task.isCompletedByTeam(teamId) || task.taskType() != TaskData.TaskType.STATISTIC) continue;
             StatisticTask data = (StatisticTask) task.data;
             StatisticHandle h = data.statistic();
             int delta = readStatistic(player, h) - baseline(player.getUniqueId(), h);

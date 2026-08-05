@@ -7,7 +7,6 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -114,6 +113,7 @@ public class ParkourTagScheduleManager extends BaseManager {
             return;
         }
 
+        plugin.getGameManager().getParkourTagManager().resetEventState();
         plugin.getScheduleManager().addRound(GameTypeEnum.ParkourTag);
         enabled = true;
         timer = 10;

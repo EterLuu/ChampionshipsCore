@@ -715,6 +715,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
     @Override
     public String getWorldName() {
-        return getGameConfig().resolveWorldName();
+        return getGameConfig().getConfiguredWorld();
     }
 }
