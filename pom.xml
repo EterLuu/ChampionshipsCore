@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ink.ziip</groupId>
-    <artifactId>ChampionshipsCore</artifactId>
+    <artifactId>championships-parent</artifactId>
     <version>1.3-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
-    <name>ChampionshipsCore</name>
+    <name>Championships</name>
+
+    <modules>
+        <module>championships-common</module>
+        <module>championships-bingo-engine</module>
+        <module>championships-platform-bukkit</module>
+        <module>championships-redis</module>
+        <module>championships-bingo-worker</module>
+        <module>championships-core</module>
+    </modules>
 
     <licenses>
         <license>
@@ -21,115 +30,29 @@
     <properties>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <paper.version>26.1.2.build.72-stable</paper.version>
+        <spigot.version>26.1.2-R0.1-SNAPSHOT</spigot.version>
     </properties>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.15.0</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>1.18.46</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.2</version>
-                <executions>
-                    <execution>
-                        <id>shade</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <artifactSet>
-                        <includes>
-                            <include>org.mariadb.jdbc:*</include>
-                            <include>com.mysql:mysql-connector-j</include>
-                            <include>com.google.protobuf:protobuf-java</include>
-                            <include>com.zaxxer:*</include>
-                            <include>com.github.stefvanschie.inventoryframework:*</include>
-                        </includes>
-                    </artifactSet>
-                    <relocations>
-                        <relocation>
-                            <pattern>com.zaxxer</pattern>
-                            <shadedPattern>ink.ziip.championshipscore.libs.com.zaxxer</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.mariadb.jdbc</pattern>
-                            <shadedPattern>ink.ziip.championshipscore.libs.org.mariadb.jdbc</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.mysql</pattern>
-                            <shadedPattern>ink.ziip.championshipscore.libs.com.mysql</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.google.protobuf</pattern>
-                            <shadedPattern>ink.ziip.championshipscore.libs.com.google.protobuf</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.github.stefvanschie.inventoryframework</pattern>
-                            <shadedPattern>ink.ziip.championshipscore.libs.inventoryframework</shadedPattern>
-                        </relocation>
-                    </relocations>
-                    <transformers>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                    </transformers>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>module-info.class</exclude>
-                            </excludes>
-                        </filter>
-                        <filter>
-                            <artifact>com.zaxxer:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/MANIFEST.MF</exclude>
-                            </excludes>
-                        </filter>
-                        <filter>
-                            <artifact>org.mariadb.jdbc:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/MANIFEST.MF</exclude>
-                            </excludes>
-                        </filter>
-                        <filter>
-                            <artifact>com.mysql:mysql-connector-j</artifact>
-                            <excludes>
-                                <exclude>META-INF/MANIFEST.MF</exclude>
-                            </excludes>
-                        </filter>
-                        <filter>
-                            <artifact>com.github.stefvanschie.inventoryframework:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/MANIFEST.MF</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
-            </plugin>
-        </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.15.0</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.6.2</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <repositories>
@@ -162,15 +85,48 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>ink.ziip</groupId>
+                <artifactId>championships-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ink.ziip</groupId>
+                <artifactId>championships-bingo-engine</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ink.ziip</groupId>
+                <artifactId>championships-platform-bukkit</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ink.ziip</groupId>
+                <artifactId>championships-redis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ink.ziip</groupId>
+                <artifactId>championships-bingo-worker</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.papermc.paper</groupId>
+                <artifactId>paper-api</artifactId>
+                <version>${paper.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.spigotmc</groupId>
+                <artifactId>spigot-api</artifactId>
+                <version>${spigot.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.intellectualsites.bom</groupId>
-                <artifactId>bom-newest</artifactId> <!-- Ref: https://github.com/IntellectualSites/bom -->
+                <artifactId>bom-newest</artifactId>
                 <version>1.56</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <!-- paper-api 26.1.2 ships an inconsistent POM (adventure-api/minimessage 4.23.0 but
-                 serializers 4.26.1); align the core Adventure API to 4.26.1 so newer component
-                 types (e.g. net.kyori.adventure.text.object.PlayerHeadObjectContents) resolve. -->
+            <!-- Paper 26.1.2 mixes Adventure versions; keep the API family aligned. -->
             <dependency>
                 <groupId>net.kyori</groupId>
                 <artifactId>adventure-api</artifactId>
@@ -181,86 +137,21 @@
                 <artifactId>adventure-text-minimessage</artifactId>
                 <version>4.26.1</version>
             </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>5.11.4</version>
+            </dependency>
+            <dependency>
+                <groupId>io.lettuce</groupId>
+                <artifactId>lettuce-core</artifactId>
+                <version>7.6.0.RELEASE</version>
+            </dependency>
+            <dependency>
+                <groupId>fr.mrmicky</groupId>
+                <artifactId>fastboard</artifactId>
+                <version>2.2.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-api</artifactId>
-            <version>26.1.2.build.72-stable</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>26.1.2-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.dmulloy2</groupId>
-            <artifactId>ProtocolLib</artifactId>
-            <version>5.4.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>me.clip</groupId>
-            <artifactId>placeholderapi</artifactId>
-            <version>2.12.2</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fastasyncworldedit</groupId>
-            <artifactId>FastAsyncWorldEdit-Core</artifactId>
-            <version>2.15.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fastasyncworldedit</groupId>
-            <artifactId>FastAsyncWorldEdit-Bukkit</artifactId>
-            <version>2.15.0</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>FastAsyncWorldEdit-Core</artifactId>
-                    <groupId>*</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.github.stefvanschie.inventoryframework</groupId>
-            <artifactId>IF</artifactId>
-            <version>0.12.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>7.0.2</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mariadb.jdbc</groupId>
-            <artifactId>mariadb-java-client</artifactId>
-            <version>3.5.8</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <version>9.6.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.46</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>26.1.0</version>
-        </dependency>
-    </dependencies>
 </project>

@@ -141,6 +141,8 @@ mvn clean package
 
 构建产物位于 `target/`。将插件本体和三个必需依赖放入服务端的 `plugins/` 目录，然后启动一次服务端生成配置。
 
+仓库已使用 Maven Reactor 管理共享协议、纯 Java Bingo 计分引擎、Paper/Folia 平台层、Redis transport、独立 Bingo Worker 和 `championships-core` 核心插件。根目录执行同一条构建命令会生成历史兼容路径 `target/ChampionshipsCore-1.3-SNAPSHOT.jar`，以及 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar`。远程 Bingo 默认关闭，真实 Folia/Redis/代理和 64 人故障演练通过前应继续使用本地执行器；部署拓扑、配置和上线门槛见 [`docs/bingo-remote-architecture.md`](docs/bingo-remote-architecture.md)。
+
 推荐的首次部署顺序：
 
 1. 创建 MariaDB/MySQL 数据库和专用账号。

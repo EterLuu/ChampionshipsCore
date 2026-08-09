@@ -1,0 +1,142 @@
+package ink.ziip.championshipscore.api.game.bingo.execution;
+
+import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.bingo.BingoConfig;
+import ink.ziip.championshipscore.api.game.bingo.card.CardSize;
+import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
+import ink.ziip.championshipscore.api.game.bingo.task.TaskData;
+import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
+import ink.ziip.championshipscore.api.object.game.GameRunMode;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.protocol.BingoPresentation;
+import ink.ziip.championshipscore.protocol.BingoScoringRules;
+import ink.ziip.championshipscore.protocol.BingoRuntimeRules;
+import ink.ziip.championshipscore.protocol.BingoTaskSpec;
+import ink.ziip.championshipscore.protocol.BingoManifestHasher;
+import ink.ziip.championshipscore.protocol.BingoDimension;
+import ink.ziip.championshipscore.protocol.BingoIntroductionMode;
+import ink.ziip.championshipscore.protocol.BingoLocationSnapshot;
+import ink.ziip.championshipscore.protocol.MatchManifest;
+import ink.ziip.championshipscore.protocol.MatchRunMode;
+import ink.ziip.championshipscore.protocol.ParticipantRole;
+import ink.ziip.championshipscore.protocol.PlayerSnapshot;
+import ink.ziip.championshipscore.protocol.ProtocolVersion;
+import ink.ziip.championshipscore.protocol.TeamSnapshot;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+/** Freezes Core's mutable roster/config/card state into one immutable remote-match manifest. */
+public final class BingoManifestFactory {
+    private final ChampionshipsCore plugin;
+
+    public BingoManifestFactory(ChampionshipsCore plugin) {
+        this.plugin = java.util.Objects.requireNonNull(plugin, "plugin");
+    }
+
+    public MatchManifest create(UUID matchId, long epoch, String workerId, BingoConfig config,
+                                GameRunMode runMode, List<ChampionshipTeam> teams,
+                                Set<UUID> spectators, boolean showIntroduction) {
+        long cardSeed = java.util.concurrent.ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
+        BingoRound generated = new BingoRound(CardSize.fromWidth(config.getCardWidth()), cardSeed,
+                Set.of(TaskData.TaskType.ITEM, TaskData.TaskType.ITEM_SET,
+                        TaskData.TaskType.ADVANCEMENT, TaskData.TaskType.STATISTIC),
+                Set.of(), Map.of(), teams, config.pointsArray(), config.getLineBonus(),
+                config.getLineBonusMajorCount(), config.getLineBonusMinor());
+        List<BingoTaskSpec> tasks = BingoTaskSpecMapper.toSpecs(generated.layout());
+        BingoScoringRules scoring = new BingoScoringRules(config.getCardWidth(), config.getPointsPerRank(),
+                config.getLineBonus(), config.getLineBonusMajorCount(), config.getLineBonusMinor());
+        org.bukkit.Location spectatorSpawn = config.getSpectatorSpawnPoint();
+        org.bukkit.Location introductionSpawn = config.getIntroductionSpawnPoint() != null
+                ? config.getIntroductionSpawnPoint() : spectatorSpawn;
+        BingoRuntimeRules runtimeRules = new BingoRuntimeRules(config.getPrepareTime(), 5,
+                config.getScatterRadius(), config.getScatterMaxTries(), 180,
+                config.getPermanentEffects(), showIntroduction, 45,
+                config.getRules() == null ? List.of() : config.getRules(),
+                config.getIntroductionGameMode() == org.bukkit.GameMode.SPECTATOR
+                        ? BingoIntroductionMode.SPECTATOR : BingoIntroductionMode.ADVENTURE,
+                location(introductionSpawn), location(spectatorSpawn), presentation(runMode));
+
+        List<TeamSnapshot> teamSnapshots = new ArrayList<>();
+        List<PlayerSnapshot> participants = new ArrayList<>();
+        for (ChampionshipTeam team : teams) {
+            List<UUID> members = team.getMembers().stream().sorted().toList();
+            teamSnapshots.add(new TeamSnapshot(team.getId(), team.getName(), team.getColorName(),
+                    team.getColorCode(), members, plugin.getRankManager().getTeamPoints(team)));
+            for (UUID member : members) {
+                participants.add(new PlayerSnapshot(member, plugin.getPlayerManager().getPlayerName(member),
+                        ParticipantRole.PLAYER, team.getId(), org.bukkit.Bukkit.getPlayer(member) != null,
+                        plugin.getRankManager().getPlayerPoints(member)));
+            }
+        }
+        spectators.stream().sorted().forEach(uuid -> participants.add(new PlayerSnapshot(uuid,
+                plugin.getPlayerManager().getPlayerName(uuid), ParticipantRole.SPECTATOR, null, false, 0D)));
+
+        String configHash = BingoManifestHasher.hash(config.getTimer(), cardSeed, scoring, runtimeRules, tasks);
+
+        return new MatchManifest(ProtocolVersion.CURRENT, matchId, epoch, System.currentTimeMillis(), workerId,
+                runMode == GameRunMode.EVENT ? MatchRunMode.EVENT : MatchRunMode.GAME,
+                config.getTimer(), cardSeed, configHash, scoring, runtimeRules, tasks,
+                teamSnapshots, participants);
+    }
+
+    private BingoPresentation presentation(GameRunMode runMode) {
+        MessageService lang = MessageService.global();
+        Map<String, String> messages = new java.util.LinkedHashMap<>();
+        messages.put("game.name", GameTypeEnum.Bingo.toString());
+        messages.put("game.preparation-countdown", MessageConfig.GAME_PREPARATION_COUNT_DOWN);
+        messages.put("game.introduction-title", MessageConfig.GAME_INTRODUCTION_TITLE);
+        messages.put("game.start-countdown-title", MessageConfig.GAME_START_COUNT_DOWN_TITLE);
+        messages.put("game.start-countdown-subtitle", MessageConfig.GAME_START_COUNT_DOWN_SUBTITLE);
+        messages.put("game.start-action-bar", MessageConfig.GAME_START_ACTION_BAR);
+        messages.put("game.end-action-bar", MessageConfig.GAME_END_ACTION_BAR);
+        boolean hasNextRound = runMode == GameRunMode.EVENT && plugin.getScheduleManager() != null
+                && plugin.getScheduleManager().hasNextRound(GameTypeEnum.Bingo);
+        messages.put("game.completion-title", hasNextRound
+                ? MessageConfig.GAME_ROUND_COMPLETE_TITLE : MessageConfig.GAME_ROUND_END_TITLE);
+        messages.put("bingo.start-preparation", MessageConfig.BINGO_START_PREPARATION);
+        messages.put("bingo.start-preparation-title", MessageConfig.BINGO_START_PREPARATION_TITLE);
+        messages.put("bingo.start-preparation-subtitle", MessageConfig.BINGO_START_PREPARATION_SUBTITLE);
+        messages.put("bingo.game-start", MessageConfig.BINGO_GAME_START);
+        messages.put("bingo.game-start-title", MessageConfig.BINGO_GAME_START_TITLE);
+        messages.put("bingo.game-start-subtitle", MessageConfig.BINGO_GAME_START_SUBTITLE);
+        messages.put("bingo.game-end", MessageConfig.BINGO_GAME_END);
+        messages.put("bingo.game-end-title", MessageConfig.BINGO_GAME_END_TITLE);
+        messages.put("bingo.game-end-subtitle", MessageConfig.BINGO_GAME_END_SUBTITLE);
+        messages.put("bingo.timer", MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN);
+        messages.put("bingo.pvp-protection", MessageConfig.BINGO_PVP_PROTECTION);
+        messages.put("bingo.pvp-active", MessageConfig.BINGO_PVP_ACTIVE);
+        messages.put("bingo.pvp-countdown", MessageConfig.BINGO_PVP_START_COUNT_DOWN);
+        messages.put("bingo.pvp-started", MessageConfig.BINGO_PVP_STARTED);
+        messages.put("bingo.task-completed", MessageConfig.BINGO_TASK_COMPLETED);
+        messages.put("bingo.game-winner", MessageConfig.BINGO_GAME_WINNER);
+        messages.put("papi.none", MessageConfig.PLACEHOLDER_NONE);
+        messages.put("papi.spectator", MessageConfig.PLACEHOLDER_SPECTATOR);
+        for (String key : List.of("card.title", "card.win_hint", "card.map_name", "card.map_hint",
+                "card.completed_by", "card.completed_at", "card.occupied_by", "compass.item_name",
+                "compass.item_hint", "compass.menu_title", "compass.teammate_hint",
+                "compass.no_teammates", "compass.target_offline", "compass.teleport_success",
+                "board.title", "board.separator", "board.current_game", "board.remaining_time",
+                "board.status_waiting", "board.status_preparing", "board.status_finished",
+                "board.teams_header", "board.team_score", "board.own_team_score", "board.footer")) {
+            messages.put(key, lang.tr(key));
+        }
+        return new BingoPresentation(messages);
+    }
+
+    private static BingoLocationSnapshot location(org.bukkit.Location location) {
+        if (location == null || location.getWorld() == null) return null;
+        BingoDimension dimension = switch (location.getWorld().getEnvironment()) {
+            case NETHER -> BingoDimension.NETHER;
+            case THE_END -> BingoDimension.THE_END;
+            default -> BingoDimension.OVERWORLD;
+        };
+        return new BingoLocationSnapshot(dimension, location.getX(), location.getY(), location.getZ(),
+                location.getYaw(), location.getPitch());
+    }
+}

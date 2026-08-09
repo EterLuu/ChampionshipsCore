@@ -1,0 +1,22 @@
+enabled: false
+worker-id: "bingo-1"
+redis:
+  uri: "redis://127.0.0.1:6379/0"
+  namespace: "championships"
+  consumer-group: "bingo-workers"
+  stream-max-length: 100000
+  block-timeout-ms: 2000
+  reclaim-idle-ms: 15000
+  max-deliveries: 8
+proxy:
+  channel: "BungeeCord"
+  return-server: "scc"
+worlds:
+  overworld: "bingo"
+  nether: "bingo_nether"
+  the-end: "bingo_the_end"
+  # Keep false for production: a consumed natural-world slot must be restored before another match.
+  allow-reuse-without-reset: false
+# All gameplay and presentation settings (phases, spawn coordinates, tasks, scoring, PvP, effects,
+# language text and scoreboard labels) are frozen by SCC in each match manifest. This file contains
+# only worker infrastructure and physical world-slot names.
