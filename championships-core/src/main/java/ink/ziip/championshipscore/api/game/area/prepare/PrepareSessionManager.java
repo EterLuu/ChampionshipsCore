@@ -182,6 +182,7 @@ public class PrepareSessionManager extends BaseManager {
         teleportToEditorLocation(player, session);
         Utils.sendAdminSuccess(player, "进入 prepare &#bababa• &#fff566" + gameType + " &#696969/ &#fff566" + areaName);
         Utils.sendAdminInfo(player, "使用热键栏配置 prepare &#696969• 打开箱子编辑步骤 &#696969• 屏障退出");
+        refreshSidebar(player);
     }
 
     public void exitSession(@NotNull Player player) {
@@ -193,6 +194,7 @@ public class PrepareSessionManager extends BaseManager {
         snapshots.remove(player.getUniqueId());
         deleteSnapshotFile(player.getUniqueId());
         Utils.sendAdminSuccess(player, "已退出 prepare &#696969• 物品栏已还原");
+        refreshSidebar(player);
     }
 
     // ── click routing (called by PrepareListener) ────────────────────────────────────────────
@@ -222,6 +224,7 @@ public class PrepareSessionManager extends BaseManager {
             });
             case LIST -> ListStepGui.open(this, player, session, step);
         }
+        refreshSidebar(player);
     }
 
     public void handleActionClick(@NotNull Player player, @NotNull PrepareSession session, @NotNull String action) {
@@ -291,6 +294,7 @@ public class PrepareSessionManager extends BaseManager {
         player.setFlying(true);
         PrepareModeInventory.refresh(player, session);
         Utils.sendAdminSuccess(player, "地图草稿已保存 &#696969• &#ededed仍需完成全部点位后再发布");
+        refreshSidebar(player);
     }
 
     private void completePublish(UUID playerId, PrepareSession session, boolean published) {
@@ -314,6 +318,7 @@ public class PrepareSessionManager extends BaseManager {
         PrepareModeInventory.refresh(player, session);
         Utils.sendAdminSuccess(player, "地图已发布 &#696969• &#edededrevision &#fff566"
                 + session.getTarget().config().getPrepareRevision());
+        refreshSidebar(player);
     }
 
     /** Game-start guard: a locked, dirty, or explicitly unpublished map cannot be selected. */
@@ -369,6 +374,10 @@ public class PrepareSessionManager extends BaseManager {
 
     private static String lockKey(GameTypeEnum gameType, String mapName) {
         return gameType.name() + "\u0000" + mapName.toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private void refreshSidebar(@NotNull Player player) {
+        if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
     }
 
     // ── inventory snapshot (in-memory + disk) ────────────────────────────────────────────────

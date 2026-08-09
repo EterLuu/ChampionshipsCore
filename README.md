@@ -469,6 +469,18 @@ light_gray cyan purple blue brown green red black
 
 Bingo 同样支持通用的 `%bingo_area_status_[场地]%` 和 `%bingo_area_timer_[场地]%`。
 
+## 侧栏记分板
+
+ChampionshipsCore 内置基于 FastBoard 的统一侧栏，不再需要 SternalBoard。显示优先级为：
+参赛/旁观游戏板、地图 prepare 编辑板、管理员地图状态板、赛事大厅板。游戏板按玩家实际
+归属选择，不依赖所在世界；remote Bingo 的模板由 Core 随比赛 manifest 下发，Worker 不需要
+额外配置。
+
+所有标题、行文本、颜色、游戏模板和地图覆盖均位于 `scoreboards.yml`。配置沿用 `&`、
+`#RRGGBB` 和 `&#RRGGBB` 颜色写法，最多渲染 15 行；`/cc admin reload --confirm` 会原子重载，
+配置无效时继续使用上一份有效快照。默认模板保留原 SternalBoard 的赛事和游戏信息，并为
+队伍、对手、排行榜及管理员警告增加原生彩色显示。
+
 ## 数据目录
 
 ```text
@@ -476,6 +488,7 @@ plugins/ChampionshipsCore/
 ├── config.yml
 ├── message.yml
 ├── schedule-message.yml
+├── scoreboards.yml             # 统一大厅、游戏、地图状态和地图编辑侧栏
 ├── maps/                       # 比赛重置使用的静态世界模板
 ├── battlebox/
 │   └── schematics/arena.schem

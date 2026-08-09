@@ -33,6 +33,8 @@ public class AdminReloadSubCommand extends BaseSubCommand {
         plugin.getConfigurationManager().reload();
         plugin.getGameManager().load();
         plugin.getScheduleManager().load();
+        plugin.getSidebarManager().reload();
+        plugin.getSidebarManager().invalidateAll();
         Utils.sendAdminSuccess(sender, "插件配置与游戏场地已重载");
 
         return true;

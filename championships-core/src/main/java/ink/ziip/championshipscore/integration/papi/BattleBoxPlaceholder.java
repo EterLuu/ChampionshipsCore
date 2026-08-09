@@ -47,7 +47,7 @@ public class BattleBoxPlaceholder extends BaseGamePlaceholder<BattleBoxArea> {
             if (result == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return result.getName();
+            return result.getColoredName();
         }
 
         /* Player required placeholders */

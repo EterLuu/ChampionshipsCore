@@ -53,7 +53,7 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getName();
+            return championshipTeam.getColoredName();
         }
         if (params.startsWith("area_rival_wins_")) {
             DragonEggCarnivalArea dragonEggCarnivalArea = resolveArea(params, "area_rival_wins_", offlinePlayer);
@@ -71,7 +71,7 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return championshipTeam.getName();
+            return championshipTeam.getColoredName();
         }
         if (params.startsWith("playtool_countdown_")) {
             DragonEggCarnivalArea dragonEggCarnivalArea = resolveArea(params, "playtool_countdown_", offlinePlayer);

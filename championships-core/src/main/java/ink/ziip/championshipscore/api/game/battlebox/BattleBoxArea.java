@@ -129,6 +129,12 @@ public class BattleBoxArea extends BasePairedGameInstance {
         return match != null && match.contains(player) ? match : null;
     }
 
+    /** The match currently hosted by this arena, including for spectator-facing presentation. */
+    @Nullable
+    public BattleBoxMatch currentMatch() {
+        return match;
+    }
+
     @Override
     public void resetArea() {
         if (match != null) {

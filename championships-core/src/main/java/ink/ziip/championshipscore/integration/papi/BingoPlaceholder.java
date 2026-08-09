@@ -103,6 +103,6 @@ public class BingoPlaceholder extends BaseGamePlaceholder<BingoArea> {
             return MessageConfig.PLACEHOLDER_NONE;
         }
         ChampionshipTeam team = ranked.get(index);
-        return team.getName() + ": " + round.score(team);
+        return team.getColoredName() + "&f: " + round.score(team);
     }
 }

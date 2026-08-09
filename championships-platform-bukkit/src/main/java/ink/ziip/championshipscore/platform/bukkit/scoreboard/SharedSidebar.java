@@ -97,6 +97,18 @@ public final class SharedSidebar {
         if (viewer != null) delete(viewer.board());
     }
 
+    /** Deletes every client-side objective owned by this sidebar. Safe to call during plugin shutdown. */
+    public void hideAll() {
+        List<Viewer> snapshot = List.copyOf(viewers.values());
+        viewers.clear();
+        for (Viewer viewer : snapshot) delete(viewer.board());
+    }
+
+    public boolean isShown(Player player) {
+        Viewer viewer = viewers.get(player.getUniqueId());
+        return viewer != null && viewer.player() == player;
+    }
+
     private void update(FastBoard board) {
         update(board, title, lines);
     }
@@ -121,7 +133,7 @@ public final class SharedSidebar {
 
     private void disable(Throwable failure) {
         disabled = true;
-        viewers.clear();
+        hideAll();
         warn(failure);
     }
 

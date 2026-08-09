@@ -142,6 +142,12 @@ public class ParkourTagArea extends BasePairedGameInstance {
         return match != null && match.contains(player) ? match : null;
     }
 
+    /** The match currently hosted by this arena, including for spectator-facing presentation. */
+    @Nullable
+    public ParkourTagMatch currentMatch() {
+        return match;
+    }
+
     @Nullable
     public ParkourTagMatch matchAt(@NotNull Location location) {
         return match != null && match.isInArea(location) ? match : null;

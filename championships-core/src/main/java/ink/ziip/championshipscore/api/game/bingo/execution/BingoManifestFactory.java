@@ -126,6 +126,9 @@ public final class BingoManifestFactory {
                 "board.teams_header", "board.team_score", "board.own_team_score", "board.footer")) {
             messages.put(key, lang.tr(key));
         }
+        if (plugin.getSidebarManager() != null) {
+            messages.putAll(plugin.getSidebarManager().bingoWorkerPresentation());
+        }
         return new BingoPresentation(messages);
     }
 

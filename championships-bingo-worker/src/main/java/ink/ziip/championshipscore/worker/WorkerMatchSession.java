@@ -14,6 +14,7 @@ import ink.ziip.championshipscore.protocol.CompletionObservation;
 import ink.ziip.championshipscore.protocol.BingoManifestHasher;
 import ink.ziip.championshipscore.protocol.BingoIntroductionMode;
 import ink.ziip.championshipscore.protocol.BingoLocationSnapshot;
+import ink.ziip.championshipscore.protocol.BingoPresentation;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
 import ink.ziip.championshipscore.protocol.MatchEvent;
 import ink.ziip.championshipscore.protocol.MatchEventType;
@@ -111,7 +112,7 @@ final class WorkerMatchSession {
         this.scoring = new BingoScoringEngine(manifest);
         this.objectives = new WorkerObjectives(manifest.tasks());
         this.sidebar = new SharedSidebar("cc_bingo",
-                WorkerPresentationService.message(manifest.runtimeRules().presentation(), "board.title"),
+                WorkerPresentationService.component(sidebarField("sidebar.title", "board.title")),
                 warning -> plugin.getLogger().warning(warning));
         this.permanentEffects = BingoPermanentEffectService.parse(manifest.runtimeRules().permanentEffects(),
                 warning -> plugin.getLogger().warning("Bingo manifest: " + warning));
@@ -1025,6 +1026,10 @@ final class WorkerMatchSession {
 
     private void renderSidebar(Player player, PlayerSnapshot viewer, BingoResult result,
                                MatchState currentState, int remaining) {
+        if (manifest.runtimeRules().presentation().messages().containsKey("sidebar.line-count")) {
+            renderConfiguredSidebar(player, viewer, result, currentState, remaining);
+            return;
+        }
         List<Component> lines = new ArrayList<>();
         lines.add(message("board.separator"));
         lines.add(message("board.current_game", "{0}", gameName()));
@@ -1052,6 +1057,70 @@ final class WorkerMatchSession {
         lines.add(Component.empty());
         lines.add(message("board.footer"));
         sidebar.render(player, message("board.title"), lines);
+    }
+
+    private void renderConfiguredSidebar(Player player, PlayerSnapshot viewer, BingoResult result,
+                                         MatchState currentState, int remaining) {
+        BingoPresentation presentation = manifest.runtimeRules().presentation();
+        int count;
+        try {
+            count = Integer.parseInt(presentation.messages().getOrDefault("sidebar.line-count", "0"));
+        } catch (NumberFormatException ignored) {
+            count = 0;
+        }
+        String status = switch (currentState) {
+            case RUNNING -> messageText("board.remaining_time", "{0}", formatDuration(remaining));
+            case COUNTDOWN -> plainMessage("board.status_preparing");
+            case FINISHED, SETTLING -> plainMessage("board.status_finished");
+            default -> plainMessage("board.status_waiting");
+        };
+        Integer viewerTeamId = viewer.role() == ParticipantRole.PLAYER ? viewer.teamId() : null;
+        int viewerTasks = viewerTeamId == null ? 0 : result.completedCells().getOrDefault(viewerTeamId, 0);
+        List<Component> lines = new ArrayList<>();
+        for (int index = 0; index < count; index++) {
+            String raw = presentation.messages().getOrDefault("sidebar.line." + index, "");
+            if ("{ranking}".equals(raw)) {
+                appendConfiguredRanking(lines, result, viewerTeamId, presentation);
+                continue;
+            }
+            raw = raw.replace("{game.name}", gameName())
+                    .replace("{game.status}", status)
+                    .replace("{viewer.tasks}", Integer.toString(viewerTasks));
+            lines.add(WorkerPresentationService.component(raw));
+        }
+        if (lines.size() > 15) lines = new ArrayList<>(lines.subList(0, 15));
+        sidebar.render(player, WorkerPresentationService.component(
+                presentation.messages().getOrDefault("sidebar.title", plainMessage("board.title"))), lines);
+    }
+
+    private void appendConfiguredRanking(List<Component> lines, BingoResult result, Integer viewerTeamId,
+                                         BingoPresentation presentation) {
+        String normal = presentation.messages().getOrDefault("sidebar.ranking-line",
+                "{rank.team-color}{rank.position}. {rank.team} &f{rank.score}");
+        String own = presentation.messages().getOrDefault("sidebar.own-ranking-line", normal);
+        for (WorkerSidebarRanking.Entry entry : WorkerSidebarRanking.select(result, teams, viewerTeamId)) {
+            TeamSnapshot team = entry.team();
+            String raw = (entry.viewerTeam() ? own : normal)
+                    .replace("{rank.team-color}", team.colorCode())
+                    .replace("{rank.position}", Integer.toString(entry.rank()))
+                    .replace("{rank.team}", team.name())
+                    .replace("{rank.score}", Integer.toString(result.teamScores().getOrDefault(team.id(), 0)))
+                    .replace("{rank.tasks}", Integer.toString(result.completedCells().getOrDefault(team.id(), 0)));
+            lines.add(WorkerPresentationService.component(raw));
+        }
+    }
+
+    private String sidebarField(String preferred, String fallback) {
+        BingoPresentation presentation = manifest.runtimeRules().presentation();
+        return presentation.messages().getOrDefault(preferred, plainMessage(fallback));
+    }
+
+    private String plainMessage(String key) {
+        return manifest.runtimeRules().presentation().messages().getOrDefault(key, "");
+    }
+
+    private String messageText(String key, String target, String replacement) {
+        return plainMessage(key).replace(target, replacement);
     }
 
     private static String formatDuration(int totalSeconds) {

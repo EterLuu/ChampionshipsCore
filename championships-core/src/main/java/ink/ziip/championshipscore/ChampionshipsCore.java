@@ -16,6 +16,7 @@ import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
 import ink.ziip.championshipscore.logging.CCLogManager;
+import ink.ziip.championshipscore.presentation.sidebar.CoreSidebarManager;
 import ink.ziip.championshipscore.command.CommandManager;
 import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -54,6 +55,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private VoteManager voteManager;
     private ScheduleManager scheduleManager;
     private PrepareSessionManager prepareSessionManager;
+    private CoreSidebarManager sidebarManager;
     private CCLogManager logManager;
     @Getter(AccessLevel.NONE)
     private final Set<BaseManager> startedManagers = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -94,6 +96,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         placeholderManager = new PlaceholderManager(this);
         voteManager = new VoteManager(this);
         scheduleManager = new ScheduleManager(this);
+        sidebarManager = new CoreSidebarManager(this);
 
         // Plugin startup logic
         loadManager(configurationManager);
@@ -116,6 +119,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         loadManager(placeholderManager);
         loadManager(voteManager);
         loadManager(scheduleManager);
+        loadManager(sidebarManager);
 
         String readyMessage = Utils.formatModuleLog("Bootstrap", "启动", "加载完成 | 模式=" + CCConfig.MODE);
         if (logManager != null) logManager.important(readyMessage);
@@ -125,6 +129,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        unloadManager(sidebarManager);
         unloadManager(remoteBingoManager);
         unloadManager(gameManager);
         unloadManager(prepareSessionManager);

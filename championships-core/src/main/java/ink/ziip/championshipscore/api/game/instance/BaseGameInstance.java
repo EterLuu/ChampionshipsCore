@@ -209,6 +209,8 @@ public abstract class BaseGameInstance {
         ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(uuid);
         if (championshipPlayer != null)
             championshipPlayer.sendActionBar("&e[+] " + points);
+        Player online = Bukkit.getPlayer(uuid);
+        if (online != null && plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(online);
     }
 
     public void addPlayerPointsToAllTeamMembers(ChampionshipTeam championshipTeam, int points) {
@@ -216,6 +218,8 @@ public abstract class BaseGameInstance {
             playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0d) + points);
             logGame(Level.INFO, "积分", "玩家=" + plugin.getPlayerManager().getPlayerName(uuid)
                     + " uuid=" + uuid + " 变更=" + formatPointChange(points));
+            Player online = Bukkit.getPlayer(uuid);
+            if (online != null && plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(online);
         }
     }
 
@@ -281,6 +285,7 @@ public abstract class BaseGameInstance {
         synchronized (this) {
             this.gameStageEnum = gameStageEnum;
         }
+        if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidateAll();
     }
 
     public CompletableFuture<Boolean> loadMap(World.Environment environment) {

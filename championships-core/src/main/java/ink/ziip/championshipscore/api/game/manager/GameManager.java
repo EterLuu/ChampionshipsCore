@@ -823,6 +823,8 @@ public class GameManager extends BaseManager {
         for (UUID uuid : championshipTeam.getMembers()) {
             playerStatus.put(uuid, baseArea);
             roundTransitionHolds.remove(uuid);
+            Player player = org.bukkit.Bukkit.getPlayer(uuid);
+            if (player != null && plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
         }
     }
 
@@ -900,6 +902,7 @@ public class GameManager extends BaseManager {
 
         playerSpectatorStatus.put(uuid, baseArea);
         baseArea.addSpectator(player);
+        if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
         return true;
     }
 
@@ -1108,6 +1111,7 @@ public class GameManager extends BaseManager {
             baseArea.removeSpectator(player);
             playerSpectatorStatus.remove(uuid);
             spectatorTransitionHolds.remove(uuid);
+            if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
             return true;
         }
 
