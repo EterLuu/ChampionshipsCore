@@ -16,7 +16,7 @@ import java.util.List;
 
 public class WorldTeleportSubCommand extends BaseSubCommand {
     public WorldTeleportSubCommand() {
-        super("teleport", "传送至世界出生点并开启飞行", "/cc admin world teleport <世界>");
+        super("teleport", "传送至地图或世界出生点并开启飞行", "/cc admin world teleport <世界>");
     }
 
     @Override
@@ -37,11 +37,14 @@ public class WorldTeleportSubCommand extends BaseSubCommand {
             return true;
         }
 
-        Location target = world.getSpawnLocation();
+        Location target = plugin.getGameManager().getMapTeleportLocation(world.getName());
+        if (target == null)
+            target = world.getSpawnLocation();
         if (!player.teleport(target)) {
             Utils.sendAdminError(sender, "无法传送至世界 &#fff566" + world.getName());
             return true;
         }
+        player.setGameMode(org.bukkit.GameMode.CREATIVE);
         player.setAllowFlight(true);
         player.setFlying(true);
         Utils.sendAdminSuccess(sender, "已传送至世界 &#fff566" + world.getName() + " &#696969• 飞行已开启");

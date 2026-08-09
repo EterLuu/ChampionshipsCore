@@ -63,6 +63,11 @@ public abstract class PrepareStep {
      */
     public abstract boolean isSet(PrepareSession session);
 
+    /** Optional live state text used by choice/toggle steps in the step menu. */
+    public String stateText(PrepareSession session) {
+        return null;
+    }
+
     /**
      * Capture for {@link StepCaptureType#CONFIRM_WORLD}/{@link StepCaptureType#STAND_AND_RUN}/
      * {@link StepCaptureType#WE_SELECTION}/{@link StepCaptureType#SCHEMATIC}. Returns a feedback message
@@ -70,6 +75,11 @@ public abstract class PrepareStep {
      */
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         return null;
+    }
+
+    /** Opens the selection GUI for a {@link StepCaptureType#SELECT} step. */
+    public void openSelection(@NotNull PrepareSessionManager manager, @NotNull Player player,
+                              @NotNull PrepareSession session) {
     }
 
     /** Capture for {@link StepCaptureType#STAMP} after the count is read from an anvil. */

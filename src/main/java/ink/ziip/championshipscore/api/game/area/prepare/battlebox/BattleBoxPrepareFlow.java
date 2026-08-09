@@ -11,7 +11,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxConfig;
-import ink.ziip.championshipscore.api.game.battlebox.BattleBoxLayout;
+import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -21,6 +21,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -28,9 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Battle Box's prepare flow: the full schematic -> stamp -> set-every-point sequence. Copy 0 is pasted at
- * {@link BattleBoxLayout#FIRST} = (0,100,0); every other copy's anchors are derived from copy 0 at match
- * time, so the admin only configures copy 0. Each map definition owns its own physical world.
+ * Battle Box's prepare flow: the full schematic -> stamp -> set-every-point sequence. Copy 0 remains the
+ * hand-built source at its selected minimum corner; every other copy's anchors are derived from copy 0 at
+ * match time, so the admin only configures copy 0. Each map definition owns its own physical world.
  */
 public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
 
@@ -47,6 +48,8 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
 
     @Override
     public @NotNull Location copyZeroLocation(@NotNull SetupTarget target) {
+        Location spawn = GameSpawnResolver.resolve(target.config());
+        if (spawn != null) return spawn;
         World w = Bukkit.getWorld(target.worldName());
         if (w == null) return CCConfig.LOBBY_LOCATION;
         return cfg(target).getCopyGrid().origin(0).toLocation(w);
@@ -62,20 +65,34 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
 
         steps.add(new SchematicStep(plugin -> schematic,
                 Component.text("保存场地模板"),
-                Component.text("用 WorldEdit 选取整个场地后点击，保存为 arena.schem")));
+                Component.text("用 WorldEdit 选取整个场地后点击，保存为 arena.schem")) {
+            @Override
+            public String capture(@NotNull ink.ziip.championshipscore.api.game.area.prepare.PrepareSession session,
+                                  @NotNull Player player) {
+                String result = super.capture(session, player);
+                try {
+                    Vector[] selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
+                    cfg(session.getTarget()).setAreaPos1(selection[0]);
+                    cfg(session.getTarget()).setAreaPos2(selection[1]);
+                } catch (Exception ignored) {
+                    // The parent capture already returns the useful WorldEdit selection error.
+                }
+                return result;
+            }
+        });
 
-        steps.add(StampStep.adaptive(plugin -> schematic,
+        steps.add(StampStep.adaptiveKeepingSource(plugin -> schematic,
                 (a, size) -> cfg(a).prepareCopyGrid(size),
                 (a, count) -> cfg(a).setCopyCount(count),
                 (session, world) -> {
                     BattleBoxConfig previous = cfg(session.getTarget());
-                    ArenaPreparer.clearCopies(session.getPlugin(), world, previous.getCopyGrid(),
-                            previous.getCopyCount(), previous.getCopySize());
+                    ArenaPreparer.clearAdditionalCopies(session.getPlugin(), world,
+                            previous.getCopyGrid(), previous.getCopyCount(), previous.getCopySize());
                 }));
 
         steps.add(new WeSelectionStep("area_pos",
-                Component.text("0 号模板边界"),
-                Component.text("只选取 0 号场地；其他副本会自动平移"),
+                Component.text("0 号场地完整边界"),
+                Component.text("框住手工保留的完整 0 号场地；该最小角决定副本粘贴位置"),
                 Material.BEDROCK,
                 a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
                 (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },

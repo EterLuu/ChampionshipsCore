@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.acerace;
 
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
+import io.papermc.paper.event.entity.EntityAttemptSpinAttackEvent;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -36,6 +37,7 @@ public class AceRaceHandler extends BaseListener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (aceRaceArea.notAreaPlayer(player)) return;
+        if (aceRaceArea.isIntroductionPhase()) return;
         if (aceRaceArea.getGameStageEnum() == GameStageEnum.PROGRESS
                 && player.getGameMode() != GameMode.SPECTATOR) {
             aceRaceArea.handlePlayerMove(event);
@@ -95,6 +97,17 @@ public class AceRaceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerRiptide(PlayerRiptideEvent event) {
         aceRaceArea.applyIntermediateRiptideBoost(event);
+        aceRaceArea.handleRiptideStart(event.getPlayer());
+    }
+
+    /** Prevents a riptiding racer from attacking another player and losing momentum on contact. */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onSpinAttackContact(EntityAttemptSpinAttackEvent event) {
+        if (!(event.getEntity() instanceof Player player) || !(event.getTarget() instanceof Player)) return;
+        if (aceRaceArea.getGameStageEnum() == GameStageEnum.PROGRESS && !aceRaceArea.notAreaPlayer(player)) {
+            event.setCancelled(true);
+            aceRaceArea.handleRiptideStart(player);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

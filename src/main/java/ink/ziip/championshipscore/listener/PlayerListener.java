@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.listener;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.player.PlayerManager;
+import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -59,14 +60,18 @@ public class PlayerListener extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent event) {
+        PlayerIdentityMigrationResult migration = plugin.getPlayerManager()
+                .prepareIdentity(event.getName(), event.getUniqueId());
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getUniqueId());
         String name = event.getName();
+        boolean hasResolvedTeam = migration.successful() && !migration.hasTeamConflict()
+                && migration.resolvedTeamId() != null;
 
         if (Bukkit.getOnlinePlayers().size() >= CCConfig.MAX_PLAYERS) {
             if (CCConfig.WHITELIST.contains(name))
                 return;
 
-            if (championshipTeam == null) {
+            if (championshipTeam == null && !hasResolvedTeam) {
                 event.kickMessage(LegacyComponentSerializer.legacySection()
                         .deserialize(Utils.translateColorCodes(MessageConfig.SERVER_FULL)));
                 event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_FULL);
@@ -79,7 +84,6 @@ public class PlayerListener extends BaseListener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         PlayerManager playerManager = ChampionshipsCore.getInstance().getPlayerManager();
-        playerManager.getPlayer(player);
         playerManager.updatePlayer(player);
 
         // Let normal join/teleport notices finish first, then restore a recent result that may have

@@ -4,7 +4,11 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.BaseSingleGameSchedule;
 
+import java.util.List;
+
 public class TGTTOSScheduleManager extends BaseSingleGameSchedule {
+    private static final List<String> EVENT_MAPS = List.of(
+            "cod", "industry", "badlands", "tsf1", "cliff", "boat");
 
     public TGTTOSScheduleManager(ChampionshipsCore championshipsCore, TGTTOSScheduleHandler handler) {
         super(championshipsCore, handler, GameTypeEnum.TGTTOS);
@@ -13,12 +17,12 @@ public class TGTTOSScheduleManager extends BaseSingleGameSchedule {
 
     @Override
     public String getArea() {
-        return plugin.getGameManager().getTgttosManager().getAreaNameList().get(subRound - 1);
+        return EVENT_MAPS.get(subRound - 1);
     }
 
     @Override
     public int getTotalRounds() {
-        return plugin.getGameManager().getTgttosManager().getAreaNameList().size();
+        return EVENT_MAPS.size();
     }
 
 }

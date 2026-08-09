@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 6
+  version: 16
 name: "area"
 world-name:
 prepare:
@@ -8,42 +8,55 @@ prepare:
   revision: 0
   published-at:
   world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
 # Round duration in seconds. Default 12 minutes.
 timer: 720
 # Preparation countdown before the round starts, in seconds.
 prepare-time: 10
-# Number of internal team bases stamped from the single base template.
+# Number of playable team bases stamped from the single base template. Copy 0 stays as the editable template;
+# team bases occupy copies 1..N.
 base-count: 8
-# Filled by prepare from hub.schem/base.schem.
+# Filled by prepare from the resource-hub boundary and base.schem. The resource hub is hand-built in place and
+# never saved or replayed as a schematic.
 copy-layout: {}
-# Bounding box of the whole arena (hub + bases). This is the gameplay zone used for player/spectator
-# boundary checks and must be configured before the map can start.
+# Legacy fields retained for old map files. Build Mart uses the resource-hub selection plus the stamped
+# base template cuboids as its playable boundary; no single whole-map selection is required.
 area-pos1:
 area-pos2:
-# Optional explicit spectator viewpoint; defaults to the hub spawn / world spawn when unset.
+# Optional explicit spectator viewpoint; defaults to the hub portal point / world spawn when unset.
 spectator-spawn-point:
-# Central resource-market spawn. Players returning from their base land here.
-hub-spawn-point:
 # Hub bounding box. Inside it, flight is disabled and block placement is blocked.
 hub-pos1:
 hub-pos2:
-# Region inside the hub that returns a player to their own team base.
-hub-return-pos1:
-hub-return-pos2:
+# Landing point used when players enter a team-base Nether portal. Set this beside the resource-hub portal,
+# not inside its purple portal block.
+hub-portal-point:
+# Optional wind vent cuboids. Players standing above any selection are slowly lifted toward absolute Y=180.
+wind-zones: []
 # Anchor where the current golden blueprint is pasted in the hub for players to observe.
 golden-display-point:
-# Portal debounce (ms) so players don't bounce back and forth across a portal region.
+# Portal debounce (ms) so players don't bounce back and forth after a manual cross-map teleport.
 portal-cooldown-millis: 1000
-# Single base TEMPLATE geometry (seat 0). Every team's base is a same-orientation copy of this template,
-# translated onto the chunk-aligned grid calculated by prepare. Configure all keys against seat 0.
-# keys: spawn, portal-pos1, portal-pos2, normal-plot-1..3, normal-ref-1..3, normal-submit-1..3,
-#       golden-plot, golden-ref, golden-submit
-# Note: normal-submit-1..3 / golden-submit capture a WorldEdit SINGLE-BLOCK selection — select the submit
-# button block itself (//pos1 + //pos2 on the same block) before running set. All other base keys capture
-# your standing position (the plot/reference origin).
+# Single base TEMPLATE geometry (physical copy 0). It is never assigned to a team; every team uses copies 1..N,
+# translated onto the chunk-aligned grid calculated by prepare. Configure all keys against copy 0.
+# keys: portal, normal-plot-1..3, normal-ref-1..3, normal-submit-1..3,
+#       golden-plot, golden-submit
+# portal is the landing point reached from the resource-hub Nether portal; set it beside the portal, not inside it.
+# Note: normal-submit-1..3 / golden-submit capture a WorldEdit SINGLE-BLOCK selection. normal-plot-1..3,
+# normal-ref-1..3 and golden-plot capture an exact 7x1x7 floor selection and store its minimum corner.
+# portal captures your standing position.
 base: {}
 # How often (seconds) the golden blueprint is swapped; it stays live for this whole window.
 golden-refresh-seconds: 120
+
+# 24 个材料岛的中心。材料区按水平距离自动归入最近的岛；新地图需先生成或填写完整中心。
+material-islands: []
+
+# 可选材料区。每项保存一个 WorldEdit 方块快照，比赛中每 2 分钟按选区原样恢复。
+material-zones: []
 
 # ── 规则介绍阶段（introduction）────────────────────────────
 # 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
@@ -52,7 +65,7 @@ golden-refresh-seconds: 120
 # introduction-spawn-point 留空时使用旁观出生点；把 rules 设为 [] 可跳过该阶段。
 introduction-spawn-point:
 rules:
-  - - "&#696969==========&r &#ff6b26[&e建材集市&#ff6b26] &#696969==========&r"
+  - - "&#696969==========&r &#ff6b26[&e匹配赛建&#ff6b26] &#696969==========&r"
     - "&#fff566建筑师们，限时 12 分钟的速建大赛开工啦！"
     - "&#ededed一局定胜负，所有队伍同在一个世界"
     - "&#ededed各队基地有 3 个普通建筑区、1 个黄金建筑区"

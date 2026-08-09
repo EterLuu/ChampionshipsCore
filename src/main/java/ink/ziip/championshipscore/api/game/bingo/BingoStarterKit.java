@@ -24,8 +24,8 @@ import java.util.Set;
 /**
  * The bingo starter kit handed to every participant at round start (per the bingo design doc):
  * <ul>
- *   <li>team-coloured leather helmet/leggings/boots - Unbreakable + Protection IV (no chestplate,
- *       the slot holds the elytra);</li>
+ *   <li>team-coloured leather helmet/leggings - Unbreakable + Protection IV; boots additionally
+ *       have Feather Falling IV (no chestplate, the slot holds the elytra);</li>
  *   <li>an Unbreakable elytra (chest slot);</li>
  *   <li>32 bread;</li>
  *   <li>Efficiency III + Unbreakable stone pickaxe / axe / shovel; no hoe;</li>
@@ -83,7 +83,7 @@ public final class BingoStarterKit {
         // Team-coloured leather armor (helmet/leggings/boots); the chest slot holds the elytra.
         inv.setHelmet(protective(team.getHelmet()));
         inv.setLeggings(protective(team.getLeggings()));
-        inv.setBoots(protective(team.getBoots()));
+        inv.setBoots(protectiveBoots(team.getBoots()));
         inv.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
 
         // Stone tools, sword, food and rockets go into the inventory; overflow is dropped at the
@@ -183,6 +183,18 @@ public final class BingoStarterKit {
         if (meta != null) {
             meta.setUnbreakable(true);
             meta.addEnchant(Enchants.get(EnchantmentKeys.PROTECTION), 4, true);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /** Unbreakable + Protection IV + Feather Falling IV on the starter boots. */
+    private static ItemStack protectiveBoots(ItemStack item) {
+        item = protective(item);
+        if (item == null) return null;
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.addEnchant(Enchants.get(EnchantmentKeys.FEATHER_FALLING), 4, true);
             item.setItemMeta(meta);
         }
         return item;

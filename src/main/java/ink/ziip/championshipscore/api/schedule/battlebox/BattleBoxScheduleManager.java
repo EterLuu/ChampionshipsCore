@@ -18,6 +18,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.*;
 
 public class BattleBoxScheduleManager extends BaseManager {
+    private static final int ROUND_TRANSITION_SECONDS = 10;
     private final BukkitScheduler scheduler;
     private final BattleBoxScheduleHandler handler;
     private final List<Set<TwoVTwoVector>> rounds = new ArrayList<>();
@@ -121,7 +122,6 @@ public class BattleBoxScheduleManager extends BaseManager {
 
         firstStartTask = scheduler.runTaskTimer(plugin, () -> {
 
-            Utils.changeLevelForAllPlayers(timer);
             plugin.getScheduleManager().showRoundPreparationCountdown(GameTypeEnum.BattleBox, 1, timer);
 
             if (timer == 10) {
@@ -133,7 +133,6 @@ public class BattleBoxScheduleManager extends BaseManager {
             }
 
             if (timer == 0) {
-                Utils.changeLevelForAllPlayers(0);
                 subRound = 0;
                 startBattleBoxRound();
                 if (firstStartTask != null)
@@ -189,7 +188,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         scheduledMapName = null;
         handler.unRegister();
         plugin.getGameManager().releaseEventSpectatorsForGame(GameTypeEnum.BattleBox);
-        Utils.changeLevelForAllPlayers(0);
+        plugin.getScheduleManager().clearRoundPreparationCountdown();
     }
 
     public void endSchedule() {
@@ -203,7 +202,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         scheduledMapName = null;
 
         handler.unRegister();
-        Utils.changeLevelForAllPlayers(0);
+        plugin.getScheduleManager().clearRoundPreparationCountdown();
         plugin.getGameManager().releaseEventSpectatorsForGame(GameTypeEnum.BattleBox);
         rounds.clear();
     }
@@ -219,18 +218,16 @@ public class BattleBoxScheduleManager extends BaseManager {
         }
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
-        timer = 30;
+        timer = ROUND_TRANSITION_SECONDS;
         startTask = scheduler.runTaskTimer(plugin, () -> {
 
-            Utils.changeLevelForAllPlayers(timer);
             plugin.getScheduleManager().showRoundPreparationCountdown(GameTypeEnum.BattleBox, subRound, timer);
 
-            if (timer == 30) {
+            if (timer == ROUND_TRANSITION_SECONDS) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.NEXT_ROUND_SOON));
             }
 
             if (timer == 0) {
-                Utils.changeLevelForAllPlayers(0);
                 startRoundBattle();
                 if (startTask != null)
                     startTask.cancel();

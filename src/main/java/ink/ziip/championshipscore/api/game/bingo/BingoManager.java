@@ -70,8 +70,12 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         compassListener.register();
         registerGlobal(new PortalListener("bingo"));
 
+        // Register map instances before deferring the expensive card-pool/image initialization. This
+        // makes the area visible to commands and schedules as soon as the persistent worlds are ready.
+        loadAreas(new File(bingoDir, "areas"));
+
         BukkitScheduler scheduler = plugin.getServer().getScheduler();
-        // Defer pool/atlas init and area scan to the first tick, when advancements, recipes and the map
+        // Defer pool/atlas initialization to the first tick, when advancements, recipes and the map
         // palette are all available.
         scheduler.runTask(plugin, task -> {
             TierlistLoader.load(plugin, config.getString("cards.tierlist", "default"));
@@ -87,16 +91,17 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
             TaskGenerator.setKitFilter(BingoStarterKit::trivialises);
             TaskImageAtlas.ensureLoaded();
 
-            File areasFolder = new File(bingoDir, "areas");
-            areasFolder.mkdirs();
-            String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
-            if (areaList != null) {
-                for (String file : areaList) {
-                    String name = file.substring(0, file.length() - 4);
-                    areas.put(name, new BingoArea(plugin, new BingoConfig(plugin, name)));
-                }
-            }
         });
+    }
+
+    private void loadAreas(File areasFolder) {
+        areasFolder.mkdirs();
+        String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
+        if (areaList == null) return;
+        for (String file : areaList) {
+            String name = file.substring(0, file.length() - 4);
+            areas.put(name, new BingoArea(plugin, new BingoConfig(plugin, name)));
+        }
     }
 
     private YamlConfiguration loadGlobalConfig(File bingoDir) {

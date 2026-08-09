@@ -181,8 +181,7 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
-            changeLevelForAllGamePlayers(timer);
-            updateSpectatorTimerBossBar(MessageConfig.SNOWBALL_ACTION_BAR_COUNT_DOWN
+            updateGameTimerBossBar(MessageConfig.SNOWBALL_ACTION_BAR_COUNT_DOWN
                     .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
             calculateCurrentRank();
         }, this::endGame);
@@ -231,7 +230,7 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         Collections.reverse(list);
 
-        int shootTimes = 0;
+        int shootTimes = Integer.MIN_VALUE;
         int additionalPoints = 65;
         for (Map.Entry<ChampionshipTeam, Integer> entry : list) {
             if (shootTimes != entry.getValue()) {

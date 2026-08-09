@@ -23,6 +23,7 @@ import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Chest;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.HappyGhast;
 import org.bukkit.entity.Player;
@@ -35,6 +36,7 @@ import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -48,10 +50,14 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     private final List<SkyWarsShrink> shrinkTimes = new ArrayList<>();
     private final Map<ChampionshipTeam, Location> teamSpawnLocations = new HashMap<>();
     private final Map<ChampionshipTeam, HappyGhast> teamHappyGhasts = new HashMap<>();
+    /** Short-lived kill attribution for players thrown off a happy ghast. */
+    private final Map<UUID, HappyGhastKillCredit> happyGhastKillCredits = new ConcurrentHashMap<>();
+    private static final long HAPPY_GHAST_KILL_CREDIT_MILLIS = 10_000L;
     @Getter
     private int timer;
     private BukkitTask startGameProgressTask;
     private BukkitTask borderCheckTask;
+    private boolean lastTeamEndCheckScheduled;
     private double radius;
     private double shrink;
     private double height;
@@ -68,9 +74,11 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         teamDeathPlayers.clear();
         teamSpawnLocations.clear();
         teamHappyGhasts.clear();
+        happyGhastKillCredits.clear();
 
         startGameProgressTask = null;
         borderCheckTask = null;
+        lastTeamEndCheckScheduled = false;
 
         preloadMap();
     }
@@ -250,12 +258,12 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         int duration = variant().lifecycle().durationSeconds();
         startGameProgressTask = startRemainingTimer(duration, seconds -> {
             timer = seconds;
-            String timerMessage = MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer));
-            sendActionBarToActiveGamePlayers(timerMessage);
-            updateSpectatorTimerBossBar(timerMessage, timer, duration);
+            updateGameTimerBossBar(skyWarsBossBarTitle(), timer, duration);
 
             if (timer == 0)
                 return;
+
+            announceUpcomingTimedEvent();
 
             if (timer == variant().rules().boundary().enableAtRemainingSeconds()) {
                 startBorderShrink();
@@ -265,6 +273,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             if (spawnHappyGhastTime != null && timer == spawnHappyGhastTime) {
                 if (spawnTeamHappyGhasts() > 0) {
                     sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_HAPPY_GHAST_SPAWNED);
+                    sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_HAPPY_GHAST_SPAWNED_ACTION_BAR);
                     playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1, 1.2F);
                 }
             }
@@ -280,6 +289,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                             skyWarsShrink.getToHeight()
                     );
                     sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_BOARD_SHRINK);
+                    sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_BOARD_SHRINK);
                     playSoundToAllGamePlayers(Sound.BLOCK_ANVIL_USE, 1, 12F);
                 }
                 if (timer == skyWarsShrink.getEndTime()) {
@@ -287,12 +297,15 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                     heightShrink = 0;
                     shrink = 0;
                     sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_STOP_BOARD_SHRINK);
+                    if (!hasShrinkStartingAt(timer))
+                        sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_STOP_BOARD_SHRINK);
                     playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1, 12F);
                 }
             }
 
             if (timer == variant().rules().disableHealthRegainAtRemainingSeconds()) {
                 sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_DEDUCT_FOOD_LEVEL);
+                sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_DEDUCT_FOOD_LEVEL);
             }
 
             if (timer <= variant().rules().disableHealthRegainAtRemainingSeconds()) {
@@ -300,6 +313,64 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             }
 
         }, this::endGame);
+
+        scheduleEndIfOneTeamRemains();
+    }
+
+    private String skyWarsBossBarTitle() {
+        String title = MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer));
+        SkyWarsShrink activeShrink = activeShrink();
+        if (activeShrink != null) {
+            int remaining = Math.max(0, timer - activeShrink.getEndTime());
+            title += " &#bababa• " + MessageConfig.SKY_WARS_BOARD_SHRINK_ACTIVE
+                    .replace("%time%", String.valueOf(remaining));
+        }
+        if (timer <= variant().rules().disableHealthRegainAtRemainingSeconds())
+            title += " &#bababa• " + MessageConfig.SKY_WARS_HEALTH_DRAIN_ACTIVE;
+        return title;
+    }
+
+    private void announceUpcomingTimedEvent() {
+        Integer happyGhastTime = variant().rules().spawnHappyGhastAtRemainingSeconds();
+        if (happyGhastTime != null) {
+            int warning = timer - happyGhastTime;
+            if (warning >= 1 && warning <= 10) {
+                sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_HAPPY_GHAST_COUNT_DOWN
+                        .replace("%time%", String.valueOf(warning)));
+                return;
+            }
+        }
+
+        for (SkyWarsShrink shrinkTime : shrinkTimes) {
+            int warning = timer - shrinkTime.getStartTime();
+            if (warning >= 1 && warning <= 10) {
+                sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_BOARD_SHRINK_COUNT_DOWN
+                        .replace("%time%", String.valueOf(warning)));
+                return;
+            }
+        }
+
+        int healthDrainWarning = timer - variant().rules().disableHealthRegainAtRemainingSeconds();
+        if (healthDrainWarning >= 1 && healthDrainWarning <= 10) {
+            sendActionBarToAllGamePlayers(MessageConfig.SKY_WARS_HEALTH_DRAIN_COUNT_DOWN
+                    .replace("%time%", String.valueOf(healthDrainWarning)));
+        }
+    }
+
+    private SkyWarsShrink activeShrink() {
+        for (SkyWarsShrink shrinkTime : shrinkTimes) {
+            if (timer <= shrinkTime.getStartTime() && timer > shrinkTime.getEndTime())
+                return shrinkTime;
+        }
+        return null;
+    }
+
+    private boolean hasShrinkStartingAt(int remainingSeconds) {
+        for (SkyWarsShrink shrinkTime : shrinkTimes) {
+            if (shrinkTime.getStartTime() == remainingSeconds)
+                return true;
+        }
+        return false;
     }
 
     private void setBorderShrinkTask(int start, int end, double startRadius, double startHeight, double startLow, int toRadius, int toHeight) {
@@ -457,7 +528,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         Integer deathPlayer = teamDeathPlayers.get(championshipTeam);
         logGame(Level.INFO, "淘汰", "队伍=" + championshipTeam.getName() + " 已淘汰人数=" + deathPlayer);
         if (deathPlayer != null) {
-            if (deathPlayer == championshipTeam.getMembers().size()) {
+            if (deathPlayer == getParticipatingTeamSize(championshipTeam)) {
                 sendMessageToAllGamePlayers(MessageConfig.SKY_WARS_WHOLE_TEAM_WAS_KILLED.replace("%team%", championshipTeam.getColoredName()));
                 killTeamHappyGhast(championshipTeam);
                 if (addedPoints)
@@ -480,6 +551,50 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             addTeamDeathPlayer(championshipTeam, true);
         }
         addPointsToAllSurvivePlayers(variant().scoring().playerEliminationSurvival());
+        scheduleEndIfOneTeamRemains();
+    }
+
+    private int getParticipatingTeamSize(ChampionshipTeam team) {
+        int participants = 0;
+        for (UUID uuid : team.getMembers()) {
+            if (gamePlayers.contains(uuid))
+                participants++;
+        }
+        return participants;
+    }
+
+    private int countSurvivingTeams() {
+        int survivingTeams = 0;
+        for (ChampionshipTeam team : gameTeams) {
+            for (UUID uuid : team.getMembers()) {
+                if (gamePlayers.contains(uuid) && !deathPlayer.contains(uuid)) {
+                    survivingTeams++;
+                    break;
+                }
+            }
+        }
+        return survivingTeams;
+    }
+
+    /**
+     * Defers the terminal check until the current death/quit event has finished awarding kill points
+     * and broadcasting its death message. Multiple eliminations in the same tick share one recheck.
+     */
+    private void scheduleEndIfOneTeamRemains() {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS
+                || lastTeamEndCheckScheduled
+                || countSurvivingTeams() > 1) {
+            return;
+        }
+
+        lastTeamEndCheckScheduled = true;
+        scheduler.runTask(plugin, () -> {
+            lastTeamEndCheckScheduled = false;
+            if (getGameStageEnum() == GameStageEnum.PROGRESS && countSurvivingTeams() <= 1) {
+                logGame(Level.INFO, "结束", "存活队伍数=" + countSurvivingTeams() + "，提前结束并结算");
+                endGame();
+            }
+        });
     }
 
     private void addPointsToAllSurvivePlayers(int points) {
@@ -523,14 +638,23 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
         spawnTomb(player, event.getDrops());
 
-        addDeathPlayer(player);
-
         Player assailant = player.getKiller();
         EntityDamageEvent entityDamageEvent = player.getLastDamageCause();
+        UUID assailantUuid = assailant == null ? null : assailant.getUniqueId();
+        if (entityDamageEvent != null
+                && (entityDamageEvent.getCause() == EntityDamageEvent.DamageCause.FALL
+                || entityDamageEvent.getCause() == EntityDamageEvent.DamageCause.VOID)) {
+            UUID happyGhastKiller = consumeHappyGhastKiller(player);
+            if (happyGhastKiller != null) {
+                assailantUuid = happyGhastKiller;
+            }
+        }
 
-        if (assailant != null) {
+        addDeathPlayer(player);
+
+        if (assailantUuid != null) {
             ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            ChampionshipTeam assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
+            ChampionshipTeam assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailantUuid);
 
             if (playerTeam == null || assailantTeam == null)
                 return;
@@ -548,18 +672,18 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                 message = MessageConfig.SKY_WARS_KILL_TEAM_PLAYER;
                 message = message
                         .replace("%player%", Utils.formatPlayerName(player))
-                        .replace("%killer%", Utils.formatPlayerName(assailant));
+                        .replace("%killer%", Utils.formatPlayerName(assailantUuid));
                 sendMessageToAllGamePlayers(message);
                 return;
             }
 
             message = message
                     .replace("%player%", Utils.formatPlayerName(player))
-                    .replace("%killer%", Utils.formatPlayerName(assailant));
+                    .replace("%killer%", Utils.formatPlayerName(assailantUuid));
 
             sendMessageToAllGamePlayers(message);
 
-            addPlayerPoints(assailant.getUniqueId(), variant().scoring().kill());
+            addPlayerPoints(assailantUuid, variant().scoring().kill());
         } else {
 
             String message = MessageConfig.SKY_WARS_PLAYER_DEATH;
@@ -786,6 +910,61 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
     public boolean isTeamHappyGhast(HappyGhast happyGhast) {
         return teamHappyGhasts.containsValue(happyGhast);
+    }
+
+    /**
+     * Records players carried by or standing on a team happy ghast when it is killed.
+     * A player standing on its collision box is not a Bukkit passenger, but will fall for
+     * exactly the same reason once the ghast dies.
+     */
+    public void recordHappyGhastKill(@NotNull HappyGhast happyGhast, @NotNull UUID killerUuid) {
+        long expiresAt = System.currentTimeMillis() + HAPPY_GHAST_KILL_CREDIT_MILLIS;
+        for (Entity passenger : happyGhast.getPassengers()) {
+            if (passenger instanceof Player player) {
+                recordHappyGhastKillCredit(player, killerUuid, expiresAt);
+            }
+        }
+        BoundingBox happyGhastBounds = happyGhast.getBoundingBox();
+        for (UUID playerUuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(playerUuid);
+            if (player != null && isStandingOnHappyGhast(player, happyGhastBounds)) {
+                recordHappyGhastKillCredit(player, killerUuid, expiresAt);
+            }
+        }
+    }
+
+    private void recordHappyGhastKillCredit(@NotNull Player player, @NotNull UUID killerUuid, long expiresAt) {
+        UUID playerUuid = player.getUniqueId();
+        if (gamePlayers.contains(playerUuid) && !deathPlayer.contains(playerUuid)) {
+            happyGhastKillCredits.put(playerUuid, new HappyGhastKillCredit(killerUuid, expiresAt));
+        }
+    }
+
+    private boolean isStandingOnHappyGhast(@NotNull Player player, @NotNull BoundingBox happyGhastBounds) {
+        BoundingBox playerBounds = player.getBoundingBox();
+        boolean horizontalOverlap = playerBounds.getMaxX() > happyGhastBounds.getMinX()
+                && playerBounds.getMinX() < happyGhastBounds.getMaxX()
+                && playerBounds.getMaxZ() > happyGhastBounds.getMinZ()
+                && playerBounds.getMinZ() < happyGhastBounds.getMaxZ();
+        double feetY = playerBounds.getMinY();
+        return horizontalOverlap
+                && feetY >= happyGhastBounds.getMaxY() - 0.25
+                && feetY <= happyGhastBounds.getMaxY() + 1.5;
+    }
+
+    /** Consumes a pending happy-ghast kill credit, if the fall happened soon enough. */
+    UUID consumeHappyGhastKiller(@NotNull Player player) {
+        HappyGhastKillCredit credit = happyGhastKillCredits.remove(player.getUniqueId());
+        if (credit == null || credit.expiresAt() < System.currentTimeMillis()) {
+            return null;
+        }
+        return credit.killerUuid();
+    }
+
+    private record HappyGhastKillCredit(UUID killerUuid, long expiresAt) {}
+
+    public int getKillPoints() {
+        return variant().scoring().kill();
     }
 
     public boolean canRideTeamHappyGhast(Player player, HappyGhast happyGhast) {

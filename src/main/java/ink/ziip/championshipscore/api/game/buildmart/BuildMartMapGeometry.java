@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.api.game.buildmart;
 
-import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
+import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
 import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.util.BoundingBox;
@@ -13,47 +13,39 @@ import org.jetbrains.annotations.Nullable;
 public final class BuildMartMapGeometry {
     @Nullable private final BoundingBox boundary;
     @Nullable private final Location spectatorSpawn;
-    @Nullable private final Location hubSpawn;
     @Nullable private final BoundingBox hub;
-    @Nullable private final BoundingBox hubReturn;
     @Nullable private final Location goldenDisplay;
-    @Nullable private final ReplicatedSpatialLayout<BuildMartBase> bases;
+    @Nullable private final BuildMartBase baseTemplate;
+    @NotNull private final ArenaGrid baseGrid;
+    private final int baseCount;
 
     private BuildMartMapGeometry(@Nullable BoundingBox boundary, @Nullable Location spectatorSpawn,
-                                 @Nullable Location hubSpawn, @Nullable BoundingBox hub,
-                                 @Nullable BoundingBox hubReturn, @Nullable Location goldenDisplay,
-                                 @Nullable ReplicatedSpatialLayout<BuildMartBase> bases) {
+                                 @Nullable BoundingBox hub, @Nullable Location goldenDisplay,
+                                 @Nullable BuildMartBase baseTemplate, @NotNull ArenaGrid baseGrid,
+                                 int baseCount) {
         this.boundary = boundary;
         this.spectatorSpawn = spectatorSpawn;
-        this.hubSpawn = hubSpawn;
         this.hub = hub;
-        this.hubReturn = hubReturn;
         this.goldenDisplay = goldenDisplay;
-        this.bases = bases;
+        this.baseTemplate = baseTemplate;
+        this.baseGrid = baseGrid;
+        this.baseCount = baseCount;
     }
 
     public static @NotNull BuildMartMapGeometry from(@NotNull BuildMartConfig config) {
         BuildMartBase template = config.getBaseTemplate();
-        ReplicatedSpatialLayout<BuildMartBase> bases = template == null ? null
-                : new ReplicatedSpatialLayout<>(template, config.getBaseGrid(), config.getBaseCount());
         return new BuildMartMapGeometry(box(config.getAreaPos1(), config.getAreaPos2()),
-                config.getSpectatorSpawnPoint(), config.getHubSpawnPoint(),
-                box(config.getHubPos1(), config.getHubPos2()),
-                box(config.getHubReturnPos1(), config.getHubReturnPos2()),
-                config.getGoldenDisplayPoint(), bases);
+                config.getSpectatorSpawnPoint(), box(config.getHubPos1(), config.getHubPos2()),
+                config.getGoldenDisplayPoint(), template, config.getBaseGrid(), config.getBaseCount());
     }
 
     public @Nullable BuildMartBase baseForSeat(int seat) {
-        if (bases == null || seat < 0 || seat >= bases.copyCount()) return null;
-        return bases.geometry(seat).forSeat(seat);
+        if (baseTemplate == null || seat < 0 || seat >= baseCount) return null;
+        return baseTemplate.transform(baseGrid.transform(BuildMartConfig.playableCopyIndex(seat))).forSeat(seat);
     }
 
     public boolean isInHub(@NotNull Location location) {
         return hub != null && hub.contains(location.toVector());
-    }
-
-    public boolean isInHubReturn(@NotNull Location location) {
-        return hubReturn != null && hubReturn.contains(location.toVector());
     }
 
     private static @Nullable BoundingBox box(@Nullable Vector a, @Nullable Vector b) {

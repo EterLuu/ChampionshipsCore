@@ -106,6 +106,12 @@ public class GameManagerHandler extends BaseListener {
         if (baseArea != null) {
             if (baseArea.restoreSharedPreGameParticipant(player))
                 return;
+            if (baseArea.getGameStageEnum() == ink.ziip.championshipscore.api.object.stage.GameStageEnum.END
+                    && baseArea.isPostGamePending()) {
+                // A reconnect during the result window must not revive game inventory or mode.
+                baseArea.sanitizeParticipantForLobby(player, true);
+                return;
+            }
             baseArea.handlePlayerJoin(event);
             return;
         }
@@ -135,9 +141,10 @@ public class GameManagerHandler extends BaseListener {
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
             championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
                 player.teleport(CCConfig.LOBBY_LOCATION);
-                player.setGameMode(GameMode.ADVENTURE);
             });
         }
+        // The lobby is always adventure, including reconnects that already spawned in its world.
+        player.setGameMode(GameMode.ADVENTURE);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

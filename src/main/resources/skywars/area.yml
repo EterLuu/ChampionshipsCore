@@ -8,6 +8,10 @@ prepare:
   revision: 0
   published-at:
   world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
 # "inline" reads rules from this map file; any other id resolves skywars/variants/<id>.yml.
 variant: inline
 timer: 960
@@ -27,11 +31,11 @@ boundary:
   radius: 240
 shrink-time:
 - 660:630:150:126
-- 540:510:100:126
-- 420:390:65:106
-- 300:270:30:96
-- 180:150:15:86
-- 90:60:5:86
+- 540:510:110:126
+- 420:390:80:106
+- 300:270:65:96
+- 180:150:45:86
+- 90:60:30:86
 - 60:10:0:76
 time:
   enable-boundary-shrink: 660

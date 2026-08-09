@@ -20,7 +20,7 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 5;
+        return 8;
     }
 
     /** Version 3 onward uses full visual-refresh templates rather than merging individual old panels. */
@@ -82,6 +82,12 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "ace-race-points")
     public static List<String> ACE_RACE_POINTS;
+
+    @ConfigOption(path = "build-mart")
+    public static List<String> BUILD_MART;
+
+    @ConfigOption(path = "build-mart-points")
+    public static List<String> BUILD_MART_POINTS;
 
     @ConfigOption(path = "hoty-cody-dusky")
     public static List<String> HOTY_CODY_DUSKY;

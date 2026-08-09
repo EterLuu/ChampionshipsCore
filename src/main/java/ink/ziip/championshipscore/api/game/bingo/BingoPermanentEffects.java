@@ -12,7 +12,6 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * Permanent potion effects granted to every bingo participant for the whole round: applied at round
@@ -27,26 +26,14 @@ import java.util.Set;
  * it never clobbers an active temporary buff, and once that buff expires the next tick restores the
  * permanent one.
  *
- * <p><b>Elytra interaction:</b> Slow Falling cancels elytra glide momentum, so while a participant
- * is gliding ({@link Player#isGliding()}) every effect in {@link #GLIDE_SUPPRESSED} is dropped and
- * kept off (the tracker's {@code ensure} skips it); when the glide ends the dropped effect is
- * restored. The toggle itself is reacted to immediately via {@code EntityToggleGlideEvent} in
- * {@link BingoHandler} so the effect vanishes the instant gliding starts, not a second later.
- *
  * <p>Config entries are {@code "<effect>:<level>"} strings where {@code <level>} is the in-game
  * displayed level (1 = I, 2 = II, …, 8 = VIII); it may be omitted (defaults to I). {@code <effect>}
  * is a vanilla {@link PotionEffectType} key ({@code night_vision}, {@code jump_boost},
- * {@code slow_falling}, {@code speed}, {@code haste}, …), resolved through {@link Registry#EFFECT}.
+ * {@code speed}, {@code haste}, …), resolved through {@link Registry#EFFECT}.
  */
 public final class BingoPermanentEffects {
     private BingoPermanentEffects() {
     }
-
-    /**
-     * Effects that conflict with elytra gliding and are suppressed while a participant is gliding.
-     * Slow Falling damps glide fall-speed and so kills elytra flight; add others here if needed.
-     */
-    private static final Set<PotionEffectType> GLIDE_SUPPRESSED = Set.of(PotionEffectType.SLOW_FALLING);
 
     /**
      * Parses config entries into infinite-duration {@link PotionEffect}s. Each entry is
@@ -87,41 +74,14 @@ public final class BingoPermanentEffects {
     }
 
     /**
-     * Re-adds each permanent effect the player is currently missing. Effects in
-     * {@link #GLIDE_SUPPRESSED} are skipped while the player is gliding (they are managed by
-     * {@link #onGlideToggle}). Safe to call every tracker tick: it only fills gaps and never
-     * overwrites an active temporary buff of the same type.
+     * Re-adds each permanent effect the player is currently missing. Safe to call every tracker tick:
+     * it only fills gaps and never overwrites an active temporary buff of the same type.
      */
     public static void ensure(Player player, List<PotionEffect> effects) {
         if (player == null || effects.isEmpty()) return;
-        boolean gliding = player.isGliding();
         for (PotionEffect effect : effects) {
             PotionEffectType type = effect.getType();
-            if (gliding && GLIDE_SUPPRESSED.contains(type)) continue;
             if (player.getPotionEffect(type) == null) {
-                player.addPotionEffect(effect);
-            }
-        }
-    }
-
-    /**
-     * Called on {@code EntityToggleGlideEvent}: when gliding begins, drop every glide-suppressed
-     * effect (currently Slow Falling) so elytra flight isn't damped; when gliding ends, restore the
-     * configured permanent one if it's still missing. No-op when the configured set contains no
-     * glide-suppressed effect.
-     */
-    public static void onGlideToggle(Player player, List<PotionEffect> effects, boolean gliding) {
-        if (player == null || effects.isEmpty()) return;
-        if (gliding) {
-            for (PotionEffectType type : GLIDE_SUPPRESSED) {
-                player.removePotionEffect(type);
-            }
-            return;
-        }
-        // Stopped gliding: restore any permanent glide-suppressed effect the player is now missing.
-        for (PotionEffect effect : effects) {
-            if (!GLIDE_SUPPRESSED.contains(effect.getType())) continue;
-            if (player.getPotionEffect(effect.getType()) == null) {
                 player.addPotionEffect(effect);
             }
         }

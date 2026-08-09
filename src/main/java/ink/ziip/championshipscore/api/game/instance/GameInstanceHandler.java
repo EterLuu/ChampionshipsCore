@@ -127,13 +127,8 @@ public class GameInstanceHandler extends BaseListener {
             event.setCancelled(true);
             return;
         }
-        if (baseArea.isSpectator(player) || isIntroductionParticipant(player)) {
-            if (event.getTo() != null && !baseArea.isSpectatorLocationAllowed(event.getTo())) {
-                player.teleport(isIntroductionParticipant(player)
-                        ? baseArea.getPreparationTeleportLocation(baseArea.getSpectatorSpawnLocation())
-                        : baseArea.getSpectatorSpawnLocation());
-            }
-        }
+        // External spectators may freely explore the world's loaded space. Their game mode and
+        // interaction protection are still enforced by this handler.
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

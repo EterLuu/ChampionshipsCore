@@ -11,8 +11,10 @@ import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +32,7 @@ public class TNTRunConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 4;
+        return 6;
     }
 
     @ConfigOption(path = "name")
@@ -77,7 +79,9 @@ public class TNTRunConfig extends BaseGameConfig {
     }
 
     public ArenaGrid prepareCopyGrid(Vector size) {
-        copyLayoutOrigin = TNTRunLayout.FIRST.clone();
+        copyLayoutOrigin = areaPos1 == null || areaPos2 == null
+                ? TNTRunLayout.FIRST.clone()
+                : Vector.getMinimum(areaPos1, areaPos2);
         copyLayoutStep = ArenaLayoutPlanner.rowStep(size);
         copySize = size.clone();
         return getCopyGrid();
@@ -107,5 +111,30 @@ public class TNTRunConfig extends BaseGameConfig {
             return derived;
         }
         return spawnPoints;
+    }
+
+    @Override
+    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
+                                                  @NotNull YamlConfiguration migratedConfiguration) {
+        // Prepared copies must be anchored to the hand-built source selection. Older prepared maps did
+        // not persist that selection and therefore derived every generated copy from the wrong origin.
+        if (oldConfiguration.getInt("copies", 0) > 0
+                && (!oldConfiguration.contains("area-pos1") || !oldConfiguration.contains("area-pos2"))) {
+            migratedConfiguration.set("prepare.published", false);
+            migratedConfiguration.set("prepare.dirty", true);
+        }
+
+        // Version 5 introduced prepare metadata and marked legacy, single-arena maps dirty even when
+        // their original aggregate bounds and explicit spawn points are still complete. Those maps are
+        // already valid published maps; keep newly stamped/copy-based drafts locked instead.
+        if (oldConfiguration.getBoolean("prepare.published", false)
+                && oldConfiguration.getBoolean("prepare.dirty", false)
+                && oldConfiguration.getInt("copies", 0) <= 0
+                && oldConfiguration.getBoolean("prepare.world-built", false)
+                && oldConfiguration.contains("area-pos1")
+                && oldConfiguration.contains("area-pos2")
+                && !oldConfiguration.getStringList("spawn-points").isEmpty()) {
+            migratedConfiguration.set("prepare.dirty", false);
+        }
     }
 }

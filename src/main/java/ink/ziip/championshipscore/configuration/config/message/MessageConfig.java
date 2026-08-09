@@ -20,7 +20,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 20;
+        return 26;
     }
 
     /** Keep unrelated rank/vote copy while replacing the unified gameplay and administration copy in v11. */
@@ -284,6 +284,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.preparation-count-down")
     public static String GAME_PREPARATION_COUNT_DOWN;
 
+    @ConfigOption(path = "game.introduction-title")
+    public static String GAME_INTRODUCTION_TITLE;
+
     @ConfigOption(path = "game.round-preparation-title")
     public static String GAME_ROUND_PREPARATION_TITLE;
 
@@ -310,6 +313,9 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "game.round-end-title")
     public static String GAME_ROUND_END_TITLE;
+
+    @ConfigOption(path = "game.round-complete-title")
+    public static String GAME_ROUND_COMPLETE_TITLE;
 
     @ConfigOption(path = "game.round-end-subtitle")
     public static String GAME_ROUND_END_SUBTITLE;
@@ -554,14 +560,32 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "skywars.board-shrink")
     public static String SKY_WARS_BOARD_SHRINK;
 
+    @ConfigOption(path = "skywars.board-shrink-count-down")
+    public static String SKY_WARS_BOARD_SHRINK_COUNT_DOWN;
+
+    @ConfigOption(path = "skywars.board-shrink-active")
+    public static String SKY_WARS_BOARD_SHRINK_ACTIVE;
+
     @ConfigOption(path = "skywars.stop-board-shrink")
     public static String SKY_WARS_STOP_BOARD_SHRINK;
 
     @ConfigOption(path = "skywars.happy-ghast-spawned")
     public static String SKY_WARS_HAPPY_GHAST_SPAWNED;
 
+    @ConfigOption(path = "skywars.happy-ghast-count-down")
+    public static String SKY_WARS_HAPPY_GHAST_COUNT_DOWN;
+
+    @ConfigOption(path = "skywars.happy-ghast-spawned-action-bar")
+    public static String SKY_WARS_HAPPY_GHAST_SPAWNED_ACTION_BAR;
+
     @ConfigOption(path = "skywars.deduct-food-level")
     public static String SKY_WARS_DEDUCT_FOOD_LEVEL;
+
+    @ConfigOption(path = "skywars.health-drain-count-down")
+    public static String SKY_WARS_HEALTH_DRAIN_COUNT_DOWN;
+
+    @ConfigOption(path = "skywars.health-drain-active")
+    public static String SKY_WARS_HEALTH_DRAIN_ACTIVE;
 
     @ConfigOption(path = "skywars.out-of-border")
     public static String SKY_WARS_OUT_OF_BORDER;
@@ -617,6 +641,9 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tgttos.fall-into-void")
     public static String TGTTOS_FALL_INTO_VOID;
+
+    @ConfigOption(path = "tgttos.elytra-eliminated")
+    public static String TGTTOS_ELYTRA_ELIMINATED;
 
     // Ace Race
     @ConfigOption(path = "acerace.start-preparation")
@@ -697,6 +724,18 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "bingo.action-bar-count-down")
     public static String BINGO_ACTION_BAR_COUNT_DOWN;
+
+    @ConfigOption(path = "bingo.pvp-protection")
+    public static String BINGO_PVP_PROTECTION;
+
+    @ConfigOption(path = "bingo.pvp-active")
+    public static String BINGO_PVP_ACTIVE;
+
+    @ConfigOption(path = "bingo.pvp-start-count-down")
+    public static String BINGO_PVP_START_COUNT_DOWN;
+
+    @ConfigOption(path = "bingo.pvp-started")
+    public static String BINGO_PVP_STARTED;
 
     @ConfigOption(path = "bingo.task-completed")
     public static String BINGO_TASK_COMPLETED;
@@ -794,6 +833,8 @@ public class MessageConfig extends BaseConfigurationFile {
     public static String DODGEBOLT_ELIMINATED;
     @ConfigOption(path = "dodgebolt.shrink", nullable = true)
     public static String DODGEBOLT_SHRINK;
+    @ConfigOption(path = "dodgebolt.shrink-warning", nullable = true)
+    public static String DODGEBOLT_SHRINK_WARNING;
     @ConfigOption(path = "dodgebolt.round-win", nullable = true)
     public static String DODGEBOLT_ROUND_WIN;
     @ConfigOption(path = "dodgebolt.round-win-title", nullable = true)
@@ -860,10 +901,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "tntrun.action-bar-count-down")
     public static String TNT_RUN_ACTION_BAR_COUNT_DOWN;
 
-    // Optional during the v9 -> v10 bootstrap; the bundled default remains active until migration.
-    @ConfigOption(path = "tntrun.final-countdown-subtitle", nullable = true)
-    public static String TNT_RUN_FINAL_COUNTDOWN_SUBTITLE;
-
     @ConfigOption(path = "tntrun.game-end")
     public static String TNT_RUN_GAME_END;
 
@@ -878,6 +915,12 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tntrun.tnt-rain")
     public static String TNT_RUN_TNT_RAIN;
+
+    @ConfigOption(path = "tntrun.tnt-rain-count-down")
+    public static String TNT_RUN_TNT_RAIN_COUNT_DOWN;
+
+    @ConfigOption(path = "tntrun.tnt-rain-active")
+    public static String TNT_RUN_TNT_RAIN_ACTIVE;
 
     // Dragon Egg Carnival
     @ConfigOption(path = "dragoneggcarnival.start-preparation")
@@ -924,6 +967,15 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "dragoneggcarnival.dragon-phase-count-down", nullable = true)
     public static String DRAGON_EGG_CARNIVAL_DRAGON_PHASE_COUNT_DOWN;
+
+    @ConfigOption(path = "dragoneggcarnival.random-kit-count-down")
+    public static String DRAGON_EGG_CARNIVAL_RANDOM_KIT_COUNT_DOWN;
+
+    @ConfigOption(path = "dragoneggcarnival.random-kit-received")
+    public static String DRAGON_EGG_CARNIVAL_RANDOM_KIT_RECEIVED;
+
+    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawned-action-bar")
+    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_ACTION_BAR;
 
     @ConfigOption(path = "dragoneggcarnival.game-end")
     public static String DRAGON_EGG_CARNIVAL_GAME_END;
@@ -1086,6 +1138,9 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "parkourwarrior.sudden-death-count-down", nullable = true)
     public static String PARKOUR_WARRIOR_SUDDEN_DEATH_COUNT_DOWN;
+
+    @ConfigOption(path = "parkourwarrior.sudden-death-start-count-down")
+    public static String PARKOUR_WARRIOR_SUDDEN_DEATH_START_COUNT_DOWN;
 
     @ConfigOption(path = "parkourwarrior.arrived-at-checkpoint")
     public static String PARKOUR_WARRIOR_SUB_CHECKPOINT_ENTERED;

@@ -19,14 +19,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-/** A paged, nine-slot step picker. It keeps every prepare action reachable without opening the backpack. */
+/** A paged, six-row step picker. It keeps large prepare flows usable without excessive page hopping. */
 public final class StepMenuGui {
-    private static final int PAGE_SIZE = 6;
-    private static final int PREVIOUS_SLOT = 0;
-    private static final int FIRST_STEP_SLOT = 1;
-    private static final int LAST_STEP_SLOT = 6;
-    private static final int BACK_SLOT = 7;
-    private static final int NEXT_SLOT = 8;
+    private static final int PAGE_SIZE = 45;
+    private static final int PREVIOUS_SLOT = 45;
+    private static final int BACK_SLOT = 49;
+    private static final int NEXT_SLOT = 53;
+    private static final int FIRST_STEP_SLOT = 0;
+    private static final int LAST_STEP_SLOT = 44;
 
     private StepMenuGui() {
     }
@@ -48,7 +48,7 @@ public final class StepMenuGui {
 
     public static void open(@NotNull Player player, @NotNull PrepareSession session) {
         Holder holder = new Holder(session);
-        Inventory inventory = Bukkit.createInventory(holder, 9,
+        Inventory inventory = Bukkit.createInventory(holder, 54,
                 Component.text("准备步骤").decoration(TextDecoration.ITALIC, false));
         holder.inventory = inventory;
         refresh(holder);
@@ -64,7 +64,7 @@ public final class StepMenuGui {
         int first = holder.page * PAGE_SIZE;
 
         for (int slot = FIRST_STEP_SLOT; slot <= LAST_STEP_SLOT; slot++) {
-            int index = first + slot - FIRST_STEP_SLOT;
+            int index = first + slot;
             if (index < session.getSteps().size()) {
                 inventory.setItem(slot, stepItem(session, session.getSteps().get(index), index + 1));
             } else {
@@ -117,7 +117,7 @@ public final class StepMenuGui {
             return;
         }
         if (slot < FIRST_STEP_SLOT || slot > LAST_STEP_SLOT) return;
-        int index = holder.page * PAGE_SIZE + slot - FIRST_STEP_SLOT;
+        int index = holder.page * PAGE_SIZE + slot;
         if (index >= session.getSteps().size()) return;
         manager.handleStepClick(player, session, session.getSteps().get(index).key());
         if (player.getOpenInventory().getTopInventory().getHolder() == holder) {
@@ -136,7 +136,8 @@ public final class StepMenuGui {
 
     private static ItemStack stepItem(@NotNull PrepareSession session, @NotNull PrepareStep step, int number) {
         boolean set = step.isSet(session);
-        String state = switch (step.captureType()) {
+        String customState = step.stateText(session);
+        String state = customState != null ? customState : switch (step.captureType()) {
             case CONFIRM_WORLD -> session.isWorldConfirmed() ? "已确认所在世界" : "待确认";
             case STAMP -> session.isStamped() ? "已盖章生成" : "待盖章";
             case LIST -> set ? "已设置（" + step.listCount(session) + " 个）" : "待设置";

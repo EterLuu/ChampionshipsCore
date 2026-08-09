@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.buildmart;
 
+import io.papermc.paper.registry.keys.EnchantmentKeys;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
@@ -13,19 +14,30 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Enchants;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.map.MapCanvas;
+import org.bukkit.map.MapCursor;
+import org.bukkit.map.MapCursorCollection;
+import org.bukkit.map.MapRenderer;
+import org.bukkit.map.MapView;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -71,6 +83,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
+    private BukkitTask materialRefillTask;
+    private BukkitTask windVentTask;
 
     public BuildMartArea(ChampionshipsCore plugin, BuildMartConfig buildMartConfig) {
         super(plugin, GameTypeEnum.BuildMart, new BuildMartHandler(plugin), buildMartConfig);
@@ -105,10 +119,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         boolean configured = getGameStageEnum() == GameStageEnum.WAITING
                 && teamCount > 0 && teamCount <= getGameConfig().getBaseCount()
                 && getGameConfig().getTimer() > 0 && getGameConfig().getPrepareTime() >= 0
-                && geometry.getBoundary() != null && geometry.getHub() != null
-                && geometry.getHubReturn() != null && geometry.getHubSpawn() != null
+                && geometry.getHub() != null
+                && getGameConfig().getHubPortalPoint() != null
+                && geometry.getHub().contains(getGameConfig().getHubPortalPoint().toVector())
+                && !getGameConfig().getWindZones().isEmpty()
                 && geometry.getGoldenDisplay() != null
-                && base != null && base.isComplete();
+                && base != null && base.isComplete()
+                && base.getPortalPoint() != null && getGameConfig().isInBaseTemplate(base.getPortalPoint());
         if (!configured)
             logGame(Level.WARNING, "启动", "地图配置尚未完成或队伍数量超出 base-count，无法开始游戏");
         return configured;
@@ -118,12 +135,12 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     protected Collection<Location> getStartPreloadLocations() {
         List<Location> locations = new ArrayList<>();
         locations.add(getSpectatorSpawnLocation());
-        if (getGameConfig().getHubSpawnPoint() != null)
-            locations.add(getGameConfig().getHubSpawnPoint());
+        if (getGameConfig().getHubPortalPoint() != null)
+            locations.add(getGameConfig().getHubPortalPoint());
         int count = Math.min(gameTeams.size(), getGameConfig().getBaseCount());
         for (int seat = 0; seat < count; seat++) {
             BuildMartBase base = getGameConfig().getSeatBase(seat);
-            if (base != null && base.getSpawn() != null) locations.add(base.getSpawn());
+            if (base != null && base.getPortalPoint() != null) locations.add(base.getPortalPoint());
         }
         return locations;
     }
@@ -132,6 +149,10 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     public void resetArea() {
         startGamePreparationTask = null;
         startGameProgressTask = null;
+        if (materialRefillTask != null) materialRefillTask.cancel();
+        materialRefillTask = null;
+        if (windVentTask != null) windVentTask.cancel();
+        windVentTask = null;
         teamStates.clear();
         seatByTeam.clear();
         baseCache.clear();
@@ -171,9 +192,12 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
     private void startFormalPreparation() {
-
-        teleportAllPlayers(getSpectatorSpawnLocation());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+
+        // Assign seats before the countdown so every participant starts, waits, and begins from their
+        // own team's base rather than from the spectator spawn.
+        assignTeamSeats();
+        teleportTeamsToBases();
 
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -204,24 +228,20 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         }
 
         resetPlayerHealthFoodEffectLevelInventory();
+        giveStartingEquipment();
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
         roundId++;
 
-        // Assign each participating team a seat (grid position) and derive its base from the template.
+        // Build the live per-team state from the seats assigned during formal preparation.
         teamStates.clear();
-        seatByTeam.clear();
-        baseCache.clear();
-        int seat = 0;
         for (ChampionshipTeam team : gameTeams) {
-            seatByTeam.put(team, seat);
-            BuildMartBase base = getGameConfig().getSeatBase(seat);
-            if (base != null) baseCache.put(seat, base);
+            Integer seat = seatByTeam.get(team);
+            BuildMartBase base = seat == null ? null : baseCache.get(seat);
             teamStates.put(team, new TeamBuildState(team, base));
-            seat++;
         }
 
-        // Send every team to its own base; teams without a configured base fall back to the hub spawn.
+        // Send every team to its own base; incomplete geometry falls back to the hub portal landing point.
         teleportTeamsToBases();
 
         // Auto-assign a random normal blueprint to each team's three plots and paste its reference build.
@@ -233,42 +253,193 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                 this::beginGameProgress);
     }
 
+    /** Assigns each participating team a stable base seat for the current round. */
+    private void assignTeamSeats() {
+        seatByTeam.clear();
+        baseCache.clear();
+        int seat = 0;
+        for (ChampionshipTeam team : gameTeams) {
+            seatByTeam.put(team, seat);
+            BuildMartBase base = getGameConfig().getSeatBase(seat);
+            if (base != null) baseCache.put(seat, base);
+            seat++;
+        }
+    }
+
     private void beginGameProgress() {
         goldenBlueprintScheduler = new GoldenBlueprintScheduler(plugin,
                 getGameConfig().getGoldenRefreshSeconds(), this::rotateGoldenBlueprint);
         goldenBlueprintScheduler.start();
-        createTimerBossBar();
-
+        refillMaterialZones();
+        if (materialRefillTask != null) materialRefillTask.cancel();
+        materialRefillTask = scheduler.runTaskTimer(plugin, this::refillMaterialZones, 2400L, 2400L);
+        if (windVentTask != null) windVentTask.cancel();
+        windVentTask = scheduler.runTaskTimer(plugin, this::applyWindVent, 1L, 1L);
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
-            updateSpectatorTimerBossBar(MessageConfig.BUILD_MART_ACTION_BAR_COUNT_DOWN
-                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
-            updateTimerBossBar();
+            updateGameTimerBossBar(bossBarTitle(), timer, getGameConfig().getTimer());
         }, this::endGame);
     }
 
-    private static final String TIMER_BOSS_BAR = "buildmart-timer";
-
-    /** Creates the detailed Build Mart timer for participants; spectators use the shared timer bar. */
-    private void createTimerBossBar() {
-        createBossBar(TIMER_BOSS_BAR, bossBarTitle(), BarColor.YELLOW, BarStyle.SOLID);
-        for (UUID uuid : gamePlayers) {
-            addBossBarPlayer(TIMER_BOSS_BAR, Bukkit.getPlayer(uuid));
+    /** Restores every configured resource cuboid from its saved WorldEdit block snapshot. */
+    private void refillMaterialZones() {
+        if (getGameStageEnum() != GameStageEnum.COUNTDOWN && getGameStageEnum() != GameStageEnum.PROGRESS)
+            return;
+        World world = Bukkit.getWorld(getWorldName());
+        if (world == null) return;
+        for (BuildMartMaterialZone zone : getGameConfig().getMaterialZones()) {
+            try {
+                plugin.getWorldEditManager().pasteSchematic(world,
+                        getGameConfig().getMaterialZoneSnapshotFile(zone),
+                        zone.minX(), zone.minY(), zone.minZ());
+            } catch (Exception exception) {
+                logGame(Level.WARNING, "材料区", "无法恢复快照=" + zone.snapshotId()
+                        + " | " + exception.getMessage());
+            }
         }
     }
 
-    private void updateTimerBossBar() {
-        setBossBar(TIMER_BOSS_BAR, bossBarTitle());
-        int full = Math.max(1, getGameConfig().getTimer());
-        setBossBarProgress(TIMER_BOSS_BAR, Math.max(0d, Math.min(1d, (double) timer / full)));
+    /** Gives each participant the fixed Build Mart kit at the start of the live round. */
+    private void giveStartingEquipment() {
+        for (UUID uuid : gamePlayers) {
+            giveStartingEquipment(Bukkit.getPlayer(uuid));
+        }
     }
 
-    /** Title showing the round time left and the live golden-window countdown. */
+    /** Gives one player the fixed kit; used after a live-round death clears their inventory. */
+    private void giveStartingEquipment(Player player) {
+        if (player == null) return;
+        ItemStack rockets = new ItemStack(Material.FIREWORK_ROCKET, 64);
+        FireworkMeta meta = (FireworkMeta) rockets.getItemMeta();
+        if (meta != null) {
+            meta.setPower(3);
+            rockets.setItemMeta(meta);
+        }
+        PlayerInventory inventory = player.getInventory();
+        inventory.clear();
+        inventory.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
+        inventory.setItemInOffHand(map(183));
+        inventory.setItem(0, efficientFortunePickaxe());
+        inventory.setItem(1, silkTouchPickaxe());
+        inventory.setItem(2, efficientUnbreakable(new ItemStack(Material.DIAMOND_SHOVEL)));
+        inventory.setItem(3, efficientUnbreakable(new ItemStack(Material.DIAMOND_AXE)));
+        inventory.setItem(8, rockets);
+        inventory.setHeldItemSlot(0);
+        player.updateInventory();
+    }
+
+    private static ItemStack map(int mapId) {
+        ItemStack item = new ItemStack(Material.FILLED_MAP);
+        MapMeta meta = item.getItemMeta() instanceof MapMeta mapMeta ? mapMeta : null;
+        if (meta != null) {
+            MapView view = Bukkit.getMap(mapId);
+            if (view == null) {
+                meta.setMapId(mapId);
+            } else {
+                view.setTrackingPosition(false);
+                view.setUnlimitedTracking(false);
+                if (view.getRenderers().stream().noneMatch(BuildMartSelfMapRenderer.class::isInstance)) {
+                    view.addRenderer(new BuildMartSelfMapRenderer());
+                }
+                meta.setMapView(view);
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /** Replaces vanilla multiplayer cursors with one contextual cursor for the player viewing the map. */
+    private static final class BuildMartSelfMapRenderer extends MapRenderer {
+        private BuildMartSelfMapRenderer() {
+            super(true);
+        }
+
+        @Override
+        public void render(@NotNull MapView view, @NotNull MapCanvas canvas, @NotNull Player player) {
+            MapCursorCollection cursors = new MapCursorCollection();
+            if (view.getWorld() != null && view.getWorld().equals(player.getWorld())) {
+                int scale = 1 << view.getScale().getValue();
+                int cursorX = (int) Math.floor((player.getX() - view.getCenterX()) * 2.0 / scale + 0.5);
+                int cursorZ = (int) Math.floor((player.getZ() - view.getCenterZ()) * 2.0 / scale + 0.5);
+                int clampedX = Math.clamp(cursorX, -128, 127);
+                int clampedZ = Math.clamp(cursorZ, -128, 127);
+                int rotation = Math.floorMod((int) Math.floor(player.getYaw() * 16.0F / 360.0F), 16);
+                MapCursor.Type type = Math.abs(cursorX) <= 63 && Math.abs(cursorZ) <= 63
+                        ? MapCursor.Type.PLAYER : MapCursor.Type.PLAYER_OFF_MAP;
+                cursors.addCursor(new MapCursor((byte) clampedX, (byte) clampedZ,
+                        (byte) rotation, type, true));
+            }
+            canvas.setCursors(cursors);
+        }
+    }
+
+    private static ItemStack efficientFortunePickaxe() {
+        ItemStack item = new ItemStack(Material.DIAMOND_PICKAXE);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setUnbreakable(true);
+            meta.addEnchant(Enchants.get(EnchantmentKeys.EFFICIENCY), 3, true);
+            meta.addEnchant(Enchants.get(EnchantmentKeys.FORTUNE), 3, true);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static ItemStack silkTouchPickaxe() {
+        ItemStack item = new ItemStack(Material.DIAMOND_PICKAXE);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setUnbreakable(true);
+            meta.addEnchant(Enchants.get(EnchantmentKeys.EFFICIENCY), 3, true);
+            meta.addEnchant(Enchants.get(EnchantmentKeys.SILK_TOUCH), 1, true);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static ItemStack efficientUnbreakable(ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setUnbreakable(true);
+            meta.addEnchant(Enchants.get(EnchantmentKeys.EFFICIENCY), 3, true);
+            meta.addEnchant(Enchants.get(EnchantmentKeys.SILK_TOUCH), 1, true);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private static ItemStack unbreakable(ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setUnbreakable(true);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    /** Applies a fast upward force while a participant remains above the configured wind vent. */
+    private void applyWindVent() {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
+        BuildMartConfig config = getGameConfig();
+        if (config.getWindZones().isEmpty()) return;
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null || player.isGliding() || !config.isAboveWindZone(player.getLocation())) continue;
+            double remaining = 180.0 - player.getLocation().getY();
+            if (remaining <= 0.0) continue;
+            Vector current = player.getVelocity();
+            double upward = Math.min(2.0, remaining);
+            if (current.getY() < upward)
+                player.setVelocity(new Vector(current.getX(), upward, current.getZ()));
+        }
+    }
+
+    /** Timer-bar title showing the round time left and the live golden-window countdown. */
     private String bossBarTitle() {
         String golden = currentGolden == null
                 ? "&7黄金: &f无"
                 : "&6黄金: &e" + currentGolden.getDisplayName() + " &7(" + goldenSecondsRemaining() + "s)";
-        return "&e建材集市 &7| &f剩余 &e" + timer + "s &7| " + golden;
+        return "&e匹配赛建 &7| &f剩余 &e" + timer + "s &7| " + golden;
     }
 
     /** Seconds left in the current golden window, derived from elapsed time and the rotation period. */
@@ -441,7 +612,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         BuildMartBlueprint blueprint = slot.getBlueprint();
         if (blueprint == null || slot.getBuildAnchor() == null) return;
 
-        int matched = blueprint.countMatching(slot.getBuildAnchor());
+        int matched = blueprint.countMatching(ReferenceBuilder.buildOrigin(slot.getBuildAnchor()));
         if (matched >= blueprint.blockCount()) {
             if (golden) {
                 completeGoldenBuild(team, state, slot, blueprint);
@@ -450,7 +621,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             }
         } else if (golden) {
             // Golden incomplete submit: clear the build zone (no material return), must rebuild from scratch.
-            ReferenceBuilder.clear(blueprint, slot.getBuildAnchor());
+            ReferenceBuilder.clearBuildArea(slot.getBuildAnchor());
             playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_GOLDEN_SUBMIT_FAILED
                     .replace("%blueprint%", blueprint.getDisplayName()));
         } else {
@@ -467,7 +638,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         state.recordCompletion(blueprint.getStars());
 
         // Clear the player's copy and the reference; a fresh blueprint auto-appears shortly.
-        if (slot.getBuildAnchor() != null) ReferenceBuilder.clear(blueprint, slot.getBuildAnchor());
+        if (slot.getBuildAnchor() != null) ReferenceBuilder.clearBuildArea(slot.getBuildAnchor());
         if (slot.getReferenceAnchor() != null) ReferenceBuilder.clear(blueprint, slot.getReferenceAnchor());
         slot.clear();
         scheduleAutoRefresh(team, slot);
@@ -508,6 +679,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         }
         if (announce) {
             sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_REFRESHED);
+            sendActionBarToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_REFRESHED);
             playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1F, 1F);
         }
     }
@@ -520,7 +692,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             BuildSlot golden = state.getGoldenSlot();
             if (golden.getBlueprint() != null) {
                 if (golden.getBuildAnchor() != null) {
-                    ReferenceBuilder.clear(golden.getBlueprint(), golden.getBuildAnchor());
+                    ReferenceBuilder.clearBuildArea(golden.getBuildAnchor());
                 }
                 golden.clear();
                 anyUnfinished = true;
@@ -532,6 +704,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         }
         if (anyUnfinished) {
             sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_EXPIRED);
+            sendActionBarToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_EXPIRED);
         }
         currentGolden = null;
     }
@@ -541,7 +714,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         addPlayerPointsToAllTeamMembers(team, points);
         state.recordCompletion(blueprint.getStars());
 
-        if (slot.getBuildAnchor() != null) ReferenceBuilder.clear(blueprint, slot.getBuildAnchor());
+        if (slot.getBuildAnchor() != null) ReferenceBuilder.clearBuildArea(slot.getBuildAnchor());
         // Clear only this team's golden slot so they can't re-score; other teams keep building it.
         slot.clear();
 
@@ -589,9 +762,36 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         return matchesFootprint(currentGolden, getGameConfig().getGoldenDisplayPoint(), world, worldX, worldY, worldZ);
     }
 
+    /** True when the block lies inside one of the specified team's four fixed 7x7x7 build volumes. */
+    public boolean isBuildZoneBlock(ChampionshipTeam team, World world, int worldX, int worldY, int worldZ) {
+        TeamBuildState state = teamStates.get(team);
+        if (state == null) return false;
+        for (BuildSlot slot : state.getNormalSlots()) {
+            if (matchesBuildArea(slot.getBuildAnchor(), world, worldX, worldY, worldZ)) return true;
+        }
+        return matchesBuildArea(state.getGoldenSlot().getBuildAnchor(), world, worldX, worldY, worldZ);
+    }
+
+    /** True when the block lies inside any configured material refill cuboid. */
+    public boolean isMaterialZoneBlock(World world, int worldX, int worldY, int worldZ) {
+        if (world == null) return false;
+        for (BuildMartMaterialZone zone : getGameConfig().getMaterialZones()) {
+            if (worldX >= zone.minX() && worldX <= zone.maxX()
+                    && worldY >= zone.minY() && worldY <= zone.maxY()
+                    && worldZ >= zone.minZ() && worldZ <= zone.maxZ()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean matchesFootprint(BuildMartBlueprint blueprint, Location anchor, World world, int x, int y, int z) {
         if (blueprint == null || anchor == null || anchor.getWorld() == null || !anchor.getWorld().equals(world)) return false;
         return ReferenceBuilder.isFootprintBlock(blueprint, anchor, x, y, z);
+    }
+
+    private static boolean matchesBuildArea(Location anchor, World world, int worldX, int worldY, int worldZ) {
+        return anchor != null && ReferenceBuilder.isBuildAreaBlock(anchor, world, worldX, worldY, worldZ);
     }
 
     /**
@@ -617,7 +817,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     private void scoreIncomplete(ChampionshipTeam team, BuildSlot slot) {
         BuildMartBlueprint blueprint = slot.getBlueprint();
         if (blueprint == null || slot.getBuildAnchor() == null) return;
-        double ratio = blueprint.completionRatio(slot.getBuildAnchor());
+        double ratio = blueprint.completionRatio(ReferenceBuilder.buildOrigin(slot.getBuildAnchor()));
         if (ratio <= 0) return;
         int points = (int) Math.round(pointsForCompletion(blueprint.getStars()) * ratio);
         if (points > 0) addPlayerPointsToAllTeamMembers(team, points);
@@ -633,13 +833,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         }
     }
 
-    /** Teleports each participating team to its seat's base spawn (hub spawn if unconfigured). */
+    /** Teleports each participating team to its seat's configured portal landing point. */
     private void teleportTeamsToBases() {
-        Location hub = getGameConfig().getHubSpawnPoint();
+        Location hub = getGameConfig().getHubPortalPoint();
         for (ChampionshipTeam team : gameTeams) {
             Integer seat = seatByTeam.get(team);
             BuildMartBase base = seat == null ? null : baseCache.get(seat);
-            Location target = base != null && base.getSpawn() != null ? base.getSpawn() : hub;
+            Location target = base != null && base.getPortalPoint() != null ? base.getPortalPoint() : hub;
             if (target == null) target = getSpectatorSpawnLocation();
             for (Player player : team.getOnlinePlayers()) {
                 if (gamePlayers.contains(player.getUniqueId())) {
@@ -652,7 +852,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     private Location teamBaseSpawn(ChampionshipTeam team) {
         Integer seat = team == null ? null : seatByTeam.get(team);
         BuildMartBase base = seat == null ? null : baseCache.get(seat);
-        Location target = base != null && base.getSpawn() != null ? base.getSpawn() : getGameConfig().getHubSpawnPoint();
+        Location target = base != null && base.getPortalPoint() != null
+                ? base.getPortalPoint() : getGameConfig().getHubPortalPoint();
         return target != null ? target : getSpectatorSpawnLocation();
     }
 
@@ -660,7 +861,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     public Location getSpectatorSpawnLocation() {
         Location set = getGameConfig().getSpectatorSpawnPoint();
         if (set != null) return set;
-        Location hub = getGameConfig().getHubSpawnPoint();
+        Location hub = getGameConfig().getHubPortalPoint();
         if (hub != null) return hub;
         World world = Bukkit.getWorld(getWorldName());
         return world != null ? world.getSpawnLocation() : CCConfig.LOBBY_LOCATION;
@@ -668,11 +869,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     @Override
     public boolean notInArea(Location location) {
-        if (location == null || location.getWorld() == null
-                || !location.getWorld().getName().equals(getWorldName()))
-            return true;
-        org.bukkit.util.BoundingBox boundary = getGameConfig().resolveMapGeometry().getBoundary();
-        return boundary != null && !boundary.contains(location.toVector());
+        return !getGameConfig().isInPlayableArea(location);
     }
 
     @Override
@@ -684,6 +881,12 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
+        if (materialRefillTask != null)
+            materialRefillTask.cancel();
+        materialRefillTask = null;
+        if (windVentTask != null)
+            windVentTask.cancel();
+        windVentTask = null;
         if (goldenBlueprintScheduler != null)
             goldenBlueprintScheduler.stop();
 
@@ -725,14 +928,19 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
         Player player = event.getEntity();
         if (notAreaPlayer(player)) return;
-        // No drops in Build Mart; respawn at the hub with a fresh inventory.
+        // No drops in Build Mart. During formal preparation/countdown, keep the player at their own base;
+        // a death during the live round returns them to the shared resource hub.
+        event.setKeepInventory(true);
+        event.setKeepLevel(true);
         event.setDroppedExp(0);
         event.getDrops().clear();
         scheduler.runTask(plugin, () -> {
             player.spigot().respawn();
-            Location hub = getGameConfig().getHubSpawnPoint();
-            if (hub != null) player.teleport(hub);
-            player.getInventory().clear();
+            Location target = getGameStageEnum() == GameStageEnum.PREPARATION
+                    || getGameStageEnum() == GameStageEnum.COUNTDOWN
+                    ? teamBaseSpawn(plugin.getTeamManager().getTeamByPlayer(player))
+                    : getGameConfig().getHubPortalPoint();
+            if (target != null) player.teleport(target);
         });
     }
 
@@ -746,7 +954,10 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         if (notAreaPlayer(player)) return;
         GameStageEnum stage = getGameStageEnum();
         if (stage == GameStageEnum.PREPARATION) {
-            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
+            Location target = isIntroductionPhase()
+                    ? getPreparationTeleportLocation(getSpectatorSpawnLocation())
+                    : teamBaseSpawn(plugin.getTeamManager().getTeamByPlayer(player));
+            player.teleport(target);
             player.setGameMode(GameMode.ADVENTURE);
             return;
         }
@@ -756,6 +967,9 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             player.setGameMode(GameMode.SURVIVAL);
             player.setAllowFlight(!getGameConfig().isInHub(target));
             player.setFlying(false);
+            // A reconnecting participant may have lost the live kit while offline. Reuse the same
+            // authoritative kit path as round start/death so the fixed 183 map is restored too.
+            giveStartingEquipment(player);
             return;
         }
         player.teleport(CCConfig.LOBBY_LOCATION);

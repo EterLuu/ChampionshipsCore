@@ -27,7 +27,7 @@ public class BattleBoxConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 7;
+        return 8;
     }
 
     @ConfigOption(path = "name")
@@ -60,7 +60,9 @@ public class BattleBoxConfig extends BaseGameConfig {
     }
 
     public @NotNull ArenaGrid prepareCopyGrid(@NotNull Vector size) {
-        copyLayoutOrigin = BattleBoxLayout.FIRST.clone();
+        copyLayoutOrigin = areaPos1 == null || areaPos2 == null
+                ? BattleBoxLayout.FIRST.clone()
+                : Vector.getMinimum(areaPos1, areaPos2);
         copyLayoutStep = ArenaLayoutPlanner.rowStep(size);
         copySize = size.clone();
         return getCopyGrid();
@@ -106,5 +108,11 @@ public class BattleBoxConfig extends BaseGameConfig {
 
         if (oldConfiguration.getString("world-name", "").isBlank())
             migratedConfiguration.set("world-name", "battlebox");
+
+        if (oldConfiguration.getInt("copy-count", 0) > 0
+                && (!oldConfiguration.contains("area-pos1") || !oldConfiguration.contains("area-pos2"))) {
+            migratedConfiguration.set("prepare.published", false);
+            migratedConfiguration.set("prepare.dirty", true);
+        }
     }
 }

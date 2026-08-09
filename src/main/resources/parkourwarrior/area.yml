@@ -8,6 +8,10 @@ prepare:
   revision: 0
   published-at:
   world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
 timer: 600
 sudden-death: 30
 area-pos1:

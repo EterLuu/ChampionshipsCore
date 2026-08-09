@@ -28,9 +28,12 @@ public final class CardItemListener extends BaseListener {
         super(plugin);
     }
 
-    /** The bingo round the player is currently in, or null. */
+    /** The bingo round the player is participating in or externally spectating, or null. */
     private BingoArea bingoAreaOf(Player player) {
         BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
+        if (area == null) {
+            area = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
+        }
         return area instanceof BingoArea bingoArea ? bingoArea : null;
     }
 
@@ -61,7 +64,9 @@ public final class CardItemListener extends BaseListener {
 
         event.setCancelled(true);
 
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam team = round.teams().stream()
+                .filter(candidate -> teamId.equals(BingoTeamAdapter.id(candidate)))
+                .findFirst().orElse(null);
         if (team == null) return;
         var msg = MessageService.global();
         round.cardFor(team).ifPresent(card ->

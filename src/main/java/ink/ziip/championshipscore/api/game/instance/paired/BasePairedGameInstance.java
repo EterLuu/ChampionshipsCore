@@ -206,12 +206,12 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
     @Override
     public void removeAllPlayers() {
         if (rightChampionshipTeam != null) {
-            rightChampionshipTeam.teleportAllPlayers(getLobbyLocation());
-            rightChampionshipTeam.setGameModeForAllPlayers(GameMode.ADVENTURE);
+            for (Player player : rightChampionshipTeam.getOnlinePlayers())
+                sanitizeParticipantForLobby(player, true);
         }
         if (leftChampionshipTeam != null) {
-            leftChampionshipTeam.teleportAllPlayers(getLobbyLocation());
-            leftChampionshipTeam.setGameModeForAllPlayers(GameMode.ADVENTURE);
+            for (Player player : leftChampionshipTeam.getOnlinePlayers())
+                sanitizeParticipantForLobby(player, true);
         }
     }
 

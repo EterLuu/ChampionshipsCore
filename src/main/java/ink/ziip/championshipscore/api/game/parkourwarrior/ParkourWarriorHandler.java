@@ -38,6 +38,9 @@ public class ParkourWarriorHandler extends BaseListener {
         if (parkourWarriorTeamArea.notAreaPlayer(player)) {
             return;
         }
+        if (parkourWarriorTeamArea.isIntroductionPhase()) {
+            return;
+        }
 
         Location location = player.getLocation();
         if (parkourWarriorTeamArea.notInArea(location)) {

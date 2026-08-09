@@ -21,14 +21,15 @@ public final class CommandCatalog {
     );
 
     private static final List<Entry> ADMIN_COMMANDS = List.of(
-            new Entry("/cc team add|delete|info|list|tphere ...", "管理队伍、查看名单与队伍传送"),
+            new Entry("/cc team", "打开管理员队伍与玩家管理界面"),
+            new Entry("/cc team add|delete|info|list|tphere ...", "兼容指令：管理队伍、查看名单与队伍传送"),
             new Entry("/cc team member add|delete <队伍> <玩家>", "管理队伍成员"),
             new Entry("/cc game start <游戏> ...", "直接启动单局，不创建正式赛程"),
             new Entry("/cc event start <游戏> [参数]", "开始正式比赛；同一赛事进行中时再次执行会紧急停止"),
             new Entry("/cc event stop <游戏>", "显式停止正式比赛的赛程任务"),
             new Entry("/cc event reset|undo --confirm", "重置赛程或撤销最近正式比赛"),
             new Entry("/cc map edit <游戏>", "打开地图准备与编辑界面（可编辑未启用游戏）"),
-            new Entry("/cc map blueprint create <名称> <星级>", "从 WorldEdit 选区导出建材集市蓝图"),
+            new Entry("/cc map blueprint create <名称> <星级>", "从 WorldEdit 选区导出匹配赛建蓝图"),
             new Entry("/cc admin vote|world|dodgebolt ...", "投票、世界与躲避箭裁判控制"),
             new Entry("/cc admin reload|sudo|teleport|set-max-player ...", "系统维护与现场管理")
     );

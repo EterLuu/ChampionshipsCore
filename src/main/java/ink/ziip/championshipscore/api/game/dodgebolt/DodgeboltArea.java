@@ -34,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.logging.Level;
+import java.util.concurrent.ThreadLocalRandom;
 
 /** One complete, non-scoring best-of-five Dodgebolt final. */
 public final class DodgeboltArea extends BasePairedGameInstance {
@@ -45,12 +46,15 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     private final NamespacedKey tokenSideKey;
     private final Map<UUID, Flight> flights = new HashMap<>();
     private final Set<UUID> tokenItems = new HashSet<>();
+    private final Map<UUID, List<ItemStack>> stowedTokens = new HashMap<>();
     private final Set<UUID> alivePlayers = new LinkedHashSet<>();
     private final Set<UUID> eliminatedPlayers = new HashSet<>();
     private final Set<UUID> forcedParticipants = new LinkedHashSet<>();
     private final Map<UUID, Location> pauseLocations = new HashMap<>();
     private final Map<BlockPosition, BlockData> platformSnapshot = new LinkedHashMap<>();
     private final Set<Column> activePlatformColumns = new LinkedHashSet<>();
+    private final Set<Column> pendingShrinkColumns = new LinkedHashSet<>();
+    private final Map<BlockPosition, BlockData> shrinkWarningSnapshot = new LinkedHashMap<>();
 
     @Getter private int timer;
     @Getter private int roundNumber;
@@ -65,11 +69,16 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     private int shotsSinceShrink;
     private int eliminationsThisRound;
     private int queuedShrinkLayers;
+    private int completedShrinkEvents;
+    private int shrinkWarningTicks;
+    private int shrinkWarningSeconds;
+    private boolean shrinkWarningVisible;
     private ChampionshipTeam firstRoundArrowTeam;
     private BukkitTask preparationTask;
     private BukkitTask restartTask;
     private BukkitTask flightMonitorTask;
     private BukkitTask shrinkTask;
+    private BukkitTask championFireworksTask;
 
     public DodgeboltArea(ChampionshipsCore plugin, DodgeboltConfig config, boolean firstTime, String areaName) {
         super(plugin, GameTypeEnum.Dodgebolt, new DodgeboltHandler(plugin), config);
@@ -163,6 +172,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         shotsSinceShrink = 0;
         eliminationsThisRound = 0;
         queuedShrinkLayers = 0;
+        completedShrinkEvents = 0;
         alivePlayers.clear();
         eliminatedPlayers.clear();
         addRoundPlayers(rightChampionshipTeam);
@@ -234,9 +244,17 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
     public boolean canShoot(@NotNull Player player) {
         DodgeboltSide side = sideOf(player);
+        return canShootFromArea(player, side) && hasTokenArrow(player, side);
+    }
+
+    private boolean canShootFromArea(@NotNull Player player, @Nullable DodgeboltSide side) {
         return side != null && getGameStageEnum() == GameStageEnum.PROGRESS && !paused
-                && isAlive(player) && contains(shootArea(side), player.getLocation())
-                && hasTokenArrow(player);
+                && isAlive(player) && contains(shootArea(side), player.getLocation());
+    }
+
+    public boolean canShoot(@NotNull Player player, @Nullable ItemStack consumedArrow) {
+        DodgeboltSide side = sideOf(player);
+        return canShootFromArea(player, side) && tokenSide(consumedArrow) == side;
     }
 
     public void registerShot(@NotNull Player shooter, @NotNull Entity projectile) {
@@ -411,10 +429,10 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         final int[] remaining = {Math.max(1, getGameConfig().getRoundRestartDelay())};
         restartTask = scheduler.runTaskTimer(plugin, () -> {
             timer = remaining[0];
-            sendActionBarToAllGamePlayers(MessageConfig.DODGEBOLT_NEXT_ROUND
+            updateGameTimerBossBar(MessageConfig.DODGEBOLT_NEXT_ROUND
                     .replace("%round%", String.valueOf(roundNumber))
-                    .replace("%time%", String.valueOf(timer)));
-            changeLevelForAllGamePlayers(timer);
+                    .replace("%time%", String.valueOf(timer)), timer,
+                    Math.max(1, getGameConfig().getRoundRestartDelay()));
             if (timer == 0) {
                 cancelTask(restartTask);
                 restartTask = null;
@@ -429,7 +447,6 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END) return;
         cancelRoundTasks();
         setGameStageEnum(GameStageEnum.END);
-        announceGameEnd(MessageConfig.DODGEBOLT_GAME_END_TITLE, MessageConfig.DODGEBOLT_GAME_END_SUBTITLE);
         if (champion != null) {
             String score = rightWins + " - " + leftWins;
             Utils.sendMessageToAllPlayers(MessageConfig.DODGEBOLT_CHAMPION
@@ -441,6 +458,8 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         } else {
             Utils.sendMessageToAllPlayers(MessageConfig.DODGEBOLT_STOPPED);
         }
+        // Keep the unified "game over" title authoritative; champion details remain in chat/fireworks.
+        announceGameEnd(MessageConfig.DODGEBOLT_GAME_END_TITLE, MessageConfig.DODGEBOLT_GAME_END_SUBTITLE);
         restoreParticipantCollisions();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
@@ -453,48 +472,151 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         int room = Math.max(0, getGameConfig().getMaxShrinkLevels() - shrinkLevel - queuedShrinkLayers);
         queuedShrinkLayers += Math.min(Math.max(0, layers), room);
         if (queuedShrinkLayers == 0 || shrinkTask != null) return;
+        beginShrinkWarning();
+    }
+
+    private void beginShrinkWarning() {
+        prepareShrinkWarning();
+        if (pendingShrinkColumns.isEmpty()) {
+            queuedShrinkLayers = 0;
+            return;
+        }
+        shrinkWarningTicks = 0;
+        shrinkWarningSeconds = 3;
+        shrinkWarningVisible = false;
+        sendShrinkWarningActionBar(shrinkWarningSeconds);
         shrinkTask = scheduler.runTaskTimer(plugin, () -> {
             if (getGameStageEnum() != GameStageEnum.PROGRESS) {
-                cancelTask(shrinkTask);
-                shrinkTask = null;
+                cancelShrinkWarning();
                 return;
             }
             if (paused) return;
-            if (queuedShrinkLayers <= 0) {
-                cancelTask(shrinkTask);
-                shrinkTask = null;
-                return;
+
+            shrinkWarningTicks += 6;
+            int remainingSeconds = Math.max(1, (60 - shrinkWarningTicks + 19) / 20);
+            if (remainingSeconds != shrinkWarningSeconds) {
+                shrinkWarningSeconds = remainingSeconds;
+                sendShrinkWarningActionBar(remainingSeconds);
             }
-            queuedShrinkLayers--;
-            shrinkOneLayer();
-        }, 0L, 20L);
+            setShrinkWarningVisible(!shrinkWarningVisible);
+            if (shrinkWarningTicks >= 60) completeShrinkWarning();
+        }, 6L, 6L);
     }
 
-    private void shrinkOneLayer() {
-        if (activePlatformColumns.isEmpty()) return;
+    private void prepareShrinkWarning() {
+        pendingShrinkColumns.clear();
+        Set<Column> remaining = new LinkedHashSet<>(activePlatformColumns);
+        int availableLayers = Math.max(0, getGameConfig().getMaxShrinkLevels() - shrinkLevel);
+        int layers = Math.min(availableLayers, completedShrinkEvents < 2 ? 2 : 1);
+        for (int layer = 0; layer < layers; layer++) {
+            Set<Column> boundary = findBoundary(remaining);
+            if (boundary.isEmpty()) break;
+            pendingShrinkColumns.addAll(boundary);
+            remaining.removeAll(boundary);
+        }
+        prepareShrinkWarningBlocks();
+    }
+
+    private Set<Column> findBoundary(@NotNull Set<Column> columns) {
         Set<Column> boundary = new LinkedHashSet<>();
-        for (Column column : activePlatformColumns) {
-            for (int[] d : CARDINAL) {
-                if (!activePlatformColumns.contains(new Column(column.x + d[0], column.z + d[1]))) {
+        for (Column column : columns) {
+            for (int[] direction : CARDINAL) {
+                if (!columns.contains(new Column(column.x + direction[0], column.z + direction[1]))) {
                     boundary.add(column);
                     break;
                 }
             }
         }
-        if (boundary.isEmpty()) return;
-        activePlatformColumns.removeAll(boundary);
+        return boundary;
+    }
+
+    private void prepareShrinkWarningBlocks() {
+        shrinkWarningSnapshot.clear();
+        World world = getSpectatorSpawnLocation().getWorld();
+        if (world == null) return;
         for (BlockPosition position : platformSnapshot.keySet()) {
-            if (boundary.contains(new Column(position.x, position.z))) {
-                World world = getSpectatorSpawnLocation().getWorld();
-                if (world != null) world.getBlockAt(position.x, position.y, position.z).setType(Material.AIR, false);
+            if (!pendingShrinkColumns.contains(new Column(position.x, position.z))) continue;
+            Block block = world.getBlockAt(position.x, position.y, position.z);
+            if (block.getType().name().endsWith("_CARPET")) {
+                shrinkWarningSnapshot.put(position, block.getBlockData().clone());
             }
         }
-        shrinkLevel++;
+    }
+
+    private void setShrinkWarningVisible(boolean visible) {
+        if (shrinkWarningVisible == visible) return;
+        World world = getSpectatorSpawnLocation().getWorld();
+        if (world == null) return;
+        if (visible) {
+            for (BlockPosition position : shrinkWarningSnapshot.keySet()) {
+                world.getBlockAt(position.x, position.y, position.z)
+                        .setType(Material.PALE_MOSS_CARPET, false);
+            }
+        } else {
+            for (Map.Entry<BlockPosition, BlockData> entry : shrinkWarningSnapshot.entrySet()) {
+                BlockPosition position = entry.getKey();
+                world.getBlockAt(position.x, position.y, position.z).setBlockData(entry.getValue(), false);
+            }
+        }
+        shrinkWarningVisible = visible;
+    }
+
+    private void sendShrinkWarningActionBar(int seconds) {
+        sendActionBarToAllGamePlayers(MessageConfig.DODGEBOLT_SHRINK_WARNING
+                .replace("%time%", String.valueOf(seconds)));
+    }
+
+    private void completeShrinkWarning() {
+        setShrinkWarningVisible(false);
+        shrinkWarningSnapshot.clear();
+        Set<Column> boundary = new LinkedHashSet<>(pendingShrinkColumns);
+        pendingShrinkColumns.clear();
+        if (boundary.isEmpty()) {
+            cancelShrinkWarning();
+            return;
+        }
+        activePlatformColumns.removeAll(boundary);
+        World world = getSpectatorSpawnLocation().getWorld();
+        if (world != null) {
+            for (BlockPosition position : platformSnapshot.keySet()) {
+                if (boundary.contains(new Column(position.x, position.z))) {
+                    world.getBlockAt(position.x, position.y, position.z).setType(Material.AIR, false);
+                }
+            }
+        }
+        int layersRemoved = completedShrinkEvents < 2 ? 2 : 1;
+        layersRemoved = Math.min(layersRemoved, getGameConfig().getMaxShrinkLevels() - shrinkLevel);
+        shrinkLevel += Math.max(0, layersRemoved);
+        completedShrinkEvents++;
+        queuedShrinkLayers = Math.max(0, queuedShrinkLayers - 1);
+        sendActionBarToAllGamePlayers(MessageConfig.DODGEBOLT_SHRINK
+                .replace("%level%", String.valueOf(shrinkLevel))
+                .replace("%max%", String.valueOf(getGameConfig().getMaxShrinkLevels())));
         sendMessageToAllGamePlayers(MessageConfig.DODGEBOLT_SHRINK
                 .replace("%level%", String.valueOf(shrinkLevel))
                 .replace("%max%", String.valueOf(getGameConfig().getMaxShrinkLevels())));
         playSoundToAllGamePlayers(Sound.BLOCK_PISTON_EXTEND, 0.8F, 0.8F);
         updateScoreBar();
+        if (queuedShrinkLayers <= 0 || shrinkLevel >= getGameConfig().getMaxShrinkLevels()) {
+            cancelShrinkWarning();
+        } else {
+            prepareShrinkWarning();
+            shrinkWarningTicks = 0;
+            shrinkWarningSeconds = 3;
+            shrinkWarningVisible = false;
+            sendShrinkWarningActionBar(shrinkWarningSeconds);
+        }
+    }
+
+    private void cancelShrinkWarning() {
+        cancelTask(shrinkTask);
+        shrinkTask = null;
+        setShrinkWarningVisible(false);
+        shrinkWarningSnapshot.clear();
+        pendingShrinkColumns.clear();
+        shrinkWarningTicks = 0;
+        shrinkWarningSeconds = 0;
+        shrinkWarningVisible = false;
     }
 
     private void snapshotPlatform() {
@@ -550,8 +672,28 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             return;
         }
 
-        Vector min = Vector.getMinimum(areaPos1, areaPos2);
-        Vector max = Vector.getMaximum(areaPos1, areaPos2);
+        Vector spectatorPos1 = getGameConfig().getSpectatorAreaPos1();
+        Vector spectatorPos2 = getGameConfig().getSpectatorAreaPos2();
+        Vector scanMin = Vector.getMinimum(areaPos1, areaPos2);
+        Vector scanMax = Vector.getMaximum(areaPos1, areaPos2);
+        if (spectatorPos1 != null && spectatorPos2 != null) {
+            Vector spectatorMin = Vector.getMinimum(spectatorPos1, spectatorPos2);
+            Vector spectatorMax = Vector.getMaximum(spectatorPos1, spectatorPos2);
+            scanMin = Vector.getMinimum(scanMin, spectatorMin);
+            scanMax = Vector.getMaximum(scanMax, spectatorMax);
+        }
+        int replacements = replaceFinalistColors(world, scanMin, scanMax,
+                rightConcrete, rightCarpet, leftConcrete, leftCarpet);
+        logGame(Level.INFO, "队伍颜色", "右队=" + rightChampionshipTeam.getName() + "(" + rightChampionshipTeam.getColorName()
+                + ") 左队=" + leftChampionshipTeam.getName() + "(" + leftChampionshipTeam.getColorName()
+                + ") 已替换比赛区和观赛区内 " + replacements + " 个占位方块");
+    }
+
+    private static int replaceFinalistColors(@NotNull World world, @NotNull Vector pos1, @NotNull Vector pos2,
+                                              @NotNull Material rightConcrete, @NotNull Material rightCarpet,
+                                              @NotNull Material leftConcrete, @NotNull Material leftCarpet) {
+        Vector min = Vector.getMinimum(pos1, pos2);
+        Vector max = Vector.getMaximum(pos1, pos2);
         int replacements = 0;
         for (int x = min.getBlockX(); x <= max.getBlockX(); x++) {
             for (int y = min.getBlockY(); y <= max.getBlockY(); y++) {
@@ -571,9 +713,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                 }
             }
         }
-        logGame(Level.INFO, "队伍颜色", "右队=" + rightChampionshipTeam.getName() + "(" + rightChampionshipTeam.getColorName()
-                + ") 左队=" + leftChampionshipTeam.getName() + "(" + leftChampionshipTeam.getColorName()
-                + ") 已替换 " + replacements + " 个占位方块");
+        return replacements;
     }
 
     private static @Nullable Material teamMaterial(@NotNull ChampionshipTeam team, @NotNull String suffix) {
@@ -600,11 +740,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     }
 
     private void preserveHeldTokens(Player player, @Nullable DodgeboltSide side) {
+        int count = countTokenArrows(player);
+        stowedTokens.remove(player.getUniqueId());
         if (side == null) return;
-        int count = 0;
-        for (ItemStack stack : player.getInventory().getContents()) {
-            if (isTokenArrow(stack)) count += stack.getAmount();
-        }
         for (int i = 0; i < count; i++) spawnArrowToken(side);
     }
 
@@ -623,11 +761,57 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         }
     }
 
-    private boolean hasTokenArrow(Player player) {
+    private boolean hasTokenArrow(@NotNull Player player, @Nullable DodgeboltSide side) {
+        if (side == null) return false;
         for (ItemStack stack : player.getInventory().getContents()) {
-            if (isTokenArrow(stack)) return true;
+            if (tokenSide(stack) == side) return true;
         }
         return false;
+    }
+
+    /** Keeps a live arrow unavailable outside the permitted shooting strip without deleting it. */
+    public void updateArrowAccess(@NotNull Player player, @NotNull Location location) {
+        DodgeboltSide side = sideOf(player);
+        if (side == null || getGameStageEnum() != GameStageEnum.PROGRESS || paused || !isAlive(player)) return;
+        if (contains(shootArea(side), location)) {
+            restoreStowedTokens(player);
+        } else {
+            stashTokenArrows(player);
+        }
+    }
+
+    private void stashTokenArrows(@NotNull Player player) {
+        List<ItemStack> stored = null;
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (!isTokenArrow(stack)) continue;
+            if (stored == null) {
+                stored = stowedTokens.computeIfAbsent(player.getUniqueId(), ignored -> new ArrayList<>());
+            }
+            stored.add(stack.clone());
+            player.getInventory().setItem(slot, null);
+        }
+    }
+
+    private void restoreStowedTokens(@NotNull Player player) {
+        List<ItemStack> stored = stowedTokens.remove(player.getUniqueId());
+        if (stored == null || stored.isEmpty()) return;
+        List<ItemStack> remaining = new ArrayList<>();
+        for (ItemStack stack : stored) {
+            remaining.addAll(player.getInventory().addItem(stack.clone()).values());
+        }
+        if (!remaining.isEmpty()) stowedTokens.put(player.getUniqueId(), remaining);
+    }
+
+    private int countTokenArrows(@NotNull Player player) {
+        int count = 0;
+        for (ItemStack stack : player.getInventory().getContents()) {
+            if (isTokenArrow(stack)) count += stack.getAmount();
+        }
+        for (ItemStack stack : stowedTokens.getOrDefault(player.getUniqueId(), List.of())) {
+            count += stack.getAmount();
+        }
+        return count;
     }
 
     private void startFlightMonitor() {
@@ -646,6 +830,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     }
 
     private void cleanupRoundEntities() {
+        cancelShrinkWarning();
         cancelTask(flightMonitorTask);
         flightMonitorTask = null;
         for (Flight flight : flights.values()) flight.arrow.remove();
@@ -658,6 +843,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             }
         }
         tokenItems.clear();
+        stowedTokens.clear();
         for (Player player : participants()) {
             player.getInventory().remove(Material.ARROW);
         }
@@ -669,14 +855,16 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         cancelTask(preparationTask);
         cancelTask(restartTask);
         cancelTask(flightMonitorTask);
-        cancelTask(shrinkTask);
-        preparationTask = restartTask = flightMonitorTask = shrinkTask = null;
+        cancelShrinkWarning();
+        cancelTask(championFireworksTask);
+        preparationTask = restartTask = flightMonitorTask = null;
+        championFireworksTask = null;
         cleanupRoundEntities();
     }
 
     private void updateScoreBar() {
         String state = paused ? MessageConfig.DODGEBOLT_STATE_PAUSED : MessageConfig.DODGEBOLT_STATE_LIVE;
-        updateSpectatorTimerBossBar(MessageConfig.DODGEBOLT_SCORE_BAR
+        updateGameTimerBossBar(MessageConfig.DODGEBOLT_SCORE_BAR
                 .replace("%round%", String.valueOf(roundNumber))
                 .replace("%right%", rightChampionshipTeam == null ? "-" : rightChampionshipTeam.getColoredName())
                 .replace("%left%", leftChampionshipTeam == null ? "-" : leftChampionshipTeam.getColoredName())
@@ -688,8 +876,12 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     }
 
     private void launchChampionFireworks(ChampionshipTeam team) {
+        cancelTask(championFireworksTask);
+        championFireworksTask = null;
         Location origin = getSpectatorSpawnLocation();
-        if (origin.getWorld() == null) return;
+        Vector areaMin = getGameConfig().getSpectatorAreaPos1();
+        Vector areaMax = getGameConfig().getSpectatorAreaPos2();
+        if (origin == null || origin.getWorld() == null || areaMin == null || areaMax == null) return;
         Color color;
         try {
             color = Utils.hex2rgb(team.getColorCode());
@@ -697,18 +889,32 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             color = Color.YELLOW;
         }
         Color finalColor = color;
-        for (int i = 0; i < 5; i++) {
-            int delay = i * 8;
-            scheduler.runTaskLater(plugin, () -> {
-                if (origin.getWorld() == null) return;
-                Firework firework = origin.getWorld().spawn(origin, Firework.class);
-                FireworkMeta meta = firework.getFireworkMeta();
-                meta.addEffect(FireworkEffect.builder().withColor(finalColor).withFade(Color.WHITE)
-                        .with(FireworkEffect.Type.BALL_LARGE).trail(true).flicker(true).build());
-                meta.setPower(1);
-                firework.setFireworkMeta(meta);
-            }, delay);
-        }
+        Vector min = Vector.getMinimum(areaMin, areaMax);
+        Vector max = Vector.getMaximum(areaMin, areaMax);
+        final int[] elapsed = {0};
+        championFireworksTask = scheduler.runTaskTimer(plugin, () -> {
+            if (elapsed[0] > 200 || origin.getWorld() == null) {
+                cancelTask(championFireworksTask);
+                championFireworksTask = null;
+                return;
+            }
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            Location location = new Location(origin.getWorld(),
+                    randomCoordinate(random, min.getX(), max.getX() + 1),
+                    randomCoordinate(random, min.getY() + 1, max.getY() + 1),
+                    randomCoordinate(random, min.getZ(), max.getZ() + 1));
+            Firework firework = origin.getWorld().spawn(location, Firework.class);
+            FireworkMeta meta = firework.getFireworkMeta();
+            meta.addEffect(FireworkEffect.builder().withColor(finalColor).withFade(Color.WHITE)
+                    .with(FireworkEffect.Type.BALL_LARGE).trail(true).flicker(true).build());
+            meta.setPower(1);
+            firework.setFireworkMeta(meta);
+            elapsed[0] += 10;
+        }, 0L, 10L);
+    }
+
+    private static double randomCoordinate(@NotNull ThreadLocalRandom random, double min, double max) {
+        return min + random.nextDouble() * Math.max(0.01D, max - min);
     }
 
     public @Nullable DodgeboltSide sideOf(@Nullable Player player) {
@@ -725,6 +931,17 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     public boolean inOwnArea(@NotNull Player player, @NotNull Location location) {
         DodgeboltSide side = sideOf(player);
         return side != null && contains(sideArea(side), location);
+    }
+
+    @Override
+    public boolean notInArea(@NotNull Location location) {
+        Vector areaPos1 = getGameConfig().getAreaPos1();
+        Vector areaPos2 = getGameConfig().getAreaPos2();
+        Location spectatorSpawn = getSpectatorSpawnLocation();
+        return areaPos1 == null || areaPos2 == null || location.getWorld() == null
+                || spectatorSpawn == null || spectatorSpawn.getWorld() == null
+                || !location.getWorld().getName().equals(spectatorSpawn.getWorld().getName())
+                || !contains(box(areaPos1, areaPos2), location);
     }
 
     /** A knocked-out finalist remains in adventure mode and may only roam the configured viewing ring. */
@@ -748,7 +965,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         return pos1 != null && pos2 != null && spectatorSpawn != null
                 && location.getWorld() != null && spectatorSpawn.getWorld() != null
                 && location.getWorld().getName().equals(spectatorSpawn.getWorld().getName())
-                && location.toVector().isInAABB(pos1, pos2)
+                && contains(box(pos1, pos2), location)
                 && notInArea(location);
     }
 
@@ -958,6 +1175,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         leftWins = 0;
         shrinkLevel = 0;
         shotsThisRound = 0;
+        completedShrinkEvents = 0;
         paused = false;
         partialRoster = false;
         champion = null;
@@ -966,6 +1184,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         eliminatedPlayers.clear();
         forcedParticipants.clear();
         pauseLocations.clear();
+        stowedTokens.clear();
         platformSnapshot.clear();
         activePlatformColumns.clear();
         preloadMap();

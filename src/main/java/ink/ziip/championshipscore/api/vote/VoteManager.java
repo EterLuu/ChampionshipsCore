@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class VoteManager extends BaseManager {
-    private static final int VOTE_DURATION_SECONDS = 120;
+    private static final int VOTE_DURATION_SECONDS = 90;
     private final Map<UUID, GameTypeEnum> playerVotes = new ConcurrentHashMap<>();
     private final Map<UUID, BossBar> voteBars = new ConcurrentHashMap<>();
     private final BukkitScheduler scheduler;

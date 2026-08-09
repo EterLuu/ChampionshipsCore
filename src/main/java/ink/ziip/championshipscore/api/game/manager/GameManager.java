@@ -33,6 +33,7 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -46,6 +47,7 @@ public class GameManager extends BaseManager {
     private final Map<ChampionshipTeam, BaseGameInstance> teamStatus = new ConcurrentHashMap<>();
     private final Map<UUID, BaseGameInstance> playerStatus = new ConcurrentHashMap<>();
     private final Map<UUID, RoundTransitionHold> roundTransitionHolds = new ConcurrentHashMap<>();
+    private final Map<UUID, SpectatorTransitionHold> spectatorTransitionHolds = new ConcurrentHashMap<>();
     private final GameManagerHandler gameManagerHandler;
     private final SpectateMenu spectateMenu;
     @Getter
@@ -129,6 +131,18 @@ public class GameManager extends BaseManager {
 
     public boolean isGameManagerLoaded(@NotNull GameTypeEnum gameTypeEnum) {
         return loadedGameManagers.contains(gameTypeEnum);
+    }
+
+    /** Returns a bound map's admin teleport anchor, or {@code null} when the world is unbound. */
+    @Nullable
+    public Location getMapTeleportLocation(@NotNull String worldName) {
+        for (GameTypeEnum gameType : GameTypeEnum.values()) {
+            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            if (manager == null) continue;
+            Location target = manager.getWorldTeleportLocation(worldName);
+            if (target != null) return target;
+        }
+        return null;
     }
 
     /**
@@ -219,6 +233,7 @@ public class GameManager extends BaseManager {
         enabledGames = null;
         spectatorFocus = null;
         roundTransitionHolds.clear();
+        spectatorTransitionHolds.clear();
 
         gameManagerHandler.unRegister();
     }
@@ -721,9 +736,14 @@ public class GameManager extends BaseManager {
             roundTransitionHolds.put(uuid, new RoundTransitionHold(instance, instance.getRunMode()));
             Player player = org.bukkit.Bukkit.getPlayer(uuid);
             if (player == null) continue;
-            player.setGameMode(GameMode.ADVENTURE);
-            player.setLevel(0);
+            instance.sanitizeParticipantForLobby(player, false);
         }
+    }
+
+    /** Keeps spectators attached to a completed event instance until the next round can adopt them. */
+    public void holdSpectatorsForNextRound(@NotNull BaseGameInstance instance) {
+        for (UUID uuid : instance.getSpectatorUniqueIds())
+            spectatorTransitionHolds.put(uuid, new SpectatorTransitionHold(instance));
     }
 
     public boolean isWaitingForNextRound(@NotNull UUID uuid) {
@@ -734,12 +754,7 @@ public class GameManager extends BaseManager {
     public boolean restoreNextRoundHold(@NotNull Player player) {
         RoundTransitionHold hold = roundTransitionHolds.get(player.getUniqueId());
         if (hold == null) return false;
-        player.getInventory().clear();
-        for (org.bukkit.potion.PotionEffect effect : player.getActivePotionEffects()) {
-            player.removePotionEffect(effect.getType());
-        }
-        player.setGameMode(GameMode.ADVENTURE);
-        player.setLevel(0);
+        hold.instance().sanitizeParticipantForLobby(player, false);
         return true;
     }
 
@@ -820,6 +835,18 @@ public class GameManager extends BaseManager {
         return true;
     }
 
+    /** Selects a live arena and teleports directly to a destination inside that same spectator instance. */
+    public synchronized boolean selectSpectatorArea(@NotNull Player player, @NotNull BaseGameInstance target,
+                                                    @NotNull Location destination) {
+        if (!isInstanceActivelyRunning(target) || playerStatus.containsKey(player.getUniqueId())) return false;
+        if (playerSpectatorStatus.get(player.getUniqueId()) == target) {
+            target.teleportSpectatorAsync(player, destination);
+            return true;
+        }
+        moveSpectatorTo(player, target, destination);
+        return true;
+    }
+
     private int spectatorInstanceIndex(@NotNull BaseGameInstance instance) {
         if (instance instanceof ParkourTagArea parkourTag) return parkourTag.getCopyIndex();
         if (instance instanceof BattleBoxArea battleBox) return battleBox.getCopyIndex();
@@ -838,7 +865,8 @@ public class GameManager extends BaseManager {
     public synchronized void releaseEventSpectatorsForGame(@NotNull GameTypeEnum gameType) {
         List<Map.Entry<UUID, BaseGameInstance>> entries = playerSpectatorStatus.entrySet().stream()
                 .filter(entry -> entry.getValue().getGameTypeEnum() == gameType
-                        && entry.getValue().isEventRun())
+                        && (entry.getValue().isEventRun()
+                        || isHeldSpectator(entry.getKey(), entry.getValue())))
                 .toList();
         for (Map.Entry<UUID, BaseGameInstance> entry : entries) {
             Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
@@ -846,10 +874,14 @@ public class GameManager extends BaseManager {
             else entry.getValue().onlyRemoveSpectatorFromList(entry.getKey());
             playerSpectatorStatus.remove(entry.getKey(), entry.getValue());
         }
+        spectatorTransitionHolds.entrySet().removeIf(entry ->
+                entry.getValue().instance().getGameTypeEnum() == gameType);
     }
 
     public void clearSpectatorStatus(@NotNull UUID uuid, @NotNull BaseGameInstance expected) {
         playerSpectatorStatus.remove(uuid, expected);
+        spectatorTransitionHolds.computeIfPresent(uuid, (ignored, hold) ->
+                hold.instance() == expected ? null : hold);
         if (spectatorFocus == expected && expected.getOnlineSpectators().isEmpty()
                 && !isInstanceAvailableForSpectating(expected)) {
             spectatorFocus = null;
@@ -861,6 +893,7 @@ public class GameManager extends BaseManager {
         BaseGameInstance target = current != null && current.getGameTypeEnum() == startedInstance.getGameTypeEnum()
                 && isInstanceActivelyRunning(current) ? current : startedInstance;
         spectatorFocus = target;
+        transferHeldSpectatorsTo(target);
 
         for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
             if (plugin.getTeamManager().getTeamByPlayer(player) != null) continue;
@@ -871,13 +904,57 @@ public class GameManager extends BaseManager {
         }
     }
 
+    private boolean isHeldSpectator(@NotNull UUID uuid, @NotNull BaseGameInstance instance) {
+        SpectatorTransitionHold hold = spectatorTransitionHolds.get(uuid);
+        return hold != null && hold.instance() == instance;
+    }
+
+    /** Transfers both online and offline spectators without a lobby hop once the next round is live. */
+    private void transferHeldSpectatorsTo(@NotNull BaseGameInstance target) {
+        List<Map.Entry<UUID, SpectatorTransitionHold>> holds = spectatorTransitionHolds.entrySet().stream()
+                .filter(entry -> entry.getValue().instance().getGameTypeEnum() == target.getGameTypeEnum())
+                .toList();
+        for (Map.Entry<UUID, SpectatorTransitionHold> entry : holds) {
+            UUID uuid = entry.getKey();
+            SpectatorTransitionHold hold = entry.getValue();
+            if (!spectatorTransitionHolds.remove(uuid, hold)) continue;
+
+            BaseGameInstance previous = playerSpectatorStatus.get(uuid);
+            if (previous != hold.instance()) continue;
+
+            Player player = org.bukkit.Bukkit.getPlayer(uuid);
+            if (previous == target) {
+                if (player != null && player.isOnline())
+                    target.teleportSpectatorAsync(player, target.getSpectatorSpawnLocation());
+                continue;
+            }
+            if (player != null && player.isOnline()) {
+                moveSpectatorTo(player, target);
+                continue;
+            }
+            if (playerSpectatorStatus.replace(uuid, previous, target)) {
+                previous.onlyRemoveSpectatorFromList(uuid);
+                target.addSpectatorWithoutTeleport(uuid);
+            }
+        }
+    }
+
     private void moveSpectatorTo(@NotNull Player player, @NotNull BaseGameInstance target) {
+        moveSpectatorTo(player, target, target.getSpectatorSpawnLocation());
+    }
+
+    private void moveSpectatorTo(@NotNull Player player, @NotNull BaseGameInstance target,
+                                 @NotNull Location destination) {
         UUID uuid = player.getUniqueId();
         BaseGameInstance previous = playerSpectatorStatus.get(uuid);
-        if (previous == target) return;
+        if (previous == target) {
+            target.teleportSpectatorAsync(player, destination);
+            return;
+        }
+        spectatorTransitionHolds.remove(uuid);
         if (previous != null) previous.detachSpectator(player);
         playerSpectatorStatus.put(uuid, target);
-        target.addSpectator(player);
+        target.addSpectator(player, destination);
     }
 
 
@@ -921,6 +998,7 @@ public class GameManager extends BaseManager {
             BaseGameInstance baseArea = playerSpectatorStatus.get(uuid);
             baseArea.removeSpectator(player);
             playerSpectatorStatus.remove(uuid);
+            spectatorTransitionHolds.remove(uuid);
             return true;
         }
 
@@ -933,6 +1011,7 @@ public class GameManager extends BaseManager {
             baseArea.removeSpectator(uuid);
             playerSpectatorStatus.remove(uuid);
         }
+        spectatorTransitionHolds.remove(uuid);
     }
 
     public void removeSpectatingPlayerFromList(@NotNull UUID uuid) {
@@ -941,8 +1020,12 @@ public class GameManager extends BaseManager {
             baseArea.onlyRemoveSpectatorFromList(uuid);
             playerSpectatorStatus.remove(uuid);
         }
+        spectatorTransitionHolds.remove(uuid);
     }
 
     private record RoundTransitionHold(BaseGameInstance instance, GameRunMode mode) {
    }
+
+    private record SpectatorTransitionHold(BaseGameInstance instance) {
+    }
 }

@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.util.Utils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.*;
 import java.util.*;
@@ -117,6 +118,32 @@ public class TeamDaoImpl implements TeamDao {
     }
 
     @Override
+    @Nullable
+    public Set<TeamMemberEntry> getTeamMembers(@NotNull String username) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT `id`, `uuid`, `username`, `teamId`
+                    FROM `team_members`
+                    WHERE LOWER(`username`)=LOWER(?)
+                    """)) {
+                statement.setString(1, username);
+                Set<TeamMemberEntry> members = new HashSet<>();
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        members.add(new TeamMemberEntry(resultSet.getInt("id"),
+                                UUID.fromString(resultSet.getString("uuid")),
+                                resultSet.getString("username"), resultSet.getInt("teamId")));
+                    }
+                }
+                return members;
+            }
+        } catch (SQLException | IllegalArgumentException exception) {
+            logFailure("按名称查询队伍成员", exception);
+            return null;
+        }
+    }
+
+    @Override
     public void deleteTeamMembers(int teamId) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
@@ -151,7 +178,24 @@ public class TeamDaoImpl implements TeamDao {
     }
 
     @Override
-    public void addTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username) {
+    public boolean deleteTeamMembers(int teamId, @NotNull String username) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    DELETE FROM `team_members`
+                    WHERE `teamId`=? AND LOWER(`username`)=LOWER(?)
+                    """)) {
+                statement.setInt(1, teamId);
+                statement.setString(2, username);
+                return statement.executeUpdate() > 0;
+            }
+        } catch (SQLException exception) {
+            logFailure("按名称删除队伍成员", exception);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean addTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
                     INSERT INTO `team_members` (`uuid`, `username`, `teamId`)
@@ -161,14 +205,72 @@ public class TeamDaoImpl implements TeamDao {
                 statement.setString(2, username);
                 statement.setInt(3, teamId);
 
-                statement.executeUpdate();
+                return statement.executeUpdate() == 1;
             }
         } catch (SQLException exception) {
             logFailure("新增队伍成员", exception);
+            return false;
         }
     }
 
-    private void logFailure(String operation, SQLException exception) {
+    @Override
+    public boolean moveTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement lock = connection.prepareStatement("""
+                        SELECT `id`
+                        FROM `team_members`
+                        WHERE `uuid`=? OR LOWER(`username`)=LOWER(?)
+                        FOR UPDATE
+                        """)) {
+                    lock.setString(1, uuid.toString());
+                    lock.setString(2, username);
+                    try (ResultSet ignored = lock.executeQuery()) {
+                        while (ignored.next()) {
+                            // Lock every matching identity row until the replacement has committed.
+                        }
+                    }
+                }
+                try (PreparedStatement delete = connection.prepareStatement("""
+                        DELETE FROM `team_members`
+                        WHERE `uuid`=? OR LOWER(`username`)=LOWER(?)
+                        """)) {
+                    delete.setString(1, uuid.toString());
+                    delete.setString(2, username);
+                    delete.executeUpdate();
+                }
+                try (PreparedStatement insert = connection.prepareStatement("""
+                        INSERT INTO `team_members` (`uuid`, `username`, `teamId`)
+                        VALUES (?,?,?)
+                        """)) {
+                    insert.setString(1, uuid.toString());
+                    insert.setString(2, username);
+                    insert.setInt(3, teamId);
+                    if (insert.executeUpdate() != 1) throw new SQLException("队伍成员迁移未插入唯一记录");
+                }
+                connection.commit();
+                return true;
+            } catch (SQLException | RuntimeException exception) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    exception.addSuppressed(rollbackFailure);
+                }
+                throw exception;
+            } finally {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (SQLException ignored) {
+                }
+            }
+        } catch (SQLException | RuntimeException exception) {
+            logFailure("迁移队伍成员", exception);
+            return false;
+        }
+    }
+
+    private void logFailure(String operation, Throwable exception) {
         plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Database", "队伍",
                 "操作=" + operation + " 失败"), exception);
     }

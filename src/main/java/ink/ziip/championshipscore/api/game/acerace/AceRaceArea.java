@@ -20,7 +20,9 @@ import org.bukkit.block.Block;
 import org.bukkit.Sound;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -32,6 +34,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,13 +53,18 @@ import java.util.UUID;
 public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final long LAUNCH_PAD_DELAY_TICKS = 2L;
     private static final int JUMP_BOOST_DURATION_TICKS = 14;
+    private static final int SPEED_BOOST_DURATION_TICKS = 100;
     private static final int RED_SPEED_DURATION_TICKS = 16;
-    private static final double RIPTIDE_EXTRA_MULTIPLIER = 0.10D;
+    private static final double RIPTIDE_EXTRA_MULTIPLIER = 0.03D;
     private static final int SPEED_STATION_RADIUS = 2;
     private static final int WATER_SPEED_STATION_RADIUS = 4;
     private static final double SPEED_STATION_RADIUS_SQUARED = SPEED_STATION_RADIUS * SPEED_STATION_RADIUS;
     private static final double WATER_SPEED_STATION_RADIUS_SQUARED =
             WATER_SPEED_STATION_RADIUS * WATER_SPEED_STATION_RADIUS;
+    private static final long RACER_VISIBILITY_HIDDEN_AFTER_START_TICKS = 60L * 20L;
+    private static final double RACER_VISIBILITY_DISTANCE_SQUARED = 8D * 8D;
+    private static final long RACER_VISIBILITY_UPDATE_TICKS = 1L;
+    private static final String COLLISION_TEAM_PREFIX = "cc_ar_";
 
     @Getter
     private final List<AceRaceProgressPoint> progressPoints = new ArrayList<>();
@@ -72,9 +81,17 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private final Set<UUID> startLineArmed = new HashSet<>();
     private final Map<UUID, TrackFeatureContact> featureContacts = new HashMap<>();
     private final Map<UUID, BukkitTask> pendingLaunchPadTasks = new HashMap<>();
+    private final Set<RacerPair> visibleRacerPairs = new HashSet<>();
+    private final Set<RacerView> riptideHiddenViews = new HashSet<>();
+    private final Map<UUID, Integer> riptideViewerGraceTicks = new HashMap<>();
+    private final Map<UUID, TextDisplay> racerNameDisplays = new HashMap<>();
+    private final Map<UUID, String> originalScoreboardTeams = new HashMap<>();
     @Getter
     private int timer;
     private BukkitTask progressTask;
+    private BukkitTask racerVisibilityTask;
+    private BukkitTask racerVisibilityUnlockTask;
+    private boolean racerVisibilityUnlocked;
 
     public AceRaceArea(ChampionshipsCore plugin, AceRaceConfig config) {
         super(plugin, GameTypeEnum.AceRace, new AceRaceHandler(plugin), config);
@@ -147,6 +164,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetArea() {
+        stopRacerVisibilityUpdates();
         restoreAllRacerVisibility();
         cancelAllPendingLaunchPads();
         finishedPlayers.clear();
@@ -171,7 +189,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             return;
         }
         setGameStageEnum(GameStageEnum.PREPARATION);
-        hideAllRacers();
+        hideAllRacersForPreparation();
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -200,12 +218,12 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     private void beginGameProgress() {
+        scheduleRacerVisibilityUnlock();
         giveTeamArmor();
         progressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             refreshEnvironmentalEffects();
             timer = seconds;
-            changeLevelForAllGamePlayers(seconds);
-            updateSpectatorTimerBossBar(MessageConfig.ACE_RACE_ACTION_BAR_COUNT_DOWN
+            updateGameTimerBossBar(MessageConfig.ACE_RACE_ACTION_BAR_COUNT_DOWN
                     .replace("%time%", String.valueOf(seconds)), seconds, getGameConfig().getTimer());
         }, this::endGame);
     }
@@ -333,7 +351,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
         switch (material) {
             case YELLOW_GLAZED_TERRACOTTA -> {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 80, 2, true, false, false));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED,
+                        SPEED_BOOST_DURATION_TICKS, 2, true, false, false));
                 player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.6F, 1.5F);
                 Utils.sendActionBar(player, MessageConfig.ACE_RACE_SPEED_BOOST);
             }
@@ -416,12 +435,16 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void giveTeamArmor() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(uuid);
-            if (player == null || team == null) continue;
-            player.getInventory().setHelmet(unbreakable(team.getHelmet()));
-            player.getInventory().setLeggings(unbreakableSwiftSneakLeggings(team.getLeggings()));
-            player.getInventory().setBoots(unbreakableDepthStriderBoots(team.getBoots()));
+            if (player != null) giveTeamArmor(player);
         }
+    }
+
+    private void giveTeamArmor(@NotNull Player player) {
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
+        if (team == null) return;
+        player.getInventory().setHelmet(unbreakable(team.getHelmet()));
+        player.getInventory().setLeggings(unbreakableSwiftSneakLeggings(team.getLeggings()));
+        player.getInventory().setBoots(unbreakableDepthStriderBoots(team.getBoots()));
     }
 
     private static @NotNull ItemStack unbreakable(@NotNull ItemStack item) {
@@ -515,6 +538,15 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         }
     }
 
+    /** Rebuilds the deterministic race loadout for players who were offline when the race began. */
+    private void restoreRacerEquipment(@NotNull Player player) {
+        player.getInventory().clear();
+        giveTeamArmor(player);
+        int reached = nextProgressPoint.getOrDefault(player.getUniqueId(), 0) - 1;
+        applyProgressPointEquipment(player, reached >= 0 && reached < progressPoints.size()
+                ? progressPoints.get(reached).equipment() : AceRaceEquipment.NONE);
+    }
+
     private void announceProgressPointEquipment(@NotNull Player player, @NotNull AceRaceEquipment equipment) {
         if (equipment == AceRaceEquipment.ELYTRA) {
             player.sendMessage(MessageConfig.ACE_RACE_RECEIVED_ELYTRA);
@@ -553,12 +585,19 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private void launchPlayer(@NotNull Player player, double horizontalVelocity, double verticalVelocity, float pitch) {
         Vector direction = player.getLocation().getDirection();
+        // Preserve the tuned horizontal range while letting pitch scale the pad's original lift:
+        // level aim keeps the old height, looking up approaches double height, and looking down
+        // approaches a flat launch without ever firing the racer into the pad.
+        double aimedVerticalVelocity = Math.max(0D, verticalVelocity * (1D + direction.getY()));
         direction.setY(0D);
-        if (direction.lengthSquared() < 0.0001D) direction = new Vector(0D, 0D, 1D);
+        if (direction.lengthSquared() < 0.0001D) {
+            double yawRadians = Math.toRadians(player.getLocation().getYaw());
+            direction = new Vector(-Math.sin(yawRadians), 0D, Math.cos(yawRadians));
+        }
         else direction.normalize();
         // setVelocity replaces the old motion with this fixed launch vector; existing momentum is not
         // carried into the pad's horizontal or vertical impulse.
-        player.setVelocity(new Vector(direction.getX() * horizontalVelocity, verticalVelocity,
+        player.setVelocity(new Vector(direction.getX() * horizontalVelocity, aimedVerticalVelocity,
                 direction.getZ() * horizontalVelocity));
         player.setFallDistance(0F);
         player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 0.8F, pitch);
@@ -637,16 +676,39 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     public int getPlayerPosition(@NotNull UUID uuid) {
-        if (!gamePlayers.contains(uuid)) return 0;
+        return getPlayerPlacementRange(uuid).first();
+    }
+
+    /**
+     * Displays a shared placement interval when multiple unfinished racers have reached the same lap and
+     * ordered progress point. Finished racers always retain their exact finish position.
+     */
+    public @NotNull String getPlayerPositionDisplay(@NotNull UUID uuid) {
+        PlacementRange range = getPlayerPlacementRange(uuid);
+        return range.first() == range.last()
+                ? String.valueOf(range.first())
+                : range.first() + "-" + range.last();
+    }
+
+    private @NotNull PlacementRange getPlayerPlacementRange(@NotNull UUID uuid) {
+        if (!gamePlayers.contains(uuid)) return new PlacementRange(0, 0);
         int finishedIndex = finishedPlayers.indexOf(uuid);
-        if (finishedIndex >= 0) return finishedIndex + 1;
+        if (finishedIndex >= 0) {
+            int place = finishedIndex + 1;
+            return new PlacementRange(place, place);
+        }
 
         int progress = playerProgress(uuid);
         int ahead = finishedPlayers.size();
+        int tied = 0;
         for (UUID other : gamePlayers) {
-            if (!finishedPlayers.contains(other) && playerProgress(other) > progress) ahead++;
+            if (finishedPlayers.contains(other)) continue;
+            int otherProgress = playerProgress(other);
+            if (otherProgress > progress) ahead++;
+            else if (otherProgress == progress) tied++;
         }
-        return ahead + 1;
+        int first = ahead + 1;
+        return new PlacementRange(first, first + Math.max(1, tied) - 1);
     }
 
     public int getCurrentLap(@NotNull UUID uuid) {
@@ -669,6 +731,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END) return;
         if (progressTask != null) progressTask.cancel();
         cancelAllPendingLaunchPads();
+        stopRacerVisibilityUpdates();
         restoreAllRacerVisibility();
         cleanInventoryForAllGamePlayers();
         announceGameEnd(MessageConfig.ACE_RACE_GAME_END_TITLE, MessageConfig.ACE_RACE_GAME_END_SUBTITLE);
@@ -699,15 +762,23 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
-        cancelPendingLaunchPad(event.getPlayer().getUniqueId());
-        if (!notAreaPlayer(event.getPlayer())) releaseRacerVisibility(event.getPlayer());
+        Player player = event.getPlayer();
+        cancelPendingLaunchPad(player.getUniqueId());
+        if (!notAreaPlayer(player)) {
+            visibleRacerPairs.removeIf(pair -> pair.contains(player.getUniqueId()));
+            releaseRacerVisibility(player);
+        }
     }
 
     @Override
     public void handlePlayerJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (notAreaPlayer(player)) return;
-        if (!finishedPlayers.contains(player.getUniqueId())) hideRacer(player);
+        if (!finishedPlayers.contains(player.getUniqueId())) {
+            visibleRacerPairs.removeIf(pair -> pair.contains(player.getUniqueId()));
+            hideRacer(player);
+            refreshRacerVisibility();
+        }
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
             player.teleport(getPreparationTeleportLocation(getGameConfig().getStartSpawnPoint()));
             player.setGameMode(GameMode.ADVENTURE);
@@ -718,9 +789,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             } else {
                 player.setGameMode(GameMode.ADVENTURE);
                 returnToLatestRespawnPoint(player);
-                int reached = nextProgressPoint.getOrDefault(player.getUniqueId(), 0) - 1;
-                applyProgressPointEquipment(player, reached >= 0 && reached < progressPoints.size()
-                        ? progressPoints.get(reached).equipment() : AceRaceEquipment.NONE);
+                restoreRacerEquipment(player);
             }
         } else {
             releaseRacerVisibility(player);
@@ -729,27 +798,121 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         }
     }
 
-    private void hideAllRacers() {
+    private void stopRacerVisibilityUpdates() {
+        if (racerVisibilityUnlockTask != null) {
+            racerVisibilityUnlockTask.cancel();
+            racerVisibilityUnlockTask = null;
+        }
+        if (racerVisibilityTask != null) {
+            racerVisibilityTask.cancel();
+            racerVisibilityTask = null;
+        }
+        racerVisibilityUnlocked = false;
+        removeAllRacerNameDisplays();
+        visibleRacerPairs.clear();
+        riptideHiddenViews.clear();
+        riptideViewerGraceTicks.clear();
+    }
+
+    /** Preparation keeps all racers fully hidden, regardless of distance. */
+    private void hideAllRacersForPreparation() {
+        stopRacerVisibilityUpdates();
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) hideRacer(player);
         }
+        racerVisibilityTask = scheduler.runTaskTimer(
+                plugin, this::refreshRacerVisibility,
+                RACER_VISIBILITY_UPDATE_TICKS, RACER_VISIBILITY_UPDATE_TICKS);
+    }
+
+    /** Keeps active racers hidden until the first minute has elapsed, then enables proximity visibility. */
+    private void scheduleRacerVisibilityUnlock() {
+        if (racerVisibilityUnlockTask != null) racerVisibilityUnlockTask.cancel();
+        racerVisibilityUnlocked = false;
+        racerVisibilityUnlockTask = scheduler.runTaskLater(plugin, () -> {
+            racerVisibilityUnlockTask = null;
+            if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
+            racerVisibilityUnlocked = true;
+            refreshRacerVisibility();
+        }, RACER_VISIBILITY_HIDDEN_AFTER_START_TICKS);
+    }
+
+    /** Keeps active racers mutually visible only while they are within eight blocks after the grace period. */
+    private void refreshRacerVisibility() {
+        GameStageEnum stage = getGameStageEnum();
+        if (stage == GameStageEnum.WAITING || stage == GameStageEnum.END) return;
+        List<Player> racers = new ArrayList<>();
+        for (UUID uuid : gamePlayers) {
+            if (finishedPlayers.contains(uuid)) continue;
+            Player racer = Bukkit.getPlayer(uuid);
+            if (racer == null) continue;
+            disableRacerCollisions(racer);
+            racers.add(racer);
+        }
+        if (stage != GameStageEnum.PROGRESS || !racerVisibilityUnlocked) return;
+        for (Player racer : racers) {
+            TextDisplay nameDisplay = ensureRacerNameDisplay(racer);
+            nameDisplay.teleport(racerNameDisplayLocation(racer));
+        }
+
+        Set<UUID> activeRacers = new HashSet<>();
+        Map<UUID, Location> racerLocations = new HashMap<>();
+        for (Player racer : racers) activeRacers.add(racer.getUniqueId());
+        for (Player racer : racers) racerLocations.put(racer.getUniqueId(), racer.getLocation());
+        visibleRacerPairs.removeIf(pair -> !pair.bothIn(activeRacers));
+        riptideHiddenViews.removeIf(view -> !view.bothIn(activeRacers));
+        updateRiptideViewerState(racers, activeRacers);
+
+        for (int firstIndex = 0; firstIndex < racers.size(); firstIndex++) {
+            Player first = racers.get(firstIndex);
+            for (int secondIndex = firstIndex + 1; secondIndex < racers.size(); secondIndex++) {
+                Player second = racers.get(secondIndex);
+                RacerPair pair = RacerPair.of(first.getUniqueId(), second.getUniqueId());
+                Location firstLocation = racerLocations.get(first.getUniqueId());
+                Location secondLocation = racerLocations.get(second.getUniqueId());
+                boolean nearby = firstLocation.getWorld().equals(secondLocation.getWorld())
+                        && firstLocation.distanceSquared(secondLocation)
+                        <= RACER_VISIBILITY_DISTANCE_SQUARED;
+                boolean visible = visibleRacerPairs.contains(pair);
+                if (nearby) {
+                    if (!visible) {
+                        showRacerNameDisplay(second, first);
+                        showRacerNameDisplay(first, second);
+                        visibleRacerPairs.add(pair);
+                    }
+                    updateDirectionalRacerView(second, first, !visible);
+                    updateDirectionalRacerView(first, second, !visible);
+                } else if (visible) {
+                    clearDirectionalRacerView(second, first);
+                    clearDirectionalRacerView(first, second);
+                    hideRacerNameDisplay(second, first);
+                    hideRacerNameDisplay(first, second);
+                    visibleRacerPairs.remove(pair);
+                }
+            }
+        }
     }
 
     private void hideRacer(@NotNull Player player) {
-        player.setCollidable(false);
+        disableRacerCollisions(player);
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             player.hidePlayer(plugin, other);
             if (gamePlayers.contains(other.getUniqueId()) && !finishedPlayers.contains(other.getUniqueId())) {
                 other.hidePlayer(plugin, player);
-                other.setCollidable(false);
+                disableRacerCollisions(other);
             }
         }
     }
 
     private void restoreRacerVisibility(@NotNull Player player) {
-        player.setCollidable(true);
+        clearRacerOutlines(player);
+        removeRacerNameDisplay(player.getUniqueId());
+        visibleRacerPairs.removeIf(pair -> pair.contains(player.getUniqueId()));
+        riptideHiddenViews.removeIf(view -> view.contains(player.getUniqueId()));
+        riptideViewerGraceTicks.remove(player.getUniqueId());
+        restoreRacerCollisions(player);
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             player.showPlayer(plugin, other);
@@ -763,8 +926,15 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void restoreAllRacerVisibility() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
+            if (player != null) clearRacerOutlines(player);
+        }
+        visibleRacerPairs.clear();
+        riptideHiddenViews.clear();
+        riptideViewerGraceTicks.clear();
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
             if (player == null) continue;
-            player.setCollidable(true);
+            restoreRacerCollisions(player);
             for (Player other : Bukkit.getOnlinePlayers()) {
                 if (!other.equals(player)) {
                     player.showPlayer(plugin, other);
@@ -776,7 +946,11 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     /** Clears this plugin's bidirectional hide state before a racer disconnects. */
     private void releaseRacerVisibility(@NotNull Player player) {
-        player.setCollidable(true);
+        clearRacerOutlines(player);
+        removeRacerNameDisplay(player.getUniqueId());
+        riptideHiddenViews.removeIf(view -> view.contains(player.getUniqueId()));
+        riptideViewerGraceTicks.remove(player.getUniqueId());
+        restoreRacerCollisions(player);
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             player.showPlayer(plugin, other);
@@ -787,10 +961,221 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     /** Keeps a newly joined observer hidden from active racers without hiding racers from observers. */
     public void handleVisibilityJoin(@NotNull Player joining) {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END) return;
+        // GameManagerHandler separately restores reconnecting participants. Do not overwrite its
+        // distance-based result if this MONITOR join hook happens to run afterwards.
+        if (gamePlayers.contains(joining.getUniqueId()) && !finishedPlayers.contains(joining.getUniqueId())) return;
         for (UUID uuid : gamePlayers) {
             Player racer = Bukkit.getPlayer(uuid);
             if (racer != null && !racer.equals(joining) && !finishedPlayers.contains(uuid))
                 racer.hidePlayer(plugin, joining);
+        }
+    }
+
+    /** Removes both directions of every Ace Race-only invisible glow involving this racer. */
+    private void clearRacerOutlines(@NotNull Player player) {
+        for (UUID uuid : gamePlayers) {
+            Player other = Bukkit.getPlayer(uuid);
+            if (other == null || other.equals(player)) continue;
+            plugin.getGlowingEntities().unsetInvisibleGlowing(other, player);
+            plugin.getGlowingEntities().unsetInvisibleGlowing(player, other);
+        }
+    }
+
+    /** Removes real racer entities from a riptiding player's client before client-side spin contact can occur. */
+    public void handleRiptideStart(@NotNull Player player) {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || notAreaPlayer(player)) return;
+        riptideViewerGraceTicks.put(player.getUniqueId(), 3);
+        for (UUID uuid : gamePlayers) {
+            if (uuid.equals(player.getUniqueId()) || finishedPlayers.contains(uuid)) continue;
+            Player target = Bukkit.getPlayer(uuid);
+            if (target == null) continue;
+            RacerView view = new RacerView(player.getUniqueId(), target.getUniqueId());
+            if (riptideHiddenViews.add(view)) {
+                plugin.getGlowingEntities().unsetInvisibleGlowing(target, player);
+                player.hidePlayer(plugin, target);
+            }
+        }
+        scheduler.runTask(plugin, () -> restoreAuthoritativeRiptideState(player));
+    }
+
+    private void restoreAuthoritativeRiptideState(@NotNull Player player) {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || !player.isOnline() || !player.isRiptiding()) return;
+        Vector velocity = player.getVelocity();
+        // Mark the riptide metadata dirty again and resend the unchanged authoritative velocity. This repairs
+        // the local player's state if it began the spin while already overlapping another client entity.
+        player.setRiptiding(false);
+        player.setRiptiding(true);
+        player.setVelocity(velocity);
+    }
+
+    private void updateRiptideViewerState(@NotNull List<Player> racers, @NotNull Set<UUID> activeRacers) {
+        riptideViewerGraceTicks.keySet().removeIf(uuid -> !activeRacers.contains(uuid));
+        for (Player racer : racers) {
+            UUID uuid = racer.getUniqueId();
+            if (racer.isRiptiding()) {
+                riptideViewerGraceTicks.put(uuid, 2);
+                continue;
+            }
+            Integer grace = riptideViewerGraceTicks.get(uuid);
+            if (grace == null) continue;
+            if (grace <= 1) riptideViewerGraceTicks.remove(uuid);
+            else riptideViewerGraceTicks.put(uuid, grace - 1);
+        }
+    }
+
+    private void updateDirectionalRacerView(@NotNull Player target, @NotNull Player viewer, boolean newlyNearby) {
+        RacerView view = new RacerView(viewer.getUniqueId(), target.getUniqueId());
+        boolean suppressForRiptide = riptideViewerGraceTicks.containsKey(viewer.getUniqueId());
+        if (suppressForRiptide) {
+            if (riptideHiddenViews.add(view)) {
+                plugin.getGlowingEntities().unsetInvisibleGlowing(target, viewer);
+                viewer.hidePlayer(plugin, target);
+            }
+            return;
+        }
+        if (riptideHiddenViews.remove(view) || newlyNearby) {
+            viewer.showPlayer(plugin, target);
+            plugin.getGlowingEntities().setInvisibleGlowing(target, viewer);
+        }
+    }
+
+    private void clearDirectionalRacerView(@NotNull Player target, @NotNull Player viewer) {
+        RacerView view = new RacerView(viewer.getUniqueId(), target.getUniqueId());
+        riptideHiddenViews.remove(view);
+        plugin.getGlowingEntities().unsetInvisibleGlowing(target, viewer);
+        viewer.hidePlayer(plugin, target);
+    }
+
+    private @NotNull TextDisplay ensureRacerNameDisplay(@NotNull Player racer) {
+        TextDisplay existing = racerNameDisplays.get(racer.getUniqueId());
+        if (existing != null && existing.isValid()) return existing;
+
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(racer.getUniqueId());
+        TextDisplay display = racer.getWorld().spawn(racerNameDisplayLocation(racer), TextDisplay.class, spawned -> {
+            spawned.text(net.kyori.adventure.text.Component.text(racer.getName(),
+                    team == null ? net.kyori.adventure.text.format.NamedTextColor.WHITE : team.getTeam().color()));
+            spawned.setBillboard(Display.Billboard.CENTER);
+            spawned.setShadowed(true);
+            spawned.setSeeThrough(false);
+            spawned.setDefaultBackground(false);
+            spawned.setBackgroundColor(org.bukkit.Color.fromARGB(0, 0, 0, 0));
+            spawned.setAlignment(TextDisplay.TextAlignment.CENTER);
+            spawned.setTeleportDuration(1);
+            spawned.setInterpolationDuration(1);
+            spawned.setVisibleByDefault(false);
+            spawned.setPersistent(false);
+            spawned.setInvulnerable(true);
+            spawned.setGravity(false);
+        });
+        racerNameDisplays.put(racer.getUniqueId(), display);
+        return display;
+    }
+
+    private @NotNull Location racerNameDisplayLocation(@NotNull Player racer) {
+        return racer.getLocation().add(0D, racer.getBoundingBox().getHeight() + 0.35D, 0D);
+    }
+
+    private void showRacerNameDisplay(@NotNull Player target, @NotNull Player viewer) {
+        viewer.showEntity(plugin, ensureRacerNameDisplay(target));
+    }
+
+    private void hideRacerNameDisplay(@NotNull Player target, @NotNull Player viewer) {
+        TextDisplay display = racerNameDisplays.get(target.getUniqueId());
+        if (display != null) viewer.hideEntity(plugin, display);
+    }
+
+    private void removeRacerNameDisplay(@NotNull UUID uuid) {
+        TextDisplay display = racerNameDisplays.remove(uuid);
+        if (display != null) display.remove();
+    }
+
+    private void removeAllRacerNameDisplays() {
+        for (TextDisplay display : racerNameDisplays.values()) display.remove();
+        racerNameDisplays.clear();
+    }
+
+    /**
+     * Disables both server-side entity pushing and the client-predicted collision driven by scoreboard teams.
+     * A separate temporary team is kept for each original colour so glowing outlines retain their team colour.
+     */
+    private void disableRacerCollisions(@NotNull Player player) {
+        player.setCollidable(false);
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        Team current = scoreboard.getEntryTeam(player.getName());
+        if (current != null && !current.getName().startsWith(COLLISION_TEAM_PREFIX))
+            originalScoreboardTeams.putIfAbsent(player.getUniqueId(), current.getName());
+
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
+        String colorName = championshipTeam == null ? "white" : championshipTeam.getColorName().toLowerCase();
+        String collisionTeamName = COLLISION_TEAM_PREFIX + colorName;
+        Team collisionTeam = scoreboard.getTeam(collisionTeamName);
+        if (collisionTeam == null) collisionTeam = scoreboard.registerNewTeam(collisionTeamName);
+        var collisionColor = Utils.toNamedTextColor(colorName);
+        if (!collisionTeam.hasColor() || !collisionColor.equals(collisionTeam.color()))
+            collisionTeam.color(collisionColor);
+        if (collisionTeam.getOption(Team.Option.COLLISION_RULE) != Team.OptionStatus.NEVER)
+            collisionTeam.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+        if (!collisionTeam.hasEntry(player.getName())) collisionTeam.addEntry(player.getName());
+    }
+
+    /** Restores the exact scoreboard team occupied before Ace Race and removes empty temporary teams. */
+    private void restoreRacerCollisions(@NotNull Player player) {
+        player.setCollidable(true);
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        String originalName = originalScoreboardTeams.remove(player.getUniqueId());
+        Team original = originalName == null ? null : scoreboard.getTeam(originalName);
+        if (original == null) {
+            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player.getUniqueId());
+            if (championshipTeam != null) original = championshipTeam.getTeam();
+        }
+        if (original != null) {
+            original.addEntry(player.getName());
+        } else {
+            Team current = scoreboard.getEntryTeam(player.getName());
+            if (current != null && current.getName().startsWith(COLLISION_TEAM_PREFIX))
+                current.removeEntry(player.getName());
+        }
+        removeEmptyCollisionTeams(scoreboard);
+    }
+
+    private void removeEmptyCollisionTeams(@NotNull Scoreboard scoreboard) {
+        for (Team team : new ArrayList<>(scoreboard.getTeams())) {
+            if (team.getName().startsWith(COLLISION_TEAM_PREFIX) && team.getEntries().isEmpty()) team.unregister();
+        }
+    }
+
+    @Override
+    public void dispose() {
+        stopRacerVisibilityUpdates();
+        restoreAllRacerVisibility();
+        super.dispose();
+    }
+
+    private record PlacementRange(int first, int last) {
+    }
+
+    private record RacerPair(@NotNull UUID first, @NotNull UUID second) {
+        private static @NotNull RacerPair of(@NotNull UUID first, @NotNull UUID second) {
+            return first.compareTo(second) <= 0 ? new RacerPair(first, second) : new RacerPair(second, first);
+        }
+
+        private boolean contains(@NotNull UUID uuid) {
+            return first.equals(uuid) || second.equals(uuid);
+        }
+
+        private boolean bothIn(@NotNull Set<UUID> uuids) {
+            return uuids.contains(first) && uuids.contains(second);
+        }
+    }
+
+    /** Directional view state: {@code viewer} may temporarily hide {@code target} while riptiding. */
+    private record RacerView(@NotNull UUID viewer, @NotNull UUID target) {
+        private boolean contains(@NotNull UUID uuid) {
+            return viewer.equals(uuid) || target.equals(uuid);
+        }
+
+        private boolean bothIn(@NotNull Set<UUID> uuids) {
+            return uuids.contains(viewer) && uuids.contains(target);
         }
     }
 

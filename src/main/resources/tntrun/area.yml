@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 4
+  version: 6
 name: "area"
 world-name:
 prepare:
@@ -8,6 +8,10 @@ prepare:
   revision: 0
   published-at:
   world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
 timer: 180
 spectator-spawn-point:
 # Aggregate play-area box for maps that do not define per-copy boxes. Prepared maps derive one tight box
@@ -15,8 +19,9 @@ spectator-spawn-point:
 area-pos1:
 area-pos2:
 # Prepare/template model: use /cc map edit TNTRun to capture one arena schematic,
-# configure its copy layout and publish the map.
-# stamps that many copies in a row and records copies + copy-size below. Then stand in copy 0 and set
+# configure its copy layout and publish the map. The saved selection minimum is copy 0's layout origin.
+# Copy 0 remains the hand-built source; stamping only creates
+# copies 1..N-1 in a row and records copies + copy-size below. Then stand in copy 0 and set
 # copy-spawn. copies = how many arena copies players are split across; copy-spawn = the spawn inside copy 0;
 # copy-size = one copy's block dimensions (auto-recorded, used to derive each copy's boundary box).
 copies: 0

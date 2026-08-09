@@ -22,17 +22,16 @@ public class TNTRunManager extends BaseGameInstanceManager<TNTRunTeamArea> {
         File areasFolder = new File(plugin.getDataFolder() + File.separator + "tntrun");
         areasFolder.mkdirs();
 
-        scheduler.runTask(plugin, task -> {
-            String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
-            if (areaList != null) {
-                for (String file : areaList) {
-                    String name = file.substring(0, file.length() - 4);
-                    TNTRunTeamArea area = new TNTRunTeamArea(plugin, new TNTRunConfig(plugin, name), false, name);
-                    areas.put(name, area);
-                    area.preloadMap();
-                }
-            }
-        });
+        String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
+        if (areaList == null) return;
+        for (String file : areaList) {
+            String name = file.substring(0, file.length() - 4);
+            TNTRunConfig config = new TNTRunConfig(plugin, name);
+            config.initializeConfiguration(plugin.getFolder());
+            TNTRunTeamArea area = new TNTRunTeamArea(plugin, config, false, name);
+            areas.put(name, area);
+            scheduler.runTask(plugin, task -> area.preloadMap());
+        }
     }
 
     @Override

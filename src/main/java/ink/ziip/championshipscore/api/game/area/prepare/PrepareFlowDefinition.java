@@ -56,4 +56,12 @@ public abstract class PrepareFlowDefinition {
         world.save();
         return CompletableFuture.completedFuture(true);
     }
+
+    /**
+     * Persists the physical map without asserting that every gameplay point is configured yet.
+     * A draft remains dirty and therefore cannot be selected for a game until a later publish.
+     */
+    public @NotNull CompletableFuture<Boolean> saveDraft(@NotNull PrepareSession session) {
+        return publish(session);
+    }
 }

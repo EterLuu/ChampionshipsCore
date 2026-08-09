@@ -101,6 +101,10 @@ public class ChampionshipPlayer {
     }
 
     public void sendTitle(String title, String subTitle) {
+        sendTitle(title, subTitle, 20);
+    }
+
+    public void sendTitle(String title, String subTitle, int stayTicks) {
         Player player = getPlayer();
         if (player == null)
             return;
@@ -109,8 +113,9 @@ public class ChampionshipPlayer {
                 .deserialize(Utils.translateColorCodes(setPlaceholders(title)));
         Component subTitleComponent = LegacyComponentSerializer.legacySection()
                 .deserialize(Utils.translateColorCodes(setPlaceholders(subTitle)));
-        // fade-in 1 tick, stay 20 ticks, fade-out 1 tick
-        Title.Times times = Title.Times.times(Duration.ofMillis(50), Duration.ofSeconds(1), Duration.ofMillis(50));
+        // fade-in 1 tick, caller-defined stay, fade-out 1 tick
+        Title.Times times = Title.Times.times(Duration.ofMillis(50),
+                Duration.ofMillis(Math.max(0, stayTicks) * 50L), Duration.ofMillis(50));
         player.showTitle(Title.title(titleComponent, subTitleComponent, times));
     }
 

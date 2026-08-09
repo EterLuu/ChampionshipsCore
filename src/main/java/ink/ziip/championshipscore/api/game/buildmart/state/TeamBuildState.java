@@ -36,7 +36,7 @@ public class TeamBuildState {
         }
         this.goldenSlot = new BuildSlot(0, true,
                 base == null ? null : base.getGoldenBuildAnchor(),
-                base == null ? null : base.getGoldenReferenceAnchor());
+                null);
     }
 
     @Nullable

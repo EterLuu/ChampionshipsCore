@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.team.dao;
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Set;
@@ -17,9 +18,17 @@ public interface TeamDao {
 
     Set<TeamMemberEntry> getTeamMembers(int teamId);
 
+    @Nullable
+    Set<TeamMemberEntry> getTeamMembers(@NotNull String username);
+
     void deleteTeamMembers(int teamId);
 
     void deleteTeamMember(UUID uuid);
 
-    void addTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username);
+    boolean deleteTeamMembers(int teamId, @NotNull String username);
+
+    boolean addTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username);
+
+    /** Atomically removes every alias of this player from old teams and inserts the target membership. */
+    boolean moveTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username);
 }

@@ -10,8 +10,6 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -110,7 +108,6 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                 addPlayerPoints(entry.getKey(), 20);
             } else if (rank == 3) {
                 addPlayerPoints(entry.getKey(), 15);
-                break;
             }
         }
 
@@ -168,9 +165,6 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        createBossBar("chaser", MessageConfig.HOTY_CODY_DUSKY_BOSS_BAR_CHASER, BarColor.RED, BarStyle.SOLID);
-        createBossBar("escaper", MessageConfig.HOTY_CODY_DUSKY_BOSS_BAR_ESCAPER, BarColor.WHITE, BarStyle.SOLID);
-
         announceGamePreparation(MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION,
                 MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_TITLE,
                 MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE);
@@ -201,8 +195,6 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                     logGame(Level.INFO, "玩家", "玩家=" + playerManager.getPlayerName(uuid) + " uuid=" + uuid
                             + " 状态=离线，计入淘汰");
                 }
-            } else {
-                addBossBarPlayer("escaper", player);
             }
         }
 
@@ -217,8 +209,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         selectCodyHolder(true);
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
-            changeLevelForAllGamePlayers(timer);
-            updateSpectatorTimerBossBar(MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN
+            updateGameTimerBossBar(MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN
                     .replace("%time%", String.valueOf(timer))
                     .replace("%holder%", codyHolder == null ? "待定" : Utils.formatPlayerName(codyHolder)),
                     timer, getGameConfig().getTimer());
@@ -340,8 +331,6 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                 for (PotionEffect potionEffect : codyHolderPlayer.getActivePotionEffects())
                     codyHolderPlayer.removePotionEffect(potionEffect.getType());
 
-                removeBossBarPlayer("chaser", codyHolderPlayer);
-                addBossBarPlayer("escaper", codyHolderPlayer);
             }
         }
         codyHolder = uuid;
@@ -368,16 +357,11 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
             player.addPotionEffect(potionEffectSpeed);
             player.addPotionEffect(potionEffectHaste);
             player.playSound(player, Sound.ENTITY_ENDERMAN_HURT, 1, 1);
-            removeBossBarPlayer("escaper", player);
-            addBossBarPlayer("chaser", player);
         }
 
     }
 
     private void addDeathPlayer(Player player) {
-        removeBossBarPlayer("chaser", player);
-        removeBossBarPlayer("escaper", player);
-
         UUID uuid = player.getUniqueId();
         addDeathPlayer(uuid);
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);

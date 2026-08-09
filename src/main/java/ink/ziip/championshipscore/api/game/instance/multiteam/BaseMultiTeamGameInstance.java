@@ -161,10 +161,14 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                if (Bukkit.isPrimaryThread()) {
                     player.setGameMode(gameMode);
-                });
+                } else {
+                    ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                        if (player.isOnline()) player.setGameMode(gameMode);
+                    });
+                }
             }
         }
     }
@@ -249,11 +253,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) {
-                player.teleport(getLobbyLocation());
-                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                    player.setGameMode(GameMode.ADVENTURE);
-                });
+                sanitizeParticipantForLobby(player, true);
             }
         }
     }

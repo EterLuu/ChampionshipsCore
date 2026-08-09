@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 4
+  version: 5
 name: "area"
 prepare:
   published: false
@@ -7,6 +7,10 @@ prepare:
   revision: 0
   published-at:
   world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
 # Round duration in seconds (10 minutes per the bingo design doc).
 timer: 600
 # Preparation countdown before the round starts, in seconds.
@@ -22,12 +26,10 @@ area-pos2:
 scatter-radius: 6
 scatter-max-tries: 32
 # 永久药水效果：开局赋予、整局保持、结束随重置清除。每项 "效果:等级"，等级为游戏内显示等级(1=I,8=VIII)，
-# 可省略(默认 I)。效果名为 vanilla PotionEffectType 键(night_vision, jump_boost, slow_falling, speed, haste, ...)。
-# 缓降(slow_falling)会在玩家鞘翅滑翔时自动移除(它会抵消滑翔)，滑翔结束后恢复。
+# 可省略(默认 I)。效果名为 vanilla PotionEffectType 键(night_vision, jump_boost, speed, haste, ...)。
 permanent-effects:
   - "night_vision:1"
   - "jump_boost:8"
-  - "slow_falling:1"
 # Points by completion rank: 1st team to complete a cell=60, 2nd=50, 3rd=40, 4th=30, 5th=20,
 # and the last value is the floor for the 6th team and beyond (=10). The completing player earns these.
 points-per-rank: [ 60, 50, 40, 30, 20, 10 ]
@@ -62,6 +64,6 @@ rules:
     - "&#fff566初始装备：皮套面包、鞘翅、效率3石工具"
     - "&#ededed铁剑（锋利2）与指南针"
     - "&#ededed左键指南针打开菜单，可传送至队友"
-    - "&#ededed永久夜视、跳跃提升与缓降"
+    - "&#ededed永久夜视、跳跃提升；皮靴附魔摔落缓冲 IV"
     - "&#ededed世界为原版普通难度，死亡不掉落"
     - "&#ededed开局时间 9000，昼夜会正常流逝"

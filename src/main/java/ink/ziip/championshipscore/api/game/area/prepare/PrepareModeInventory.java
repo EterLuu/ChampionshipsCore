@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * Builds and refreshes the dedicated prepare-mode hotbar. The hotbar contains the fixed controls and one
- * entry point for the paged, single-row step menu; no step item is placed in the player's main inventory.
+ * entry point for the paged step menu; no step item is placed in the player's main inventory.
  * The WorldEdit wand is deliberately left untagged so WorldEdit's own interact handlers run.
  */
 public final class PrepareModeInventory {
@@ -44,13 +44,14 @@ public final class PrepareModeInventory {
         inv.setItem(3, validateItem());
         inv.setItem(4, publishItem(session));
         if (session.requiresWorldEdit()) inv.setItem(5, wandItem());
+        inv.setItem(6, saveDraftItem());
         inv.setItem(8, exitItem());
     }
 
     /** Slots reserved for prepare controls and therefore never valid creative pick-block targets. */
     public static boolean isControlSlot(@NotNull PrepareSession session, int slot) {
         return switch (slot) {
-            case 0, 1, 2, 3, 4, 8 -> true;
+            case 0, 1, 2, 3, 4, 6, 8 -> true;
             case 5 -> session.requiresWorldEdit();
             default -> false;
         };
@@ -112,7 +113,7 @@ public final class PrepareModeInventory {
     private static ItemStack stepsItem(@NotNull PrepareSession session) {
         ItemStack item = PrepareKeys.item(Material.CHEST,
                 Component.text("编辑准备步骤").color(NamedTextColor.AQUA),
-                List.of(Component.text("打开单行步骤菜单").color(NamedTextColor.GRAY),
+                List.of(Component.text("打开多行步骤菜单").color(NamedTextColor.GRAY),
                         Component.text("步骤数量：" + session.totalSteps()).color(NamedTextColor.GRAY)));
         PrepareKeys.setAction(item, "steps");
         return item;
@@ -142,6 +143,15 @@ public final class PrepareModeInventory {
                 List.of(Component.text(ready ? "再次发布会生成新的 revision" : "校验通过后固化世界并允许开赛")
                         .color(NamedTextColor.GRAY)));
         PrepareKeys.setAction(item, "publish");
+        return item;
+    }
+
+    private static ItemStack saveDraftItem() {
+        ItemStack item = PrepareKeys.item(Material.WRITABLE_BOOK,
+                Component.text("保存草稿").color(NamedTextColor.GOLD),
+                List.of(Component.text("保存当前方块改动，不要求点位全部完成").color(NamedTextColor.GRAY),
+                        Component.text("草稿仍不可开赛，完成配置后再发布").color(NamedTextColor.YELLOW)));
+        PrepareKeys.setAction(item, "save-draft");
         return item;
     }
 

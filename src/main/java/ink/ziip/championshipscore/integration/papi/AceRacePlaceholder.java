@@ -32,7 +32,8 @@ public class AceRacePlaceholder extends BaseGamePlaceholder<AceRaceArea> {
         if (params.startsWith("player_position_")) {
             AceRaceArea area = resolvePlayerArea(params, "player_position_", offlinePlayer);
             return area == null ? MessageConfig.PLACEHOLDER_NONE
-                    : area.getPlayerPosition(offlinePlayer.getUniqueId()) + "/" + area.getGamePlayers().size();
+                    : area.getPlayerPositionDisplay(offlinePlayer.getUniqueId())
+                    + "/" + area.getGamePlayers().size();
         }
         if (params.startsWith("player_lap_")) {
             AceRaceArea area = resolvePlayerArea(params, "player_lap_", offlinePlayer);

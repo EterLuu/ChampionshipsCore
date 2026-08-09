@@ -26,7 +26,7 @@ public class ParkourTagConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 7;
+        return 8;
     }
 
     @ConfigOption(path = "name")
@@ -82,6 +82,14 @@ public class ParkourTagConfig extends BaseGameConfig {
     @ConfigOption(path = "left-prepare-spot")
     private Location leftPrepareSpot;
 
+    /** Wall-mounted button used by slot A players to volunteer as their team's chaser. */
+    @ConfigOption(path = "right-chaser-button")
+    private Location rightChaserButton;
+
+    /** Wall-mounted button used by slot B players to volunteer as their team's chaser. */
+    @ConfigOption(path = "left-chaser-button")
+    private Location leftChaserButton;
+
     @ConfigOption(path = "spectator-spawn-point")
     private Location spectatorSpawnPoint;
 
@@ -119,5 +127,13 @@ public class ParkourTagConfig extends BaseGameConfig {
 
         if (oldConfiguration.getString("world-name", "").isBlank())
             migratedConfiguration.set("world-name", "parkourtag");
+
+        // v8 introduces two required physical controls which cannot be inferred safely from an old map.
+        // Keep the map unavailable until an administrator captures both buttons and republishes it.
+        if (!oldConfiguration.contains("right-chaser-button")
+                || !oldConfiguration.contains("left-chaser-button")) {
+            migratedConfiguration.set("prepare.published", false);
+            migratedConfiguration.set("prepare.dirty", true);
+        }
     }
 }

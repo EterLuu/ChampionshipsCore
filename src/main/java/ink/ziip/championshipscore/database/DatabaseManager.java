@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -96,6 +97,7 @@ public class DatabaseManager extends BaseManager {
                     }
                 }
                 ensurePointTransactionSchema(connection);
+                ensureIdentityIndexes(connection);
             } catch (SQLException | IOException e) {
                 throw new IllegalStateException("Failed to create database tables.", e);
             }
@@ -133,6 +135,50 @@ public class DatabaseManager extends BaseManager {
                         + "`uq_player_points_transaction_id` (`transactionId`)");
             }
         }
+    }
+
+    private void ensureIdentityIndexes(@NotNull Connection connection) throws SQLException {
+        ensureUniqueIdentityIndex(connection, "players", "uuid", "uq_players_uuid");
+        ensureUniqueIdentityIndex(connection, "players", "username", "uq_players_username");
+        ensureUniqueIdentityIndex(connection, "team_members", "uuid", "uq_team_members_uuid");
+        ensureUniqueIdentityIndex(connection, "team_members", "username", "uq_team_members_username");
+    }
+
+    private void ensureUniqueIdentityIndex(@NotNull Connection connection, @NotNull String table,
+                                           @NotNull String column, @NotNull String indexName) throws SQLException {
+        if (hasIndex(connection, table, indexName)) return;
+
+        int duplicateGroups;
+        String duplicateQuery = "SELECT COUNT(*) FROM (SELECT 1 FROM `" + table + "` GROUP BY `"
+                + column + "` HAVING COUNT(*) > 1) duplicate_values";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(duplicateQuery)) {
+            resultSet.next();
+            duplicateGroups = resultSet.getInt(1);
+        }
+
+        if (duplicateGroups > 0) {
+            plugin.getLogger().warning(Utils.formatModuleLog("Database", "IdentityIndex",
+                    "暂未创建唯一索引=" + indexName + "，表=" + table + " 字段=" + column
+                            + " 存在冲突组数=" + duplicateGroups + "；玩家登录迁移或人工消歧后将在下次启动重试"));
+            return;
+        }
+
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("ALTER TABLE `" + table + "` ADD UNIQUE INDEX `" + indexName
+                    + "` (`" + column + "`)");
+        }
+    }
+
+    private boolean hasIndex(@NotNull Connection connection, @NotNull String table,
+                             @NotNull String indexName) throws SQLException {
+        try (ResultSet indexes = connection.getMetaData().getIndexInfo(connection.getCatalog(), null,
+                table, true, false)) {
+            while (indexes.next()) {
+                if (indexName.equalsIgnoreCase(indexes.getString("INDEX_NAME"))) return true;
+            }
+        }
+        return false;
     }
 
     @NotNull

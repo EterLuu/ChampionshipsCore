@@ -7,9 +7,11 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.SchematicStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StampStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunConfig;
+import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunLayout;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -19,6 +21,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -39,6 +42,8 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
 
     @Override
     public @NotNull Location copyZeroLocation(@NotNull SetupTarget target) {
+        Location spawn = GameSpawnResolver.resolve(target.config());
+        if (spawn != null) return spawn;
         World world = Bukkit.getWorld(target.worldName());
         return world == null ? CCConfig.LOBBY_LOCATION : cfg(target).getCopyGrid().origin(0).toLocation(world);
     }
@@ -50,14 +55,36 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
                 new SchematicStep(plugin -> schematic, Component.text("保存 0 号赛道模板"),
-                        Component.text("选中完整单赛道后保存 arena.schem")),
-                StampStep.adaptive(plugin -> schematic,
+                        Component.text("选中完整单赛道后保存 arena.schem")) {
+                    @Override
+                    public String capture(@NotNull PrepareSession session, @NotNull Player player) {
+                        String result = super.capture(session, player);
+                        try {
+                            Vector[] selection = session.getPlugin().getWorldEditManager()
+                                    .getPlayerSelection(player, true);
+                            cfg(session.getTarget()).setAreaPos1(selection[0]);
+                            cfg(session.getTarget()).setAreaPos2(selection[1]);
+                        } catch (Exception ignored) {
+                            // The parent capture already returns the useful WorldEdit selection error.
+                        }
+                        return result;
+                    }
+                },
+                new WeSelectionStep("copy_zero_bounds", Component.text("0 号赛道完整边界"),
+                        Component.text("框住手工保留的完整 0 号赛道；该最小角决定副本粘贴位置"),
+                        Material.BEDROCK,
+                        t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
+                        (t, selection) -> {
+                            cfg(t).setAreaPos1(selection[0]);
+                            cfg(t).setAreaPos2(selection[1]);
+                        }, Utils.formatAdminSuccess("已设置 0 号赛道完整边界。")),
+                StampStep.adaptiveKeepingSource(plugin -> schematic,
                         (t, size) -> cfg(t).prepareCopyGrid(size),
                         (t, count) -> cfg(t).setCopies(count),
                         (session, world) -> {
                             TNTRunConfig previous = cfg(session.getTarget());
-                            ArenaPreparer.clearCopies(session.getPlugin(), world, previous.getCopyGrid(),
-                                    previous.getCopies(), previous.getCopySize());
+                            ArenaPreparer.clearAdditionalCopies(session.getPlugin(), world,
+                                    previous.getCopyGrid(), previous.getCopies(), previous.getCopySize());
                         }),
                 new StandAndRunStep("copy_spawn", Component.text("0 号赛道出生点"),
                         Component.text("站到 copy0 玩家出生点后点击"), Material.ELYTRA,

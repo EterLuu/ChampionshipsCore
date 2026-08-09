@@ -38,6 +38,9 @@ public class SnowballShowdownHandler extends BaseListener {
         if (snowballShowdownTeamArea.notAreaPlayer(player)) {
             return;
         }
+        if (snowballShowdownTeamArea.isIntroductionPhase()) {
+            return;
+        }
 
         Location location = player.getLocation();
         if (snowballShowdownTeamArea.notInArea(location)) {
@@ -123,6 +126,9 @@ public class SnowballShowdownHandler extends BaseListener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (snowballShowdownTeamArea.notAreaPlayer(player)) {
+            return;
+        }
+        if (snowballShowdownTeamArea.isIntroductionPhase()) {
             return;
         }
 

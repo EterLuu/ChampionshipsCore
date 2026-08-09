@@ -37,6 +37,9 @@ public class SkyWarsHandler extends BaseListener {
         if (skyWarsArea.notAreaPlayer(player)) {
             return;
         }
+        if (skyWarsArea.isIntroductionPhase()) {
+            return;
+        }
 
         Location location = player.getLocation();
         if (skyWarsArea.notInArea(location)) {
@@ -245,6 +248,31 @@ public class SkyWarsHandler extends BaseListener {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTeamHappyGhastKilled(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof HappyGhast happyGhast)
+                || skyWarsArea.getGameStageEnum() != GameStageEnum.PROGRESS
+                || !skyWarsArea.isTeamHappyGhast(happyGhast)
+                || happyGhast.getHealth() > event.getFinalDamage()) {
+            return;
+        }
+
+        UUID killerUuid = resolvePlayerDamager(event.getDamager());
+        if (killerUuid != null && skyWarsArea.getParticipantUniqueIds().contains(killerUuid)) {
+            skyWarsArea.recordHappyGhastKill(happyGhast, killerUuid);
+        }
+    }
+
+    private UUID resolvePlayerDamager(Entity damager) {
+        if (damager instanceof Player player) {
+            return player.getUniqueId();
+        }
+        if (damager instanceof Projectile projectile && projectile.getShooter() instanceof Player player) {
+            return player.getUniqueId();
+        }
+        return null;
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerBreakBlock(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -270,6 +298,9 @@ public class SkyWarsHandler extends BaseListener {
         if (skyWarsArea.notAreaPlayer(player)) {
             return;
         }
+        if (skyWarsArea.isIntroductionPhase()) {
+            return;
+        }
 
         Location location = player.getLocation();
         if (skyWarsArea.notInArea(location)) {
@@ -287,15 +318,21 @@ public class SkyWarsHandler extends BaseListener {
                     UUID uuid = player.getUniqueId();
                     if (!skyWarsArea.getDeathPlayer().contains(uuid)) {
                         Player assailant = player.getKiller();
+                        UUID assailantUuid = assailant == null ? null : assailant.getUniqueId();
+                        UUID happyGhastKiller = skyWarsArea.consumeHappyGhastKiller(player);
+                        if (happyGhastKiller != null) {
+                            assailantUuid = happyGhastKiller;
+                        }
 
-                        if (assailant != null) {
+                        if (assailantUuid != null) {
                             ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
-                            ChampionshipTeam assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailant);
+                            ChampionshipTeam assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailantUuid);
 
                             if (playerTeam == null || assailantTeam == null)
                                 return;
 
                             if (playerTeam.equals(assailantTeam)) {
+                                skyWarsArea.addDeathPlayer(player);
                                 return;
                             }
 
@@ -303,10 +340,10 @@ public class SkyWarsHandler extends BaseListener {
 
                             message = message
                                     .replace("%player%", Utils.formatPlayerName(player))
-                                    .replace("%killer%", Utils.formatPlayerName(assailant));
+                                    .replace("%killer%", Utils.formatPlayerName(assailantUuid));
 
                             skyWarsArea.sendMessageToAllGamePlayers(message);
-                            skyWarsArea.addPlayerPoints(assailant.getUniqueId(), 40);
+                            skyWarsArea.addPlayerPoints(assailantUuid, skyWarsArea.getKillPoints());
 
                             skyWarsArea.addDeathPlayer(player);
                         } else {

@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 7
+  version: 8
 world-name:
 prepare:
   published: false
@@ -7,9 +7,14 @@ prepare:
   revision: 0
   published-at:
   world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
 timer: 60
 copy-count: 8
-# Filled by prepare from arena.schem.
+# Filled by prepare from arena.schem. The saved selection minimum is copy 0's layout origin; copy 0 remains
+# the hand-built source while stamping clears and recreates only copies 1..N-1.
 copy-layout: {}
 area-pos1:
 area-pos2:

@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,7 +29,7 @@ public class BingoConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 4;
+        return 5;
     }
 
     @ConfigOption(path = "name")
@@ -79,11 +80,19 @@ public class BingoConfig extends BaseGameConfig {
      * start, kept alive via the tracker, cleared at round end). Each entry is {@code "<effect>:<level>"}
      * where {@code <level>} is the in-game displayed level (1 = I, 8 = VIII) and may be omitted
      * (defaults to I); {@code <effect>} is a vanilla PotionEffectType key (night_vision, jump_boost,
-     * slow_falling, speed, haste, …). Slow Falling is auto-removed while a participant is gliding
-     * with an elytra (it cancels elytra flight). See {@link BingoPermanentEffects}.
+     * speed, haste, …). See {@link BingoPermanentEffects}.
      */
     @ConfigOption(path = "permanent-effects")
-    private List<String> permanentEffects = List.of("night_vision:1", "jump_boost:8", "slow_falling:1");
+    private List<String> permanentEffects = List.of("night_vision:1", "jump_boost:8");
+
+    @Override
+    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
+                                                  @NotNull YamlConfiguration migratedConfiguration) {
+        List<String> effects = migratedConfiguration.getStringList("permanent-effects");
+        effects.removeIf(effect -> effect != null
+                && effect.trim().split(":", 2)[0].trim().equalsIgnoreCase("slow_falling"));
+        migratedConfiguration.set("permanent-effects", effects);
+    }
 
     /**
      * Points awarded by claim rank: index 0 = first team to complete a cell, 1 = second, etc. The last

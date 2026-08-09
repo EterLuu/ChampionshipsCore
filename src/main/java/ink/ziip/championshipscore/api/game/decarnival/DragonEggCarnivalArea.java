@@ -151,21 +151,18 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         timer = 0;
         giveRandomKitToTeamMembers(rightChampionshipTeam);
         giveRandomKitToTeamMembers(leftChampionshipTeam);
-        changeLevelForAllGamePlayers(timer);
-        updateSpectatorTimerBossBar(MessageConfig.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN
+        updateGameTimerBossBar(MessageConfig.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN
                 .replace("%time%", String.valueOf(timer)), 1D);
 
         startGameProgressTask = scheduler.runTaskTimer(plugin, () -> {
             timer++;
-            changeLevelForAllGamePlayers(timer);
-
-            if (timer % 10 == 0) {
+            boolean randomKitGranted = timer % 10 == 0;
+            if (randomKitGranted) {
                 giveRandomKitToTeamMembers(rightChampionshipTeam);
                 giveRandomKitToTeamMembers(leftChampionshipTeam);
             }
 
-
-            if (timer == 80 || timer == 90 | timer == 95) {
+            if (timer == 80 || (timer >= 90 && timer < 100)) {
                 String message = MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON.replace("%time%", String.valueOf(100 - timer));
                 sendActionBarToAllGamePlayers(message);
                 if (timer == 95)
@@ -174,6 +171,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
             }
 
             if (timer == 100) {
+                sendActionBarToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_ACTION_BAR);
                 dragonEgg.setType(Material.AIR, true);
                 sendTitleToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_TITLE,
                         MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_SUBTITLE);
@@ -186,12 +184,20 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
                     roundEntityIds.add(dragon.getUniqueId());
                 }
                 giveDragonItemToAllGamePlayers();
+            } else if (timer != 80 && (timer < 90 || timer > 100)) {
+                int randomKitWarning = 10 - timer % 10;
+                if (randomKitGranted) {
+                    sendActionBarToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_RANDOM_KIT_RECEIVED);
+                } else if (randomKitWarning >= 1 && randomKitWarning <= 5) {
+                    sendActionBarToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_RANDOM_KIT_COUNT_DOWN
+                            .replace("%time%", String.valueOf(randomKitWarning)));
+                }
             }
 
             String timerTemplate = timer >= 100
                     ? MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_PHASE_COUNT_DOWN
                     : MessageConfig.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN;
-            updateSpectatorTimerBossBar(timerTemplate
+            updateGameTimerBossBar(timerTemplate
                     .replace("%time%", String.valueOf(timer)), Math.max(0D, (100D - timer) / 100D));
         }, 20L, 20L);
     }
@@ -244,7 +250,9 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
                     return;
                 }
 
-                changeLevelForAllGamePlayers(seconds);
+                updateGameTimerBossBar(MessageConfig.GAME_PREPARATION_COUNT_DOWN
+                        .replace("%game%", GameTypeEnum.DragonEggCarnival.toString())
+                        .replace("%time%", String.valueOf(seconds)), seconds, 10);
                 restartRemaining[0]--;
             }, 0, 20L);
         }

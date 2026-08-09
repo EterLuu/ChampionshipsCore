@@ -25,6 +25,7 @@ import org.bukkit.event.player.PlayerHarvestBlockEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -41,8 +42,14 @@ public class ParkourTagHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerChooseChaser(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
         Player player = event.getPlayer();
         if (parkourTagArea.notAreaPlayer(player)) {
+            return;
+        }
+        if (parkourTagArea.isIntroductionPhase()) {
             return;
         }
 
@@ -53,7 +60,9 @@ public class ParkourTagHandler extends BaseListener {
 
         if (parkourTagArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
             Block block = event.getClickedBlock();
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK && block != null && block.getType() == Material.BIRCH_WALL_SIGN) {
+            if (event.getAction() == Action.RIGHT_CLICK_BLOCK && block != null
+                    && Tag.BUTTONS.isTagged(block.getType()) && parkourTagArea.isChaserButton(player, block)) {
+                event.setCancelled(true);
                 parkourTagArea.chooseChaser(player);
             }
         }
@@ -281,6 +290,9 @@ public class ParkourTagHandler extends BaseListener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (parkourTagArea.notAreaPlayer(player)) {
+            return;
+        }
+        if (parkourTagArea.isIntroductionPhase()) {
             return;
         }
 

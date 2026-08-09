@@ -1,11 +1,19 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.ToggleStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.CountdownBlockDisappearanceStep;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.util.Utils;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Material;
+import org.bukkit.GameMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,8 +39,52 @@ public class PrepareSession {
         this.areaName = areaName;
         this.target = target;
         this.flow = flow;
-        this.steps = flow.buildSteps(target);
+        this.steps = new ArrayList<>(flow.buildSteps(target));
+        addCommonIntroductionSpawnStep();
         this.stamped = target.config().isPrepareWorldBuilt();
+    }
+
+    /** Every game shares the optional dedicated rule-introduction spawn from BaseGameConfig. */
+    private void addCommonIntroductionSpawnStep() {
+        if (steps.stream().anyMatch(step -> step.key().equals("introduction_spawn"))) return;
+
+        PrepareStep introductionSpawn = new StandAndRunStep(
+                "introduction_spawn",
+                Component.text("规则介绍出生点（可覆盖）"),
+                Component.text("站到专用出生点后点击；未单独设置时沿用旁观者出生点"),
+                Material.BOOK,
+                setup -> setup.config().getIntroductionSpawnPoint() != null
+                        || setup.config().getSpectatorSpawnPoint() != null,
+                (setup, location) -> setup.config().setIntroductionSpawnPoint(location),
+                Utils.formatAdminSuccess("已设置规则介绍专用出生点。"));
+
+        int spectatorSpawn = -1;
+        int confirmWorld = -1;
+        for (int i = 0; i < steps.size(); i++) {
+            if (steps.get(i).key().equals("spectator_spawn")) spectatorSpawn = i;
+            if (steps.get(i).captureType() == StepCaptureType.CONFIRM_WORLD) confirmWorld = i;
+        }
+        int insertionPoint = spectatorSpawn >= 0 ? spectatorSpawn + 1 : confirmWorld + 1;
+        steps.add(Math.max(0, Math.min(insertionPoint, steps.size())), introductionSpawn);
+
+        PrepareStep introductionMode = new ToggleStep(
+                "introduction_game_mode",
+                Component.text("规则介绍模式"),
+                Component.text("点击切换该地图规则介绍阶段的玩家模式"),
+                Material.RECOVERY_COMPASS,
+                setup -> setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
+                        ? "当前：旁观者模式" : "当前：冒险模式",
+                setup -> setup.config().setIntroductionGameMode(
+                        setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
+                                ? GameMode.ADVENTURE : GameMode.SPECTATOR));
+        steps.add(Math.max(0, Math.min(insertionPoint + 1, steps.size())), introductionMode);
+
+        // The opening countdown removal is a TGTTOS-specific mechanic. Keeping it out of the shared
+        // flow prevents unrelated games from exposing or persisting a misleading optional step.
+        if (gameType == GameTypeEnum.TGTTOS) {
+            steps.add(Math.max(0, Math.min(insertionPoint + 2, steps.size())),
+                    new CountdownBlockDisappearanceStep());
+        }
     }
 
     public ChampionshipsCore getPlugin() {

@@ -34,13 +34,19 @@ public class TNTRunHandler extends BaseListener {
         if (tntRunTeamArea.notAreaPlayer(player)) {
             return;
         }
+        if (tntRunTeamArea.isIntroductionPhase()) {
+            return;
+        }
 
         Location location = player.getLocation();
         if (tntRunTeamArea.notInArea(location)) {
-            if (tntRunTeamArea.getGameStageEnum() == GameStageEnum.PREPARATION) {
+            GameStageEnum stage = tntRunTeamArea.getGameStageEnum();
+            if (stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN) {
                 tntRunTeamArea.teleportPlayerToSpawnPoint(player);
+                player.setFallDistance(0f);
+                return;
             }
-            if (tntRunTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
+            if (stage == GameStageEnum.PROGRESS) {
                 if (player.getGameMode() == GameMode.SPECTATOR) {
                     if (location.getY() < -64) {
                         player.teleport(getTntRunTeamArea().getSpectatorSpawnLocation());
@@ -61,6 +67,12 @@ public class TNTRunHandler extends BaseListener {
     public void onPlayerDamaged(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player) {
             if (tntRunTeamArea.notAreaPlayer(player)) {
+                return;
+            }
+
+            GameStageEnum stage = tntRunTeamArea.getGameStageEnum();
+            if (stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN) {
+                event.setCancelled(true);
                 return;
             }
 

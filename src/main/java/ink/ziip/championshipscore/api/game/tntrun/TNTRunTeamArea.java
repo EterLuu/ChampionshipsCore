@@ -34,6 +34,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
+    private static final int EVENT_WARNING_SECONDS = 10;
+    private static final int TNT_RAIN_DURATION_SECONDS = 10;
+    private static final int[] TNT_RAIN_START_TIMES = {120, 60, 20};
     @Getter
     private final Map<UUID, Location> playerSpawnLocations = new ConcurrentHashMap<>();
     @Getter
@@ -138,6 +141,17 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     }
 
     @Override
+    public Location getAdminTeleportLocation() {
+        List<String> configured = getGameConfig().getPlayerSpawnPoints();
+        if (configured != null && !configured.isEmpty()) {
+            Location copyZero = Utils.getLocation(configured.getFirst());
+            if (copyZero != null && copyZero.getWorld() != null)
+                return copyZero;
+        }
+        return getSpectatorSpawnLocation();
+    }
+
+    @Override
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
@@ -221,11 +235,15 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     private void beginGameProgress() {
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
-            changeLevelForAllGamePlayers(timer);
-            updateSpectatorTimerBossBar(MessageConfig.TNT_RUN_ACTION_BAR_COUNT_DOWN
-                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
+            updateGameTimerBossBar(tntRunBossBarTitle(), timer, getGameConfig().getTimer());
 
-            if (timer == 120 || timer == 60 || timer == 20) {
+            int tntRainWarning = tntRainWarningSeconds();
+            if (tntRainWarning > 0) {
+                sendActionBarToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN_COUNT_DOWN
+                        .replace("%time%", String.valueOf(tntRainWarning)));
+            }
+
+            if (isTntRainStart(timer)) {
                 sendActionBarToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
 
                 tntTimer = 9;
@@ -297,9 +315,40 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         }), 0, 1L);
     }
 
-    @Override
-    protected String getFinalCountdownSubtitle(String gameTitle) {
-        return MessageConfig.TNT_RUN_FINAL_COUNTDOWN_SUBTITLE;
+    private String tntRunBossBarTitle() {
+        String title = MessageConfig.TNT_RUN_ACTION_BAR_COUNT_DOWN
+                .replace("%time%", String.valueOf(timer));
+        int activeSeconds = activeTntRainSeconds();
+        if (activeSeconds > 0) {
+            title += " &#bababa• " + MessageConfig.TNT_RUN_TNT_RAIN_ACTIVE
+                    .replace("%time%", String.valueOf(activeSeconds));
+        }
+        return title;
+    }
+
+    private int tntRainWarningSeconds() {
+        for (int start : TNT_RAIN_START_TIMES) {
+            int until = timer - start;
+            if (until >= 1 && until <= EVENT_WARNING_SECONDS)
+                return until;
+        }
+        return 0;
+    }
+
+    private int activeTntRainSeconds() {
+        for (int start : TNT_RAIN_START_TIMES) {
+            if (timer <= start && timer > start - TNT_RAIN_DURATION_SECONDS)
+                return timer - (start - TNT_RAIN_DURATION_SECONDS);
+        }
+        return 0;
+    }
+
+    private boolean isTntRainStart(int remainingSeconds) {
+        for (int start : TNT_RAIN_START_TIMES) {
+            if (remainingSeconds == start)
+                return true;
+        }
+        return false;
     }
 
     private void handlePlayerMove(@NotNull Player player) {
@@ -483,7 +532,31 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        if (notAreaPlayer(player)) return;
 
+        GameStageEnum stage = getGameStageEnum();
+        boolean preGameDeath = stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN;
+        event.setKeepInventory(true);
+        event.setKeepLevel(true);
+        event.setDroppedExp(0);
+        event.getDrops().clear();
+
+        if (!preGameDeath && stage == GameStageEnum.PROGRESS) {
+            addDeathPlayer(player);
+        }
+
+        scheduler.runTask(plugin, () -> {
+            player.spigot().respawn();
+            player.setFallDistance(0f);
+            if (preGameDeath) {
+                teleportPlayerToSpawnPoint(player);
+                player.setGameMode(GameMode.ADVENTURE);
+            } else if (stage == GameStageEnum.PROGRESS) {
+                player.teleport(getSpectatorSpawnLocation());
+                player.setGameMode(GameMode.SPECTATOR);
+            }
+        });
     }
 
     @Override

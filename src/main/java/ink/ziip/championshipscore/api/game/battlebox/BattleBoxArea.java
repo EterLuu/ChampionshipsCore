@@ -26,6 +26,7 @@ import org.bukkit.potion.PotionType;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -99,6 +100,14 @@ public class BattleBoxArea extends BasePairedGameInstance {
     private BattleBoxGeometry configuredGeometry(int index) {
         return new ReplicatedSpatialLayout<>(BattleBoxGeometry.from(getGameConfig()),
                 getGameConfig().getCopyGrid(), getGameConfig().getCopyCount()).geometry(index);
+    }
+
+    @Override
+    protected Vector[] getCountdownBlockDisappearanceBounds() {
+        Vector[] bounds = super.getCountdownBlockDisappearanceBounds();
+        if (bounds == null) return null;
+        Vector delta = getGameConfig().getCopyGrid().delta(copyIndex);
+        return new Vector[]{bounds[0].add(delta), bounds[1].add(delta)};
     }
 
     @Override
@@ -197,8 +206,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
     private void beginGameProgress() {
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
-            changeLevelForAllGamePlayers(timer);
-            updateSpectatorTimerBossBar(MessageConfig.BATTLE_BOX_ACTION_BAR_COUNT_DOWN
+            updateGameTimerBossBar(MessageConfig.BATTLE_BOX_ACTION_BAR_COUNT_DOWN
                     .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
         }, this::endGame);
 
@@ -213,7 +221,6 @@ public class BattleBoxArea extends BasePairedGameInstance {
             int leftWool = blockCount.getOrDefault(match.getLeft().getWool().getType(), 0);
             if (rightWool == 9 || leftWool == 9) {
                 finishMatch();
-                changeLevelForAllGamePlayers(0);
                 endGame();
                 if (woolCheckerTask != null)
                     woolCheckerTask.cancel();
@@ -548,6 +555,12 @@ public class BattleBoxArea extends BasePairedGameInstance {
     @Override
     public Location getSpectatorSpawnLocation() {
         return (match == null ? configuredGeometry() : match.getGeometry()).getSpectatorSpawn();
+    }
+
+    @Override
+    public Location getAdminTeleportLocation() {
+        Location configured = getGameConfig().getGameSpawnPoint();
+        return configured != null ? configured : configuredGeometry(0).getSpectatorSpawn();
     }
 
     @Override

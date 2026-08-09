@@ -33,6 +33,9 @@ public class DragonEggCarnivalHandler extends BaseListener {
         if (dragonEggCarnivalArea.notAreaPlayer(player)) {
             return;
         }
+        if (dragonEggCarnivalArea.isIntroductionPhase()) {
+            return;
+        }
 
         Location location = player.getLocation();
         if (dragonEggCarnivalArea.notInArea(location)) {
@@ -78,6 +81,9 @@ public class DragonEggCarnivalHandler extends BaseListener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (dragonEggCarnivalArea.notAreaPlayer(player)) {
+            return;
+        }
+        if (dragonEggCarnivalArea.isIntroductionPhase()) {
             return;
         }
 

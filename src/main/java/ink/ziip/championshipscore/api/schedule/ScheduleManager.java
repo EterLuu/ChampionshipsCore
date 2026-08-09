@@ -8,6 +8,8 @@ import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.schedule.battlebox.BattleBoxScheduleManager;
 import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleManager;
+import ink.ziip.championshipscore.api.schedule.buildmart.BuildMartScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.buildmart.BuildMartScheduleManager;
 import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskyScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourtag.ParkourTagScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleHandler;
@@ -29,6 +31,9 @@ import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
@@ -40,6 +45,8 @@ import java.util.*;
 
 public class ScheduleManager extends BaseManager {
     private static final long RESULT_DISPLAY_TICKS = 200L;
+    private static final int FIRST_ROUND_PREPARATION_SECONDS = 10;
+    private static final int ROUND_TRANSITION_SECONDS = 10;
     public enum EventAction {
         STARTED,
         STOPPED,
@@ -67,9 +74,12 @@ public class ScheduleManager extends BaseManager {
     private BingoScheduleManager bingoScheduleManager;
     @Getter
     private AceRaceScheduleManager aceRaceScheduleManager;
+    @Getter
+    private BuildMartScheduleManager buildMartScheduleManager;
     private int timer;
     private BukkitTask dodgeboltTransitionTask;
     private BukkitTask dragonEggCarnivalTransitionTask;
+    private BossBar roundPreparationBar;
     private final Map<GameTypeEnum, Set<BaseGameInstance>> pendingEventInstances =
             new EnumMap<>(GameTypeEnum.class);
 
@@ -90,6 +100,7 @@ public class ScheduleManager extends BaseManager {
         hotyCodyDuskyScheduleManager = new HotyCodyDuskyScheduleManager(plugin);
         bingoScheduleManager = new BingoScheduleManager(plugin, new BingoScheduleHandler(plugin));
         aceRaceScheduleManager = new AceRaceScheduleManager(plugin, new AceRaceScheduleHandler(plugin));
+        buildMartScheduleManager = new BuildMartScheduleManager(plugin, new BuildMartScheduleHandler(plugin));
 
         snowballScheduleManager.load();
         skyWarsScheduleManager.load();
@@ -101,6 +112,7 @@ public class ScheduleManager extends BaseManager {
         hotyCodyDuskyScheduleManager.load();
         bingoScheduleManager.load();
         aceRaceScheduleManager.load();
+        buildMartScheduleManager.load();
     }
 
     @Override
@@ -109,6 +121,7 @@ public class ScheduleManager extends BaseManager {
         if (dragonEggCarnivalTransitionTask != null) dragonEggCarnivalTransitionTask.cancel();
         dodgeboltTransitionTask = null;
         dragonEggCarnivalTransitionTask = null;
+        clearRoundPreparationCountdown();
         snowballScheduleManager.unload();
         skyWarsScheduleManager.unload();
         tntRunScheduleManager.unload();
@@ -119,6 +132,7 @@ public class ScheduleManager extends BaseManager {
         hotyCodyDuskyScheduleManager.unload();
         bingoScheduleManager.unload();
         aceRaceScheduleManager.unload();
+        buildMartScheduleManager.unload();
     }
 
     public void addRound(GameTypeEnum gameTypeEnum) {
@@ -133,7 +147,7 @@ public class ScheduleManager extends BaseManager {
     public boolean supportsFormalEvent(@NotNull GameTypeEnum gameTypeEnum) {
         return switch (gameTypeEnum) {
             case SnowballShowdown, SkyWars, TNTRun, TGTTOS, ParkourWarrior, BattleBox,
-                    ParkourTag, HotyCodyDusky, Bingo, DragonEggCarnival, Dodgebolt, AceRace -> true;
+                    ParkourTag, HotyCodyDusky, Bingo, DragonEggCarnival, Dodgebolt, AceRace, BuildMart -> true;
             default -> false;
         };
     }
@@ -145,7 +159,10 @@ public class ScheduleManager extends BaseManager {
                 || gameTypeEnum == GameTypeEnum.Dodgebolt)
             return EventAction.UNSUPPORTED;
         if (isFormalEventRunning(gameTypeEnum)) {
-            endGameSchedule(gameTypeEnum);
+            // A repeated start is the emergency-stop form of this command.  Stop the
+            // scheduler and release every instance, just like /cc event stop; leaving
+            // instances in PREPARATION/PROGRESS keeps their participants unavailable.
+            stopFormalEvent(gameTypeEnum);
             return EventAction.STOPPED;
         }
         switch (gameTypeEnum) {
@@ -159,6 +176,7 @@ public class ScheduleManager extends BaseManager {
             case HotyCodyDusky -> hotyCodyDuskyScheduleManager.startHotyCodyDusky();
             case Bingo -> bingoScheduleManager.startGame();
             case AceRace -> aceRaceScheduleManager.startGame();
+            case BuildMart -> buildMartScheduleManager.startGame();
             default -> {
                 return EventAction.UNSUPPORTED;
             }
@@ -169,7 +187,7 @@ public class ScheduleManager extends BaseManager {
     public EventAction startOrStopDragonEggCarnival(@NotNull ChampionshipTeam team,
                                                       @NotNull ChampionshipTeam rival) {
         if (isFormalEventRunning(GameTypeEnum.DragonEggCarnival)) {
-            endGameSchedule(GameTypeEnum.DragonEggCarnival);
+            stopFormalEvent(GameTypeEnum.DragonEggCarnival);
             return EventAction.STOPPED;
         }
         startDragonEggCarnival(team, rival);
@@ -196,6 +214,7 @@ public class ScheduleManager extends BaseManager {
             case HotyCodyDusky -> hotyCodyDuskyScheduleManager.isEnabled();
             case Bingo -> bingoScheduleManager.isEnabled();
             case AceRace -> aceRaceScheduleManager.isEnabled();
+            case BuildMart -> buildMartScheduleManager.isEnabled();
             case DragonEggCarnival -> dragonEggCarnivalTransitionTask != null;
             case Dodgebolt -> dodgeboltTransitionTask != null;
             default -> false;
@@ -211,6 +230,7 @@ public class ScheduleManager extends BaseManager {
             case BattleBox -> battleBoxScheduleManager.hasNextRound();
             case ParkourTag -> parkourTagScheduleManager.hasNextRound();
             case HotyCodyDusky -> hotyCodyDuskyScheduleManager.hasNextRound();
+            case BuildMart -> buildMartScheduleManager.hasNextRound();
             default -> false;
         };
     }
@@ -219,6 +239,13 @@ public class ScheduleManager extends BaseManager {
     public synchronized void registerPendingEventInstance(@NotNull BaseGameInstance instance) {
         pendingEventInstances.computeIfAbsent(instance.getGameTypeEnum(), ignored ->
                 Collections.newSetFromMap(new IdentityHashMap<>())).add(instance);
+    }
+
+    /** Removes an instance from the settlement queue when it is finalized directly by a force-stop. */
+    public synchronized void unregisterPendingEventInstance(@NotNull BaseGameInstance instance) {
+        Set<BaseGameInstance> pending = pendingEventInstances.get(instance.getGameTypeEnum());
+        if (pending == null || !pending.remove(instance)) return;
+        if (pending.isEmpty()) pendingEventInstances.remove(instance.getGameTypeEnum());
     }
 
     /** Special one-off events have no per-game schedule handler to close their settlement phase. */
@@ -270,14 +297,37 @@ public class ScheduleManager extends BaseManager {
         release.run();
     }
 
-    /** Shows an in-arena round transition in the action bar only. */
+    /** Shows a global round-transition countdown in one persistent boss bar. */
     public void showRoundPreparationCountdown(GameTypeEnum gameType, int round, int seconds) {
+        if (seconds <= 0) {
+            clearRoundPreparationCountdown();
+            return;
+        }
         String roundValue = String.valueOf(Math.max(1, round));
-        String secondsValue = String.valueOf(Math.max(0, seconds));
-        Utils.sendActionBarToAllPlayers(MessageConfig.GAME_ROUND_PREPARATION_ACTION_BAR
+        String secondsValue = String.valueOf(seconds);
+        String title = Utils.translateColorCodes(MessageConfig.GAME_ROUND_PREPARATION_ACTION_BAR
                 .replace("%game%", gameType.toString())
                 .replace("%round%", roundValue)
                 .replace("%time%", secondsValue));
+        if (roundPreparationBar == null)
+            roundPreparationBar = Bukkit.createBossBar(title, BarColor.YELLOW, BarStyle.SOLID);
+        roundPreparationBar.setTitle(title);
+        int duration = round <= 1 ? FIRST_ROUND_PREPARATION_SECONDS : ROUND_TRANSITION_SECONDS;
+        roundPreparationBar.setProgress(Math.max(0D, Math.min(1D, seconds / (double) duration)));
+        Set<Player> online = new HashSet<>(Bukkit.getOnlinePlayers());
+        for (Player current : new ArrayList<>(roundPreparationBar.getPlayers())) {
+            if (!online.contains(current))
+                roundPreparationBar.removePlayer(current);
+        }
+        for (Player player : online)
+            roundPreparationBar.addPlayer(player);
+    }
+
+    public void clearRoundPreparationCountdown() {
+        if (roundPreparationBar == null)
+            return;
+        roundPreparationBar.removeAll();
+        roundPreparationBar = null;
     }
 
     /**
@@ -297,6 +347,7 @@ public class ScheduleManager extends BaseManager {
             case HotyCodyDusky -> { if (hotyCodyDuskyScheduleManager.isEnabled()) hotyCodyDuskyScheduleManager.endSchedule(); }
             case Bingo -> { if (bingoScheduleManager.isEnabled()) bingoScheduleManager.endSchedule(); }
             case AceRace -> { if (aceRaceScheduleManager.isEnabled()) aceRaceScheduleManager.endSchedule(); }
+            case BuildMart -> { if (buildMartScheduleManager.isEnabled()) buildMartScheduleManager.endSchedule(); }
             case Dodgebolt -> {
                 if (dodgeboltTransitionTask != null) dodgeboltTransitionTask.cancel();
                 dodgeboltTransitionTask = null;
@@ -305,8 +356,9 @@ public class ScheduleManager extends BaseManager {
                 if (dragonEggCarnivalTransitionTask != null) dragonEggCarnivalTransitionTask.cancel();
                 dragonEggCarnivalTransitionTask = null;
             }
-            default -> { } // BuildMart has no formal schedule manager
+            default -> { }
         }
+        clearRoundPreparationCountdown();
     }
 
     /**
@@ -330,7 +382,6 @@ public class ScheduleManager extends BaseManager {
         timer = 10;
         dragonEggCarnivalTransitionTask = scheduler.runTaskTimer(plugin, () -> {
 
-            Utils.changeLevelForAllPlayers(timer);
             showRoundPreparationCountdown(GameTypeEnum.DragonEggCarnival, 1, timer);
 
             if (timer == 10) {
@@ -343,7 +394,6 @@ public class ScheduleManager extends BaseManager {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.DRAGON_EGG_CARNIVAL_POINTS));
             }
             if (timer == 0) {
-                Utils.changeLevelForAllPlayers(0);
                 plugin.getGameManager().joinTeamArea(GameTypeEnum.DragonEggCarnival, "area1", team, rival,
                         true, GameRunMode.EVENT);
                 if (dragonEggCarnivalTransitionTask != null)
@@ -373,19 +423,7 @@ public class ScheduleManager extends BaseManager {
             return;
         }
         plugin.getRankManager().withFreshTeamLeaderboard(leaderboard -> {
-            String area = requestedArea;
-            if (area == null || area.isBlank()) {
-                List<String> names = plugin.getGameManager().getDodgeboltManager().getAreaNameList();
-                names.sort(String.CASE_INSENSITIVE_ORDER);
-                area = names.stream()
-                        .filter(name -> plugin.getPrepareSessionManager()
-                                .canStart(GameTypeEnum.Dodgebolt, name))
-                        .findFirst().orElse(null);
-                if (area == null) {
-                    Utils.sendAdminError(requester, "没有已发布的躲避箭地图");
-                    return;
-                }
-            }
+            String area = requestedArea == null || requestedArea.isBlank() ? "dodgebolt" : requestedArea;
             DodgeboltArea instance = plugin.getGameManager().getDodgeboltManager().getArea(area);
             if (instance == null || !plugin.getPrepareSessionManager().canStart(GameTypeEnum.Dodgebolt, area)) {
                 Utils.sendAdminError(requester, "躲避箭地图不存在或尚未发布：&#fff566" + area);
@@ -435,11 +473,9 @@ public class ScheduleManager extends BaseManager {
                 + "\n&#ededed第一局两箭：" + higherSeed.getColoredName());
         dodgeboltTransitionTask = scheduler.runTaskTimer(plugin, () -> {
             showRoundPreparationCountdown(GameTypeEnum.Dodgebolt, 1, remaining[0]);
-            Utils.changeLevelForAllPlayers(remaining[0]);
             if (remaining[0] == 0) {
                 dodgeboltTransitionTask.cancel();
                 dodgeboltTransitionTask = null;
-                Utils.changeLevelForAllPlayers(0);
                 if (plugin.getGameManager().joinDodgeboltArea(area, right, left, higherSeed,
                         true, forcePartialRoster, GameRunMode.EVENT)) {
                     plugin.getGameManager().spectateDodgeboltFinal(instance, right, left);
@@ -477,6 +513,8 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.BINGO);
         if (gameTypeEnum == GameTypeEnum.AceRace)
             return Utils.getMessage(ScheduleMessageConfig.ACE_RACE);
+        if (gameTypeEnum == GameTypeEnum.BuildMart)
+            return Utils.getMessage(ScheduleMessageConfig.BUILD_MART);
 
         return "";
     }
@@ -496,6 +534,8 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.BINGO_POINTS);
         if (gameTypeEnum == GameTypeEnum.AceRace)
             return Utils.getMessage(ScheduleMessageConfig.ACE_RACE_POINTS);
+        if (gameTypeEnum == GameTypeEnum.BuildMart)
+            return Utils.getMessage(ScheduleMessageConfig.BUILD_MART_POINTS);
 
         return "";
     }

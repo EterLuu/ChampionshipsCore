@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 7
+  version: 8
 name: area
 world-name:
 prepare:
@@ -8,6 +8,10 @@ prepare:
   revision: 0
   published-at:
   world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
 timer: 60
 copy-count: 8
 # Filled by prepare from arena.schem. PKT always keeps a 512-block pitch between complete two-track match units.
@@ -18,6 +22,10 @@ area-pos2:
 # slot A chases on right-area while slot B escapes; slot B chases on left-area while slot A escapes.
 left-prepare-spot:  # slot B team preparation point
 right-prepare-spot: # slot A team preparation point
+# Each team presses its own wall-mounted button during preparation to volunteer as chaser.
+# The prepare flow automatically creates a glowing birch wall sign directly below each button.
+left-chaser-button:
+right-chaser-button:
 left-area:
   # Track 2: slot B chaser versus slot A escapees
   area-pos1:

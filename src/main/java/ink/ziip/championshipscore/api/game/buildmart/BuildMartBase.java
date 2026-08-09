@@ -6,8 +6,6 @@ import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.util.BoundingBox;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +14,7 @@ import java.util.List;
 
 /**
  * Geometry of one team's base, derived from the configured {@code base} template. A base holds the team
- * spawn, the portal region that sends players to the hub, and the build plots. Each build plot has a
+ * portal landing point and the build plots. Each build plot has a
  * reference anchor, a player build anchor, and a submission button.
  *
  * <p>All fields are optional so an unfinished setup can still load. A game starts only after the template
@@ -26,10 +24,7 @@ import java.util.List;
 public class BuildMartBase implements SpatialTemplate<BuildMartBase> {
     private final int teamId;
     @Nullable
-    private final Location spawn;
-    /** Region a player walks into to be teleported to the hub. */
-    @Nullable
-    private final BoundingBox portalToHub;
+    private final Location portalPoint;
 
     /** Build/reference anchors for the 3 normal plots (parallel lists, index = plot number). */
     private final List<Location> normalBuildAnchors = new ArrayList<>();
@@ -40,16 +35,13 @@ public class BuildMartBase implements SpatialTemplate<BuildMartBase> {
 
     @Nullable
     private final Location goldenBuildAnchor;
-    @Nullable
-    private final Location goldenReferenceAnchor;
     /** The golden plot's submit-button block coord. */
     @Nullable
     private final Location goldenSubmitAnchor;
 
     public BuildMartBase(int teamId, ConfigurationSection section) {
         this.teamId = teamId;
-        this.spawn = loc(section, "spawn");
-        this.portalToHub = box(loc(section, "portal-pos1"), loc(section, "portal-pos2"));
+        this.portalPoint = loc(section, "portal");
 
         for (int i = 1; i <= 3; i++) {
             Location build = loc(section, "normal-plot-" + i);
@@ -61,15 +53,13 @@ public class BuildMartBase implements SpatialTemplate<BuildMartBase> {
         }
 
         this.goldenBuildAnchor = loc(section, "golden-plot");
-        this.goldenReferenceAnchor = loc(section, "golden-ref");
         this.goldenSubmitAnchor = loc(section, "golden-submit");
     }
 
     /** Copy constructor that shifts every anchor of {@code template} by {@code delta} for a new seat. */
     private BuildMartBase(int teamId, @NotNull BuildMartBase template, @NotNull SpatialTransform transform) {
         this.teamId = teamId;
-        this.spawn = transform.apply(template.spawn);
-        this.portalToHub = transform.apply(template.portalToHub);
+        this.portalPoint = transform.apply(template.portalPoint);
         for (Location anchor : template.normalBuildAnchors) {
             Location shifted = transform.apply(anchor);
             if (shifted != null) normalBuildAnchors.add(shifted);
@@ -82,7 +72,6 @@ public class BuildMartBase implements SpatialTemplate<BuildMartBase> {
             normalSubmitAnchors.add(transform.apply(anchor)); // keep null-padded alignment
         }
         this.goldenBuildAnchor = transform.apply(template.goldenBuildAnchor);
-        this.goldenReferenceAnchor = transform.apply(template.goldenReferenceAnchor);
         this.goldenSubmitAnchor = transform.apply(template.goldenSubmitAnchor);
     }
 
@@ -103,10 +92,10 @@ public class BuildMartBase implements SpatialTemplate<BuildMartBase> {
 
     /** All geometry required by the live Build Mart rules has been captured for this base template. */
     public boolean isComplete() {
-        return spawn != null && portalToHub != null
+        return portalPoint != null
                 && normalBuildAnchors.size() == 3 && normalReferenceAnchors.size() == 3
                 && normalSubmitAnchors.size() == 3 && normalSubmitAnchors.stream().allMatch(java.util.Objects::nonNull)
-                && goldenBuildAnchor != null && goldenReferenceAnchor != null && goldenSubmitAnchor != null;
+                && goldenBuildAnchor != null && goldenSubmitAnchor != null;
     }
 
     @Nullable
@@ -116,9 +105,4 @@ public class BuildMartBase implements SpatialTemplate<BuildMartBase> {
         return Utils.getLocation(raw);
     }
 
-    @Nullable
-    private static BoundingBox box(@Nullable Location a, @Nullable Location b) {
-        if (a == null || b == null) return null;
-        return BoundingBox.of(new Vector(a.getX(), a.getY(), a.getZ()), new Vector(b.getX(), b.getY(), b.getZ()));
-    }
 }

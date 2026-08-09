@@ -13,7 +13,7 @@ import java.util.List;
 
 public class BuildMartStartAllSubCommand extends BaseSubCommand {
     public BuildMartStartAllSubCommand() {
-        super("all", "所有队伍开始建材集市", "/cc game start buildmart all <场地>");
+        super("all", "所有队伍开始匹配赛建", "/cc game start buildmart all <场地>");
     }
 
     @Override

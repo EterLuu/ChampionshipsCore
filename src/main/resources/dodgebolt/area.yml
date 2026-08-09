@@ -30,6 +30,10 @@ prepare:
   revision: 0
   published-at:
   world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
 introduction-spawn-point:
 rules:
   -

@@ -3,15 +3,21 @@ package ink.ziip.championshipscore.api.game.manager;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
 import ink.ziip.championshipscore.api.game.setup.MapSetupTarget;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,6 +36,37 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
     /** All permanent runtime instances owned by this manager. Replicated-map managers include every slot. */
     public Collection<T> getRuntimeInstances() {
         return List.copyOf(areas.values());
+    }
+
+    /**
+     * Resolves the configured admin teleport anchor for a physical world. Replicated maps are sorted
+     * by copy index so copy 0 is selected consistently; map name is a deterministic tie-breaker for
+     * shared-world game types.
+     */
+    @Nullable
+    public Location getWorldTeleportLocation(@NotNull String worldName) {
+        return getRuntimeInstances().stream()
+                .filter(instance -> worldName.equals(instance.getWorldName()))
+                .sorted(Comparator
+                        .comparingInt(BaseGameInstance::getCopyIndex)
+                        .thenComparing(instance -> Objects.toString(instance.getGameConfig().getConfigName(), ""),
+                                String.CASE_INSENSITIVE_ORDER))
+                .map(instance -> {
+                    try {
+                        Location configured = GameSpawnResolver.resolve(instance.getGameConfig());
+                        if (configured != null && configured.getWorld() == null) {
+                            World world = Bukkit.getWorld(instance.getWorldName());
+                            if (world != null) configured.setWorld(world);
+                        }
+                        return configured != null ? configured : instance.getAdminTeleportLocation();
+                    } catch (RuntimeException ignored) {
+                        return null;
+                    }
+                })
+                .filter(location -> location != null && location.getWorld() != null
+                        && worldName.equals(location.getWorld().getName()))
+                .findFirst()
+                .orElse(null);
     }
 
     @Nullable
@@ -90,10 +127,15 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
         boolean usedByOtherMap = areas.entrySet().stream()
                 .anyMatch(entry -> !entry.getKey().equals(name)
                         && world.getName().equals(entry.getValue().getWorldName()));
-        if (usedByOtherMap) return false;
+        if (usedByOtherMap && !allowsSharedMapWorlds()) return false;
         representative.getGameConfig().bindConfiguredWorld(world.getName());
         representative.getGameConfig().saveOptions();
         return world.getName().equals(representative.getWorldName());
+    }
+
+    /** Shared-world games can keep several independent map regions in one physical world. */
+    protected boolean allowsSharedMapWorlds() {
+        return false;
     }
 
     /** Loads and takes ownership of a void arena world for this enabled game. */

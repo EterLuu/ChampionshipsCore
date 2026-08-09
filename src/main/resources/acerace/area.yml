@@ -8,7 +8,11 @@ prepare:
   revision: 0
   published-at:
   world-built: false
-timer: 720
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
+timer: 900
 laps: 3
 spectator-spawn-point:
 start-spawn-point:

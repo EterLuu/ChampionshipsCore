@@ -52,10 +52,18 @@ public class SchematicStep extends PrepareStep {
         if (parent != null) parent.mkdirs();
         try {
             session.getPlugin().getWorldEditManager().saveSelectionAsSchematic(player, file);
+            onSchematicSaved(session, player, file);
         } catch (Exception e) {
-            return Utils.formatAdminError("保存模板失败，请检查 WorldEdit 选区：&#fff566" + e.getMessage());
+            String detail = e.getMessage();
+            if (detail == null || detail.isBlank()) detail = e.getClass().getSimpleName();
+            return Utils.formatAdminError("保存模板失败，请检查 WorldEdit 选区：&#fff566" + detail);
         }
         session.markDirty();
         return Utils.formatAdminSuccess("已保存场地模板：&#fff566" + file.getName());
+    }
+
+    /** Allows game-specific steps to persist metadata that cannot be recovered reliably from the file. */
+    protected void onSchematicSaved(@NotNull PrepareSession session, @NotNull Player player,
+                                    @NotNull File file) throws Exception {
     }
 }

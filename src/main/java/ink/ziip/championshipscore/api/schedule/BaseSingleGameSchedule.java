@@ -14,6 +14,7 @@ import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
 public abstract class BaseSingleGameSchedule extends BaseManager {
+    private static final int ROUND_TRANSITION_SECONDS = 10;
     protected final BukkitScheduler scheduler;
     protected final BaseListener handler;
     protected final GameTypeEnum gameTypeEnum;
@@ -59,7 +60,6 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         subRound = 0;
         firstStartTask = scheduler.runTaskTimer(plugin, () -> {
 
-            Utils.changeLevelForAllPlayers(timer);
             scheduleManager.showRoundPreparationCountdown(gameTypeEnum, 1, timer);
 
             if (timer == 10) {
@@ -71,7 +71,6 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
             }
 
             if (timer == 0) {
-                Utils.changeLevelForAllPlayers(0);
                 subRound = 0;
                 startRound();
                 if (firstStartTask != null)
@@ -104,7 +103,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         enabled = false;
 
         handler.unRegister();
-        Utils.changeLevelForAllPlayers(0);
+        scheduleManager.clearRoundPreparationCountdown();
         plugin.getGameManager().releaseEventSpectatorsForGame(gameTypeEnum);
     }
 
@@ -128,18 +127,16 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         subRound++;
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
-        timer = 30;
+        timer = ROUND_TRANSITION_SECONDS;
         startTask = scheduler.runTaskTimer(plugin, () -> {
 
-            Utils.changeLevelForAllPlayers(timer);
             scheduleManager.showRoundPreparationCountdown(gameTypeEnum, subRound, timer);
 
-            if (timer == 30) {
+            if (timer == ROUND_TRANSITION_SECONDS) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.NEXT_ROUND_SOON));
             }
 
             if (timer == 0) {
-                Utils.changeLevelForAllPlayers(0);
                 boolean started = plugin.getGameManager()
                         .joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea(), false, GameRunMode.EVENT);
                 if (startTask != null)

@@ -29,7 +29,7 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 - 连成横、竖或对角线时，前 4 条线为全队每人 50 分，之后每条线为全队每人 25 分。
 - 按总分排名；同分时，较早达到该分数的队伍优先。
 - 开局会发放队伍色护甲、鞘翅、食物、工具、武器和指南针；左键指南针可以传送到在线队友身边。
-- 默认拥有夜视、跳跃提升和缓降，死亡不掉落物品。前三分钟关闭 PvP，此后仍禁止攻击队友。
+- 默认拥有夜视、跳跃提升，初始皮靴附有摔落缓冲 IV，死亡不掉落物品。前三分钟关闭 PvP，此后仍禁止攻击队友。
 
 ### 匹配赛建（Build Match）
 
@@ -76,7 +76,7 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 
 ### 去到另一边（Try Get To The Other Side）
 
-玩家在默认 90 秒内穿越障碍并击打终点鸡完成地图。不同场地类型可以发放船，或提供钻石镐和队伍色混凝土用于铺路；地图还可配置流浪者和终点鸡生成点。
+玩家在默认 90 秒内穿越障碍并击打终点鸡完成地图。地图的 `area-type` 可配置为 `BOAT`（橡木船）、`ROAD`（不可破坏钻石镐和队伍色混凝土）、`NONE`（无物品）或 `ELYTRA`（胸甲槽装备不可破坏鞘翅）；地图可选配置流浪者生成点，并分别用一格高的 WorldEdit 平面设置鸡和玩家的随机生成区域，玩家区域同时记录统一朝向。
 
 个人到达越早得分越高，前 10 名另有到达奖励；全队完成也会触发团队奖励。正式调度会依次比赛全部已加载场地，每张地图进行一轮。
 
@@ -183,7 +183,7 @@ mvn clean package
 
 场地配置和游戏专属配置分别位于对应游戏目录。火热宾果还使用 `bingo/config.yml`、`cards/`、`tags/`、`tierlists/` 和语言文件；匹配赛建使用 `buildmart/blueprints/` 中的蓝图。
 
-Bingo 的场地文件还可通过 `permanent-effects` 调整常驻效果，格式为 `效果:等级`，例如 `night_vision:1`、`jump_boost:8`。缓降会在鞘翅滑翔时暂时关闭，落地后自动恢复。
+Bingo 的场地文件还可通过 `permanent-effects` 调整常驻效果，格式为 `效果:等级`，例如 `night_vision:1`、`jump_boost:8`。
 
 空岛乱斗场地通过 `variant` 选择规则方案。保留默认值 `inline` 时，计时、边界、计分和介绍文本均读取场地 YAML；填写其他名称时，插件会读取 `skywars/variants/<名称>.yml`。首次启动会生成可复制修改的 `default.yml`。
 
@@ -225,6 +225,8 @@ Bingo 的场地文件还可通过 `permanent-effects` 调整常驻效果，格�
 观战命令使用启用游戏的配置名称，Tab 补全会自动隐藏 `enabled-games` 中未启用的游戏。
 
 ## 队伍与成员管理
+
+游戏内拥有 `cc.admin` 权限的管理员可直接输入 `/cc team` 打开原生队伍管理界面。界面支持队伍总览、创建与删除、成员在线状态、在线或历史离线成员添加、成员移除，以及将单支/全部队伍传送到管理员当前位置；总览的“快速调队”可先选在线玩家再选目标队伍，已有队伍时经二次确认并以数据库事务原子迁移。原有子指令仍完整保留，供控制台和自动化使用。
 
 ### 创建队伍
 
@@ -347,13 +349,13 @@ light_gray cyan purple blue brown green red black
 5. 退出编辑模式，使用 `/cc game start ...` 进行单局测试。
 6. 检查观战边界、比赛结束、地图重置、大厅返回和积分写入。
 
-斗战方框、跑酷追击和 TNT飞跃使用 `schematics/arena.schem` 生成复制场地；建材集市使用 `schematics/hub.schem` 与 `schematics/base.schem` 生成公共大厅和队伍基地。复制数量、布局和所有锚点都由各自的向导步骤配置。
+斗战方框、跑酷追击和 TNT飞跃使用 `schematics/arena.schem` 生成复制场地；匹配赛建保留管理员手建的资源大厅，只选择其边界，并使用 `schematics/base.schem` 生成队伍基地。匹配赛建 0 号基地只作模板，实际队伍从 1 号基地开始分配；大厅与基地各设置一个传送门落点即可双向路由。复制数量、布局和所有锚点都由各自的向导步骤配置。
 
 跑酷追击的每个复制场地是一整个双赛道对局单元：对局位 A、B 各有一个准备点；赛道 1 同时承载 A 队追击者与 B 队逃跑者，赛道 2 同时承载 B 队追击者与 A 队逃跑者。每条赛道分别配置一个完整活动边界、一个追击者出生点和一组逃跑者出生点，不存在彼此独立的“追击区”和“逃跑区”。
 
 每张地图都可配置赛前规则介绍。设置 `introduction-spawn-point` 和 `rules` 后，玩家会先进入规则介绍阶段；将介绍点留空或把 `rules` 设为 `[]` 即可跳过。
 
-### 建材集市蓝图
+### 匹配赛建蓝图
 
 用 WorldEdit 选择成品建筑后执行：
 
@@ -362,6 +364,8 @@ light_gray cyan purple blue brown green red black
 ```
 
 插件会忽略空气，把方块保存为相对选区最小角的偏移并立即重载蓝图库。蓝图长、宽、高均不能超过 7 格，文件位于 `buildmart/blueprints/<名称>.yml`；目录为空时会写出三个示例蓝图。
+
+保存匹配赛建材料区时，插件会扫描当前选区并生成 `buildmart/material-manifests/<地图>.yml`。该文件按材料区和总计记录非空气方块的 `minecraft:<material>` 数量，同时保留精确 `BlockData` 数量，供检查全部建筑的材料需求是否被资源大厅覆盖；它是生成结果，不参与游戏配置读取或运行时逻辑。
 
 ## 比赛流程
 
@@ -400,7 +404,7 @@ light_gray cyan purple blue brown green red black
 | `/cc event reset --confirm` | 重置正式比赛轮次和游戏顺序 |
 | `/cc event undo --confirm` | 停止并撤销最近一轮正式比赛及其成绩 |
 
-正式赛程支持除建材集市外的全部游戏。建材集市使用 `/cc game start buildmart all <场地>` 启动单局。Battle Box 与 Parkour Tag 需要偶数支队伍和足够的复制实例；TGTTOS 会依次使用已加载地图；其他游戏按各自赛程管理器选择地图和轮数。
+正式赛程支持除匹配赛建外的全部游戏。匹配赛建使用 `/cc game start buildmart all <场地>` 启动单局。Battle Box 与 Parkour Tag 需要偶数支队伍和足够的复制实例；TGTTOS 会依次使用已加载地图；其他游戏按各自赛程管理器选择地图和轮数。
 
 ## 投票、积分与观战
 
@@ -480,8 +484,8 @@ plugins/ChampionshipsCore/
 ├── buildmart/
 │   ├── areas/
 │   ├── blueprints/
+│   ├── material-manifests/    # 自动生成的材料区方块清单（只读）
 │   └── schematics/
-│       ├── hub.schem
 │       └── base.schem
 ├── skywars/
 │   └── variants/

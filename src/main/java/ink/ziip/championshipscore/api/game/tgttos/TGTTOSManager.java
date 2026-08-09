@@ -56,4 +56,9 @@ public class TGTTOSManager extends BaseGameInstanceManager<TGTTOSTeamArea> {
 
         return tgttosTeamArea == null;
     }
+
+    @Override
+    protected boolean allowsSharedMapWorlds() {
+        return true;
+    }
 }

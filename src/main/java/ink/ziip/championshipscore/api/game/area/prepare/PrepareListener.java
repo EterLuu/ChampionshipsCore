@@ -7,8 +7,12 @@ import ink.ziip.championshipscore.api.game.area.prepare.gui.AceRaceEquipmentGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AreaListGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.TGTTOSAreaTypeGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.CountdownBlockDisappearanceGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.BuildMartMaterialZoneGui;
 import io.papermc.paper.event.player.PlayerPickItemEvent;
 import org.bukkit.entity.Player;
+import org.bukkit.GameMode;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
@@ -71,6 +75,18 @@ public class PrepareListener extends BaseListener {
             AceRaceEquipmentGui.handleClick(manager, event, player, h);
             return;
         }
+        if (holder instanceof TGTTOSAreaTypeGui.Holder h) {
+            TGTTOSAreaTypeGui.handleClick(manager, event, player, h);
+            return;
+        }
+        if (holder instanceof CountdownBlockDisappearanceGui.Holder h) {
+            CountdownBlockDisappearanceGui.handleClick(manager, event, player, h);
+            return;
+        }
+        if (holder instanceof BuildMartMaterialZoneGui.Holder h) {
+            BuildMartMaterialZoneGui.handleClick(manager, event, player, h);
+            return;
+        }
         if (holder instanceof StepMenuGui.Holder h) {
             StepMenuGui.handleClick(manager, event, player, h);
             return;
@@ -79,25 +95,37 @@ public class PrepareListener extends BaseListener {
         PrepareSession session = manager.getSession(player);
         if (session == null) return;
 
-        // In prepare mode: lock the inventory. Only clicks in the player's own hotbar are routed to the
-        // control handlers; everything else (main inventory, crafting grid, external inventories) is
-        // cancelled so prepare items cannot be moved out.
+        // Creative mode uses the top inventory as the item palette. Let that palette and all spare
+        // material slots work normally; only the fixed prepare controls remain protected.
         Inventory clicked = event.getClickedInventory();
-        if (clicked == event.getView().getBottomInventory()) {
-            event.setCancelled(true);
-            ItemStack item = event.getCurrentItem();
-            String stepKey = PrepareKeys.stepKeyOf(item);
-            if (stepKey != null) {
-                manager.handleStepClick(player, session, stepKey);
-                return;
-            }
-            String action = PrepareKeys.actionOf(item);
-            if (action != null) {
-                manager.handleActionClick(player, session, action);
+        if (player.getGameMode() == GameMode.CREATIVE) {
+            if (clicked == event.getView().getBottomInventory()
+                    && PrepareModeInventory.isControlSlot(session, event.getSlot())) {
+                event.setCancelled(true);
+                routeControlClick(player, session, event.getCurrentItem());
             }
             return;
         }
+
+        // In non-creative prepare mode, lock the inventory. Only clicks in the player's own hotbar are
+        // routed to the control handlers; everything else is cancelled so prepare items cannot be moved out.
+        if (clicked == event.getView().getBottomInventory()) {
+            event.setCancelled(true);
+            routeControlClick(player, session, event.getCurrentItem());
+            return;
+        }
         event.setCancelled(true);
+    }
+
+    private void routeControlClick(@NotNull Player player, @NotNull PrepareSession session,
+                                   @org.jetbrains.annotations.Nullable ItemStack item) {
+        String stepKey = PrepareKeys.stepKeyOf(item);
+        if (stepKey != null) {
+            manager.handleStepClick(player, session, stepKey);
+            return;
+        }
+        String action = PrepareKeys.actionOf(item);
+        if (action != null) manager.handleActionClick(player, session, action);
     }
 
     @EventHandler
@@ -111,11 +139,25 @@ public class PrepareListener extends BaseListener {
         if (holder instanceof AreaListGui.Holder || holder instanceof ListStepGui.Holder
                 || holder instanceof ListStepGui.EntryHolder || holder instanceof ListStepGui.EditHolder
                 || holder instanceof AceRaceEquipmentGui.Holder
+                || holder instanceof TGTTOSAreaTypeGui.Holder
+                || holder instanceof CountdownBlockDisappearanceGui.Holder
+                || holder instanceof BuildMartMaterialZoneGui.Holder
                 || holder instanceof StepMenuGui.Holder) {
             event.setCancelled(true);
             return;
         }
-        if (event.getWhoClicked() instanceof Player player && manager.getSession(player) != null) {
+        if (event.getWhoClicked() instanceof Player player) {
+            PrepareSession session = manager.getSession(player);
+            if (session == null) return;
+            if (player.getGameMode() == GameMode.CREATIVE) {
+                for (int raw : event.getRawSlots()) {
+                    if (raw >= 36 && raw < 45 && PrepareModeInventory.isControlSlot(session, raw - 36)) {
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+                return;
+            }
             event.setCancelled(true);
         }
     }

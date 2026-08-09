@@ -43,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,6 +70,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     private BukkitTask startGameProgressTask;
     /** Scheduled re-enable of world PvP after the 3-minute grace; cancelled if the round ends early. */
     private BukkitTask pvpEnableTask;
+    private boolean pvpEnabled;
 
     /** One recycled MapView per team, reused every round so the server's map-id counter stays bounded. */
     private final Map<ChampionshipTeam, MapView> teamMapViews = new HashMap<>();
@@ -112,6 +114,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             pvpEnableTask.cancel();
             pvpEnableTask = null;
         }
+        pvpEnabled = false;
         lastQuitLocations.clear();
         permanentEffects = List.of();
     }
@@ -183,6 +186,9 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             round.cardFor(team).ifPresent(card ->
                     round.setMapItem(team, CardMapItem.create(view, world, card, team, 0)));
         }
+        for (Player spectator : getOnlineSpectators()) {
+            applySpectatorGameMode(spectator);
+        }
 
         // Parse the round's permanent effects once; handed out per-player below and re-ensured by the
         // tracker (see beginRunningAfterScatter). Done after the round exists but before the state reset
@@ -231,23 +237,39 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         // PVP gamerule - one toggle covers melee + projectiles, so no per-event cancellation is needed.
         // Same-team friendly fire stays cancelled in BingoHandler throughout the whole round.
         setBingoPvP(false);
+        pvpEnabled = false;
         if (pvpEnableTask != null) pvpEnableTask.cancel();
-        pvpEnableTask = scheduler.runTaskLater(plugin, () -> setBingoPvP(true), PVP_GRACE_TICKS);
+        pvpEnableTask = scheduler.runTaskLater(plugin, () -> {
+            pvpEnableTask = null;
+            setBingoPvP(true);
+            pvpEnabled = true;
+            sendActionBarToAllGamePlayers(MessageConfig.BINGO_PVP_STARTED);
+        }, PVP_GRACE_TICKS);
 
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
             if (round == null) return;
 
-            updateSpectatorTimerBossBar(MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN
-                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
+            int elapsed = Math.max(0, getGameConfig().getTimer() - timer);
+            int graceRemaining = Math.max(0, PVP_GRACE_SECONDS - elapsed);
+            String timerTitle = MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer));
+            timerTitle += " &#bababa• " + (pvpEnabled
+                    ? MessageConfig.BINGO_PVP_ACTIVE
+                    : MessageConfig.BINGO_PVP_PROTECTION
+                    .replace("%time%", String.valueOf(graceRemaining)));
+            updateGameTimerBossBar(timerTitle, timer, getGameConfig().getTimer());
+            if (!pvpEnabled && graceRemaining >= 1 && graceRemaining <= 10) {
+                sendActionBarToAllGamePlayers(MessageConfig.BINGO_PVP_START_COUNT_DOWN
+                        .replace("%time%", String.valueOf(graceRemaining)));
+            }
             if (timer == 0)
                 return;
 
             for (UUID uuid : gamePlayers) {
                 Player player = Bukkit.getPlayer(uuid);
                 if (player == null) continue;
-                // Self-heal permanent effects (death/reconnect/temp-potion-overwrite all drop them)
-                // and keep glide-suppressed effects off while gliding. Cheap: a few getPotionEffect calls.
+                // Self-heal permanent effects (death/reconnect/temp-potion-overwrite all drop them).
                 ensurePermanentEffects(player);
                 checkPlayerProgress(player);
             }
@@ -338,7 +360,12 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                 .replace("%player%", Utils.formatPlayerName(player))
                 .replace("%points%", String.valueOf(delta)))
                 .replaceText(builder -> builder.matchLiteral("%task%").replacement(task.data.getName()));
-        getOnlineParticipantSpectators().forEach(audience -> audience.sendMessage(message));
+        Set<UUID> audienceIds = new HashSet<>(gamePlayers);
+        audienceIds.addAll(spectators);
+        for (UUID audienceId : audienceIds) {
+            Player audience = Bukkit.getPlayer(audienceId);
+            if (audience != null) audience.sendMessage(message);
+        }
     }
 
     /**
@@ -374,7 +401,8 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     }
 
     /** First-3-minutes PvP grace, in ticks (180s). After it elapses world PvP is re-enabled. */
-    private static final long PVP_GRACE_TICKS = 180L * 20L;
+    private static final int PVP_GRACE_SECONDS = 180;
+    private static final long PVP_GRACE_TICKS = PVP_GRACE_SECONDS * 20L;
 
     /** Toggles PvP on every bingo dimension (overworld/nether/end) via the PVP gamerule (World.setPVP
      *  is deprecated since 1.21.9). The gamerule covers melee and projectiles in one toggle, so the
@@ -393,6 +421,51 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         // Default to the bingo world spawn when no explicit spectator point is configured.
         World world = Bukkit.getWorld(getWorldName());
         return world != null ? world.getSpawnLocation() : CCConfig.LOBBY_LOCATION;
+    }
+
+    /** Bingo spectators need normal item rendering so they can hold and inspect every team's live card. */
+    @Override
+    protected void applySpectatorGameMode(@NotNull Player player) {
+        player.setGameMode(GameMode.ADVENTURE);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+        player.setCollidable(false);
+        ensureCardsForSpectator(player);
+    }
+
+    @Override
+    protected void clearSpectatorGameMode(@NotNull Player player) {
+        removeSpectatorCards(player);
+        player.setFlying(false);
+        player.setAllowFlight(false);
+        player.setCollidable(true);
+    }
+
+    private void ensureCardsForSpectator(Player player) {
+        removeSpectatorCards(player);
+        if (round == null) return;
+
+        var inventory = player.getInventory();
+        boolean offHandAvailable = isEmpty(inventory.getItemInOffHand());
+        for (ChampionshipTeam team : round.teams()) {
+            ItemStack card = round.mapItem(team).map(ItemStack::clone).orElse(null);
+            if (card == null) continue;
+            if (offHandAvailable) {
+                inventory.setItemInOffHand(card);
+                offHandAvailable = false;
+            } else {
+                inventory.addItem(card);
+            }
+        }
+        player.updateInventory();
+    }
+
+    private static void removeSpectatorCards(Player player) {
+        var inventory = player.getInventory();
+        if (CardMapItem.isCard(inventory.getItemInOffHand())) inventory.setItemInOffHand(null);
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            if (CardMapItem.isCard(inventory.getItem(slot))) inventory.setItem(slot, null);
+        }
     }
 
     /**
@@ -525,7 +598,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
             return;
         }
-        if (stage == GameStageEnum.PROGRESS) {
+        if (stage == GameStageEnum.COUNTDOWN || stage == GameStageEnum.PROGRESS) {
             // Mid-round reconnect: a participant is returning to a round already in progress. KEEP_INVENTORY
             // is on and the inventory is restored from playerdata, so do NOT wipe it (that would discard
             // collected card items). Only re-issue the kit if they never received it (e.g. crashed before
@@ -534,6 +607,10 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             // missing statistic baselines are filled in.
             ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
             if (team == null) return;
+            // Countdown and live play both use the participant survival mode. The shared
+            // reconnect path below also refreshes vitals, but applying it here prevents a
+            // one-tick lobby/adventure state while an async scatter is pending.
+            player.setGameMode(GameMode.SURVIVAL);
             if (round != null) round.ensureStatBaselines(player);
             ensureKitAndCard(player);
             refreshVitals(player);
@@ -586,24 +663,13 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     /**
      * Re-applies any permanent effect the participant is currently missing (no-op outside a round
      * where {@link #permanentEffects} is empty). Delegates to {@link BingoPermanentEffects#ensure},
-     * which skips glide-suppressed effects while the player is gliding and never overwrites active
-     * temporary buffs. Called from the per-second tracker, {@link #ensureKitAndCard} (respawn) and
-     * {@link #refreshVitals} (reconnect) so effects survive every kind of mid-round drop.
+     * which never overwrites active temporary buffs. Called from the per-second tracker,
+     * {@link #ensureKitAndCard} (respawn) and {@link #refreshVitals} (reconnect) so effects survive
+     * every kind of mid-round drop.
      */
     private void ensurePermanentEffects(Player player) {
         if (permanentEffects.isEmpty() || player == null) return;
         BingoPermanentEffects.ensure(player, permanentEffects);
-    }
-
-    /**
-     * Toggles the permanent Slow Falling effect off while a participant is gliding with an elytra
-     * (it cancels elytra flight) and back on when gliding ends. Driven by
-     * {@code EntityToggleGlideEvent} in {@link BingoHandler} so the change is immediate, not delayed
-     * to the next tracker tick. No-op when the configured set has no glide-suppressed effect.
-     */
-    public void onGlideToggle(Player player, boolean gliding) {
-        if (permanentEffects.isEmpty() || player == null) return;
-        BingoPermanentEffects.onGlideToggle(player, permanentEffects, gliding);
     }
 
     /** Sets a participant to SURVIVAL with full vitals and no potion effects (used on reconnect). */

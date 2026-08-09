@@ -14,6 +14,10 @@ public enum StepCaptureType {
     STAMP,
     /** Capture the player's current location into config. */
     STAND_AND_RUN,
+    /** Immediately cycles a small configuration choice. */
+    TOGGLE,
+    /** Opens a custom selection GUI for a configuration choice. */
+    SELECT,
     /** Capture the player's current WorldEdit selection (pos1/pos2) into config. */
     WE_SELECTION,
     /** A list of locations: add the player's current location, or clear. */

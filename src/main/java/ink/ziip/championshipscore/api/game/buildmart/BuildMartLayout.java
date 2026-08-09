@@ -5,20 +5,17 @@ import ink.ziip.championshipscore.api.game.arena.RingArenaGrid;
 import org.bukkit.util.Vector;
 
 /**
- * Fixed, deterministic placement grid for a prepared Build Mart map. The whole arena is stamped out once
- * by the {@code prepare} command: the hub schematic is pasted with its minimum corner at {@link #HUB}, and
- * each team base is pasted with its minimum corner at {@link #gridOrigin(int)}.
+ * Fixed fallback placement grid for a prepared Build Mart map. Prepare normally derives the grid centre from
+ * the selected, hand-built resource-hub boundary. Copy 0 is the editable base template, while team bases
+ * begin at copy 1.
  *
  * <p>The base placement is a {@link RingArenaGrid} centred on the hub, so the same function drives both the
- * offline paste (in {@code prepare}) and the runtime anchor maths ({@code BuildMartConfig#getSeatBase}):
- * a team's anchors always line up with the base physically pasted for its seat. Seat 0 sits at
- * {@code (0,100,500)}, seat 1 at {@code (500,100,500)}, seat 2 at {@code (500,100,0)} and so on, with no
- * cap on team count.
+ * offline paste and runtime anchor maths. The template at copy 0 is never assigned to a team.
  */
 public final class BuildMartLayout {
-    /** Minimum corner where the hub schematic is pasted. */
+    /** Fallback grid centre used only before an admin selects the resource-hub boundary. */
     public static final Vector HUB = new Vector(0, 100, 0);
-    /** Distance in blocks between adjacent grid cells (hub and every base). */
+    /** Fallback distance in blocks between adjacent grid cells. */
     public static final int SPACING = 500;
 
     /** Shared ring placement (centred on the hub) used for both pasting and anchor derivation. */
@@ -27,14 +24,14 @@ public final class BuildMartLayout {
     private BuildMartLayout() {
     }
 
-    /** Minimum-corner paste/anchor origin for the base in {@code seat} (0-based). */
+    /** Minimum-corner paste/anchor origin for a physical base copy (0 is the template). */
     public static Vector gridOrigin(int seat) {
         return GRID.origin(seat);
     }
 
     /**
-     * Translation from seat 0's base to {@code seat}'s base. Anchors are configured once against seat 0
-     * (the physical base at {@code gridOrigin(0)}); every other seat's anchors are this delta applied.
+     * Translation from physical copy 0 to another physical copy. Anchors are configured once against the
+     * 0th template; playable team seat {@code seat} maps to copy {@code seat + 1}.
      */
     public static Vector delta(int seat) {
         return GRID.delta(seat);

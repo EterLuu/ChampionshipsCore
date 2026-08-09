@@ -2,6 +2,8 @@ package ink.ziip.championshipscore.api.game.spectate;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
+import ink.ziip.championshipscore.api.game.buildmart.BuildMartArea;
+import ink.ziip.championshipscore.api.game.buildmart.BuildMartBase;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
@@ -17,6 +19,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -36,6 +39,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -90,12 +94,14 @@ public final class SpectateMenu implements Listener {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Inventory top = player.getOpenInventory().getTopInventory();
             if (top.getHolder() instanceof Holder holder) refresh(holder);
+            else if (top.getHolder() instanceof BuildMartHolder holder) refreshBuildMart(holder);
         }
     }
 
     private void closeAll() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder) {
+            InventoryHolder holder = player.getOpenInventory().getTopInventory().getHolder();
+            if (holder instanceof Holder || holder instanceof BuildMartHolder) {
                 player.closeInventory();
             }
         }
@@ -104,6 +110,10 @@ public final class SpectateMenu implements Listener {
     @EventHandler
     public void onInventoryClick(@NotNull InventoryClickEvent event) {
         Inventory top = event.getView().getTopInventory();
+        if (top.getHolder() instanceof BuildMartHolder holder) {
+            handleBuildMartClick(event, holder);
+            return;
+        }
         if (!(top.getHolder() instanceof Holder holder)) return;
 
         event.setCancelled(true);
@@ -148,6 +158,11 @@ public final class SpectateMenu implements Listener {
         BaseGameInstance target = holder.instancesBySlot.get(slot);
         if (target == null) return;
         if (!manager.canManuallySpectate(player)) return;
+        if (target instanceof BuildMartArea buildMart) {
+            openBuildMart(player, buildMart);
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8F, 1.2F);
+            return;
+        }
         if (!manager.selectSpectatorArea(player, target)) {
             Utils.sendAdminError(player, "该场地已结束或当前不可观战");
             refresh(holder);
@@ -163,7 +178,129 @@ public final class SpectateMenu implements Listener {
 
     @EventHandler
     public void onInventoryDrag(@NotNull InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof Holder) event.setCancelled(true);
+        InventoryHolder holder = event.getView().getTopInventory().getHolder();
+        if (holder instanceof Holder || holder instanceof BuildMartHolder) event.setCancelled(true);
+    }
+
+    private void openBuildMart(@NotNull Player player, @NotNull BuildMartArea area) {
+        BuildMartHolder holder = new BuildMartHolder(player.getUniqueId(), area);
+        holder.inventory = Bukkit.createInventory(holder, INVENTORY_SIZE,
+                Component.text("选择建材集市观战位置", NamedTextColor.GOLD)
+                        .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        refreshBuildMart(holder);
+        player.openInventory(holder.inventory);
+    }
+
+    private void handleBuildMartClick(@NotNull InventoryClickEvent event, @NotNull BuildMartHolder holder) {
+        event.setCancelled(true);
+        if (!(event.getWhoClicked() instanceof Player player)
+                || event.getClickedInventory() != event.getView().getTopInventory()) return;
+        if (!holder.viewer.equals(player.getUniqueId())) {
+            player.closeInventory();
+            return;
+        }
+        int slot = event.getRawSlot();
+        if (slot == CLOSE_SLOT) {
+            player.closeInventory();
+            return;
+        }
+        if (slot == LEAVE_SLOT) {
+            open(player);
+            return;
+        }
+        if (slot == REFRESH_SLOT) {
+            refreshBuildMart(holder);
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, 1.1F);
+            return;
+        }
+        if (slot == PREVIOUS_SLOT && holder.page > 0) {
+            holder.page--;
+            refreshBuildMart(holder);
+            return;
+        }
+        if (slot == NEXT_SLOT && holder.page + 1 < holder.pageCount) {
+            holder.page++;
+            refreshBuildMart(holder);
+            return;
+        }
+
+        BuildMartDestination destination = holder.destinationsBySlot.get(slot);
+        if (destination == null || !manager.canManuallySpectate(player)) return;
+        if (!manager.selectSpectatorArea(player, holder.area, destination.location())) {
+            Utils.sendAdminError(player, "该场地已结束或当前不可观战");
+            open(player);
+            return;
+        }
+        player.sendMessage(MessageConfig.SPECTATOR_JOIN_AREA
+                .replace("%game%", holder.area.getGameTypeEnum().toString())
+                .replace("%area%", displayAreaName(holder.area) + " · " + destination.label()));
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8F, 1.2F);
+        player.closeInventory();
+    }
+
+    private void refreshBuildMart(@NotNull BuildMartHolder holder) {
+        Inventory inventory = holder.inventory;
+        inventory.clear();
+        holder.destinationsBySlot.clear();
+
+        ItemStack border = item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of(), false);
+        for (int slot = 0; slot < 9; slot++) inventory.setItem(slot, border);
+        for (int slot = 45; slot < INVENTORY_SIZE; slot++) inventory.setItem(slot, border);
+
+        List<BuildMartDestination> destinations = buildMartDestinations(holder.area);
+        holder.pageCount = Math.max(1, (destinations.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        holder.page = Math.max(0, Math.min(holder.page, holder.pageCount - 1));
+        inventory.setItem(CURRENT_SLOT, item(Material.CRAFTING_TABLE,
+                Component.text("建材集市 · " + displayAreaName(holder.area), NamedTextColor.GOLD)
+                        .decorate(TextDecoration.BOLD),
+                List.of(Component.text(destinations.size() + " 个观战位置", NamedTextColor.GRAY)), false));
+
+        int from = holder.page * PAGE_SIZE;
+        int to = Math.min(destinations.size(), from + PAGE_SIZE);
+        for (int index = from; index < to; index++) {
+            int slot = 9 + index - from;
+            BuildMartDestination destination = destinations.get(index);
+            inventory.setItem(slot, item(destination.material(), destination.name(), destination.lore(), false));
+            holder.destinationsBySlot.put(slot, destination);
+        }
+
+        inventory.setItem(LEAVE_SLOT, item(Material.ARROW,
+                Component.text("返回场地列表", NamedTextColor.WHITE), List.of(), false));
+        if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW,
+                Component.text("上一页", NamedTextColor.WHITE), List.of(), false));
+        inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
+                Component.text("刷新", NamedTextColor.YELLOW), List.of(), false));
+        inventory.setItem(PAGE_SLOT, item(Material.PAPER,
+                Component.text("第 " + (holder.page + 1) + " / " + holder.pageCount + " 页", NamedTextColor.AQUA),
+                List.of(Component.text(destinations.size() + " 个位置", NamedTextColor.GRAY)), false));
+        if (holder.page + 1 < holder.pageCount) inventory.setItem(NEXT_SLOT, item(Material.ARROW,
+                Component.text("下一页", NamedTextColor.WHITE), List.of(), false));
+        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER,
+                Component.text("关闭", NamedTextColor.RED), List.of(), false));
+    }
+
+    private static List<BuildMartDestination> buildMartDestinations(@NotNull BuildMartArea area) {
+        List<BuildMartDestination> destinations = new ArrayList<>();
+        destinations.add(new BuildMartDestination("资源大厅", Component.text("资源大厅", NamedTextColor.GOLD)
+                .decorate(TextDecoration.BOLD), Material.CHEST, area.getSpectatorSpawnLocation(),
+                List.of(Component.text("公共材料区", NamedTextColor.GRAY))));
+
+        List<ChampionshipTeam> teams = area.getGameTeams();
+        for (int index = 0; index < teams.size(); index++) {
+            ChampionshipTeam team = teams.get(index);
+            Integer assignedSeat = area.seatOf(team);
+            int seat = assignedSeat == null ? index : assignedSeat;
+            BuildMartBase base = area.cachedBaseForSeat(seat);
+            if (base == null) base = area.getGameConfig().getSeatBase(seat);
+            if (base == null || base.getPortalPoint() == null) continue;
+            Material material = Material.getMaterial(team.getColorName().toUpperCase(Locale.ROOT) + "_WOOL");
+            if (material == null) material = Material.WHITE_WOOL;
+            destinations.add(new BuildMartDestination(team.getName() + "基地",
+                    teamName(team).append(Component.text("基地", NamedTextColor.WHITE))
+                            .decorate(TextDecoration.BOLD), material, base.getPortalPoint(),
+                    List.of(Component.text("队伍建筑区", NamedTextColor.GRAY))));
+        }
+        return destinations;
     }
 
     private void refresh(@NotNull Holder holder) {
@@ -358,6 +495,29 @@ public final class SpectateMenu implements Listener {
 
         private Holder(UUID viewer) {
             this.viewer = viewer;
+        }
+
+        @Override
+        public @NotNull Inventory getInventory() {
+            return inventory;
+        }
+    }
+
+    private record BuildMartDestination(String label, Component name, Material material,
+                                        Location location, List<Component> lore) {
+    }
+
+    private static final class BuildMartHolder implements InventoryHolder {
+        private final UUID viewer;
+        private final BuildMartArea area;
+        private final Map<Integer, BuildMartDestination> destinationsBySlot = new HashMap<>();
+        private Inventory inventory;
+        private int page;
+        private int pageCount = 1;
+
+        private BuildMartHolder(UUID viewer, BuildMartArea area) {
+            this.viewer = viewer;
+            this.area = area;
         }
 
         @Override

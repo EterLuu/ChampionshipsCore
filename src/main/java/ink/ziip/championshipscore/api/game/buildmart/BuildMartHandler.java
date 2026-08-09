@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,8 +17,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Collection;
@@ -44,45 +49,105 @@ public class BuildMartHandler extends BaseListener {
         return buildMartArea != null && buildMartArea.getGameStageEnum() == GameStageEnum.PROGRESS;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onFoodLevelChange(FoodLevelChangeEvent event) {
+        if (event.getEntity() instanceof Player player && buildMartArea != null
+                && !buildMartArea.notAreaPlayer(player) && event.getFoodLevel() < player.getFoodLevel()) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onFallDamage(EntityDamageEvent event) {
+        if (event.getCause() == EntityDamageEvent.DamageCause.FALL
+                && event.getEntity() instanceof Player player && buildMartArea != null
+                && !buildMartArea.notAreaPlayer(player)) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean boundaryActive() {
+        if (buildMartArea == null || buildMartArea.isIntroductionPhase()) return false;
+        GameStageEnum stage = buildMartArea.getGameStageEnum();
+        return stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN
+                || stage == GameStageEnum.PROGRESS;
+    }
+
+    @EventHandler(ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
-        if (!running()) return;
+        boolean gameRunning = running();
+        if (!gameRunning && !boundaryActive()) return;
         Location to = event.getTo();
         Location from = event.getFrom();
+        if (to == null) return;
         // Only act once per block step to keep this off the hot path of every sub-pixel move.
-        if (to.getBlockX() == from.getBlockX() && to.getBlockY() == from.getBlockY() && to.getBlockZ() == from.getBlockZ())
+        if (to.getWorld() != null && to.getWorld().equals(from.getWorld())
+                && to.getBlockX() == from.getBlockX() && to.getBlockY() == from.getBlockY()
+                && to.getBlockZ() == from.getBlockZ())
             return;
 
         Player player = event.getPlayer();
         if (buildMartArea.notAreaPlayer(player)) return;
         BuildMartConfig config = buildMartArea.getGameConfig();
-        Location spawn = buildMartArea.getSpectatorSpawnLocation();
-        if (spawn.getWorld() == null || to.getWorld() == null || !to.getWorld().getName().equals(spawn.getWorld().getName()))
+
+        // The playable space is the disjoint hub/base union. Returning to the hub keeps players from
+        // escaping through the gaps between the separated team bases.
+        if (to.getWorld() == null || !to.getWorld().getName().equals(buildMartArea.getWorldName())
+                || !config.isInPlayableArea(to)) {
+            Location hub = config.getHubPortalPoint();
+            if (hub != null) event.setTo(hub);
             return;
-
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-
-        // ── portals ─────────────────────────────────────────────────────────────────────────────
-        if (!onCooldown(player)) {
-            Integer seat = team == null ? null : buildMartArea.seatOf(team);
-            BuildMartBase base = seat == null ? null : buildMartArea.cachedBaseForSeat(seat);
-            // base → hub
-            if (base != null && base.getPortalToHub() != null && base.getPortalToHub().contains(to.toVector())) {
-                Location hub = config.getHubSpawnPoint();
-                if (hub != null) {
-                    triggerPortal(player, hub);
-                    return;
-                }
-            }
-            // hub → base
-            if (base != null && base.getSpawn() != null && config.isInHubReturn(to)) {
-                triggerPortal(player, base.getSpawn());
-                return;
-            }
         }
+
+        // Formal preparation uses the same boundary but remains otherwise passive until the live round.
+        if (!gameRunning) return;
 
         // ── flight rule: fly in the build area, no fly in the hub ──────────────────────────────────
         applyFlight(player, config, to);
+    }
+
+    /** Build Mart owns participant portal routing; vanilla destination lookup must never run. */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onPlayerPortal(PlayerPortalEvent event) {
+        Player player = event.getPlayer();
+        if (!portalActive(player) || !isBuildMartPortal(player, event.getFrom())) return;
+        event.setCancelled(true);
+        routePortal(player, event.getFrom());
+    }
+
+    private boolean portalActive(Player player) {
+        return buildMartArea != null && (running() || boundaryActive())
+                && !buildMartArea.notAreaPlayer(player);
+    }
+
+    /**
+     * Only real Nether portal blocks in the player's own base or the shared hub participate. The two
+     * configured points are landing locations, so admins never need separate outbound/inbound spawns.
+     */
+    private boolean isBuildMartPortal(Player player, Location from) {
+        if (from == null || from.getBlock().getType() != Material.NETHER_PORTAL) return false;
+        BuildMartConfig config = buildMartArea.getGameConfig();
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        Integer seat = team == null ? null : buildMartArea.seatOf(team);
+        return config.isInHub(from) || seat != null && config.isInBase(from, seat);
+    }
+
+    private void routePortal(Player player, Location from) {
+        BuildMartConfig config = buildMartArea.getGameConfig();
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        Integer seat = team == null ? null : buildMartArea.seatOf(team);
+        BuildMartBase base = seat == null ? null : buildMartArea.cachedBaseForSeat(seat);
+        if (base == null || onCooldown(player)) return;
+
+        if (config.isInBase(from, seat)) {
+            Location target = config.getHubPortalPoint();
+            if (target != null) triggerPortal(player, target);
+            return;
+        }
+        if (config.isInHub(from)) {
+            Location target = base.getPortalPoint();
+            if (target != null) triggerPortal(player, target);
+        }
     }
 
     private void applyFlight(Player player, BuildMartConfig config, Location to) {
@@ -106,6 +171,8 @@ public class BuildMartHandler extends BaseListener {
 
     private void triggerPortal(Player player, Location target) {
         lastPortal.put(player.getUniqueId(), System.currentTimeMillis());
+        long cooldownMillis = Math.max(50L, buildMartArea.getGameConfig().getPortalCooldownMillis());
+        player.setPortalCooldown((int) Math.min(Integer.MAX_VALUE, (cooldownMillis + 49L) / 50L));
         player.teleport(target);
         // Re-evaluate flight at the destination on the next tick (after the teleport settles).
         plugin.getServer().getScheduler().runTaskLater(plugin, () ->
@@ -135,6 +202,55 @@ public class BuildMartHandler extends BaseListener {
         buildMartArea.handleSubmitClick(player, slotId);
     }
 
+    /** Allows work blocks in a team's base while restricting structural controls outside build volumes. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBaseBlockInteract(PlayerInteractEvent event) {
+        if (!running() || event.getAction() != Action.RIGHT_CLICK_BLOCK
+                && event.getAction() != Action.PHYSICAL) return;
+        Player player = event.getPlayer();
+        if (buildMartArea.notAreaPlayer(player)) return;
+        Block clicked = event.getClickedBlock();
+        if (clicked == null || !isAnyTeamBase(clicked.getLocation())) return;
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (team == null || !isOwnTeamBase(team, clicked.getLocation())) {
+            denyInteraction(event);
+            return;
+        }
+        if (buildMartArea.isBuildZoneBlock(team, clicked.getWorld(),
+                clicked.getX(), clicked.getY(), clicked.getZ())) return;
+
+        Material type = clicked.getType();
+        boolean restricted = event.getAction() == Action.PHYSICAL
+                ? Tag.PRESSURE_PLATES.isTagged(type)
+                : isRestrictedBaseControl(type);
+        if (restricted) denyInteraction(event);
+    }
+
+    private boolean isOwnTeamBase(ChampionshipTeam team, Location location) {
+        Integer seat = buildMartArea.seatOf(team);
+        return seat != null && buildMartArea.getGameConfig().isInBase(location, seat);
+    }
+
+    private static boolean isRestrictedBaseControl(Material type) {
+        return Tag.DOORS.isTagged(type) || Tag.TRAPDOORS.isTagged(type)
+                || Tag.FENCE_GATES.isTagged(type) || Tag.BUTTONS.isTagged(type)
+                || Tag.PRESSURE_PLATES.isTagged(type) || type == Material.LEVER;
+    }
+
+    private static void denyInteraction(PlayerInteractEvent event) {
+        event.setCancelled(true);
+        event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
+        event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+    }
+
+    private boolean isAnyTeamBase(Location location) {
+        BuildMartConfig config = buildMartArea.getGameConfig();
+        for (int seat = 0; seat < config.getBaseCount(); seat++) {
+            if (config.isInBase(location, seat)) return true;
+        }
+        return false;
+    }
+
     // ── build zone protection + validation ──────────────────────────────────────────────────────
 
     /**
@@ -146,16 +262,16 @@ public class BuildMartHandler extends BaseListener {
         if (!running()) return;
         Player player = event.getPlayer();
         if (buildMartArea.notAreaPlayer(player)) return;
-        if (buildMartArea.getGameConfig().isInHub(event.getBlock().getLocation())) {
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (team == null || !buildMartArea.isBuildZoneBlock(team, event.getBlock().getWorld(),
+                event.getBlock().getX(), event.getBlock().getY(), event.getBlock().getZ())) {
             event.setCancelled(true);
         }
     }
 
     /**
-     * Protects reference builds and submit buttons from being broken, and routes every other break straight
-     * into the breaker's inventory: the block emits no ground item, and its drops (computed for the held
-     * tool) are handed to the player. Overflow when the inventory is full falls back to a natural drop at the
-     * block so nothing is lost.
+     * Allows breaks only in material/build plots, protects reference builds and submit buttons, and routes
+     * allowed survival drops straight into the breaker's inventory. A full inventory does not create a world drop.
      */
     @EventHandler(ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
@@ -171,16 +287,19 @@ public class BuildMartHandler extends BaseListener {
             event.setCancelled(true);
             return;
         }
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (!buildMartArea.isMaterialZoneBlock(block.getWorld(), block.getX(), block.getY(), block.getZ())
+                && (team == null || !buildMartArea.isBuildZoneBlock(team, block.getWorld(), block.getX(), block.getY(), block.getZ()))) {
+            event.setCancelled(true);
+            return;
+        }
         // Creative admins keep vanilla break behaviour; participants run SURVIVAL during a round.
         if (player.getGameMode() == GameMode.CREATIVE) return;
         // Suppress the vanilla ground drop and give the broken block's drops directly to the breaker.
         event.setDropItems(false);
         Collection<ItemStack> drops = block.getDrops(player.getInventory().getItemInMainHand(), player);
         for (ItemStack drop : drops) {
-            Map<Integer, ItemStack> overflow = player.getInventory().addItem(drop);
-            for (ItemStack leftover : overflow.values()) {
-                block.getWorld().dropItemNaturally(block.getLocation(), leftover);
-            }
+            player.getInventory().addItem(drop);
         }
     }
 

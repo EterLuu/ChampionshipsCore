@@ -5,7 +5,6 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class ChampionshipPlaceholder extends BasePlaceholder {
@@ -49,25 +48,17 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
             return championshipTeam.getColorName();
         }
 
-        /* Player required placeholders */
-
-        Player player = offlinePlayer.getPlayer();
-        if (player == null)
-            return MessageConfig.PLACEHOLDER_NONE;
-
         if (params.startsWith("player_points")) {
-            return Utils.formatPoints(plugin.getRankManager().getPlayerPoints(player));
+            return Utils.formatPoints(plugin.getRankManager().getPlayerPoints(offlinePlayer.getUniqueId()));
         }
         if (params.startsWith("player_team_points")) {
-            return Utils.formatPoints(plugin.getRankManager().getPlayerTeamPoints(player));
+            return Utils.formatPoints(plugin.getRankManager().getPlayerTeamPoints(offlinePlayer.getUniqueId()));
         }
         if (params.startsWith("player_rank")) {
-
-            return String.valueOf(plugin.getRankManager().getPlayerRank(player));
+            return String.valueOf(plugin.getRankManager().getPlayerRank(offlinePlayer.getUniqueId()));
         }
         if (params.startsWith("player_team_rank")) {
-
-            return String.valueOf(plugin.getRankManager().getPlayerTeamRank(player));
+            return String.valueOf(plugin.getRankManager().getPlayerTeamRank(offlinePlayer.getUniqueId()));
         }
 
         // Placeholder is unknown by the Expansion

@@ -25,7 +25,9 @@ CREATE TABLE IF NOT EXISTS `team_members`
     `username` VARCHAR(255) NOT NULL,
     `teamId`   INTEGER      NOT NULL,
 
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_team_members_uuid` (`uuid`),
+    UNIQUE KEY `uq_team_members_username` (`username`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -74,7 +76,9 @@ CREATE TABLE IF NOT EXISTS `players`
     `uuid`     VARCHAR(255) NOT NULL,
     `username` VARCHAR(255) NOT NULL,
 
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_players_uuid` (`uuid`),
+    UNIQUE KEY `uq_players_username` (`username`)
     ) ENGINE = InnoDB
     DEFAULT CHARSET = utf8mb4
     COLLATE = utf8mb4_unicode_ci;

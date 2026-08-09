@@ -4,10 +4,9 @@ import org.bukkit.util.Vector;
 
 /**
  * Lays copies on a square ring spiralling outward from a centre point (e.g. a shared hub), spaced
- * {@code spacing} blocks apart. Within a ring the perimeter is traced clockwise from the top-middle cell
- * {@code (0, R)}, so the first three copies sit at {@code centre + (0, spacing)}, {@code (spacing, spacing)}
- * and {@code (spacing, 0)}. The ring grows as needed — no cap on copy count. All copies share the centre's
- * Y level.
+ * {@code spacing} blocks apart. Copy 0 is the centre/source template; subsequent copies trace each ring
+ * clockwise from the top-middle cell {@code (0, R)}. The ring grows as needed — no cap on copy count. All
+ * copies share the centre's Y level.
  */
 public final class RingArenaGrid implements ArenaGrid {
     private final Vector center;
@@ -36,6 +35,8 @@ public final class RingArenaGrid implements ArenaGrid {
      * rings outward; the first cell of ring 1 is the top-middle {@code (0, 1)}.
      */
     private static int[] ringCell(int index) {
+        if (index == 0) return new int[]{0, 0};
+        index--;
         int ring = 1;
         // Cells in rings 1..(ring-1) total 4*(ring-1)*ring; advance until the index falls inside this ring.
         while (index >= 4 * ring * (ring + 1)) {

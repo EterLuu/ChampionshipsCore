@@ -92,11 +92,14 @@ public class ChampionshipTeam {
     }
 
     public List<String> getTeamMemberNameList() {
-        List<String> list = new ArrayList<>();
-        for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(getId())) {
-            list.add(teamMemberEntry.getUsername());
-        }
-        return list;
+        return getTeamMemberEntries().stream()
+                .map(TeamMemberEntry::getUsername)
+                .toList();
+    }
+
+    /** Returns the authoritative persisted identity for every member, including offline players. */
+    public List<TeamMemberEntry> getTeamMemberEntries() {
+        return List.copyOf(teamDao.getTeamMembers(getId()));
     }
 
     public List<UUID> getOfflineMembers() {
@@ -175,10 +178,16 @@ public class ChampionshipTeam {
 
     public void setGameModeForAllPlayers(GameMode gameMode) {
         for (Player player : getOnlinePlayers()) {
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+            // Lifecycle transitions are already driven from the server thread. Applying the mode
+            // synchronously keeps it ordered with the inventory clear and teleport in the same phase.
+            if (Bukkit.isPrimaryThread()) {
                 player.setGameMode(gameMode);
-            });
+            } else {
+                ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
+                    if (player.isOnline()) player.setGameMode(gameMode);
+                });
+            }
         }
     }
 

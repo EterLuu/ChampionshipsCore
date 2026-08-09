@@ -8,21 +8,25 @@ import ink.ziip.championshipscore.util.Utils;
 import lombok.Setter;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.EquipmentSlot;
 
 @Setter
 public final class DodgeboltHandler extends BaseListener {
@@ -32,15 +36,37 @@ public final class DodgeboltHandler extends BaseListener {
         super(plugin);
     }
 
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onFoodLevelChange(FoodLevelChangeEvent event) {
+        if (event.getEntity() instanceof Player player && area != null
+                && !area.notAreaPlayer(player) && event.getFoodLevel() < player.getFoodLevel()) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onShoot(EntityShootBowEvent event) {
         if (!(event.getEntity() instanceof Player player) || area.notAreaPlayer(player)) return;
-        if (!area.canShoot(player)) {
+        if (!area.canShoot(player, event.getConsumable())) {
+            event.setConsumeItem(false);
             event.setCancelled(true);
             Utils.sendActionBar(player, MessageConfig.DODGEBOLT_CANT_SHOOT);
             return;
         }
         area.registerShot(player, event.getProjectile());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBowDraw(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (area.notAreaPlayer(player) || event.getHand() != EquipmentSlot.HAND
+                || event.getItem() == null || event.getItem().getType() != Material.BOW
+                || (event.getAction() != Action.RIGHT_CLICK_AIR
+                && event.getAction() != Action.RIGHT_CLICK_BLOCK)) return;
+        if (!area.canShoot(player)) {
+            event.setCancelled(true);
+            Utils.sendActionBar(player, MessageConfig.DODGEBOLT_CANT_SHOOT);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -94,6 +120,7 @@ public final class DodgeboltHandler extends BaseListener {
     public void onMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (area.notAreaPlayer(player) || event.getTo() == null) return;
+        if (area.isIntroductionPhase()) return;
         if (area.isEliminatedPlayer(player)) {
             if (!area.isSpectatorLocationAllowed(event.getTo())) area.teleportToSpectatorArea(player);
             return;
@@ -115,7 +142,9 @@ public final class DodgeboltHandler extends BaseListener {
         if (!area.inOwnArea(player, event.getTo()) && changedBlock(event.getFrom(), event.getTo())) {
             event.setCancelled(true);
             Utils.sendActionBar(player, MessageConfig.DODGEBOLT_CANT_CROSS);
+            return;
         }
+        area.updateArrowAccess(player, event.getTo());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -134,8 +163,8 @@ public final class DodgeboltHandler extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onEliminatedBreak(BlockBreakEvent event) {
-        if (area.isEliminatedPlayer(event.getPlayer())) event.setCancelled(true);
+    public void onPlayerBreak(BlockBreakEvent event) {
+        if (!area.notAreaPlayer(event.getPlayer())) event.setCancelled(true);
     }
 
     private static boolean changedBlock(Location from, Location to) {

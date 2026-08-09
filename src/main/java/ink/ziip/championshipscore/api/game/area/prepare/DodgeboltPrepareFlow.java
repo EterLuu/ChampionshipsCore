@@ -50,9 +50,6 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
         steps.add(location("spectator_spawn", "旁观出生点", Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null,
                 (t, l) -> cfg(t).setSpectatorSpawnPoint(l)));
-        steps.add(location("introduction_spawn", "规则介绍出生点", Material.BOOK,
-                t -> cfg(t).getIntroductionSpawnPoint() != null,
-                (t, l) -> cfg(t).setIntroductionSpawnPoint(l)));
         steps.add(list("right_spawns", "右队选手出生点", Material.RED_WOOL,
                 t -> cfg(t).getRightSpawnPoints(), (t, l) -> cfg(t).setRightSpawnPoints(l)));
         steps.add(list("left_spawns", "左队选手出生点", Material.BLUE_WOOL,

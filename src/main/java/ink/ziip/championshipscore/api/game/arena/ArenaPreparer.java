@@ -56,9 +56,20 @@ public final class ArenaPreparer {
 
     /** Removes copies from a previously persisted layout before a changed layout is stamped. */
     public static void clearCopies(ChampionshipsCore plugin, World world, ArenaGrid grid, int count, Vector size) {
+        clearCopies(plugin, world, grid, count, size, 0);
+    }
+
+    /** Removes only generated copies, preserving copy 0 as the hand-built source. */
+    public static void clearAdditionalCopies(ChampionshipsCore plugin, World world, ArenaGrid grid,
+                                             int count, Vector size) {
+        clearCopies(plugin, world, grid, count, size, 1);
+    }
+
+    private static void clearCopies(ChampionshipsCore plugin, World world, ArenaGrid grid,
+                                    int count, Vector size, int firstCopy) {
         if (count < 1 || size == null) return;
         try {
-            for (int i = 0; i < count; i++) {
+            for (int i = firstCopy; i < count; i++) {
                 Vector origin = grid.origin(i);
                 plugin.getWorldEditManager().clearCuboid(world, origin, size);
                 BoundingBox box = BoundingBox.of(origin, origin.clone().add(size));

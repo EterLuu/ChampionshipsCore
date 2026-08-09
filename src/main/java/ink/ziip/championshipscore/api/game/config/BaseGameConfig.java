@@ -6,11 +6,13 @@ import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Location;
+import org.bukkit.GameMode;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -140,6 +142,11 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
     public @NotNull String getConfiguredWorld() {
         return configuration == null ? "" : configuration.getString("world-name", "");
+    }
+
+    /** First configured participant spawn, falling back to the map's spectator spawn. */
+    public @Nullable Location getGameSpawnPoint() {
+        return GameSpawnResolver.resolve(this);
     }
 
     public boolean isWorldBindingPending() {
@@ -306,8 +313,53 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     @ConfigOption(path = "introduction-spawn-point", nullable = true)
     protected Location introductionSpawnPoint;
 
+    /** Per-map movement mode used only during the optional rule-introduction phase. */
+    @ConfigOption(path = "introduction-game-mode", nullable = true)
+    protected String introductionGameModeName = "ADVENTURE";
+
+    /**
+     * Optional cuboid removed during the opening countdown. The coordinates are block-inclusive
+     * WorldEdit endpoints in this map's world; replica-based games translate them per copy at runtime.
+     */
+    @ConfigOption(path = "countdown-block-disappearance.pos1", nullable = true)
+    protected Vector countdownBlockDisappearancePos1;
+
+    @ConfigOption(path = "countdown-block-disappearance.pos2", nullable = true)
+    protected Vector countdownBlockDisappearancePos2;
+
+    /** RANDOM, DOOR_EAST_WEST, DOOR_NORTH_SOUTH, DOOR_VERTICAL or DIRECT. */
+    @ConfigOption(path = "countdown-block-disappearance.mode", nullable = true)
+    protected String countdownBlockDisappearanceMode = "RANDOM";
+
     public void setIntroductionSpawnPoint(Location introductionSpawnPoint) {
         this.introductionSpawnPoint = introductionSpawnPoint;
+    }
+
+    public GameMode getIntroductionGameMode() {
+        return "SPECTATOR".equalsIgnoreCase(introductionGameModeName)
+                ? GameMode.SPECTATOR : GameMode.ADVENTURE;
+    }
+
+    public void setIntroductionGameMode(GameMode gameMode) {
+        introductionGameModeName = gameMode == GameMode.SPECTATOR ? "SPECTATOR" : "ADVENTURE";
+    }
+
+    public void setCountdownBlockDisappearanceBounds(Vector pos1, Vector pos2) {
+        countdownBlockDisappearancePos1 = pos1 == null ? null : pos1.clone();
+        countdownBlockDisappearancePos2 = pos2 == null ? null : pos2.clone();
+    }
+
+    public void clearCountdownBlockDisappearanceBounds() {
+        countdownBlockDisappearancePos1 = null;
+        countdownBlockDisappearancePos2 = null;
+    }
+
+    public boolean hasCountdownBlockDisappearance() {
+        return countdownBlockDisappearancePos1 != null && countdownBlockDisappearancePos2 != null;
+    }
+
+    public void setCountdownBlockDisappearanceMode(String mode) {
+        countdownBlockDisappearanceMode = mode == null ? "RANDOM" : mode;
     }
 
     /**

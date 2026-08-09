@@ -40,7 +40,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 
 public abstract class BaseGameInstance {
-    private static final String SPECTATOR_TIMER_BOSS_BAR = "spectator-game-timer";
+    private static final String GAME_TIMER_BOSS_BAR = "game-timer";
     protected final HashSet<UUID> spectators = new HashSet<>();
     protected final Map<UUID, Double> playerPoints = new ConcurrentHashMap<>();
     protected final ChampionshipsCore plugin;
@@ -62,14 +62,19 @@ public abstract class BaseGameInstance {
 
     /** Duration (seconds) of the optional rule-introduction phase preceding the normal preparation. */
     protected static final int INTRODUCTION_DURATION = 45;
+    private static final int INTRODUCTION_TITLE_DURATION_SECONDS = 5;
+    private static final int INTRODUCTION_FIRST_RULE_SECOND = 10;
+    private static final int INTRODUCTION_DEFAULT_RULE_INTERVAL_SECONDS = 10;
 
     /** True while players are gathered at the introduction spawn point for the rules broadcast. */
     protected volatile boolean introductionPhase = false;
     protected BukkitTask introductionTask;
     private boolean introductionEnabledForNextStart = true;
+    private int preparationCountdownDuration;
 
     /** Final five-second countdown, isolated from every game's live timer. */
     protected BukkitTask finalCountdownTask;
+    private final CountdownBlockDisappearance countdownBlockDisappearance;
     private static final long POST_GAME_RESULT_DISPLAY_TICKS = 200L;
     private BukkitTask postGameRoutingTask;
 
@@ -93,6 +98,7 @@ public abstract class BaseGameInstance {
 
         this.gameHandler = gameHandler;
         this.gameConfig = gameConfig;
+        this.countdownBlockDisappearance = new CountdownBlockDisappearance(plugin, this);
 
         gameInstanceHandler = new GameInstanceHandler(plugin, this);
         gameInstanceHandler.register();
@@ -102,6 +108,7 @@ public abstract class BaseGameInstance {
         releaseStartChunks();
         cancelIntroduction();
         cancelFinalCountdown();
+        countdownBlockDisappearance.restore();
         resetBaseArea();
         roundTransitionPending = false;
         postGamePending = false;
@@ -121,6 +128,7 @@ public abstract class BaseGameInstance {
         releaseStartChunks();
         cancelIntroduction();
         cancelFinalCountdown();
+        countdownBlockDisappearance.restore();
         cancelPostGameRouting();
         clearBossBars();
         getGameHandler().unRegister();
@@ -191,6 +199,10 @@ public abstract class BaseGameInstance {
     }
 
     public void addPlayerPoints(UUID uuid, double points) {
+        if (uuid == null) {
+            logGame(Level.WARNING, "积分", "忽略空玩家 UUID 的积分变更=" + formatPointChange(points));
+            return;
+        }
         playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0d) + points);
         logGame(Level.INFO, "积分", "玩家=" + plugin.getPlayerManager().getPlayerName(uuid)
                 + " uuid=" + uuid + " 变更=" + formatPointChange(points));
@@ -601,6 +613,7 @@ public abstract class BaseGameInstance {
         for (BossBar bossBar : new ArrayList<>(bossBars.values()))
             bossBar.removeAll();
         bossBars.clear();
+        preparationCountdownDuration = 0;
     }
 
     private void removePlayerFromBossBars(Player player) {
@@ -608,23 +621,28 @@ public abstract class BaseGameInstance {
             bossBar.removePlayer(player);
     }
 
-    /** Updates the shared live timer bar and synchronizes it to current in-game and external spectators. */
-    protected void updateSpectatorTimerBossBar(String title, int remainingSeconds, int durationSeconds) {
+    /** Updates the shared timer bar and synchronizes it to every participant and instance spectator. */
+    protected void updateGameTimerBossBar(String title, int remainingSeconds, int durationSeconds) {
         double progress = durationSeconds <= 0 ? 0D : remainingSeconds / (double) durationSeconds;
-        updateSpectatorTimerBossBar(title, progress);
+        updateGameTimerBossBar(title, progress);
     }
 
     /** Variant for non-countdown clocks, where the caller supplies the semantic progress directly. */
-    protected void updateSpectatorTimerBossBar(String title, double progress) {
-        BossBar bossBar = bossBars.computeIfAbsent(SPECTATOR_TIMER_BOSS_BAR,
+    protected void updateGameTimerBossBar(String title, double progress) {
+        BossBar bossBar = bossBars.computeIfAbsent(GAME_TIMER_BOSS_BAR,
                 ignored -> createBossBar(title, BarColor.YELLOW, BarStyle.SOLID));
         bossBar.setTitle(Utils.translateColorCodes(title));
         bossBar.setProgress(Math.max(0D, Math.min(1D, progress)));
 
-        Set<Player> viewers = new LinkedHashSet<>(getOnlineParticipantSpectators());
+        Set<Player> viewers = new LinkedHashSet<>();
+        for (UUID uuid : getParticipantUniqueIds()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null)
+                viewers.add(player);
+        }
         viewers.addAll(getOnlineSpectators());
         for (Map.Entry<String, BossBar> entry : bossBars.entrySet()) {
-            if (SPECTATOR_TIMER_BOSS_BAR.equals(entry.getKey()))
+            if (GAME_TIMER_BOSS_BAR.equals(entry.getKey()))
                 continue;
             for (Player viewer : viewers)
                 entry.getValue().removePlayer(viewer);
@@ -635,6 +653,11 @@ public abstract class BaseGameInstance {
         }
         for (Player viewer : viewers)
             bossBar.addPlayer(viewer);
+    }
+
+    protected void clearGameTimerBossBar() {
+        removeBossBar(GAME_TIMER_BOSS_BAR);
+        preparationCountdownDuration = 0;
     }
 
     public void setBossBar(String name, String title) {
@@ -680,6 +703,27 @@ public abstract class BaseGameInstance {
         return CCConfig.LOBBY_LOCATION;
     }
 
+    /** True while the visible result phase still owns the participant roster. */
+    public boolean isPostGamePending() {
+        return postGamePending;
+    }
+
+    /** Removes all game state that could leak into the lobby and applies its authoritative mode. */
+    public void sanitizeParticipantForLobby(@NotNull Player player, boolean teleport) {
+        player.getInventory().clear();
+        for (org.bukkit.potion.PotionEffect effect : player.getActivePotionEffects()) {
+            player.removePotionEffect(effect.getType());
+        }
+        player.setFlying(false);
+        player.setAllowFlight(false);
+        player.setFireTicks(0);
+        player.setFallDistance(0f);
+        player.setLevel(0);
+        if (teleport && getLobbyLocation() != null && getLobbyLocation().getWorld() != null)
+            player.teleport(getLobbyLocation());
+        player.setGameMode(GameMode.ADVENTURE);
+    }
+
     /** Opens the result-display phase without releasing players or rebuilding the arena. */
     protected final void beginPostGameSettlement() {
         cancelPostGameRouting();
@@ -708,21 +752,30 @@ public abstract class BaseGameInstance {
         if (!postGamePending || postGameFinalizing)
             return;
         postGameFinalizing = true;
+        // Normal event settlement removes the queue entry before this callback; force-stop
+        // finalization reaches here directly, so make both paths clean up identically.
+        if (plugin.getScheduleManager() != null)
+            plugin.getScheduleManager().unregisterPendingEventInstance(this);
         cancelPostGameRouting();
         roundTransitionPending = nextEventRound;
 
         List<UUID> participantIds = List.copyOf(getParticipantUniqueIds());
-        if (nextEventRound)
+        if (nextEventRound) {
             plugin.getGameManager().holdParticipantsForNextRound(this, participantIds);
-        for (UUID uuid : participantIds) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline() && getLobbyLocation() != null)
-                player.teleport(getLobbyLocation());
+            plugin.getGameManager().holdSpectatorsForNextRound(this);
+        } else {
+            for (UUID uuid : participantIds) {
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null && player.isOnline())
+                    sanitizeParticipantForLobby(player, true);
+            }
         }
 
-        releaseAllSpectators();
+        if (!nextEventRound)
+            releaseAllSpectators();
         plugin.getGameManager().releaseInstanceParticipants(this);
         try {
+            countdownBlockDisappearance.restore();
             resetGame();
         } finally {
             roundTransitionPending = false;
@@ -761,7 +814,7 @@ public abstract class BaseGameInstance {
     /**
      * Runs the optional rule-introduction phase. When the area config provides at least one rule
      * section, every player is teleported to its introduction spawn, falling back to the spectator
-     * spawn when no dedicated point is configured. Players remain in PREPARATION and use spectator
+     * spawn when no dedicated point is configured. Players remain in PREPARATION and use adventure
      * mode while the rule sections are broadcast one at a time
      * in chat over {@link #INTRODUCTION_DURATION} seconds; afterwards {@code onComplete} (the normal
      * preparation: spawn assignment + countdown) runs. Without rules the introduction is skipped
@@ -783,20 +836,28 @@ public abstract class BaseGameInstance {
         }
 
         introductionPhase = true;
-        changeGameModelForAllGamePlayers(GameMode.SPECTATOR);
+        applyIntroductionGameModeToAllParticipants();
         teleportAllPlayers(introductionSpawnPoint);
+        sendTimedTitleToAllGamePlayers(MessageConfig.GAME_INTRODUCTION_TITLE
+                        .replace("%game%", gameTypeEnum.toString()), "",
+                INTRODUCTION_TITLE_DURATION_SECONDS * 20);
 
         final int sectionCount = rules.size();
-        // First broadcast at t=10s (players get a moment to look around after teleporting in), then one
-        // section every 10s (with 3 sections: t=10s/20s/30s, the last one stays up for 15s). Section
-        // counts that wouldn't fit fall back to a tighter even distribution.
-        final int interval = Math.max(1, Math.min(10, INTRODUCTION_DURATION / (sectionCount + 1)));
+        // The first section is always sent at t=10s. Normal three-section introductions then use
+        // t=10s/20s/30s; unusually long rule sets tighten only the later interval so the first section
+        // never moves earlier than the promised ten-second mark.
+        final int availableAfterFirst = INTRODUCTION_DURATION - INTRODUCTION_FIRST_RULE_SECOND - 1;
+        final int interval = sectionCount <= 1
+                ? INTRODUCTION_DEFAULT_RULE_INTERVAL_SECONDS
+                : Math.max(1, Math.min(INTRODUCTION_DEFAULT_RULE_INTERVAL_SECONDS,
+                availableAfterFirst / (sectionCount - 1)));
         final int[] remain = {INTRODUCTION_DURATION};
 
         introductionTask = scheduler.runTaskTimer(plugin, () -> {
             int elapsed = INTRODUCTION_DURATION - remain[0];
-            if (remain[0] > 0 && elapsed > 0 && elapsed % interval == 0) {
-                int section = elapsed / interval - 1;
+            if (remain[0] > 0 && elapsed >= INTRODUCTION_FIRST_RULE_SECOND
+                    && (elapsed - INTRODUCTION_FIRST_RULE_SECOND) % interval == 0) {
+                int section = (elapsed - INTRODUCTION_FIRST_RULE_SECOND) / interval;
                 if (section < sectionCount)
                     broadcastRuleSection(rules.get(section));
             }
@@ -805,6 +866,7 @@ public abstract class BaseGameInstance {
 
             if (remain[0] == 0) {
                 cancelIntroduction();
+                clearGameTimerBossBar();
                 // The game may have been ended during the introduction (stop command / force end).
                 if (getGameStageEnum() == GameStageEnum.PREPARATION)
                     onComplete.run();
@@ -836,9 +898,7 @@ public abstract class BaseGameInstance {
     public boolean restoreSharedPreGameParticipant(@NotNull Player player) {
         GameStageEnum stage = getGameStageEnum();
         if (stage == GameStageEnum.LOADING) {
-            player.setGameMode(GameMode.ADVENTURE);
-            player.setFlying(false);
-            player.setAllowFlight(false);
+            applyIntroductionGameMode(player);
             player.setFallDistance(0f);
             player.setFireTicks(0);
             Location lobby = getLobbyLocation();
@@ -850,7 +910,9 @@ public abstract class BaseGameInstance {
             Location introductionSpawnPoint = resolveIntroductionSpawnPoint();
             if (introductionSpawnPoint == null)
                 return false;
-            player.setGameMode(GameMode.SPECTATOR);
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setFlying(false);
+            player.setAllowFlight(false);
             player.setFallDistance(0f);
             player.setFireTicks(0);
             player.teleport(introductionSpawnPoint);
@@ -859,10 +921,43 @@ public abstract class BaseGameInstance {
         return false;
     }
 
+    private void applyIntroductionGameModeToAllParticipants() {
+        GameMode mode = gameConfig.getIntroductionGameMode();
+        changeGameModelForAllGamePlayers(mode);
+        if (mode != GameMode.ADVENTURE) return;
+        for (UUID uuid : getParticipantUniqueIds()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                player.setFlying(false);
+                player.setAllowFlight(false);
+            }
+        }
+    }
+
+    private void applyIntroductionGameMode(@NotNull Player player) {
+        GameMode mode = gameConfig.getIntroductionGameMode();
+        player.setGameMode(mode);
+        if (mode == GameMode.ADVENTURE) {
+            player.setFlying(false);
+            player.setAllowFlight(false);
+        }
+    }
+
     private void broadcastRuleSection(@NotNull List<String> lines) {
         for (String line : lines)
             sendMessageToAllGamePlayers(Utils.translateColorCodes(line));
         playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1F);
+    }
+
+    /** Sends one title to this instance's participants and spectators with an exact stay duration. */
+    private void sendTimedTitleToAllGamePlayers(String title, String subtitle, int stayTicks) {
+        Set<UUID> viewers = new LinkedHashSet<>(getParticipantUniqueIds());
+        viewers.addAll(spectators);
+        for (UUID uuid : viewers) {
+            ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
+            if (championshipPlayer != null)
+                championshipPlayer.sendTitle(title, subtitle, stayTicks);
+        }
     }
 
     /** One durable chat line at preparation; later phase changes stay out of chat. */
@@ -873,9 +968,12 @@ public abstract class BaseGameInstance {
     }
 
     protected void showPreparationCountdown(int seconds) {
-        sendActionBarToAllGamePlayers(MessageConfig.GAME_PREPARATION_COUNT_DOWN
+        int remaining = Math.max(0, seconds);
+        if (preparationCountdownDuration <= 0 || remaining > preparationCountdownDuration)
+            preparationCountdownDuration = Math.max(1, remaining);
+        updateGameTimerBossBar(MessageConfig.GAME_PREPARATION_COUNT_DOWN
                 .replace("%game%", gameTypeEnum.toString())
-                .replace("%time%", String.valueOf(Math.max(0, seconds))));
+                .replace("%time%", String.valueOf(remaining)), remaining, preparationCountdownDuration);
     }
 
     /** Runs the default five-second final countdown. */
@@ -891,8 +989,11 @@ public abstract class BaseGameInstance {
     protected void startFinalCountdown(int countdownSeconds, String gameTitle, String startTitle,
                                        String startSubtitle, @NotNull Runnable onStart) {
         cancelFinalCountdown();
+        clearGameTimerBossBar();
+        changeLevelForAllGamePlayers(0);
         setGameStageEnum(GameStageEnum.COUNTDOWN);
         int duration = Math.max(0, countdownSeconds);
+        countdownBlockDisappearance.start(duration);
         logGame(Level.INFO, "流程", "开始 " + duration + " 秒开赛倒计时");
         final int[] remaining = {duration};
 
@@ -902,12 +1003,7 @@ public abstract class BaseGameInstance {
                 String title = MessageConfig.GAME_START_COUNT_DOWN_TITLE
                         .replace("%time%", String.valueOf(seconds));
                 String subtitle = getFinalCountdownSubtitle(gameTitle);
-                String actionBar = MessageConfig.GAME_START_COUNT_DOWN_ACTION_BAR
-                        .replace("%game%", gameTypeEnum.toString())
-                        .replace("%time%", String.valueOf(seconds));
                 sendTitleToAllGamePlayers(title, subtitle);
-                sendActionBarToAllGamePlayers(actionBar);
-                changeLevelForAllGamePlayers(seconds);
                 playCountdownBit(BIT_C4);
                 remaining[0]--;
                 return;
@@ -919,7 +1015,6 @@ public abstract class BaseGameInstance {
             if (getGameStageEnum() != GameStageEnum.COUNTDOWN)
                 return;
 
-            changeLevelForAllGamePlayers(0);
             setGameStageEnum(GameStageEnum.PROGRESS);
             onStart.run();
             if (getGameStageEnum() == GameStageEnum.PROGRESS) {
@@ -927,6 +1022,14 @@ public abstract class BaseGameInstance {
                 playCountdownBit(BIT_C5);
             }
         }, 0L, 20L);
+    }
+
+    /** Optional block-disappearance selection for this instance, translated by replica subclasses. */
+    protected Vector[] getCountdownBlockDisappearanceBounds() {
+        if (gameTypeEnum != GameTypeEnum.TGTTOS) return null;
+        if (!gameConfig.hasCountdownBlockDisappearance()) return null;
+        return new Vector[]{gameConfig.getCountdownBlockDisappearancePos1().clone(),
+                gameConfig.getCountdownBlockDisappearancePos2().clone()};
     }
 
     /**
@@ -959,6 +1062,7 @@ public abstract class BaseGameInstance {
             finalCountdownTask.cancel();
             finalCountdownTask = null;
         }
+        countdownBlockDisappearance.cancel();
     }
 
     protected String getFinalCountdownSubtitle(String gameTitle) {
@@ -983,7 +1087,12 @@ public abstract class BaseGameInstance {
         clearBossBars();
         sendActionBarToAllGamePlayers(MessageConfig.GAME_END_ACTION_BAR
                 .replace("%game%", gameTypeEnum.toString()));
-        sendTitleToAllGamePlayers(title, subtitle);
+        boolean hasNextRound = isEventRun() && plugin.getScheduleManager() != null
+                && plugin.getScheduleManager().hasNextRound(gameTypeEnum);
+        String completionTitle = hasNextRound
+                ? MessageConfig.GAME_ROUND_COMPLETE_TITLE
+                : MessageConfig.GAME_ROUND_END_TITLE;
+        sendTitleToAllGamePlayers(completionTitle, subtitle);
         logGame(Level.INFO, "流程", "游戏结束，开始结算");
     }
 
@@ -1037,8 +1146,23 @@ public abstract class BaseGameInstance {
     }
 
     public void addSpectator(@NotNull Player player) {
+        addSpectator(player, getSpectatorSpawnLocation());
+    }
+
+    /** Adds a spectator and sends them directly to an explicitly selected location in this instance. */
+    public void addSpectator(@NotNull Player player, @NotNull Location location) {
         spectators.add(player.getUniqueId());
-        teleportSpectatorAsync(player, getSpectatorSpawnLocation());
+        teleportSpectatorAsync(player, location);
+    }
+
+    /** Retains an offline spectator for a direct hand-off to a later event-round instance. */
+    public void addSpectatorWithoutTeleport(@NotNull UUID uuid) {
+        spectators.add(uuid);
+    }
+
+    /** Snapshot used by the schedule coordinator to carry spectators through an event-round transition. */
+    public Set<UUID> getSpectatorUniqueIds() {
+        return Set.copyOf(spectators);
     }
 
     /** Loads the destination chunk without blocking the server thread, then applies spectator state. */
@@ -1242,6 +1366,21 @@ public abstract class BaseGameInstance {
     }
 
     public abstract Location getSpectatorSpawnLocation();
+
+    /**
+     * Location used by the admin world-teleport command when this instance owns the target world.
+     * Replicated games can override this to expose their copy-0 anchor without changing the normal
+     * spectator routing behavior.
+     */
+    public Location getAdminTeleportLocation() {
+        Location configured = getGameConfig().getGameSpawnPoint();
+        return configured != null ? configured : getSpectatorSpawnLocation();
+    }
+
+    /** Copy ordering used when a physical world contains several replicated instances. */
+    public int getCopyIndex() {
+        return 0;
+    }
 
     public abstract int getTimer();
 

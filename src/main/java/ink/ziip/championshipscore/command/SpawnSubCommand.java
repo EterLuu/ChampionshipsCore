@@ -29,7 +29,8 @@ public class SpawnSubCommand extends BaseSubCommand {
         }
         if (plugin.getGameManager().getBasePlayerArea(player.getUniqueId()) != null
                 || plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId()) != null) {
-            player.sendMessage("&#bababa[&#ff6b26大厅&#bababa] &#ededed正在游戏或观战，不能返回大厅");
+            player.sendMessage(Utils.translateColorCodes(
+                    "&#bababa[&#ff6b26大厅&#bababa] &#ededed正在游戏或观战，不能返回大厅"));
             return true;
         }
         Location lobby = CCConfig.LOBBY_LOCATION;

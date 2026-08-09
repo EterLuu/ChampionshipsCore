@@ -176,6 +176,10 @@ public class PrepareSessionManager extends BaseManager {
         PrepareSession session = new PrepareSession(plugin, gameType, areaName, target, flow);
         sessions.put(player.getUniqueId(), session);
         PrepareModeInventory.apply(player, session);
+        player.setGameMode(org.bukkit.GameMode.CREATIVE);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+        teleportToEditorLocation(player, session);
         Utils.sendAdminSuccess(player, "进入 prepare &#bababa• &#fff566" + gameType + " &#696969/ &#fff566" + areaName);
         Utils.sendAdminInfo(player, "使用热键栏配置 prepare &#696969• 打开箱子编辑步骤 &#696969• 屏障退出");
     }
@@ -198,16 +202,19 @@ public class PrepareSessionManager extends BaseManager {
         if (step == null) return;
         if (step.captureType() != StepCaptureType.CONFIRM_WORLD
                 && step.captureType() != StepCaptureType.STAMP
+                && step.captureType() != StepCaptureType.TOGGLE
+                && step.captureType() != StepCaptureType.SELECT
                 && !session.getFlow().isInCorrectWorld(player, session.getTarget())) {
             Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
             return;
         }
         switch (step.captureType()) {
-            case CONFIRM_WORLD, STAND_AND_RUN, WE_SELECTION, SCHEMATIC -> {
+            case CONFIRM_WORLD, STAND_AND_RUN, TOGGLE, WE_SELECTION, SCHEMATIC -> {
                 String msg = step.capture(session, player);
                 if (msg != null) player.sendMessage(msg);
                 PrepareModeInventory.refresh(player, session);
             }
+            case SELECT -> step.openSelection(this, player, session);
             case STAMP -> AnvilInputGui.openNumber(player, count -> {
                 String msg = step.stamp(session, player, count);
                 if (msg != null) player.sendMessage(msg);
@@ -219,19 +226,11 @@ public class PrepareSessionManager extends BaseManager {
 
     public void handleActionClick(@NotNull Player player, @NotNull PrepareSession session, @NotNull String action) {
         switch (action) {
-            case "teleport" -> {
-                Location dest = session.getFlow().copyZeroLocation(session.getTarget());
-                if (dest == null || dest.getWorld() == null) {
-                    Utils.sendAdminError(player, "目标世界未加载");
-                    return;
-                }
-                player.teleport(dest);
-                Utils.sendAdminSuccess(player, "已传送至 "
-                        + session.getFlow().editorLocationName(session.getTarget()));
-            }
+            case "teleport" -> teleportToEditorLocation(player, session);
             case "steps" -> StepMenuGui.open(player, session);
             case "exit" -> exitSession(player);
             case "validate" -> validate(player, session, false);
+            case "save-draft" -> saveDraft(player, session);
             case "publish" -> {
                 if (!validate(player, session, true)) return;
                 if (!session.getTarget().canSaveMap()) {
@@ -252,6 +251,48 @@ public class PrepareSessionManager extends BaseManager {
         }
     }
 
+    private void saveDraft(@NotNull Player player, @NotNull PrepareSession session) {
+        if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
+            Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
+            return;
+        }
+        if (!session.getTarget().canSaveMap()) {
+            Utils.sendAdminError(player, "同一地图仍有游戏实例运行，无法保存草稿");
+            return;
+        }
+        session.markDirty();
+        Utils.sendAdminInfo(player, "正在保存地图草稿，请稍候……");
+        UUID playerId = player.getUniqueId();
+        session.getFlow().saveDraft(session).whenComplete((saved, error) -> {
+            Runnable completion = () -> completeDraftSave(playerId, session,
+                    error == null && Boolean.TRUE.equals(saved));
+            if (Bukkit.isPrimaryThread()) completion.run();
+            else if (plugin.isEnabled()) Bukkit.getScheduler().runTask(plugin, completion);
+        });
+    }
+
+    private void completeDraftSave(UUID playerId, PrepareSession session, boolean saved) {
+        Player player = Bukkit.getPlayer(playerId);
+        if (player == null || sessions.get(playerId) != session)
+            return;
+        if (!saved) {
+            Utils.sendAdminError(player, "草稿保存失败，请查看控制台日志");
+            PrepareModeInventory.refresh(player, session);
+            return;
+        }
+
+        Location destination = session.getFlow().copyZeroLocation(session.getTarget());
+        if (destination != null && destination.getWorld() == null)
+            destination.setWorld(Bukkit.getWorld(session.getTarget().worldName()));
+        if (destination != null && destination.getWorld() != null)
+            player.teleport(destination);
+        player.setGameMode(org.bukkit.GameMode.CREATIVE);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+        PrepareModeInventory.refresh(player, session);
+        Utils.sendAdminSuccess(player, "地图草稿已保存 &#696969• &#ededed仍需完成全部点位后再发布");
+    }
+
     private void completePublish(UUID playerId, PrepareSession session, boolean published) {
         if (published)
             session.getTarget().config().markPreparePublished();
@@ -266,6 +307,8 @@ public class PrepareSessionManager extends BaseManager {
         }
 
         Location destination = session.getFlow().copyZeroLocation(session.getTarget());
+        if (destination != null && destination.getWorld() == null)
+            destination.setWorld(Bukkit.getWorld(session.getTarget().worldName()));
         if (destination != null && destination.getWorld() != null)
             player.teleport(destination);
         PrepareModeInventory.refresh(player, session);
@@ -292,6 +335,38 @@ public class PrepareSessionManager extends BaseManager {
         return false;
     }
 
+    /** Teleports an editor only when the selected map has a loaded, bound physical world. */
+    private boolean teleportToEditorLocation(@NotNull Player player, @NotNull PrepareSession session) {
+        String worldName = session.getFlow().worldName(session.getTarget());
+        if (worldName.isBlank()) {
+            Utils.sendAdminInfo(player, "该地图尚未绑定世界，请先前往目标世界并使用“绑定当前世界”。");
+            return false;
+        }
+        org.bukkit.World world = Bukkit.getWorld(worldName);
+        if (world == null) {
+            Utils.sendAdminError(player, "地图世界 &#fff566" + worldName + " &#ededed尚未加载");
+            return false;
+        }
+
+        Location destination = session.getFlow().copyZeroLocation(session.getTarget());
+        if (destination != null && destination.getWorld() == null) destination.setWorld(world);
+        if (destination == null || destination.getWorld() == null) {
+            Utils.sendAdminError(player, "无法找到地图编辑位置");
+            return false;
+        }
+        if (!player.teleport(destination)) {
+            Utils.sendAdminError(player, "传送至地图编辑位置失败");
+            return false;
+        }
+        player.setGameMode(org.bukkit.GameMode.CREATIVE);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+
+        Utils.sendAdminSuccess(player, "已传送至 "
+                + session.getFlow().editorLocationName(session.getTarget()));
+        return true;
+    }
+
     private static String lockKey(GameTypeEnum gameType, String mapName) {
         return gameType.name() + "\u0000" + mapName.toLowerCase(java.util.Locale.ROOT);
     }
@@ -304,7 +379,7 @@ public class PrepareSessionManager extends BaseManager {
                 inv.getStorageContents(),
                 inv.getArmorContents(),
                 inv.getItemInOffHand(),
-                player.getItemOnCursor());
+                player.getItemOnCursor(), player.getGameMode(), player.getAllowFlight(), player.isFlying());
         snapshots.put(player.getUniqueId(), snap);
         saveSnapshotFile(player.getUniqueId(), snap);
     }
@@ -318,6 +393,7 @@ public class PrepareSessionManager extends BaseManager {
         if (snap.armor != null) inv.setArmorContents(snap.armor);
         inv.setItemInOffHand(snap.offhand);
         player.setItemOnCursor(snap.cursor);
+        restorePlayerState(player, snap);
     }
 
     /** Crash recovery: if a snapshot file lingers from a non-clean exit, restore the real inventory. */
@@ -329,6 +405,7 @@ public class PrepareSessionManager extends BaseManager {
         if (snap.armor != null) inv.setArmorContents(snap.armor);
         inv.setItemInOffHand(snap.offhand);
         player.setItemOnCursor(snap.cursor);
+        restorePlayerState(player, snap);
         deleteSnapshotFile(player.getUniqueId());
         snapshots.remove(player.getUniqueId());
         Utils.sendAdminInfo(player, "检测到未结束的 prepare &#696969• 物品栏已还原");
@@ -340,6 +417,9 @@ public class PrepareSessionManager extends BaseManager {
         y.set("armor", serializeItems(snap.armor));
         y.set("offhand", serializeItem(snap.offhand));
         y.set("cursor", serializeItem(snap.cursor));
+        y.set("game-mode", snap.gameMode == null ? null : snap.gameMode.name());
+        if (snap.allowFlight != null) y.set("allow-flight", snap.allowFlight);
+        if (snap.flying != null) y.set("flying", snap.flying);
         try {
             Files.createDirectories(sessionsDir);
             y.save(sessionsDir.resolve(id + ".yml").toFile());
@@ -357,7 +437,17 @@ public class PrepareSessionManager extends BaseManager {
         ItemStack offhand = deserializeItem(y.getString("offhand"));
         ItemStack cursor = deserializeItem(y.getString("cursor"));
         if (storage == null || armor == null) return null;
-        return new Snapshot(storage, armor, offhand, cursor);
+        org.bukkit.GameMode gameMode = null;
+        String mode = y.getString("game-mode");
+        if (mode != null) {
+            try {
+                gameMode = org.bukkit.GameMode.valueOf(mode);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        Boolean allowFlight = y.contains("allow-flight") ? y.getBoolean("allow-flight") : null;
+        Boolean flying = y.contains("flying") ? y.getBoolean("flying") : null;
+        return new Snapshot(storage, armor, offhand, cursor, gameMode, allowFlight, flying);
     }
 
     private void deleteSnapshotFile(@NotNull UUID id) {
@@ -408,12 +498,25 @@ public class PrepareSessionManager extends BaseManager {
         final ItemStack[] armor;
         final ItemStack offhand;
         final ItemStack cursor;
+        final org.bukkit.GameMode gameMode;
+        final Boolean allowFlight;
+        final Boolean flying;
 
-        Snapshot(ItemStack[] storage, ItemStack[] armor, ItemStack offhand, ItemStack cursor) {
+        Snapshot(ItemStack[] storage, ItemStack[] armor, ItemStack offhand, ItemStack cursor,
+                 org.bukkit.GameMode gameMode, Boolean allowFlight, Boolean flying) {
             this.storage = storage;
             this.armor = armor;
             this.offhand = offhand;
             this.cursor = cursor;
+            this.gameMode = gameMode;
+            this.allowFlight = allowFlight;
+            this.flying = flying;
         }
+    }
+
+    private static void restorePlayerState(@NotNull Player player, @NotNull Snapshot snap) {
+        if (snap.gameMode != null) player.setGameMode(snap.gameMode);
+        if (snap.allowFlight != null) player.setAllowFlight(snap.allowFlight);
+        if (snap.flying != null) player.setFlying(snap.flying && Boolean.TRUE.equals(snap.allowFlight));
     }
 }

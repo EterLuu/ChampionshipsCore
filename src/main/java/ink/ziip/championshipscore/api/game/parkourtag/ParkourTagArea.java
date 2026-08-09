@@ -13,10 +13,9 @@ import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.format.TextDecoration;
 import lombok.Getter;
 import org.bukkit.*;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.block.Block;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -25,11 +24,14 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,6 +55,9 @@ public class ParkourTagArea extends BasePairedGameInstance {
     private ParkourTagMatch match;
     // Teams that have spent their once-per-round wind charge this round; cleared on each preparation.
     private final Set<ChampionshipTeam> windChargeUsedTeams = ConcurrentHashMap.newKeySet();
+    /** Chasers currently revealed by an Ender Eye; each entry owns its expiry task. */
+    private final Map<UUID, BukkitTask> temporaryChaserGlowTasks = new HashMap<>();
+    private boolean parkourTagGlowsActive;
 
     public ParkourTagArea(ChampionshipsCore plugin, ParkourTagConfig parkourTagConfig) {
         this(plugin, parkourTagConfig, 0, true);
@@ -88,6 +93,8 @@ public class ParkourTagArea extends BasePairedGameInstance {
                 || geometry.getSpectatorSpawn() == null
                 || geometry.getLeftZone().getChaserSpawn() == null
                 || geometry.getRightZone().getChaserSpawn() == null
+                || geometry.getRightChaserButton() == null
+                || geometry.getLeftChaserButton() == null
                 || geometry.getLeftZone().getEscapeeSpawns().isEmpty()
                 || geometry.getRightZone().getEscapeeSpawns().isEmpty()) {
             logGame(Level.WARNING, "启动", "地图配置尚未完成，无法开始游戏");
@@ -107,11 +114,21 @@ public class ParkourTagArea extends BasePairedGameInstance {
     }
 
     @Override
+    protected Vector[] getCountdownBlockDisappearanceBounds() {
+        Vector[] bounds = super.getCountdownBlockDisappearanceBounds();
+        if (bounds == null) return null;
+        Vector delta = getGameConfig().getCopyGrid().delta(copyIndex);
+        return new Vector[]{bounds[0].add(delta), bounds[1].add(delta)};
+    }
+
+    @Override
     protected Collection<Location> getStartPreloadLocations() {
         if (match == null) return List.of();
         List<Location> locations = new ArrayList<>();
         locations.add(match.getRightPrepareSpot());
         locations.add(match.getLeftPrepareSpot());
+        locations.add(match.getRightChaserButton());
+        locations.add(match.getLeftChaserButton());
         locations.add(match.getSpectatorSpawn());
         locations.add(match.getLeftAreaChaserSpawn());
         locations.add(match.getRightAreaChaserSpawn());
@@ -136,11 +153,18 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
     @Override
     public void resetArea() {
+        clearParkourTagGlows();
         cleanDroppedItems();
         match = null;
         windChargeUsedTeams.clear();
         startGamePreparationTask = null;
         startGameProgressTask = null;
+    }
+
+    @Override
+    public void dispose() {
+        clearParkourTagGlows();
+        super.dispose();
     }
 
     @Override
@@ -165,9 +189,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
-
-        createBossBar("chaser", MessageConfig.PARKOUR_TAG_BOSS_BAR_CHASER, BarColor.RED, BarStyle.SOLID);
-        createBossBar("escaper", MessageConfig.PARKOUR_TAG_BOSS_BAR_ESCAPER, BarColor.WHITE, BarStyle.SOLID);
 
         announceGamePreparation(MessageConfig.PARKOUR_TAG_START_PREPARATION,
                 MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE, MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
@@ -208,13 +229,21 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (match != null) updateAndAnnounce(match);
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
-            changeLevelForAllGamePlayers(timer);
-            updateSpectatorTimerBossBar(MessageConfig.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN
-                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
+            String chasers = match == null ? "-"
+                    : formatChaserName(match.getRightAreaChaser()) + " / "
+                    + formatChaserName(match.getLeftAreaChaser());
+            updateGameTimerBossBar(MessageConfig.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", String.valueOf(timer))
+                    + " &#bababa• &#ededed追击者 &#fff566" + chasers,
+                    timer, getGameConfig().getTimer());
         }, () -> {
             if (match != null) updateAndAnnounce(match);
             endGame();
         });
+    }
+
+    private String formatChaserName(UUID uuid) {
+        return uuid == null ? "待定" : Utils.formatPlayerNameOnly(playerManager.getPlayerName(uuid));
     }
 
     /** Assigns each team's chaser for a match (honouring a prep-time choice), rotating via the manager. */
@@ -224,16 +253,12 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
         if (match.getRightAreaChaser() == null) {
             match.setRightAreaChaser(manager.getTeamChaser(match.getRight()));
-            Player player = Bukkit.getPlayer(match.getRightAreaChaser());
-            if (player != null) addBossBarPlayer("chaser", player);
             match.getRight().sendMessageToAll(message
                     .replace("%player%", Utils.formatPlayerName(match.getRightAreaChaser()))
                     .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - manager.getChaserTimes(match.getRightAreaChaser()) - 1)));
         }
         if (match.getLeftAreaChaser() == null) {
             match.setLeftAreaChaser(manager.getTeamChaser(match.getLeft()));
-            Player player = Bukkit.getPlayer(match.getLeftAreaChaser());
-            if (player != null) addBossBarPlayer("chaser", player);
             match.getLeft().sendMessageToAll(message
                     .replace("%player%", Utils.formatPlayerName(match.getLeftAreaChaser()))
                     .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - manager.getChaserTimes(match.getLeftAreaChaser()) - 1)));
@@ -246,7 +271,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         setSurviveTimeToZero(match, match.getLeft(), match.getLeftAreaChaser());
     }
 
-    /** Teleports a match's chasers/escapees into their cages and shows the escaper boss bar. */
+    /** Teleports a match's chasers and escapees into their cages. */
     private void spawnMatch(ParkourTagMatch match) {
         Player rightChaser = match.getRightAreaChaserPlayer();
         if (rightChaser != null) rightChaser.teleport(match.getRightAreaChaserSpawn());
@@ -261,7 +286,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (spawns.isEmpty()) return;
         int i = 0;
         for (Player escapee : escapees) {
-            addBossBarPlayer("escaper", escapee);
             escapee.teleport(spawns.get(i % spawns.size()));
             i++;
         }
@@ -287,6 +311,12 @@ public class ParkourTagArea extends BasePairedGameInstance {
     }
 
     @Override
+    public Location getAdminTeleportLocation() {
+        Location configured = getGameConfig().getGameSpawnPoint();
+        return configured != null ? configured : configuredGeometry(0).getSpectatorSpawn();
+    }
+
+    @Override
     public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
@@ -296,9 +326,14 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
-        if (match != null) calculatePoints(match);
+        // A forced stop can happen during preparation or the final countdown, before
+        // chasers have been assigned.  That is not a played match and must not score.
+        if (match != null && getGameStageEnum() == GameStageEnum.PROGRESS
+                && match.getRightAreaChaser() != null && match.getLeftAreaChaser() != null)
+            calculatePoints(match);
         addPlayerPointsToDatabase();
 
+        clearParkourTagGlows();
         cleanInventoryForAllGamePlayers();
 
         announceGameEnd(MessageConfig.PARKOUR_TAG_GAME_END_TITLE, MessageConfig.PARKOUR_TAG_GAME_END_SUBTITLE);
@@ -406,22 +441,180 @@ public class ParkourTagArea extends BasePairedGameInstance {
             windCharge.setItemMeta(windChargeMeta);
         }
 
-        int glowTicks = getGameConfig().getTimer() * 20 + 100;
         for (Player player : match.getRightAreaEscapees()) {
             player.getInventory().setItem(0, enderEye.clone());
             player.getInventory().setItem(1, windCharge.clone());
-            player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, glowTicks, 0));
         }
         for (Player player : match.getLeftAreaEscapees()) {
             player.getInventory().setItem(0, enderEye.clone());
             player.getInventory().setItem(1, windCharge.clone());
-            player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, glowTicks, 0));
+        }
+        parkourTagGlowsActive = true;
+        syncAllParkourTagGlows();
+    }
+
+    /**
+     * Rebuilds every PKT glow relationship for this match. The two simultaneous chase zones are kept
+     * deliberately separate: a zone's three escapees (and its temporarily revealed chaser) are visible
+     * only to that zone's four players plus spectators attached to this copied match instance.
+     */
+    private void syncAllParkourTagGlows() {
+        ParkourTagMatch current = match;
+        if (current == null || !parkourTagGlowsActive) return;
+
+        Set<Player> allViewers = allGlowViewers(current);
+        Set<Player> rightViewers = rightAreaGlowViewers(current);
+        Set<Player> leftViewers = leftAreaGlowViewers(current);
+
+        for (Player target : current.getRightAreaEscapees()) {
+            syncGlowTarget(target, allViewers, rightViewers);
+        }
+        for (Player target : current.getLeftAreaEscapees()) {
+            syncGlowTarget(target, allViewers, leftViewers);
+        }
+
+        Player rightChaser = current.getRightAreaChaserPlayer();
+        if (rightChaser != null) {
+            syncGlowTarget(rightChaser, allViewers,
+                    temporaryChaserGlowTasks.containsKey(rightChaser.getUniqueId())
+                            ? rightViewers : Set.of());
+        }
+        Player leftChaser = current.getLeftAreaChaserPlayer();
+        if (leftChaser != null) {
+            syncGlowTarget(leftChaser, allViewers,
+                    temporaryChaserGlowTasks.containsKey(leftChaser.getUniqueId())
+                            ? leftViewers : Set.of());
+        }
+    }
+
+    private void syncGlowForViewer(@NotNull Player viewer) {
+        ParkourTagMatch current = match;
+        if (current == null || !parkourTagGlowsActive) return;
+
+        boolean spectator = isSpectator(viewer);
+        boolean rightViewer = spectator || isRightAreaPlayer(current, viewer);
+        boolean leftViewer = spectator || isLeftAreaPlayer(current, viewer);
+
+        for (Player target : current.getRightAreaEscapees()) {
+            setViewerGlow(target, viewer, rightViewer);
+        }
+        for (Player target : current.getLeftAreaEscapees()) {
+            setViewerGlow(target, viewer, leftViewer);
+        }
+        Player rightChaser = current.getRightAreaChaserPlayer();
+        if (rightChaser != null) {
+            setViewerGlow(rightChaser, viewer, rightViewer
+                    && temporaryChaserGlowTasks.containsKey(rightChaser.getUniqueId()));
+        }
+        Player leftChaser = current.getLeftAreaChaserPlayer();
+        if (leftChaser != null) {
+            setViewerGlow(leftChaser, viewer, leftViewer
+                    && temporaryChaserGlowTasks.containsKey(leftChaser.getUniqueId()));
+        }
+    }
+
+    private void syncGlowTarget(@NotNull Player target, @NotNull Set<Player> allViewers,
+                                @NotNull Set<Player> allowedViewers) {
+        for (Player viewer : allViewers) {
+            setViewerGlow(target, viewer, allowedViewers.contains(viewer));
+        }
+    }
+
+    private void setViewerGlow(@NotNull Player target, @NotNull Player viewer, boolean glowing) {
+        if (glowing) plugin.getGlowingEntities().setGlowing(target, viewer);
+        else plugin.getGlowingEntities().unsetGlowing(target, viewer);
+    }
+
+    private Set<Player> rightAreaGlowViewers(@NotNull ParkourTagMatch current) {
+        Set<Player> viewers = new LinkedHashSet<>(getOnlineSpectators());
+        Player chaser = current.getRightAreaChaserPlayer();
+        if (chaser != null) viewers.add(chaser);
+        viewers.addAll(current.getRightAreaEscapees());
+        return viewers;
+    }
+
+    private Set<Player> leftAreaGlowViewers(@NotNull ParkourTagMatch current) {
+        Set<Player> viewers = new LinkedHashSet<>(getOnlineSpectators());
+        Player chaser = current.getLeftAreaChaserPlayer();
+        if (chaser != null) viewers.add(chaser);
+        viewers.addAll(current.getLeftAreaEscapees());
+        return viewers;
+    }
+
+    private Set<Player> allGlowViewers(@NotNull ParkourTagMatch current) {
+        Set<Player> viewers = rightAreaGlowViewers(current);
+        viewers.addAll(leftAreaGlowViewers(current));
+        return viewers;
+    }
+
+    private boolean isRightAreaPlayer(@NotNull ParkourTagMatch current, @NotNull Player player) {
+        return player.getUniqueId().equals(current.getRightAreaChaser())
+                || current.getRightAreaEscapees().contains(player);
+    }
+
+    private boolean isLeftAreaPlayer(@NotNull ParkourTagMatch current, @NotNull Player player) {
+        return player.getUniqueId().equals(current.getLeftAreaChaser())
+                || current.getLeftAreaEscapees().contains(player);
+    }
+
+    private void revealChaser(@NotNull Player chaser) {
+        UUID uuid = chaser.getUniqueId();
+        BukkitTask previous = temporaryChaserGlowTasks.remove(uuid);
+        if (previous != null) previous.cancel();
+
+        BukkitTask task = scheduler.runTaskLater(plugin, () -> {
+            temporaryChaserGlowTasks.remove(uuid);
+            syncAllParkourTagGlows();
+        }, 60L);
+        temporaryChaserGlowTasks.put(uuid, task);
+        syncAllParkourTagGlows();
+    }
+
+    private void clearParkourTagGlows() {
+        parkourTagGlowsActive = false;
+        for (BukkitTask task : temporaryChaserGlowTasks.values()) task.cancel();
+        temporaryChaserGlowTasks.clear();
+
+        ParkourTagMatch current = match;
+        if (current == null) return;
+        Set<Player> viewers = allGlowViewers(current);
+        Set<Player> targets = new LinkedHashSet<>();
+        targets.addAll(current.getRightAreaEscapees());
+        targets.addAll(current.getLeftAreaEscapees());
+        Player rightChaser = current.getRightAreaChaserPlayer();
+        Player leftChaser = current.getLeftAreaChaserPlayer();
+        if (rightChaser != null) targets.add(rightChaser);
+        if (leftChaser != null) targets.add(leftChaser);
+        for (Player target : targets) {
+            clearGlowTarget(target, viewers);
+        }
+    }
+
+    private void clearGlowTarget(@NotNull Player target, @NotNull Collection<Player> viewers) {
+        for (Player viewer : viewers) {
+            plugin.getGlowingEntities().unsetGlowing(target, viewer);
         }
     }
 
     // ── handler-facing logic (routed to the player's match) ──────────────────────────────────────
 
-    /** Prep-time chaser pick from a sign click; validates rotation and records it on the player's match. */
+    /** Whether this is the configured selection button for the player's own team in this arena copy. */
+    public boolean isChaserButton(@NotNull Player player, @NotNull Block block) {
+        ParkourTagMatch match = matchOf(player);
+        if (match == null) return false;
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (team == null) return false;
+        Location expected = team.equals(match.getRight())
+                ? match.getRightChaserButton()
+                : team.equals(match.getLeft()) ? match.getLeftChaserButton() : null;
+        if (expected == null || expected.getWorld() == null
+                || !expected.getWorld().equals(block.getWorld())) return false;
+        return expected.getBlockX() == block.getX()
+                && expected.getBlockY() == block.getY()
+                && expected.getBlockZ() == block.getZ();
+    }
+
+    /** Prep-time chaser pick from the configured wall button; validates quota and records the choice. */
     public void chooseChaser(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         ParkourTagMatch match = matchOf(player);
@@ -435,7 +628,8 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (team == null) return;
         String message = MessageConfig.PARKOUR_TAG_BECOME_CHASER
                 .replace("%player%", Utils.formatPlayerName(player))
-                .replace("%times%", String.valueOf(CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - manager.getChaserTimes(uuid)));
+                .replace("%times%", String.valueOf(Math.max(0,
+                        CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES - manager.getChaserTimes(uuid) - 1)));
         if (team.equals(match.getRight())) {
             match.setRightAreaChaser(uuid);
             match.getRight().sendMessageToAll(message);
@@ -470,7 +664,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
                 escapee.setCooldown(Material.ENDER_EYE, 200);
             }
         }
-        if (chaser != null) chaser.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 60, 0));
+        if (chaser != null) revealChaser(chaser);
         plugin.getGameManager().getParkourTagManager().setEnderEyeUsedTimes(team);
     }
 
@@ -636,7 +830,13 @@ public class ParkourTagArea extends BasePairedGameInstance {
     @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        if (notAreaPlayer(player) || getGameStageEnum() != GameStageEnum.PROGRESS)
+        if (notAreaPlayer(player))
+            return;
+
+        // Remove the departing entity id immediately; Bukkit may reuse it before this round is reset.
+        if (match != null) clearGlowTarget(player, allGlowViewers(match));
+
+        if (getGameStageEnum() != GameStageEnum.PROGRESS)
             return;
         if (!isChaser(player)) {
             sendMessageToAllGamePlayers(MessageConfig.PARKOUR_TAG_PLAYER_LEAVE
@@ -650,6 +850,9 @@ public class ParkourTagArea extends BasePairedGameInstance {
         Player player = event.getPlayer();
         if (notAreaPlayer(player))
             return;
+
+        // Recreate target/viewer entity-id relationships after the reconnecting client has spawned.
+        scheduler.runTaskLater(plugin, this::syncAllParkourTagGlows, 2L);
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
             teleportPlayerToPrepareSpotLocation(player);
@@ -680,6 +883,30 @@ public class ParkourTagArea extends BasePairedGameInstance {
         player.teleport(getSpectatorSpawnLocation());
         scheduler.runTask(plugin, () -> player.setGameMode(
                 getGameStageEnum() == GameStageEnum.END ? GameMode.ADVENTURE : GameMode.SPECTATOR));
+    }
+
+    @Override
+    protected void applySpectatorGameMode(@NotNull Player player) {
+        super.applySpectatorGameMode(player);
+        scheduler.runTask(plugin, () -> syncGlowForViewer(player));
+    }
+
+    @Override
+    protected void clearSpectatorGameMode(@NotNull Player player) {
+        ParkourTagMatch current = match;
+        if (current != null) {
+            Set<Player> targets = new LinkedHashSet<>();
+            targets.addAll(current.getRightAreaEscapees());
+            targets.addAll(current.getLeftAreaEscapees());
+            Player rightChaser = current.getRightAreaChaserPlayer();
+            Player leftChaser = current.getLeftAreaChaserPlayer();
+            if (rightChaser != null) targets.add(rightChaser);
+            if (leftChaser != null) targets.add(leftChaser);
+            for (Player target : targets) {
+                plugin.getGlowingEntities().unsetGlowing(target, player);
+            }
+        }
+        super.clearSpectatorGameMode(player);
     }
 
     private void teleportPlayerToPrepareSpotLocation(Player player) {

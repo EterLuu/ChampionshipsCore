@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.BaseManager;
 public class ListenerManager extends BaseManager {
     private static PlayerListener playerListener;
     private static ProtectionListener protectionListener;
+    private static PortalGuardListener portalGuardListener;
 
     public ListenerManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -15,8 +16,10 @@ public class ListenerManager extends BaseManager {
     public void load() {
         playerListener = new PlayerListener(plugin);
         protectionListener = new ProtectionListener(plugin);
+        portalGuardListener = new PortalGuardListener(plugin);
         playerListener.register();
         protectionListener.register();
+        portalGuardListener.register();
     }
 
     @Override
@@ -28,6 +31,10 @@ public class ListenerManager extends BaseManager {
         if (protectionListener != null) {
             protectionListener.unRegister();
             protectionListener = null;
+        }
+        if (portalGuardListener != null) {
+            portalGuardListener.unRegister();
+            portalGuardListener = null;
         }
     }
 }

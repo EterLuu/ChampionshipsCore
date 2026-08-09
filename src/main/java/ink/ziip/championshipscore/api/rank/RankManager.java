@@ -86,15 +86,27 @@ public class RankManager extends BaseManager {
     }
 
     public int getPlayerRank(Player player) {
-        return playerRank.getOrDefault(player.getUniqueId(), 0);
+        return getPlayerRank(player.getUniqueId());
+    }
+
+    public int getPlayerRank(@NotNull UUID uuid) {
+        return playerRank.getOrDefault(uuid, 0);
     }
 
     public double getPlayerPoints(Player player) {
-        return playerPoints.getOrDefault(player.getUniqueId(), 0D);
+        return getPlayerPoints(player.getUniqueId());
+    }
+
+    public double getPlayerPoints(@NotNull UUID uuid) {
+        return playerPoints.getOrDefault(uuid, 0D);
     }
 
     public int getPlayerTeamRank(Player player) {
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        return getPlayerTeamRank(player.getUniqueId());
+    }
+
+    public int getPlayerTeamRank(@NotNull UUID uuid) {
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (championshipTeam != null) {
             return teamRank.getOrDefault(championshipTeam, Integer.MAX_VALUE);
         }
@@ -106,7 +118,11 @@ public class RankManager extends BaseManager {
     }
 
     public double getPlayerTeamPoints(Player player) {
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        return getPlayerTeamPoints(player.getUniqueId());
+    }
+
+    public double getPlayerTeamPoints(@NotNull UUID uuid) {
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (championshipTeam != null) {
             return teamPoints.getOrDefault(championshipTeam, -1D);
         }
@@ -133,7 +149,7 @@ public class RankManager extends BaseManager {
         updateGameWeights();
 
         for (Map.Entry<ChampionshipTeam, List<PlayerPointEntry>> entry : entriesByTeam.entrySet()) {
-            teamPoints.put(entry.getKey(), calculateTeamPoints(entry.getValue()));
+            teamPoints.put(entry.getKey(), calculateFinalPoints(entry.getValue()));
         }
         for (ChampionshipTeam championshipTeam : teamPoints.keySet()) {
             if (!plugin.getTeamManager().getTeamList().contains(championshipTeam))
@@ -168,17 +184,16 @@ public class RankManager extends BaseManager {
     }
 
     private void updatePlayerPoint() {
+        Map<UUID, Double> refreshedPlayerPoints = new HashMap<>();
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
             for (TeamMemberEntry teamMemberEntry : teamDao.getTeamMembers(championshipTeam.getId())) {
                 UUID uuid = teamMemberEntry.getUuid();
-                playerPoints.put(uuid, getPlayerPoints(uuid));
+                refreshedPlayerPoints.put(uuid, calculatePlayerPoints(uuid));
             }
         }
-        for (UUID uuid : playerPoints.keySet()) {
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
-            if (championshipTeam == null)
-                playerPoints.remove(uuid);
-        }
+        playerPoints.keySet().removeIf(uuid -> !refreshedPlayerPoints.containsKey(uuid));
+        playerPoints.putAll(refreshedPlayerPoints);
+        playerRank.clear();
 
         ArrayList<Map.Entry<UUID, Double>> list;
         list = new ArrayList<>(playerPoints.entrySet());
@@ -474,17 +489,8 @@ public class RankManager extends BaseManager {
         });
     }
 
-    private double getPlayerPoints(UUID uuid) {
-        List<PlayerPointEntry> playerPointEntries = rankDao.getPlayerPoints(uuid);
-
-        double points = 0d;
-        for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-            if (playerPointEntry.getValid() == 1 && isScoringGame(playerPointEntry.getGame())) {
-                points = points + playerPointEntry.getPoints();
-            }
-        }
-
-        return points;
+    private double calculatePlayerPoints(UUID uuid) {
+        return calculateFinalPoints(rankDao.getPlayerPoints(uuid));
     }
 
     private synchronized void addTeamTotalPoints(GameTypeEnum gameTypeEnum, double points) {
@@ -492,7 +498,8 @@ public class RankManager extends BaseManager {
         gameTotalPoints.put(gameTypeEnum, prevPoints + points);
     }
 
-    private double calculateTeamPoints(List<PlayerPointEntry> playerPointEntries) {
+    /** Applies the same game-normalization weight and round multiplier used by the spreadsheet's K column. */
+    private double calculateFinalPoints(List<PlayerPointEntry> playerPointEntries) {
         double points = 0;
         for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             int gameOrder = rankDao.getGameStatusOrder(gameTypeEnum);
@@ -514,16 +521,13 @@ public class RankManager extends BaseManager {
     }
 
     public double getPointMultiple(int round) {
-        if (round == 1 || round == 2) {
-            return 1d;
-        }
-        if (round == 3 || round == 4 || round == 5) {
-            return 1.5d;
-        }
-        if (round == 6) {
-            return 2d;
-        }
-        return 0d;
+        return switch (round) {
+            case 1 -> 1D;
+            case 2, 3 -> 1.2D;
+            case 4, 5 -> 1.5D;
+            case 6 -> 1.8D;
+            default -> 0D;
+        };
     }
 
     private double getTeamPoints(ChampionshipTeam championshipTeam, GameTypeEnum gameTypeEnum) {

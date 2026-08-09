@@ -17,7 +17,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
-import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -137,18 +136,6 @@ public class BingoHandler extends BaseListener {
             // non-stacking tools never duplicate.
             plugin.getServer().getScheduler().runTask(plugin, () -> bingoArea.ensureKitAndCard(player));
         }
-    }
-
-    // ── elytra glide ────────────────────────────────────────────────────────────────────────────
-
-    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public void onGlideToggle(EntityToggleGlideEvent event) {
-        if (!running()) return;
-        if (!(event.getEntity() instanceof Player player)) return;
-        if (bingoArea.notAreaPlayer(player)) return;
-        // Slow Falling cancels elytra flight; drop the permanent Slow Falling while gliding and restore
-        // it when gliding ends. See BingoArea#onGlideToggle / BingoPermanentEffects.
-        bingoArea.onGlideToggle(player, event.isGliding());
     }
 
     // ── friendly fire off ──────────────────────────────────────────────────────────────────────

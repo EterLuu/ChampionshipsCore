@@ -9,7 +9,9 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.SchematicStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StampStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
+import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagConfig;
+import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagLayout;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -47,6 +49,8 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
 
     @Override
     public @NotNull Location copyZeroLocation(@NotNull SetupTarget target) {
+        Location spawn = GameSpawnResolver.resolve(target.config());
+        if (spawn != null) return spawn;
         World w = Bukkit.getWorld(target.worldName());
         if (w == null) return CCConfig.LOBBY_LOCATION;
         return cfg(target).getCopyGrid().origin(0).toLocation(w);
@@ -80,7 +84,12 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
 
         steps.add(StampStep.adaptiveKeepingSource(plugin -> schematic,
                 (a, size) -> cfg(a).prepareCopyGrid(size),
-                (a, count) -> cfg(a).setCopyCount(count)));
+                (a, count) -> cfg(a).setCopyCount(count),
+                (session, world) -> {
+                    ParkourTagConfig previous = cfg(session.getTarget());
+                    ArenaPreparer.clearAdditionalCopies(session.getPlugin(), world,
+                            previous.getCopyGrid(), previous.getCopyCount(), previous.getCopySize());
+                }));
 
         steps.add(new WeSelectionStep("area_pos",
                 Component.text("0 号对局场地总边界"),
@@ -113,6 +122,18 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                 a -> cfg(a).getLeftPrepareSpot() != null,
                 (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
                 Utils.formatAdminSuccess("已设置对局位 B 队准备点。")));
+
+        steps.add(new ParkourTagChaserButtonStep("right_chaser_button",
+                Component.text("对局位 A 队追击者按钮"),
+                Component.text("对准 A 队准备区内已经贴墙放置的按钮后点击"),
+                a -> cfg(a).getRightChaserButton(),
+                (a, loc) -> cfg(a).setRightChaserButton(loc)));
+
+        steps.add(new ParkourTagChaserButtonStep("left_chaser_button",
+                Component.text("对局位 B 队追击者按钮"),
+                Component.text("对准 B 队准备区内已经贴墙放置的按钮后点击"),
+                a -> cfg(a).getLeftChaserButton(),
+                (a, loc) -> cfg(a).setLeftChaserButton(loc)));
 
         steps.add(new WeSelectionStep("right_area_pos",
                 Component.text("赛道 1 完整边界（A 追 B 逃）"),

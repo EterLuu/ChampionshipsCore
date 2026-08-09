@@ -436,17 +436,22 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     private void beginGameProgress() {
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
+            int suddenDeathWarning = timer - getGameConfig().getSuddenDeath();
+            if (suddenDeathWarning >= 1 && suddenDeathWarning <= 10) {
+                sendActionBarToAllGamePlayers(MessageConfig.PARKOUR_WARRIOR_SUDDEN_DEATH_START_COUNT_DOWN
+                        .replace("%time%", String.valueOf(suddenDeathWarning)));
+            }
             if (timer == getGameConfig().getSuddenDeath()) {
+                sendActionBarToAllGamePlayers(MessageConfig.PARKOUR_WARRIOR_START_SUDDEN_DEATH);
                 sendTitleToAllGamePlayers(MessageConfig.PARKOUR_WARRIOR_START_SUDDEN_DEATH_TITLE,
                         MessageConfig.PARKOUR_WARRIOR_START_SUDDEN_DEATH_SUBTITLE);
                 playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1, 12F);
             }
 
-            changeLevelForAllGamePlayers(timer);
             String timerTemplate = timer <= getGameConfig().getSuddenDeath()
                     ? MessageConfig.PARKOUR_WARRIOR_SUDDEN_DEATH_COUNT_DOWN
                     : MessageConfig.PARKOUR_WARRIOR_ACTION_BAR_COUNT_DOWN;
-            updateSpectatorTimerBossBar(timerTemplate
+            updateGameTimerBossBar(timerTemplate
                     .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
         }, this::endGame);
     }

@@ -17,6 +17,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.*;
 
 public class HotyCodyDuskyScheduleManager extends BaseManager {
+    private static final int ROUND_TRANSITION_SECONDS = 10;
     private final int hotyCodyDuskyRounds = 3;
     private final BukkitScheduler scheduler;
     private final HotyCodyDuskyScheduleHandler handler;
@@ -62,7 +63,6 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         completedAreaNum = 0;
         firstStartTask = scheduler.runTaskTimer(plugin, () -> {
 
-            Utils.changeLevelForAllPlayers(timer);
             plugin.getScheduleManager().showRoundPreparationCountdown(GameTypeEnum.HotyCodyDusky, 1, timer);
 
             if (timer == 10) {
@@ -74,7 +74,6 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
             }
 
             if (timer == 0) {
-                Utils.changeLevelForAllPlayers(0);
                 subRound = 0;
                 startHotyCodyDuskyRound();
                 if (firstStartTask != null)
@@ -154,7 +153,7 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         enabled = false;
 
         handler.unRegister();
-        Utils.changeLevelForAllPlayers(0);
+        plugin.getScheduleManager().clearRoundPreparationCountdown();
         plugin.getGameManager().releaseEventSpectatorsForGame(GameTypeEnum.HotyCodyDusky);
     }
 
@@ -170,18 +169,16 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         }
         Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
-        timer = 30;
+        timer = ROUND_TRANSITION_SECONDS;
         startTask = scheduler.runTaskTimer(plugin, () -> {
 
-            Utils.changeLevelForAllPlayers(timer);
             plugin.getScheduleManager().showRoundPreparationCountdown(GameTypeEnum.HotyCodyDusky, subRound, timer);
 
-            if (timer == 30) {
+            if (timer == ROUND_TRANSITION_SECONDS) {
                 Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.NEXT_ROUND_SOON));
             }
 
             if (timer == 0) {
-                Utils.changeLevelForAllPlayers(0);
                 if (!arrangeHotyCodyDuskyRounds(false)) abortSchedule("下一轮启动失败");
                 if (startTask != null)
                     startTask.cancel();

@@ -19,6 +19,7 @@ import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.regions.RegionSelector;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.world.block.BlockTypes;
+import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
@@ -31,6 +32,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class WorldEditManager extends BaseManager {
     private final WorldEdit worldEdit;
@@ -80,15 +84,28 @@ public class WorldEditManager extends BaseManager {
      * @throws Exception if there is no selection or the write fails
      */
     public void saveSelectionAsSchematic(@NotNull Player player, @NotNull File file) throws Exception {
+        saveSelectionAsSchematic(player, file, true);
+    }
+
+    /** Saves only the selected blocks and block-entity state, without copying living entities. */
+    public void saveSelectionAsBlockSchematic(@NotNull Player player, @NotNull File file) throws Exception {
+        saveSelectionAsSchematic(player, file, false);
+    }
+
+    private void saveSelectionAsSchematic(@NotNull Player player, @NotNull File file, boolean copyEntities)
+            throws Exception {
         BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
         com.sk89q.worldedit.world.World weWorld = bukkitPlayer.getWorld();
-        Region region = worldEdit.getSessionManager().get(bukkitPlayer).getSelection(weWorld);
+        RegionSelector selector = worldEdit.getSessionManager().get(bukkitPlayer).getRegionSelector(weWorld);
+        if (!selector.isDefined())
+            throw new IllegalStateException("WorldEdit 选区未完整设置");
+        Region region = selector.getRegion();
 
         BlockArrayClipboard clipboard = new BlockArrayClipboard(region);
         clipboard.setOrigin(region.getMinimumPoint());
         try (EditSession editSession = worldEdit.newEditSession(weWorld)) {
             ForwardExtentCopy copy = new ForwardExtentCopy(editSession, region, clipboard, region.getMinimumPoint());
-            copy.setCopyingEntities(true);
+            copy.setCopyingEntities(copyEntities);
             Operations.complete(copy);
         }
 
@@ -115,6 +132,38 @@ public class WorldEditManager extends BaseManager {
             BlockVector3 dimensions = clipboard.getRegion().getDimensions();
             return new Vector(dimensions.x(), dimensions.y(), dimensions.z());
         }
+    }
+
+    /**
+     * Reads the exact non-air block inventory stored in a schematic without pasting it into a world.
+     * Material manifests use this so their contents always describe the refill source of truth rather
+     * than whatever an administrator may currently be editing in the live map.
+     */
+    public @NotNull SchematicBlockInventory readSchematicBlockInventory(@NotNull File file) throws IOException {
+        if (!file.isFile()) throw new IOException("schematic not found: " + file.getName());
+        ClipboardFormat format = ClipboardFormats.findByFile(file);
+        if (format == null) throw new IOException("unknown schematic format: " + file.getName());
+
+        try (ClipboardReader reader = format.getReader(new FileInputStream(file));
+             Clipboard clipboard = reader.read()) {
+            Map<String, Long> materials = new TreeMap<>();
+            Map<String, Long> blockData = new TreeMap<>();
+            long nonAirBlocks = 0L;
+            for (BlockVector3 position : clipboard) {
+                BlockState state = clipboard.getBlock(position);
+                if (state.isAir()) continue;
+                nonAirBlocks++;
+                materials.merge(state.getBlockType().id(), 1L, Long::sum);
+                blockData.merge(state.getAsString(), 1L, Long::sum);
+            }
+            return new SchematicBlockInventory(clipboard.getVolume(), nonAirBlocks,
+                    Collections.unmodifiableMap(materials), Collections.unmodifiableMap(blockData));
+        }
+    }
+
+    public record SchematicBlockInventory(long volume, long nonAirBlocks,
+                                          @NotNull Map<String, Long> materials,
+                                          @NotNull Map<String, Long> blockData) {
     }
 
     /**

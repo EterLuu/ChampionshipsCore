@@ -101,6 +101,14 @@ public class StampStep extends PrepareStep {
                 Integer.MAX_VALUE, true, true);
     }
 
+    public static StampStep adaptiveKeepingSource(@NotNull Function<ChampionshipsCore, File> fileResolver,
+                                                   @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
+                                                   @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
+                                                   @NotNull BiConsumer<PrepareSession, World> preStampCleaner) {
+        return new StampStep(fileResolver, gridResolver, copyCountWriter, null, preStampCleaner,
+                Integer.MAX_VALUE, true, true);
+    }
+
     public static StampStep adaptive(@NotNull Function<ChampionshipsCore, File> fileResolver,
                                      @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
                                      @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,

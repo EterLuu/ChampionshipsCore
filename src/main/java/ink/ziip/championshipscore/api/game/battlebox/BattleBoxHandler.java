@@ -42,6 +42,9 @@ public class BattleBoxHandler extends BaseListener {
         if (battleBoxArea.notAreaPlayer(player)) {
             return;
         }
+        if (battleBoxArea.isIntroductionPhase()) {
+            return;
+        }
 
         Location location = player.getLocation();
         if (battleBoxArea.notInArea(location)) {
@@ -205,6 +208,9 @@ public class BattleBoxHandler extends BaseListener {
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (battleBoxArea.notAreaPlayer(player)) {
+            return;
+        }
+        if (battleBoxArea.isIntroductionPhase()) {
             return;
         }
 

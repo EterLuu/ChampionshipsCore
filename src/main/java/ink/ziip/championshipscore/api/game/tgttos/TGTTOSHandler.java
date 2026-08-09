@@ -37,6 +37,9 @@ public class TGTTOSHandler extends BaseListener {
         if (tgttosTeamArea.notAreaPlayer(player)) {
             return;
         }
+        if (tgttosTeamArea.isIntroductionPhase()) {
+            return;
+        }
 
         Location location = player.getLocation();
         if (tgttosTeamArea.notInArea(location)) {
@@ -86,6 +89,27 @@ public class TGTTOSHandler extends BaseListener {
     public void onPlayerDamaged(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player) {
             if (tgttosTeamArea.notAreaPlayer(player)) {
+                return;
+            }
+
+            if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS
+                    && tgttosTeamArea.getGameConfig().getAreaType().equals("ELYTRA")
+                    && (event.getCause() == EntityDamageEvent.DamageCause.FLY_INTO_WALL
+                    || event.getCause() == EntityDamageEvent.DamageCause.LAVA
+                    || event.getCause() == EntityDamageEvent.DamageCause.VOID)
+                    && player.getGameMode() != GameMode.SPECTATOR) {
+                event.setCancelled(true);
+                if (event.getCause() == EntityDamageEvent.DamageCause.FLY_INTO_WALL
+                        && tgttosTeamArea.isElytraFinishSafeLocation(player.getLocation())) {
+                    return;
+                }
+                String reason = switch (event.getCause()) {
+                    case FLY_INTO_WALL -> "撞上障碍";
+                    case LAVA -> "接触岩浆";
+                    case VOID -> "坠出赛道";
+                    default -> "发生事故";
+                };
+                tgttosTeamArea.resetElytraPlayerToStart(player, reason);
                 return;
             }
 
@@ -141,6 +165,14 @@ public class TGTTOSHandler extends BaseListener {
         if (tgttosTeamArea.notAreaPlayer(player)) {
             return;
         }
+        if (tgttosTeamArea.isIntroductionPhase()) {
+            return;
+        }
+
+        if (tgttosTeamArea.updateElytraLandingState(player)) {
+            tgttosTeamArea.resetElytraPlayerToStart(player, "落地");
+            return;
+        }
 
         Location location = player.getLocation();
         if (tgttosTeamArea.notInArea(location)) {
@@ -157,6 +189,10 @@ public class TGTTOSHandler extends BaseListener {
                 }
                 if (tgttosTeamArea.getGameConfig().getAreaType().equals("ROAD")) {
                     tgttosTeamArea.giveRoadToolToPlayer(player);
+                }
+                if (tgttosTeamArea.getGameConfig().getAreaType().equals("ELYTRA")) {
+                    tgttosTeamArea.resetElytraPlayerToStart(player, "飞出赛道");
+                    return;
                 }
 
                 Utils.sendActionBar(player, MessageConfig.TGTTOS_FALL_INTO_VOID);

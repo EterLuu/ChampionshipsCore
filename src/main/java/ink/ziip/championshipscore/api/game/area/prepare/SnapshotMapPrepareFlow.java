@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
+import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -34,8 +35,8 @@ public abstract class SnapshotMapPrepareFlow extends PrepareFlowDefinition {
 
     @Override
     public @NotNull Location copyZeroLocation(@NotNull SetupTarget target) {
-        Location spectator = target.config().getSpectatorSpawnPoint();
-        if (spectator != null) return spectator;
+        Location spawn = GameSpawnResolver.resolve(target.config());
+        if (spawn != null) return spawn;
         World world = Bukkit.getWorld(target.worldName());
         return world == null ? CCConfig.LOBBY_LOCATION : world.getSpawnLocation();
     }
