@@ -17,6 +17,7 @@
         <module>championships-platform-bukkit</module>
         <module>championships-redis</module>
         <module>championships-bingo-worker</module>
+        <module>championships-bingo-loadtest</module>
         <module>championships-core</module>
     </modules>
 

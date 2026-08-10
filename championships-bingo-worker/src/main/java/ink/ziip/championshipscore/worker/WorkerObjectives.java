@@ -19,19 +19,35 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntPredicate;
 
 /** Manifest task compiler and Folia-safe per-player objective observer. */
 final class WorkerObjectives {
     private final List<Objective> objectives;
-    private final Map<UUID, Map<Integer, Integer>> statisticBaselines = new HashMap<>();
+    private final List<Objective> pollingObjectives;
+    private final Map<String, List<Integer>> advancementCells;
+    private final Map<UUID, Map<Integer, Integer>> statisticBaselines = new ConcurrentHashMap<>();
 
     WorkerObjectives(List<BingoTaskSpec> specs) {
         List<Objective> parsed = new ArrayList<>(specs.size());
         for (BingoTaskSpec spec : specs) parsed.add(parse(spec));
         this.objectives = List.copyOf(parsed);
+        this.pollingObjectives = parsed.stream()
+                .filter(objective -> !(objective instanceof AdvancementObjective))
+                .toList();
+        Map<String, List<Integer>> cellsByAdvancement = new HashMap<>();
+        for (Objective objective : parsed) {
+            if (objective instanceof AdvancementObjective advancement) {
+                cellsByAdvancement.computeIfAbsent(advancement.key(), ignored -> new ArrayList<>())
+                        .add(advancement.cellIndex());
+            }
+        }
+        cellsByAdvancement.replaceAll((ignored, cells) -> List.copyOf(cells));
+        this.advancementCells = Map.copyOf(cellsByAdvancement);
     }
 
-    synchronized void captureBaselines(Player player) {
+    void captureBaselines(Player player) {
         Map<Integer, Integer> values = new HashMap<>();
         for (Objective objective : objectives) {
             if (objective instanceof StatisticObjective statistic) {
@@ -52,13 +68,11 @@ final class WorkerObjectives {
         captureBaselines(player);
     }
 
-    List<Integer> matching(Player player) {
-        Map<Integer, Integer> baselines;
-        synchronized (this) {
-            baselines = statisticBaselines.getOrDefault(player.getUniqueId(), Map.of());
-        }
+    List<Integer> matching(Player player, IntPredicate eligibleCell) {
+        Map<Integer, Integer> baselines = statisticBaselines.getOrDefault(player.getUniqueId(), Map.of());
         List<Integer> matches = new ArrayList<>();
-        for (Objective objective : objectives) {
+        for (Objective objective : pollingObjectives) {
+            if (!eligibleCell.test(objective.cellIndex())) continue;
             if (objective.matches(player, baselines.getOrDefault(objective.cellIndex(), 0))) {
                 matches.add(objective.cellIndex());
             }
@@ -67,15 +81,7 @@ final class WorkerObjectives {
     }
 
     List<Integer> matchingAdvancement(Advancement advancement) {
-        String key = advancement.key().asString();
-        List<Integer> matches = new ArrayList<>();
-        for (Objective objective : objectives) {
-            if (objective instanceof AdvancementObjective advancementObjective
-                    && advancementObjective.key().equals(key)) {
-                matches.add(objective.cellIndex());
-            }
-        }
-        return matches;
+        return advancementCells.getOrDefault(advancement.key().asString(), List.of());
     }
 
     private static Objective parse(BingoTaskSpec spec) {
@@ -123,7 +129,7 @@ final class WorkerObjectives {
         if (advancement == null) {
             throw new IllegalArgumentException("Unknown advancement " + rawKey + " at cell " + cellIndex);
         }
-        return new AdvancementObjective(cellIndex, rawKey, advancement);
+        return new AdvancementObjective(cellIndex, advancement.key().asString(), advancement);
     }
 
     private static Set<Material> materials(Map<String, String> attributes) {

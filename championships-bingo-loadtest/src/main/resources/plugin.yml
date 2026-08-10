@@ -1,0 +1,14 @@
+name: ChampionshipsBingoLoadTest
+version: '${project.version}'
+main: ink.ziip.championshipscore.loadtest.BingoLoadTestPlugin
+api-version: '26.1'
+folia-supported: true
+description: One-shot Folia chunk-generation load test for the Bingo worker.
+commands:
+  chunkstress:
+    description: Controls the one-shot Bingo chunk stress test.
+    usage: /chunkstress <start|stop|status>
+    permission: championships.loadtest.admin
+permissions:
+  championships.loadtest.admin:
+    default: op

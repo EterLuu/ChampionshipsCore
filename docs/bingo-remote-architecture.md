@@ -2,9 +2,9 @@
 
 ## 状态与启用原则
 
-远程 Bingo 的代码边界、Core 控制面、Folia Worker、Redis Streams 可靠消费和代理转服链路已经接通。SCC 的默认配置仍是 `bingo.execution-mode: LOCAL`；只有远程依赖全部通过联调后才应切换为 `REMOTE`。
+远程 Bingo 的代码边界、Core 控制面、Folia Worker、Redis Streams 可靠消费和代理转服链路已经接通。2026-08-10 的当前 SCC 运行实例为 `bingo.execution-mode: REMOTE`，这是联调环境快照，不是源码默认值或生产验收结论。出现跨服生命周期故障时仍可在维护窗口回退到 `LOCAL`；不要在一场比赛运行中热切换执行器。
 
-目前代码已通过全 Reactor 离线 clean 构建和 22 项协议、计分、Redis、outbox 与 Worker 展示测试，但尚未在真实 Folia、Redis、BungeeCord/Velocity 和 64 名玩家环境做端到端故障演练。因此现阶段是“代码收尾完成、可部署联调”，不是“已验证可直接用于正式赛事”。
+代码已具备协议、计分、Redis、outbox、Worker 展示和目标观察测试。Folia 上还完成了 64 个逻辑玩家、移动区块加载和约 1 万至 2 万实体的压力实验；结果与推荐参数见 [Bingo 64 人 Folia 性能分析](bingo-64-player-performance-report.md)。该实验没有建立 64 个真实 Minecraft 连接，也没有覆盖代理转服、Redis/MariaDB 故障恢复和完整比赛结算，所以当前状态仍是“可部署联调”，不是“已验证可直接用于正式赛事”。
 
 ## Maven 模块
 
@@ -15,6 +15,7 @@
 | `championships-platform-bukkit` | Paper/Folia Scheduler、代理 Plugin Message、散布、初始装备和常驻效果共享实现 |
 | `championships-redis` | Redis Streams 发布、consumer group、pending reclaim、DLQ 和消息编解码 |
 | `championships-bingo-worker` | 独立 Folia 执行插件，拥有世界、实体、背包观察、任务菜单和实时玩法 |
+| `championships-bingo-loadtest` | 仅供可丢弃世界使用的一次性 Folia 区块/实体压测插件；不参与正式玩法 |
 | `championships-core` | 原 ChampionshipsCore；SCC 权威控制、赛程 ownership、事件重放、积分和数据库持久化 |
 
 根目录 `mvn clean package` 生成：
@@ -22,9 +23,10 @@
 ```text
 target/ChampionshipsCore-1.3-SNAPSHOT.jar
 championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar
+championships-bingo-loadtest/target/championships-bingo-loadtest-1.3-SNAPSHOT.jar
 ```
 
-Core 的历史制品路径保持不变；Worker JAR 已包含 Redis 客户端及所有内部模块，不需要把 common/engine/platform/redis 作为独立插件安装。
+Core 的历史制品路径保持不变；Worker JAR 已包含 Redis 客户端及所有内部模块，不需要把 common/engine/platform/redis 作为独立插件安装。LoadTest JAR 只应在维护期临时安装，测试结束后移出 `plugins/`；具体保护线和已知模型偏差见 [LoadTest README](../championships-bingo-loadtest/README.md)。
 
 ## 权威边界
 
@@ -150,7 +152,7 @@ SCC `plugins/ChampionshipsCore/config.yml`：
 
 ```yaml
 bingo:
-  execution-mode: "LOCAL"       # 联调通过后改 REMOTE
+  execution-mode: "REMOTE"      # 当前联调实例；生产切换必须走下方上线流程
   worker-id: "bingo-1"          # 必须与 Worker 一致
   worker-server: "bingo"        # 代理配置中的服务名
   proxy-channel: "BungeeCord"
@@ -197,7 +199,7 @@ worlds:
 
 当前一个 Worker 进程只接受一个同时运行的比赛，三个世界是一个物理 slot。建议把 Bingo Worker 做成可重建实例：以预生成、已校验的三维度世界作为镜像/快照，每次正式 Bingo 前恢复干净世界。不要在未恢复世界的情况下连续复用同一进程，否则已采集资源和玩家修改会污染下一局。
 
-Folia 解决的是相互远离 region 的 tick 并行，不会消除首次生成新区块的成本。64 人联调前应预生成目标活动半径、设置合理 world border，并把视距、模拟距离和实体生成量纳入压测。
+Folia 解决的是相互远离 region 的 tick 并行，不会消除首次生成新区块的成本。现有压测已经证明：即使总 CPU 仍有余量，玩家和实体集中在单个 hot region 时也能先把该 region 压到低 TPS。64 人生产世界必须预生成目标活动半径、设置合理 world border，并同时观察 region TPS/MSPT、区块加载延迟和实体分布，不能只看进程 CPU 或全服平均 TPS。
 
 ## 上线顺序
 
@@ -205,10 +207,10 @@ Folia 解决的是相互远离 region 的 tick 并行，不会消除首次生成
 2. 创建独立 Folia 实例，建议 `level-name=bingo`，准备 `bingo`、`bingo_nether`、`bingo_the_end` 三维度及预生成范围。
 3. 在代理中注册 `scc` 和 `bingo`；将 Bingo 设为不可直接选择，连接失败回退到 SCC。
 4. 安装 Worker JAR，保持 `enabled: false` 启动一次生成配置；核对后启用。
-5. 保持 SCC `execution-mode: LOCAL`，验证 Worker、Redis 和代理日志均健康。
+5. 新环境先保持 SCC `execution-mode: LOCAL`，验证 Worker、Redis 和代理日志均健康；已有 REMOTE 联调环境则核对当前无活动比赛。
 6. 在维护窗口切到 `REMOTE`，先用 1 支测试队伍验证 READY、转服、任务、结算和返回。
 7. 依次演练 Worker 崩溃、SCC 崩溃、Redis 中断、玩家中途掉线、重复事件和代理目标不可达。
-8. 用 64 名模拟/真实玩家压测 CPU、MSPT、区块生成、Redis pending、数据库写入和转服到达时间。
+8. 先按性能报告复现逻辑玩家压力，再用 64 个协议客户端或真人压测 CPU、region MSPT、区块生成、Redis pending、数据库写入和转服到达时间。
 9. 全部通过后才用于正式赛事；任一阶段异常可切回 `LOCAL`，本地 Bingo 路径仍完整保留。
 
 ## 尚需真实环境验证
@@ -217,4 +219,5 @@ Folia 解决的是相互远离 region 的 tick 并行，不会消除首次生成
 - Redis 断线、pending reclaim、磁盘 outbox 重放和 DLQ 告警；
 - BungeeCord 与 Velocity 两套代理的 Connect channel、掉线回退与重连；
 - MariaDB inbox、确定性积分事务和 Core 重启孤儿 fencing；
-- 干净世界恢复流程及 64 人负载。
+- 16 支四人队伍、64 个真实连接的完整一局，以及干净世界恢复后再开一局；
+- 代理、Redis、MariaDB 与 Worker 在压力下的组合故障和恢复。

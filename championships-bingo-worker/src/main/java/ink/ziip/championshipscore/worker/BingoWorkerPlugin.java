@@ -121,7 +121,7 @@ public final class BingoWorkerPlugin extends JavaPlugin {
     private void scanOnlinePlayers() {
         if (registry == null) return;
         List<Player> players = List.copyOf(getServer().getOnlinePlayers());
-        for (Player player : players) scheduler.runEntity(player, () -> registry.observe(player));
+        for (Player player : players) registry.requestObserve(player);
     }
 
     private void registerPlaceholderApi() {

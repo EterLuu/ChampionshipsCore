@@ -11,7 +11,6 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -87,7 +86,6 @@ final class WorkerMenuService {
         holder.inventory = inventory;
         for (int slot = 0; slot < teammates.size() && slot < inventory.getSize(); slot++) {
             PlayerSnapshot teammate = teammates.get(slot);
-            Player online = Bukkit.getPlayer(teammate.uuid());
             ItemStack item = new ItemStack(Material.ENDER_PEARL);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
@@ -118,7 +116,7 @@ final class WorkerMenuService {
         boolean own = completedByViewer.contains(task.cellIndex());
         Material icon = own ? Material.BARRIER : WorkerTaskDisplay.icon(task);
         if (!icon.isItem()) icon = Material.PAPER;
-        int required = requiredAmount(task);
+        int required = WorkerTaskDisplay.amount(task);
         ItemStack item = new ItemStack(icon, own ? 1 : Math.min(required, 64));
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
@@ -209,31 +207,22 @@ final class WorkerMenuService {
 
 
     private static Component advancementTitle(String key) {
-        Advancement advancement = advancement(key);
+        Advancement advancement = WorkerTaskDisplay.advancement(key);
         if (advancement != null && advancement.getDisplay() != null) {
             return advancement.getDisplay().title().color(NamedTextColor.GREEN);
         }
         return Component.text(key == null ? "advancement" : key).color(NamedTextColor.GREEN);
     }
 
-    private static Advancement advancement(String key) {
-        NamespacedKey parsed = key == null ? null : NamespacedKey.fromString(key);
-        return parsed == null ? null : Bukkit.getAdvancement(parsed);
-    }
-
     private static Component statisticName(Map<String, String> attributes) {
         int amount = requiredAmount(attributes);
         String statistic = attributes.getOrDefault("statistic", "STATISTIC").toLowerCase(Locale.ROOT);
         Component subject = Component.empty();
-        Material material = material(attributes.get("material"), null);
+        Material material = WorkerTaskDisplay.material(attributes.get("material"), null);
         if (material != null) subject = Component.text(" ").append(Component.translatable(material.translationKey()));
         String entity = attributes.get("entity");
         if (entity != null) subject = Component.text(" " + entity.toLowerCase(Locale.ROOT));
         return Component.text(statistic + " × " + amount).color(NamedTextColor.LIGHT_PURPLE).append(subject);
-    }
-
-    private static int requiredAmount(BingoTaskSpec task) {
-        return WorkerTaskDisplay.amount(task);
     }
 
     private static int requiredAmount(Map<String, String> attributes) {
@@ -243,12 +232,6 @@ final class WorkerMenuService {
         } catch (NumberFormatException ignored) {
             return 1;
         }
-    }
-
-    private static Material material(String raw, Material fallback) {
-        if (raw == null || raw.isBlank()) return fallback;
-        Material material = Material.matchMaterial(raw.replace("MINECRAFT:", ""));
-        return material == null ? fallback : material;
     }
 
     private static final class CardHolder implements InventoryHolder {

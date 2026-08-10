@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.util;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -14,62 +15,22 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
-    private static final Pattern EXPLICIT_HEX_COLOR = Pattern.compile("&#([a-fA-F0-9]{6})");
-    private static final Pattern LEGACY_HEX_COLOR = Pattern.compile("(?<!&)#([a-fA-F0-9]{6})");
-
     private Utils() {
     }
 
     /** Translates the preferred {@code &#RRGGBB} syntax and the legacy {@code #RRGGBB} syntax. */
     public static String translateColorCodes(String message) {
-        message = expandHexColors(message, EXPLICIT_HEX_COLOR);
-        message = expandHexColors(message, LEGACY_HEX_COLOR);
-        return translateAmpersandCodes(message);
-    }
-
-    private static String expandHexColors(String message, Pattern pattern) {
-        Matcher matcher = pattern.matcher(message);
-        StringBuffer expanded = new StringBuffer();
-        while (matcher.find()) {
-            String hex = matcher.group(1);
-            StringBuilder replacement = new StringBuilder("&x");
-            for (char digit : hex.toCharArray()) {
-                replacement.append('&').append(digit);
-            }
-            matcher.appendReplacement(expanded, Matcher.quoteReplacement(replacement.toString()));
-        }
-        matcher.appendTail(expanded);
-        return expanded.toString();
-    }
-
-    /** The color/format code characters accepted after {@code &}, including {@code x} for hex sequences. */
-    private static final String COLOR_CODE_CHARS = "0123456789AaBbCcDdEeFfKkLlMmNnOoRrXx";
-    private static final char SECTION = '§';
-
-    /** Replaces {@code &<code>} with the section-sign form the client renders. */
-    private static String translateAmpersandCodes(String message) {
-        char[] chars = message.toCharArray();
-        for (int i = 0; i + 1 < chars.length; i++) {
-            if (chars[i] == '&' && COLOR_CODE_CHARS.indexOf(chars[i + 1]) > -1) {
-                chars[i] = SECTION;
-                chars[i + 1] = Character.toLowerCase(chars[i + 1]);
-            }
-        }
-        return new String(chars);
+        return LegacyText.translateColorCodes(message);
     }
 
     /** Strips section-sign colour/format codes (incl. {@code §x} hex) from a string, for plain-text logging. */
@@ -80,7 +41,7 @@ public class Utils {
 
     /** Colour-translates a legacy string and parses it into an Adventure component. */
     public static Component toComponent(String message) {
-        return LegacyComponentSerializer.legacySection().deserialize(translateColorCodes(message));
+        return LegacyText.component(message);
     }
 
     /** Neutral player name followed by the player's coloured team, matching the server chat identity. */
@@ -238,7 +199,7 @@ public class Utils {
     }
 
     public static String formatPoints(double points) {
-        return BigDecimal.valueOf(points).setScale(0, RoundingMode.HALF_UP).toPlainString();
+        return LegacyText.formatPoints(points);
     }
 
     public static String getMessage(List<String> messages) {

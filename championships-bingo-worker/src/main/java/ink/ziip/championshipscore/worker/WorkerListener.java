@@ -62,21 +62,21 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPickup(EntityPickupItemEvent event) {
         if (event.getEntity() instanceof Player player) {
-            scheduler.runEntityLater(player, () -> registry.observe(player), 1L);
+            registry.requestObserve(player);
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
         if (event.getWhoClicked() instanceof Player player) {
-            scheduler.runEntityLater(player, () -> registry.observe(player), 1L);
+            registry.requestObserve(player);
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryMutation(InventoryClickEvent event) {
         if (event.getWhoClicked() instanceof Player player) {
-            scheduler.runEntityLater(player, () -> registry.observe(player), 1L);
+            registry.requestObserve(player);
         }
     }
 

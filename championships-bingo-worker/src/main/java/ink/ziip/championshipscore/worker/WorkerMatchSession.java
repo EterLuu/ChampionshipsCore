@@ -63,6 +63,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 /** One isolated match coordinator. It never reads Bukkit state while holding its state lock. */
@@ -84,7 +86,7 @@ final class WorkerMatchSession {
     private final Set<UUID> arrived = new HashSet<>();
     private final Set<UUID> preparedPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<UUID> bulkScatterPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
-    private final Set<String> completedTeamCells = new HashSet<>();
+    private final Set<TeamCell> completedTeamCells = ConcurrentHashMap.newKeySet();
     private final Map<Integer, List<Integer>> completionTeamsByCell = new HashMap<>();
     private final Map<Integer, MapView> cardViews = new HashMap<>();
     private long eventSeq;
@@ -99,6 +101,7 @@ final class WorkerMatchSession {
     private volatile BossBar timerBossBar;
     private volatile boolean pvpEnabled;
     private volatile Integer winnerTeamId;
+    private final AtomicBoolean sidebarRefreshPending = new AtomicBoolean();
 
     WorkerMatchSession(Plugin plugin, WorkerConfig config, MatchManifest manifest,
                        DurableEventOutbox events, WorkerReturnRouter returnRouter) {
@@ -490,6 +493,7 @@ final class WorkerMatchSession {
             lifecycle.transitionTo(MatchState.RUNNING);
             startedAtMillis = System.currentTimeMillis();
         }
+        updateSidebar();
         Component startTitle = message("bingo.game-start-title");
         Component startSubtitle = message("bingo.game-start-subtitle");
         forEachOnlinePlayer(player -> {
@@ -514,7 +518,11 @@ final class WorkerMatchSession {
         PlayerSnapshot participant = participants.get(player.getUniqueId());
         if (participant == null || participant.role() != ParticipantRole.PLAYER) return;
         BingoPermanentEffectService.ensure(player, permanentEffects);
-        for (int cellIndex : objectives.matching(player)) acceptCompletion(participant, cellIndex);
+        int teamId = participant.teamId();
+        for (int cellIndex : objectives.matching(player,
+                cellIndex -> !completedTeamCells.contains(new TeamCell(teamId, cellIndex)))) {
+            acceptCompletion(participant, cellIndex);
+        }
     }
 
     void observeAdvancement(Player player, org.bukkit.advancement.Advancement advancement) {
@@ -530,7 +538,7 @@ final class WorkerMatchSession {
         long outgoingEventSeq;
         synchronized (this) {
             if (lifecycle.state() != MatchState.RUNNING) return;
-            String completionKey = player.teamId() + ":" + cellIndex;
+            TeamCell completionKey = new TeamCell(player.teamId(), cellIndex);
             if (!completedTeamCells.add(completionKey)) return;
             observation = new CompletionObservation(manifest.matchId(), manifest.epoch(), ++completionSeq,
                     player.teamId(), player.uuid(), cellIndex, elapsedTicks());
@@ -557,7 +565,7 @@ final class WorkerMatchSession {
                 .replaceText(builder -> builder.matchLiteral("%task%").replacement(taskName));
         Component finalCompletion = completion;
         forEachOnlinePlayer(audience -> audience.sendMessage(finalCompletion));
-        scheduler.runGlobal(this::updateSidebar);
+        requestSidebarUpdate();
         if (scoring.result().boardFullyClaimed()) scheduler.runGlobal(() -> finish("board-claimed"));
     }
 
@@ -645,9 +653,8 @@ final class WorkerMatchSession {
                     ? snapshot.teamId() : selectedTeamId == null ? firstTeamId() : selectedTeamId;
             if (!teams.containsKey(viewedTeam)) return;
             if (viewedTeam >= 0) {
-                for (String key : completedTeamCells) {
-                    String prefix = viewedTeam + ":";
-                    if (key.startsWith(prefix)) own.add(Integer.parseInt(key.substring(prefix.length())));
+                for (TeamCell completed : completedTeamCells) {
+                    if (completed.teamId() == viewedTeam) own.add(completed.cellIndex());
                 }
             }
             completionTeamsByCell.forEach((cell, teams) -> all.put(cell, List.copyOf(teams)));
@@ -979,7 +986,6 @@ final class WorkerMatchSession {
                 ? message("bingo.pvp-active")
                 : message("bingo.pvp-protection", "%time%", Integer.toString(graceRemaining)));
         updateTimerBossBar(title, remaining, manifest.durationSeconds());
-        updateSidebar();
         if (!pvpEnabled && graceRemaining >= 1 && graceRemaining <= 10) {
             Component warning = message("bingo.pvp-countdown", "%time%", Integer.toString(graceRemaining));
             forEachOnlinePlayer(player -> player.sendActionBar(warning));
@@ -989,13 +995,13 @@ final class WorkerMatchSession {
     private void updateTimerBossBar(Component title, int remaining, int duration) {
         float progress = duration <= 0 ? 0F : Math.clamp(remaining / (float) duration, 0F, 1F);
         if (timerBossBar == null) {
-            timerBossBar = BossBar.bossBar(title, progress, BossBar.Color.YELLOW, BossBar.Overlay.PROGRESS);
+            BossBar bar = BossBar.bossBar(title, progress, BossBar.Color.YELLOW, BossBar.Overlay.PROGRESS);
+            timerBossBar = bar;
+            forEachOnlinePlayer(player -> player.showBossBar(bar));
         } else {
             timerBossBar.name(title);
             timerBossBar.progress(progress);
         }
-        BossBar bar = timerBossBar;
-        forEachOnlinePlayer(player -> player.showBossBar(bar));
     }
 
     private void hideTimerBossBar() {
@@ -1009,6 +1015,14 @@ final class WorkerMatchSession {
         MatchState currentState = state();
         forEachOnlineParticipant((player, snapshot) ->
                 renderSidebar(player, snapshot, result, currentState));
+    }
+
+    private void requestSidebarUpdate() {
+        if (!sidebarRefreshPending.compareAndSet(false, true)) return;
+        scheduler.runGlobalLater(() -> {
+            sidebarRefreshPending.set(false);
+            updateSidebar();
+        }, 1L);
     }
 
     private void refreshSidebar(Player player, PlayerSnapshot viewer) {
@@ -1192,5 +1206,8 @@ final class WorkerMatchSession {
         for (Map.Entry<Player, PlayerSnapshot> entry : online) {
             scheduler.runEntity(entry.getKey(), () -> action.accept(entry.getKey(), entry.getValue()));
         }
+    }
+
+    private record TeamCell(int teamId, int cellIndex) {
     }
 }

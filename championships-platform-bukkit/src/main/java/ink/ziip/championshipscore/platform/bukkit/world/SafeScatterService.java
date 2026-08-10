@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
@@ -22,6 +23,7 @@ import java.util.function.Consumer;
  * the owning region and player mutations by each player's entity scheduler, on both Paper and Folia.
  */
 public final class SafeScatterService {
+    private static final int MAX_CONCURRENT_SEARCHES = 4;
     private static final Set<Biome> WATER_BIOMES = Set.of(
             Biome.OCEAN, Biome.DEEP_OCEAN, Biome.WARM_OCEAN, Biome.LUKEWARM_OCEAN,
             Biome.DEEP_LUKEWARM_OCEAN, Biome.COLD_OCEAN, Biome.DEEP_COLD_OCEAN,
@@ -42,12 +44,13 @@ public final class SafeScatterService {
         }
         int discRadius = Math.max(1, radius);
         int tries = Math.max(8, maxTries);
+        List<Player> playerSnapshot = List.copyOf(players);
         scheduler.supplyGlobal(() -> world.getSpawnLocation().clone()).thenAccept(spawn ->
-                processPlayersAsync(world, spawn, players, new ArrayList<>(), discRadius, tries, locations -> {
+                processPlayersAsync(world, spawn, playerSnapshot.size(), discRadius, tries, locations -> {
                     List<CompletableFuture<Void>> teleports = new ArrayList<>();
-                    for (int i = 0; i < players.size(); i++) {
+                    for (int i = 0; i < playerSnapshot.size(); i++) {
                         Location target = i < locations.size() ? locations.get(i) : spawn;
-                        teleports.add(teleportReset(players.get(i), target));
+                        teleports.add(teleportReset(playerSnapshot.get(i), target));
                     }
                     CompletableFuture.allOf(teleports.toArray(CompletableFuture[]::new))
                             .whenComplete((ignored, error) -> {
@@ -56,16 +59,34 @@ public final class SafeScatterService {
                 }));
     }
 
-    private void processPlayersAsync(World world, Location spawn, List<Player> players,
-                                     List<Location> locations, int radius, int tries,
+    private void processPlayersAsync(World world, Location spawn, int playerCount,
+                                     int radius, int tries,
                                      Consumer<List<Location>> onAllDone) {
-        if (locations.size() >= players.size()) {
-            onAllDone.accept(locations);
+        if (playerCount == 0) {
+            onAllDone.accept(List.of());
             return;
         }
+        Location[] locations = new Location[playerCount];
+        AtomicInteger nextIndex = new AtomicInteger();
+        AtomicInteger remaining = new AtomicInteger(playerCount);
+        int workers = Math.min(MAX_CONCURRENT_SEARCHES, playerCount);
+        for (int worker = 0; worker < workers; worker++) {
+            findNextSpotAsync(world, spawn, locations, nextIndex, remaining, radius, tries, onAllDone);
+        }
+    }
+
+    private void findNextSpotAsync(World world, Location spawn, Location[] locations,
+                                   AtomicInteger nextIndex, AtomicInteger remaining,
+                                   int radius, int tries, Consumer<List<Location>> onAllDone) {
+        int index = nextIndex.getAndIncrement();
+        if (index >= locations.length) return;
         findSingleSpotAsync(world, spawn, radius, tries, location -> {
-            locations.add(location);
-            processPlayersAsync(world, spawn, players, locations, radius, tries, onAllDone);
+            locations[index] = location;
+            if (remaining.decrementAndGet() == 0) {
+                onAllDone.accept(List.of(locations));
+                return;
+            }
+            findNextSpotAsync(world, spawn, locations, nextIndex, remaining, radius, tries, onAllDone);
         });
     }
 
@@ -74,10 +95,9 @@ public final class SafeScatterService {
         if (triesLeft <= 0) {
             world.getChunkAtAsync(spawn)
                     .thenCompose(chunk -> scheduler.supplyAt(spawn, () -> fallbackWorldSpawn(world, spawn)))
-                    .thenAccept(callback)
-                    .exceptionally(error -> {
-                        callback.accept(spawn.clone().add(0.5, 1.0, 0.5));
-                        return null;
+                    .whenComplete((location, error) -> {
+                        if (error == null) callback.accept(location);
+                        else callback.accept(spawn.clone().add(0.5, 1.0, 0.5));
                     });
             return;
         }
@@ -91,13 +111,11 @@ public final class SafeScatterService {
 
         world.getChunkAtAsync(candidateRegion)
                 .thenCompose(chunk -> scheduler.supplyAt(candidateRegion, () -> toTopSafe(world, x, z)))
-                .thenAccept(candidate -> {
-                    if (candidate != null) callback.accept(candidate);
+                .whenComplete((candidate, error) -> {
+                    if (error != null) {
+                        callback.accept(spawn.clone().add(0.5, 1.0, 0.5));
+                    } else if (candidate != null) callback.accept(candidate);
                     else findSingleSpotAsync(world, spawn, radius, triesLeft - 1, callback);
-                })
-                .exceptionally(error -> {
-                    callback.accept(spawn.clone().add(0.5, 1.0, 0.5));
-                    return null;
                 });
     }
 

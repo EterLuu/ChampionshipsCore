@@ -1,0 +1,30 @@
+# Keep false in packaged artifacts. The deployed test config enables this once and the plugin
+# immediately persists it back to false before scheduling the run.
+auto-start: false
+start-delay-seconds: 20
+world: bingo
+view-distance: 10
+movement-period-ticks: 10
+team-anchor-radius-blocks: 1536
+stationary-player-separation-blocks: 384
+entity-minimum-spawn-distance-blocks: 24
+entity-maximum-spawn-distance-blocks: 128
+layout-switch-interval-seconds: 60
+stationary-dispersal-speed-blocks-per-second: 7.0
+stage-walkers: [8, 32, 64]
+stage-duration-seconds: [120, 120, 180]
+stage-modes: [mixed, mixed, mixed]
+stage-speed-blocks-per-second: [32.0, 32.0, 32.0]
+stage-target-world-entities: [4000, 8000, 16000]
+max-concurrent-loads: 384
+max-submissions-per-tick: 96
+entity-spawns-per-tick: 20
+ticket-release-delay-seconds: 5
+status-interval-seconds: 10
+limits:
+  max-completed-loads: 250000
+  max-pending-requests: 60000
+  max-failures: 100
+  minimum-free-disk-gib: 80
+  minimum-scheduler-tps: 3.0
+  low-tps-grace-samples: 2

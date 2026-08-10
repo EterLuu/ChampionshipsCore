@@ -1,24 +1,17 @@
 package ink.ziip.championshipscore.worker;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import ink.ziip.championshipscore.protocol.BingoPresentation;
 import ink.ziip.championshipscore.protocol.MatchState;
 import org.bukkit.entity.Player;
 
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /** Manifest-driven rule presentation with the same 10-second first-section timing as Core. */
 final class WorkerPresentationService {
     private static final int FIRST_SECTION_SECOND = 10;
     private static final int DEFAULT_INTERVAL_SECONDS = 10;
-    private static final LegacyComponentSerializer AMPERSAND = LegacyComponentSerializer.builder()
-            .character('&').hexColors().useUnusualXRepeatedCharacterHexFormat().build();
-    private static final LegacyComponentSerializer SECTION = LegacyComponentSerializer.legacySection();
-    private static final Pattern COMPACT_HEX = Pattern.compile("&?#([0-9a-fA-F]{6})");
-
     private WorkerPresentationService() {
     }
 
@@ -38,10 +31,7 @@ final class WorkerPresentationService {
     }
 
     static Component component(String text) {
-        if (text == null || text.isEmpty()) return Component.empty();
-        // Core's configs use both &#RRGGBB and ordinary & colour codes. Adventure's legacy parser
-        // accepts the latter and the conversion below normalises the compact hex form first.
-        return text.indexOf('§') >= 0 ? SECTION.deserialize(text) : AMPERSAND.deserialize(expandHex(text));
+        return LegacyText.component(text);
     }
 
     static Component message(BingoPresentation presentation, String key, String... replacements) {
@@ -69,18 +59,5 @@ final class WorkerPresentationService {
             case FINISHED, ABORTED -> "已结束";
             default -> "等待中";
         };
-    }
-
-    private static String expandHex(String text) {
-        Matcher matcher = COMPACT_HEX.matcher(text);
-        StringBuilder result = new StringBuilder();
-        while (matcher.find()) {
-            String hex = matcher.group(1);
-            StringBuilder expanded = new StringBuilder("&x");
-            for (int index = 0; index < hex.length(); index++) expanded.append('&').append(hex.charAt(index));
-            matcher.appendReplacement(result, Matcher.quoteReplacement(expanded.toString()));
-        }
-        matcher.appendTail(result);
-        return result.toString();
     }
 }

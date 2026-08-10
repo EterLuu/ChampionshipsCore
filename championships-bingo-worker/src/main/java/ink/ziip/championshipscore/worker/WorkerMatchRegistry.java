@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Worker command dispatcher with match/epoch fencing and a single active-world ownership slot. */
 final class WorkerMatchRegistry {
@@ -30,6 +31,7 @@ final class WorkerMatchRegistry {
     private final PlatformScheduler scheduler;
     private final Set<NamespacedKey> recipeKeys;
     private final Map<UUID, MatchManifest> manifests = new HashMap<>();
+    private final Set<UUID> pendingObservations = ConcurrentHashMap.newKeySet();
     private WorkerMatchSession active;
     private boolean worldSlotConsumed;
 
@@ -140,6 +142,7 @@ final class WorkerMatchRegistry {
 
     void onQuit(Player player) {
         returnRouter.cancel(player.getUniqueId());
+        pendingObservations.remove(player.getUniqueId());
         WorkerMatchSession session;
         synchronized (this) {
             session = active;
@@ -153,6 +156,15 @@ final class WorkerMatchRegistry {
             session = active;
         }
         if (session != null) session.observe(player);
+    }
+
+    void requestObserve(Player player) {
+        UUID playerId = player.getUniqueId();
+        if (!pendingObservations.add(playerId)) return;
+        scheduler.runEntityLater(player, () -> {
+            pendingObservations.remove(playerId);
+            observe(player);
+        }, 1L);
     }
 
     void observeAdvancement(Player player, org.bukkit.advancement.Advancement advancement) {

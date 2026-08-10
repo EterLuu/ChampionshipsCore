@@ -141,7 +141,9 @@ mvn clean package
 
 构建产物位于 `target/`。将插件本体和三个必需依赖放入服务端的 `plugins/` 目录，然后启动一次服务端生成配置。
 
-仓库已使用 Maven Reactor 管理共享协议、纯 Java Bingo 计分引擎、Paper/Folia 平台层、Redis transport、独立 Bingo Worker 和 `championships-core` 核心插件。根目录执行同一条构建命令会生成历史兼容路径 `target/ChampionshipsCore-1.3-SNAPSHOT.jar`，以及 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar`。远程 Bingo 默认关闭，真实 Folia/Redis/代理和 64 人故障演练通过前应继续使用本地执行器；部署拓扑、配置和上线门槛见 [`docs/bingo-remote-architecture.md`](docs/bingo-remote-architecture.md)。
+仓库已使用 Maven Reactor 管理共享协议、纯 Java Bingo 计分引擎、Paper/Folia 平台层、Redis transport、独立 Bingo Worker、一次性压测插件和 `championships-core` 核心插件。根目录执行同一条构建命令会生成历史兼容路径 `target/ChampionshipsCore-1.3-SNAPSHOT.jar`、`championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar` 和 `championships-bingo-loadtest/target/championships-bingo-loadtest-1.3-SNAPSHOT.jar`。
+
+当前 SCC 运行实例已切换到 `bingo.execution-mode: REMOTE` 进行联调。64 个逻辑玩家的 Folia 区块/实体压力已经执行，但这不等于 64 个真实客户端的跨服、协议和数据库端到端验收。正式部署前请分别阅读 [Worker README](championships-bingo-worker/README.md)、[跨服架构与上线流程](docs/bingo-remote-architecture.md) 和 [64 人性能报告](docs/bingo-64-player-performance-report.md)。压测插件会生成区块并主动创建大量实体，只能临时安装在可丢弃的测试世界，不能留在生产服。
 
 推荐的首次部署顺序：
 
