@@ -116,7 +116,7 @@ final class WorkerMenuService {
                                       Set<Integer> completedByViewer,
                                       Map<Integer, List<Integer>> completions) {
         boolean own = completedByViewer.contains(task.cellIndex());
-        Material icon = own ? Material.BARRIER : icon(task);
+        Material icon = own ? Material.BARRIER : WorkerTaskDisplay.icon(task);
         if (!icon.isItem()) icon = Material.PAPER;
         int required = requiredAmount(task);
         ItemStack item = new ItemStack(icon, own ? 1 : Math.min(required, 64));
@@ -139,9 +139,11 @@ final class WorkerMenuService {
             lore.add(completed);
         }
         meta.lore(lore);
-        if (!teams.isEmpty()) meta.setEnchantmentGlintOverride(true);
+        if (own || WorkerTaskDisplay.glows(task)) meta.setEnchantmentGlintOverride(true);
         meta.addItemFlags(ItemFlag.values());
-        if (!own && required > 64) meta.setMaxStackSize(Math.min(required, 99));
+        if (!own && "statistic".equalsIgnoreCase(task.taskType()) && required > 1) {
+            meta.setMaxStackSize(Math.min(required, 99));
+        }
         if (meta instanceof PotionMeta potionMeta) {
             String effect = task.attributes().get("effect");
             if (effect != null) {
@@ -156,17 +158,6 @@ final class WorkerMenuService {
         return item;
     }
 
-    private static Material icon(BingoTaskSpec task) {
-        Map<String, String> attributes = task.attributes();
-        return switch (task.taskType().toLowerCase(Locale.ROOT)) {
-            case "item", "potion" -> material(attributes.get("material"), Material.PAPER);
-            case "item_set" -> material(attributes.getOrDefault("materials", "").split(",")[0], Material.CHEST);
-            case "advancement" -> advancementIcon(attributes.get("key"));
-            case "statistic" -> material(attributes.get("material"), Material.GLOBE_BANNER_PATTERN);
-            default -> Material.PAPER;
-        };
-    }
-
     static Component displayName(BingoTaskSpec task) {
         String serialized = task.attributes().get("display.name");
         if (serialized != null) {
@@ -178,11 +169,12 @@ final class WorkerMenuService {
         }
         Map<String, String> attributes = task.attributes();
         return switch (task.taskType().toLowerCase(Locale.ROOT)) {
-            case "item" -> Component.translatable(icon(task).translationKey()).color(NamedTextColor.YELLOW);
+            case "item" -> Component.translatable(WorkerTaskDisplay.icon(task).translationKey()).color(NamedTextColor.YELLOW);
             case "potion" -> Component.translatable("item.minecraft."
-                    + icon(task).key().value() + ".effect." + attributes.getOrDefault("effect", "water"))
+                    + WorkerTaskDisplay.icon(task).key().value() + ".effect."
+                    + attributes.getOrDefault("effect", "water"))
                     .color(NamedTextColor.YELLOW);
-            case "item_set" -> Component.translatable(icon(task).translationKey())
+            case "item_set" -> Component.translatable(WorkerTaskDisplay.icon(task).translationKey())
                     .color(NamedTextColor.YELLOW);
             case "advancement" -> advancementTitle(attributes.get("key"));
             case "statistic" -> statisticName(attributes);
@@ -224,12 +216,6 @@ final class WorkerMenuService {
         return Component.text(key == null ? "advancement" : key).color(NamedTextColor.GREEN);
     }
 
-    private static Material advancementIcon(String key) {
-        Advancement advancement = advancement(key);
-        return advancement == null || advancement.getDisplay() == null
-                ? Material.FILLED_MAP : advancement.getDisplay().icon().getType();
-    }
-
     private static Advancement advancement(String key) {
         NamespacedKey parsed = key == null ? null : NamespacedKey.fromString(key);
         return parsed == null ? null : Bukkit.getAdvancement(parsed);
@@ -247,7 +233,7 @@ final class WorkerMenuService {
     }
 
     private static int requiredAmount(BingoTaskSpec task) {
-        return requiredAmount(task.attributes());
+        return WorkerTaskDisplay.amount(task);
     }
 
     private static int requiredAmount(Map<String, String> attributes) {

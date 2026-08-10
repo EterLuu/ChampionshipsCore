@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 /** Formal tournament lifecycle. Direct one-off games remain under {@code /cc game start}. */
 public final class EventMainCommand extends BaseMainCommand {
     public EventMainCommand() {
-        super("event", "正式比赛与赛程管理", ADMIN_PERMISSION);
+        super("event", "正式比赛的规则、观众与赛程管理", ADMIN_PERMISSION);
         addSubCommand(new EventStartSubCommand());
         addSubCommand(new EventStopSubCommand());
         addSubCommand(new EventResetSubCommand());

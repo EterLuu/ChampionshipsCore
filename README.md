@@ -303,7 +303,9 @@ light_gray cyan purple blue brown green red black
 | 所有队伍 | `/cc game start acerace all <场地>` |
 | 指定多队 | `/cc game start hotycodydusky <场地> <队伍...>` |
 
-`/cc game start` 只启动一次测试局，不创建正式赛事轮次；正式比赛使用 `/cc event start`。
+`/cc game start` 只启动一次测试局，不创建正式赛事轮次，并且只处理命令明确指定的队伍
+（或 `all` 所代表的全部队伍）；它不会播报赛事规则、自动吸纳无队伍玩家旁观，也不会改动
+其他玩家的状态。规则介绍、自动旁观调度和跨轮次观众承接统一由 `/cc event start` 管理。
 
 ### 管理员命令
 

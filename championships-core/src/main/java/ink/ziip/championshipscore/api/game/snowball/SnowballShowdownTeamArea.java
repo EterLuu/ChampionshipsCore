@@ -374,6 +374,19 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
         return teamRank;
     }
 
+    /** Authoritative live team score used by the Core-owned sidebar. */
+    public int getTeamScore(ChampionshipTeam team) {
+        return teamShootTimes.getOrDefault(team, 0);
+    }
+
+    /** Includes zero-score teams and uses a stable team-id tiebreaker. */
+    public List<ChampionshipTeam> getRankedTeams() {
+        List<ChampionshipTeam> ranked = new ArrayList<>(getGameTeams());
+        ranked.sort(Comparator.comparingInt(this::getTeamScore).reversed()
+                .thenComparingInt(ChampionshipTeam::getId));
+        return List.copyOf(ranked);
+    }
+
     private void calculateCurrentRank() {
         List<String> rank = new ArrayList<>();
 

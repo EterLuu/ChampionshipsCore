@@ -14,6 +14,14 @@ class BingoExecutionRouterTest {
     private static final BingoStartRequest EVENT = new BingoStartRequest("bingo", true, GameRunMode.EVENT);
 
     @Test
+    void standaloneRequestCannotEnableEventIntroduction() {
+        BingoStartRequest request = new BingoStartRequest("bingo", true, GameRunMode.GAME);
+
+        assertFalse(request.showIntroduction());
+        assertEquals(GameRunMode.GAME, request.runMode());
+    }
+
+    @Test
     void lifecycleOperationsFollowTheActiveExecutionPlane() {
         FakeGateway local = new FakeGateway(BingoExecutionMode.LOCAL, true);
         FakeGateway remote = new FakeGateway(BingoExecutionMode.REMOTE, false);

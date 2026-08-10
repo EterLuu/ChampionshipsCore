@@ -14,7 +14,7 @@ import ink.ziip.championshipscore.command.game.start.acerace.AceRaceStartMainCom
 public class GameStartMainCommand extends BaseMainCommand {
 
     public GameStartMainCommand() {
-        super("start", "直接启动单局（不创建正式赛程）");
+        super("start", "仅为指定队伍启动单局（不播报规则或自动调度观众）");
         addGameSubCommand(GameTypeEnum.Bingo, new BingoStartMainCommand());
         addGameSubCommand(GameTypeEnum.BuildMart, new BuildMartStartMainCommand());
         addGameSubCommand(GameTypeEnum.BattleBox, new BattleBoxStartSubCommand());

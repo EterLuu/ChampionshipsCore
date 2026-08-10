@@ -43,6 +43,9 @@ public final class TaskImageAtlas {
     private static final int BADGE_Y = CELL - BADGE - BADGE_INSET + 1;
     private static final int ITEM_NUDGE_X = 5;
     private static final int ITEM_NUDGE_Y = -5;
+    /** Entity sprites sit a little farther right/down than item sprites in statistic cells. */
+    private static final int ENTITY_NUDGE_X = 2;
+    private static final int ENTITY_NUDGE_Y = 3;
 
     private static volatile boolean loaded;
     private static boolean failed;
@@ -202,8 +205,10 @@ public final class TaskImageAtlas {
         BufferedImage badge = statisticBadge(stat);
 
         BufferedImage item = null;
+        boolean entitySprite = false;
         if (itemKey != null) {
             item = badge != null ? entityImageFor(itemKey) : null;
+            entitySprite = item != null;
             if (item == null) {
                 item = imageFor(itemKey);
             }
@@ -211,8 +216,8 @@ public final class TaskImageAtlas {
         if (item != null) {
             // All sprites are 22x22; draw at the same +1 offset used by normal cells. Nudged top-right
             // only when a badge shares the cell, otherwise left centred.
-            int nudgeX = badge != null ? ITEM_NUDGE_X : 0;
-            int nudgeY = badge != null ? ITEM_NUDGE_Y : 0;
+            int nudgeX = (badge != null ? ITEM_NUDGE_X : 0) + (entitySprite ? ENTITY_NUDGE_X : 0);
+            int nudgeY = (badge != null ? ITEM_NUDGE_Y : 0) + (entitySprite ? ENTITY_NUDGE_Y : 0);
             g.drawImage(item, 1 + nudgeX, 1 + nudgeY, null);
         }
 

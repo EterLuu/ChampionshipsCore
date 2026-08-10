@@ -12,6 +12,8 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagMatch;
+import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorTeamArea;
+import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.SharedSidebar;
@@ -141,6 +143,10 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             instance = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
             spectator = instance != null;
         }
+        if (instance instanceof ParkourWarriorTeamArea parkourWarrior
+                && parkourWarrior.isFinishedPlayer(player.getUniqueId())) {
+            spectator = true;
+        }
         if (instance != null) return renderGame(player, instance, spectator, config);
 
         PrepareSession session = plugin.getPrepareSessionManager().getSession(player);
@@ -179,6 +185,10 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                 lines.addAll(renderLocalBingoRanking(player, bingo, game));
                 continue;
             }
+            if ("{ranking}".equals(raw) && instance instanceof SnowballShowdownTeamArea snowball) {
+                lines.addAll(renderLocalSnowballRanking(player, snowball, game));
+                continue;
+            }
             String line = raw;
             if (instance instanceof BingoArea bingo) {
                 BingoRound round = bingo.getRound();
@@ -201,8 +211,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         if (round == null) return List.of("&7暂无排行");
         List<ChampionshipTeam> ranked = round.rankedTeams();
         ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
-        List<ChampionshipTeam> selected = new ArrayList<>(ranked.subList(0, Math.min(8, ranked.size())));
-        if (viewerTeam != null && ranked.contains(viewerTeam) && !selected.contains(viewerTeam)) selected.add(viewerTeam);
+        List<ChampionshipTeam> selected = selectRankingRows(ranked, viewerTeam);
         List<String> result = new ArrayList<>();
         for (ChampionshipTeam team : selected) {
             int position = ranked.indexOf(team) + 1;
@@ -215,6 +224,31 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             result.add(line);
         }
         return result;
+    }
+
+    private List<String> renderLocalSnowballRanking(Player player, SnowballShowdownTeamArea snowball,
+                                                    SidebarConfiguration.GameTemplate template) {
+        List<ChampionshipTeam> ranked = snowball.getRankedTeams();
+        if (ranked.isEmpty()) return List.of("&7暂无排行");
+        ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        List<String> result = new ArrayList<>();
+        for (ChampionshipTeam team : selectRankingRows(ranked, viewerTeam)) {
+            int position = ranked.indexOf(team) + 1;
+            String raw = team.equals(viewerTeam) ? template.ownRankingLine() : template.rankingLine();
+            result.add(raw.replace("{rank.team-color}", team.getColorCode())
+                    .replace("{rank.position}", Integer.toString(position))
+                    .replace("{rank.team}", team.getName())
+                    .replace("{rank.score}", Integer.toString(snowball.getTeamScore(team))));
+        }
+        return result;
+    }
+
+    static <T> List<T> selectRankingRows(List<T> ranked, T viewerEntry) {
+        List<T> selected = new ArrayList<>(ranked.subList(0, Math.min(8, ranked.size())));
+        if (viewerEntry != null && ranked.contains(viewerEntry) && !selected.contains(viewerEntry)) {
+            selected.add(viewerEntry);
+        }
+        return selected;
     }
 
     private RenderedSidebar renderEdit(Player player, PrepareSession session, SidebarConfiguration config) {
@@ -293,8 +327,9 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     /** Runs the PAPI compatibility pass once per viewer/snapshot rather than once per line. */
     private RenderedSidebar renderRaw(Player player, String title, List<String> rawLines,
                                       Map<String, String> values, boolean papi) {
-        StringBuilder batch = new StringBuilder(replaceValues(title, values));
-        for (String line : rawLines) batch.append('\u0000').append(replaceValues(line, values));
+        Map<String, String> effectiveValues = withViewerValues(player, values);
+        StringBuilder batch = new StringBuilder(replaceValues(title, effectiveValues));
+        for (String line : rawLines) batch.append('\u0000').append(replaceValues(line, effectiveValues));
         String renderedBatch = batch.toString();
         if (papi && renderedBatch.indexOf('%') >= 0) {
             renderedBatch = PlaceholderAPI.setPlaceholders(player, renderedBatch);
@@ -315,9 +350,17 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     }
 
     private Component resolve(Player player, String raw, Map<String, String> values, boolean papi) {
-        String value = replaceValues(raw, values);
+        String value = replaceValues(raw, withViewerValues(player, values));
         if (papi && value.indexOf('%') >= 0) value = PlaceholderAPI.setPlaceholders(player, value);
         return Utils.toComponent(value);
+    }
+
+    private Map<String, String> withViewerValues(Player player, Map<String, String> values) {
+        ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        Map<String, String> effective = new LinkedHashMap<>();
+        effective.put("viewer.team", viewerTeam == null ? "&7旁观者" : viewerTeam.getColoredName());
+        effective.putAll(values);
+        return effective;
     }
 
     private static RenderedSidebar normalize(Component title, List<Component> requested) {

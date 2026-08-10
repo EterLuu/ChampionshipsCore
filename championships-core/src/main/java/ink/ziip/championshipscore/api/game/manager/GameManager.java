@@ -276,7 +276,7 @@ public class GameManager extends BaseManager {
     }
 
     public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam rightChampionshipTeam, @NotNull ChampionshipTeam leftChampionshipTeam) {
-        return joinTeamArea(gameTypeEnum, area, rightChampionshipTeam, leftChampionshipTeam, true);
+        return joinTeamArea(gameTypeEnum, area, rightChampionshipTeam, leftChampionshipTeam, false);
     }
 
     /** Starts the non-scoring final and records which finalist owns both opening arrows. */
@@ -312,6 +312,7 @@ public class GameManager extends BaseManager {
     public void spectateDodgeboltFinal(@NotNull DodgeboltArea area,
                                        @NotNull ChampionshipTeam rightTeam,
                                        @NotNull ChampionshipTeam leftTeam) {
+        if (!area.isEventRun()) return;
         for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
             if (rightTeam.isTeamMember(player) || leftTeam.isTeamMember(player)) continue;
             moveSpectatorTo(player, area);
@@ -395,12 +396,12 @@ public class GameManager extends BaseManager {
             return true;
         }
         teamArea.prepareRunMode(GameRunMode.GAME);
-        teamArea.setIntroductionEnabledForNextStart(true);
+        teamArea.setIntroductionEnabledForNextStart(false);
         return false;
     }
 
     public synchronized boolean joinSingleTeamAreaForTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam... championshipTeams) {
-        return joinSingleTeamAreaForTeams(gameTypeEnum, area, true, championshipTeams);
+        return joinSingleTeamAreaForTeams(gameTypeEnum, area, false, championshipTeams);
     }
 
     public synchronized boolean joinSingleTeamAreaForTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
@@ -450,12 +451,12 @@ public class GameManager extends BaseManager {
         }
 
         singleTeamArea.prepareRunMode(GameRunMode.GAME);
-        singleTeamArea.setIntroductionEnabledForNextStart(true);
+        singleTeamArea.setIntroductionEnabledForNextStart(false);
         return false;
     }
 
     public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, List<UUID> players) {
-        return joinSingleTeamAreaForPlayers(gameTypeEnum, area, players, true);
+        return joinSingleTeamAreaForPlayers(gameTypeEnum, area, players, false);
     }
 
     public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
@@ -506,12 +507,12 @@ public class GameManager extends BaseManager {
         }
 
         singleTeamArea.prepareRunMode(GameRunMode.GAME);
-        singleTeamArea.setIntroductionEnabledForNextStart(true);
+        singleTeamArea.setIntroductionEnabledForNextStart(false);
         return false;
     }
 
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {
-        return joinSingleTeamAreaForAllTeams(gameTypeEnum, area, true);
+        return joinSingleTeamAreaForAllTeams(gameTypeEnum, area, false);
     }
 
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
@@ -573,7 +574,7 @@ public class GameManager extends BaseManager {
         }
 
         singleTeamArea.prepareRunMode(GameRunMode.GAME);
-        singleTeamArea.setIntroductionEnabledForNextStart(true);
+        singleTeamArea.setIntroductionEnabledForNextStart(false);
         return false;
     }
 
@@ -594,7 +595,7 @@ public class GameManager extends BaseManager {
             }
         }
         remoteBingoInstances.put(instance.matchId(), instance);
-        spectatorFocus = instance;
+        if (runMode == GameRunMode.EVENT) spectatorFocus = instance;
         return true;
     }
 
@@ -616,6 +617,7 @@ public class GameManager extends BaseManager {
 
     /** Unteamed online viewers frozen into the remote manifest and owned until settlement. */
     public synchronized Set<UUID> reserveRemoteBingoSpectators(@NotNull RemoteBingoInstance instance) {
+        if (!instance.isEventRun()) return Set.of();
         Set<UUID> result = new LinkedHashSet<>();
         for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
             if (plugin.getTeamManager().getTeamByPlayer(player) != null) continue;
@@ -649,7 +651,7 @@ public class GameManager extends BaseManager {
 
     /** Starts one or more independent Battle Box instances from a shared map definition. */
     public synchronized boolean joinBattleBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
-        return joinBattleBoxArea(area, pairs, true);
+        return joinBattleBoxArea(area, pairs, false);
     }
 
     public synchronized boolean joinBattleBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs,
@@ -711,7 +713,7 @@ public class GameManager extends BaseManager {
             instance.setIntroductionEnabledForNextStart(showIntroduction);
             if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
                 startGate.complete(null);
-                instance.setIntroductionEnabledForNextStart(true);
+                instance.setIntroductionEnabledForNextStart(false);
                 return null;
             }
             teamStatus.put(pair.getTeamOne(), instance);
@@ -730,7 +732,7 @@ public class GameManager extends BaseManager {
 
     /** Battle-Box-style parallel start for Parkour Tag: each pairing runs in its own stamped arena copy. */
     public synchronized boolean joinParkourTagArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
-        return joinParkourTagArea(area, pairs, true);
+        return joinParkourTagArea(area, pairs, false);
     }
 
     public synchronized boolean joinParkourTagArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs,
@@ -792,7 +794,7 @@ public class GameManager extends BaseManager {
             instance.setIntroductionEnabledForNextStart(showIntroduction);
             if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
                 startGate.complete(null);
-                instance.setIntroductionEnabledForNextStart(true);
+                instance.setIntroductionEnabledForNextStart(false);
                 return null;
             }
             teamStatus.put(pair.getTeamOne(), instance);
@@ -1001,6 +1003,7 @@ public class GameManager extends BaseManager {
     }
 
     private synchronized void focusSpectatorsOn(@NotNull BaseGameInstance startedInstance) {
+        if (!startedInstance.isEventRun()) return;
         BaseGameInstance current = getCurrentSpectatorFocus();
         BaseGameInstance target = current != null && current.getGameTypeEnum() == startedInstance.getGameTypeEnum()
                 && isInstanceActivelyRunning(current) ? current : startedInstance;
@@ -1079,6 +1082,7 @@ public class GameManager extends BaseManager {
             BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
             if (manager == null) continue;
             BaseGameInstance active = manager.getRuntimeInstances().stream()
+                    .filter(BaseGameInstance::isEventRun)
                     .filter(this::isInstanceActivelyRunning)
                     .sorted(Comparator.comparing(instance -> instance.getGameConfig().getConfigName(),
                             String.CASE_INSENSITIVE_ORDER))
@@ -1093,6 +1097,7 @@ public class GameManager extends BaseManager {
 
     private boolean isInstanceAvailableForSpectating(@Nullable BaseGameInstance instance) {
         if (instance == null) return false;
+        if (!instance.isEventRun()) return false;
         if (isInstanceActivelyRunning(instance)) return true;
         return instance.isEventRun() && instance.getGameStageEnum() == GameStageEnum.END;
     }

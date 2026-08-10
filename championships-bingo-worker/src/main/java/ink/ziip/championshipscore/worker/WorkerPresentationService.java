@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.worker;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import ink.ziip.championshipscore.protocol.BingoPresentation;
+import ink.ziip.championshipscore.protocol.MatchState;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -49,6 +50,25 @@ final class WorkerPresentationService {
             text = text.replace(replacements[index], replacements[index + 1]);
         }
         return component(text);
+    }
+
+    /** Resolves one Core-owned Bingo sidebar line without invoking PlaceholderAPI on the worker. */
+    static String sidebarLine(String template, String gameName, String status, int viewerTasks) {
+        return template.replace("{game.name}", gameName)
+                .replace("{game.status}", status)
+                .replace("{viewer.tasks}", Integer.toString(viewerTasks));
+    }
+
+    /** Bingo's time is already visible in the BossBar, so the sidebar mirrors Core game stages. */
+    static String sidebarStatus(MatchState state) {
+        return switch (state) {
+            case PREPARING, READY, ROUTING -> "预备中";
+            case COUNTDOWN -> "倒计时";
+            case RUNNING -> "进行中";
+            case SETTLING -> "结算中";
+            case FINISHED, ABORTED -> "已结束";
+            default -> "等待中";
+        };
     }
 
     private static String expandHex(String text) {

@@ -69,7 +69,7 @@ public abstract class BaseGameInstance {
     /** True while players are gathered at the introduction spawn point for the rules broadcast. */
     protected volatile boolean introductionPhase = false;
     protected BukkitTask introductionTask;
-    private boolean introductionEnabledForNextStart = true;
+    private boolean introductionEnabledForNextStart;
     private int preparationCountdownDuration;
 
     /** Final five-second countdown, isolated from every game's live timer. */
@@ -826,8 +826,10 @@ public abstract class BaseGameInstance {
      * and {@code onComplete} runs immediately.
      */
     protected void startGameIntroduction(@NotNull Runnable onComplete) {
-        boolean showIntroduction = introductionEnabledForNextStart;
-        introductionEnabledForNextStart = true;
+        // Rule presentation belongs to the formal event lifecycle. Standalone game starts may
+        // select their participants, but must never turn into an event-wide audience action.
+        boolean showIntroduction = isEventRun() && introductionEnabledForNextStart;
+        introductionEnabledForNextStart = false;
         if (!showIntroduction) {
             onComplete.run();
             return;

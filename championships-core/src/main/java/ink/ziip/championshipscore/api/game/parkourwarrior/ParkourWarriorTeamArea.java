@@ -37,6 +37,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     private final Map<UUID, Integer> playerLastSubCheckpoint = new HashMap<>();
     private final Map<UUID, PKWCheckpoint> playerLastCheckpoint = new HashMap<>();
     private final Map<UUID, Map<PKWCheckpoint, Integer>> playerCheckpointProgress = new HashMap<>();
+    private final Set<UUID> finishedPlayers = new HashSet<>();
     private final List<PKWCheckpoint> checkpoints = new ArrayList<>();
     private final Map<ChampionshipTeam, Double> gamePointsMultiplier = new HashMap<>();
 
@@ -67,6 +68,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         playerLastSubCheckpoint.clear();
         playerLastCheckpoint.clear();
         playerSpawnLocations.clear();
+        finishedPlayers.clear();
 
         setGameStageEnum(GameStageEnum.WAITING);
     }
@@ -227,7 +229,9 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
                         } else if (checkpoint.getType() == PKWCheckPointTypeEnum.fin) {
 
                             // End checkpoint logic
+                            if (!finishedPlayers.add(uuid)) return;
                             player.setGameMode(GameMode.SPECTATOR);
+                            hideAndShowPlayer(player);
 
                             if (championshipTeam != null) {
                                 gamePointsMultiplier.put(championshipTeam, gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + checkpoint.getPointMultiplier(getGameConfig()));
@@ -296,6 +300,10 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         }
 
         return count;
+    }
+
+    public boolean isFinishedPlayer(@NotNull UUID uuid) {
+        return finishedPlayers.contains(uuid);
     }
 
     public void backToMainSpawnPoint(Player player) {
@@ -397,6 +405,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
     private void startFormalPreparation() {
+        finishedPlayers.clear();
 
         for (UUID uuid : getGamePlayers()) {
             playerLastCheckpoint.put(uuid, null);
@@ -495,8 +504,9 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     public void hideAndShowPlayer(Player player) {
         UUID uuid = player.getUniqueId();
+        boolean activeRunner = getGamePlayers().contains(uuid) && !finishedPlayers.contains(uuid);
 
-        if (getGamePlayers().contains(uuid)) {
+        if (activeRunner) {
             // Game player
             for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                 ChampionshipTeam playerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
@@ -518,7 +528,13 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         }
 
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (getGamePlayers().contains(onlinePlayer.getUniqueId())) {
+            boolean onlinePlayerIsActiveRunner = getGamePlayers().contains(onlinePlayer.getUniqueId())
+                    && !finishedPlayers.contains(onlinePlayer.getUniqueId());
+            if (onlinePlayerIsActiveRunner) {
+                if (!activeRunner) {
+                    onlinePlayer.hidePlayer(ChampionshipsCore.getInstance(), player);
+                    continue;
+                }
                 ChampionshipTeam playerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
                 ChampionshipTeam onlinePlayerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(onlinePlayer);
 
@@ -621,6 +637,12 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         Player player = event.getPlayer();
         if (notAreaPlayer(player)) return;
         GameStageEnum stage = getGameStageEnum();
+        if (stage == GameStageEnum.PROGRESS && finishedPlayers.contains(player.getUniqueId())) {
+            player.teleport(getSpectatorSpawnLocation());
+            player.setGameMode(GameMode.SPECTATOR);
+            hideAndShowPlayer(player);
+            return;
+        }
         if (stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN
                 || stage == GameStageEnum.PROGRESS) {
             player.teleport(playerSpawnLocations.getOrDefault(player.getUniqueId(),

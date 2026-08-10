@@ -32,8 +32,7 @@ public final class DodgeboltStartSubCommand extends BaseSubCommand {
         }
         ChampionshipTeam higher = plugin.getRankManager().getCachedTeamPoints(right)
                 >= plugin.getRankManager().getCachedTeamPoints(left) ? right : left;
-        if (plugin.getGameManager().joinDodgeboltArea(args[0], right, left, higher, true, force)) {
-            plugin.getGameManager().spectateDodgeboltFinal(area, right, left);
+        if (plugin.getGameManager().joinDodgeboltArea(args[0], right, left, higher, false, force)) {
             Utils.sendAdminSuccess(sender, force
                     ? "躲避箭已强制开始准备，仅计入两队当前在线成员"
                     : "躲避箭决赛已开始准备");

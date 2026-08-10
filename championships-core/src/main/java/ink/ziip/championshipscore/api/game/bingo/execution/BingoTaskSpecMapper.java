@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.execution;
 
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
+import ink.ziip.championshipscore.api.game.bingo.task.CardDisplayInfo;
 import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.ItemTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
@@ -68,6 +69,11 @@ public final class BingoTaskSpecMapper {
     }
 
     private static void appendPresentation(GameTask task, Map<String, String> attributes) {
+        // These are presentation decisions owned by Core's task model, not values the Worker should
+        // try to reconstruct from an objective's execution attributes. In particular, generic
+        // statistics have no material qualifier at all while still having a specific card icon.
+        attributes.put("display.material", task.data.getDisplayMaterial(CardDisplayInfo.DEFAULT).name());
+        attributes.put("display.amount", Integer.toString(Math.max(1, task.data.getRequiredAmount())));
         try {
             GsonComponentSerializer serializer = GsonComponentSerializer.gson();
             attributes.put("display.name", serializer.serialize(task.data.getName()));

@@ -35,6 +35,10 @@ class SidebarConfigurationTest {
         assertTrue(worker.values().stream().anyMatch("{ranking}"::equals));
         assertEquals(configuration.game(GameTypeEnum.Bingo).base().lines().size(),
                 Integer.parseInt(worker.get("sidebar.line-count")));
+
+        var snowball = configuration.game(GameTypeEnum.SnowballShowdown);
+        assertTrue(snowball.base().lines().contains("{ranking}"));
+        assertTrue(snowball.base().lines().stream().noneMatch(line -> line.contains("snowball_area_rank_")));
     }
 
     private static java.net.URL requireResource() {

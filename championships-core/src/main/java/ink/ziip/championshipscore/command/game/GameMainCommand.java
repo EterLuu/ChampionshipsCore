@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.command.game.start.GameStartMainCommand;
 
 public class GameMainCommand extends BaseMainCommand {
     public GameMainCommand() {
-        super("game", "直接启动单局（不创建正式赛程）", ADMIN_PERMISSION);
+        super("game", "仅为指定队伍启动单局（不创建正式赛程）", ADMIN_PERMISSION);
         addSubCommand(new GameStartMainCommand());
     }
 }

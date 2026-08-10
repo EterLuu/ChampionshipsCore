@@ -1007,38 +1007,26 @@ final class WorkerMatchSession {
     private void updateSidebar() {
         BingoResult result = scoring.result();
         MatchState currentState = state();
-        int remaining = currentState == MatchState.RUNNING
-                ? Math.max(0, manifest.durationSeconds()
-                - (int) ((System.currentTimeMillis() - startedAtMillis) / 1000L))
-                : 0;
         forEachOnlineParticipant((player, snapshot) ->
-                renderSidebar(player, snapshot, result, currentState, remaining));
+                renderSidebar(player, snapshot, result, currentState));
     }
 
     private void refreshSidebar(Player player, PlayerSnapshot viewer) {
         MatchState currentState = state();
-        int remaining = currentState == MatchState.RUNNING
-                ? Math.max(0, manifest.durationSeconds()
-                - (int) ((System.currentTimeMillis() - startedAtMillis) / 1000L))
-                : 0;
-        renderSidebar(player, viewer, scoring.result(), currentState, remaining);
+        renderSidebar(player, viewer, scoring.result(), currentState);
     }
 
     private void renderSidebar(Player player, PlayerSnapshot viewer, BingoResult result,
-                               MatchState currentState, int remaining) {
+                               MatchState currentState) {
         if (manifest.runtimeRules().presentation().messages().containsKey("sidebar.line-count")) {
-            renderConfiguredSidebar(player, viewer, result, currentState, remaining);
+            renderConfiguredSidebar(player, viewer, result, currentState);
             return;
         }
         List<Component> lines = new ArrayList<>();
         lines.add(message("board.separator"));
         lines.add(message("board.current_game", "{0}", gameName()));
-        lines.add(switch (currentState) {
-            case RUNNING -> message("board.remaining_time", "{0}", formatDuration(remaining));
-            case COUNTDOWN -> message("board.status_preparing");
-            case FINISHED, SETTLING -> message("board.status_finished");
-            default -> message("board.status_waiting");
-        });
+        lines.add(WorkerPresentationService.component("#1da4ad场地状态: #f6ffa8"
+                + WorkerPresentationService.sidebarStatus(currentState)));
         lines.add(message("board.teams_header"));
         Integer viewerTeamId = viewer.role() == ParticipantRole.PLAYER ? viewer.teamId() : null;
         for (WorkerSidebarRanking.Entry entry : WorkerSidebarRanking.select(result, teams, viewerTeamId)) {
@@ -1060,7 +1048,7 @@ final class WorkerMatchSession {
     }
 
     private void renderConfiguredSidebar(Player player, PlayerSnapshot viewer, BingoResult result,
-                                         MatchState currentState, int remaining) {
+                                         MatchState currentState) {
         BingoPresentation presentation = manifest.runtimeRules().presentation();
         int count;
         try {
@@ -1068,12 +1056,7 @@ final class WorkerMatchSession {
         } catch (NumberFormatException ignored) {
             count = 0;
         }
-        String status = switch (currentState) {
-            case RUNNING -> messageText("board.remaining_time", "{0}", formatDuration(remaining));
-            case COUNTDOWN -> plainMessage("board.status_preparing");
-            case FINISHED, SETTLING -> plainMessage("board.status_finished");
-            default -> plainMessage("board.status_waiting");
-        };
+        String status = WorkerPresentationService.sidebarStatus(currentState);
         Integer viewerTeamId = viewer.role() == ParticipantRole.PLAYER ? viewer.teamId() : null;
         int viewerTasks = viewerTeamId == null ? 0 : result.completedCells().getOrDefault(viewerTeamId, 0);
         List<Component> lines = new ArrayList<>();
@@ -1083,9 +1066,7 @@ final class WorkerMatchSession {
                 appendConfiguredRanking(lines, result, viewerTeamId, presentation);
                 continue;
             }
-            raw = raw.replace("{game.name}", gameName())
-                    .replace("{game.status}", status)
-                    .replace("{viewer.tasks}", Integer.toString(viewerTasks));
+            raw = WorkerPresentationService.sidebarLine(raw, gameName(), status, viewerTasks);
             lines.add(WorkerPresentationService.component(raw));
         }
         if (lines.size() > 15) lines = new ArrayList<>(lines.subList(0, 15));
@@ -1117,15 +1098,6 @@ final class WorkerMatchSession {
 
     private String plainMessage(String key) {
         return manifest.runtimeRules().presentation().messages().getOrDefault(key, "");
-    }
-
-    private String messageText(String key, String target, String replacement) {
-        return plainMessage(key).replace(target, replacement);
-    }
-
-    private static String formatDuration(int totalSeconds) {
-        int safeSeconds = Math.max(0, totalSeconds);
-        return "%d:%02d".formatted(safeSeconds / 60, safeSeconds % 60);
     }
 
     private Component message(String key, String... replacements) {

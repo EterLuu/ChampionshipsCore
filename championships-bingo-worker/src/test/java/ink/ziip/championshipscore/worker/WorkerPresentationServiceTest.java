@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.protocol.BingoPresentation;
+import ink.ziip.championshipscore.protocol.MatchState;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.Test;
 
@@ -39,5 +40,26 @@ class WorkerPresentationServiceTest {
         String plain = PlainTextComponentSerializer.plainText().serialize(
                 WorkerPresentationService.message(presentation, "timer", "%time%", "599"));
         assertEquals("宾果 • 剩余 599s", plain);
+    }
+
+    @Test
+    void configuredStatusLineUsesTheSameLabelAndValueLayoutAsCore() {
+        String rendered = WorkerPresentationService.sidebarLine(
+                "#1da4ad场地状态: #f6ffa8{game.status}", "宾果时速", "进行中", 4);
+
+        assertEquals("#1da4ad场地状态: #f6ffa8进行中", rendered);
+        assertEquals("场地状态: 进行中", PlainTextComponentSerializer.plainText()
+                .serialize(WorkerPresentationService.component(rendered)));
+    }
+
+    @Test
+    void runningSidebarStatusDoesNotDuplicateTheBossBarTimer() {
+        assertEquals("进行中", WorkerPresentationService.sidebarStatus(MatchState.RUNNING));
+    }
+
+    @Test
+    void ordinarySidebarPlaceholdersStillResolveNormally() {
+        assertEquals("宾果时速 / 4", WorkerPresentationService.sidebarLine(
+                "{game.name} / {viewer.tasks}", "宾果时速", "ignored", 4));
     }
 }

@@ -26,15 +26,23 @@ class BingoTaskSpecMapperTest {
                 new GameTask(new OneOfTask(Set.of(Material.WHITE_WOOL, Material.RED_WOOL),
                         Material.WHITE_WOOL, "wool", 3, Dimension.OVERWORLD)),
                 new GameTask(new StatisticTask(new StatisticHandle(Statistic.MINE_BLOCK, Material.DIAMOND_ORE),
-                        5, Dimension.OVERWORLD))));
+                        5, Dimension.OVERWORLD)),
+                new GameTask(new StatisticTask(new StatisticHandle(Statistic.JUMP),
+                        7, Dimension.OVERWORLD))));
 
         assertEquals("item", specs.get(0).taskType());
         assertEquals("IRON_INGOT", specs.get(0).attributes().get("material"));
         assertEquals("potion", specs.get(1).taskType());
         assertEquals("strength", specs.get(1).attributes().get("effect"));
         assertEquals("RED_WOOL,WHITE_WOOL", specs.get(2).attributes().get("materials"));
+        assertEquals("WHITE_WOOL", specs.get(2).attributes().get("display.material"));
+        assertEquals("3", specs.get(2).attributes().get("display.amount"));
         assertEquals("MINE_BLOCK", specs.get(3).attributes().get("statistic"));
         assertEquals("DIAMOND_ORE", specs.get(3).attributes().get("material"));
         assertEquals("5", specs.get(3).attributes().get("target"));
+        assertEquals("DIAMOND_ORE", specs.get(3).attributes().get("display.material"));
+        assertEquals("5", specs.get(3).attributes().get("display.amount"));
+        assertEquals("RABBIT_FOOT", specs.get(4).attributes().get("display.material"));
+        assertEquals("7", specs.get(4).attributes().get("display.amount"));
     }
 }
