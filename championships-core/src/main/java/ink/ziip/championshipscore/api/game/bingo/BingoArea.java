@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.bingo;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
+import ink.ziip.championshipscore.api.daily.DailyRecordType;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.game.RoundOutcome;
@@ -354,6 +355,17 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         // Line bonus goes to every team member ("队内所有成员+50/+25"), not just the completer.
         if (lineDelta != 0 && team != null) {
             addPlayerPointsToAllTeamMembers(team, lineDelta);
+        }
+        if (team != null && getRunMode() == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY) {
+            long elapsedMillis = Math.max(0L, System.currentTimeMillis() - roundStartMillis);
+            if (round.countCompletedLines(team) > 0) {
+                plugin.getDailyManager().statsManager().recordTeamMilestone(this, team,
+                        DailyRecordType.BINGO_FIRST_LINE, elapsedMillis, player.getUniqueId());
+            }
+            if (round.completedCount(team) >= getGameConfig().getCardWidth() * getGameConfig().getCardWidth()) {
+                plugin.getDailyManager().statsManager().recordTeamMilestone(this, team,
+                        DailyRecordType.BINGO_FULL_CARD, elapsedMillis, player.getUniqueId());
+            }
         }
 
         int delta = cellDelta + lineDelta;

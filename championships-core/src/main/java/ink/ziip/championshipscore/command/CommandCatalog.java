@@ -15,12 +15,16 @@ public final class CommandCatalog {
 
     private static final List<Entry> PLAYER_COMMANDS = List.of(
             new Entry("/cc spawn", "回到大厅（游戏或观战期间不可用）"),
+            new Entry("/cc play [leave|leaderboard]", "选择自由游戏、离开游玩或查看榜单"),
+            new Entry("/cc party invite|accept|leave|disband|info", "管理仅在本次相聚期间存在的同行小队"),
+            new Entry("/cc daily leave|stats [游戏]", "退出自由匹配或查看独立游玩统计"),
             new Entry("/cc vote [游戏]", "打开投票菜单或直接投票"),
             new Entry("/cc spectate [leave | <游戏> <场地>]", "打开观战菜单或直接选择场地"),
             new Entry("/cc rank [teamboard|playerboard|info|recap]", "查看个人、队伍与结算积分")
     );
 
     private static final List<Entry> ADMIN_COMMANDS = List.of(
+            new Entry("/cc switch [championship|daily]", "查看或切换正式赛事/自由游玩"),
             new Entry("/cc team", "打开管理员队伍与玩家管理界面"),
             new Entry("/cc team add|delete|info|list|tphere ...", "兼容指令：管理队伍、查看名单与队伍传送"),
             new Entry("/cc team member add|delete <队伍> <玩家>", "管理队伍成员"),

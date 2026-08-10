@@ -16,6 +16,8 @@ import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorTeamArea
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.api.daily.DailyPlayerSnapshot;
+import ink.ziip.championshipscore.api.daily.DailyStatSnapshot;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.SharedSidebar;
 import ink.ziip.championshipscore.util.Utils;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -152,6 +154,23 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         PrepareSession session = plugin.getPrepareSessionManager().getSession(player);
         if (session != null) return renderEdit(player, session, config);
 
+        if (plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby()) {
+            DailyPlayerSnapshot daily = plugin.getDailyManager().snapshot(player.getUniqueId());
+            DailyStatSnapshot stat = plugin.getDailyManager().statsManager().stat(player.getUniqueId(), null);
+            Map<String, String> values = new LinkedHashMap<>();
+            values.put("daily.mode", daily.mode());
+            values.put("daily.party-leader", daily.partyLeader());
+            values.put("daily.party-size", Integer.toString(daily.partySize()));
+            values.put("daily.selected-game", daily.selectedGame());
+            values.put("daily.queue-state", daily.queueState());
+            values.put("daily.queue-players", Integer.toString(daily.queuePlayers()));
+            values.put("daily.countdown", daily.countdown() < 0 ? "-" : Integer.toString(daily.countdown()));
+            values.put("daily.games", Long.toString(stat.gamesPlayed()));
+            values.put("daily.wins", Long.toString(stat.wins()));
+            values.put("daily.points", Utils.formatPoints(stat.totalPoints()));
+            return renderTemplate(player, config.dailyLobby(), values);
+        }
+
         List<MapDescriptor> maps = mapsIn(player.getWorld());
         if (player.hasPermission("cc.admin") && !maps.isEmpty()) {
             return renderMapStatus(player, maps, config);
@@ -168,6 +187,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put("game.map", Objects.toString(instance.getGameConfig().getConfigName(), "-"));
         values.put("game.world", Objects.toString(instance.getWorldName(), "-"));
         values.put("game.status", instance.getGameStageEnum().toString());
+        values.put("game.run-mode", instance.getRunMode().name());
+        values.put("game.instance", Integer.toString(instance.getCopyIndex() + 1));
         values.put("viewer.role", spectator ? "旁观" : "参赛");
         ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
         values.put("viewer.team", viewerTeam == null ? "&7旁观者" : viewerTeam.getColoredName());

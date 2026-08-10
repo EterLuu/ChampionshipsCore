@@ -41,6 +41,7 @@ public abstract class BaseGamePlaceholder<T extends BaseGameInstance> extends Ba
     @Nullable
     @SuppressWarnings("unchecked")
     protected T resolveAreaByName(String areaName, OfflinePlayer offlinePlayer) {
+        if (areaName == null) return null;
         T namedArea = getManager().getArea(areaName);
         if (offlinePlayer == null)
             return namedArea;
@@ -60,6 +61,7 @@ public abstract class BaseGamePlaceholder<T extends BaseGameInstance> extends Ba
 
     @Override
     public String onRequest(OfflinePlayer offlinePlayer, String params) {
+        if (params == null) return null;
         if (params.startsWith("area_status_")) {
             T area = resolveArea(params, "area_status_", offlinePlayer);
             return area == null ? MessageConfig.PLACEHOLDER_NONE : area.getGameStageEnum().toString();

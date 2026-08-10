@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.acerace;
 import io.papermc.paper.registry.keys.EnchantmentKeys;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
+import ink.ziip.championshipscore.api.daily.DailyRecordType;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -73,6 +74,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private final List<UUID> finishedPlayers = new ArrayList<>();
     private final Map<UUID, Integer> nextProgressPoint = new HashMap<>();
     private final Map<UUID, Integer> completedLaps = new HashMap<>();
+    private final Map<UUID, Long> lapStartedNanos = new HashMap<>();
     private final Map<UUID, Location> latestRespawnLocations = new HashMap<>();
     private final Map<UUID, Set<Integer>> capturedRespawnPoints = new HashMap<>();
     private final Map<UUID, Integer> activeFallHeights = new HashMap<>();
@@ -86,6 +88,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private final Map<UUID, Integer> riptideViewerGraceTicks = new HashMap<>();
     private final Map<UUID, TextDisplay> racerNameDisplays = new HashMap<>();
     private final Map<UUID, String> originalScoreboardTeams = new HashMap<>();
+    private final int copyIndex;
     @Getter
     private int timer;
     private BukkitTask progressTask;
@@ -94,12 +97,22 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private boolean racerVisibilityUnlocked;
 
     public AceRaceArea(ChampionshipsCore plugin, AceRaceConfig config) {
+        this(plugin, config, 0, true);
+    }
+
+    AceRaceArea(ChampionshipsCore plugin, AceRaceConfig config, int copyIndex, boolean initializeConfig) {
         super(plugin, GameTypeEnum.AceRace, new AceRaceHandler(plugin), config);
-        getGameConfig().initializeConfiguration(plugin.getFolder());
+        if (initializeConfig) getGameConfig().initializeConfiguration(plugin.getFolder());
+        this.copyIndex = copyIndex;
         getGameHandler().setAceRaceArea(this);
         getGameHandler().register();
         loadCoursePoints();
         setGameStageEnum(GameStageEnum.WAITING);
+    }
+
+    @Override
+    public int getCopyIndex() {
+        return copyIndex;
     }
 
     public void loadCoursePoints() {
@@ -170,6 +183,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         finishedPlayers.clear();
         nextProgressPoint.clear();
         completedLaps.clear();
+        lapStartedNanos.clear();
         latestRespawnLocations.clear();
         capturedRespawnPoints.clear();
         activeFallHeights.clear();
@@ -283,7 +297,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (startLine == null || finishLine == null) return;
         UUID uuid = player.getUniqueId();
         if (!startLineArmed.contains(uuid)) {
-            if (startLine.crossedAtOrAbove(previous, current)) startLineArmed.add(uuid);
+            if (startLine.crossedAtOrAbove(previous, current)) {
+                startLineArmed.add(uuid);
+                lapStartedNanos.put(uuid, System.nanoTime());
+            }
             return;
         }
         if (nextProgressPoint.getOrDefault(uuid, 0) < progressPoints.size()
@@ -291,6 +308,13 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
         int lap = completedLaps.getOrDefault(player.getUniqueId(), 0) + 1;
         completedLaps.put(player.getUniqueId(), lap);
+        long completedAt = System.nanoTime();
+        Long lapStarted = lapStartedNanos.put(uuid, completedAt);
+        if (lapStarted != null && getRunMode() == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY) {
+            long durationMillis = Math.max(0L, (completedAt - lapStarted) / 1_000_000L);
+            plugin.getDailyManager().statsManager().recordPlayerTime(
+                    this, uuid, DailyRecordType.ACERACE_FASTEST_LAP, durationMillis);
+        }
         if (lap < getGameConfig().getLaps()) {
             resetLapProgress(player, current);
             String message = MessageConfig.ACE_RACE_LAP_COMPLETED
@@ -898,9 +922,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         disableRacerCollisions(player);
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
-            player.hidePlayer(plugin, other);
+            setRacerVisible(player, other, false);
             if (gamePlayers.contains(other.getUniqueId()) && !finishedPlayers.contains(other.getUniqueId())) {
-                other.hidePlayer(plugin, player);
+                setRacerVisible(other, player, false);
                 disableRacerCollisions(other);
             }
         }
@@ -915,11 +939,11 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         restoreRacerCollisions(player);
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
-            player.showPlayer(plugin, other);
+            setRacerVisible(player, other, true);
             if (gamePlayers.contains(other.getUniqueId()) && !finishedPlayers.contains(other.getUniqueId()))
-                other.hidePlayer(plugin, player);
+                setRacerVisible(other, player, false);
             else
-                other.showPlayer(plugin, player);
+                setRacerVisible(other, player, true);
         }
     }
 
@@ -937,8 +961,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             restoreRacerCollisions(player);
             for (Player other : Bukkit.getOnlinePlayers()) {
                 if (!other.equals(player)) {
-                    player.showPlayer(plugin, other);
-                    other.showPlayer(plugin, player);
+                    setRacerVisible(player, other, true);
+                    setRacerVisible(other, player, true);
                 }
             }
         }
@@ -953,8 +977,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         restoreRacerCollisions(player);
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
-            player.showPlayer(plugin, other);
-            other.showPlayer(plugin, player);
+            setRacerVisible(player, other, true);
+            setRacerVisible(other, player, true);
         }
     }
 
@@ -967,7 +991,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         for (UUID uuid : gamePlayers) {
             Player racer = Bukkit.getPlayer(uuid);
             if (racer != null && !racer.equals(joining) && !finishedPlayers.contains(uuid))
-                racer.hidePlayer(plugin, joining);
+                setRacerVisible(racer, joining, false);
         }
     }
 
@@ -992,7 +1016,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             RacerView view = new RacerView(player.getUniqueId(), target.getUniqueId());
             if (riptideHiddenViews.add(view)) {
                 plugin.getGlowingEntities().unsetInvisibleGlowing(target, player);
-                player.hidePlayer(plugin, target);
+                setRacerVisible(player, target, false);
             }
         }
         scheduler.runTask(plugin, () -> restoreAuthoritativeRiptideState(player));
@@ -1029,12 +1053,12 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (suppressForRiptide) {
             if (riptideHiddenViews.add(view)) {
                 plugin.getGlowingEntities().unsetInvisibleGlowing(target, viewer);
-                viewer.hidePlayer(plugin, target);
+                setRacerVisible(viewer, target, false);
             }
             return;
         }
         if (riptideHiddenViews.remove(view) || newlyNearby) {
-            viewer.showPlayer(plugin, target);
+            setRacerVisible(viewer, target, true);
             plugin.getGlowingEntities().setInvisibleGlowing(target, viewer);
         }
     }
@@ -1043,7 +1067,17 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         RacerView view = new RacerView(viewer.getUniqueId(), target.getUniqueId());
         riptideHiddenViews.remove(view);
         plugin.getGlowingEntities().unsetInvisibleGlowing(target, viewer);
-        viewer.hidePlayer(plugin, target);
+        setRacerVisible(viewer, target, false);
+    }
+
+    /** Central policy prevents this runtime slot from revealing racers owned by another shared slot. */
+    private void setRacerVisible(@NotNull Player viewer, @NotNull Player target, boolean visible) {
+        if (plugin.getDailyManager() == null) {
+            if (visible) viewer.showPlayer(plugin, target);
+            else viewer.hidePlayer(plugin, target);
+            return;
+        }
+        plugin.getDailyManager().isolation().setVisible(this, viewer, target, visible);
     }
 
     private @NotNull TextDisplay ensureRacerNameDisplay(@NotNull Player racer) {

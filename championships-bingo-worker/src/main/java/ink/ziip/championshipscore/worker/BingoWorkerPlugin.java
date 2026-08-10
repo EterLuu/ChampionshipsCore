@@ -63,6 +63,7 @@ public final class BingoWorkerPlugin extends JavaPlugin {
             router = new PluginMessagePlayerRouter(this, workerConfig.proxyChannel());
             returnRouter = new WorkerReturnRouter(this, router, workerConfig.returnServer());
             registry = new WorkerMatchRegistry(this, workerConfig, outbox, returnRouter);
+            if (getCommand("cc") != null) getCommand("cc").setExecutor(new WorkerPlayCommand(registry));
             registerPlaceholderApi();
             getServer().getPluginManager().registerEvents(new WorkerListener(this, registry), this);
             getServer().getPluginManager().registerEvents(new BingoPortalRouter(workerConfig.overworld(),

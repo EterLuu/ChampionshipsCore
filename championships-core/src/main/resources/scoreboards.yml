@@ -31,6 +31,22 @@ boards:
       - ''
       - '{style.footer}'
 
+  daily-lobby:
+    title: '#31e061&l自由游玩'
+    lines:
+      - '#bababa游玩方式: #ededed{daily.mode}'
+      - '#bababa同行队长: #24abff{daily.party-leader} #696969({daily.party-size}人)'
+      - '#bababa心仪游戏: #fff566{daily.selected-game}'
+      - '#bababa当前状态: #ededed{daily.queue-state}'
+      - '#bababa等候人数: #ededed{daily.queue-players}'
+      - '#bababa启程倒计时: #ff6b26{daily.countdown}'
+      - ''
+      - '#bababa游玩场次: #ededed{daily.games} #696969• #bababa胜场: #31e061{daily.wins}'
+      - '#bababa游玩积分: #ff6b26{daily.points}'
+      - ''
+      - '#fff566/cc play #bababa选择游戏'
+      - '#fff566/cc play leaderboard #bababa查看榜单'
+
   map-status:
     title: '#64b5f6&l地图状态'
     lines:

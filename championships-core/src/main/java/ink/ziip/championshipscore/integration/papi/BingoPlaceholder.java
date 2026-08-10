@@ -44,6 +44,7 @@ public class BingoPlaceholder extends BaseGamePlaceholder<BingoArea> {
 
     @Override
     protected String onGameRequest(OfflinePlayer offlinePlayer, String params) {
+        if (params == null) return null;
 
         /* Countdown timer: %bingo_current_time% or %bingo_current_time_[areaName]% */
         if (params.equals("current_time") || params.startsWith("current_time_")) {
@@ -59,7 +60,7 @@ public class BingoPlaceholder extends BaseGamePlaceholder<BingoArea> {
         if (params.equals("current_tasks_team") || params.startsWith("current_tasks_team_")) {
             String areaName = params.equals("current_tasks_team") ? "" : params.substring("current_tasks_team_".length());
             BingoArea area = resolveAreaByName(areaName, offlinePlayer);
-            Player player = offlinePlayer.getPlayer();
+            Player player = offlinePlayer == null ? null : offlinePlayer.getPlayer();
             if (area == null || player == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }

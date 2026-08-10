@@ -7,3 +7,7 @@ authors: [ Eter Lu, LettuceIce ]
 description: Dedicated Folia execution worker for ChampionshipsCore Bingo matches.
 softdepend:
   - PlaceholderAPI
+commands:
+  cc:
+    description: Free-play Bingo controls.
+    usage: /cc play leave

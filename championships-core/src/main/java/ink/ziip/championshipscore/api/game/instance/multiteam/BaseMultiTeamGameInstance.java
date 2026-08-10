@@ -258,6 +258,18 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
         }
     }
 
+    /** Removes selected runtime participants without disturbing the remaining match roster. */
+    public void removeRuntimePlayers(@NotNull Set<UUID> players) {
+        for (UUID uuid : players) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                removePlayerFromBossBars(player);
+                sanitizeParticipantForLobby(player, true);
+            }
+        }
+        gamePlayers.removeAll(players);
+    }
+
     @Override
     public Collection<UUID> getParticipantUniqueIds() {
         return List.copyOf(gamePlayers);

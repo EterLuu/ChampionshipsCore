@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
+import ink.ziip.championshipscore.api.daily.DailyManager;
+import ink.ziip.championshipscore.api.daily.DailyStatsManager;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoManager;
@@ -56,6 +58,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     private ScheduleManager scheduleManager;
     private PrepareSessionManager prepareSessionManager;
     private CoreSidebarManager sidebarManager;
+    private DailyManager dailyManager;
+    private DailyStatsManager dailyStatsManager;
     private CCLogManager logManager;
     @Getter(AccessLevel.NONE)
     private final Set<BaseManager> startedManagers = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -97,6 +101,8 @@ public final class ChampionshipsCore extends JavaPlugin {
         voteManager = new VoteManager(this);
         scheduleManager = new ScheduleManager(this);
         sidebarManager = new CoreSidebarManager(this);
+        dailyStatsManager = new DailyStatsManager(this);
+        dailyManager = new DailyManager(this, dailyStatsManager);
 
         // Plugin startup logic
         loadManager(configurationManager);
@@ -112,6 +118,8 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         loadManager(gameManager);
         loadManager(remoteBingoManager);
+        loadManager(dailyStatsManager);
+        loadManager(dailyManager);
 
         loadManager(prepareSessionManager);
 
@@ -130,6 +138,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         unloadManager(sidebarManager);
+        unloadManager(dailyManager);
+        unloadManager(dailyStatsManager);
         unloadManager(remoteBingoManager);
         unloadManager(gameManager);
         unloadManager(prepareSessionManager);

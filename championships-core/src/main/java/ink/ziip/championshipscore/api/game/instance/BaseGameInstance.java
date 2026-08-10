@@ -223,6 +223,11 @@ public abstract class BaseGameInstance {
         }
     }
 
+    /** Immutable result snapshot for non-formal settlement layers such as DAILY. */
+    public Map<UUID, Double> getPlayerPointsSnapshot() {
+        return Map.copyOf(playerPoints);
+    }
+
     protected void logGame(Level level, String event, String message) {
         String area = gameConfig == null || gameConfig.getAreaName() == null ? "-" : gameConfig.getAreaName();
         String stage = gameStageEnum == null ? "-" : gameStageEnum.name();
@@ -621,7 +626,7 @@ public abstract class BaseGameInstance {
         preparationCountdownDuration = 0;
     }
 
-    private void removePlayerFromBossBars(Player player) {
+    protected final void removePlayerFromBossBars(Player player) {
         for (BossBar bossBar : bossBars.values())
             bossBar.removePlayer(player);
     }

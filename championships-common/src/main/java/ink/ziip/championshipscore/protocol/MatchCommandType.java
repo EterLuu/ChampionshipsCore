@@ -5,6 +5,7 @@ public enum MatchCommandType {
     START_COMMIT,
     ADD_SPECTATOR,
     REMOVE_SPECTATOR,
+    REMOVE_PARTICIPANTS,
     FORCE_END,
     ABORT,
     SHUTDOWN_WHEN_IDLE

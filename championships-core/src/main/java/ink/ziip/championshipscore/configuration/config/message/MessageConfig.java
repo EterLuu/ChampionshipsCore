@@ -20,7 +20,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 26;
+        return 27;
     }
 
     /** Keep unrelated rank/vote copy while replacing the unified gameplay and administration copy in v11. */
@@ -28,7 +28,7 @@ public class MessageConfig extends BaseConfigurationFile {
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) {
         for (String section : List.of("command", "team", "member", "reason", "area", "spectator", "game",
                 "battlebox", "parkourtag", "skywars", "tgttos", "bingo", "buildmart", "tntrun",
-                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky", "acerace"))
+                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky", "acerace", "daily"))
             outdatedConfiguration.set(section, null);
         outdatedConfiguration.set("no-permission", null);
         outdatedConfiguration.set("vote.start-vote", null);
@@ -68,6 +68,56 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "command.catalog-row")
     public static String COMMAND_CATALOG_ROW;
+
+    // Free play
+    @ConfigOption(path = "daily.prefix") public static String DAILY_PREFIX;
+    @ConfigOption(path = "daily.mode.championship") public static String DAILY_MODE_CHAMPIONSHIP;
+    @ConfigOption(path = "daily.mode.free-play") public static String DAILY_MODE_FREE_PLAY;
+    @ConfigOption(path = "daily.state.idle") public static String DAILY_STATE_IDLE;
+    @ConfigOption(path = "daily.state.selected") public static String DAILY_STATE_SELECTED;
+    @ConfigOption(path = "daily.state.waiting-member") public static String DAILY_STATE_WAITING_MEMBER;
+    @ConfigOption(path = "daily.state.queued") public static String DAILY_STATE_QUEUED;
+    @ConfigOption(path = "daily.state.playing") public static String DAILY_STATE_PLAYING;
+    @ConfigOption(path = "daily.team-name") public static String DAILY_TEAM_NAME;
+    @ConfigOption(path = "daily.unavailable") public static String DAILY_UNAVAILABLE;
+    @ConfigOption(path = "daily.already-playing") public static String DAILY_ALREADY_PLAYING;
+    @ConfigOption(path = "daily.game-unavailable") public static String DAILY_GAME_UNAVAILABLE;
+    @ConfigOption(path = "daily.party-too-large") public static String DAILY_PARTY_TOO_LARGE;
+    @ConfigOption(path = "daily.party-member-unavailable") public static String DAILY_PARTY_MEMBER_UNAVAILABLE;
+    @ConfigOption(path = "daily.already-queued") public static String DAILY_ALREADY_QUEUED;
+    @ConfigOption(path = "daily.queue-unavailable") public static String DAILY_QUEUE_UNAVAILABLE;
+    @ConfigOption(path = "daily.queue-migration-failed") public static String DAILY_QUEUE_MIGRATION_FAILED;
+    @ConfigOption(path = "daily.queue-selected") public static String DAILY_QUEUE_SELECTED;
+    @ConfigOption(path = "daily.queue-left") public static String DAILY_QUEUE_LEFT;
+    @ConfigOption(path = "daily.not-in-play") public static String DAILY_NOT_IN_PLAY;
+    @ConfigOption(path = "daily.play-left") public static String DAILY_PLAY_LEFT;
+    @ConfigOption(path = "daily.queue-ready") public static String DAILY_QUEUE_READY;
+    @ConfigOption(path = "daily.queue-countdown") public static String DAILY_QUEUE_COUNTDOWN;
+    @ConfigOption(path = "daily.queue-composition-failed") public static String DAILY_QUEUE_COMPOSITION_FAILED;
+    @ConfigOption(path = "daily.queue-no-arena") public static String DAILY_QUEUE_NO_ARENA;
+    @ConfigOption(path = "daily.match-assigned") public static String DAILY_MATCH_ASSIGNED;
+    @ConfigOption(path = "daily.match-aborted") public static String DAILY_MATCH_ABORTED;
+    @ConfigOption(path = "daily.bossbar.waiting") public static String DAILY_BOSSBAR_WAITING;
+    @ConfigOption(path = "daily.bossbar.countdown") public static String DAILY_BOSSBAR_COUNTDOWN;
+    @ConfigOption(path = "daily.menu.game-title") public static String DAILY_MENU_GAME_TITLE;
+    @ConfigOption(path = "daily.menu.leaderboard-title") public static String DAILY_MENU_LEADERBOARD_TITLE;
+    @ConfigOption(path = "daily.menu.board-title") public static String DAILY_MENU_BOARD_TITLE;
+    @ConfigOption(path = "daily.menu.queue-players") public static String DAILY_MENU_QUEUE_PLAYERS;
+    @ConfigOption(path = "daily.menu.team-limit") public static String DAILY_MENU_TEAM_LIMIT;
+    @ConfigOption(path = "daily.menu.party-selection") public static String DAILY_MENU_PARTY_SELECTION;
+    @ConfigOption(path = "daily.menu.current-selection") public static String DAILY_MENU_CURRENT_SELECTION;
+    @ConfigOption(path = "daily.menu.click-to-queue") public static String DAILY_MENU_CLICK_TO_QUEUE;
+    @ConfigOption(path = "daily.menu.click-to-view") public static String DAILY_MENU_CLICK_TO_VIEW;
+    @ConfigOption(path = "daily.menu.back") public static String DAILY_MENU_BACK;
+    @ConfigOption(path = "daily.leaderboard.points") public static String DAILY_LEADERBOARD_POINTS;
+    @ConfigOption(path = "daily.leaderboard.wins") public static String DAILY_LEADERBOARD_WINS;
+    @ConfigOption(path = "daily.leaderboard.game-points") public static String DAILY_LEADERBOARD_GAME_POINTS;
+    @ConfigOption(path = "daily.leaderboard.bingo-first-line") public static String DAILY_LEADERBOARD_BINGO_FIRST_LINE;
+    @ConfigOption(path = "daily.leaderboard.bingo-full-card") public static String DAILY_LEADERBOARD_BINGO_FULL_CARD;
+    @ConfigOption(path = "daily.leaderboard.acerace-fastest-lap") public static String DAILY_LEADERBOARD_ACERACE_FASTEST_LAP;
+    @ConfigOption(path = "daily.leaderboard.row-points") public static String DAILY_LEADERBOARD_ROW_POINTS;
+    @ConfigOption(path = "daily.leaderboard.row-time") public static String DAILY_LEADERBOARD_ROW_TIME;
+    @ConfigOption(path = "daily.leaderboard.empty") public static String DAILY_LEADERBOARD_EMPTY;
 
     // Team
     @ConfigOption(path = "team.successfully-added")

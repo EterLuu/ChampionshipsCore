@@ -97,7 +97,7 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         return config != null
                 && matches.values().stream().noneMatch(match -> !match.state().terminal())
                 && plugin.getGameManager().canReserveRemoteBingo(
-                        request.runMode(), request.showIntroduction());
+                        request.runMode(), request.showIntroduction(), teams(request));
     }
 
     @Override
@@ -110,7 +110,7 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         long epoch = 1L;
         RemoteBingoInstance instance = new RemoteBingoInstance(plugin, config, matchId, epoch);
         if (!plugin.getGameManager().reserveRemoteBingo(
-                instance, request.runMode(), request.showIntroduction())) {
+                instance, request.runMode(), request.showIntroduction(), teams(request))) {
             instance.dispose();
             return false;
         }
@@ -118,7 +118,7 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         MatchManifest manifest;
         try {
             manifest = manifests.create(matchId, epoch, CCConfig.BINGO_WORKER_ID, config,
-                    request.runMode(), plugin.getTeamManager().getTeamList(), spectators,
+                    request.runMode(), teams(request), spectators,
                     request.showIntroduction());
             store.create(manifest);
         } catch (RuntimeException | SQLException failure) {
@@ -140,6 +140,10 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         scheduler.runGlobalLater(() -> timeout(match, MatchState.PREPARING, "ready-timeout"),
                 CCConfig.BINGO_READY_TIMEOUT_SECONDS * 20L);
         return true;
+    }
+
+    private java.util.List<ink.ziip.championshipscore.api.team.ChampionshipTeam> teams(BingoStartRequest request) {
+        return request.teams().isEmpty() ? plugin.getTeamManager().getTeamList() : request.teams();
     }
 
     @Override
@@ -320,6 +324,16 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         if (match == null) return;
         match.removeSpectator(playerId).exceptionally(failure -> {
             plugin.getLogger().log(Level.WARNING, "Unable to remove remote Bingo spectator " + playerId, failure);
+            return false;
+        });
+    }
+
+    public void removeDailyPlayers(RemoteBingoInstance instance, Set<UUID> players) {
+        RemoteBingoMatch match = matches.get(instance.matchId());
+        if (match == null || players.isEmpty()) return;
+        match.removeParticipants(players).exceptionally(failure -> {
+            plugin.getLogger().log(Level.WARNING,
+                    "Unable to remove DAILY Bingo participants " + players, failure);
             return false;
         });
     }

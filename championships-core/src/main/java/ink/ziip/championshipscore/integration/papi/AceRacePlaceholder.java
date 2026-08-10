@@ -25,6 +25,7 @@ public class AceRacePlaceholder extends BaseGamePlaceholder<AceRaceArea> {
 
     @Override
     protected String onGameRequest(OfflinePlayer offlinePlayer, String params) {
+        if (params == null) return null;
         if (params.startsWith("area_finished_players_")) {
             AceRaceArea area = resolveArea(params, "area_finished_players_", offlinePlayer);
             return area == null ? MessageConfig.PLACEHOLDER_NONE : String.valueOf(area.getFinishedPlayers().size());
@@ -52,6 +53,7 @@ public class AceRacePlaceholder extends BaseGamePlaceholder<AceRaceArea> {
     }
 
     private AceRaceArea resolvePlayerArea(String params, String prefix, OfflinePlayer offlinePlayer) {
+        if (offlinePlayer == null) return null;
         AceRaceArea area = resolveArea(params, prefix, offlinePlayer);
         Player player = offlinePlayer.getPlayer();
         return area != null && player != null && area.getGamePlayers().contains(player.getUniqueId()) ? area : null;

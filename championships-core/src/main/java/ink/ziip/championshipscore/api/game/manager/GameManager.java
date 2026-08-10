@@ -128,8 +128,12 @@ public class GameManager extends BaseManager {
         areaManagers.put(GameTypeEnum.AceRace, aceRaceManager);
 
         bingoExecutionRouter = new BingoExecutionRouter(new LocalBingoExecutionGateway(request ->
-                joinSingleTeamAreaForAllTeamsLocal(GameTypeEnum.Bingo, request.area(),
-                        request.showIntroduction(), request.runMode()),
+                request.teams().isEmpty()
+                        ? joinSingleTeamAreaForAllTeamsLocal(GameTypeEnum.Bingo, request.area(),
+                                request.showIntroduction(), request.runMode())
+                        : joinSingleTeamAreaForTeams(GameTypeEnum.Bingo, request.area(),
+                                request.showIntroduction(), request.runMode(),
+                                request.teams().toArray(ChampionshipTeam[]::new)),
                 ignored -> forceEndLocalAreas(GameTypeEnum.Bingo)));
     }
 
@@ -439,9 +443,32 @@ public class GameManager extends BaseManager {
         if (!(manager.getArea(area) instanceof BaseMultiTeamGameInstance singleTeamArea))
             return false;
 
+        return joinMultiTeamInstanceForTeams(gameTypeEnum, singleTeamArea, showIntroduction,
+                runMode, List.of(championshipTeams));
+    }
+
+    /** Starts an explicitly selected runtime slot, used by same-map DAILY replicas such as Ace Race. */
+    public synchronized boolean joinMultiTeamInstanceForTeams(
+            @NotNull GameTypeEnum gameTypeEnum, @NotNull BaseMultiTeamGameInstance singleTeamArea,
+            boolean showIntroduction, @NotNull GameRunMode runMode,
+            @NotNull List<ChampionshipTeam> championshipTeams) {
+        if (!isGameEnabled(gameTypeEnum) || singleTeamArea.getGameTypeEnum() != gameTypeEnum)
+            return false;
+        String mapName = singleTeamArea.getGameConfig().getConfigName();
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, mapName))
+            return false;
+        for (ChampionshipTeam championshipTeam : championshipTeams) {
+            if (teamStatus.containsKey(championshipTeam)) return false;
+            for (UUID uuid : championshipTeam.getMembers()) {
+                if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode)) return false;
+            }
+        }
+        for (ChampionshipTeam championshipTeam : championshipTeams)
+            for (UUID uuid : championshipTeam.getMembers()) removeSpectator(uuid);
+
         singleTeamArea.prepareRunMode(runMode);
         singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
-        if (singleTeamArea.tryStartGame(List.of(championshipTeams))) {
+        if (singleTeamArea.tryStartGame(championshipTeams)) {
             for (ChampionshipTeam championshipTeam : championshipTeams) {
                 teamStatus.put(championshipTeam, singleTeamArea);
                 addPlayerStatusByTeam(championshipTeam, singleTeamArea);
@@ -453,6 +480,14 @@ public class GameManager extends BaseManager {
         singleTeamArea.prepareRunMode(GameRunMode.GAME);
         singleTeamArea.setIntroductionEnabledForNextStart(false);
         return false;
+    }
+
+    /** Public-play Bingo entry that carries an explicit transient roster through local or remote execution. */
+    public boolean joinBingoForTeams(@NotNull String area, boolean showIntroduction,
+                                     @NotNull GameRunMode runMode,
+                                     @NotNull List<ChampionshipTeam> teams) {
+        if (teams.isEmpty()) return false;
+        return bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode, teams));
     }
 
     public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, List<UUID> players) {
@@ -582,8 +617,14 @@ public class GameManager extends BaseManager {
     public synchronized boolean reserveRemoteBingo(@NotNull RemoteBingoInstance instance,
                                                    @NotNull GameRunMode runMode,
                                                    boolean showIntroduction) {
-        if (!canReserveRemoteBingo(runMode, showIntroduction)) return false;
-        List<ChampionshipTeam> teams = plugin.getTeamManager().getTeamList();
+        return reserveRemoteBingo(instance, runMode, showIntroduction, plugin.getTeamManager().getTeamList());
+    }
+
+    public synchronized boolean reserveRemoteBingo(@NotNull RemoteBingoInstance instance,
+                                                   @NotNull GameRunMode runMode,
+                                                   boolean showIntroduction,
+                                                   @NotNull List<ChampionshipTeam> teams) {
+        if (!canReserveRemoteBingo(runMode, showIntroduction, teams)) return false;
         if (!instance.reserve(teams, runMode)) return false;
 
         for (ChampionshipTeam team : teams) {
@@ -602,8 +643,13 @@ public class GameManager extends BaseManager {
     /** Checks the same ownership constraints as {@link #reserveRemoteBingo} without changing them. */
     public synchronized boolean canReserveRemoteBingo(@NotNull GameRunMode runMode,
                                                        boolean showIntroduction) {
+        return canReserveRemoteBingo(runMode, showIntroduction, plugin.getTeamManager().getTeamList());
+    }
+
+    public synchronized boolean canReserveRemoteBingo(@NotNull GameRunMode runMode,
+                                                       boolean showIntroduction,
+                                                       @NotNull List<ChampionshipTeam> teams) {
         if (!isGameEnabled(GameTypeEnum.Bingo)) return false;
-        List<ChampionshipTeam> teams = plugin.getTeamManager().getTeamList();
         if (teams.stream().flatMap(team -> team.getOnlinePlayers().stream()).findAny().isEmpty()) return false;
         for (ChampionshipTeam team : teams) {
             if (teamStatus.containsKey(team)) return false;
@@ -642,6 +688,7 @@ public class GameManager extends BaseManager {
         }
         remoteBingoInstances.remove(instance.matchId(), instance);
         instance.abortFromRemote();
+        if (plugin.getDailyManager() != null) plugin.getDailyManager().abort(instance);
         instance.dispose();
         if (interruptedEvent) {
             plugin.getScheduleManager().abortFormalEvent(GameTypeEnum.Bingo,
@@ -883,6 +930,10 @@ public class GameManager extends BaseManager {
         playerStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
     }
 
+    public void releaseInstancePlayers(@NotNull BaseGameInstance instance, @NotNull Set<UUID> players) {
+        for (UUID player : players) playerStatus.remove(player, instance);
+    }
+
     @Nullable
     public BaseGameInstance getBasePlayerArea(UUID uuid) {
         return playerStatus.get(uuid);
@@ -964,6 +1015,8 @@ public class GameManager extends BaseManager {
     private int spectatorInstanceIndex(@NotNull BaseGameInstance instance) {
         if (instance instanceof ParkourTagArea parkourTag) return parkourTag.getCopyIndex();
         if (instance instanceof BattleBoxArea battleBox) return battleBox.getCopyIndex();
+        if (instance instanceof ink.ziip.championshipscore.api.game.acerace.AceRaceArea aceRace)
+            return aceRace.getCopyIndex();
         return 0;
     }
 
@@ -1068,8 +1121,10 @@ public class GameManager extends BaseManager {
         }
         spectatorTransitionHolds.remove(uuid);
         if (previous != null) previous.detachSpectator(player);
+        if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
         playerSpectatorStatus.put(uuid, target);
         target.addSpectator(player, destination);
+        if (plugin.getDailyManager() != null) plugin.getDailyManager().attachSpectator(target, uuid);
     }
 
 
@@ -1115,6 +1170,7 @@ public class GameManager extends BaseManager {
             BaseGameInstance baseArea = playerSpectatorStatus.get(uuid);
             baseArea.removeSpectator(player);
             playerSpectatorStatus.remove(uuid);
+            if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
             spectatorTransitionHolds.remove(uuid);
             if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
             return true;
@@ -1128,6 +1184,7 @@ public class GameManager extends BaseManager {
             BaseGameInstance baseArea = playerSpectatorStatus.get(uuid);
             baseArea.removeSpectator(uuid);
             playerSpectatorStatus.remove(uuid);
+            if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
         }
         spectatorTransitionHolds.remove(uuid);
     }
@@ -1137,6 +1194,7 @@ public class GameManager extends BaseManager {
             BaseGameInstance baseArea = playerSpectatorStatus.get(uuid);
             baseArea.onlyRemoveSpectatorFromList(uuid);
             playerSpectatorStatus.remove(uuid);
+            if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
         }
         spectatorTransitionHolds.remove(uuid);
     }

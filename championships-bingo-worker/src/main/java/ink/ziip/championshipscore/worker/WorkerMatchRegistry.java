@@ -18,6 +18,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,6 +87,8 @@ final class WorkerMatchRegistry {
                     command.attributes().getOrDefault("username", "Spectator")));
             case REMOVE_SPECTATOR -> withActive(command, session -> session.removeSpectator(
                     UUID.fromString(command.attributes().get("playerId"))));
+            case REMOVE_PARTICIPANTS -> withActive(command, session -> session.removeParticipants(
+                    parsePlayers(command.attributes().get("players"))));
             case SHUTDOWN_WHEN_IDLE -> CompletableFuture.completedFuture(active == null || active.state().terminal());
         };
     }
@@ -148,6 +152,26 @@ final class WorkerMatchRegistry {
             session = active;
         }
         if (session != null) session.playerLeft(player);
+    }
+
+    void requestVoluntaryLeave(Player player) {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        if (session == null || !session.isPlaying(player.getUniqueId())) {
+            player.sendMessage(Component.text("[自由游玩] ", NamedTextColor.GREEN)
+                    .append(Component.text("你当前没有参与任何游戏。", NamedTextColor.GRAY)));
+            return;
+        }
+        session.requestVoluntaryLeave(player);
+    }
+
+    private static Set<UUID> parsePlayers(String value) {
+        if (value == null || value.isBlank()) return Set.of();
+        Set<UUID> players = new LinkedHashSet<>();
+        for (String token : value.split(",")) players.add(UUID.fromString(token));
+        return Set.copyOf(players);
     }
 
     void observe(Player player) {

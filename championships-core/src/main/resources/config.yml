@@ -1,6 +1,26 @@
 dont-edit-this:
-  version: 11
+  version: 12
 mode: "CHAMPIONSHIP"
+# DAILY opens the self-service game menu and queues. It does not disable /cc event or /cc game start.
+daily:
+  enabled-games:
+    - "Bingo"
+    - "AceRace"
+  games:
+    Bingo:
+      min-players: 2
+      max-players: 16
+      team-size: 4
+      teams: 4
+      countdown-seconds: 20
+    AceRace:
+      min-players: 1
+      max-players: 16
+      team-size: 4
+      teams: 4
+      countdown-seconds: 15
+      # Runtime copies share the same physical track and are isolated by player visibility.
+      concurrent-instances: 2
 max-players: 100
 whitelist: [ ]
 weighted-score: false

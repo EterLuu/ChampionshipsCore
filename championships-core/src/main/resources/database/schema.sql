@@ -111,3 +111,60 @@ CREATE TABLE IF NOT EXISTS `remote_bingo_inbox`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
+
+-- DAILY is deliberately isolated from player_points/game_status. These tables may be rebuilt or
+-- ranked independently without changing any formal-event history.
+CREATE TABLE IF NOT EXISTS `daily_player_stats`
+(
+    `uuid`          VARCHAR(36)  NOT NULL,
+    `username`      VARCHAR(16)  NOT NULL,
+    `game`          VARCHAR(64)  NOT NULL,
+    `gamesPlayed`   BIGINT       NOT NULL DEFAULT 0,
+    `wins`          BIGINT       NOT NULL DEFAULT 0,
+    `totalPoints`   DOUBLE       NOT NULL DEFAULT 0,
+    `bestPoints`    DOUBLE       NOT NULL DEFAULT 0,
+    `updatedAt`     BIGINT       NOT NULL,
+
+    PRIMARY KEY (`uuid`, `game`),
+    INDEX `idx_daily_stats_board` (`game`, `wins`, `totalPoints`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `daily_match_results`
+(
+    `matchId`       VARCHAR(36)  NOT NULL,
+    `uuid`          VARCHAR(36)  NOT NULL,
+    `username`      VARCHAR(16)  NOT NULL,
+    `game`          VARCHAR(64)  NOT NULL,
+    `map`           VARCHAR(128) NOT NULL,
+    `teamKey`       VARCHAR(64)  NOT NULL,
+    `points`        DOUBLE       NOT NULL,
+    `won`           BOOLEAN      NOT NULL,
+    `finishedAt`    BIGINT       NOT NULL,
+
+    PRIMARY KEY (`matchId`, `uuid`),
+    INDEX `idx_daily_results_player` (`uuid`, `game`, `finishedAt`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `daily_player_records`
+(
+    `uuid`          VARCHAR(36)  NOT NULL,
+    `username`      VARCHAR(16)  NOT NULL,
+    `game`          VARCHAR(64)  NOT NULL,
+    `map`           VARCHAR(128) NOT NULL,
+    `mapRevision`   VARCHAR(64)  NOT NULL,
+    `rulesHash`     VARCHAR(128) NOT NULL,
+    `recordType`    VARCHAR(64)  NOT NULL,
+    `durationMs`    BIGINT       NOT NULL,
+    `matchId`       VARCHAR(36)  NOT NULL,
+    `achievedBy`    VARCHAR(36)  NULL,
+    `achievedAt`    BIGINT       NOT NULL,
+
+    PRIMARY KEY (`uuid`, `game`, `map`, `mapRevision`, `rulesHash`, `recordType`),
+    INDEX `idx_daily_records_board` (`game`, `map`, `recordType`, `durationMs`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;

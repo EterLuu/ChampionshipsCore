@@ -20,6 +20,8 @@ class SidebarConfigurationTest {
         assertTrue(configuration.enabled());
         assertEquals(20L, configuration.updateIntervalTicks());
         assertTrue(configuration.lobby().lines().size() <= SidebarConfiguration.MAX_LINES);
+        assertFalse(configuration.dailyLobby().lines().isEmpty());
+        assertTrue(configuration.dailyLobby().lines().size() <= SidebarConfiguration.MAX_LINES);
         assertTrue(configuration.mapStatus().lines().size() <= SidebarConfiguration.MAX_LINES);
         assertTrue(configuration.mapEdit().lines().size() <= SidebarConfiguration.MAX_LINES);
         for (GameTypeEnum game : GameTypeEnum.values()) {

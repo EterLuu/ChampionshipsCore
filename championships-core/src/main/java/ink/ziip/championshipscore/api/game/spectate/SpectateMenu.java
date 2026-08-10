@@ -438,6 +438,9 @@ public final class SpectateMenu implements Listener {
         if (instance instanceof BattleBoxArea battleBox) {
             return name + " · 分区 " + (battleBox.getCopyIndex() + 1);
         }
+        if (instance instanceof ink.ziip.championshipscore.api.game.acerace.AceRaceArea aceRace) {
+            return name + " · 实例 " + (aceRace.getCopyIndex() + 1);
+        }
         return name;
     }
 

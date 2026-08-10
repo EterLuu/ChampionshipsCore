@@ -629,6 +629,51 @@ final class WorkerMatchSession {
         emit(MatchEventType.PLAYER_LEFT, Map.of("playerId", player.getUniqueId().toString()));
     }
 
+    void requestVoluntaryLeave(Player player) {
+        if (!isPlaying(player.getUniqueId())) return;
+        player.sendMessage(Component.text("正在离开自由游玩…", NamedTextColor.YELLOW));
+        emit(MatchEventType.PLAYER_LEFT, Map.of(
+                "playerId", player.getUniqueId().toString(), "intent", "voluntary"));
+    }
+
+    CompletionStage<Boolean> removeParticipants(Set<UUID> playerIds) {
+        if (playerIds.isEmpty()) return CompletableFuture.completedFuture(true);
+        synchronized (this) {
+            for (UUID playerId : playerIds) {
+                PlayerSnapshot participant = participants.get(playerId);
+                if (participant == null || participant.role() != ParticipantRole.PLAYER) continue;
+                participants.remove(playerId);
+                arrived.remove(playerId);
+                preparedPlayers.remove(playerId);
+                bulkScatterPlayers.remove(playerId);
+            }
+        }
+        for (UUID playerId : playerIds) {
+            Player player = plugin.getServer().getPlayer(playerId);
+            if (player == null) continue;
+            scheduler.runEntity(player, () -> {
+                sidebar.hide(player);
+                resetVitals(player);
+                player.getInventory().clear();
+                returnRouter.request(player);
+            });
+        }
+        boolean empty;
+        MatchState current;
+        synchronized (this) {
+            empty = participants.values().stream().noneMatch(
+                    participant -> participant.role() == ParticipantRole.PLAYER);
+            current = lifecycle.state();
+        }
+        if (!empty) {
+            updateSidebar();
+            return CompletableFuture.completedFuture(true);
+        }
+        return current == MatchState.RUNNING
+                ? finish("all-players-left")
+                : abort("all-players-left");
+    }
+
     CompletionStage<Boolean> addSpectator(UUID playerId, String username) {
         synchronized (this) {
             if (lifecycle.state().terminal()) return CompletableFuture.completedFuture(false);

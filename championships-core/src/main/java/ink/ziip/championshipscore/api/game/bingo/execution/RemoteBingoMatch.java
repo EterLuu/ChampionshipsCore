@@ -5,6 +5,9 @@ import ink.ziip.championshipscore.bingo.engine.BingoResult;
 import ink.ziip.championshipscore.bingo.engine.BingoScoringEngine;
 import ink.ziip.championshipscore.bingo.engine.PlayerAward;
 import ink.ziip.championshipscore.bingo.engine.ScoringDecision;
+import ink.ziip.championshipscore.api.daily.DailyRecordType;
+import ink.ziip.championshipscore.api.object.game.GameRunMode;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.protocol.DeterministicIds;
 import ink.ziip.championshipscore.protocol.MatchCommand;
 import ink.ziip.championshipscore.protocol.MatchCommandType;
@@ -94,7 +97,8 @@ final class RemoteBingoMatch {
             case TASK_COMPLETED -> completed(() -> applyCompletion(event));
             case FINISHED -> completed(() -> finish(event));
             case PREPARE_FAILED, FAILED, ABORTED -> completed(this::abort);
-            case PLAYER_LEFT, HEARTBEAT -> CompletableFuture.completedFuture(true);
+            case PLAYER_LEFT -> onPlayerLeft(event);
+            case HEARTBEAT -> CompletableFuture.completedFuture(true);
         };
         return result.thenApply(success -> {
             if (success) {
@@ -184,6 +188,15 @@ final class RemoteBingoMatch {
         });
     }
 
+    private CompletionStage<Boolean> onPlayerLeft(MatchEvent event) {
+        if (!"voluntary".equals(event.attributes().get("intent")))
+            return CompletableFuture.completedFuture(true);
+        UUID playerId = UUID.fromString(required(event, "playerId"));
+        Set<UUID> leaving = plugin.getDailyManager().leaveActiveFromRemote(instance, playerId);
+        if (leaving.isEmpty()) return CompletableFuture.completedFuture(true);
+        return removeParticipants(leaving);
+    }
+
     private boolean markStarted() {
         synchronized (this) {
             if (lifecycle.state() != MatchState.COUNTDOWN) return false;
@@ -202,6 +215,27 @@ final class RemoteBingoMatch {
         for (PlayerAward award : decision.awards()) {
             instance.applyAward(award.playerId(), award.points());
             pendingAwards.add(new PendingAward(decision.observation().seq(), award));
+        }
+        if (instance.getRunMode() == GameRunMode.DAILY) {
+            ChampionshipTeam team = instance.getGameTeams().stream()
+                    .filter(candidate -> candidate.getMembers().equals(
+                            Set.copyOf(manifest.teamsById().get(decision.observation().teamId()).members())))
+                    .findFirst().orElse(null);
+            if (team != null) {
+                long durationMillis = decision.observation().observedGameTick() * 50L;
+                if (decision.completedLines() > 0) {
+                    plugin.getDailyManager().statsManager().recordTeamMilestone(instance, team,
+                            DailyRecordType.BINGO_FIRST_LINE, durationMillis,
+                            decision.observation().playerId());
+                }
+                int completed = scoring.result().completedCells()
+                        .getOrDefault(decision.observation().teamId(), 0);
+                if (completed >= manifest.tasks().size()) {
+                    plugin.getDailyManager().statsManager().recordTeamMilestone(instance, team,
+                            DailyRecordType.BINGO_FULL_CARD, durationMillis,
+                            decision.observation().playerId());
+                }
+            }
         }
         return true;
     }
@@ -256,6 +290,15 @@ final class RemoteBingoMatch {
     MatchCommand forceEndCommand(String reason) {
         return MatchMessages.command(manifest.matchId(), manifest.epoch(), MatchCommandType.FORCE_END,
                 Map.of("reason", reason), Clock.systemUTC());
+    }
+
+    CompletionStage<Boolean> removeParticipants(Set<UUID> players) {
+        if (players.isEmpty()) return CompletableFuture.completedFuture(true);
+        String joined = players.stream().map(UUID::toString).sorted()
+                .collect(java.util.stream.Collectors.joining(","));
+        MatchCommand command = MatchMessages.command(manifest.matchId(), manifest.epoch(),
+                MatchCommandType.REMOVE_PARTICIPANTS, Map.of("players", joined), Clock.systemUTC());
+        return commands.publishCommand(command).thenApply(ignored -> true);
     }
 
     CompletionStage<Boolean> addSpectator(UUID playerId, String username) {

@@ -20,17 +20,19 @@ public final class SidebarConfiguration {
     private final boolean papiFallback;
     private final long updateIntervalTicks;
     private final Template lobby;
+    private final Template dailyLobby;
     private final Template mapStatus;
     private final Template mapEdit;
     private final Map<GameTypeEnum, GameTemplate> games;
 
     private SidebarConfiguration(boolean enabled, boolean papiFallback, long updateIntervalTicks,
-                                 Template lobby, Template mapStatus, Template mapEdit,
+                                 Template lobby, Template dailyLobby, Template mapStatus, Template mapEdit,
                                  Map<GameTypeEnum, GameTemplate> games) {
         this.enabled = enabled;
         this.papiFallback = papiFallback;
         this.updateIntervalTicks = updateIntervalTicks;
         this.lobby = lobby;
+        this.dailyLobby = dailyLobby;
         this.mapStatus = mapStatus;
         this.mapEdit = mapEdit;
         this.games = Map.copyOf(games);
@@ -50,6 +52,20 @@ public final class SidebarConfiguration {
         }
 
         Template lobby = template(yaml, "boards.lobby", styles, true);
+        Template dailyLobby = template(yaml, "boards.daily-lobby", styles, false);
+        if (dailyLobby == null) dailyLobby = new Template("&#31e061&l自由游玩", List.of(
+                "&#bababa游玩方式: &#ededed{daily.mode}",
+                "&#bababa同行队长: &#24abff{daily.party-leader} &#696969({daily.party-size}人)",
+                "&#bababa心仪游戏: &#fff566{daily.selected-game}",
+                "&#bababa当前状态: &#ededed{daily.queue-state}",
+                "&#bababa等候人数: &#ededed{daily.queue-players}",
+                "&#bababa启程倒计时: &#ff6b26{daily.countdown}",
+                "",
+                "&#bababa游玩场次: &#ededed{daily.games} &#696969• &#bababa胜场: &#31e061{daily.wins}",
+                "&#bababa游玩积分: &#ff6b26{daily.points}",
+                "",
+                "&#fff566/cc play &#bababa选择游戏",
+                "&#fff566/cc play leaderboard &#bababa查看榜单"));
         Template mapStatus = template(yaml, "boards.map-status", styles, true);
         Template mapEdit = template(yaml, "boards.map-edit", styles, true);
 
@@ -84,7 +100,7 @@ public final class SidebarConfiguration {
         if (interval < 1L) throw new IllegalArgumentException("update interval must be positive");
         return new SidebarConfiguration(yaml.getBoolean("settings.enabled", true),
                 yaml.getBoolean("settings.papi-fallback", true), interval,
-                lobby, mapStatus, mapEdit, games);
+                lobby, dailyLobby, mapStatus, mapEdit, games);
     }
 
     private static Template template(YamlConfiguration yaml, String path, Map<String, String> styles,
@@ -146,6 +162,10 @@ public final class SidebarConfiguration {
 
     public Template lobby() {
         return lobby;
+    }
+
+    public Template dailyLobby() {
+        return dailyLobby;
     }
 
     public Template mapStatus() {

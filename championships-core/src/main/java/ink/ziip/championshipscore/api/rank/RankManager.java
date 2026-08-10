@@ -110,7 +110,7 @@ public class RankManager extends BaseManager {
     }
 
     public int getPlayerTeamRank(@NotNull UUID uuid) {
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getFormalTeamByPlayer(uuid);
         if (championshipTeam != null) {
             return teamRank.getOrDefault(championshipTeam, Integer.MAX_VALUE);
         }
@@ -127,7 +127,7 @@ public class RankManager extends BaseManager {
     }
 
     public double getPlayerTeamPoints(@NotNull UUID uuid) {
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getFormalTeamByPlayer(uuid);
         if (championshipTeam != null) {
             return getTeamPoints(championshipTeam);
         }
@@ -338,7 +338,7 @@ public class RankManager extends BaseManager {
             @NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
             @NotNull String round, double points) {
         if (!isScoringGame(gameTypeEnum)) return false;
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
+        ChampionshipTeam championshipTeam = plugin.getTeamManager().getFormalTeamByPlayer(uuid);
         if (rival == null) {
             rival = championshipTeam;
         }

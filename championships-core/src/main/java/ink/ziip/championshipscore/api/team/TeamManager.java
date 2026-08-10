@@ -23,6 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TeamManager extends BaseManager {
     private static final ConcurrentHashMap<String, ChampionshipTeam> cachedTeams = new ConcurrentHashMap<>();
+    /** Match-scoped teams used by DAILY runs. They never enter {@link #cachedTeams} or the database. */
+    private final ConcurrentHashMap<UUID, ChampionshipTeam> transientTeamByPlayer = new ConcurrentHashMap<>();
+    private final Set<ChampionshipTeam> transientTeams = ConcurrentHashMap.newKeySet();
+    private final ConcurrentHashMap<UUID, String> originalScoreboardTeamByPlayer = new ConcurrentHashMap<>();
     private static final TeamDaoImpl teamDaoImpl = new TeamDaoImpl();
     private final BukkitScheduler scheduler;
     private static Scoreboard scoreboard = null;
@@ -110,7 +114,7 @@ public class TeamManager extends BaseManager {
 
     @Override
     public void unload() {
-
+        for (ChampionshipTeam team : Set.copyOf(transientTeams)) removeTransientTeam(team);
     }
 
     public List<ChampionshipTeam> getTeamList() {
@@ -147,10 +151,107 @@ public class TeamManager extends BaseManager {
 
     @Nullable
     public ChampionshipTeam getTeamByPlayer(@NotNull UUID uuid) {
+        ChampionshipTeam transientTeam = transientTeamByPlayer.get(uuid);
+        if (transientTeam != null) return transientTeam;
         for (ChampionshipTeam championshipTeam : cachedTeams.values()) {
             for (UUID playerUUID : championshipTeam.getMembers()) {
                 if (playerUUID.equals(uuid)) return championshipTeam;
             }
+        }
+        return null;
+    }
+
+    /**
+     * Creates a scoreboard-backed runtime team for one DAILY session. The team is visible through
+     * normal player-to-team lookup so existing game code needs no parallel roster implementation,
+     * while formal team iteration and all DAO operations remain isolated.
+     */
+    public synchronized @NotNull ChampionshipTeam createTransientTeam(
+            @NotNull String scoreboardId, @NotNull String displayName,
+            @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members) {
+        if (!Bukkit.isPrimaryThread()) throw new IllegalStateException("Transient teams must be created on the server thread");
+        if (members.isEmpty()) throw new IllegalArgumentException("Transient team must have members");
+        if (scoreboardId.length() > 16 || !scoreboardId.matches("[A-Za-z0-9_]+"))
+            throw new IllegalArgumentException("Invalid transient scoreboard id: " + scoreboardId);
+        for (UUID member : members) {
+            if (transientTeamByPlayer.containsKey(member))
+                throw new IllegalStateException("Player already belongs to a transient team: " + member);
+        }
+
+        Team scoreboardTeam = scoreboard.getTeam(scoreboardId);
+        if (scoreboardTeam != null) scoreboardTeam.unregister();
+        scoreboardTeam = scoreboard.registerNewTeam(scoreboardId);
+        try {
+            scoreboardTeam.color(Utils.toNamedTextColor(colorName));
+        } catch (RuntimeException ignored) {
+        }
+        scoreboardTeam.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+
+        for (UUID member : members) {
+            String playerName = plugin.getPlayerManager().getPlayerName(member);
+            if (playerName == null) {
+                OfflinePlayer offline = Bukkit.getOfflinePlayer(member);
+                playerName = offline.getName();
+            }
+            if (playerName == null) continue;
+            Team previous = scoreboard.getEntryTeam(playerName);
+            if (previous != null) originalScoreboardTeamByPlayer.put(member, previous.getName());
+            scoreboardTeam.addEntry(playerName);
+        }
+
+        int id = scoreboardId.hashCode();
+        if (id >= 0) id = -id - 1;
+        ChampionshipTeam team = new ChampionshipTeam(id, displayName, colorName, colorCode,
+                new LinkedHashSet<>(members), scoreboardTeam);
+        transientTeams.add(team);
+        for (UUID member : members) transientTeamByPlayer.put(member, team);
+        return team;
+    }
+
+    /** Removes a DAILY team and restores each player's exact pre-session scoreboard team when possible. */
+    public synchronized void removeTransientTeam(@NotNull ChampionshipTeam team) {
+        if (!transientTeams.remove(team)) return;
+        Team temporary = team.getTeam();
+        for (UUID member : team.getMembers()) transientTeamByPlayer.remove(member, team);
+        if (temporary != null) {
+            try {
+                temporary.unregister();
+            } catch (IllegalStateException ignored) {
+            }
+        }
+        for (UUID member : team.getMembers()) {
+            String originalName = originalScoreboardTeamByPlayer.remove(member);
+            Team original = originalName == null ? null : scoreboard.getTeam(originalName);
+            String playerName = plugin.getPlayerManager().getPlayerName(member);
+            if (playerName == null) playerName = Bukkit.getOfflinePlayer(member).getName();
+            if (original != null && playerName != null) original.addEntry(playerName);
+        }
+    }
+
+    /** Shrinks a running transient team after voluntary departure and restores formal scoreboard entries. */
+    public synchronized void removeTransientMembers(@NotNull ChampionshipTeam team, @NotNull Set<UUID> members) {
+        if (!transientTeams.contains(team)) return;
+        for (UUID member : members) {
+            if (!team.deleteMember(member)) continue;
+            transientTeamByPlayer.remove(member, team);
+            String playerName = plugin.getPlayerManager().getPlayerName(member);
+            if (playerName == null) playerName = Bukkit.getOfflinePlayer(member).getName();
+            if (team.getTeam() != null && playerName != null) team.getTeam().removeEntry(playerName);
+            String originalName = originalScoreboardTeamByPlayer.remove(member);
+            Team original = originalName == null ? null : scoreboard.getTeam(originalName);
+            if (original != null && playerName != null) original.addEntry(playerName);
+        }
+    }
+
+    public boolean isTransientTeam(@Nullable ChampionshipTeam team) {
+        return team != null && transientTeams.contains(team);
+    }
+
+    /** Formal lookup that deliberately ignores DAILY's runtime overlay. */
+    @Nullable
+    public ChampionshipTeam getFormalTeamByPlayer(@NotNull UUID uuid) {
+        for (ChampionshipTeam championshipTeam : cachedTeams.values()) {
+            if (championshipTeam.isTeamMember(uuid)) return championshipTeam;
         }
         return null;
     }

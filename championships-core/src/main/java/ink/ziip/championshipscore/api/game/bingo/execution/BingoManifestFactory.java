@@ -64,14 +64,22 @@ public final class BingoManifestFactory {
 
         List<TeamSnapshot> teamSnapshots = new ArrayList<>();
         List<PlayerSnapshot> participants = new ArrayList<>();
-        for (ChampionshipTeam team : teams) {
+        for (int teamIndex = 0; teamIndex < teams.size(); teamIndex++) {
+            ChampionshipTeam team = teams.get(teamIndex);
+            // Runtime DAILY teams intentionally use negative Core-only IDs. The worker protocol uses
+            // a compact match-local namespace so those teams never need a persisted database ID.
+            int protocolTeamId = team.getId() < 0 ? teamIndex : team.getId();
             List<UUID> members = team.getMembers().stream().sorted().toList();
-            teamSnapshots.add(new TeamSnapshot(team.getId(), team.getName(), team.getColorName(),
-                    team.getColorCode(), members, plugin.getRankManager().getTeamPoints(team)));
+            double teamPoints = runMode == GameRunMode.EVENT ? plugin.getRankManager().getTeamPoints(team) : 0D;
+            teamSnapshots.add(new TeamSnapshot(protocolTeamId, team.getName(), team.getColorName(),
+                    team.getColorCode(), members, teamPoints));
             for (UUID member : members) {
-                participants.add(new PlayerSnapshot(member, plugin.getPlayerManager().getPlayerName(member),
-                        ParticipantRole.PLAYER, team.getId(), org.bukkit.Bukkit.getPlayer(member) != null,
-                        plugin.getRankManager().getPlayerPoints(member)));
+                String username = plugin.getPlayerManager().getPlayerName(member);
+                if (username == null || username.isBlank()) username = member.toString();
+                double playerPoints = runMode == GameRunMode.EVENT ? plugin.getRankManager().getPlayerPoints(member) : 0D;
+                participants.add(new PlayerSnapshot(member, username,
+                        ParticipantRole.PLAYER, protocolTeamId, org.bukkit.Bukkit.getPlayer(member) != null,
+                        playerPoints));
             }
         }
         spectators.stream().sorted().forEach(uuid -> participants.add(new PlayerSnapshot(uuid,
