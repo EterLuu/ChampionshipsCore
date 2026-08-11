@@ -4,11 +4,15 @@ import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import io.papermc.paper.event.entity.EntityAttemptSpinAttackEvent;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
+import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceRespawnPointListStep;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.EnderCrystal;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -19,6 +23,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRiptideEvent;
@@ -58,11 +63,27 @@ public class AceRaceHandler extends BaseListener {
         if (event.getEntity() instanceof Player player && !aceRaceArea.notAreaPlayer(player)) {
             event.setCancelled(true);
         }
+        if (event.getEntity() instanceof EnderCrystal crystal
+                && aceRaceArea.mapEditPreviewRespawnIndex(crystal) >= 0) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onDamageByEntity(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Player player && !aceRaceArea.notAreaPlayer(player)) event.setCancelled(true);
+        if (event.getEntity() instanceof EnderCrystal crystal
+                && aceRaceArea.mapEditPreviewRespawnIndex(crystal) >= 0) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPreviewCrystalInteract(PlayerInteractEntityEvent event) {
+        if (!(event.getRightClicked() instanceof EnderCrystal crystal)) return;
+        int index = aceRaceArea.mapEditPreviewRespawnIndex(crystal);
+        if (index < 0) return;
+        event.setCancelled(true);
+        PrepareSession session = plugin.getPrepareSessionManager().getSession(event.getPlayer());
+        if (session == null || session.getGameType() != ink.ziip.championshipscore.api.object.game.GameTypeEnum.AceRace
+                || !java.util.Objects.equals(session.getAreaName(), aceRaceArea.getGameConfig().getAreaName())) return;
+        ListStepGui.openEdit(event.getPlayer(), session, new AceRaceRespawnPointListStep(), index);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

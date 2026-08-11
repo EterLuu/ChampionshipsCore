@@ -1,8 +1,10 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.api.game.acerace.AceRaceConfig;
+import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceProgressPointListStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceRespawnPointListStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceMapPreviewStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceLineStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
@@ -40,7 +42,14 @@ public final class AceRacePrepareFlow extends PrepareFlowDefinition {
                 new AceRaceLineStep(true),
                 new AceRaceLineStep(false),
                 new AceRaceProgressPointListStep(),
-                new AceRaceRespawnPointListStep());
+                new AceRaceRespawnPointListStep(),
+                new AceRaceMapPreviewStep());
+    }
+
+    @Override
+    public void onSessionExit(@NotNull PrepareSession session) {
+        AceRaceArea area = session.getPlugin().getGameManager().getAceRaceManager().getArea(session.getAreaName());
+        if (area != null) area.disableMapEditPreview();
     }
     private static AceRaceConfig cfg(SetupTarget target) { return (AceRaceConfig) target.config(); }
 }

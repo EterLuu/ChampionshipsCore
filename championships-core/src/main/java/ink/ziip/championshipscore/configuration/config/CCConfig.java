@@ -18,7 +18,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 12;
+        return 13;
     }
 
     // Games
@@ -90,6 +90,9 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "chat.spectator")
     public static String CHAT_SPECTATOR;
+
+    @ConfigOption(path = "chat.daily")
+    public static String CHAT_DAILY;
 
     // Database
     @ConfigOption(path = "database.type")

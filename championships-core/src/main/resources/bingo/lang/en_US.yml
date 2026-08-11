@@ -250,7 +250,7 @@ board:
   team_progress: "{0}&7: &f{1}/{2} &7L{3}"
   team_score: "&8{0}. {1} &7- #ff6e26{2}pts &8({3}/{4})"
   own_team_score: "#f6ffa8&l▶ {0}. {1} #ff6e26&l{2}pts &f({3}/{4})"
-  footer: "&aHAMMER &f& &cRIA &f& #ae70ffINF &f& #036eb7&l天际服"
+  footer: "&aHAMMER &f& &cRIA &f& #ae70ffINF &f& #036eb7&lHS"
   team_members: "{0}&7: &f{1}"
   countdown: "&7Start: &e{0}s"
   genesis: "&7Genesis: &d{0}s"

@@ -30,6 +30,7 @@ final class WorkerMatchRegistry {
     private final WorkerConfig config;
     private final DurableEventOutbox events;
     private final WorkerReturnRouter returnRouter;
+    private final WorkerWorldResetCoordinator worldReset;
     private final PlatformScheduler scheduler;
     private final Set<NamespacedKey> recipeKeys;
     private final Map<UUID, MatchManifest> manifests = new HashMap<>();
@@ -45,6 +46,8 @@ final class WorkerMatchRegistry {
         this.returnRouter = returnRouter;
         this.scheduler = new PlatformScheduler(plugin);
         this.recipeKeys = loadRecipeKeys(plugin);
+        this.worldReset = config.allowWorldReuseWithoutReset()
+                ? null : new WorkerWorldResetCoordinator(plugin, config);
     }
 
     CompletionStage<DeliveryDisposition> handle(InboundDelivery<MatchInboundMessage> delivery) {
@@ -84,7 +87,8 @@ final class WorkerMatchRegistry {
                     command.attributes().getOrDefault("reason", "core-abort")));
             case ADD_SPECTATOR -> withActive(command, session -> session.addSpectator(
                     UUID.fromString(command.attributes().get("playerId")),
-                    command.attributes().getOrDefault("username", "Spectator")));
+                    command.attributes().getOrDefault("username", "Spectator"),
+                    Double.parseDouble(command.attributes().getOrDefault("points", "0"))));
             case REMOVE_SPECTATOR -> withActive(command, session -> session.removeSpectator(
                     UUID.fromString(command.attributes().get("playerId"))));
             case REMOVE_PARTICIPANTS -> withActive(command, session -> session.removeParticipants(
@@ -104,7 +108,8 @@ final class WorkerMatchRegistry {
             }
             if (!active.state().terminal()) return CompletableFuture.completedFuture(false);
         }
-        active = new WorkerMatchSession(plugin, config, manifest, events, returnRouter);
+        active = new WorkerMatchSession(plugin, config, manifest, events, returnRouter,
+                worldReset == null ? () -> { } : worldReset::request);
         if (worldSlotConsumed && !config.allowWorldReuseWithoutReset()) {
             return active.rejectPreparation("world-slot-requires-reset");
         }
@@ -225,6 +230,10 @@ final class WorkerMatchRegistry {
 
     synchronized String resolveChampionshipPlaceholder(UUID playerId, String params) {
         return active == null ? null : active.resolveChampionshipPlaceholder(playerId, params);
+    }
+
+    synchronized WorkerPlayerPresentation playerPresentation(UUID playerId) {
+        return active == null ? WorkerPlayerPresentation.spectator() : active.playerPresentation(playerId);
     }
 
     private static Set<NamespacedKey> loadRecipeKeys(Plugin plugin) {

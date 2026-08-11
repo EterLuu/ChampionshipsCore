@@ -21,7 +21,7 @@
 
 `config.yml` 的 `daily.enabled-games` 是正式比赛游戏列表的日常子集。每个适配器从 `daily.games.<game>` 读取最小人数、最大人数、队伍容量、队伍数量和倒计时；AceRace 还读取 `concurrent-instances`。新增游戏应实现 `DailyGameAdapter`，使用 `DailyRules` 描述队列容量，并由 `DailyManager` 注册。
 
-分配器把同行小队视为不可拆分单元：较大的小队优先落位，个人玩家随机补足未满队伍；全部为个人玩家时同样随机分队。分配完成后才创建 `TeamManager` 的临时“同游小队”，因此不会污染正式队伍缓存和数据库。
+分配器把同行小队视为不可拆分单元：较大的小队优先落位，个人玩家随机补足未满队伍；全部为个人玩家时同样随机分队。分配完成后才创建 `TeamManager` 的临时颜色队伍（红队、绿队、蓝队等），因此不会污染正式队伍缓存和数据库。
 
 AceRace 的并发实例共享同一地图几何和世界。`PlayerIsolationService` 以日常 match ID 隔离玩家可见性，观战者会附着到所观战的实例；离开实例后恢复大厅可见性。
 
@@ -29,14 +29,16 @@ AceRace 的并发实例共享同一地图几何和世界。`PlayerIsolationServi
 
 独立数据表结构统一维护在 `resources/database/schema.sql`，业务由 `DailyStatsManager` 管理，所有 JDBC 访问通过 `DailyStatsDao`/`DailyStatsDaoImpl` 完成。数据表为：
 
-- `daily_player_stats`：按玩家和游戏聚合场次、胜场与日常积分。
-- `daily_match_results`：每场每位玩家的结果，`matchId + uuid` 保证幂等。
+- `daily_player_stats`：按玩家和游戏聚合场次、胜场；Bingo 额外保存连线数、完成任务总数和单场最多完成数，不保存任何累计积分。
+- `daily_match_results`：每场每位玩家的独立战绩，包含该场积分及 Bingo 进度，`matchId + uuid` 保证幂等。
 - `daily_player_records`：按游戏、地图、地图版本、规则版本和纪录类型存储最佳耗时。
 
-Bingo 记录首次连线和全收集耗时；AceRace 按地图记录最快完整合法单圈。日常运行不会调用正式积分/轮次持久化。
+Bingo 记录胜场、连线数、完成任务总数和单场最多完成数；AceRace 按地图记录最快单圈和最快完整三圈。单局积分只随该场战绩写入 `daily_match_results`，不会累加、继承或进入大厅展示；自由游玩也不会调用正式积分/轮次持久化。
 
-自由游玩占位符统一使用 `%cc_daily_*%`，包括 `mode`、`party_leader`、`party_size`、`selected_game`、`queue_state`、`queue_players`、`countdown`、`active_game`、`active_map`、`match_id`、`games`、`wins`、`points`、`best`。这些占位符只读取快照或缓存，离线/空上下文返回稳定默认值，不在 PAPI 回调线程访问数据库。
+自由游玩占位符统一使用 `%cc_daily_*%`，包括 `mode`、`party_leader`、`party_size`、`selected_game`、`queue_state`、`queue_players`、`countdown`、`active_game`、`active_map`、`match_id`、`games`、`wins`。旧的 `points`、`best` 为兼容保留但固定返回 `0`。这些占位符只读取快照或缓存，离线/空上下文返回稳定默认值，不在 PAPI 回调线程访问数据库。
 
-排行榜占位符格式为 `%cc_daily_lb_<榜单>_<名次>%`，并可追加 `_name` 或 `_value` 只取玩家名/数值。例如：`points`、`wins`、`bingo_points`、`acerace_points`、`bingo_first_line_<地图>`、`bingo_full_card_<地图>`、`acerace_fastest_lap_<地图>`。地图名会转为小写下划线标识。FancyHolograms 的现场配置已预置三块榜单，位置可在重启前后手动调整。
+DAILY 下正式队伍占位符 `player_team_name*`、`player_team_color*` 返回空文本，`player_team_points`/`player_team_rank` 返回 `0`。TAB 应使用 `%cc_tab_prefix%`、`%cc_tab_name_color%` 与 `%cc_tab_footer_status%`：大厅玩家使用白色名字，进入游戏后才使用当局队色；聊天和加入/离开提示复用相同的 `[前缀] 玩家名` 身份格式。匹配产生的临时队伍按颜色命名为“红队、绿队、蓝队”等。
+
+排行榜占位符格式为 `%cc_daily_lb_<榜单>_<名次>%`，并可追加 `_name` 或 `_value` 只取玩家名/数值。例如：`wins`、`bingo_wins`、`bingo_lines`、`bingo_completed_tasks`、`bingo_max_completed`、`acerace_fastest_lap_<地图>`、`acerace_fastest_three_laps_<地图>`。不存在累计积分榜。地图名会转为小写下划线标识。FancyHolograms 的现场配置已预置三块榜单，位置可在重启前后手动调整。
 
 大厅侧边栏使用 `scoreboards.yml` 的 `daily-lobby`。旧运行目录尚无该节点时会使用代码内置的安全模板，避免必须覆盖现场配置。

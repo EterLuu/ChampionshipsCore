@@ -1,10 +1,10 @@
 # Bingo 跨服拆分架构
 
-## 状态与启用原则
+## 模式与启用原则
 
-远程 Bingo 的代码边界、Core 控制面、Folia Worker、Redis Streams 可靠消费和代理转服链路已经接通。2026-08-10 的当前 SCC 运行实例为 `bingo.execution-mode: REMOTE`，这是联调环境快照，不是源码默认值或生产验收结论。出现跨服生命周期故障时仍可在维护窗口回退到 `LOCAL`；不要在一场比赛运行中热切换执行器。
+远程 Bingo 由 ChampionshipsCore 控制面、Folia Worker、Redis Streams 和代理转服链路组成。`LOCAL` 适用于单服执行，`REMOTE` 适用于将 Bingo 世界与玩法负载隔离到独立 Folia 服务器的部署。新部署应先以 `LOCAL` 验证基础玩法，再在维护窗口切换到 `REMOTE`；不得在比赛运行中热切换执行器。
 
-代码已具备协议、计分、Redis、outbox、Worker 展示和目标观察测试。Folia 上还完成了 64 个逻辑玩家、移动区块加载和约 1 万至 2 万实体的压力实验；结果与推荐参数见 [Bingo 64 人 Folia 性能分析](bingo-64-player-performance-report.md)。该实验没有建立 64 个真实 Minecraft 连接，也没有覆盖代理转服、Redis/MariaDB 故障恢复和完整比赛结算，所以当前状态仍是“可部署联调”，不是“已验证可直接用于正式赛事”。
+协议、计分、Redis、outbox、Worker 展示和目标观察均有自动化测试覆盖。项目还执行过 64 个逻辑玩家、移动区块加载和约 1 万至 2 万实体的 Folia 压力测试；结果与推荐参数见 [Bingo 64 人 Folia 性能指南](bingo-64-player-performance-report.md)。该测试不包含 64 个真实 Minecraft 连接，也不覆盖代理转服、Redis/MariaDB 故障恢复和完整比赛结算。生产部署前必须按本文的上线顺序完成端到端验收。
 
 ## Maven 模块
 
@@ -16,7 +16,7 @@
 | `championships-redis` | Redis Streams 发布、consumer group、pending reclaim、DLQ 和消息编解码 |
 | `championships-bingo-worker` | 独立 Folia 执行插件，拥有世界、实体、背包观察、任务菜单和实时玩法 |
 | `championships-bingo-loadtest` | 仅供可丢弃世界使用的一次性 Folia 区块/实体压测插件；不参与正式玩法 |
-| `championships-core` | 原 ChampionshipsCore；SCC 权威控制、赛程 ownership、事件重放、积分和数据库持久化 |
+| `championships-core` | ChampionshipsCore 主插件；负责赛程 ownership、事件重放、积分和数据库持久化 |
 
 根目录 `mvn clean package` 生成：
 
@@ -30,7 +30,7 @@ Core 的历史制品路径保持不变；Worker JAR 已包含 Redis 客户端及
 
 ## 权威边界
 
-SCC 是唯一控制面和正式积分权威。它负责：
+ChampionshipsCore 是唯一控制面和正式积分权威。它负责：
 
 - 生成卡片并冻结完整 `MatchManifest`；
 - 冻结队伍、名册、开局在线状态、计分规则、倒计时、散布、PvP 保护和常驻效果；
@@ -39,23 +39,23 @@ SCC 是唯一控制面和正式积分权威。它负责：
 - 按严格事件序列独立重放 Worker 的完成观察；
 - 校验最终结果哈希后，以确定性事务 ID 写入积分。
 
-Worker 只拥有执行面：世界、实体、背包/进度/统计观察、玩家 UI 和本地 tick。它不能直接访问 SCC 数据库，也不能决定正式积分。
+Worker 只拥有执行面：世界、实体、背包/进度/统计观察、玩家 UI 和本地 tick。它不能直接访问 ChampionshipsCore 数据库，也不能决定正式积分。
 
 初始装备、常驻效果、旁观状态、安全散布和记分板基础位于共享 Bukkit 平台模块，本地 Bingo 与 Worker 使用同一实现。计分、排名和胜者判定位于纯 Java engine，Core 与 Worker 各运行一份，避免复制玩法规则。Worker 不携带第二份 Bingo 玩法或语言配置：开局时 Core 将当前场地配置、`message.yml`、Bingo 语言文本与任务富文本冻结到 manifest。
 
 ## 生命周期与路由
 
 ```text
-SCC:  freeze manifest -> PREPARE ----------------------+
+Core: freeze manifest -> PREPARE ----------------------+
                                                       |
 Worker:                PREPARING -> READY ------------+
-                                           SCC routes players
+                                           Core routes players
 Worker:                PLAYER_ARRIVED ... ------------+
-                                           SCC START_COMMIT
+                                           Core START_COMMIT
 Worker:                COUNTDOWN -> RUNNING -> FINISHED
                               events + heartbeat |
-SCC:                         replay + verify ----+-> score -> schedule event
-Worker:                                                -> route everyone to SCC
+Core:                        replay + verify ----+-> score -> schedule event
+Worker:                                                -> route everyone to Core
 ```
 
 合法状态主路径为：
@@ -67,7 +67,7 @@ CREATED -> PREPARING -> READY -> ROUTING -> COUNTDOWN
 
 所有非终态可进入 `ABORTED`。`matchId + epoch` 是 fencing token，旧 epoch 的命令和事件不能改变当前比赛。
 
-创建 manifest 时在线的选手标记为 `requiredAtStart`，只有他们会阻塞到达屏障；完整离线名册仍保留用于团队奖励，并可在比赛中上线后通过 SCC ownership 路由进入 Worker。无任何在线选手时 Core 拒绝开局。
+创建 manifest 时在线的选手标记为 `requiredAtStart`，只有他们会阻塞到达屏障；完整离线名册仍保留用于团队奖励，并可在比赛中上线后按 Core ownership 路由进入 Worker。无任何在线选手时 Core 拒绝开局。
 
 代理路由使用标准 BungeeCord `Connect` Plugin Message。BungeeCord 使用 `BungeeCord` channel；Velocity 需启用其 BungeeCord 兼容 channel，也可配置 `bungeecord:main`。Plugin Message 只提出转服请求，真正的到达确认来自 Worker 的 `PLAYER_ARRIVED` 事件。
 
@@ -129,7 +129,7 @@ UUIDv5(matchId + epoch + completionSeq + playerUuid + awardKind)
 
 ## Worker 玩法能力
 
-当前 Worker 已实现：
+Worker 提供以下能力：
 
 - Folia global/region/entity/async Scheduler 分工；
 - 三维度加载、玩家安全散布、倒计时和 PvP 保护期；
@@ -139,28 +139,30 @@ UUIDv5(matchId + epoch + completionSeq + playerUuid + awardKind)
 - 同队伤害取消；
 - 与本地 Bingo 共用图像资源和颜色匹配器的动态地图任务卡；
 - 地图或指南针右键打开详细只读任务菜单，指南针左键选择在线队友跨 region 传送；
-- 由 SCC 冻结并随 manifest 下发的规则介绍、菜单、聊天、Title、BossBar 和任务富文本；
+- 由 Core 冻结并随 manifest 下发的规则介绍、菜单、聊天、Title、BossBar 和任务富文本；
 - 最后倒计时的移动/交互保护，以及观众全程的交互/伤害保护；
 - 无外部记分板插件时的自管理侧边栏；
-- 中途加入/重连选手、动态观众、无限夜视和结算后全员返回 SCC。
+- 中途加入/重连选手、动态观众、无限夜视和结算后全员返回 Core 服务器。
 
-Worker 的自然世界属于一次性比赛槽。生产配置默认拒绝在同一进程内复用已经结束或中止的世界；开始下一场前应由实例编排层恢复干净的三维度快照。开发环境只有明确启用 `allow-reuse-without-reset` 才允许跳过此保护。
+Worker 的自然世界属于一次性比赛槽。生产配置会在结算后先把全员送回 Core，确认后端无人后停止 Folia；`session.lock` 释放后旧存档会被原子移出，Worker 使用当前 Java 命令启动替代进程，旧存档由新进程后台删除。开发环境只有明确启用 `allow-reuse-without-reset` 才会跳过此流程。
 
 ## 配置
 
-SCC `plugins/ChampionshipsCore/config.yml`：
+以下配置使用示例服务名和 Redis 主机名。部署时必须将它们替换为代理与基础设施中的实际值。
+
+Core `plugins/ChampionshipsCore/config.yml`：
 
 ```yaml
 bingo:
-  execution-mode: "REMOTE"      # 当前联调实例；生产切换必须走下方上线流程
+  execution-mode: "REMOTE"      # 远程执行示例；首次联调前保持 LOCAL
   worker-id: "bingo-1"          # 必须与 Worker 一致
-  worker-server: "bingo"        # 代理配置中的服务名
+  worker-server: "bingo-worker" # 代理配置中的 Worker 服务名
   proxy-channel: "BungeeCord"
   ready-timeout-seconds: 30
   arrival-timeout-seconds: 45
   heartbeat-timeout-seconds: 20
   redis:
-    uri: "redis://redis:6379/0"
+    uri: "redis://redis-host:6379/0"
     namespace: "championships"
     consumer-group: "championships-core"
     stream-max-length: 100000
@@ -175,7 +177,7 @@ Worker `plugins/ChampionshipsBingoWorker/config.yml`：
 enabled: true
 worker-id: "bingo-1"
 redis:
-  uri: "redis://redis:6379/0"
+  uri: "redis://redis-host:6379/0"
   namespace: "championships"
   consumer-group: "bingo-workers"
   stream-max-length: 100000
@@ -184,7 +186,7 @@ redis:
   max-deliveries: 8
 proxy:
   channel: "BungeeCord"
-  return-server: "scc"
+  return-server: "core"         # 示例：代理中的 Core 服务名
 worlds:
   overworld: "bingo"
   nether: "bingo_nether"
@@ -193,31 +195,31 @@ worlds:
   allow-reuse-without-reset: false
 ```
 
-倒计时、散布、PvP、常驻效果、阶段坐标、介绍模式和展示文本不在 Worker 配置中重复出现，它们由 SCC 的 Bingo 场地配置、`message.yml` 与 Bingo 语言文件冻结后随 manifest 下发。快照属于协议 v5，因此 Core 与 Worker 必须成对升级，并通过新建比赛生成新的 manifest。
+倒计时、散布、PvP、常驻效果、阶段坐标、介绍模式和展示文本不在 Worker 配置中重复出现，它们由 Core 的 Bingo 场地配置、`message.yml` 与 Bingo 语言文件冻结后随 manifest 下发。快照属于协议 v5，因此 Core 与 Worker 必须成对升级，并通过新建比赛生成新的 manifest。
 
 ## 世界与容量模型
 
-当前一个 Worker 进程只接受一个同时运行的比赛，三个世界是一个物理 slot。建议把 Bingo Worker 做成可重建实例：以预生成、已校验的三维度世界作为镜像/快照，每次正式 Bingo 前恢复干净世界。不要在未恢复世界的情况下连续复用同一进程，否则已采集资源和玩家修改会污染下一局。
+每个 Worker 进程只接受一个同时运行的比赛，三个世界共同组成一个物理 slot。每局结束后 Worker 使用原进程的 Java 命令启动替代进程并自动重建该 slot。不要启用生产世界复用，否则已采集资源和玩家修改会污染下一局。
 
-Folia 解决的是相互远离 region 的 tick 并行，不会消除首次生成新区块的成本。现有压测已经证明：即使总 CPU 仍有余量，玩家和实体集中在单个 hot region 时也能先把该 region 压到低 TPS。64 人生产世界必须预生成目标活动半径、设置合理 world border，并同时观察 region TPS/MSPT、区块加载延迟和实体分布，不能只看进程 CPU 或全服平均 TPS。
+Folia 解决的是相互远离 region 的 tick 并行，不会消除首次生成新区块的成本。参考压测表明：即使总 CPU 仍有余量，玩家和实体集中在单个 hot region 时也可能先将该 region 压到低 TPS。64 人生产世界必须预生成目标活动半径、设置合理 world border，并同时观察 region TPS/MSPT、区块加载延迟和实体分布，不能只看进程 CPU 或全服平均 TPS。
 
 ## 上线顺序
 
-1. 建立 Redis，并限制只允许 SCC 与 Worker 网络访问。
+1. 建立 Redis，并限制只允许 Core 与 Worker 网络访问。
 2. 创建独立 Folia 实例，建议 `level-name=bingo`，准备 `bingo`、`bingo_nether`、`bingo_the_end` 三维度及预生成范围。
-3. 在代理中注册 `scc` 和 `bingo`；将 Bingo 设为不可直接选择，连接失败回退到 SCC。
+3. 在代理中注册 Core 和 Bingo Worker 服务；将 Worker 设为不可直接选择，连接失败回退到 Core。
 4. 安装 Worker JAR，保持 `enabled: false` 启动一次生成配置；核对后启用。
-5. 新环境先保持 SCC `execution-mode: LOCAL`，验证 Worker、Redis 和代理日志均健康；已有 REMOTE 联调环境则核对当前无活动比赛。
+5. 先保持 Core `execution-mode: LOCAL`，验证 Worker、Redis 和代理日志均健康。
 6. 在维护窗口切到 `REMOTE`，先用 1 支测试队伍验证 READY、转服、任务、结算和返回。
-7. 依次演练 Worker 崩溃、SCC 崩溃、Redis 中断、玩家中途掉线、重复事件和代理目标不可达。
-8. 先按性能报告复现逻辑玩家压力，再用 64 个协议客户端或真人压测 CPU、region MSPT、区块生成、Redis pending、数据库写入和转服到达时间。
+7. 依次演练 Worker 崩溃、Core 崩溃、Redis 中断、玩家中途掉线、重复事件和代理目标不可达。
+8. 先按性能指南复现逻辑玩家压力，再用 64 个协议客户端或真人压测 CPU、region MSPT、区块生成、Redis pending、数据库写入和转服到达时间。
 9. 全部通过后才用于正式赛事；任一阶段异常可切回 `LOCAL`，本地 Bingo 路径仍完整保留。
 
-## 尚需真实环境验证
+## 生产验收清单
 
 - Folia 下跨维度传送、指南针跨 region 传送和三维度 Portal 行为；
 - Redis 断线、pending reclaim、磁盘 outbox 重放和 DLQ 告警；
 - BungeeCord 与 Velocity 两套代理的 Connect channel、掉线回退与重连；
 - MariaDB inbox、确定性积分事务和 Core 重启孤儿 fencing；
-- 16 支四人队伍、64 个真实连接的完整一局，以及干净世界恢复后再开一局；
+- 16 支四人队伍、64 个真实连接的完整一局，以及自动停服、删档、拉起后再开一局；
 - 代理、Redis、MariaDB 与 Worker 在压力下的组合故障和恢复。

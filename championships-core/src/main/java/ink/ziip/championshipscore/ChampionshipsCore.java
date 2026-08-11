@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.api.vote.VoteManager;
+import ink.ziip.championshipscore.api.visibility.PlayerVisibilityManager;
 import ink.ziip.championshipscore.integration.papi.PlaceholderManager;
 import ink.ziip.championshipscore.util.glow.GlowingEntities;
 import ink.ziip.championshipscore.util.Utils;
@@ -49,6 +50,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private CommandManager commandManager;
     private WorldEditManager worldEditManager;
     private GameManager gameManager;
+    private PlayerVisibilityManager visibilityManager;
     private RemoteBingoManager remoteBingoManager;
     private RankManager rankManager;
     private WorldManager worldManager;
@@ -92,6 +94,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         teamManager = new TeamManager(this);
         worldEditManager = new WorldEditManager(this);
         gameManager = new GameManager(this);
+        visibilityManager = new PlayerVisibilityManager(this);
         remoteBingoManager = new RemoteBingoManager(this);
         prepareSessionManager = new PrepareSessionManager(this);
         rankManager = new RankManager(this);
@@ -117,6 +120,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         loadManager(worldEditManager);
 
         loadManager(gameManager);
+        loadManager(visibilityManager);
         loadManager(remoteBingoManager);
         loadManager(dailyStatsManager);
         loadManager(dailyManager);
@@ -142,6 +146,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         unloadManager(dailyStatsManager);
         unloadManager(remoteBingoManager);
         unloadManager(gameManager);
+        unloadManager(visibilityManager);
         unloadManager(prepareSessionManager);
         unloadManager(rankManager);
 

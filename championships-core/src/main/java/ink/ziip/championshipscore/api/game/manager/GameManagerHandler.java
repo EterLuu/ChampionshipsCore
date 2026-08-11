@@ -16,6 +16,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.potion.PotionEffect;
 
@@ -121,7 +122,8 @@ public class GameManagerHandler extends BaseListener {
             return;
         }
 
-        if (championshipTeam == null && plugin.getGameManager().spectateCurrentGame(player)) {
+        boolean dailyLobby = plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby();
+        if (!dailyLobby && championshipTeam == null && plugin.getGameManager().spectateCurrentGame(player)) {
             return;
         }
 
@@ -145,6 +147,22 @@ public class GameManagerHandler extends BaseListener {
         }
         // The lobby is always adventure, including reconnects that already spawned in its world.
         player.setGameMode(GameMode.ADVENTURE);
+    }
+
+    /** Returns untracked lobby players before the void can kill them. Game instances own their own fall handling. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onLobbyFall(PlayerMoveEvent event) {
+        if (event.getTo() == null || event.getTo().getY() > 0D || !lobbyAvailable()) return;
+        Player player = event.getPlayer();
+        if (!event.getTo().getWorld().equals(CCConfig.LOBBY_LOCATION.getWorld())) return;
+        UUID uuid = player.getUniqueId();
+        if (plugin.getGameManager().getBasePlayerArea(uuid) != null
+                || plugin.getGameManager().getPlayerSpectatorStatus(uuid) != null
+                || plugin.getGameManager().isWaitingForNextRound(uuid)) return;
+
+        player.setFallDistance(0F);
+        player.setVelocity(new org.bukkit.util.Vector());
+        player.teleport(CCConfig.LOBBY_LOCATION);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

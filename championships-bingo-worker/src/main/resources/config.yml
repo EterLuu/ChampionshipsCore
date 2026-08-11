@@ -15,7 +15,8 @@ worlds:
   overworld: "bingo"
   nether: "bingo_nether"
   the-end: "bingo_the_end"
-  # Keep false for production: a consumed natural-world slot must be restored before another match.
+  # Keep false for production: after all players return to Core, Folia moves this level aside and
+  # starts a replacement process with a fresh world; the retired level is deleted in the background.
   allow-reuse-without-reset: false
 # All gameplay and presentation settings (phases, spawn coordinates, tasks, scoring, PvP, effects,
 # language text and scoreboard labels) are frozen by SCC in each match manifest. This file contains

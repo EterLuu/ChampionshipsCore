@@ -24,12 +24,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.function.ToLongFunction;
 
 /** DAILY result manager. Business state stays here; every database operation is delegated to its DAO. */
 public final class DailyStatsManager extends BaseManager {
     private final DailyStatsDao statsDao = new DailyStatsDaoImpl();
     private final Map<StatKey, DailyStatSnapshot> stats = new ConcurrentHashMap<>();
     private final Map<RecordKey, Long> records = new ConcurrentHashMap<>();
+    /** Latest per-team Bingo progress, copied into the immutable match result at game end. */
+    private final Map<UUID, Map<UUID, BingoProgress>> bingoProgress = new ConcurrentHashMap<>();
     private final Map<UUID, String> names = new ConcurrentHashMap<>();
     private volatile Map<String, List<DailyLeaderboardEntry>> leaderboards = Map.of();
     private final Set<MilestoneKey> emittedMilestones = ConcurrentHashMap.newKeySet();
@@ -51,6 +54,7 @@ public final class DailyStatsManager extends BaseManager {
         active = false;
         stats.clear();
         records.clear();
+        bingoProgress.clear();
         names.clear();
         leaderboards = Map.of();
         emittedMilestones.clear();
@@ -61,17 +65,19 @@ public final class DailyStatsManager extends BaseManager {
         if (game != null) return stats.getOrDefault(new StatKey(player, game), DailyStatSnapshot.EMPTY);
         long games = 0L;
         long wins = 0L;
-        double total = 0D;
-        double best = 0D;
+        long lines = 0L;
+        long completedTasks = 0L;
+        long maxCompletedTasks = 0L;
         for (Map.Entry<StatKey, DailyStatSnapshot> entry : stats.entrySet()) {
             if (!entry.getKey().player().equals(player)) continue;
             DailyStatSnapshot value = entry.getValue();
             games += value.gamesPlayed();
             wins += value.wins();
-            total += value.totalPoints();
-            best = Math.max(best, value.bestPoints());
+            lines += value.lineCount();
+            completedTasks += value.completedTasks();
+            maxCompletedTasks = Math.max(maxCompletedTasks, value.maxCompletedTasks());
         }
-        return new DailyStatSnapshot(games, wins, total, best);
+        return new DailyStatSnapshot(games, wins, lines, completedTasks, maxCompletedTasks);
     }
 
     public long bestRecord(UUID player, GameTypeEnum game, String map, DailyRecordType type) {
@@ -92,8 +98,25 @@ public final class DailyStatsManager extends BaseManager {
         return map.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", "");
     }
 
+    /** Records the latest Bingo progress for every member of a team; both values are monotonic. */
+    public void recordBingoProgress(@NotNull BaseGameInstance instance, @NotNull ChampionshipTeam team,
+                                    long lineCount, long completedTasks) {
+        DailySession session = plugin.getDailyManager().session(instance);
+        if (session == null || session.game() != GameTypeEnum.Bingo
+                || lineCount < 0L || completedTasks < 0L) return;
+        Map<UUID, BingoProgress> progress = bingoProgress.computeIfAbsent(session.matchId(),
+                ignored -> new ConcurrentHashMap<>());
+        BingoProgress current = new BingoProgress(lineCount, completedTasks);
+        for (UUID player : team.getMembers()) {
+            progress.merge(player, current, (previous, latest) -> new BingoProgress(
+                    Math.max(previous.lineCount(), latest.lineCount()),
+                    Math.max(previous.completedTasks(), latest.completedTasks())));
+        }
+    }
+
     void recordMatch(@NotNull DailySession session, @NotNull Map<UUID, Double> points) {
         if (!recordedMatches.add(session.matchId())) return;
+        Map<UUID, BingoProgress> matchProgress = bingoProgress.remove(session.matchId());
         Map<ChampionshipTeam, Double> teamScores = new HashMap<>();
         for (ChampionshipTeam team : session.teams()) {
             double score = team.getMembers().stream().mapToDouble(uuid -> points.getOrDefault(uuid, 0D)).sum();
@@ -106,11 +129,15 @@ public final class DailyStatsManager extends BaseManager {
             boolean won = teamScores.getOrDefault(team, 0D) == winningScore;
             for (UUID player : team.getMembers()) {
                 double playerPoints = points.getOrDefault(player, 0D);
+                BingoProgress progress = matchProgress == null ? null : matchProgress.get(player);
+                long lineCount = progress == null ? 0L : progress.lineCount();
+                long completedTasks = progress == null ? 0L : progress.completedTasks();
                 results.add(new DailyMatchResultEntry(session.matchId(), player, safeName(player),
-                        session.game(), session.map(), team.getName(), playerPoints, won, now));
+                        session.game(), session.map(), team.getName(), playerPoints, won,
+                        lineCount, completedTasks, now));
                 stats.compute(new StatKey(player, session.game()),
                         (ignored, previous) -> (previous == null ? DailyStatSnapshot.EMPTY : previous)
-                                .add(won, playerPoints));
+                                .add(won, lineCount, completedTasks));
                 names.put(player, safeName(player));
             }
         }
@@ -157,7 +184,7 @@ public final class DailyStatsManager extends BaseManager {
         for (DailyStatEntry entry : statsDao.getPlayerStats()) {
             names.put(entry.uuid(), entry.username());
             stats.put(new StatKey(entry.uuid(), entry.game()), new DailyStatSnapshot(entry.gamesPlayed(),
-                    entry.wins(), entry.totalPoints(), entry.bestPoints()));
+                    entry.wins(), entry.lineCount(), entry.completedTasks(), entry.maxCompletedTasks()));
         }
         for (DailyRecordEntry entry : statsDao.getPlayerRecords()) {
             names.put(entry.uuid(), entry.username());
@@ -170,21 +197,27 @@ public final class DailyStatsManager extends BaseManager {
     private void rebuildLeaderboards() {
         Map<String, List<DailyLeaderboardEntry>> rebuilt = new LinkedHashMap<>();
         Map<UUID, DailyStatSnapshot> totals = new HashMap<>();
+        Map<UUID, DailyStatSnapshot> bingoTotals = new HashMap<>();
         for (Map.Entry<StatKey, DailyStatSnapshot> entry : stats.entrySet()) {
             DailyStatSnapshot value = entry.getValue();
             totals.compute(entry.getKey().player(), (ignored, prior) -> prior == null ? value
                     : new DailyStatSnapshot(prior.gamesPlayed() + value.gamesPlayed(),
-                    prior.wins() + value.wins(), prior.totalPoints() + value.totalPoints(),
-                    Math.max(prior.bestPoints(), value.bestPoints())));
+                    prior.wins() + value.wins(), prior.lineCount() + value.lineCount(),
+                    prior.completedTasks() + value.completedTasks(),
+                    Math.max(prior.maxCompletedTasks(), value.maxCompletedTasks())));
+            if (entry.getKey().game() == GameTypeEnum.Bingo) {
+                bingoTotals.compute(entry.getKey().player(), (ignored, prior) -> prior == null ? value
+                        : new DailyStatSnapshot(prior.gamesPlayed() + value.gamesPlayed(),
+                        prior.wins() + value.wins(), prior.lineCount() + value.lineCount(),
+                        prior.completedTasks() + value.completedTasks(),
+                        Math.max(prior.maxCompletedTasks(), value.maxCompletedTasks())));
+            }
         }
-        rebuilt.put("points", rankStats(totals, false));
-        rebuilt.put("wins", rankStats(totals, true));
-        for (GameTypeEnum game : GameTypeEnum.values()) {
-            Map<UUID, DailyStatSnapshot> perGame = new HashMap<>();
-            stats.forEach((key, value) -> { if (key.game() == game) perGame.put(key.player(), value); });
-            if (!perGame.isEmpty()) rebuilt.put(game.name().toLowerCase(Locale.ROOT) + "_points",
-                    rankStats(perGame, false));
-        }
+        rebuilt.put("wins", rankMetric(totals, DailyStatSnapshot::wins));
+        rebuilt.put("bingo_wins", rankMetric(bingoTotals, DailyStatSnapshot::wins));
+        rebuilt.put("bingo_lines", rankMetric(bingoTotals, DailyStatSnapshot::lineCount));
+        rebuilt.put("bingo_completed_tasks", rankMetric(bingoTotals, DailyStatSnapshot::completedTasks));
+        rebuilt.put("bingo_max_completed", rankMetric(bingoTotals, DailyStatSnapshot::maxCompletedTasks));
         Map<String, Map<UUID, Long>> timed = new HashMap<>();
         records.forEach((key, value) -> timed.computeIfAbsent(recordBoardId(key), ignored -> new HashMap<>())
                 .merge(key.player(), value, Math::min));
@@ -195,10 +228,11 @@ public final class DailyStatsManager extends BaseManager {
         leaderboards = Map.copyOf(rebuilt);
     }
 
-    private List<DailyLeaderboardEntry> rankStats(Map<UUID, DailyStatSnapshot> values, boolean wins) {
+    private List<DailyLeaderboardEntry> rankMetric(Map<UUID, DailyStatSnapshot> values,
+                                                   ToLongFunction<DailyStatSnapshot> metric) {
         return values.entrySet().stream()
                 .map(entry -> new DailyLeaderboardEntry(entry.getKey(), displayName(entry.getKey()),
-                        wins ? entry.getValue().wins() : entry.getValue().totalPoints(), false))
+                        metric.applyAsLong(entry.getValue()), false))
                 .filter(entry -> entry.value() > 0D)
                 .sorted(Comparator.comparingDouble(DailyLeaderboardEntry::value).reversed()
                         .thenComparing(DailyLeaderboardEntry::name, String.CASE_INSENSITIVE_ORDER))
@@ -210,6 +244,7 @@ public final class DailyStatsManager extends BaseManager {
             case BINGO_FIRST_LINE -> "bingo_first_line_";
             case BINGO_FULL_CARD -> "bingo_full_card_";
             case ACERACE_FASTEST_LAP -> "acerace_fastest_lap_";
+            case ACERACE_FASTEST_THREE_LAPS -> "acerace_fastest_three_laps_";
         };
         return prefix + mapSlug(key.map());
     }
@@ -233,4 +268,5 @@ public final class DailyStatsManager extends BaseManager {
     private record StatKey(UUID player, GameTypeEnum game) {}
     private record RecordKey(UUID player, GameTypeEnum game, String map, DailyRecordType type) {}
     private record MilestoneKey(UUID match, int teamId, DailyRecordType type) {}
+    private record BingoProgress(long lineCount, long completedTasks) {}
 }

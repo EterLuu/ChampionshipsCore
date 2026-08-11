@@ -358,11 +358,15 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         }
         if (team != null && getRunMode() == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY) {
             long elapsedMillis = Math.max(0L, System.currentTimeMillis() - roundStartMillis);
-            if (round.countCompletedLines(team) > 0) {
+            int completedLines = round.countCompletedLines(team);
+            int completedTasks = round.completedCount(team);
+            plugin.getDailyManager().statsManager().recordBingoProgress(
+                    this, team, completedLines, completedTasks);
+            if (completedLines > 0) {
                 plugin.getDailyManager().statsManager().recordTeamMilestone(this, team,
                         DailyRecordType.BINGO_FIRST_LINE, elapsedMillis, player.getUniqueId());
             }
-            if (round.completedCount(team) >= getGameConfig().getCardWidth() * getGameConfig().getCardWidth()) {
+            if (completedTasks >= getGameConfig().getCardWidth() * getGameConfig().getCardWidth()) {
                 plugin.getDailyManager().statsManager().recordTeamMilestone(this, team,
                         DailyRecordType.BINGO_FULL_CARD, elapsedMillis, player.getUniqueId());
             }

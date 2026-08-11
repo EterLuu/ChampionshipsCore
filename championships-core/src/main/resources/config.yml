@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 12
+  version: 14
 mode: "CHAMPIONSHIP"
 # DAILY opens the self-service game menu and queues. It does not disable /cc event or /cc game start.
 daily:
@@ -14,7 +14,7 @@ daily:
       teams: 4
       countdown-seconds: 20
     AceRace:
-      min-players: 1
+      min-players: 2
       max-players: 16
       team-size: 4
       teams: 4
@@ -44,9 +44,11 @@ enabled-games:
   - "Dodgebolt"
   - "AceRace"
 chat:
-  refugee: "&8<&f%s &7<&c裁判组&7>&8>&#696969:&f %s"
-  player: "&8<&f%s &7<%team%&7>&8>&#696969:&f %s"
-  spectator: "&8<&f%s &7<&7旁观&7>&8>&#696969:&7 %s"
+  # Player identity is rendered with the same [prefix] coloured-name contract as TAB.
+  daily: "%s &#696969» &#ededed%s"
+  refugee: "%s &#696969» &#ededed%s"
+  player: "%s &#696969» &#ededed%s"
+  spectator: "%s &#696969» &#ededed%s"
 database:
   type: "MARIADB"
   address: "127.0.0.1"

@@ -34,8 +34,7 @@ public final class DailySubCommand extends BaseSubCommand {
             if (args.length > 1 && game == null) { message(sender, "&c未知游戏。"); return true; }
             DailyStatSnapshot stat = plugin.getDailyManager().statsManager().stat(player.getUniqueId(), game);
             message(sender, "&e" + (game == null ? "综合" : game.name()) + " &7| &f场次 " + stat.gamesPlayed()
-                    + " &7| &a胜场 " + stat.wins() + " &7| &d积分 " + Utils.formatPoints(stat.totalPoints())
-                    + " &7| &6最佳 " + Utils.formatPoints(stat.bestPoints()));
+                    + " &7| &a胜场 " + stat.wins());
             return true;
         }
         sendUsage(sender);

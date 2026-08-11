@@ -3,6 +3,9 @@ package ink.ziip.championshipscore.worker;
 import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+import ink.ziip.championshipscore.platform.bukkit.text.ChampionshipTabText;
+import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -51,12 +54,31 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        WorkerPlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
+        event.joinMessage(Component.translatable("multiplayer.player.joined",
+                ChampionshipTabText.playerIdentityComponent(presentation.label(), presentation.teamColorCode(),
+                        presentation.activePlayer(), player.getName())));
         registry.onJoin(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        WorkerPlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
+        event.quitMessage(Component.translatable("multiplayer.player.left",
+                ChampionshipTabText.playerIdentityComponent(presentation.label(), presentation.teamColorCode(),
+                        presentation.activePlayer(), player.getName())));
         registry.onQuit(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onChat(AsyncChatEvent event) {
+        Player player = event.getPlayer();
+        WorkerPlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
+        event.renderer((source, sourceDisplayName, message, viewer) ->
+                ChampionshipTabText.chatLine(presentation.label(), presentation.teamColorCode(),
+                        presentation.activePlayer(), player.getName(), message));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

@@ -121,12 +121,13 @@ CREATE TABLE IF NOT EXISTS `daily_player_stats`
     `game`          VARCHAR(64)  NOT NULL,
     `gamesPlayed`   BIGINT       NOT NULL DEFAULT 0,
     `wins`          BIGINT       NOT NULL DEFAULT 0,
-    `totalPoints`   DOUBLE       NOT NULL DEFAULT 0,
-    `bestPoints`    DOUBLE       NOT NULL DEFAULT 0,
+    `lineCount`     BIGINT       NOT NULL DEFAULT 0,
+    `completedTasks` BIGINT      NOT NULL DEFAULT 0,
+    `maxCompletedTasks` BIGINT  NOT NULL DEFAULT 0,
     `updatedAt`     BIGINT       NOT NULL,
 
     PRIMARY KEY (`uuid`, `game`),
-    INDEX `idx_daily_stats_board` (`game`, `wins`, `totalPoints`)
+    INDEX `idx_daily_stats_board` (`game`, `wins`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -141,6 +142,8 @@ CREATE TABLE IF NOT EXISTS `daily_match_results`
     `teamKey`       VARCHAR(64)  NOT NULL,
     `points`        DOUBLE       NOT NULL,
     `won`           BOOLEAN      NOT NULL,
+    `lineCount`     BIGINT       NOT NULL DEFAULT 0,
+    `completedTasks` BIGINT      NOT NULL DEFAULT 0,
     `finishedAt`    BIGINT       NOT NULL,
 
     PRIMARY KEY (`matchId`, `uuid`),

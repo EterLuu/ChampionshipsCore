@@ -13,6 +13,7 @@ public class AdminMainCommand extends BaseMainCommand {
         addSubCommand(new AdminSudoSubCommand());
         addSubCommand(new AdminTeleportationSubCommand());
         addSubCommand(new AdminReloadSubCommand());
+        addSubCommand(new AdminVisibilitySubCommand());
         addSubCommand(new AdminWorldMainCommand());
         addSubCommand(new AdminDodgeboltMainCommand());
     }

@@ -27,8 +27,8 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
     public @NotNull List<DailyStatEntry> getPlayerStats() {
         try (Connection connection = plugin.getDatabaseManager().getConnection();
              PreparedStatement statement = connection.prepareStatement("""
-                     SELECT `uuid`, `username`, `game`, `gamesPlayed`, `wins`,
-                            `totalPoints`, `bestPoints`, `updatedAt`
+                     SELECT `uuid`, `username`, `game`, `gamesPlayed`, `wins`, `lineCount`,
+                            `completedTasks`, `maxCompletedTasks`, `updatedAt`
                      FROM `daily_player_stats`
                      """);
              ResultSet result = statement.executeQuery()) {
@@ -38,8 +38,9 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                     entries.add(new DailyStatEntry(
                             UUID.fromString(result.getString("uuid")), result.getString("username"),
                             GameTypeEnum.valueOf(result.getString("game")), result.getLong("gamesPlayed"),
-                            result.getLong("wins"), result.getDouble("totalPoints"),
-                            result.getDouble("bestPoints"), result.getLong("updatedAt")));
+                            result.getLong("wins"), result.getLong("lineCount"),
+                            result.getLong("completedTasks"), result.getLong("maxCompletedTasks"),
+                            result.getLong("updatedAt")));
                 } catch (IllegalArgumentException exception) {
                     logFailure("解析日常统计记录", exception);
                 }
@@ -90,17 +91,20 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
             connection.setAutoCommit(false);
             try (PreparedStatement result = connection.prepareStatement("""
                          INSERT IGNORE INTO `daily_match_results`
-                         (`matchId`,`uuid`,`username`,`game`,`map`,`teamKey`,`points`,`won`,`finishedAt`)
-                         VALUES (?,?,?,?,?,?,?,?,?)
+                         (`matchId`,`uuid`,`username`,`game`,`map`,`teamKey`,`points`,`won`,
+                          `lineCount`,`completedTasks`,`finishedAt`)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?)
                          """);
                  PreparedStatement aggregate = connection.prepareStatement("""
                          INSERT INTO `daily_player_stats`
-                         (`uuid`,`username`,`game`,`gamesPlayed`,`wins`,`totalPoints`,`bestPoints`,`updatedAt`)
-                         VALUES (?,?,?,1,?,?,?,?)
+                         (`uuid`,`username`,`game`,`gamesPlayed`,`wins`,`lineCount`,
+                          `completedTasks`,`maxCompletedTasks`,`updatedAt`)
+                         VALUES (?,?,?,1,?,?,?,?,?)
                          ON DUPLICATE KEY UPDATE `username`=VALUES(`username`),
                          `gamesPlayed`=`gamesPlayed`+1, `wins`=`wins`+VALUES(`wins`),
-                         `totalPoints`=`totalPoints`+VALUES(`totalPoints`),
-                         `bestPoints`=GREATEST(`bestPoints`,VALUES(`bestPoints`)),
+                         `lineCount`=`lineCount`+VALUES(`lineCount`),
+                         `completedTasks`=`completedTasks`+VALUES(`completedTasks`),
+                         `maxCompletedTasks`=GREATEST(`maxCompletedTasks`,VALUES(`maxCompletedTasks`)),
                          `updatedAt`=VALUES(`updatedAt`)
                          """)) {
                 for (DailyMatchResultEntry entry : results) {
@@ -110,9 +114,10 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                     aggregate.setString(2, entry.username());
                     aggregate.setString(3, entry.game().name());
                     aggregate.setLong(4, entry.won() ? 1L : 0L);
-                    aggregate.setDouble(5, entry.points());
-                    aggregate.setDouble(6, entry.points());
-                    aggregate.setLong(7, entry.finishedAt());
+                    aggregate.setLong(5, entry.lineCount());
+                    aggregate.setLong(6, entry.completedTasks());
+                    aggregate.setLong(7, entry.completedTasks());
+                    aggregate.setLong(8, entry.finishedAt());
                     aggregate.executeUpdate();
                 }
                 connection.commit();
@@ -175,7 +180,9 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
         statement.setString(6, entry.teamKey());
         statement.setDouble(7, entry.points());
         statement.setBoolean(8, entry.won());
-        statement.setLong(9, entry.finishedAt());
+        statement.setLong(9, entry.lineCount());
+        statement.setLong(10, entry.completedTasks());
+        statement.setLong(11, entry.finishedAt());
     }
 
     private void logFailure(String operation, Throwable exception) {

@@ -7,6 +7,8 @@ import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.platform.bukkit.text.ChampionshipTabText;
 import ink.ziip.championshipscore.util.Utils;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
@@ -20,6 +22,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
 public class PlayerListener extends BaseListener {
@@ -30,31 +33,20 @@ public class PlayerListener extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-
-        // Pick the chat layout for this sender; both %s slots are name then message (String.format order).
-        final String format;
+        PlayerPresentation presentation = presentation(player);
         final Component messageOverride;
         if (player.hasPermission("cc.refuge")) {
-            format = Utils.translateColorCodes(CCConfig.CHAT_REFUGEE);
-            // Refugees may colour their own message; the leading &f resets any inherited colour.
+            // Referees may colour their own message; identity still follows the same contract as TAB.
             String typed = PlainTextComponentSerializer.plainText().serialize(event.message());
             messageOverride = Utils.toComponent("&f" + typed);
-        } else if (championshipTeam == null) {
-            format = Utils.translateColorCodes(CCConfig.CHAT_SPECTATOR);
-            messageOverride = null;
         } else {
-            format = Utils.translateColorCodes(CCConfig.CHAT_PLAYER.replace("%team%", championshipTeam.getColoredName()));
             messageOverride = null;
         }
 
-        // Serialise name/message back to legacy, format, and parse the whole line once, so colour codes
-        // bleed into the substituted name/message across the %s boundaries.
         event.renderer((source, sourceDisplayName, message, viewer) -> {
             Component actualMessage = messageOverride != null ? messageOverride : message;
-            String nameLegacy = LegacyComponentSerializer.legacySection().serialize(sourceDisplayName);
-            String messageLegacy = LegacyComponentSerializer.legacySection().serialize(actualMessage);
-            return LegacyComponentSerializer.legacySection().deserialize(String.format(format, nameLegacy, messageLegacy));
+            return ChampionshipTabText.chatLine(presentation.label(), presentation.teamColorCode(),
+                    presentation.activePlayer(), player.getName(), actualMessage);
         });
     }
 
@@ -85,6 +77,10 @@ public class PlayerListener extends BaseListener {
         Player player = event.getPlayer();
         PlayerManager playerManager = ChampionshipsCore.getInstance().getPlayerManager();
         playerManager.updatePlayer(player);
+        PlayerPresentation presentation = presentation(player);
+        event.joinMessage(Component.translatable("multiplayer.player.joined",
+                ChampionshipTabText.playerIdentityComponent(presentation.label(), presentation.teamColorCode(),
+                        presentation.activePlayer(), player.getName())));
 
         // Let normal join/teleport notices finish first, then restore a recent result that may have
         // been missed while this player was disconnected.
@@ -98,6 +94,35 @@ public class PlayerListener extends BaseListener {
                 player.discoverRecipe(keyedRecipe.getKey());
             }
         });
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        PlayerPresentation presentation = presentation(player);
+        event.quitMessage(Component.translatable("multiplayer.player.left",
+                ChampionshipTabText.playerIdentityComponent(presentation.label(), presentation.teamColorCode(),
+                        presentation.activePlayer(), player.getName())));
+    }
+
+    private PlayerPresentation presentation(Player player) {
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        BaseGameInstance playerArea = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
+        boolean daily = plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby();
+        if (daily) {
+            BaseGameInstance shownArea = playerArea;
+            if (shownArea == null)
+                shownArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
+            String label = shownArea == null ? "&a大厅" : "&6" + shownArea.getGameTypeEnum();
+            return new PlayerPresentation(label, team == null ? null : team.getColorCode(),
+                    playerArea != null && team != null);
+        }
+        String label = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
+        return new PlayerPresentation(label, team == null ? null : team.getColorCode(),
+                playerArea != null && team != null);
+    }
+
+    private record PlayerPresentation(String label, String teamColorCode, boolean activePlayer) {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

@@ -82,13 +82,23 @@ public final class BingoManifestFactory {
                         playerPoints));
             }
         }
-        spectators.stream().sorted().forEach(uuid -> participants.add(new PlayerSnapshot(uuid,
-                plugin.getPlayerManager().getPlayerName(uuid), ParticipantRole.SPECTATOR, null, false, 0D)));
+        spectators.stream().sorted().forEach(uuid -> {
+            String username = plugin.getPlayerManager().getPlayerName(uuid);
+            if (username == null || username.isBlank()) username = uuid.toString();
+            double playerPoints = runMode == GameRunMode.EVENT
+                    ? plugin.getRankManager().getPlayerPoints(uuid) : 0D;
+            participants.add(new PlayerSnapshot(uuid, username,
+                    ParticipantRole.SPECTATOR, null, false, playerPoints));
+        });
 
         String configHash = BingoManifestHasher.hash(config.getTimer(), cardSeed, scoring, runtimeRules, tasks);
 
         return new MatchManifest(ProtocolVersion.CURRENT, matchId, epoch, System.currentTimeMillis(), workerId,
-                runMode == GameRunMode.EVENT ? MatchRunMode.EVENT : MatchRunMode.GAME,
+                switch (runMode) {
+                    case EVENT -> MatchRunMode.EVENT;
+                    case DAILY -> MatchRunMode.DAILY;
+                    case GAME -> MatchRunMode.GAME;
+                },
                 config.getTimer(), cardSeed, configHash, scoring, runtimeRules, tasks,
                 teamSnapshots, participants);
     }
@@ -125,6 +135,13 @@ public final class BingoManifestFactory {
         messages.put("bingo.game-winner", MessageConfig.BINGO_GAME_WINNER);
         messages.put("papi.none", MessageConfig.PLACEHOLDER_NONE);
         messages.put("papi.spectator", MessageConfig.PLACEHOLDER_SPECTATOR);
+        messages.put("sidebar.status.waiting", MessageConfig.AREA_STATUS_WAITING);
+        messages.put("sidebar.status.loading", MessageConfig.AREA_STATUS_LOADING);
+        messages.put("sidebar.status.preparation", MessageConfig.AREA_STATUS_PREPARATION);
+        messages.put("sidebar.status.countdown", MessageConfig.AREA_STATUS_COUNTDOWN);
+        messages.put("sidebar.status.progress", MessageConfig.AREA_STATUS_PROGRESS);
+        messages.put("sidebar.status.stopping", MessageConfig.AREA_STATUS_STOPPING);
+        messages.put("sidebar.status.end", MessageConfig.AREA_STATUS_END);
         for (String key : List.of("card.title", "card.win_hint", "card.map_name", "card.map_hint",
                 "card.completed_by", "card.completed_at", "card.occupied_by", "compass.item_name",
                 "compass.item_hint", "compass.menu_title", "compass.teammate_hint",
@@ -136,6 +153,12 @@ public final class BingoManifestFactory {
         }
         if (plugin.getSidebarManager() != null) {
             messages.putAll(plugin.getSidebarManager().bingoWorkerPresentation());
+        }
+        if (runMode == GameRunMode.DAILY) {
+            messages.put("sidebar.ranking-line",
+                    "{rank.team-color}{rank.position}. {rank.team} &7({rank.tasks} 项)");
+            messages.put("sidebar.own-ranking-line",
+                    "{rank.team-color}&l▶ {rank.position}. {rank.team} &7({rank.tasks} 项)");
         }
         return new BingoPresentation(messages);
     }

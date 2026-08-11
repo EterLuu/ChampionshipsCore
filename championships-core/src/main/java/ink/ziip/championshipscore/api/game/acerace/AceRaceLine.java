@@ -34,6 +34,20 @@ record AceRaceLine(@NotNull Vector pos1, @NotNull Vector pos2) {
         return runsAlongX() ? location.getZ() - centerZ() : location.getX() - centerX();
     }
 
+    /** Squared distance from a location to the selected vertical gate volume. */
+    double distanceSquared(@NotNull Location location) {
+        double x = distanceToRange(location.getX(), minX(), maxX() + 1.0D);
+        double z = distanceToRange(location.getZ(), minZ(), maxZ() + 1.0D);
+        double y = location.getY() < minY() - 3.0D ? minY() - 3.0D - location.getY() : 0.0D;
+        return x * x + y * y + z * z;
+    }
+
+    private static double distanceToRange(double value, double min, double max) {
+        if (value < min) return min - value;
+        if (value > max) return value - max;
+        return 0.0D;
+    }
+
     /** Returns the side of the line, or zero while inside the selected line thickness. */
     int side(@NotNull Location location) {
         double halfThickness = (runsAlongX() ? maxZ() - minZ() + 1 : maxX() - minX() + 1) / 2.0D;
@@ -44,18 +58,24 @@ record AceRaceLine(@NotNull Vector pos1, @NotNull Vector pos2) {
 
     /** Every race gate uses the selected horizontal line as its floor and extends upward. */
     boolean crossedAtOrAbove(@NotNull Location from, @NotNull Location to) {
-        return crossed(from, to, true);
+        return crossedAtOrAbove(from, to, 0);
     }
 
-    private boolean crossed(@NotNull Location from, @NotNull Location to, boolean extendUpward) {
+    /** Extends the vertical gate down by the requested number of blocks as well as upward. */
+    boolean crossedAtOrAbove(@NotNull Location from, @NotNull Location to, int blocksBelow) {
+        return crossed(from, to, true, Math.max(0, blocksBelow));
+    }
+
+    private boolean crossed(@NotNull Location from, @NotNull Location to, boolean extendUpward,
+                            int blocksBelow) {
         if (from.getWorld() != to.getWorld()) return false;
         double fromNormal = signedNormalDistance(from);
         double normalMovement = signedNormalDistance(to) - fromNormal;
         if (Math.abs(normalMovement) <= EPSILON) return false;
 
         double halfThickness = (runsAlongX() ? maxZ() - minZ() + 1 : maxX() - minX() + 1) / 2.0D;
-        return crossesBoundary(from, to, fromNormal, normalMovement, -halfThickness, extendUpward)
-                || crossesBoundary(from, to, fromNormal, normalMovement, halfThickness, extendUpward);
+        return crossesBoundary(from, to, fromNormal, normalMovement, -halfThickness, extendUpward, blocksBelow)
+                || crossesBoundary(from, to, fromNormal, normalMovement, halfThickness, extendUpward, blocksBelow);
     }
 
     boolean sameGeometry(@NotNull AceRaceLine other) {
@@ -69,12 +89,13 @@ record AceRaceLine(@NotNull Vector pos1, @NotNull Vector pos2) {
      * that intersection to fall along the selected line prevents an endpoint exit from counting.
      */
     private boolean crossesBoundary(@NotNull Location from, @NotNull Location to, double fromNormal,
-                                    double normalMovement, double boundary, boolean extendUpward) {
+                                    double normalMovement, double boundary, boolean extendUpward,
+                                    int blocksBelow) {
         double progress = (boundary - fromNormal) / normalMovement;
         if (progress < -EPSILON || progress > 1.0D + EPSILON) return false;
         double crossingY = from.getY() + (to.getY() - from.getY()) * progress;
         int crossingBlockY = supportingBlockY(crossingY);
-        if (crossingBlockY < minY() || (!extendUpward && crossingBlockY > maxY())) return false;
+        if (crossingBlockY < minY() - blocksBelow || (!extendUpward && crossingBlockY > maxY())) return false;
 
         double longitudinal = runsAlongX()
                 ? from.getX() + (to.getX() - from.getX()) * progress

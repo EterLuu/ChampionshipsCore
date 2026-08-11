@@ -16,12 +16,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.Sound;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Display;
+import org.bukkit.entity.EnderCrystal;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -38,6 +42,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
+import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -50,7 +55,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-/** A lap race with ordered progress gates and independent proximity-based respawn points. */
+/** A lap race with ordered progress gates and course-bound proximity respawn points. */
 public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final long LAUNCH_PAD_DELAY_TICKS = 2L;
     private static final int JUMP_BOOST_DURATION_TICKS = 14;
@@ -64,17 +69,28 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             WATER_SPEED_STATION_RADIUS * WATER_SPEED_STATION_RADIUS;
     private static final long RACER_VISIBILITY_HIDDEN_AFTER_START_TICKS = 60L * 20L;
     private static final double RACER_VISIBILITY_DISTANCE_SQUARED = 8D * 8D;
+    private static final double RESPAWN_GATE_BIND_DISTANCE_SQUARED = 6D * 6D;
+    private static final double RESPAWN_ROUTE_CORRIDOR_MARGIN = 28D;
     private static final long RACER_VISIBILITY_UPDATE_TICKS = 1L;
+    private static final long MAP_EDIT_PREVIEW_UPDATE_TICKS = 10L;
     private static final String COLLISION_TEAM_PREFIX = "cc_ar_";
 
     @Getter
     private final List<AceRaceProgressPoint> progressPoints = new ArrayList<>();
     private final List<AceRaceRespawnPoint> respawnPoints = new ArrayList<>();
+    /** Zero-based progress point for each respawn marker, or -1 for the start segment. */
+    private final List<Integer> respawnProgressPointBindings = new ArrayList<>();
+    /** Raw configuration index for each loaded marker (invalid serialized rows are skipped). */
+    private final List<Integer> respawnPointConfigIndexes = new ArrayList<>();
+    private final List<EnderCrystal> mapEditPreviewCrystals = new ArrayList<>();
+    private final NamespacedKey mapEditPreviewMarkerKey;
+    private final NamespacedKey mapEditPreviewAreaKey;
     @Getter
     private final List<UUID> finishedPlayers = new ArrayList<>();
     private final Map<UUID, Integer> nextProgressPoint = new HashMap<>();
     private final Map<UUID, Integer> completedLaps = new HashMap<>();
     private final Map<UUID, Long> lapStartedNanos = new HashMap<>();
+    private final Map<UUID, Long> raceStartedNanos = new HashMap<>();
     private final Map<UUID, Location> latestRespawnLocations = new HashMap<>();
     private final Map<UUID, Set<Integer>> capturedRespawnPoints = new HashMap<>();
     private final Map<UUID, Integer> activeFallHeights = new HashMap<>();
@@ -84,6 +100,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private final Map<UUID, TrackFeatureContact> featureContacts = new HashMap<>();
     private final Map<UUID, BukkitTask> pendingLaunchPadTasks = new HashMap<>();
     private final Set<RacerPair> visibleRacerPairs = new HashSet<>();
+    private final String visibilityOwner = "game:acerace:" + UUID.randomUUID();
     private final Set<RacerView> riptideHiddenViews = new HashSet<>();
     private final Map<UUID, Integer> riptideViewerGraceTicks = new HashMap<>();
     private final Map<UUID, TextDisplay> racerNameDisplays = new HashMap<>();
@@ -94,6 +111,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private BukkitTask progressTask;
     private BukkitTask racerVisibilityTask;
     private BukkitTask racerVisibilityUnlockTask;
+    private BukkitTask mapEditPreviewTask;
+    private UUID mapEditPreviewViewer;
     private boolean racerVisibilityUnlocked;
 
     public AceRaceArea(ChampionshipsCore plugin, AceRaceConfig config) {
@@ -104,6 +123,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         super(plugin, GameTypeEnum.AceRace, new AceRaceHandler(plugin), config);
         if (initializeConfig) getGameConfig().initializeConfiguration(plugin.getFolder());
         this.copyIndex = copyIndex;
+        this.mapEditPreviewMarkerKey = new NamespacedKey(plugin, "acerace_preview_respawn");
+        this.mapEditPreviewAreaKey = new NamespacedKey(plugin, "acerace_preview_area");
         getGameHandler().setAceRaceArea(this);
         getGameHandler().register();
         loadCoursePoints();
@@ -137,7 +158,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         }
 
         respawnPoints.clear();
-        for (String serialized : getGameConfig().ensureRespawnPoints()) {
+        respawnPointConfigIndexes.clear();
+        List<String> configuredRespawnPoints = getGameConfig().ensureRespawnPoints();
+        for (int configIndex = 0; configIndex < configuredRespawnPoints.size(); configIndex++) {
+            String serialized = configuredRespawnPoints.get(configIndex);
             try {
                 Location location = Utils.getLocation(serialized);
                 if (location.getWorld() == null || !getWorldName().equals(location.getWorld().getName())) {
@@ -145,10 +169,205 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                     continue;
                 }
                 respawnPoints.add(new AceRaceRespawnPoint(location));
+                respawnPointConfigIndexes.add(configIndex);
             } catch (Exception exception) {
                 logGame(java.util.logging.Level.WARNING, "重生点", "跳过格式无效的重生点=" + serialized);
             }
         }
+        rebuildRespawnProgressPointBindings();
+        if (mapEditPreviewViewer != null) refreshMapEditPreviewEntities();
+    }
+
+    /**
+     * Binds each marker from its position relative to the ordered gate geometry. The route corridor
+     * keeps bends and large launch jumps in the correct segment without depending on marker list order.
+     */
+    private void rebuildRespawnProgressPointBindings() {
+        respawnProgressPointBindings.clear();
+        if (respawnPoints.isEmpty()) return;
+
+        World world = respawnPoints.getFirst().destination().getWorld();
+        AceRaceLine finishLine = getFinishLine();
+        Location startApproach = getGameConfig().getStartSpawnPoint();
+        Location finishApproach = world == null || finishLine == null ? null : finishLine.center(world);
+        respawnProgressPointBindings.addAll(bindRespawnPoints(
+                progressPoints, respawnPoints, startApproach, finishApproach));
+
+        for (int index = 0; index < respawnProgressPointBindings.size(); index++) {
+            int configIndex = index < respawnPointConfigIndexes.size()
+                    ? respawnPointConfigIndexes.get(index) : -1;
+            Integer configured = getGameConfig().getRespawnProgressPointBinding(
+                    configIndex, progressPoints.size());
+            if (configured != null) respawnProgressPointBindings.set(index, configured);
+        }
+
+        Set<Integer> boundProgressPoints = new HashSet<>(respawnProgressPointBindings);
+        for (int index = 0; index < progressPoints.size(); index++) {
+            if (!boundProgressPoints.contains(index)) {
+                logGame(java.util.logging.Level.WARNING, "重生点",
+                        "未能按坐标为进度点 #" + (index + 1) + " 找到绑定重生点");
+            }
+        }
+    }
+
+    static @NotNull List<Integer> bindRespawnPoints(@NotNull List<AceRaceProgressPoint> progressPoints,
+                                                     @NotNull List<AceRaceRespawnPoint> respawnPoints,
+                                                     Location startApproach, Location finishApproach) {
+        if (progressPoints.isEmpty()) return new ArrayList<>();
+        List<AceRaceLine> gates = progressPoints.stream()
+                .map(point -> new AceRaceLine(point.pos1(), point.pos2())).toList();
+        World world = startApproach == null ? null : startApproach.getWorld();
+        if (world == null && finishApproach != null) world = finishApproach.getWorld();
+        if (world == null && !respawnPoints.isEmpty()) world = respawnPoints.getFirst().destination().getWorld();
+
+        List<Location> gateCenters = new ArrayList<>();
+        for (AceRaceLine gate : gates) gateCenters.add(gate.center(world));
+        List<Location> routeNodes = new ArrayList<>();
+        routeNodes.add(startApproach != null ? startApproach.clone() : gateCenters.getFirst().clone());
+        routeNodes.addAll(gateCenters.stream().map(Location::clone).toList());
+        routeNodes.add(finishApproach != null ? finishApproach.clone() : gateCenters.getLast().clone());
+
+        List<Integer> bindings = new ArrayList<>(respawnPoints.size());
+        for (AceRaceRespawnPoint respawnPoint : respawnPoints) {
+            Location location = respawnPoint.destination();
+            int nearGate = nearestGateWithinBindingRadius(location, gates);
+            if (nearGate >= 0) {
+                // A marker close to a gate is deliberately considered part of the segment after it;
+                // its capture radius is the same safety margin used when recovering a missed gate.
+                bindings.add(nearGate);
+                continue;
+            }
+
+            List<Integer> orientedCandidates = new ArrayList<>();
+            Location firstGateNext = gates.size() > 1 ? gateCenters.get(1) : routeNodes.getLast();
+            if (isBeforeGate(location, gates.getFirst(), firstGateNext)) {
+                orientedCandidates.add(0);
+            }
+            for (int segment = 1; segment < gates.size(); segment++) {
+                AceRaceLine previousGate = gates.get(segment - 1);
+                AceRaceLine nextGate = gates.get(segment);
+                Location nextGateNext = segment + 1 < gates.size()
+                        ? gateCenters.get(segment + 1) : routeNodes.getLast();
+                if (isAfterGate(location, previousGate, gateCenters.get(segment))
+                        && isBeforeGate(location, nextGate, nextGateNext)) {
+                    orientedCandidates.add(segment);
+                }
+            }
+            if (isAfterGate(location, gates.getLast(), routeNodes.getLast())) {
+                orientedCandidates.add(gates.size());
+            }
+
+            List<Integer> corridorCandidates = new ArrayList<>();
+            for (int segment = 0; segment < routeNodes.size() - 1; segment++) {
+                if (withinRouteCorridor(location, routeNodes.get(segment), routeNodes.get(segment + 1))) {
+                    corridorCandidates.add(segment);
+                }
+            }
+            List<Integer> candidates = corridorCandidates.isEmpty()
+                    ? orientedCandidates : corridorCandidates;
+            if (corridorCandidates.size() > 1 && !orientedCandidates.isEmpty()) {
+                List<Integer> intersection = corridorCandidates.stream()
+                        .filter(orientedCandidates::contains).toList();
+                if (!intersection.isEmpty()) candidates = intersection;
+            }
+
+            int binding = candidates.stream()
+                    .min(Comparator.comparingDouble(segment -> distanceSquaredToSegment(
+                            location, routeNodes.get(segment), routeNodes.get(segment + 1))))
+                    .orElseGet(() -> nearestRouteSegment(location, routeNodes));
+            // Route segment 0 is before the first gate and therefore has binding -1;
+            // segment N is after gate N and therefore has binding N-1.
+            bindings.add(binding - 1);
+        }
+
+        // Some maps place the final recovery marker before the last gate and go straight into the
+        // finish line. Keep that marker as a final-gate safety net, selected by distance rather than
+        // by whichever marker happened to be saved last.
+        int finalProgressPoint = progressPoints.size() - 1;
+        if (!bindings.contains(finalProgressPoint) && !respawnPoints.isEmpty()) {
+            int fallback = -1;
+            double nearestDistance = Double.POSITIVE_INFINITY;
+            for (int index = 0; index < respawnPoints.size(); index++) {
+                if (bindings.get(index) != finalProgressPoint - 1 && finalProgressPoint > 0) continue;
+                double distance = gates.getLast().distanceSquared(respawnPoints.get(index).destination());
+                if (distance >= nearestDistance) continue;
+                nearestDistance = distance;
+                fallback = index;
+            }
+            if (fallback >= 0) bindings.set(fallback, finalProgressPoint);
+        }
+        return bindings;
+    }
+
+    private static boolean withinRouteCorridor(@NotNull Location location,
+                                               @NotNull Location from, @NotNull Location to) {
+        if (location.getWorld() != from.getWorld() || from.getWorld() != to.getWorld()) return false;
+        double minX = Math.min(from.getX(), to.getX()) - RESPAWN_ROUTE_CORRIDOR_MARGIN;
+        double maxX = Math.max(from.getX(), to.getX()) + RESPAWN_ROUTE_CORRIDOR_MARGIN;
+        double minZ = Math.min(from.getZ(), to.getZ()) - RESPAWN_ROUTE_CORRIDOR_MARGIN;
+        double maxZ = Math.max(from.getZ(), to.getZ()) + RESPAWN_ROUTE_CORRIDOR_MARGIN;
+        return location.getX() >= minX && location.getX() <= maxX
+                && location.getZ() >= minZ && location.getZ() <= maxZ;
+    }
+
+    private static int nearestGateWithinBindingRadius(@NotNull Location location,
+                                                       @NotNull List<AceRaceLine> gates) {
+        int nearest = -1;
+        double nearestDistance = RESPAWN_GATE_BIND_DISTANCE_SQUARED;
+        for (int index = 0; index < gates.size(); index++) {
+            double distance = gates.get(index).distanceSquared(location);
+            if (distance >= nearestDistance) continue;
+            nearestDistance = distance;
+            nearest = index;
+        }
+        return nearest;
+    }
+
+    private static boolean isAfterGate(@NotNull Location location, @NotNull AceRaceLine gate,
+                                       @NotNull Location nextGateCenter) {
+        int expectedSide = gate.side(nextGateCenter);
+        int actualSide = gate.side(location);
+        return expectedSide != 0 && (actualSide == expectedSide || actualSide == 0);
+    }
+
+    private static boolean isBeforeGate(@NotNull Location location, @NotNull AceRaceLine gate,
+                                        @NotNull Location nextGateCenter) {
+        int expectedSide = gate.side(nextGateCenter);
+        int actualSide = gate.side(location);
+        return expectedSide != 0 && (actualSide == -expectedSide || actualSide == 0);
+    }
+
+    private static int nearestRouteSegment(@NotNull Location location, @NotNull List<Location> routeNodes) {
+        int nearest = 0;
+        double nearestDistance = Double.POSITIVE_INFINITY;
+        for (int segment = 0; segment < routeNodes.size() - 1; segment++) {
+            double distance = distanceSquaredToSegment(location, routeNodes.get(segment), routeNodes.get(segment + 1));
+            if (distance >= nearestDistance) continue;
+            nearestDistance = distance;
+            nearest = segment;
+        }
+        return nearest;
+    }
+
+    private static double distanceSquaredToSegment(@NotNull Location location,
+                                                    @NotNull Location from, @NotNull Location to) {
+        if (location.getWorld() != from.getWorld() || from.getWorld() != to.getWorld())
+            return Double.POSITIVE_INFINITY;
+        double x = to.getX() - from.getX();
+        double y = to.getY() - from.getY();
+        double z = to.getZ() - from.getZ();
+        double lengthSquared = x * x + y * y + z * z;
+        double progress = lengthSquared <= 0.0001D ? 0D
+                : ((location.getX() - from.getX()) * x + (location.getY() - from.getY()) * y
+                + (location.getZ() - from.getZ()) * z) / lengthSquared;
+        progress = Math.max(0D, Math.min(1D, progress));
+        double nearestX = from.getX() + x * progress;
+        double nearestY = from.getY() + y * progress;
+        double nearestZ = from.getZ() + z * progress;
+        double dx = location.getX() - nearestX;
+        double dy = location.getY() - nearestY;
+        double dz = location.getZ() - nearestZ;
+        return dx * dx + dy * dy + dz * dz;
     }
 
     private int getWorldFallHeight() {
@@ -164,6 +383,133 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private AceRaceLine getFinishLine() {
         AceRaceConfig config = getGameConfig();
         return config.hasFinishLine() ? new AceRaceLine(config.getFinishLinePos1(), config.getFinishLinePos2()) : null;
+    }
+
+    public int getRespawnPointBinding(int index) {
+        int loadedIndex = getRespawnPointIndexForConfig(index);
+        return loadedIndex >= 0 && loadedIndex < respawnProgressPointBindings.size()
+                ? respawnProgressPointBindings.get(loadedIndex) : -1;
+    }
+
+    public int getRespawnPointCount() {
+        return respawnPoints.size();
+    }
+
+    public int getRespawnPointIndexForConfig(int configIndex) {
+        return respawnPointConfigIndexes.indexOf(configIndex);
+    }
+
+    public int getRespawnPointConfigIndex(int loadedIndex) {
+        return loadedIndex >= 0 && loadedIndex < respawnPointConfigIndexes.size()
+                ? respawnPointConfigIndexes.get(loadedIndex) : -1;
+    }
+
+    public boolean setRespawnPointBinding(int index, int binding) {
+        int loadedIndex = getRespawnPointIndexForConfig(index);
+        if (loadedIndex < 0 || index < 0 || index >= getGameConfig().ensureRespawnPoints().size()
+                || binding < -1 || binding >= progressPoints.size()) return false;
+        getGameConfig().setRespawnProgressPointBinding(index, binding);
+        loadCoursePoints();
+        return true;
+    }
+
+    /** Toggles the editor-only course preview for the current prepare session. */
+    public boolean toggleMapEditPreview(@NotNull Player viewer) {
+        if (mapEditPreviewViewer != null && mapEditPreviewViewer.equals(viewer.getUniqueId())) {
+            disableMapEditPreview();
+            return false;
+        }
+        disableMapEditPreview();
+        mapEditPreviewViewer = viewer.getUniqueId();
+        refreshMapEditPreviewEntities();
+        mapEditPreviewTask = scheduler.runTaskTimer(plugin, () -> {
+            Player player = Bukkit.getPlayer(mapEditPreviewViewer);
+            var session = player == null ? null : plugin.getPrepareSessionManager().getSession(player);
+            String areaName = getGameConfig().getAreaName();
+            if (player == null || session == null
+                    || session.getGameType() != GameTypeEnum.AceRace
+                    || areaName == null || !areaName.equals(session.getAreaName())) {
+                disableMapEditPreview();
+                return;
+            }
+            spawnMapEditPreviewParticles(player);
+        }, MAP_EDIT_PREVIEW_UPDATE_TICKS, MAP_EDIT_PREVIEW_UPDATE_TICKS);
+        return true;
+    }
+
+    public boolean isMapEditPreviewEnabled() {
+        return mapEditPreviewViewer != null;
+    }
+
+    public void disableMapEditPreview() {
+        if (mapEditPreviewTask != null) {
+            mapEditPreviewTask.cancel();
+            mapEditPreviewTask = null;
+        }
+        for (EnderCrystal crystal : mapEditPreviewCrystals) {
+            if (crystal != null && !crystal.isDead()) crystal.remove();
+        }
+        mapEditPreviewCrystals.clear();
+        mapEditPreviewViewer = null;
+    }
+
+    /** Returns the configured marker index represented by an editor preview crystal, or -1. */
+    public int mapEditPreviewRespawnIndex(@NotNull Entity entity) {
+        if (mapEditPreviewCrystals.stream().noneMatch(crystal -> crystal.getUniqueId().equals(entity.getUniqueId()))) return -1;
+        String area = entity.getPersistentDataContainer().get(mapEditPreviewAreaKey, PersistentDataType.STRING);
+        if (!java.util.Objects.equals(getGameConfig().getAreaName(), area)) return -1;
+        Integer index = entity.getPersistentDataContainer().get(mapEditPreviewMarkerKey, PersistentDataType.INTEGER);
+        return index == null || index < 0 || index >= respawnPoints.size()
+                ? -1 : getRespawnPointConfigIndex(index);
+    }
+
+    private void refreshMapEditPreviewEntities() {
+        for (EnderCrystal crystal : mapEditPreviewCrystals) {
+            if (crystal != null && !crystal.isDead()) crystal.remove();
+        }
+        mapEditPreviewCrystals.clear();
+        if (mapEditPreviewViewer == null) return;
+        World world = Bukkit.getWorld(getWorldName());
+        if (world == null) return;
+        String areaName = getGameConfig().getAreaName();
+        for (int index = 0; index < respawnPoints.size(); index++) {
+            int markerIndex = index;
+            Location location = respawnPoints.get(index).destination().clone();
+            EnderCrystal crystal = world.spawn(location, EnderCrystal.class, spawned -> {
+                spawned.setShowingBottom(false);
+                spawned.setInvulnerable(true);
+                spawned.setPersistent(false);
+                int binding = markerIndex < respawnProgressPointBindings.size()
+                        ? respawnProgressPointBindings.get(markerIndex) : -1;
+                spawned.setCustomName(binding < 0
+                        ? "起点后" : "进度点 #" + (binding + 1) + " 后");
+                spawned.setCustomNameVisible(true);
+                spawned.getPersistentDataContainer().set(mapEditPreviewAreaKey,
+                        PersistentDataType.STRING, areaName);
+                spawned.getPersistentDataContainer().set(mapEditPreviewMarkerKey,
+                        PersistentDataType.INTEGER, markerIndex);
+            });
+            mapEditPreviewCrystals.add(crystal);
+        }
+    }
+
+    private void spawnMapEditPreviewParticles(@NotNull Player viewer) {
+        World world = Bukkit.getWorld(getWorldName());
+        if (world == null || viewer.getWorld() != world) return;
+        for (AceRaceProgressPoint progressPoint : progressPoints) {
+            Vector first = progressPoint.pos1();
+            Vector second = progressPoint.pos2();
+            double dx = second.getX() - first.getX();
+            double dy = second.getY() - first.getY();
+            double dz = second.getZ() - first.getZ();
+            int samples = Math.max(1, (int) Math.ceil(Math.sqrt(dx * dx + dy * dy + dz * dz) / 2D));
+            for (int sample = 0; sample <= samples; sample++) {
+                double ratio = sample / (double) samples;
+                Location particle = new Location(world, first.getX() + dx * ratio + 0.5D,
+                        first.getY() + dy * ratio + 0.15D, first.getZ() + dz * ratio + 0.5D);
+                viewer.spawnParticle(Particle.END_ROD, particle, 1, 0D, 0D, 0D, 0D);
+            }
+        }
     }
 
     @Override
@@ -184,6 +530,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         nextProgressPoint.clear();
         completedLaps.clear();
         lapStartedNanos.clear();
+        raceStartedNanos.clear();
         latestRespawnLocations.clear();
         capturedRespawnPoints.clear();
         activeFallHeights.clear();
@@ -222,6 +569,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         for (UUID uuid : gamePlayers) {
             nextProgressPoint.put(uuid, 0);
             completedLaps.put(uuid, 0);
+            lapStartedNanos.remove(uuid);
+            raceStartedNanos.remove(uuid);
             latestRespawnLocations.put(uuid, start.clone());
             capturedRespawnPoints.put(uuid, new HashSet<>());
             activeFallHeights.put(uuid, getGameConfig().getStartFallY());
@@ -246,7 +595,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         Player player = event.getPlayer();
         if (getGameStageEnum() != GameStageEnum.PROGRESS || finishedPlayers.contains(player.getUniqueId())) return;
         UUID uuid = player.getUniqueId();
-        Location current = player.getLocation();
+        Location current = event.getTo();
+        if (current == null) return;
         Location previous = lastMoveLocations.put(uuid, current.clone());
         if (previous == null) previous = current;
         // Apply stations before fall recovery as well: a fast jump into a water ring may cross the
@@ -266,12 +616,20 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void handleProgressPoint(@NotNull Player player, @NotNull Location previous,
                                      @NotNull Location current) {
         int expected = nextProgressPoint.getOrDefault(player.getUniqueId(), 0);
-        if (expected >= progressPoints.size()) return;
-        AceRaceProgressPoint progressPoint = progressPoints.get(expected);
-        if (!progressPoint.crossed(previous, current)) return;
+        // A fast riptide/elytra movement event can cross several gates before Bukkit emits the next
+        // movement event. Consume every consecutive gate intersected by this same trajectory instead
+        // of leaving the later gates behind the player's new position forever.
+        while (expected < progressPoints.size()
+                && progressPoints.get(expected).crossed(previous, current)) {
+            advanceProgressPoint(player, expected);
+            expected++;
+        }
+    }
 
+    private void advanceProgressPoint(@NotNull Player player, int progressIndex) {
+        AceRaceProgressPoint progressPoint = progressPoints.get(progressIndex);
         activeFallHeights.put(player.getUniqueId(), progressPoint.fallY());
-        nextProgressPoint.put(player.getUniqueId(), expected + 1);
+        nextProgressPoint.put(player.getUniqueId(), progressIndex + 1);
         applyProgressPointEquipment(player, progressPoint.equipment());
         announceProgressPointEquipment(player, progressPoint.equipment());
         player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 0.7F, 1F);
@@ -281,10 +639,30 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                                      @NotNull Location current) {
         UUID uuid = player.getUniqueId();
         Set<Integer> captured = capturedRespawnPoints.computeIfAbsent(uuid, ignored -> new HashSet<>());
+        List<Integer> crossed = new ArrayList<>();
         for (int index = 0; index < respawnPoints.size(); index++) {
             if (captured.contains(index)) continue;
             AceRaceRespawnPoint respawnPoint = respawnPoints.get(index);
-            if (!respawnPoint.reached(previous, current)) continue;
+            if (respawnPoint.crossingProgress(previous, current) < 0.0D) continue;
+            crossed.add(index);
+        }
+        // A single high-speed movement can pass several markers. Their configured list order is not
+        // the route order, so consume them in the order in which this trajectory actually reaches them.
+        crossed.sort(Comparator.comparingDouble(index ->
+                respawnPoints.get(index).crossingProgress(previous, current)));
+        for (int index : crossed) {
+            AceRaceRespawnPoint respawnPoint = respawnPoints.get(index);
+            int boundProgressPoint = index < respawnProgressPointBindings.size()
+                    ? respawnProgressPointBindings.get(index) : -1;
+            int expected = nextProgressPoint.getOrDefault(uuid, 0);
+            // A marker may repair exactly one missed gate. Later-course markers cannot be used to
+            // shortcut several gates, and markers from an older segment cannot move respawn backward.
+            if (boundProgressPoint == expected && expected < progressPoints.size()) {
+                advanceProgressPoint(player, expected);
+                expected++;
+            }
+            if (boundProgressPoint != expected - 1) continue;
+
             captured.add(index);
             latestRespawnLocations.put(uuid, respawnPoint.destination());
         }
@@ -299,7 +677,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (!startLineArmed.contains(uuid)) {
             if (startLine.crossedAtOrAbove(previous, current)) {
                 startLineArmed.add(uuid);
-                lapStartedNanos.put(uuid, System.nanoTime());
+                long startedAt = System.nanoTime();
+                lapStartedNanos.put(uuid, startedAt);
+                raceStartedNanos.putIfAbsent(uuid, startedAt);
             }
             return;
         }
@@ -314,6 +694,13 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             long durationMillis = Math.max(0L, (completedAt - lapStarted) / 1_000_000L);
             plugin.getDailyManager().statsManager().recordPlayerTime(
                     this, uuid, DailyRecordType.ACERACE_FASTEST_LAP, durationMillis);
+        }
+        Long raceStarted = raceStartedNanos.get(uuid);
+        if (lap == 3 && getGameConfig().getLaps() == 3 && raceStarted != null
+                && getRunMode() == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY) {
+            long durationMillis = Math.max(0L, (completedAt - raceStarted) / 1_000_000L);
+            plugin.getDailyManager().statsManager().recordPlayerTime(
+                    this, uuid, DailyRecordType.ACERACE_FASTEST_THREE_LAPS, durationMillis);
         }
         if (lap < getGameConfig().getLaps()) {
             resetLapProgress(player, current);
@@ -684,7 +1071,13 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         applyProgressPointEquipment(player, AceRaceEquipment.NONE);
         restoreRacerVisibility(player);
         player.setGameMode(GameMode.SPECTATOR);
-        if (finishedPlayers.size() == gamePlayers.size()) scheduler.runTask(plugin, this::endGame);
+        if (allParticipantsFinished(gamePlayers, finishedPlayers)) endGame();
+    }
+
+    /** Uses roster membership rather than equal list sizes so duplicate or already-removed entries cannot delay the end. */
+    static boolean allParticipantsFinished(@NotNull Collection<UUID> participants,
+                                           @NotNull Collection<UUID> finished) {
+        return !participants.isEmpty() && finished.containsAll(participants);
     }
 
     public void returnToLatestRespawnPoint(@NotNull Player player) {
@@ -920,9 +1313,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private void hideRacer(@NotNull Player player) {
         disableRacerCollisions(player);
+        plugin.getVisibilityManager().seeSelf(player.getUniqueId(), visibilityOwner,
+                "Ace Race 开始后一分钟内隐藏其他玩家");
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
-            setRacerVisible(player, other, false);
             if (gamePlayers.contains(other.getUniqueId()) && !finishedPlayers.contains(other.getUniqueId())) {
                 setRacerVisible(other, player, false);
                 disableRacerCollisions(other);
@@ -937,13 +1331,11 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         riptideHiddenViews.removeIf(view -> view.contains(player.getUniqueId()));
         riptideViewerGraceTicks.remove(player.getUniqueId());
         restoreRacerCollisions(player);
+        plugin.getVisibilityManager().release(player.getUniqueId(), visibilityOwner);
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
-            setRacerVisible(player, other, true);
             if (gamePlayers.contains(other.getUniqueId()) && !finishedPlayers.contains(other.getUniqueId()))
                 setRacerVisible(other, player, false);
-            else
-                setRacerVisible(other, player, true);
         }
     }
 
@@ -955,31 +1347,21 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         visibleRacerPairs.clear();
         riptideHiddenViews.clear();
         riptideViewerGraceTicks.clear();
+        plugin.getVisibilityManager().releaseAll(gamePlayers, visibilityOwner);
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) continue;
             restoreRacerCollisions(player);
-            for (Player other : Bukkit.getOnlinePlayers()) {
-                if (!other.equals(player)) {
-                    setRacerVisible(player, other, true);
-                    setRacerVisible(other, player, true);
-                }
-            }
         }
     }
 
-    /** Clears this plugin's bidirectional hide state before a racer disconnects. */
+    /** Cleans transient visuals on disconnect; the UUID policy intentionally survives reconnects. */
     private void releaseRacerVisibility(@NotNull Player player) {
         clearRacerOutlines(player);
         removeRacerNameDisplay(player.getUniqueId());
         riptideHiddenViews.removeIf(view -> view.contains(player.getUniqueId()));
         riptideViewerGraceTicks.remove(player.getUniqueId());
         restoreRacerCollisions(player);
-        for (Player other : Bukkit.getOnlinePlayers()) {
-            if (other.equals(player)) continue;
-            setRacerVisible(player, other, true);
-            setRacerVisible(other, player, true);
-        }
     }
 
     /** Keeps a newly joined observer hidden from active racers without hiding racers from observers. */
@@ -1070,14 +1452,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         setRacerVisible(viewer, target, false);
     }
 
-    /** Central policy prevents this runtime slot from revealing racers owned by another shared slot. */
+    /** Delegates the directional decision to the UUID-backed global lifecycle manager. */
     private void setRacerVisible(@NotNull Player viewer, @NotNull Player target, boolean visible) {
-        if (plugin.getDailyManager() == null) {
-            if (visible) viewer.showPlayer(plugin, target);
-            else viewer.hidePlayer(plugin, target);
-            return;
-        }
-        plugin.getDailyManager().isolation().setVisible(this, viewer, target, visible);
+        plugin.getVisibilityManager().setPlayerVisible(viewer.getUniqueId(), target.getUniqueId(), visible,
+                visibilityOwner, visible ? "Ace Race 距离内玩家可见" : "Ace Race 距离或冲刺规则隐藏");
     }
 
     private @NotNull TextDisplay ensureRacerNameDisplay(@NotNull Player racer) {
@@ -1180,6 +1558,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void dispose() {
+        disableMapEditPreview();
         stopRacerVisibilityUpdates();
         restoreAllRacerVisibility();
         super.dispose();

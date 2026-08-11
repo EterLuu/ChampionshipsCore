@@ -25,7 +25,7 @@ import java.util.List;
 public final class AceRaceProgressPointListStep extends PrepareStep {
     public AceRaceProgressPointListStep() {
         super("progress_points", Component.text("竞速进度点"),
-                Component.text("用 WorldEdit 选取水平直线；触发面从该高度向上延伸"),
+                Component.text("用 WorldEdit 选取水平直线；短线扩至 20 格，触发面含线下 3 格及以上"),
                 Material.LIME_CONCRETE, StepCaptureType.LIST);
     }
 
@@ -86,7 +86,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
             AceRaceEquipment equipment = AceRaceEquipment.fromConfig(progressPoint.getString("equipment"));
             entries.add(new ListEntry("进度点 #" + progressPoint.getInt("order"), List.of(
                     "选线：" + format(progressPoint.getVector("pos1")) + " -> " + format(progressPoint.getVector("pos2")),
-                    "触发高度：选线 Y 及以上",
+                    "触发范围：不足 20 格自动向两侧扩展；选线 Y-3 及以上",
                     "摔落高度：" + progressPoint.getInt("fall-y"),
                     "下一赛段道具：" + equipment.displayName())));
         }

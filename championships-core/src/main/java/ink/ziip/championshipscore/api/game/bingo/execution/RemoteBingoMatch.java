@@ -223,13 +223,15 @@ final class RemoteBingoMatch {
                     .findFirst().orElse(null);
             if (team != null) {
                 long durationMillis = decision.observation().observedGameTick() * 50L;
+                int completed = scoring.result().completedCells()
+                        .getOrDefault(decision.observation().teamId(), 0);
+                plugin.getDailyManager().statsManager().recordBingoProgress(
+                        instance, team, decision.completedLines(), completed);
                 if (decision.completedLines() > 0) {
                     plugin.getDailyManager().statsManager().recordTeamMilestone(instance, team,
                             DailyRecordType.BINGO_FIRST_LINE, durationMillis,
                             decision.observation().playerId());
                 }
-                int completed = scoring.result().completedCells()
-                        .getOrDefault(decision.observation().teamId(), 0);
                 if (completed >= manifest.tasks().size()) {
                     plugin.getDailyManager().statsManager().recordTeamMilestone(instance, team,
                             DailyRecordType.BINGO_FULL_CARD, durationMillis,
@@ -301,7 +303,7 @@ final class RemoteBingoMatch {
         return commands.publishCommand(command).thenApply(ignored -> true);
     }
 
-    CompletionStage<Boolean> addSpectator(UUID playerId, String username) {
+    CompletionStage<Boolean> addSpectator(UUID playerId, String username, double points) {
         synchronized (this) {
             if (lifecycle.state().terminal()) return CompletableFuture.completedFuture(false);
             removedSpectators.remove(playerId);
@@ -309,7 +311,8 @@ final class RemoteBingoMatch {
         }
         MatchCommand add = MatchMessages.command(manifest.matchId(), manifest.epoch(),
                 MatchCommandType.ADD_SPECTATOR,
-                Map.of("playerId", playerId.toString(), "username", username), Clock.systemUTC());
+                Map.of("playerId", playerId.toString(), "username", username,
+                        "points", Double.toString(points)), Clock.systemUTC());
         CompletableFuture<Boolean> acknowledged = new CompletableFuture<>();
         spectatorAddAcks.put(playerId, acknowledged);
         return commands.publishCommand(add)

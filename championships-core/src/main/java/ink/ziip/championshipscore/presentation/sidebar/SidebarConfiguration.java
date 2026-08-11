@@ -53,19 +53,19 @@ public final class SidebarConfiguration {
 
         Template lobby = template(yaml, "boards.lobby", styles, true);
         Template dailyLobby = template(yaml, "boards.daily-lobby", styles, false);
-        if (dailyLobby == null) dailyLobby = new Template("&#31e061&l自由游玩", List.of(
-                "&#bababa游玩方式: &#ededed{daily.mode}",
-                "&#bababa同行队长: &#24abff{daily.party-leader} &#696969({daily.party-size}人)",
-                "&#bababa心仪游戏: &#fff566{daily.selected-game}",
-                "&#bababa当前状态: &#ededed{daily.queue-state}",
-                "&#bababa等候人数: &#ededed{daily.queue-players}",
-                "&#bababa启程倒计时: &#ff6b26{daily.countdown}",
+        if (dailyLobby == null) dailyLobby = new Template(
+                "&#3fb2ba[&#31e061S&#dbffe5³&#e42d3eCC&#bababa夏季联合锦标赛&#3fb2ba]", List.of(
+                "&#4f4f4f&m+-------------------+",
+                "&#dfff2b当前游戏: &#f6ffa8{daily.selected-game}",
+                "&#ff0808当前状态: &#ff7373{daily.queue-state}",
                 "",
-                "&#bababa游玩场次: &#ededed{daily.games} &#696969• &#bababa胜场: &#31e061{daily.wins}",
-                "&#bababa游玩积分: &#ff6b26{daily.points}",
+                "&f同行队长: &#24abff{daily.party-leader}",
+                "&f同行人数: &#ff6e26{daily.party-size}",
                 "",
-                "&#fff566/cc play &#bababa选择游戏",
-                "&#fff566/cc play leaderboard &#bababa查看榜单"));
+                "&#4287f5等候人数: &#ff6e26{daily.queue-players}",
+                "&#4287f5启程倒计时: &#ff6e26{daily.countdown}",
+                "",
+                "&aHAMMER &f& &cRIA &f& &#ae70ffINF &f& &#036eb7&lHS"));
         Template mapStatus = template(yaml, "boards.map-status", styles, true);
         Template mapEdit = template(yaml, "boards.map-edit", styles, true);
 

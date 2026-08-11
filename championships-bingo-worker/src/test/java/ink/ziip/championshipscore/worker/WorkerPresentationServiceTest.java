@@ -54,7 +54,15 @@ class WorkerPresentationServiceTest {
 
     @Test
     void runningSidebarStatusDoesNotDuplicateTheBossBarTimer() {
-        assertEquals("进行中", WorkerPresentationService.sidebarStatus(MatchState.RUNNING));
+        BingoPresentation presentation = new BingoPresentation(Map.of(
+                "sidebar.status.progress", "比赛中"));
+        assertEquals("比赛中", WorkerPresentationService.sidebarStatus(presentation, MatchState.RUNNING));
+    }
+
+    @Test
+    void sidebarStatusFallsBackForOlderManifests() {
+        assertEquals("进行中", WorkerPresentationService.sidebarStatus(
+                new BingoPresentation(Map.of()), MatchState.RUNNING));
     }
 
     @Test

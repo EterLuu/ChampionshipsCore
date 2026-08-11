@@ -84,13 +84,18 @@ public class AceRaceConfig extends BaseGameConfig {
     @ConfigOption(path = "respawn-points")
     private List<String> respawnPoints;
 
+    /** Zero-based progress point reached after each respawn marker; -1 means the start segment,
+     * and -2 means that the runtime should infer the segment from the marker's coordinates. */
+    @ConfigOption(path = "respawn-progress-points", nullable = true)
+    private List<Integer> respawnProgressPoints;
+
     public AceRaceConfig(@NotNull ChampionshipsCore plugin, String areaName) {
         super(plugin, areaName);
     }
 
     @Override
     public int getLatestVersion() {
-        return 16;
+        return 17;
     }
 
     @Override
@@ -135,7 +140,7 @@ public class AceRaceConfig extends BaseGameConfig {
                         "&#696969==========&r &#ff6b26[&d王牌竞速&#ff6b26] &#696969==========&r",
                         "&#ededed在限定时间内完成赛道，率先跑完全部圈数的选手排名靠前。",
                         "&#ededed按顺序通过进度点后，正向穿过终点线才会完成当前圈数。",
-                        "&#ededed进度点负责赛段道具和摔落高度；经过重生点 3 格内会保存本圈重生位置。"),
+                        "&#ededed进度点负责赛段道具和摔落高度；重生点按位置绑定赛段，经过其 3 格内会同步进度并保存。"),
                 List.of(
                         "&#696969==========&r &#fff566积分规则 &#696969==========&r",
                         "&#ededed完赛基础分从 &#ff6b26500 分&#ededed起，每后一名减少 &#ff6b2610 分&#ededed，最低 &#ff6b2680 分&#ededed。",
@@ -256,12 +261,58 @@ public class AceRaceConfig extends BaseGameConfig {
         return respawnPoints;
     }
 
+    public void setRespawnPoints(List<String> respawnPoints) {
+        this.respawnPoints = respawnPoints == null ? new ArrayList<>() : new ArrayList<>(respawnPoints);
+        ensureRespawnProgressPoints();
+    }
+
+    public List<Integer> ensureRespawnProgressPoints() {
+        if (respawnProgressPoints == null) respawnProgressPoints = new ArrayList<>();
+        while (respawnProgressPoints.size() < ensureRespawnPoints().size()) respawnProgressPoints.add(-2);
+        while (respawnProgressPoints.size() > ensureRespawnPoints().size())
+            respawnProgressPoints.removeLast();
+        return respawnProgressPoints;
+    }
+
+    public Integer getRespawnProgressPointBinding(int index, int progressPointCount) {
+        if (respawnProgressPoints == null || index < 0 || index >= respawnProgressPoints.size()) return null;
+        Integer binding = respawnProgressPoints.get(index);
+        if (binding == null || binding < -1 || binding >= progressPointCount) return null;
+        return binding;
+    }
+
+    public void setRespawnProgressPointBinding(int index, int binding) {
+        if (index < 0 || index >= ensureRespawnPoints().size()) return;
+        if (binding < -1) binding = -2;
+        ensureRespawnProgressPoints().set(index, binding);
+    }
+
     public void addRespawnPoint(String location) {
         ensureRespawnPoints().add(location);
+        ensureRespawnProgressPoints();
     }
 
     public void clearRespawnPoints() {
         ensureRespawnPoints().clear();
+        ensureRespawnProgressPoints().clear();
+    }
+
+    public void moveRespawnPoint(int index, int newOrder) {
+        if (index < 0 || index >= ensureRespawnPoints().size()
+                || newOrder < 1 || newOrder > ensureRespawnPoints().size()) return;
+        List<String> locations = ensureRespawnPoints();
+        List<Integer> bindings = ensureRespawnProgressPoints();
+        String location = locations.remove(index);
+        Integer binding = bindings.remove(index);
+        locations.add(newOrder - 1, location);
+        bindings.add(newOrder - 1, binding);
+    }
+
+    public void removeRespawnPoint(int index) {
+        if (index < 0 || index >= ensureRespawnPoints().size()) return;
+        List<Integer> bindings = ensureRespawnProgressPoints();
+        ensureRespawnPoints().remove(index);
+        bindings.remove(index);
     }
 
     public boolean hasStartLine() {

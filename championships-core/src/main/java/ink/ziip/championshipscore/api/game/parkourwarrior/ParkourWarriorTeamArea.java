@@ -40,6 +40,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     private final Set<UUID> finishedPlayers = new HashSet<>();
     private final List<PKWCheckpoint> checkpoints = new ArrayList<>();
     private final Map<ChampionshipTeam, Double> gamePointsMultiplier = new HashMap<>();
+    private final String visibilityOwner = "game:parkour-warrior:" + UUID.randomUUID();
 
     @Getter
     private int timer;
@@ -60,6 +61,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetGame() {
+        plugin.getVisibilityManager().releaseAll(getGamePlayers(), visibilityOwner);
         cancelIntroduction();
         cancelFinalCountdown();
         resetBaseArea();
@@ -421,12 +423,9 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
         giveBootToAllPlayers();
 
-        for (UUID uuid : getGamePlayers()) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                hideOnlinePlayers(player);
-            }
-        }
+        for (UUID uuid : getGamePlayers())
+            plugin.getVisibilityManager().seeTeammates(uuid, visibilityOwner,
+                    "Parkour Warrior 进行中只能看见本队玩家");
 
         plugin.getTeamManager().setCollision(false);
 
@@ -478,79 +477,20 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     }
 
     public void hideOnlinePlayers(Player player) {
-        if (player != null) {
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                ChampionshipTeam playerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
-                ChampionshipTeam onlinePlayerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(onlinePlayer);
-
-                if (playerTeam != null) {
-                    if (!playerTeam.equals(onlinePlayerTeam)) {
-                        player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
-                    }
-                } else {
-                    player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
-                }
-            }
-        }
+        if (player != null) plugin.getVisibilityManager().seeTeammates(player.getUniqueId(), visibilityOwner,
+                "Parkour Warrior 进行中只能看见本队玩家");
     }
 
     public void showOnlinePlayers(Player player) {
-        if (player != null) {
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                player.showPlayer(ChampionshipsCore.getInstance(), onlinePlayer);
-            }
-        }
+        if (player != null) plugin.getVisibilityManager().release(player.getUniqueId(), visibilityOwner);
     }
 
     public void hideAndShowPlayer(Player player) {
         UUID uuid = player.getUniqueId();
         boolean activeRunner = getGamePlayers().contains(uuid) && !finishedPlayers.contains(uuid);
-
-        if (activeRunner) {
-            // Game player
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                ChampionshipTeam playerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
-                ChampionshipTeam onlinePlayerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(onlinePlayer);
-
-                if (playerTeam != null) {
-                    if (!playerTeam.equals(onlinePlayerTeam)) {
-                        player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
-                    }
-                } else {
-                    player.hidePlayer(ChampionshipsCore.getInstance(), onlinePlayer);
-                }
-            }
-        } else {
-            // Spectator
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                player.showPlayer(ChampionshipsCore.getInstance(), onlinePlayer);
-            }
-        }
-
-        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            boolean onlinePlayerIsActiveRunner = getGamePlayers().contains(onlinePlayer.getUniqueId())
-                    && !finishedPlayers.contains(onlinePlayer.getUniqueId());
-            if (onlinePlayerIsActiveRunner) {
-                if (!activeRunner) {
-                    onlinePlayer.hidePlayer(ChampionshipsCore.getInstance(), player);
-                    continue;
-                }
-                ChampionshipTeam playerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
-                ChampionshipTeam onlinePlayerTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(onlinePlayer);
-
-                if (playerTeam != null) {
-                    if (!playerTeam.equals(onlinePlayerTeam)) {
-                        onlinePlayer.hidePlayer(ChampionshipsCore.getInstance(), player);
-                    } else {
-                        onlinePlayer.showPlayer(ChampionshipsCore.getInstance(), player);
-                    }
-                } else {
-                    onlinePlayer.hidePlayer(ChampionshipsCore.getInstance(), player);
-                }
-            } else {
-                onlinePlayer.showPlayer(ChampionshipsCore.getInstance(), player);
-            }
-        }
+        if (activeRunner) hideOnlinePlayers(player);
+        else showOnlinePlayers(player);
+        plugin.getVisibilityManager().reconcilePlayer(uuid);
     }
 
     @Override
@@ -570,12 +510,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         announceGameEnd(MessageConfig.PARKOUR_WARRIOR_GAME_END_TITLE,
                 MessageConfig.PARKOUR_WARRIOR_GAME_END_SUBTITLE);
 
-        for (UUID uuid : getGamePlayers()) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                showOnlinePlayers(player);
-            }
-        }
+        plugin.getVisibilityManager().releaseAll(getGamePlayers(), visibilityOwner);
 
         setGameStageEnum(GameStageEnum.END);
 

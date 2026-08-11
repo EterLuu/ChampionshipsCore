@@ -98,6 +98,7 @@ public class DatabaseManager extends BaseManager {
                 }
                 ensurePointTransactionSchema(connection);
                 ensureIdentityIndexes(connection);
+                ensureDailyStatsSchema(connection);
             } catch (SQLException | IOException e) {
                 throw new IllegalStateException("Failed to create database tables.", e);
             }
@@ -142,6 +143,25 @@ public class DatabaseManager extends BaseManager {
         ensureUniqueIdentityIndex(connection, "players", "username", "uq_players_username");
         ensureUniqueIdentityIndex(connection, "team_members", "uuid", "uq_team_members_uuid");
         ensureUniqueIdentityIndex(connection, "team_members", "username", "uq_team_members_username");
+    }
+
+    private void ensureDailyStatsSchema(@NotNull Connection connection) throws SQLException {
+        // CREATE TABLE IF NOT EXISTS does not update the tables installed by older Core versions.
+        ensureColumn(connection, "daily_player_stats", "lineCount", "BIGINT NOT NULL DEFAULT 0");
+        ensureColumn(connection, "daily_player_stats", "completedTasks", "BIGINT NOT NULL DEFAULT 0");
+        ensureColumn(connection, "daily_player_stats", "maxCompletedTasks", "BIGINT NOT NULL DEFAULT 0");
+        ensureColumn(connection, "daily_match_results", "lineCount", "BIGINT NOT NULL DEFAULT 0");
+        ensureColumn(connection, "daily_match_results", "completedTasks", "BIGINT NOT NULL DEFAULT 0");
+    }
+
+    private void ensureColumn(@NotNull Connection connection, @NotNull String table,
+                               @NotNull String column, @NotNull String definition) throws SQLException {
+        try (ResultSet columns = connection.getMetaData().getColumns(connection.getCatalog(), null, table, column)) {
+            if (columns.next()) return;
+        }
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
+        }
     }
 
     private void ensureUniqueIdentityIndex(@NotNull Connection connection, @NotNull String table,

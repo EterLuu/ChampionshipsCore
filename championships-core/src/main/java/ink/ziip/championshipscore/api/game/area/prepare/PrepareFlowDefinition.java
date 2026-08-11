@@ -33,6 +33,10 @@ public abstract class PrepareFlowDefinition {
     /** Build the step list bound to the given map/configuration target. */
     public abstract @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target);
 
+    /** Called when a prepare session ends so a flow can release session-only world visuals. */
+    public void onSessionExit(@NotNull PrepareSession session) {
+    }
+
     /** Required-step validation shared by preview, validate and publish. */
     public @NotNull List<String> validate(@NotNull PrepareSession session) {
         List<String> errors = new ArrayList<>();

@@ -58,6 +58,15 @@ public final class DailyLeaderboardMenu {
         player.openInventory(holder.inventory);
     }
 
+    void refreshOpenMenus() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof LeaderboardHolder holder) {
+                if (holder.boardId == null) refreshCategories(holder);
+                else refreshBoard(holder);
+            }
+        }
+    }
+
     private void openBoard(Player player, String boardId) {
         LeaderboardHolder holder = new LeaderboardHolder(player.getUniqueId(), boardId);
         Board board = findBoard(boardId);
@@ -129,7 +138,7 @@ public final class DailyLeaderboardMenu {
         int totalRows = boards.stream().mapToInt(board -> stats.leaderboard(board.id()).size()).sum();
         inventory.setItem(PLAYER_SLOT, playerSummary(holder.viewer));
         inventory.setItem(OVERVIEW_SLOT, item(Material.NETHER_STAR,
-                Component.text("自由游玩荣誉榜", NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                Component.text("荣誉榜", NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
                 List.of(
                         Component.text(boards.size() + " 个榜单分类", NamedTextColor.WHITE)
                                 .append(Component.text("  ·  " + totalRows + " 条上榜记录", NamedTextColor.GRAY)),
@@ -182,7 +191,7 @@ public final class DailyLeaderboardMenu {
                 Component.text("暂无上榜记录", NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
                 List.of(
                         Component.text("完成一场对应游戏后，纪录会显示在这里", NamedTextColor.DARK_GRAY),
-                        Component.text("排行榜只读取自由游玩数据", NamedTextColor.YELLOW)
+                        Component.text("排行榜只读取本模式数据", NamedTextColor.YELLOW)
                 ), false));
 
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
@@ -202,15 +211,15 @@ public final class DailyLeaderboardMenu {
 
     private ItemStack playerSummary(UUID viewer) {
         DailyStatSnapshot stat = stats.stat(viewer, null);
-        int position = position(stats.leaderboard("points"), viewer);
+        int position = position(stats.leaderboard("wins"), viewer);
         return playerHead(viewer,
                 Component.text("我的榜单名片", NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
                 List.of(
                         Component.text("总榜  ", NamedTextColor.GRAY)
                                 .append(Component.text(position < 0 ? "尚未上榜" : "#" + position,
                                         position < 0 ? NamedTextColor.DARK_GRAY : NamedTextColor.GOLD)),
-                        Component.text("积分  ", NamedTextColor.GRAY).append(Component.text(Utils.formatPoints(stat.totalPoints()), NamedTextColor.GOLD)),
                         Component.text("战绩  ", NamedTextColor.GRAY).append(Component.text(stat.gamesPlayed() + " 场 · " + stat.wins() + " 胜", NamedTextColor.GREEN)),
+                        Component.text("胜率  ", NamedTextColor.GRAY).append(Component.text(winRate(stat), NamedTextColor.YELLOW)),
                         Component.empty(),
                         Component.text("选择下方分类查看详细名次", NamedTextColor.DARK_GRAY)
                 ), position > 0);
@@ -220,7 +229,9 @@ public final class DailyLeaderboardMenu {
         List<Component> lore = new ArrayList<>();
         appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FIRST_LINE, "首次连线");
         appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FULL_CARD, "全收集");
-        appendPersonalRecords(lore, viewer, GameTypeEnum.AceRace, DailyRecordType.ACERACE_FASTEST_LAP, "最快完整圈");
+        appendPersonalRecords(lore, viewer, GameTypeEnum.AceRace, DailyRecordType.ACERACE_FASTEST_LAP, "最快单圈");
+        appendPersonalRecords(lore, viewer, GameTypeEnum.AceRace,
+                DailyRecordType.ACERACE_FASTEST_THREE_LAPS, "最快完整三圈");
         if (lore.isEmpty()) lore.add(Component.text("完成 Bingo 或 AceRace 后解锁", NamedTextColor.DARK_GRAY));
         lore.add(Component.empty());
         lore.add(Component.text("不同地图的时间不会混合排名", NamedTextColor.YELLOW));
@@ -309,16 +320,8 @@ public final class DailyLeaderboardMenu {
 
     private List<Board> boards() {
         List<Board> boards = new ArrayList<>();
-        boards.add(new Board("points", MessageConfig.DAILY_LEADERBOARD_POINTS, Material.NETHER_STAR,
-                NamedTextColor.GOLD, "综合荣誉", "累计所有自由游玩项目的积分"));
         boards.add(new Board("wins", MessageConfig.DAILY_LEADERBOARD_WINS, Material.GOLDEN_SWORD,
-                NamedTextColor.GREEN, "综合战绩", "累计所有自由游玩项目的胜场"));
-        boards.add(new Board("bingo_points", replace(MessageConfig.DAILY_LEADERBOARD_GAME_POINTS,
-                "%game%", GameTypeEnum.Bingo.toString()), Material.FILLED_MAP,
-                NamedTextColor.LIGHT_PURPLE, "宾果 · 积分", "仅统计 Bingo 自由游玩积分"));
-        boards.add(new Board("acerace_points", replace(MessageConfig.DAILY_LEADERBOARD_GAME_POINTS,
-                "%game%", GameTypeEnum.AceRace.toString()), Material.ELYTRA,
-                NamedTextColor.AQUA, "竞速 · 积分", "仅统计 AceRace 自由游玩积分"));
+                NamedTextColor.GREEN, "综合战绩", "累计所有模式项目的胜场"));
         for (String map : knownMaps(GameTypeEnum.Bingo)) {
             String slug = DailyStatsManager.mapSlug(map);
             boards.add(new Board("bingo_first_line_" + slug, replace(
@@ -328,10 +331,15 @@ public final class DailyLeaderboardMenu {
                     MessageConfig.DAILY_LEADERBOARD_BINGO_FULL_CARD, "%map%", map), Material.FILLED_MAP,
                     NamedTextColor.GOLD, "宾果 · " + map, "从开场到完成整张卡片的最快时间"));
         }
-        for (String map : knownMaps(GameTypeEnum.AceRace)) boards.add(new Board(
-                "acerace_fastest_lap_" + DailyStatsManager.mapSlug(map), replace(
-                MessageConfig.DAILY_LEADERBOARD_ACERACE_FASTEST_LAP, "%map%", map), Material.CLOCK,
-                NamedTextColor.AQUA, "王牌竞速 · " + map, "该地图完整合法单圈的最快时间"));
+        for (String map : knownMaps(GameTypeEnum.AceRace)) {
+            String slug = DailyStatsManager.mapSlug(map);
+            boards.add(new Board("acerace_fastest_lap_" + slug, replace(
+                    MessageConfig.DAILY_LEADERBOARD_ACERACE_FASTEST_LAP, "%map%", map), Material.CLOCK,
+                    NamedTextColor.AQUA, "王牌竞速 · " + map, "该地图完整合法单圈的最快时间"));
+            boards.add(new Board("acerace_fastest_three_laps_" + slug, replace(
+                    MessageConfig.DAILY_LEADERBOARD_ACERACE_FASTEST_THREE_LAPS, "%map%", map), Material.CLOCK,
+                    NamedTextColor.GOLD, "王牌竞速 · " + map, "该地图完整三圈的最快时间"));
+        }
         return List.copyOf(boards);
     }
 
@@ -346,7 +354,7 @@ public final class DailyLeaderboardMenu {
 
     private Board findBoard(String id) {
         return boards().stream().filter(board -> board.id().equals(id)).findFirst()
-                .orElse(new Board(id, id, Material.PAPER, NamedTextColor.WHITE, "自由游玩", "历史榜单"));
+                .orElse(new Board(id, id, Material.PAPER, NamedTextColor.WHITE, "本模式", "历史榜单"));
     }
 
     private static void drawBorder(Inventory inventory) {
@@ -422,7 +430,12 @@ public final class DailyLeaderboardMenu {
     }
 
     private static String value(DailyLeaderboardEntry entry) {
-        return entry.duration() ? formatDuration((long) entry.value()) : Utils.formatPoints(entry.value());
+        return entry.duration() ? formatDuration((long) entry.value()) : (long) entry.value() + " 胜";
+    }
+
+    private static String winRate(DailyStatSnapshot stat) {
+        return stat.gamesPlayed() == 0 ? "0%"
+                : Math.round(stat.wins() * 100D / stat.gamesPlayed()) + "%";
     }
 
     public static String formatDuration(long millis) {

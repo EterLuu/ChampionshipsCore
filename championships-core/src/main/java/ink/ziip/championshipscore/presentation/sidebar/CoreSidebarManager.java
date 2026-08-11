@@ -15,9 +15,9 @@ import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagMatch;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorTeamArea;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.daily.DailyPlayerSnapshot;
-import ink.ziip.championshipscore.api.daily.DailyStatSnapshot;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.SharedSidebar;
 import ink.ziip.championshipscore.util.Utils;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -156,18 +156,13 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
 
         if (plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby()) {
             DailyPlayerSnapshot daily = plugin.getDailyManager().snapshot(player.getUniqueId());
-            DailyStatSnapshot stat = plugin.getDailyManager().statsManager().stat(player.getUniqueId(), null);
             Map<String, String> values = new LinkedHashMap<>();
-            values.put("daily.mode", daily.mode());
             values.put("daily.party-leader", daily.partyLeader());
             values.put("daily.party-size", Integer.toString(daily.partySize()));
             values.put("daily.selected-game", daily.selectedGame());
             values.put("daily.queue-state", daily.queueState());
             values.put("daily.queue-players", Integer.toString(daily.queuePlayers()));
             values.put("daily.countdown", daily.countdown() < 0 ? "-" : Integer.toString(daily.countdown()));
-            values.put("daily.games", Long.toString(stat.gamesPlayed()));
-            values.put("daily.wins", Long.toString(stat.wins()));
-            values.put("daily.points", Utils.formatPoints(stat.totalPoints()));
             return renderTemplate(player, config.dailyLobby(), values);
         }
 
@@ -236,7 +231,11 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         List<String> result = new ArrayList<>();
         for (ChampionshipTeam team : selected) {
             int position = ranked.indexOf(team) + 1;
-            String raw = team.equals(viewerTeam) ? template.ownRankingLine() : template.rankingLine();
+            String raw = bingo.getRunMode() == GameRunMode.DAILY
+                    ? team.equals(viewerTeam)
+                    ? "{rank.team-color}&l▶ {rank.position}. {rank.team} &7({rank.tasks} 项)"
+                    : "{rank.team-color}{rank.position}. {rank.team} &7({rank.tasks} 项)"
+                    : team.equals(viewerTeam) ? template.ownRankingLine() : template.rankingLine();
             String line = raw.replace("{rank.team-color}", team.getColorCode())
                     .replace("{rank.position}", Integer.toString(position))
                     .replace("{rank.team}", team.getName())

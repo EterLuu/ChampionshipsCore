@@ -32,6 +32,7 @@ public class AdminReloadSubCommand extends BaseSubCommand {
         plugin.getGameManager().unload();
         plugin.getConfigurationManager().reload();
         plugin.getGameManager().load();
+        plugin.getVisibilityManager().reconcileAll();
         plugin.getScheduleManager().load();
         plugin.getSidebarManager().reload();
         plugin.getSidebarManager().invalidateAll();

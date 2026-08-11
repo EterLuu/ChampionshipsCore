@@ -3,13 +3,20 @@ package ink.ziip.championshipscore.api.game.acerace;
 import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 
-/** A proximity marker which can become a racer's latest respawn location once per lap. */
+/** A proximity marker which is bound to its surrounding progress segment from its position at load time. */
 record AceRaceRespawnPoint(@NotNull Location location) {
-    private static final double CAPTURE_RADIUS_SQUARED = 9.0D;
+    private static final double CAPTURE_RADIUS_SQUARED = 16.0D;
 
     boolean reached(@NotNull Location from, @NotNull Location to) {
-        if (location.getWorld() == null || from.getWorld() != location.getWorld() || to.getWorld() != location.getWorld())
-            return false;
+        return crossingProgress(from, to) >= 0.0D;
+    }
+
+    /** Returns where this marker is reached along the movement segment, or -1 when not reached. */
+    double crossingProgress(@NotNull Location from, @NotNull Location to) {
+        if (from.getWorld() != to.getWorld()
+                || (location.getWorld() != null
+                && (from.getWorld() != location.getWorld() || to.getWorld() != location.getWorld())))
+            return -1.0D;
 
         double segmentX = to.getX() - from.getX();
         double segmentY = to.getY() - from.getY();
@@ -30,7 +37,7 @@ record AceRaceRespawnPoint(@NotNull Location location) {
         double distanceY = location.getY() - nearestY;
         double distanceZ = location.getZ() - nearestZ;
         return distanceX * distanceX + distanceY * distanceY + distanceZ * distanceZ
-                <= CAPTURE_RADIUS_SQUARED;
+                <= CAPTURE_RADIUS_SQUARED ? progress : -1.0D;
     }
 
     @NotNull Location destination() {

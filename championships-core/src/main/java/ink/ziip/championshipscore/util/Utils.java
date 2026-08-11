@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
@@ -178,6 +179,16 @@ public class Utils {
                 NamedTextColor named = NamedTextColor.NAMES.value(color.toLowerCase(Locale.ROOT));
                 return named != null ? named : NamedTextColor.WHITE;
         }
+    }
+
+    /** Uses an exact Minecraft named colour from the configured hex code when one exists. */
+    public static NamedTextColor toNamedTextColor(@NotNull String color, @Nullable String colorCode) {
+        TextColor parsed = colorCode == null ? null : TextColor.fromHexString(colorCode);
+        if (parsed != null) {
+            NamedTextColor exact = NamedTextColor.namedColor(parsed.value());
+            if (exact != null) return exact;
+        }
+        return toNamedTextColor(color);
     }
 
     public static String[] getColorNames() {

@@ -9,5 +9,6 @@ import java.util.UUID;
 public record DailyMatchResultEntry(@NotNull UUID matchId, @NotNull UUID uuid,
                                     @NotNull String username, @NotNull GameTypeEnum game,
                                     @NotNull String map, @NotNull String teamKey,
-                                    double points, boolean won, long finishedAt) {
+                                    double points, boolean won, long lineCount,
+                                    long completedTasks, long finishedAt) {
 }

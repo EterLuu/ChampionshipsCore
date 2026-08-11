@@ -109,13 +109,12 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "daily.menu.click-to-queue") public static String DAILY_MENU_CLICK_TO_QUEUE;
     @ConfigOption(path = "daily.menu.click-to-view") public static String DAILY_MENU_CLICK_TO_VIEW;
     @ConfigOption(path = "daily.menu.back") public static String DAILY_MENU_BACK;
-    @ConfigOption(path = "daily.leaderboard.points") public static String DAILY_LEADERBOARD_POINTS;
     @ConfigOption(path = "daily.leaderboard.wins") public static String DAILY_LEADERBOARD_WINS;
-    @ConfigOption(path = "daily.leaderboard.game-points") public static String DAILY_LEADERBOARD_GAME_POINTS;
     @ConfigOption(path = "daily.leaderboard.bingo-first-line") public static String DAILY_LEADERBOARD_BINGO_FIRST_LINE;
     @ConfigOption(path = "daily.leaderboard.bingo-full-card") public static String DAILY_LEADERBOARD_BINGO_FULL_CARD;
     @ConfigOption(path = "daily.leaderboard.acerace-fastest-lap") public static String DAILY_LEADERBOARD_ACERACE_FASTEST_LAP;
-    @ConfigOption(path = "daily.leaderboard.row-points") public static String DAILY_LEADERBOARD_ROW_POINTS;
+    @ConfigOption(path = "daily.leaderboard.acerace-fastest-three-laps") public static String DAILY_LEADERBOARD_ACERACE_FASTEST_THREE_LAPS;
+    @ConfigOption(path = "daily.leaderboard.row-count") public static String DAILY_LEADERBOARD_ROW_COUNT;
     @ConfigOption(path = "daily.leaderboard.row-time") public static String DAILY_LEADERBOARD_ROW_TIME;
     @ConfigOption(path = "daily.leaderboard.empty") public static String DAILY_LEADERBOARD_EMPTY;
 

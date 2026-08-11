@@ -20,6 +20,7 @@ import ink.ziip.championshipscore.protocol.MatchEvent;
 import ink.ziip.championshipscore.protocol.MatchEventType;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.MatchMessages;
+import ink.ziip.championshipscore.protocol.MatchRunMode;
 import ink.ziip.championshipscore.protocol.MatchState;
 import ink.ziip.championshipscore.protocol.MatchStateMachine;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
@@ -74,6 +75,7 @@ final class WorkerMatchSession {
     private final MatchManifest manifest;
     private final DurableEventOutbox events;
     private final WorkerReturnRouter returnRouter;
+    private final Runnable worldReset;
     private final PlatformScheduler scheduler;
     private final SafeScatterService scatter;
     private final MatchStateMachine lifecycle = new MatchStateMachine();
@@ -104,12 +106,13 @@ final class WorkerMatchSession {
     private final AtomicBoolean sidebarRefreshPending = new AtomicBoolean();
 
     WorkerMatchSession(Plugin plugin, WorkerConfig config, MatchManifest manifest,
-                       DurableEventOutbox events, WorkerReturnRouter returnRouter) {
+                       DurableEventOutbox events, WorkerReturnRouter returnRouter, Runnable worldReset) {
         this.plugin = plugin;
         this.config = config;
         this.manifest = manifest;
         this.events = events;
         this.returnRouter = returnRouter;
+        this.worldReset = worldReset;
         this.scheduler = new PlatformScheduler(plugin);
         this.scatter = new SafeScatterService(plugin);
         this.scoring = new BingoScoringEngine(manifest);
@@ -157,7 +160,23 @@ final class WorkerMatchSession {
         TeamSnapshot team = participant == null || participant.teamId() == null
                 ? null : teams.get(participant.teamId());
         return WorkerChampionshipPlaceholderValues.resolve(participant, team,
-                manifest.runtimeRules().presentation(), params);
+                manifest.runtimeRules().presentation(), params,
+                manifest.runMode() == ink.ziip.championshipscore.protocol.MatchRunMode.DAILY);
+    }
+
+    WorkerPlayerPresentation playerPresentation(UUID playerId) {
+        PlayerSnapshot participant = participants.get(playerId);
+        TeamSnapshot team = participant == null || participant.teamId() == null
+                ? null : teams.get(participant.teamId());
+        String gameName = manifest.runtimeRules().presentation().messages()
+                .getOrDefault("game.name", "宾果时速");
+        String spectator = manifest.runtimeRules().presentation().messages()
+                .getOrDefault("papi.spectator", "旁观");
+        String label = manifest.runMode() == MatchRunMode.DAILY
+                ? "&6" + gameName
+                : team == null ? spectator : team.colorCode() + team.name();
+        boolean activePlayer = participant != null && participant.role() == ParticipantRole.PLAYER && team != null;
+        return new WorkerPlayerPresentation(label, team == null ? null : team.colorCode(), activePlayer);
     }
 
     synchronized boolean canPickupCard(UUID playerId, int teamId) {
@@ -674,14 +693,15 @@ final class WorkerMatchSession {
                 : abort("all-players-left");
     }
 
-    CompletionStage<Boolean> addSpectator(UUID playerId, String username) {
+    CompletionStage<Boolean> addSpectator(UUID playerId, String username, double points) {
         synchronized (this) {
             if (lifecycle.state().terminal()) return CompletableFuture.completedFuture(false);
             PlayerSnapshot existing = participants.get(playerId);
             if (existing != null && existing.role() == ParticipantRole.PLAYER) {
                 return CompletableFuture.completedFuture(false);
             }
-            participants.put(playerId, new PlayerSnapshot(playerId, username, ParticipantRole.SPECTATOR, null));
+            participants.put(playerId, new PlayerSnapshot(playerId, username,
+                    ParticipantRole.SPECTATOR, null, false, points));
         }
         return emit(MatchEventType.SPECTATOR_ADDED, Map.of("playerId", playerId.toString()))
                 .thenApply(ignored -> true);
@@ -973,7 +993,9 @@ final class WorkerMatchSession {
         synchronized (this) {
             lifecycle.transitionTo(MatchState.ABORTED);
         }
-        return emit(MatchEventType.PREPARE_FAILED, Map.of("reason", reason)).thenApply(ignored -> false);
+        CompletionStage<MatchEvent> published = emit(MatchEventType.PREPARE_FAILED, Map.of("reason", reason));
+        worldReset.run();
+        return published.thenApply(ignored -> false);
     }
 
     CompletionStage<Boolean> rejectPreparation(String reason) {
@@ -1011,6 +1033,7 @@ final class WorkerMatchSession {
             }
             returnRouter.request(participant.uuid());
         }
+        worldReset.run();
     }
 
     private void cancelTasks() {
@@ -1085,7 +1108,7 @@ final class WorkerMatchSession {
         lines.add(message("board.separator"));
         lines.add(message("board.current_game", "{0}", gameName()));
         lines.add(WorkerPresentationService.component("#1da4ad场地状态: #f6ffa8"
-                + WorkerPresentationService.sidebarStatus(currentState)));
+                + WorkerPresentationService.sidebarStatus(manifest.runtimeRules().presentation(), currentState)));
         lines.add(message("board.teams_header"));
         Integer viewerTeamId = viewer.role() == ParticipantRole.PLAYER ? viewer.teamId() : null;
         for (WorkerSidebarRanking.Entry entry : WorkerSidebarRanking.select(result, teams, viewerTeamId)) {
@@ -1115,7 +1138,7 @@ final class WorkerMatchSession {
         } catch (NumberFormatException ignored) {
             count = 0;
         }
-        String status = WorkerPresentationService.sidebarStatus(currentState);
+        String status = WorkerPresentationService.sidebarStatus(presentation, currentState);
         Integer viewerTeamId = viewer.role() == ParticipantRole.PLAYER ? viewer.teamId() : null;
         int viewerTasks = viewerTeamId == null ? 0 : result.completedCells().getOrDefault(viewerTeamId, 0);
         List<Component> lines = new ArrayList<>();

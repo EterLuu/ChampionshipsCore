@@ -12,6 +12,7 @@ import ink.ziip.championshipscore.protocol.MatchCommandType;
 import ink.ziip.championshipscore.protocol.MatchEvent;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.MatchMessages;
+import ink.ziip.championshipscore.protocol.MatchRunMode;
 import ink.ziip.championshipscore.protocol.MatchState;
 import ink.ziip.championshipscore.protocol.transport.DeliveryDisposition;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
@@ -308,7 +309,9 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
             instance.onlyRemoveSpectatorFromList(player.getUniqueId());
             return;
         }
-        match.addSpectator(player.getUniqueId(), player.getName()).thenAccept(accepted -> {
+        double points = match.manifest().runMode() == MatchRunMode.EVENT
+                ? plugin.getRankManager().getPlayerPoints(player.getUniqueId()) : 0D;
+        match.addSpectator(player.getUniqueId(), player.getName(), points).thenAccept(accepted -> {
             if (!accepted) scheduler.runGlobal(() -> {
                 plugin.getGameManager().clearSpectatorStatus(player.getUniqueId(), instance);
                 instance.onlyRemoveSpectatorFromList(player.getUniqueId());

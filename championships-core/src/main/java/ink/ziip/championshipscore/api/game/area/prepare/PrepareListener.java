@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AceRaceEquipmentGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.AceRaceRespawnPointBindingGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AreaListGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
@@ -75,6 +76,10 @@ public class PrepareListener extends BaseListener {
             AceRaceEquipmentGui.handleClick(manager, event, player, h);
             return;
         }
+        if (holder instanceof AceRaceRespawnPointBindingGui.Holder h) {
+            AceRaceRespawnPointBindingGui.handleClick(manager, event, player, h);
+            return;
+        }
         if (holder instanceof TGTTOSAreaTypeGui.Holder h) {
             TGTTOSAreaTypeGui.handleClick(manager, event, player, h);
             return;
@@ -139,6 +144,7 @@ public class PrepareListener extends BaseListener {
         if (holder instanceof AreaListGui.Holder || holder instanceof ListStepGui.Holder
                 || holder instanceof ListStepGui.EntryHolder || holder instanceof ListStepGui.EditHolder
                 || holder instanceof AceRaceEquipmentGui.Holder
+                || holder instanceof AceRaceRespawnPointBindingGui.Holder
                 || holder instanceof TGTTOSAreaTypeGui.Holder
                 || holder instanceof CountdownBlockDisappearanceGui.Holder
                 || holder instanceof BuildMartMaterialZoneGui.Holder

@@ -95,6 +95,8 @@ public class PrepareSessionManager extends BaseManager {
     @Override
     public void unload() {
         for (UUID id : new ArrayList<>(sessions.keySet())) {
+            PrepareSession session = sessions.get(id);
+            if (session != null) session.getFlow().onSessionExit(session);
             Player p = Bukkit.getPlayer(id);
             if (p != null) {
                 AnvilInputGui.close(p);
@@ -188,6 +190,7 @@ public class PrepareSessionManager extends BaseManager {
     public void exitSession(@NotNull Player player) {
         PrepareSession session = sessions.remove(player.getUniqueId());
         if (session == null) return;
+        session.getFlow().onSessionExit(session);
         mapLocks.remove(lockKey(session.getGameType(), session.getAreaName()), player.getUniqueId());
         AnvilInputGui.close(player);
         restoreSnapshot(player);

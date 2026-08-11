@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceRespawnPointListStep;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -233,6 +234,11 @@ public final class ListStepGui {
                 Component.text("编辑点位 #" + (index + 1)).decoration(TextDecoration.ITALIC, false));
         holder.inventory.setItem(0, item(Material.NAME_TAG, Component.text("编辑序号"), NamedTextColor.YELLOW,
                 List.of(Component.text("调整此项在列表中的顺序").color(NamedTextColor.GRAY))));
+        if (step instanceof AceRaceRespawnPointListStep respawnStep) {
+            holder.inventory.setItem(2, item(Material.IRON_BARS, Component.text("编辑所属进度线"), NamedTextColor.LIGHT_PURPLE,
+                    List.of(Component.text(respawnStep.bindingText(session, index)).color(NamedTextColor.GRAY),
+                            Component.text("选择该重生点在哪条进度线后").color(NamedTextColor.GRAY))));
+        }
         holder.inventory.setItem(4, item(Material.COMPASS, Component.text("编辑实际信息"), NamedTextColor.AQUA,
                 List.of(Component.text("使用当前位置/当前选区覆盖").color(NamedTextColor.GRAY))));
         holder.inventory.setItem(6, item(Material.RED_WOOL, Component.text("删除此项"), NamedTextColor.RED,
@@ -262,6 +268,10 @@ public final class ListStepGui {
                 if (message != null) player.sendMessage(message);
                 openEntries(player, session, step);
             });
+            case 2 -> {
+                if (step instanceof AceRaceRespawnPointListStep)
+                    AceRaceRespawnPointBindingGui.open(manager, player, session, holder.index);
+            }
             case 4 -> {
                 if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
                     Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());

@@ -49,15 +49,20 @@ final class WorkerPresentationService {
                 .replace("{viewer.tasks}", Integer.toString(viewerTasks));
     }
 
-    /** Bingo's time is already visible in the BossBar, so the sidebar mirrors Core game stages. */
-    static String sidebarStatus(MatchState state) {
+    /** Bingo's time is already visible in the BossBar, so the sidebar mirrors Core-owned game stages. */
+    static String sidebarStatus(BingoPresentation presentation, MatchState state) {
         return switch (state) {
-            case PREPARING, READY, ROUTING -> "预备中";
-            case COUNTDOWN -> "倒计时";
-            case RUNNING -> "进行中";
-            case SETTLING -> "结算中";
-            case FINISHED, ABORTED -> "已结束";
-            default -> "等待中";
+            case PREPARING, READY, ROUTING -> status(presentation, "preparation", "预备中");
+            case COUNTDOWN -> status(presentation, "countdown", "倒计时");
+            case RUNNING -> status(presentation, "progress", "进行中");
+            case SETTLING -> status(presentation, "stopping", "结算中");
+            case FINISHED, ABORTED -> status(presentation, "end", "已结束");
+            case SUSPENDED -> status(presentation, "loading", "加载中");
+            default -> status(presentation, "waiting", "等待中");
         };
+    }
+
+    private static String status(BingoPresentation presentation, String key, String fallback) {
+        return presentation.messages().getOrDefault("sidebar.status." + key, fallback);
     }
 }

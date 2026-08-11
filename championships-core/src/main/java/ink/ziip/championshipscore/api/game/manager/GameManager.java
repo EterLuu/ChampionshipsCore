@@ -391,6 +391,7 @@ public class GameManager extends BaseManager {
                 for (UUID uuid : teamArea.getParticipantUniqueIds()) {
                     playerStatus.put(uuid, teamArea);
                     roundTransitionHolds.remove(uuid);
+                    plugin.getVisibilityManager().reconcilePlayer(uuid);
                 }
             } else {
                 addPlayerStatusByTeam(rightChampionshipTeam, teamArea);
@@ -536,6 +537,7 @@ public class GameManager extends BaseManager {
             for (UUID playerUUID : players) {
                 playerStatus.put(playerUUID, singleTeamArea);
                 roundTransitionHolds.remove(playerUUID);
+                plugin.getVisibilityManager().reconcilePlayer(playerUUID);
             }
             focusSpectatorsOn(singleTeamArea);
             return true;
@@ -633,6 +635,7 @@ public class GameManager extends BaseManager {
                 removeSpectator(playerId);
                 playerStatus.put(playerId, instance);
                 roundTransitionHolds.remove(playerId);
+                plugin.getVisibilityManager().reconcilePlayer(playerId);
             }
         }
         remoteBingoInstances.put(instance.matchId(), instance);
@@ -672,6 +675,7 @@ public class GameManager extends BaseManager {
             if (previous != null && previous != instance) previous.onlyRemoveSpectatorFromList(playerId);
             playerSpectatorStatus.put(playerId, instance);
             instance.addSpectatorWithoutTeleport(playerId);
+            plugin.getVisibilityManager().reconcilePlayer(playerId);
             result.add(playerId);
         }
         return Set.copyOf(result);
@@ -685,6 +689,7 @@ public class GameManager extends BaseManager {
         for (UUID spectatorId : spectatorIds) {
             playerSpectatorStatus.remove(spectatorId, instance);
             instance.onlyRemoveSpectatorFromList(spectatorId);
+            plugin.getVisibilityManager().reconcilePlayer(spectatorId);
         }
         remoteBingoInstances.remove(instance.matchId(), instance);
         instance.abortFromRemote();
@@ -872,6 +877,7 @@ public class GameManager extends BaseManager {
         for (UUID uuid : championshipTeam.getMembers()) {
             playerStatus.put(uuid, baseArea);
             roundTransitionHolds.remove(uuid);
+            plugin.getVisibilityManager().reconcilePlayer(uuid);
             Player player = org.bukkit.Bukkit.getPlayer(uuid);
             if (player != null && plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
         }
@@ -927,11 +933,16 @@ public class GameManager extends BaseManager {
     /** Clears only mappings owned by the instance being finalized. */
     public void releaseInstanceParticipants(@NotNull BaseGameInstance instance) {
         teamStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
+        List<UUID> released = playerStatus.entrySet().stream()
+                .filter(entry -> entry.getValue() == instance).map(Map.Entry::getKey).toList();
         playerStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
+        for (UUID playerId : released) plugin.getVisibilityManager().reconcilePlayer(playerId);
     }
 
     public void releaseInstancePlayers(@NotNull BaseGameInstance instance, @NotNull Set<UUID> players) {
-        for (UUID player : players) playerStatus.remove(player, instance);
+        for (UUID player : players) {
+            if (playerStatus.remove(player, instance)) plugin.getVisibilityManager().reconcilePlayer(player);
+        }
     }
 
     @Nullable
@@ -946,6 +957,9 @@ public class GameManager extends BaseManager {
 
     public synchronized boolean spectateArea(@NotNull Player player, @NotNull BaseGameInstance baseArea) {
         UUID uuid = player.getUniqueId();
+        if (!isInstanceActivelyRunning(baseArea)) {
+            return false;
+        }
         if (playerSpectatorStatus.containsKey(uuid)) {
             return false;
         }
@@ -955,6 +969,7 @@ public class GameManager extends BaseManager {
 
         playerSpectatorStatus.put(uuid, baseArea);
         baseArea.addSpectator(player);
+        plugin.getVisibilityManager().reconcilePlayer(uuid);
         if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
         return true;
     }
@@ -1040,19 +1055,21 @@ public class GameManager extends BaseManager {
             if (player != null) entry.getValue().removeSpectator(player);
             else entry.getValue().onlyRemoveSpectatorFromList(entry.getKey());
             playerSpectatorStatus.remove(entry.getKey(), entry.getValue());
+            plugin.getVisibilityManager().reconcilePlayer(entry.getKey());
         }
         spectatorTransitionHolds.entrySet().removeIf(entry ->
                 entry.getValue().instance().getGameTypeEnum() == gameType);
     }
 
     public void clearSpectatorStatus(@NotNull UUID uuid, @NotNull BaseGameInstance expected) {
-        playerSpectatorStatus.remove(uuid, expected);
+        boolean removed = playerSpectatorStatus.remove(uuid, expected);
         spectatorTransitionHolds.computeIfPresent(uuid, (ignored, hold) ->
                 hold.instance() == expected ? null : hold);
         if (spectatorFocus == expected && expected.getOnlineSpectators().isEmpty()
                 && !isInstanceAvailableForSpectating(expected)) {
             spectatorFocus = null;
         }
+        if (removed) plugin.getVisibilityManager().reconcilePlayer(uuid);
     }
 
     private synchronized void focusSpectatorsOn(@NotNull BaseGameInstance startedInstance) {
@@ -1103,6 +1120,7 @@ public class GameManager extends BaseManager {
             if (playerSpectatorStatus.replace(uuid, previous, target)) {
                 previous.onlyRemoveSpectatorFromList(uuid);
                 target.addSpectatorWithoutTeleport(uuid);
+                plugin.getVisibilityManager().reconcilePlayer(uuid);
             }
         }
     }
@@ -1124,6 +1142,7 @@ public class GameManager extends BaseManager {
         if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
         playerSpectatorStatus.put(uuid, target);
         target.addSpectator(player, destination);
+        plugin.getVisibilityManager().reconcilePlayer(uuid);
         if (plugin.getDailyManager() != null) plugin.getDailyManager().attachSpectator(target, uuid);
     }
 
@@ -1157,7 +1176,7 @@ public class GameManager extends BaseManager {
         return instance.isEventRun() && instance.getGameStageEnum() == GameStageEnum.END;
     }
 
-    private boolean isInstanceActivelyRunning(@NotNull BaseGameInstance instance) {
+    public boolean isInstanceActivelyRunning(@NotNull BaseGameInstance instance) {
         return switch (instance.getGameStageEnum()) {
             case LOADING, PREPARATION, COUNTDOWN, PROGRESS -> true;
             default -> false;
@@ -1172,6 +1191,7 @@ public class GameManager extends BaseManager {
             playerSpectatorStatus.remove(uuid);
             if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
             spectatorTransitionHolds.remove(uuid);
+            plugin.getVisibilityManager().reconcilePlayer(uuid);
             if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
             return true;
         }
@@ -1185,6 +1205,7 @@ public class GameManager extends BaseManager {
             baseArea.removeSpectator(uuid);
             playerSpectatorStatus.remove(uuid);
             if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
+            plugin.getVisibilityManager().reconcilePlayer(uuid);
         }
         spectatorTransitionHolds.remove(uuid);
     }
@@ -1195,6 +1216,7 @@ public class GameManager extends BaseManager {
             baseArea.onlyRemoveSpectatorFromList(uuid);
             playerSpectatorStatus.remove(uuid);
             if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
+            plugin.getVisibilityManager().reconcilePlayer(uuid);
         }
         spectatorTransitionHolds.remove(uuid);
     }

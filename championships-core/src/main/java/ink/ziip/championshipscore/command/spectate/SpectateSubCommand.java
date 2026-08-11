@@ -88,9 +88,18 @@ public class SpectateSubCommand extends BaseSubCommand {
             if (manager == null) {
                 return true;
             }
-            BaseGameInstance baseArea = manager.getArea(args[1]);
-            if (baseArea == null) {
+            BaseGameInstance configuredArea = manager.getArea(args[1]);
+            if (configuredArea == null) {
                 Utils.sendAdminError(sender, "找不到场地 &#fff566" + args[1]);
+                return true;
+            }
+            BaseGameInstance baseArea = manager.getRuntimeInstances().stream()
+                    .filter(instance -> instance.getGameConfig() == configuredArea.getGameConfig())
+                    .filter(plugin.getGameManager()::isInstanceActivelyRunning)
+                    .min(java.util.Comparator.comparingInt(BaseGameInstance::getCopyIndex))
+                    .orElse(null);
+            if (baseArea == null) {
+                Utils.sendAdminError(sender, "该场地尚未开启或已经结束，当前不可旁观");
                 return true;
             }
             if (plugin.getGameManager().spectateArea(player, baseArea)) {
@@ -122,7 +131,12 @@ public class SpectateSubCommand extends BaseSubCommand {
             if (gameTypeEnum != null) {
                 BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
                 if (manager != null) {
-                    List<String> returnList = manager.getAreaNameList();
+                    List<String> returnList = plugin.getGameManager().getSpectatableInstances().stream()
+                            .filter(instance -> instance.getGameTypeEnum() == gameTypeEnum)
+                            .map(instance -> instance.getGameConfig().getAreaName())
+                            .filter(java.util.Objects::nonNull)
+                            .distinct()
+                            .toList();
                     return filterStartsWith(returnList, args[1]);
                 }
             }

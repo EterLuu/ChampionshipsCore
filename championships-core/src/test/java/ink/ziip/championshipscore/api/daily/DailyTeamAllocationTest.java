@@ -1,0 +1,58 @@
+package ink.ziip.championshipscore.api.daily;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class DailyTeamAllocationTest {
+    private static final DailyRules RULES = new DailyRules(2, 16, 4, 4, 5);
+
+    @Test
+    void balancesSmallSoloLobbiesAroundTwoPlayersPerTeam() {
+        assertEquals(List.of(1, 2), sizes(DailyManager.allocate(solos(3), RULES)));
+        assertEquals(List.of(2, 2), sizes(DailyManager.allocate(solos(4), RULES)));
+        assertEquals(List.of(2, 2, 2), sizes(DailyManager.allocate(solos(6), RULES)));
+    }
+
+    @Test
+    void keepsPartyTogetherAndBalancesOtherGroupsAroundIt() {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        Set<UUID> party = Set.of(first, second);
+        List<DailyQueue.Group> groups = new ArrayList<>();
+        groups.add(group(party));
+        groups.addAll(solos(3));
+
+        List<Set<UUID>> teams = DailyManager.allocate(groups, RULES);
+        assertEquals(List.of(1, 2, 2), sizes(teams));
+        assertTrue(teams.stream().anyMatch(team -> team.containsAll(party)));
+    }
+
+    @Test
+    void refusesToCreateAWinBearingMatchFromOnlyOneQueueGroup() {
+        assertTrue(DailyManager.allocate(List.of(group(Set.of(UUID.randomUUID(), UUID.randomUUID()))), RULES)
+                .isEmpty());
+    }
+
+    private static List<DailyQueue.Group> solos(int count) {
+        List<DailyQueue.Group> groups = new ArrayList<>();
+        for (int index = 0; index < count; index++) groups.add(group(Set.of(UUID.randomUUID())));
+        return groups;
+    }
+
+    private static DailyQueue.Group group(Set<UUID> players) {
+        return new DailyQueue.Group(UUID.randomUUID(), new LinkedHashSet<>(players));
+    }
+
+    private static List<Integer> sizes(List<Set<UUID>> teams) {
+        return teams.stream().map(Set::size).sorted(Comparator.naturalOrder()).toList();
+    }
+}

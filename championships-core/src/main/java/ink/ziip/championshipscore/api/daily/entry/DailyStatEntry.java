@@ -8,5 +8,6 @@ import java.util.UUID;
 /** Persisted aggregate for one player and one DAILY game. */
 public record DailyStatEntry(@NotNull UUID uuid, @NotNull String username,
                              @NotNull GameTypeEnum game, long gamesPlayed, long wins,
-                             double totalPoints, double bestPoints, long updatedAt) {
+                             long lineCount, long completedTasks, long maxCompletedTasks,
+                             long updatedAt) {
 }

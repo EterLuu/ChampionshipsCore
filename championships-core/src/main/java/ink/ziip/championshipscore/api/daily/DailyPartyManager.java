@@ -33,18 +33,32 @@ public final class DailyPartyManager {
         return partyByPlayer.get(player);
     }
 
+    public synchronized @Nullable PendingInvite pendingInvite(@NotNull UUID target) {
+        Invite invite = inviteByTarget.get(target);
+        if (invite == null) return null;
+        if (invite.expires().isBefore(Instant.now())) {
+            inviteByTarget.remove(target, invite);
+            return null;
+        }
+        return new PendingInvite(invite.party().leader(), invite.expires());
+    }
+
     public synchronized boolean invite(@NotNull UUID sender, @NotNull UUID target) {
+        if (!daily.isDailyLobby() || !daily.canJoinParty(sender)
+                || !daily.canJoinParty(target) || partyByPlayer.containsKey(target)
+                || sender.equals(target)) return false;
         DailyParty party = getOrCreate(sender);
-        if (!party.isLeader(sender) || partyByPlayer.containsKey(target) || sender.equals(target)) return false;
+        if (!party.isLeader(sender)) return false;
         inviteByTarget.put(target, new Invite(party, Instant.now().plusSeconds(INVITE_SECONDS)));
         return true;
     }
 
     public synchronized @Nullable DailyParty accept(@NotNull UUID target) {
         Invite invite = inviteByTarget.remove(target);
-        if (invite == null || invite.expires().isBefore(Instant.now()) || partyByPlayer.containsKey(target)) return null;
+        if (invite == null || invite.expires().isBefore(Instant.now())
+                || partyByPlayer.containsKey(target) || !daily.canJoinParty(target)) return null;
         DailyParty party = invite.party();
-        if (daily.session(target) != null || daily.isQueued(target) || daily.isPartyInSession(party)) return null;
+        if (daily.isPartyInSession(party)) return null;
         daily.pauseParty(party, "同行小队成员发生变化");
         if (!party.add(target)) return null;
         partyByPlayer.put(target, party);
@@ -94,4 +108,6 @@ public final class DailyPartyManager {
     }
 
     private record Invite(DailyParty party, Instant expires) {}
+
+    public record PendingInvite(UUID leader, Instant expires) {}
 }

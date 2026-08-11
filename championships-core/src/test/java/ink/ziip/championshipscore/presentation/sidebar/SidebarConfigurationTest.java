@@ -22,6 +22,11 @@ class SidebarConfigurationTest {
         assertTrue(configuration.lobby().lines().size() <= SidebarConfiguration.MAX_LINES);
         assertFalse(configuration.dailyLobby().lines().isEmpty());
         assertTrue(configuration.dailyLobby().lines().size() <= SidebarConfiguration.MAX_LINES);
+        assertEquals(configuration.lobby().title(), configuration.dailyLobby().title());
+        assertEquals(configuration.lobby().lines().get(0), configuration.dailyLobby().lines().get(0));
+        assertTrue(configuration.dailyLobby().lines().stream().noneMatch(line ->
+                line.contains("自由游玩") || line.contains("游玩场次") || line.contains("胜场")
+                        || line.contains("/cc play")));
         assertTrue(configuration.mapStatus().lines().size() <= SidebarConfiguration.MAX_LINES);
         assertTrue(configuration.mapEdit().lines().size() <= SidebarConfiguration.MAX_LINES);
         for (GameTypeEnum game : GameTypeEnum.values()) {
