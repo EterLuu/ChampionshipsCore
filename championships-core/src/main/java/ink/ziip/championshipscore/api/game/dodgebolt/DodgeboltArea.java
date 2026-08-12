@@ -564,6 +564,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     private void sendShrinkWarningActionBar(int seconds) {
         sendActionBarToAllGamePlayers(MessageConfig.DODGEBOLT_SHRINK_WARNING
                 .replace("%time%", String.valueOf(seconds)));
+        playSoundToAllGamePlayers(Sound.BLOCK_ANVIL_USE, 0.9F, 1.0F);
     }
 
     private void completeShrinkWarning() {
@@ -595,7 +596,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         sendMessageToAllGamePlayers(MessageConfig.DODGEBOLT_SHRINK
                 .replace("%level%", String.valueOf(shrinkLevel))
                 .replace("%max%", String.valueOf(getGameConfig().getMaxShrinkLevels())));
-        playSoundToAllGamePlayers(Sound.BLOCK_PISTON_EXTEND, 0.8F, 0.8F);
+        playSoundToAllGamePlayers(Sound.BLOCK_ANVIL_USE, 1.0F, 0.8F);
         updateScoreBar();
         if (queuedShrinkLayers <= 0 || shrinkLevel >= getGameConfig().getMaxShrinkLevels()) {
             cancelShrinkWarning();
