@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
@@ -92,7 +94,7 @@ public final class BingoCompassListener extends BaseListener {
             teammates.add(target);
         }
         if (teammates.isEmpty()) {
-            player.sendMessage(Component.text("当前没有可传送的在线队友").color(NamedTextColor.YELLOW));
+            player.sendMessage(Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-001")).color(NamedTextColor.YELLOW));
             return;
         }
         teammates.sort(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER));
@@ -100,7 +102,7 @@ public final class BingoCompassListener extends BaseListener {
         int rows = Math.max(1, Math.min(6, (teammates.size() + 8) / 9));
         CompassHolder holder = new CompassHolder();
         Inventory inv = Bukkit.createInventory(holder, rows * 9,
-                Component.text("传送至队友").decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-002")).decoration(TextDecoration.ITALIC, false));
         holder.setInventory(inv);
 
         for (int i = 0; i < teammates.size() && i < rows * 9; i++) {
@@ -115,7 +117,7 @@ public final class BingoCompassListener extends BaseListener {
         item.editMeta(meta -> {
             meta.displayName(Utils.toComponent(Utils.formatPlayerName(target))
                     .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text("点击传送到此队友").color(NamedTextColor.GRAY)
+            meta.lore(List.of(Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-003")).color(NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
             if (TARGET_KEY != null) {
                 meta.getPersistentDataContainer().set(TARGET_KEY, PersistentDataType.STRING,
@@ -144,13 +146,13 @@ public final class BingoCompassListener extends BaseListener {
         }
         Player target = Bukkit.getPlayer(targetId);
         if (target == null || !target.isOnline() || area.notAreaPlayer(target)) {
-            player.sendMessage(Component.text("该队友已不可达").color(NamedTextColor.YELLOW));
+            player.sendMessage(Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-004")).color(NamedTextColor.YELLOW));
             player.closeInventory();
             return;
         }
         player.closeInventory();
         player.teleportAsync(target.getLocation());
-        player.sendMessage(Component.text("已传送到 ", NamedTextColor.AQUA)
+        player.sendMessage(Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-005"), NamedTextColor.AQUA)
                 .append(Utils.toComponent(Utils.formatPlayerName(target))));
     }
 

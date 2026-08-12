@@ -287,10 +287,16 @@ public abstract class BaseGameInstance {
     }
 
     public void setGameStageEnum(GameStageEnum gameStageEnum) {
+        GameStageEnum previous;
         synchronized (this) {
+            previous = this.gameStageEnum;
             this.gameStageEnum = gameStageEnum;
         }
         if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidateAll();
+        if (gameStageEnum == GameStageEnum.PREPARATION && previous != GameStageEnum.PREPARATION
+                && plugin.getGameManager() != null) {
+            plugin.getGameManager().onInstancePreparationStarted(this);
+        }
     }
 
     public CompletableFuture<Boolean> loadMap(World.Environment environment) {
@@ -1132,6 +1138,13 @@ public abstract class BaseGameInstance {
         return spectators.contains(player.getUniqueId());
     }
 
+    /** Unified spectator identity for both arena spectators and eliminated participants. */
+    public boolean isManagedSpectator(@NotNull Player player) {
+        UUID uuid = player.getUniqueId();
+        return plugin.getGameManager().getSpectatorManager().isSpectatorLike(uuid)
+                && plugin.getGameManager().getSpectatorManager().areaOf(uuid) == this;
+    }
+
     public void handleSpectatorDeath(@NotNull PlayerDeathEvent event) {
         Player player = event.getEntity();
         if (isSpectator(player)) {
@@ -1193,13 +1206,26 @@ public abstract class BaseGameInstance {
         }));
     }
 
-    /** Applies the mode used by external spectators of this game. Most games use vanilla spectator mode. */
+    /** Applies the common spectator presentation; area subclasses may add game-specific overlays. */
     protected void applySpectatorGameMode(@NotNull Player player) {
-        player.setGameMode(GameMode.SPECTATOR);
+        player.setGameMode(GameMode.ADVENTURE);
+        player.setAllowFlight(true);
+        player.setFlying(true);
+        player.setInvulnerable(true);
+        player.setCollidable(false);
+    }
+
+    /** Called by the unified spectator manager when an area legacy path requests spectator mode. */
+    public final void applyManagedSpectatorPresentation(@NotNull Player player) {
+        applySpectatorGameMode(player);
     }
 
     /** Restores any per-game spectator state before the player leaves this game. */
     protected void clearSpectatorGameMode(@NotNull Player player) {
+        player.setFlying(false);
+        player.setAllowFlight(false);
+        player.setInvulnerable(false);
+        player.setCollidable(true);
     }
 
     public void removeAllSpectator() {
@@ -1284,6 +1310,7 @@ public abstract class BaseGameInstance {
             championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
                 clearSpectatorGameMode(player);
                 player.setGameMode(GameMode.ADVENTURE);
+                championshipsCore.getGameManager().getSpectatorManager().leavePresentation(player);
             });
             player.setLevel(0);
         }

@@ -14,13 +14,16 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * The loaded set of blueprints split into the normal pool (1–5 stars, drawn for the per-plot auto-assignment)
- * and the golden pool (exactly 7 stars, surfaced one at a time on the golden timer). Blueprints live in
- * {@code plugin/buildmart/blueprints/*.yml}. Blueprints whose star rating is outside {1..5, 7} are skipped
- * with a warning at load time.
+ * and the golden candidate pool (the 3-star subset, surfaced one at a time on the golden timer). A blueprint
+ * selected for the golden plot is still worth 7 stars; its configured rating remains 3 when it appears as a
+ * normal order. Blueprints live in {@code plugin/buildmart/blueprints/*.yml}. Ratings outside 1–5 are skipped.
  */
 public class BuildMartOrderPool {
-    /** Star rating at or above which a blueprint is treated as golden. */
-    public static final int GOLDEN_STAR_THRESHOLD = 7;
+    /** Configured difficulty used as the source pool for golden orders. */
+    public static final int GOLDEN_SOURCE_STARS = 3;
+    /** Score value of a completed golden order, independent of its configured source difficulty. */
+    public static final int GOLDEN_SCORE_STARS = 7;
+    public static final int MAX_NORMAL_STARS = 5;
 
     @Getter
     private final List<BuildMartBlueprint> normal = new ArrayList<>();
@@ -38,13 +41,12 @@ public class BuildMartOrderPool {
                 if (blueprint == null) continue;
                 pool.byId.put(blueprint.getId(), blueprint);
                 int stars = blueprint.getStars();
-                if (stars == GOLDEN_STAR_THRESHOLD) {
-                    pool.golden.add(blueprint);
-                } else if (stars >= 1 && stars <= 5) {
+                if (isNormalRating(stars)) {
                     pool.normal.add(blueprint);
+                    if (isGoldenSourceRating(stars)) pool.golden.add(blueprint);
                 } else {
                     plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "加载", "蓝图",
-                            "蓝图=" + blueprint.getId() + " 星级=" + stars + " 不在普通 1-5/黄金 7 范围，已跳过"));
+                            "蓝图=" + blueprint.getId() + " 星级=" + stars + " 不在普通 1-5 范围，已跳过"));
                 }
             }
         }
@@ -54,7 +56,7 @@ public class BuildMartOrderPool {
     }
 
     public boolean isEmpty() {
-        return normal.isEmpty() && golden.isEmpty();
+        return normal.isEmpty();
     }
 
     public BuildMartBlueprint byId(String id) {
@@ -88,12 +90,20 @@ public class BuildMartOrderPool {
 
     /** Lower stars → higher weight, so common builds dominate the auto-assignment draws. */
     private static int weight(BuildMartBlueprint blueprint) {
-        return Math.max(1, GOLDEN_STAR_THRESHOLD - blueprint.getStars());
+        return Math.max(1, GOLDEN_SCORE_STARS - blueprint.getStars());
     }
 
     /** A random golden blueprint, or {@code null} when none are configured. */
     public BuildMartBlueprint randomGolden() {
         if (golden.isEmpty()) return null;
         return golden.get(ThreadLocalRandom.current().nextInt(golden.size()));
+    }
+
+    static boolean isNormalRating(int stars) {
+        return stars >= 1 && stars <= MAX_NORMAL_STARS;
+    }
+
+    static boolean isGoldenSourceRating(int stars) {
+        return stars == GOLDEN_SOURCE_STARS;
     }
 }

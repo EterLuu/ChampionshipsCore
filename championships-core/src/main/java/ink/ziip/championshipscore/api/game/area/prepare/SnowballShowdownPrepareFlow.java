@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ListStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
@@ -36,15 +38,15 @@ public final class SnowballShowdownPrepareFlow extends PrepareFlowDefinition {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
-        steps.add(new WeSelectionStep("area_pos", Component.text("场地边界"), Component.text("用 WorldEdit 选取完整雪球场地区域"),
+        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("area-prepare-snowballshowdownprepareflow.text-001")), Component.text(GuiConfig.text("area-prepare-snowballshowdownprepareflow.text-002")),
                 Material.BEDROCK, t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess("已设置场地边界。")));
-        steps.add(new StandAndRunStep("spectator_spawn", Component.text("旁观者出生点"), Component.text("站到旁观位置后点击"),
+                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("area-prepare-snowballshowdownprepareflow.text-003"))));
+        steps.add(new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("area-prepare-snowballshowdownprepareflow.text-004")), Component.text(GuiConfig.text("area-prepare-snowballshowdownprepareflow.text-005")),
                 Material.ENDER_EYE, t -> cfg(t).getSpectatorSpawnPoint() != null,
-                (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess("已设置旁观者出生点。")));
+                (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("area-prepare-snowballshowdownprepareflow.text-006"))));
         for (String lane : LANES) {
-            steps.add(new ListStep("player_spawn_" + lane, Component.text("玩家出生点 " + lane),
-                    Component.text("逐个添加该区域的玩家出生位置"), Material.PLAYER_HEAD,
+            steps.add(new ListStep("player_spawn_" + lane, Component.text(GuiConfig.text("area-prepare-snowballshowdownprepareflow.text-007") + lane),
+                    Component.text(GuiConfig.text("area-prepare-snowballshowdownprepareflow.text-008")), Material.PLAYER_HEAD,
                     t -> laneValues(t, lane), (t, values) -> section(t).set(lane, values),
                     t -> laneValues(t, lane).isEmpty(),
                     (t, value) -> { List<String> values = laneValues(t, lane); values.add(value); section(t).set(lane, values); },

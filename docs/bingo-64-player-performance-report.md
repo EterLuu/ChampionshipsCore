@@ -358,6 +358,17 @@ Core：
 ```yaml
 team:
   max-members: 4
+redis:
+  enabled: true
+  instance-id: auto
+  uri: redis://redis-host:6379/0
+  namespace: championships
+  consumer-group-prefix: championships-core
+  stream-max-length: 100000
+  block-timeout-ms: 2000
+  reclaim-idle-ms: 15000
+  max-deliveries: 8
+  reconciliation-seconds: 30
 bingo:
   execution-mode: REMOTE
   worker-id: bingo-1

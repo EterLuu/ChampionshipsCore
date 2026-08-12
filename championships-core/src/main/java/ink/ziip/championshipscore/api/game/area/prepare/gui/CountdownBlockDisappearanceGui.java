@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
@@ -55,7 +57,7 @@ public final class CountdownBlockDisappearanceGui {
                             @NotNull CountdownBlockDisappearanceStep step) {
         Holder holder = new Holder(session, step);
         holder.inventory = Bukkit.createInventory(holder, 27,
-                Component.text("倒计时方块消失").decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-001")).decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -105,9 +107,9 @@ public final class CountdownBlockDisappearanceGui {
         Vector first = config.getCountdownBlockDisappearancePos1();
         Vector second = config.getCountdownBlockDisappearancePos2();
         boolean enabled = first != null && second != null;
-        String selection = enabled ? "已设置（" + volume(first, second) + " 个方块）" : "未设置（功能关闭）";
-        inventory.setItem(SELECTION_SLOT, item(Material.GOLDEN_AXE, "设置当前 WorldEdit 选区",
-                NamedTextColor.AQUA, selection, "点击读取当前选区"));
+        String selection = enabled ? GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-002") + volume(first, second) + GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-003") : GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-004");
+        inventory.setItem(SELECTION_SLOT, item(Material.GOLDEN_AXE, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-005"),
+                NamedTextColor.AQUA, selection, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-006")));
 
         CountdownBlockDisappearanceStep.Mode current =
                 CountdownBlockDisappearanceStep.Mode.from(config.getCountdownBlockDisappearanceMode());
@@ -116,9 +118,9 @@ public final class CountdownBlockDisappearanceGui {
         inventory.setItem(NORTH_SOUTH_SLOT, modeItem(CountdownBlockDisappearanceStep.Mode.DOOR_NORTH_SOUTH, current, enabled));
         inventory.setItem(VERTICAL_SLOT, modeItem(CountdownBlockDisappearanceStep.Mode.DOOR_VERTICAL, current, enabled));
         inventory.setItem(DIRECT_SLOT, modeItem(CountdownBlockDisappearanceStep.Mode.DIRECT, current, enabled));
-        inventory.setItem(CLEAR_SLOT, item(Material.BARRIER, "关闭并清除选区", NamedTextColor.RED,
-                "删除已保存的方块消失选区"));
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, "返回", NamedTextColor.WHITE, "返回准备步骤"));
+        inventory.setItem(CLEAR_SLOT, item(Material.BARRIER, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-007"), NamedTextColor.RED,
+                GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-008")));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-009"), NamedTextColor.WHITE, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-010")));
         for (int slot : new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 18, 19, 20, 21, 23, 24, 25, 26})
             inventory.setItem(slot, filler());
     }
@@ -127,8 +129,8 @@ public final class CountdownBlockDisappearanceGui {
                                       @NotNull CountdownBlockDisappearanceStep.Mode current,
                                       boolean enabled) {
         return item(mode.icon(), mode.displayName(), mode == current ? NamedTextColor.GREEN : NamedTextColor.WHITE,
-                mode == current ? "当前方式" : "点击选择",
-                enabled ? "将在开赛倒计时前 3 秒完成" : "请先设置 WorldEdit 选区");
+                mode == current ? GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-011") : GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-012"),
+                enabled ? GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-013") : GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-014"));
     }
 
     private static ItemStack item(@NotNull Material material, @NotNull String name,

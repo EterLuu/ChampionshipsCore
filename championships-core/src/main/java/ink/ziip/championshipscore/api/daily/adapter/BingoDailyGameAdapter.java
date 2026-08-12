@@ -29,6 +29,11 @@ public final class BingoDailyGameAdapter implements DailyGameAdapter {
     }
 
     @Override
+    public int availableSlots() {
+        return plugin.getDailyManager().isGameRunning(GameTypeEnum.Bingo) ? 0 : 1;
+    }
+
+    @Override
     public @Nullable StartResult start(@NotNull List<ChampionshipTeam> teams) {
         List<String> maps = plugin.getGameManager().getBingoManager().getAreaNameList().stream().sorted().toList();
         for (String map : maps) {

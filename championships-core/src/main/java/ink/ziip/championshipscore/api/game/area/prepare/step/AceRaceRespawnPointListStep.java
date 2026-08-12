@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
 import ink.ziip.championshipscore.api.game.acerace.AceRaceConfig;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -15,8 +17,8 @@ import java.util.List;
 /** Edits course-ordered markers which are bound to Ace Race progress segments at load time. */
 public final class AceRaceRespawnPointListStep extends ListStep {
     public AceRaceRespawnPointListStep() {
-        super("respawn_points", Component.text("竞速重生点"),
-                Component.text("默认按位置绑定赛段；可在编辑中指定进度线；经过 3 格内时同步进度并保存"),
+        super("respawn_points", Component.text(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-001")),
+                Component.text(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-002")),
                 Material.RECOVERY_COMPASS,
                 target -> cfg(target).ensureRespawnPoints(),
                 (target, values) -> cfg(target).setRespawnPoints(values),
@@ -74,11 +76,11 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         AceRaceConfig config = cfg(session.getTarget());
         int count = config.ensureRespawnPoints().size();
         if (index < 0 || index >= count || newOrder < 1 || newOrder > count)
-            return ink.ziip.championshipscore.util.Utils.formatAdminError("序号必须在 1 到 " + count + " 之间。");
+            return ink.ziip.championshipscore.util.Utils.formatAdminError(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-003") + count + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-004"));
         config.moveRespawnPoint(index, newOrder);
         session.markDirty();
         String result = ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                "已将点位调整为第 " + newOrder + " 项。");
+                GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-005") + newOrder + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-006"));
         reload(session);
         return result;
     }
@@ -90,16 +92,16 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         config.removeRespawnPoint(index);
         session.markDirty();
         String result = ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                "已删除第 " + (index + 1) + " 个点位。");
+                GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-007") + (index + 1) + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-008"));
         reload(session);
         return result;
     }
 
     public String bindingText(@NotNull PrepareSession session, int index) {
         AceRaceArea area = area(session);
-        if (area == null || area.getRespawnPointIndexForConfig(index) < 0) return "所属进度线：未加载";
+        if (area == null || area.getRespawnPointIndexForConfig(index) < 0) return GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-009");
         int binding = area.getRespawnPointBinding(index);
-        return binding < 0 ? "所属进度线：起点后" : "所属进度线：#" + (binding + 1) + " 后";
+        return binding < 0 ? GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-010") : GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-011") + (binding + 1) + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-012");
     }
 
     public String setBinding(@NotNull PrepareSession session, int index, int binding) {
@@ -107,7 +109,7 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         if (area == null || !area.setRespawnPointBinding(index, binding)) return null;
         session.markDirty();
         return ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                "已将该重生点绑定到 " + (binding < 0 ? "起点后" : "进度线 #" + (binding + 1) + " 后") + "。");
+                GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-013") + (binding < 0 ? GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-014") : GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-015") + (binding + 1) + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-012")) + "。");
     }
 
     public int currentBinding(@NotNull PrepareSession session, int index) {
@@ -121,11 +123,11 @@ public final class AceRaceRespawnPointListStep extends ListStep {
 
     @Override
     public @NotNull Component listAddLabel() {
-        return Component.text("添加重生点");
+        return Component.text(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-016"));
     }
 
     @Override
     public @NotNull Component listAddHint() {
-        return Component.text("站在重生位置后点击；赛段默认按坐标判断，可再手动指定");
+        return Component.text(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-017"));
     }
 }

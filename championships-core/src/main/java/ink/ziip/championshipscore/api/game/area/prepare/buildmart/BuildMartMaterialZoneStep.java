@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -15,8 +17,8 @@ import org.jetbrains.annotations.NotNull;
 /** Repeated Build Mart resource-area editor: each WorldEdit cuboid retains its original block snapshot. */
 public final class BuildMartMaterialZoneStep extends PrepareStep {
     public BuildMartMaterialZoneStep() {
-        super("material_zones", Component.text("材料区"),
-                Component.text("保存材料区选区原样，比赛中定时恢复"), Material.CHEST, StepCaptureType.SELECT);
+        super("material_zones", Component.text(GuiConfig.text("prepare-buildmart-buildmartmaterialzonestep.text-001")),
+                Component.text(GuiConfig.text("prepare-buildmart-buildmartmaterialzonestep.text-002")), Material.CHEST, StepCaptureType.SELECT);
     }
 
     @Override
@@ -29,7 +31,7 @@ public final class BuildMartMaterialZoneStep extends PrepareStep {
     public String stateText(PrepareSession session) {
         if (session == null) return null;
         int count = config(session.getTarget()).getMaterialZones().size();
-        return count == 0 ? "未设置（可选）" : "已设置 · " + count + " 个材料区";
+        return count == 0 ? GuiConfig.text("prepare-buildmart-buildmartmaterialzonestep.text-003") : GuiConfig.text("prepare-buildmart-buildmartmaterialzonestep.text-004") + count + GuiConfig.text("prepare-buildmart-buildmartmaterialzonestep.text-005");
     }
 
     @Override

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
 import ink.ziip.championshipscore.api.game.acerace.AceRaceConfig;
 import ink.ziip.championshipscore.api.game.acerace.AceRaceEquipment;
@@ -8,6 +10,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AceRaceEquipmentGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
@@ -24,8 +27,8 @@ import java.util.List;
 /** Adds and safely edits ordered WorldEdit progress gates and their following segment rules. */
 public final class AceRaceProgressPointListStep extends PrepareStep {
     public AceRaceProgressPointListStep() {
-        super("progress_points", Component.text("竞速进度点"),
-                Component.text("用 WorldEdit 选取水平直线；短线扩至 20 格，触发面含线下 3 格及以上"),
+        super("progress_points", Component.text(GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-001")),
+                Component.text(GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-002")),
                 Material.LIME_CONCRETE, StepCaptureType.LIST);
     }
 
@@ -53,8 +56,8 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         Gate gate = captureGate(session, player);
         if (gate == null) return null;
         int defaultFallY = gate.pos1().getBlockY();
-        Utils.sendAdminInfo(player, "请输入该进度点之后的摔落高度；留空使用选线高度 " + defaultFallY + "。");
-        AnvilInputGui.openInteger(player, "输入摔落高度", defaultFallY, fallY ->
+        Utils.sendAdminInfo(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-003") + defaultFallY + "。");
+        AnvilInputGui.openInteger(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-004"), defaultFallY, fallY ->
                 AceRaceEquipmentGui.open(player, session, AceRaceEquipment.NONE, equipment -> {
                     ConfigurationSection root = cfg(session.getTarget()).ensureProgressPoints();
                     int order = orderedKeys(root).size() + 1;
@@ -65,8 +68,8 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
                     writeProgressPoint(progressPoint, order, gate, fallY, equipment);
                     session.markDirty();
                     reload(session);
-                    Utils.sendAdminSuccess(player, "已添加进度点 #" + order + " &#696969• 摔落高度="
-                            + fallY + " &#696969• 赛段道具=" + equipment.displayName());
+                    Utils.sendAdminSuccess(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-005") + order + GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-006")
+                            + fallY + GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-007") + equipment.displayName());
                 }));
         return null;
     }
@@ -84,11 +87,11 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
             ConfigurationSection progressPoint = root.getConfigurationSection(key);
             if (progressPoint == null) continue;
             AceRaceEquipment equipment = AceRaceEquipment.fromConfig(progressPoint.getString("equipment"));
-            entries.add(new ListEntry("进度点 #" + progressPoint.getInt("order"), List.of(
-                    "选线：" + format(progressPoint.getVector("pos1")) + " -> " + format(progressPoint.getVector("pos2")),
-                    "触发范围：不足 20 格自动向两侧扩展；选线 Y-3 及以上",
-                    "摔落高度：" + progressPoint.getInt("fall-y"),
-                    "下一赛段道具：" + equipment.displayName())));
+            entries.add(new ListEntry(GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-008") + progressPoint.getInt("order"), List.of(
+                    GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-009") + format(progressPoint.getVector("pos1")) + " -> " + format(progressPoint.getVector("pos2")),
+                    GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-010"),
+                    GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-011") + progressPoint.getInt("fall-y"),
+                    GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-012") + equipment.displayName())));
         }
         return entries;
     }
@@ -106,20 +109,20 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         int order = existing.getInt("order", index + 1);
         int defaultFallY = existing.getInt("fall-y", gate.pos1().getBlockY());
         AceRaceEquipment current = AceRaceEquipment.fromConfig(existing.getString("equipment"));
-        Utils.sendAdminInfo(player, "请输入该进度点之后的摔落高度；留空保留当前值 " + defaultFallY + "。");
-        AnvilInputGui.openInteger(player, "输入摔落高度", defaultFallY, fallY ->
+        Utils.sendAdminInfo(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-013") + defaultFallY + "。");
+        AnvilInputGui.openInteger(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-004"), defaultFallY, fallY ->
                 AceRaceEquipmentGui.open(player, session, current, equipment -> {
                     ConfigurationSection progressPoint = cfg(session.getTarget()).ensureProgressPoints()
                             .getConfigurationSection(key);
                     if (progressPoint == null) {
-                        Utils.sendAdminError(player, "该进度点已不存在。");
+                        Utils.sendAdminError(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-014"));
                         return;
                     }
                     writeProgressPoint(progressPoint, order, gate, fallY, equipment);
                     session.markDirty();
                     reload(session);
-                    Utils.sendAdminSuccess(player, "已更新进度点 #" + order + " &#696969• 摔落高度="
-                            + fallY + " &#696969• 赛段道具=" + equipment.displayName());
+                    Utils.sendAdminSuccess(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-015") + order + GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-006")
+                            + fallY + GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-007") + equipment.displayName());
                 }));
         return null;
     }
@@ -129,19 +132,49 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         return true;
     }
 
+    public @NotNull String equipmentText(@NotNull PrepareSession session, int index) {
+        ConfigurationSection progressPoint = progressPoint(session, index);
+        if (progressPoint == null) return GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-016");
+        return GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-017") + AceRaceEquipment.fromConfig(
+                progressPoint.getString("equipment")).displayName();
+    }
+
+    /** Edits only the following segment's equipment, preserving the gate and fall height. */
+    public void editEquipment(@NotNull PrepareSession session, @NotNull Player player, int index) {
+        ConfigurationSection progressPoint = progressPoint(session, index);
+        if (progressPoint == null) {
+            Utils.sendAdminError(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-014"));
+            return;
+        }
+        AceRaceEquipment current = AceRaceEquipment.fromConfig(progressPoint.getString("equipment"));
+        AceRaceEquipmentGui.open(player, session, current, equipment -> {
+            ConfigurationSection selected = progressPoint(session, index);
+            if (selected == null) {
+                Utils.sendAdminError(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-014"));
+                return;
+            }
+            selected.set("equipment", equipment.configValue());
+            session.markDirty();
+            reload(session);
+            Utils.sendAdminSuccess(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-018") + selected.getInt("order", index + 1)
+                    + GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-019") + equipment.displayName());
+            ListStepGui.openEdit(player, session, this, index);
+        });
+    }
+
     @Override
     public String listSetOrder(@NotNull PrepareSession session, @NotNull Player player,
                                int index, int newOrder) {
         ConfigurationSection root = cfg(session.getTarget()).ensureProgressPoints();
         List<String> keys = orderedKeys(root);
         if (index < 0 || index >= keys.size() || newOrder < 1 || newOrder > keys.size())
-            return Utils.formatAdminError("序号必须在 1 到 " + keys.size() + " 之间。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-020") + keys.size() + GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-021"));
         String moved = keys.remove(index);
         keys.add(newOrder - 1, moved);
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess("已将进度点调整为第 " + newOrder + " 项。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-022") + newOrder + GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-023"));
     }
 
     @Override
@@ -154,7 +187,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess("已删除第 " + (index + 1) + " 个进度点。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-024") + (index + 1) + GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-025"));
     }
 
     private static Gate captureGate(@NotNull PrepareSession session, @NotNull Player player) {
@@ -162,14 +195,14 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            Utils.sendAdminError(player, "请先用 WorldEdit 选取进度点水平直线。");
+            Utils.sendAdminError(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-026"));
             return null;
         }
         int spanX = Math.abs(selection[0].getBlockX() - selection[1].getBlockX());
         int spanY = Math.abs(selection[0].getBlockY() - selection[1].getBlockY());
         int spanZ = Math.abs(selection[0].getBlockZ() - selection[1].getBlockZ());
         if (spanY != 0 || (spanX > 0 && spanZ > 0) || (spanX == 0 && spanZ == 0)) {
-            Utils.sendAdminError(player, "进度点必须是同一高度、沿 X 或 Z 方向延伸的 WorldEdit 直线。");
+            Utils.sendAdminError(player, GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-027"));
             return null;
         }
         return new Gate(selection[0].clone(), selection[1].clone());
@@ -193,22 +226,29 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         return keys;
     }
 
+    private static ConfigurationSection progressPoint(@NotNull PrepareSession session, int index) {
+        ConfigurationSection root = cfg(session.getTarget()).ensureProgressPoints();
+        List<String> keys = orderedKeys(root);
+        if (index < 0 || index >= keys.size()) return null;
+        return root.getConfigurationSection(keys.get(index));
+    }
+
     private static void renumber(ConfigurationSection root, List<String> keys) {
         for (int i = 0; i < keys.size(); i++) root.getConfigurationSection(keys.get(i)).set("order", i + 1);
     }
 
     private static String format(Vector vector) {
-        return vector == null ? "未设置" : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
+        return vector == null ? GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-028") : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
     }
 
     @Override
     public @NotNull Component listAddLabel() {
-        return Component.text("添加进度点");
+        return Component.text(GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-029"));
     }
 
     @Override
     public @NotNull Component listAddHint() {
-        return Component.text("用 WorldEdit 选取进度点直线后点击");
+        return Component.text(GuiConfig.text("prepare-step-aceraceprogresspointliststep.text-030"));
     }
 
     private record Gate(@NotNull Vector pos1, @NotNull Vector pos2) {

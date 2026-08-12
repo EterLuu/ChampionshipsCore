@@ -310,7 +310,7 @@ public class SkyWarsHandler extends BaseListener {
                 return;
             }
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                if (player.getGameMode() == GameMode.SPECTATOR) {
+                if (skyWarsArea.isManagedSpectator(player)) {
                     if (location.getY() < -64) {
                         player.teleport(skyWarsArea.getSpectatorSpawnLocation());
                     }

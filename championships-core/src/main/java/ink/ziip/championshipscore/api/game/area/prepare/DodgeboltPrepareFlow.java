@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ListStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
@@ -26,38 +28,38 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
-        steps.add(selection("area", "比赛区边界", Material.BEDROCK,
+        steps.add(selection("area", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-001"), Material.BEDROCK,
                 t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
                 (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }));
-        steps.add(selection("spectator_area", "观赛活动区边界", Material.SPYGLASS,
+        steps.add(selection("spectator_area", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-002"), Material.SPYGLASS,
                 t -> cfg(t).getSpectatorAreaPos1() != null && cfg(t).getSpectatorAreaPos2() != null,
                 (t, v) -> { cfg(t).setSpectatorAreaPos1(v[0]); cfg(t).setSpectatorAreaPos2(v[1]); }));
-        steps.add(selection("platform", "可收缩平台", Material.SMOOTH_STONE,
+        steps.add(selection("platform", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-003"), Material.SMOOTH_STONE,
                 t -> cfg(t).getPlatformPos1() != null && cfg(t).getPlatformPos2() != null,
                 (t, v) -> { cfg(t).setPlatformPos1(v[0]); cfg(t).setPlatformPos2(v[1]); }));
-        steps.add(selection("right_area", "右队活动区域", Material.RED_STAINED_GLASS,
+        steps.add(selection("right_area", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-004"), Material.RED_STAINED_GLASS,
                 t -> cfg(t).getRightAreaPos1() != null && cfg(t).getRightAreaPos2() != null,
                 (t, v) -> { cfg(t).setRightAreaPos1(v[0]); cfg(t).setRightAreaPos2(v[1]); }));
-        steps.add(selection("left_area", "左队活动区域", Material.BLUE_STAINED_GLASS,
+        steps.add(selection("left_area", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-005"), Material.BLUE_STAINED_GLASS,
                 t -> cfg(t).getLeftAreaPos1() != null && cfg(t).getLeftAreaPos2() != null,
                 (t, v) -> { cfg(t).setLeftAreaPos1(v[0]); cfg(t).setLeftAreaPos2(v[1]); }));
-        steps.add(selection("right_shoot", "右队射箭区域", Material.RED_CONCRETE,
+        steps.add(selection("right_shoot", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-006"), Material.RED_CONCRETE,
                 t -> cfg(t).getRightShootPos1() != null && cfg(t).getRightShootPos2() != null,
                 (t, v) -> { cfg(t).setRightShootPos1(v[0]); cfg(t).setRightShootPos2(v[1]); }));
-        steps.add(selection("left_shoot", "左队射箭区域", Material.BLUE_CONCRETE,
+        steps.add(selection("left_shoot", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-007"), Material.BLUE_CONCRETE,
                 t -> cfg(t).getLeftShootPos1() != null && cfg(t).getLeftShootPos2() != null,
                 (t, v) -> { cfg(t).setLeftShootPos1(v[0]); cfg(t).setLeftShootPos2(v[1]); }));
-        steps.add(location("spectator_spawn", "旁观出生点", Material.ENDER_EYE,
+        steps.add(location("spectator_spawn", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-008"), Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null,
                 (t, l) -> cfg(t).setSpectatorSpawnPoint(l)));
-        steps.add(list("right_spawns", "右队选手出生点", Material.RED_WOOL,
+        steps.add(list("right_spawns", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-009"), Material.RED_WOOL,
                 t -> cfg(t).getRightSpawnPoints(), (t, l) -> cfg(t).setRightSpawnPoints(l)));
-        steps.add(list("left_spawns", "左队选手出生点", Material.BLUE_WOOL,
+        steps.add(list("left_spawns", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-010"), Material.BLUE_WOOL,
                 t -> cfg(t).getLeftSpawnPoints(), (t, l) -> cfg(t).setLeftSpawnPoints(l)));
-        steps.add(location("right_arrow", "右队箭刷新点", Material.ARROW,
+        steps.add(location("right_arrow", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-011"), Material.ARROW,
                 t -> hasPoint(cfg(t).getRightArrowSpawnPoint()),
                 (t, l) -> cfg(t).setRightArrowSpawnPoint(Utils.getLocationConfigString(l))));
-        steps.add(location("left_arrow", "左队箭刷新点", Material.SPECTRAL_ARROW,
+        steps.add(location("left_arrow", GuiConfig.text("area-prepare-dodgeboltprepareflow.text-012"), Material.SPECTRAL_ARROW,
                 t -> hasPoint(cfg(t).getLeftArrowSpawnPoint()),
                 (t, l) -> cfg(t).setLeftArrowSpawnPoint(Utils.getLocationConfigString(l))));
         return steps;
@@ -66,35 +68,35 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
     @Override public @NotNull List<String> validate(@NotNull PrepareSession session) {
         List<String> errors = new ArrayList<>(super.validate(session));
         DodgeboltConfig config = cfg(session.getTarget());
-        requireCount(errors, "右队选手出生点", config.getRightSpawnPoints(), 4);
-        requireCount(errors, "左队选手出生点", config.getLeftSpawnPoints(), 4);
-        requirePoint(errors, "右队箭刷新点", config.getRightArrowSpawnPoint());
-        requirePoint(errors, "左队箭刷新点", config.getLeftArrowSpawnPoint());
+        requireCount(errors, GuiConfig.text("area-prepare-dodgeboltprepareflow.text-009"), config.getRightSpawnPoints(), 4);
+        requireCount(errors, GuiConfig.text("area-prepare-dodgeboltprepareflow.text-010"), config.getLeftSpawnPoints(), 4);
+        requirePoint(errors, GuiConfig.text("area-prepare-dodgeboltprepareflow.text-011"), config.getRightArrowSpawnPoint());
+        requirePoint(errors, GuiConfig.text("area-prepare-dodgeboltprepareflow.text-012"), config.getLeftArrowSpawnPoint());
         if (!isInSpectatorArea(config, config.getSpectatorSpawnPoint()))
-            errors.add("旁观出生点必须位于观赛活动区内");
+            errors.add(GuiConfig.text("area-prepare-dodgeboltprepareflow.text-013"));
         if (isInArea(config, config.getSpectatorSpawnPoint()))
-            errors.add("旁观出生点必须位于比赛区外");
+            errors.add(GuiConfig.text("area-prepare-dodgeboltprepareflow.text-014"));
         return errors;
     }
 
     private static WeSelectionStep selection(String key, String name, Material icon,
                                               java.util.function.Predicate<SetupTarget> set,
                                               java.util.function.BiConsumer<SetupTarget, Vector[]> setter) {
-        return new WeSelectionStep(key, Component.text(name), Component.text("用 WorldEdit 选取两个端点"),
-                icon, set, setter, Utils.formatAdminSuccess("已设置" + name + "。"));
+        return new WeSelectionStep(key, Component.text(name), Component.text(GuiConfig.text("area-prepare-dodgeboltprepareflow.text-015")),
+                icon, set, setter, Utils.formatAdminSuccess(GuiConfig.text("area-prepare-dodgeboltprepareflow.text-016") + name + "。"));
     }
 
     private static StandAndRunStep location(String key, String name, Material icon,
                                             java.util.function.Predicate<SetupTarget> set,
                                             java.util.function.BiConsumer<SetupTarget, Location> setter) {
-        return new StandAndRunStep(key, Component.text(name), Component.text("站到目标位置后点击"),
-                icon, set, setter, Utils.formatAdminSuccess("已设置" + name + "。"));
+        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("area-prepare-dodgeboltprepareflow.text-017")),
+                icon, set, setter, Utils.formatAdminSuccess(GuiConfig.text("area-prepare-dodgeboltprepareflow.text-016") + name + "。"));
     }
 
     private static ListStep list(String key, String name, Material icon,
                                  java.util.function.Function<SetupTarget, List<String>> getter,
                                  java.util.function.BiConsumer<SetupTarget, List<String>> setter) {
-        return new ListStep(key, Component.text(name), Component.text("逐个添加点位"), icon,
+        return new ListStep(key, Component.text(name), Component.text(GuiConfig.text("area-prepare-dodgeboltprepareflow.text-018")), icon,
                 t -> values(getter.apply(t)), setter,
                 t -> values(getter.apply(t)).isEmpty(),
                 (t, value) -> { List<String> list = values(getter.apply(t)); list.add(value); setter.accept(t, list); },
@@ -103,11 +105,11 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
 
     private static void requireCount(List<String> errors, String name, List<String> values, int minimum) {
         int count = values == null ? 0 : values.size();
-        if (count < minimum) errors.add(name + "（至少 " + minimum + " 个，当前 " + count + " 个）");
+        if (count < minimum) errors.add(name + GuiConfig.text("area-prepare-dodgeboltprepareflow.text-019") + minimum + GuiConfig.text("area-prepare-dodgeboltprepareflow.text-020") + count + GuiConfig.text("area-prepare-dodgeboltprepareflow.text-021"));
     }
 
     private static void requirePoint(List<String> errors, String name, String value) {
-        if (!hasPoint(value)) errors.add(name + "未设置");
+        if (!hasPoint(value)) errors.add(name + GuiConfig.text("area-prepare-dodgeboltprepareflow.text-022"));
     }
 
     private static boolean isInSpectatorArea(DodgeboltConfig config, Location location) {

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.tntrun;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -54,8 +56,8 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                 "tntrun"), "schematics"), target.name()), "arena.schem");
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
-                new SchematicStep(plugin -> schematic, Component.text("保存 0 号赛道模板"),
-                        Component.text("选中完整单赛道后保存 arena.schem")) {
+                new SchematicStep(plugin -> schematic, Component.text(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-001")),
+                        Component.text(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-002"))) {
                     @Override
                     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
                         String result = super.capture(session, player);
@@ -70,14 +72,14 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                         return result;
                     }
                 },
-                new WeSelectionStep("copy_zero_bounds", Component.text("0 号赛道完整边界"),
-                        Component.text("框住手工保留的完整 0 号赛道；该最小角决定副本粘贴位置"),
+                new WeSelectionStep("copy_zero_bounds", Component.text(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-003")),
+                        Component.text(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-004")),
                         Material.BEDROCK,
                         t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
                         (t, selection) -> {
                             cfg(t).setAreaPos1(selection[0]);
                             cfg(t).setAreaPos2(selection[1]);
-                        }, Utils.formatAdminSuccess("已设置 0 号赛道完整边界。")),
+                        }, Utils.formatAdminSuccess(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-005"))),
                 StampStep.adaptiveKeepingSource(plugin -> schematic,
                         (t, size) -> cfg(t).prepareCopyGrid(size),
                         (t, count) -> cfg(t).setCopies(count),
@@ -86,15 +88,15 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                             ArenaPreparer.clearAdditionalCopies(session.getPlugin(), world,
                                     previous.getCopyGrid(), previous.getCopies(), previous.getCopySize());
                         }),
-                new StandAndRunStep("copy_spawn", Component.text("0 号赛道出生点"),
-                        Component.text("站到 copy0 玩家出生点后点击"), Material.ELYTRA,
+                new StandAndRunStep("copy_spawn", Component.text(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-006")),
+                        Component.text(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-007")), Material.ELYTRA,
                         t -> cfg(t).getCopySpawn() != null, (t, loc) -> cfg(t).setCopySpawn(loc),
-                        Utils.formatAdminSuccess("已设置 0 号赛道出生点。")),
-                new StandAndRunStep("spectator_spawn", Component.text("旁观者出生点"),
-                        Component.text("站到旁观位置后点击"), Material.ENDER_EYE,
+                        Utils.formatAdminSuccess(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-008"))),
+                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-009")),
+                        Component.text(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-010")), Material.ENDER_EYE,
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, loc) -> cfg(t).setSpectatorSpawnPoint(loc),
-                        Utils.formatAdminSuccess("已设置旁观者出生点。"))
+                        Utils.formatAdminSuccess(GuiConfig.text("prepare-tntrun-tntrunprepareflow.text-011")))
         );
     }
 

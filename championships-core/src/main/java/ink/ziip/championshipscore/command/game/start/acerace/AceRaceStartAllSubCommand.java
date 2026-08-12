@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +24,10 @@ public class AceRaceStartAllSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        String message = plugin.getGameManager().joinSingleTeamAreaForAllTeams(GameTypeEnum.AceRace, args[0])
+        List<java.util.UUID> commandPlayers = sender instanceof Player player
+                ? List.of(player.getUniqueId()) : List.of();
+        String message = plugin.getGameManager().joinSingleTeamAreaForAllTeams(
+                        GameTypeEnum.AceRace, args[0], commandPlayers)
                 ? MessageConfig.GAME_SINGLE_GAME_START_SUCCESSFUL : MessageConfig.GAME_SINGLE_GAME_START_FAILED;
         sender.sendMessage(message.replace("%game%", GameTypeEnum.AceRace.toString()).replace("%area%", args[0]));
         return true;

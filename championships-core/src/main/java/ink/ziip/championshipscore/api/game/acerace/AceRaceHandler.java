@@ -10,7 +10,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceRespawnPoint
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.event.Event;
@@ -44,7 +43,7 @@ public class AceRaceHandler extends BaseListener {
         if (aceRaceArea.notAreaPlayer(player)) return;
         if (aceRaceArea.isIntroductionPhase()) return;
         if (aceRaceArea.getGameStageEnum() == GameStageEnum.PROGRESS
-                && player.getGameMode() != GameMode.SPECTATOR) {
+                && !aceRaceArea.isManagedSpectator(player)) {
             aceRaceArea.handlePlayerMove(event);
             return;
         }

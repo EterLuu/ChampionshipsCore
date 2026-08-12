@@ -13,13 +13,13 @@ countdown-block-disappearance:
   pos2:
   mode: RANDOM
 timer: 90
-# 地图装备类型：BOAT=橡木船，ROAD=钻石镐+队伍混凝土，NONE=无物品，ELYTRA=不可破坏鞘翅。
+#地图装备类型：BOAT=橡木船，ROAD=钻石镐+队伍混凝土，NONE=无物品，ELYTRA=不可破坏鞘翅。
 area-type:
 spectator-spawn-point:
 area-pos1:
 area-pos2:
 monster-spawn-points: [ ]
-# 鸡/玩家均在对应 WorldEdit 单层选区的上方一格随机生成；玩家会统一使用设置区域时记录的朝向。
+#鸡/玩家均在对应WorldEdit单层选区的上方一格随机生成；玩家会统一使用设置区域时记录的朝向。
 chicken-spawn-area-pos1:
 chicken-spawn-area-pos2:
 player-spawn-area-pos1:
@@ -27,11 +27,11 @@ player-spawn-area-pos2:
 player-spawn-yaw:
 player-spawn-pitch:
 
-# ── 规则介绍阶段（introduction）────────────────────────────
-# 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
-# 规则文案（rules，每个子列表为一段，支持 & 颜色码与 &#RRGGBB 十六进制颜色），期间可以自由参观
-# 场地；结束后传送到正式准备点位，读秒后开始游戏。
-# introduction-spawn-point 留空时使用旁观出生点；把 rules 设为 [] 可跳过该阶段。
+# ──规则介绍阶段（introduction）────────────────────────────
+#游戏正式开始前，玩家会先被传送到introduction-spawn-point，在45秒内于聊天框分段播报下面的
+#规则文案（rules，每个子列表为一段，支持&颜色码与&#RRGGBB十六进制颜色），期间可以自由参观
+#场地；结束后传送到正式准备点位，读秒后开始游戏。
+# introduction-spawn-point留空时使用旁观出生点；把rules设为[]可跳过该阶段。
 introduction-spawn-point:
 rules:
   - - "&#696969==========&r &#ff6b26[&d去到另一边&#ff6b26] &#696969==========&r"
@@ -39,11 +39,11 @@ rules:
     - "&#ededed所有人从起点出发，率先冲到终点"
     - "&#ededed部分地图会发放小船或挖掘工具"
     - "&#ededed跑酷、划船、挖路……各凭本事过关"
-  - - "&#696969==========&r &#fff566积分规则 &#696969==========&r"
-    - "&#ededed第一名到达获得 &#fff56664 分&#ededed，此后每名递减 1 分"
-    - "&#ededed前 12 名另有个人奖励：首位 &#fff56680 分&#ededed，此后每名递减 5 分"
+  - - "&#696969==========&r&#fff566积分规则&#696969==========&r"
+    - "&#ededed第一名到达获得&#fff56664分&#ededed，此后每名递减1分"
+    - "&#ededed前12名另有个人奖励：首位&#fff56680分&#ededed，此后每名递减5分"
     - "&#ededed全队越早全部到达，团队加分越多"
-  - - "&#696969==========&r &#fff566小提示 &#696969==========&r"
+  - - "&#696969==========&r&#fff566小提示&#696969==========&r"
     - "&#fff566路线不止一条，观察对手但别盲从"
     - "&#ededed划船图把握好上下船的时机"
     - "&#ededed挖路图和队友分工，一人开路大家走"

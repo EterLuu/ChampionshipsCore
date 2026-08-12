@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.parkourtag;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -65,8 +67,8 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
         steps.add(new SchematicStep(plugin -> schematic,
-                Component.text("保存双赛道对局模板"),
-                Component.text("选取整个 0 号对局场地：两条镜像赛道、两队准备区及观战区")) {
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-001")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-002"))) {
             @Override
             public String capture(@NotNull ink.ziip.championshipscore.api.game.area.prepare.PrepareSession session,
                                   @NotNull Player player) {
@@ -92,91 +94,91 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                 }));
 
         steps.add(new WeSelectionStep("area_pos",
-                Component.text("0 号对局场地总边界"),
-                Component.text("框住两条赛道和两队准备区；其他对局副本会自动平移"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-003")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-004")),
                 Material.BEDROCK,
                 a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
                 (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess("已设置场地总边界。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-005"))));
 
         steps.add(new StandAndRunStep("spectator_spawn",
-                Component.text("旁观者出生点"),
-                Component.text("站到旁观位置后点击"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-006")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-007")),
                 Material.ENDER_EYE,
                 a -> cfg(a).getSpectatorSpawnPoint() != null,
                 (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置旁观者出生点。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-008"))));
 
         steps.add(new StandAndRunStep("right_prepare_spot",
-                Component.text("对局位 A 队准备点"),
-                Component.text("站到 A 队正式倒计时前集合的位置后点击"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-009")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-010")),
                 Material.GREEN_WOOL,
                 a -> cfg(a).getRightPrepareSpot() != null,
                 (a, loc) -> cfg(a).setRightPrepareSpot(loc),
-                Utils.formatAdminSuccess("已设置对局位 A 队准备点。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-011"))));
 
         steps.add(new StandAndRunStep("left_prepare_spot",
-                Component.text("对局位 B 队准备点"),
-                Component.text("站到 B 队正式倒计时前集合的位置后点击"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-012")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-013")),
                 Material.RED_WOOL,
                 a -> cfg(a).getLeftPrepareSpot() != null,
                 (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
-                Utils.formatAdminSuccess("已设置对局位 B 队准备点。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-014"))));
 
         steps.add(new ParkourTagChaserButtonStep("right_chaser_button",
-                Component.text("对局位 A 队追击者按钮"),
-                Component.text("对准 A 队准备区内已经贴墙放置的按钮后点击"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-015")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-016")),
                 a -> cfg(a).getRightChaserButton(),
                 (a, loc) -> cfg(a).setRightChaserButton(loc)));
 
         steps.add(new ParkourTagChaserButtonStep("left_chaser_button",
-                Component.text("对局位 B 队追击者按钮"),
-                Component.text("对准 B 队准备区内已经贴墙放置的按钮后点击"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-017")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-018")),
                 a -> cfg(a).getLeftChaserButton(),
                 (a, loc) -> cfg(a).setLeftChaserButton(loc)));
 
         steps.add(new WeSelectionStep("right_area_pos",
-                Component.text("赛道 1 完整边界（A 追 B 逃）"),
-                Component.text("选取第一张完整跑酷地图；边界同时约束追击者和逃跑者"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-019")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-020")),
                 Material.GREEN_STAINED_GLASS,
                 a -> cfg(a).getRightAreaAreaPos1() != null && cfg(a).getRightAreaAreaPos2() != null,
                 (a, sel) -> { cfg(a).setRightAreaAreaPos1(sel[0]); cfg(a).setRightAreaAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess("已设置赛道 1 完整边界。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-021"))));
 
         steps.add(new StandAndRunStep("right_chaser_spawn",
-                Component.text("赛道 1：A 队追击者出生点"),
-                Component.text("A 队追击者在赛道 1 的出生位置"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-022")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-023")),
                 Material.GREEN_CONCRETE,
                 a -> cfg(a).getRightAreaChaserSpawnPoint() != null,
                 (a, loc) -> cfg(a).setRightAreaChaserSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置赛道 1 的 A 队追击者出生点。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-024"))));
 
         steps.add(escapeeStep("right_escapee_spawns",
-                Component.text("赛道 1：B 队逃跑者出生点"),
-                Component.text("逐个添加 B 队逃跑者在赛道 1 的出生位置"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-025")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-026")),
                 Material.LIME_WOOL,
                 ParkourTagConfig::getRightAreaEscapeeSpawnPoints,
                 ParkourTagConfig::setRightAreaEscapeeSpawnPoints));
 
         steps.add(new WeSelectionStep("left_area_pos",
-                Component.text("赛道 2 完整边界（B 追 A 逃）"),
-                Component.text("选取第二张完整跑酷地图；边界同时约束追击者和逃跑者"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-027")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-028")),
                 Material.RED_STAINED_GLASS,
                 a -> cfg(a).getLeftAreaAreaPos1() != null && cfg(a).getLeftAreaAreaPos2() != null,
                 (a, sel) -> { cfg(a).setLeftAreaAreaPos1(sel[0]); cfg(a).setLeftAreaAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess("已设置赛道 2 完整边界。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-029"))));
 
         steps.add(new StandAndRunStep("left_chaser_spawn",
-                Component.text("赛道 2：B 队追击者出生点"),
-                Component.text("B 队追击者在赛道 2 的出生位置"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-030")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-031")),
                 Material.RED_CONCRETE,
                 a -> cfg(a).getLeftAreaChaserSpawnPoint() != null,
                 (a, loc) -> cfg(a).setLeftAreaChaserSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置赛道 2 的 B 队追击者出生点。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-032"))));
 
         steps.add(escapeeStep("left_escapee_spawns",
-                Component.text("赛道 2：A 队逃跑者出生点"),
-                Component.text("逐个添加 A 队逃跑者在赛道 2 的出生位置"),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-033")),
+                Component.text(GuiConfig.text("prepare-parkourtag-parkourtagprepareflow.text-034")),
                 Material.ORANGE_WOOL,
                 ParkourTagConfig::getLeftAreaEscapeeSpawnPoints,
                 ParkourTagConfig::setLeftAreaEscapeeSpawnPoints));

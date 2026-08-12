@@ -7,6 +7,7 @@ public final class MapMainCommand extends BaseMainCommand {
     public MapMainCommand() {
         super("map", "地图与蓝图管理", ADMIN_PERMISSION);
         addSubCommand(new MapEditSubCommand());
+        addSubCommand(new MapRenameSubCommand());
         addSubCommand(new BuildMartBlueprintMainCommand());
     }
 }

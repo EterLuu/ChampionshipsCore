@@ -288,7 +288,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
     public boolean updateElytraLandingState(@NotNull Player player) {
         if (getGameStageEnum() != GameStageEnum.PROGRESS
                 || !getGameConfig().getAreaType().equals("ELYTRA")
-                || player.getGameMode() == GameMode.SPECTATOR
+                || isManagedSpectator(player)
                 || arrivedPlayers.contains(player.getUniqueId())) {
             return false;
         }

@@ -29,9 +29,12 @@ public class AdminSudoSubCommand extends BaseSubCommand {
         String commands = String.join(" ", split);
 
         if (args[0].equalsIgnoreCase("all")) {
+            int affected = 0;
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.performCommand(commands);
+                affected++;
             }
+            Utils.sendAdminSuccess(sender, "已让 &#fff566" + affected + " &#ededed名在线玩家执行命令");
             return true;
         }
 
@@ -40,9 +43,12 @@ public class AdminSudoSubCommand extends BaseSubCommand {
             Utils.sendAdminError(sender, "队伍不存在：&#fff566" + args[0]);
             return true;
         }
-        for (Player teamPlayer : team.getOnlinePlayers()) {
+        List<Player> onlinePlayers = team.getOnlinePlayers();
+        for (Player teamPlayer : onlinePlayers) {
             teamPlayer.performCommand(commands);
         }
+        Utils.sendAdminSuccess(sender, "已让队伍 " + team.getColoredName() + " &#ededed的 &#fff566"
+                + onlinePlayers.size() + " &#ededed名在线玩家执行命令");
 
         return true;
     }

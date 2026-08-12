@@ -6,7 +6,6 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Setter;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Arrow;
@@ -125,7 +124,7 @@ public final class DodgeboltHandler extends BaseListener {
             if (!area.isSpectatorLocationAllowed(event.getTo())) area.teleportToSpectatorArea(player);
             return;
         }
-        if (player.getGameMode() == GameMode.SPECTATOR) return;
+        if (area.isManagedSpectator(player)) return;
         if (area.isPaused() && area.getGameStageEnum() == GameStageEnum.PROGRESS) {
             if (changedBlock(event.getFrom(), event.getTo())) event.setCancelled(true);
             return;

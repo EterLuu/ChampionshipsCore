@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.acerace.AceRaceConfig;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -19,9 +21,9 @@ public final class AceRaceLineStep extends PrepareStep {
 
     public AceRaceLineStep(boolean start) {
         super(start ? "start_line" : "finish_line",
-                Component.text(start ? "起点线" : "终点线"),
-                Component.text("用 WorldEdit 选取水平底线，触发面从该高度向上延伸；"
-                        + (start ? "当前位置同时作为起跑出生点" : "用于计圈/完赛")),
+                Component.text(start ? GuiConfig.text("prepare-step-aceracelinestep.text-001") : GuiConfig.text("prepare-step-aceracelinestep.text-002")),
+                Component.text(GuiConfig.text("prepare-step-aceracelinestep.text-003")
+                        + (start ? GuiConfig.text("prepare-step-aceracelinestep.text-004") : GuiConfig.text("prepare-step-aceracelinestep.text-005"))),
                 start ? Material.LIME_WOOL : Material.ORANGE_WOOL, StepCaptureType.WE_SELECTION);
         this.start = start;
     }
@@ -41,13 +43,13 @@ public final class AceRaceLineStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return Utils.formatAdminError("请先用 WorldEdit 选取起点线或终点线。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-aceracelinestep.text-006"));
         }
         int spanX = Math.abs(selection[0].getBlockX() - selection[1].getBlockX());
         int spanY = Math.abs(selection[0].getBlockY() - selection[1].getBlockY());
         int spanZ = Math.abs(selection[0].getBlockZ() - selection[1].getBlockZ());
         if (spanY != 0 || (spanX > 0 && spanZ > 0) || (spanX == 0 && spanZ == 0))
-            return Utils.formatAdminError("起点线/终点线必须是同一高度、沿 X 或 Z 方向延伸的直线。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-aceracelinestep.text-007"));
         AceRaceConfig config = cfg(session.getTarget());
         if (start) {
             config.setStartLinePos1(selection[0]);
@@ -59,14 +61,14 @@ public final class AceRaceLineStep extends PrepareStep {
         }
         session.markDirty();
         if (start) {
-            Utils.sendAdminInfo(player, "请输入起点线之后的摔落高度；留空保留当前值 "
+            Utils.sendAdminInfo(player, GuiConfig.text("prepare-step-aceracelinestep.text-008")
                     + config.getStartFallY() + "。");
-            AnvilInputGui.openInteger(player, "起点线摔落高度", config.getStartFallY(), value -> {
+            AnvilInputGui.openInteger(player, GuiConfig.text("prepare-step-aceracelinestep.text-009"), config.getStartFallY(), value -> {
                 config.setStartFallY(value);
                 session.markDirty();
-                Utils.sendAdminSuccess(player, "已设置起点线之后的摔落高度为 " + value + "。");
+                Utils.sendAdminSuccess(player, GuiConfig.text("prepare-step-aceracelinestep.text-010") + value + "。");
             });
         }
-        return Utils.formatAdminSuccess(start ? "已设置起点线。" : "已设置终点线。");
+        return Utils.formatAdminSuccess(start ? GuiConfig.text("prepare-step-aceracelinestep.text-011") : GuiConfig.text("prepare-step-aceracelinestep.text-012"));
     }
 }

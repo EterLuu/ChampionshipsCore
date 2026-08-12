@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
+import org.jetbrains.annotations.NotNull;
 
 public class SkyWarsManager extends BaseGameInstanceManager<SkyWarsTeamArea> {
     private final SkyWarsVariantRegistry variantRegistry;
@@ -66,6 +67,17 @@ public class SkyWarsManager extends BaseGameInstanceManager<SkyWarsTeamArea> {
         SkyWarsTeamArea skyWarsArea = new SkyWarsTeamArea(plugin, skyWarsConfig, true, name, variantRegistry);
         areas.put(name, skyWarsArea);
 
+        return true;
+    }
+
+    @Override
+    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+        if (areas.containsKey(name)) return false;
+        SkyWarsConfig config = new SkyWarsConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        SkyWarsTeamArea area = new SkyWarsTeamArea(plugin, config, false, name, variantRegistry);
+        areas.put(name, area);
+        area.preloadMap();
         return true;
     }
 

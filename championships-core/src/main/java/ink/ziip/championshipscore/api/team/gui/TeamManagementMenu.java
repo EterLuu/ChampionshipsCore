@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.team.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -81,7 +83,7 @@ public final class TeamManagementMenu implements Listener {
         int page = Math.max(0, Math.min(requestedPage, pages - 1));
         MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.OVERVIEW, null, page);
         Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE,
-                title("队伍管理", NamedTextColor.GOLD));
+                title(GuiConfig.text("team-gui-teammanagementmenu.text-001"), NamedTextColor.GOLD));
         holder.inventory = inventory;
         fillOverview(holder, teams, pages);
         player.openInventory(inventory);
@@ -100,34 +102,34 @@ public final class TeamManagementMenu implements Listener {
             holder.targets.put(slot, team.getName());
         }
         if (teams.isEmpty()) {
-            inventory.setItem(22, item(Material.GRAY_DYE, Component.text("还没有队伍", NamedTextColor.GRAY),
-                    List.of(Component.text("点击左下角创建第一支队伍", NamedTextColor.DARK_GRAY)), false));
+            inventory.setItem(22, item(Material.GRAY_DYE, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-002"), NamedTextColor.GRAY),
+                    List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-003"), NamedTextColor.DARK_GRAY)), false));
         }
 
         fillFooter(inventory);
         inventory.setItem(CREATE_SLOT, item(Material.EMERALD,
-                Component.text("创建队伍", NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
-                List.of(Component.text("输入内部名称，再选择队伍颜色", NamedTextColor.GRAY)), false));
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-004"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-005"), NamedTextColor.GRAY)), false));
         inventory.setItem(QUICK_ASSIGN_SLOT, item(Material.PLAYER_HEAD,
-                Component.text("快速调队", NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                List.of(Component.text("选择在线玩家，再选择目标队伍", NamedTextColor.GRAY),
-                        Component.text("已有队伍的玩家会要求二次确认", NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-006"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-007"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-008"), NamedTextColor.DARK_GRAY)), false));
         inventory.setItem(REFRESH_SLOT, item(Material.SUNFLOWER,
-                Component.text("刷新", NamedTextColor.YELLOW), List.of(), false));
-        inventory.setItem(PAGE_SLOT, pageItem(holder.page, pages, teams.size(), "支队伍"));
-        if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem("上一页"));
-        if (holder.page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem("下一页"));
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-009"), NamedTextColor.YELLOW), List.of(), false));
+        inventory.setItem(PAGE_SLOT, pageItem(holder.page, pages, teams.size(), GuiConfig.text("team-gui-teammanagementmenu.text-010")));
+        if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-011")));
+        if (holder.page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-012")));
         inventory.setItem(TELEPORT_ALL_SLOT, item(Material.ENDER_EYE,
-                Component.text("传送全部队伍到这里", NamedTextColor.LIGHT_PURPLE),
-                List.of(Component.text("仅传送在线成员", NamedTextColor.GRAY),
-                        Component.empty(), Component.text("点击后需要确认", NamedTextColor.YELLOW)), false));
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-013"), NamedTextColor.LIGHT_PURPLE),
+                List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-014"), NamedTextColor.GRAY),
+                        Component.empty(), Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-015"), NamedTextColor.YELLOW)), false));
         inventory.setItem(CLOSE_SLOT, closeItem());
     }
 
     private void openTeam(@NotNull Player player, @NotNull String teamName, int requestedPage) {
         ChampionshipTeam team = plugin.getTeamManager().getTeam(teamName);
         if (team == null) {
-            Utils.sendAdminError(player, "队伍已不存在：&#fff566" + teamName);
+            Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-016") + teamName);
             openOverview(player, 0);
             return;
         }
@@ -137,7 +139,7 @@ public final class TeamManagementMenu implements Listener {
         int page = Math.max(0, Math.min(requestedPage, pages - 1));
         MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.TEAM, team.getName(), page);
         Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE,
-                teamTitle(team, "成员管理"));
+                teamTitle(team, GuiConfig.text("team-gui-teammanagementmenu.text-017")));
         holder.inventory = inventory;
         fillTeam(holder, team, members, pages);
         player.openInventory(inventory);
@@ -158,39 +160,39 @@ public final class TeamManagementMenu implements Listener {
         }
         if (members.isEmpty()) {
             inventory.setItem(22, item(Material.PLAYER_HEAD,
-                    Component.text("队伍中还没有成员", NamedTextColor.GRAY),
-                    List.of(Component.text("从左下角添加在线玩家或输入玩家名", NamedTextColor.DARK_GRAY)), false));
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-018"), NamedTextColor.GRAY),
+                    List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-019"), NamedTextColor.DARK_GRAY)), false));
         }
 
         fillFooter(inventory);
         boolean full = members.size() >= CCConfig.TEAM_MAX_MEMBERS;
         if (full) {
             inventory.setItem(ADD_ONLINE_SLOT, item(Material.RED_DYE,
-                    Component.text("队伍已满", NamedTextColor.RED).decorate(TextDecoration.BOLD),
-                    List.of(Component.text(members.size() + " / " + CCConfig.TEAM_MAX_MEMBERS + " 名成员", NamedTextColor.GRAY),
-                            Component.text("移除成员后才能继续添加", NamedTextColor.DARK_GRAY)), false));
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-020"), NamedTextColor.RED).decorate(TextDecoration.BOLD),
+                    List.of(Component.text(members.size() + "/" + CCConfig.TEAM_MAX_MEMBERS + GuiConfig.text("team-gui-teammanagementmenu.text-021"), NamedTextColor.GRAY),
+                            Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-022"), NamedTextColor.DARK_GRAY)), false));
         } else {
             inventory.setItem(ADD_ONLINE_SLOT, item(Material.LIME_DYE,
-                    Component.text("添加在线玩家", NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
-                    List.of(Component.text("从当前在线且尚未入队的玩家中选择", NamedTextColor.GRAY)), false));
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-023"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
+                    List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-024"), NamedTextColor.GRAY)), false));
             inventory.setItem(ADD_HISTORY_SLOT, item(Material.BOOK,
-                    Component.text("历史 / 离线玩家", NamedTextColor.AQUA),
-                    List.of(Component.text("从已记录且尚未入队的离线玩家中选择", NamedTextColor.GRAY),
-                            Component.text("也可在下一页手动输入玩家名", NamedTextColor.DARK_GRAY)), false));
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-025"), NamedTextColor.AQUA),
+                    List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-026"), NamedTextColor.GRAY),
+                            Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-027"), NamedTextColor.DARK_GRAY)), false));
         }
-        inventory.setItem(PREVIOUS_SLOT, holder.page > 0 ? navigationItem("上一页")
-                : item(Material.ARROW, Component.text("返回队伍列表", NamedTextColor.WHITE), List.of(), false));
+        inventory.setItem(PREVIOUS_SLOT, holder.page > 0 ? navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-011"))
+                : item(Material.ARROW, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-028"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(REFRESH_SLOT, item(Material.SUNFLOWER,
-                Component.text("刷新", NamedTextColor.YELLOW), List.of(), false));
-        inventory.setItem(PAGE_SLOT, pageItem(holder.page, pages, members.size(), "名成员"));
-        if (holder.page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem("下一页"));
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-009"), NamedTextColor.YELLOW), List.of(), false));
+        inventory.setItem(PAGE_SLOT, pageItem(holder.page, pages, members.size(), GuiConfig.text("team-gui-teammanagementmenu.text-029")));
+        if (holder.page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-012")));
         inventory.setItem(TELEPORT_TEAM_SLOT, item(Material.ENDER_PEARL,
-                Component.text("传送本队到这里", NamedTextColor.LIGHT_PURPLE),
-                List.of(Component.text(team.getOnlinePlayers().size() + " 名在线成员将被传送", NamedTextColor.GRAY)), false));
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-030"), NamedTextColor.LIGHT_PURPLE),
+                List.of(Component.text(team.getOnlinePlayers().size() + GuiConfig.text("team-gui-teammanagementmenu.text-031"), NamedTextColor.GRAY)), false));
         inventory.setItem(DELETE_TEAM_SLOT, item(Material.TNT,
-                Component.text("删除队伍", NamedTextColor.RED),
-                List.of(Component.text("永久删除队伍和成员关系", NamedTextColor.GRAY),
-                        Component.empty(), Component.text("点击后需要确认", NamedTextColor.YELLOW)), false));
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-032"), NamedTextColor.RED),
+                List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-033"), NamedTextColor.GRAY),
+                        Component.empty(), Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-015"), NamedTextColor.YELLOW)), false));
         inventory.setItem(CLOSE_SLOT, closeItem());
     }
 
@@ -201,7 +203,7 @@ public final class TeamManagementMenu implements Listener {
             return;
         }
         if (team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
-            Utils.sendAdminError(player, "队伍人数已达到上限 &#fff566" + CCConfig.TEAM_MAX_MEMBERS);
+            Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-034") + CCConfig.TEAM_MAX_MEMBERS);
             openTeam(player, teamName, 0);
             return;
         }
@@ -212,7 +214,7 @@ public final class TeamManagementMenu implements Listener {
         int pages = pageCount(candidates.size());
         int page = Math.max(0, Math.min(requestedPage, pages - 1));
         MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.ADD_PLAYER, team.getName(), page);
-        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, teamTitle(team, "选择新成员"));
+        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, teamTitle(team, GuiConfig.text("team-gui-teammanagementmenu.text-035")));
         holder.inventory = inventory;
         int from = page * PAGE_SIZE;
         int to = Math.min(from + PAGE_SIZE, candidates.size());
@@ -221,26 +223,26 @@ public final class TeamManagementMenu implements Listener {
             int slot = index - from;
             inventory.setItem(slot, playerHead(candidate.getUniqueId(), candidate.getName(),
                     Component.text(candidate.getName(), NamedTextColor.GREEN),
-                    List.of(Component.text("点击加入 " + team.getName(), teamColor(team)))));
+                    List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-036") + team.getName(), teamColor(team)))));
             holder.targets.put(slot, candidate.getName());
         }
         if (candidates.isEmpty()) {
             inventory.setItem(22, item(Material.GRAY_DYE,
-                    Component.text("没有可添加的在线玩家", NamedTextColor.GRAY),
-                    List.of(Component.text("可以返回后使用“输入玩家名”", NamedTextColor.DARK_GRAY)), false));
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-037"), NamedTextColor.GRAY),
+                    List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-038"), NamedTextColor.DARK_GRAY)), false));
         }
         fillFooter(inventory);
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, Component.text("返回成员管理", NamedTextColor.WHITE), List.of(), false));
-        if (page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem("上一页"));
-        inventory.setItem(PAGE_SLOT, pageItem(page, pages, candidates.size(), "名可选玩家"));
-        if (page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem("下一页"));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-039"), NamedTextColor.WHITE), List.of(), false));
+        if (page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-011")));
+        inventory.setItem(PAGE_SLOT, pageItem(page, pages, candidates.size(), GuiConfig.text("team-gui-teammanagementmenu.text-040")));
+        if (page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-012")));
         inventory.setItem(CLOSE_SLOT, closeItem());
         player.openInventory(inventory);
     }
 
     private void openColorPicker(@NotNull Player player, @NotNull String newTeamName) {
         MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.COLOR, newTeamName, 0);
-        Inventory inventory = Bukkit.createInventory(holder, 36, title("选择队伍颜色", NamedTextColor.GOLD));
+        Inventory inventory = Bukkit.createInventory(holder, 36, title(GuiConfig.text("team-gui-teammanagementmenu.text-041"), NamedTextColor.GOLD));
         holder.inventory = inventory;
         List<String> colors = List.of(Utils.getColorNames());
         for (int index = 0; index < colors.size(); index++) {
@@ -250,18 +252,18 @@ public final class TeamManagementMenu implements Listener {
                     .findFirst().orElse(null);
             Material material = material(color + "_WOOL", Material.WHITE_WOOL);
             List<Component> lore = new ArrayList<>();
-            lore.add(Component.text("内部颜色名  " + color, NamedTextColor.GRAY));
-            lore.add(Component.text("显示颜色  " + COLOR_HEX.get(color), color(color)));
+            lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-042") + color, NamedTextColor.GRAY));
+            lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-043") + COLOR_HEX.get(color), color(color)));
             lore.add(Component.empty());
-            if (usedBy == null) lore.add(Component.text("点击创建队伍", NamedTextColor.GREEN));
-            else lore.add(Component.text("已被 " + usedBy.getName() + " 使用", NamedTextColor.RED));
+            if (usedBy == null) lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-044"), NamedTextColor.GREEN));
+            else lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-045") + usedBy.getName() + GuiConfig.text("team-gui-teammanagementmenu.text-046"), NamedTextColor.RED));
             int slot = COLOR_SLOTS.get(index);
             inventory.setItem(slot, item(usedBy == null ? material : Material.GRAY_DYE,
                     Component.text(COLOR_LABELS.get(color), usedBy == null ? color(color) : NamedTextColor.DARK_GRAY)
                             .decorate(TextDecoration.BOLD), lore, false));
             if (usedBy == null) holder.targets.put(slot, color);
         }
-        inventory.setItem(31, item(Material.ARROW, Component.text("返回队伍列表", NamedTextColor.WHITE), List.of(), false));
+        inventory.setItem(31, item(Material.ARROW, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-028"), NamedTextColor.WHITE), List.of(), false));
         player.openInventory(inventory);
     }
 
@@ -272,7 +274,7 @@ public final class TeamManagementMenu implements Listener {
         int pages = pageCount(players.size());
         int page = Math.max(0, Math.min(requestedPage, pages - 1));
         MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.QUICK_PLAYER, null, page);
-        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, title("快速调队 · 选择玩家", NamedTextColor.AQUA));
+        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, title(GuiConfig.text("team-gui-teammanagementmenu.text-047"), NamedTextColor.AQUA));
         holder.inventory = inventory;
         int from = page * PAGE_SIZE;
         int to = Math.min(from + PAGE_SIZE, players.size());
@@ -281,11 +283,11 @@ public final class TeamManagementMenu implements Listener {
             ChampionshipTeam current = plugin.getTeamManager().getTeamByPlayer(candidate);
             List<Component> lore = new ArrayList<>();
             lore.add(current == null
-                    ? Component.text("当前未分队", NamedTextColor.GRAY)
-                    : Component.text("当前队伍  ", NamedTextColor.GRAY)
+                    ? Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-048"), NamedTextColor.GRAY)
+                    : Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-049"), NamedTextColor.GRAY)
                     .append(Component.text(current.getName(), teamColor(current))));
             lore.add(Component.empty());
-            lore.add(Component.text("点击选择目标队伍", NamedTextColor.YELLOW));
+            lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-050"), NamedTextColor.YELLOW));
             int slot = index - from;
             inventory.setItem(slot, playerHead(candidate.getUniqueId(), candidate.getName(),
                     Component.text(candidate.getName(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD), lore));
@@ -293,10 +295,10 @@ public final class TeamManagementMenu implements Listener {
             holder.targets.put(slot, candidate.getName());
         }
         fillFooter(inventory);
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, Component.text("返回队伍列表", NamedTextColor.WHITE), List.of(), false));
-        if (page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem("上一页"));
-        inventory.setItem(PAGE_SLOT, pageItem(page, pages, players.size(), "名在线玩家"));
-        if (page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem("下一页"));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-028"), NamedTextColor.WHITE), List.of(), false));
+        if (page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-011")));
+        inventory.setItem(PAGE_SLOT, pageItem(page, pages, players.size(), GuiConfig.text("team-gui-teammanagementmenu.text-051")));
+        if (page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-012")));
         inventory.setItem(CLOSE_SLOT, closeItem());
         player.openInventory(inventory);
     }
@@ -308,33 +310,33 @@ public final class TeamManagementMenu implements Listener {
         MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.TARGET_TEAM, null, returnPage);
         holder.selectedPlayerUuid = selectedUuid;
         holder.memberName = selectedName;
-        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, title("选择 " + selectedName + " 的队伍", NamedTextColor.GOLD));
+        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, title(GuiConfig.text("team-gui-teammanagementmenu.text-052") + selectedName + GuiConfig.text("team-gui-teammanagementmenu.text-053"), NamedTextColor.GOLD));
         holder.inventory = inventory;
         for (int index = 0; index < Math.min(PAGE_SIZE, teams.size()); index++) {
             ChampionshipTeam team = teams.get(index);
             boolean same = current != null && current.equals(team);
             boolean full = team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS;
             List<Component> lore = new ArrayList<>();
-            lore.add(Component.text(team.getMembers().size() + " / " + CCConfig.TEAM_MAX_MEMBERS + " 名成员", NamedTextColor.GRAY));
+            lore.add(Component.text(team.getMembers().size() + "/" + CCConfig.TEAM_MAX_MEMBERS + GuiConfig.text("team-gui-teammanagementmenu.text-021"), NamedTextColor.GRAY));
             lore.add(Component.empty());
-            if (same) lore.add(Component.text("当前所在队伍", NamedTextColor.GREEN));
-            else if (full) lore.add(Component.text("队伍已满", NamedTextColor.RED));
-            else if (current == null) lore.add(Component.text("点击直接加入", NamedTextColor.YELLOW));
-            else lore.add(Component.text("点击后确认调队", NamedTextColor.YELLOW));
+            if (same) lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-054"), NamedTextColor.GREEN));
+            else if (full) lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-020"), NamedTextColor.RED));
+            else if (current == null) lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-055"), NamedTextColor.YELLOW));
+            else lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-056"), NamedTextColor.YELLOW));
             inventory.setItem(index, item(material(team.getColorName() + "_WOOL", Material.WHITE_WOOL),
                     Component.text(team.getName(), same || full ? NamedTextColor.DARK_GRAY : teamColor(team))
                             .decorate(TextDecoration.BOLD), lore, same));
             if (!same && !full) holder.targets.put(index, team.getName());
         }
         if (teams.isEmpty()) {
-            inventory.setItem(22, item(Material.GRAY_DYE, Component.text("还没有可选队伍", NamedTextColor.GRAY), List.of(), false));
+            inventory.setItem(22, item(Material.GRAY_DYE, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-057"), NamedTextColor.GRAY), List.of(), false));
         }
         fillFooter(inventory);
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, Component.text("返回在线玩家", NamedTextColor.WHITE), List.of(), false));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-058"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(49, playerHead(selectedUuid, selectedName,
                 Component.text(selectedName, NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                List.of(current == null ? Component.text("当前未分队", NamedTextColor.GRAY)
-                        : Component.text("当前  " + current.getName(), teamColor(current)))));
+                List.of(current == null ? Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-048"), NamedTextColor.GRAY)
+                        : Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-059") + current.getName(), teamColor(current)))));
         inventory.setItem(CLOSE_SLOT, closeItem());
         player.openInventory(inventory);
     }
@@ -346,7 +348,7 @@ public final class TeamManagementMenu implements Listener {
             return;
         }
         if (team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
-            Utils.sendAdminError(player, "队伍人数已达到上限 &#fff566" + CCConfig.TEAM_MAX_MEMBERS);
+            Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-034") + CCConfig.TEAM_MAX_MEMBERS);
             openTeam(player, teamName, 0);
             return;
         }
@@ -358,7 +360,7 @@ public final class TeamManagementMenu implements Listener {
         int pages = pageCount(candidates.size());
         int page = Math.max(0, Math.min(requestedPage, pages - 1));
         MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.KNOWN_PLAYER, teamName, page);
-        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, teamTitle(team, "历史 / 离线玩家"));
+        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, teamTitle(team, GuiConfig.text("team-gui-teammanagementmenu.text-025")));
         holder.inventory = inventory;
         int from = page * PAGE_SIZE;
         int to = Math.min(from + PAGE_SIZE, candidates.size());
@@ -367,23 +369,23 @@ public final class TeamManagementMenu implements Listener {
             int slot = index - from;
             inventory.setItem(slot, playerHead(candidate.getUuid(), candidate.getName(),
                     Component.text(candidate.getName(), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                    List.of(Component.text("历史玩家 · 当前离线", NamedTextColor.DARK_GRAY),
-                            Component.empty(), Component.text("点击加入 " + team.getName(), teamColor(team)))));
+                    List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-060"), NamedTextColor.DARK_GRAY),
+                            Component.empty(), Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-036") + team.getName(), teamColor(team)))));
             holder.playerTargets.put(slot, candidate.getUuid());
             holder.targets.put(slot, candidate.getName());
         }
         if (candidates.isEmpty()) {
-            inventory.setItem(22, item(Material.GRAY_DYE, Component.text("没有可选的离线历史玩家", NamedTextColor.GRAY),
-                    List.of(Component.text("可以使用左下角手动输入玩家名", NamedTextColor.DARK_GRAY)), false));
+            inventory.setItem(22, item(Material.GRAY_DYE, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-061"), NamedTextColor.GRAY),
+                    List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-062"), NamedTextColor.DARK_GRAY)), false));
         }
         fillFooter(inventory);
-        inventory.setItem(MANUAL_INPUT_SLOT, item(Material.NAME_TAG, Component.text("手动输入玩家名", NamedTextColor.AQUA),
-                List.of(Component.text("仅在历史列表中找不到玩家时使用", NamedTextColor.GRAY),
-                        Component.text("请仔细核对拼写", NamedTextColor.YELLOW)), false));
-        inventory.setItem(HISTORY_BACK_SLOT, item(Material.ARROW, Component.text("返回成员管理", NamedTextColor.WHITE), List.of(), false));
-        if (page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem("上一页"));
-        inventory.setItem(PAGE_SLOT, pageItem(page, pages, candidates.size(), "名离线玩家"));
-        if (page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem("下一页"));
+        inventory.setItem(MANUAL_INPUT_SLOT, item(Material.NAME_TAG, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-063"), NamedTextColor.AQUA),
+                List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-064"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-065"), NamedTextColor.YELLOW)), false));
+        inventory.setItem(HISTORY_BACK_SLOT, item(Material.ARROW, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-039"), NamedTextColor.WHITE), List.of(), false));
+        if (page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-011")));
+        inventory.setItem(PAGE_SLOT, pageItem(page, pages, candidates.size(), GuiConfig.text("team-gui-teammanagementmenu.text-066")));
+        if (page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("team-gui-teammanagementmenu.text-012")));
         inventory.setItem(CLOSE_SLOT, closeItem());
         player.openInventory(inventory);
     }
@@ -394,13 +396,13 @@ public final class TeamManagementMenu implements Listener {
         holder.confirmation = action;
         holder.memberName = memberName;
         holder.selectedPlayerUuid = selectedPlayerUuid;
-        Inventory inventory = Bukkit.createInventory(holder, 27, title("确认操作", NamedTextColor.RED));
+        Inventory inventory = Bukkit.createInventory(holder, 27, title(GuiConfig.text("team-gui-teammanagementmenu.text-067"), NamedTextColor.RED));
         holder.inventory = inventory;
         Component subject = switch (action) {
-            case DELETE_TEAM -> Component.text("删除队伍 " + teamName, NamedTextColor.RED);
-            case REMOVE_MEMBER -> Component.text("移除成员 " + memberName, NamedTextColor.RED);
-            case TELEPORT_ALL -> Component.text("传送全部队伍", NamedTextColor.LIGHT_PURPLE);
-            case MOVE_MEMBER -> Component.text("将 " + memberName + " 调至 " + teamName, NamedTextColor.GOLD);
+            case DELETE_TEAM -> Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-068") + teamName, NamedTextColor.RED);
+            case REMOVE_MEMBER -> Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-069") + memberName, NamedTextColor.RED);
+            case TELEPORT_ALL -> Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-070"), NamedTextColor.LIGHT_PURPLE);
+            case MOVE_MEMBER -> Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-071") + memberName + GuiConfig.text("team-gui-teammanagementmenu.text-072") + teamName, NamedTextColor.GOLD);
         };
         Material subjectMaterial = switch (action) {
             case DELETE_TEAM -> Material.TNT;
@@ -411,14 +413,14 @@ public final class TeamManagementMenu implements Listener {
         inventory.setItem(13, item(subjectMaterial,
                 subject.decorate(TextDecoration.BOLD), confirmationLore(action, teamName), false));
         inventory.setItem(CONFIRM_SLOT, item(Material.LIME_CONCRETE,
-                Component.text("确认", NamedTextColor.GREEN).decorate(TextDecoration.BOLD), List.of(), false));
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-073"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD), List.of(), false));
         inventory.setItem(CANCEL_SLOT, item(Material.RED_CONCRETE,
-                Component.text("取消", NamedTextColor.RED), List.of(), false));
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-074"), NamedTextColor.RED), List.of(), false));
         player.openInventory(inventory);
     }
 
     private void openTextInput(@NotNull Player player, @NotNull InputPurpose purpose, @Nullable String teamName) {
-        String prompt = purpose == InputPurpose.CREATE_TEAM ? "输入队伍内部名称" : "输入要添加的玩家名";
+        String prompt = purpose == InputPurpose.CREATE_TEAM ? GuiConfig.text("team-gui-teammanagementmenu.text-075") : GuiConfig.text("team-gui-teammanagementmenu.text-076");
         InputSession previous = inputs.remove(player.getUniqueId());
         if (previous != null) previous.inventory.clear();
         AnvilView view = MenuType.ANVIL.create(player, title(prompt, NamedTextColor.GOLD));
@@ -427,7 +429,7 @@ public final class TeamManagementMenu implements Listener {
         InputSession session = new InputSession(purpose, teamName, inventory);
         inputs.put(player.getUniqueId(), session);
         inventory.setFirstItem(item(Material.PAPER, Component.text(prompt, NamedTextColor.YELLOW),
-                List.of(Component.text("在上方重命名栏输入，再点击右侧结果格", NamedTextColor.GRAY)), false));
+                List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-077"), NamedTextColor.GRAY)), false));
         view.setMaximumRepairCost(0);
         view.setRepairCost(0);
     }
@@ -442,7 +444,7 @@ public final class TeamManagementMenu implements Listener {
             if (!player.hasPermission("cc.admin")) {
                 finishInput(player, input);
                 player.closeInventory();
-                Utils.sendAdminError(player, "你已没有使用队伍管理界面的权限。");
+                Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-078"));
                 return;
             }
             if (event.getRawSlot() == 2) submitInput(player, input, (AnvilView) event.getView());
@@ -453,7 +455,7 @@ public final class TeamManagementMenu implements Listener {
         if (!holder.viewer.equals(player.getUniqueId()) || event.getClickedInventory() != top) return;
         if (!player.hasPermission("cc.admin")) {
             player.closeInventory();
-            Utils.sendAdminError(player, "你已没有使用队伍管理界面的权限。");
+            Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-078"));
             return;
         }
         handleMenuClick(player, holder, event.getRawSlot());
@@ -537,8 +539,8 @@ public final class TeamManagementMenu implements Listener {
         ChampionshipTeam team = plugin.getTeamManager().getTeam(holder.teamName);
         boolean full = team == null || team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS;
         if ((slot == ADD_ONLINE_SLOT || slot == ADD_HISTORY_SLOT) && full) {
-            Utils.sendAdminError(player, team == null ? "队伍已不存在。"
-                    : "队伍人数已达到上限 &#fff566" + CCConfig.TEAM_MAX_MEMBERS);
+            Utils.sendAdminError(player, team == null ? GuiConfig.text("team-gui-teammanagementmenu.text-079")
+                    : GuiConfig.text("team-gui-teammanagementmenu.text-034") + CCConfig.TEAM_MAX_MEMBERS);
             openTeam(player, holder.teamName, holder.page);
         } else if (slot == ADD_ONLINE_SLOT) openAddPlayer(player, holder.teamName, 0);
         else if (slot == ADD_HISTORY_SLOT) openKnownPlayers(player, holder.teamName, 0);
@@ -606,24 +608,24 @@ public final class TeamManagementMenu implements Listener {
         String selectedColor = holder.targets.get(slot);
         if (selectedColor != null) {
             if (plugin.getTeamManager().getTeam(holder.teamName) != null) {
-                Utils.sendAdminError(player, "队伍名称已存在：&#fff566" + holder.teamName);
+                Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-080") + holder.teamName);
                 openOverview(player, 0);
                 return;
             }
             boolean colorUsed = plugin.getTeamManager().getTeamList().stream()
                     .anyMatch(team -> team.getColorName().equalsIgnoreCase(selectedColor));
             if (colorUsed) {
-                Utils.sendAdminError(player, "该颜色刚刚被其他队伍占用，请重新选择。");
+                Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-081"));
                 openColorPicker(player, holder.teamName);
                 return;
             }
             boolean created = plugin.getTeamManager().addTeam(holder.teamName, selectedColor, COLOR_HEX.get(selectedColor));
             if (created) {
-                Utils.sendAdminSuccess(player, "已创建队伍 " + COLOR_HEX.get(selectedColor) + holder.teamName);
+                Utils.sendAdminSuccess(player, GuiConfig.text("team-gui-teammanagementmenu.text-082") + COLOR_HEX.get(selectedColor) + holder.teamName);
                 success(player);
                 openTeam(player, holder.teamName, 0);
             } else {
-                Utils.sendAdminError(player, "创建队伍失败，名称或颜色可能已被占用。");
+                Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-083"));
                 openOverview(player, 0);
             }
         } else if (slot == 31) openOverview(player, 0);
@@ -638,21 +640,21 @@ public final class TeamManagementMenu implements Listener {
         switch (holder.confirmation) {
             case DELETE_TEAM -> {
                 if (plugin.getTeamManager().getTeam(holder.teamName) == null) {
-                    Utils.sendAdminError(player, "队伍已不存在：&#fff566" + holder.teamName);
+                    Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-016") + holder.teamName);
                 } else if (plugin.getTeamManager().deleteTeam(holder.teamName)) {
-                    Utils.sendAdminSuccess(player, "已删除队伍 &#fff566" + holder.teamName);
+                    Utils.sendAdminSuccess(player, GuiConfig.text("team-gui-teammanagementmenu.text-084") + holder.teamName);
                     success(player);
                 } else {
-                    Utils.sendAdminError(player, "无法删除队伍；队伍可能正在游戏中。");
+                    Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-085"));
                 }
                 openOverview(player, 0);
             }
             case REMOVE_MEMBER -> {
                 if (plugin.getTeamManager().deleteTeamMember(holder.memberName, holder.teamName)) {
-                    Utils.sendAdminSuccess(player, "已从 &#fff566" + holder.teamName + " &#ededed移除玩家 &#fff566" + holder.memberName);
+                    Utils.sendAdminSuccess(player, GuiConfig.text("team-gui-teammanagementmenu.text-086") + holder.teamName + GuiConfig.text("team-gui-teammanagementmenu.text-087") + holder.memberName);
                     success(player);
                 } else {
-                    Utils.sendAdminError(player, "移除失败；队伍或成员状态可能已经改变。");
+                    Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-088"));
                 }
                 openTeam(player, holder.teamName, holder.page);
             }
@@ -662,7 +664,7 @@ public final class TeamManagementMenu implements Listener {
                     players += team.getOnlinePlayers().size();
                     team.teleportAllPlayers(player.getLocation());
                 }
-                Utils.sendAdminSuccess(player, "已将全部队伍的 &#fff566" + players + " &#ededed名在线成员传送到当前位置。");
+                Utils.sendAdminSuccess(player, GuiConfig.text("team-gui-teammanagementmenu.text-089") + players + GuiConfig.text("team-gui-teammanagementmenu.text-090"));
                 success(player);
                 openOverview(player, holder.page);
             }
@@ -676,17 +678,17 @@ public final class TeamManagementMenu implements Listener {
         String text = renameText == null ? "" : renameText.trim();
         if (input.purpose == InputPurpose.CREATE_TEAM) {
             if (text.isBlank()) {
-                Utils.sendAdminError(player, "队伍名称不能为空。");
+                Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-091"));
                 return;
             }
             if (text.length() > 64 || text.chars().anyMatch(Character::isISOControl)) {
-                Utils.sendAdminError(player, "队伍名称不能超过 64 个字符，也不能包含控制字符。");
+                Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-092"));
                 return;
             }
             boolean exists = plugin.getTeamManager().getTeamList().stream()
                     .anyMatch(team -> team.getName().equalsIgnoreCase(text));
             if (exists) {
-                Utils.sendAdminError(player, "队伍名称已存在：&#fff566" + text);
+                Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-080") + text);
                 return;
             }
             finishInput(player, input);
@@ -695,7 +697,7 @@ public final class TeamManagementMenu implements Listener {
         }
 
         if (!text.matches("[A-Za-z0-9_]{1,16}")) {
-            Utils.sendAdminError(player, "请输入有效的 Minecraft 玩家名（1–16 位字母、数字或下划线）。");
+            Utils.sendAdminError(player, GuiConfig.text("team-gui-teammanagementmenu.text-093"));
             return;
         }
         String teamName = input.teamName;
@@ -712,19 +714,19 @@ public final class TeamManagementMenu implements Listener {
                            boolean keepSelectorOpen, int selectorPage) {
         ChampionshipTeam team = plugin.getTeamManager().getTeam(teamName);
         if (team == null) {
-            Utils.sendAdminError(admin, "队伍已不存在：&#fff566" + teamName);
+            Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-016") + teamName);
             openOverview(admin, 0);
             return;
         }
         boolean added = false;
         if (team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
-            Utils.sendAdminError(admin, "队伍人数已达到上限 &#fff566" + CCConfig.TEAM_MAX_MEMBERS);
+            Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-034") + CCConfig.TEAM_MAX_MEMBERS);
         } else if (plugin.getTeamManager().addTeamMember(memberName, team)) {
-            Utils.sendAdminSuccess(admin, "已将玩家 &#fff566" + memberName + " &#ededed加入 " + team.getColorCode() + team.getName());
+            Utils.sendAdminSuccess(admin, GuiConfig.text("team-gui-teammanagementmenu.text-094") + memberName + GuiConfig.text("team-gui-teammanagementmenu.text-095") + team.getColorCode() + team.getName());
             success(admin);
             added = true;
         } else {
-            Utils.sendAdminError(admin, "添加失败；玩家可能已在队伍中，或存在同名身份冲突。");
+            Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-096"));
         }
         if (keepSelectorOpen && team.getMembers().size() < CCConfig.TEAM_MAX_MEMBERS) {
             openAddPlayer(admin, teamName, added ? selectorPage : 0);
@@ -741,16 +743,16 @@ public final class TeamManagementMenu implements Listener {
             return;
         }
         if (team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
-            Utils.sendAdminError(admin, "队伍人数已达到上限 &#fff566" + CCConfig.TEAM_MAX_MEMBERS);
+            Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-034") + CCConfig.TEAM_MAX_MEMBERS);
             openTeam(admin, teamName, 0);
         } else if (plugin.getTeamManager().addTeamMember(memberName, team)) {
-            Utils.sendAdminSuccess(admin, "已将离线玩家 &#fff566" + memberName + " &#ededed加入 "
+            Utils.sendAdminSuccess(admin, GuiConfig.text("team-gui-teammanagementmenu.text-097") + memberName + GuiConfig.text("team-gui-teammanagementmenu.text-095")
                     + team.getColorCode() + team.getName());
             success(admin);
             if (team.getMembers().size() < CCConfig.TEAM_MAX_MEMBERS) openKnownPlayers(admin, teamName, selectorPage);
             else openTeam(admin, teamName, 0);
         } else {
-            Utils.sendAdminError(admin, "添加失败；玩家可能刚刚被分队，或存在身份冲突。");
+            Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-098"));
             openKnownPlayers(admin, teamName, selectorPage);
         }
     }
@@ -759,32 +761,32 @@ public final class TeamManagementMenu implements Listener {
                             @NotNull String targetTeamName, int returnPage) {
         ChampionshipTeam target = plugin.getTeamManager().getTeam(targetTeamName);
         if (target == null) {
-            Utils.sendAdminError(admin, "目标队伍已不存在：&#fff566" + targetTeamName);
+            Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-099") + targetTeamName);
             openQuickPlayers(admin, returnPage);
             return;
         }
         TeamManager.MemberMoveResult result = plugin.getTeamManager().moveTeamMember(uuid, memberName, target);
         switch (result) {
             case SUCCESS -> {
-                Utils.sendAdminSuccess(admin, "已将玩家 &#fff566" + memberName + " &#ededed调至 "
+                Utils.sendAdminSuccess(admin, GuiConfig.text("team-gui-teammanagementmenu.text-094") + memberName + GuiConfig.text("team-gui-teammanagementmenu.text-100")
                         + target.getColorCode() + target.getName());
                 success(admin);
                 openQuickPlayers(admin, returnPage);
             }
             case SAME_TEAM -> {
-                Utils.sendAdminError(admin, "玩家已经在该队伍中。");
+                Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-101"));
                 openTargetTeams(admin, uuid, memberName, returnPage);
             }
             case TARGET_FULL -> {
-                Utils.sendAdminError(admin, "目标队伍人数已满。");
+                Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-102"));
                 openTargetTeams(admin, uuid, memberName, returnPage);
             }
             case TEAM_ACTIVE -> {
-                Utils.sendAdminError(admin, "玩家当前队伍或目标队伍正在游戏中，不能调队。");
+                Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-103"));
                 openTargetTeams(admin, uuid, memberName, returnPage);
             }
             case INVALID_PLAYER, FAILED -> {
-                Utils.sendAdminError(admin, "调队失败，数据库或玩家身份状态可能已改变。");
+                Utils.sendAdminError(admin, GuiConfig.text("team-gui-teammanagementmenu.text-104"));
                 openTargetTeams(admin, uuid, memberName, returnPage);
             }
         }
@@ -798,8 +800,8 @@ public final class TeamManagementMenu implements Listener {
         }
         int online = team.getOnlinePlayers().size();
         team.teleportAllPlayers(admin.getLocation());
-        Utils.sendAdminSuccess(admin, "已将 " + team.getColorCode() + team.getName()
-                + " &#ededed的 &#fff566" + online + " &#ededed名在线成员传送到当前位置。");
+        Utils.sendAdminSuccess(admin, GuiConfig.text("team-gui-teammanagementmenu.text-105") + team.getColorCode() + team.getName()
+                + GuiConfig.text("team-gui-teammanagementmenu.text-106") + online + GuiConfig.text("team-gui-teammanagementmenu.text-090"));
         success(admin);
         openTeam(admin, teamName, 0);
     }
@@ -832,13 +834,13 @@ public final class TeamManagementMenu implements Listener {
         int online = team.getOnlinePlayers().size();
         int members = team.getMembers().size();
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("在线  ", NamedTextColor.GRAY)
-                .append(Component.text(online + " / " + members, online > 0 ? NamedTextColor.GREEN : NamedTextColor.DARK_GRAY)));
-        lore.add(Component.text("颜色  ", NamedTextColor.GRAY)
+        lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-107"), NamedTextColor.GRAY)
+                .append(Component.text(online + "/" + members, online > 0 ? NamedTextColor.GREEN : NamedTextColor.DARK_GRAY)));
+        lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-108"), NamedTextColor.GRAY)
                 .append(Component.text(COLOR_LABELS.getOrDefault(team.getColorName().toLowerCase(Locale.ROOT), team.getColorName()), teamColor(team))));
-        lore.add(Component.text("内部 ID  ", NamedTextColor.GRAY).append(Component.text(team.getId(), NamedTextColor.WHITE)));
+        lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-109"), NamedTextColor.GRAY).append(Component.text(team.getId(), NamedTextColor.WHITE)));
         lore.add(Component.empty());
-        lore.add(Component.text("点击管理成员与队伍", NamedTextColor.YELLOW));
+        lore.add(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-110"), NamedTextColor.YELLOW));
         return item(material(team.getColorName() + "_WOOL", Material.WHITE_WOOL),
                 Component.text(team.getName(), teamColor(team)).decorate(TextDecoration.BOLD), lore, false);
     }
@@ -847,8 +849,8 @@ public final class TeamManagementMenu implements Listener {
         NamedTextColor status = member.online ? NamedTextColor.GREEN : NamedTextColor.GRAY;
         return playerHead(member.uuid, member.name,
                 Component.text(member.name, status).decorate(TextDecoration.BOLD),
-                List.of(Component.text(member.online ? "● 在线" : "○ 离线", status),
-                        Component.empty(), Component.text("点击移出队伍", NamedTextColor.RED)));
+                List.of(Component.text(member.online ? GuiConfig.text("team-gui-teammanagementmenu.text-111") : GuiConfig.text("team-gui-teammanagementmenu.text-112"), status),
+                        Component.empty(), Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-113"), NamedTextColor.RED)));
     }
 
     private static ItemStack playerHead(@NotNull UUID uuid, @NotNull String profileName,
@@ -864,15 +866,15 @@ public final class TeamManagementMenu implements Listener {
     private static List<Component> confirmationLore(@NotNull Confirmation action, @Nullable String teamName) {
         return switch (action) {
             case DELETE_TEAM -> List.of(
-                    Component.text("队伍及全部成员关系会被永久删除", NamedTextColor.GRAY),
-                    Component.text("正在参加游戏的队伍无法删除", NamedTextColor.DARK_GRAY));
-            case REMOVE_MEMBER -> List.of(Component.text("玩家将立即失去该队伍身份", NamedTextColor.GRAY));
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-114"), NamedTextColor.GRAY),
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-115"), NamedTextColor.DARK_GRAY));
+            case REMOVE_MEMBER -> List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-116"), NamedTextColor.GRAY));
             case TELEPORT_ALL -> List.of(
-                    Component.text("所有队伍的在线成员会到达你的位置", NamedTextColor.GRAY),
-                    Component.text("当前所在场地：" + (teamName == null ? "管理员位置" : teamName), NamedTextColor.DARK_GRAY));
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-117"), NamedTextColor.GRAY),
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-118") + (teamName == null ? GuiConfig.text("team-gui-teammanagementmenu.text-119") : teamName), NamedTextColor.DARK_GRAY));
             case MOVE_MEMBER -> List.of(
-                    Component.text("旧队伍关系会在数据库事务中原子替换", NamedTextColor.GRAY),
-                    Component.text("任一队伍正在比赛时会拒绝操作", NamedTextColor.DARK_GRAY));
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-120"), NamedTextColor.GRAY),
+                    Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-121"), NamedTextColor.DARK_GRAY));
         };
     }
 
@@ -883,8 +885,8 @@ public final class TeamManagementMenu implements Listener {
 
     private static ItemStack pageItem(int page, int pages, int count, @NotNull String unit) {
         return item(Material.PAPER,
-                Component.text("第 " + (page + 1) + " / " + pages + " 页", NamedTextColor.AQUA),
-                List.of(Component.text("共 " + count + " " + unit, NamedTextColor.GRAY)), false);
+                Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-122") + (page + 1) + "/" + pages + GuiConfig.text("team-gui-teammanagementmenu.text-123"), NamedTextColor.AQUA),
+                List.of(Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-124") + count + " " + unit, NamedTextColor.GRAY)), false);
     }
 
     private static ItemStack navigationItem(@NotNull String label) {
@@ -892,7 +894,7 @@ public final class TeamManagementMenu implements Listener {
     }
 
     private static ItemStack closeItem() {
-        return item(Material.BARRIER, Component.text("关闭", NamedTextColor.RED), List.of(), false);
+        return item(Material.BARRIER, Component.text(GuiConfig.text("team-gui-teammanagementmenu.text-125"), NamedTextColor.RED), List.of(), false);
     }
 
     private static ItemStack item(@NotNull Material material, @NotNull Component name,
@@ -913,7 +915,7 @@ public final class TeamManagementMenu implements Listener {
     }
 
     private static Component teamTitle(@NotNull ChampionshipTeam team, @NotNull String suffix) {
-        return Component.text(team.getName(), teamColor(team)).append(Component.text(" · " + suffix, NamedTextColor.WHITE))
+        return Component.text(team.getName(), teamColor(team)).append(Component.text(GuiConfig.text("common.separator") + suffix, NamedTextColor.WHITE))
                 .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false);
     }
 
@@ -967,12 +969,12 @@ public final class TeamManagementMenu implements Listener {
 
     private static Map<String, String> createColorLabels() {
         return Map.ofEntries(
-                Map.entry("white", "白色"), Map.entry("orange", "橙色"), Map.entry("magenta", "品红色"),
-                Map.entry("light_blue", "淡蓝色"), Map.entry("yellow", "黄色"), Map.entry("lime", "黄绿色"),
-                Map.entry("pink", "粉红色"), Map.entry("gray", "灰色"), Map.entry("light_gray", "淡灰色"),
-                Map.entry("cyan", "青色"), Map.entry("purple", "紫色"), Map.entry("blue", "蓝色"),
-                Map.entry("brown", "棕色"), Map.entry("green", "绿色"), Map.entry("red", "红色"),
-                Map.entry("black", "黑色"));
+                Map.entry("white", GuiConfig.text("team-gui-teammanagementmenu.text-126")), Map.entry("orange", GuiConfig.text("team-gui-teammanagementmenu.text-127")), Map.entry("magenta", GuiConfig.text("team-gui-teammanagementmenu.text-128")),
+                Map.entry("light_blue", GuiConfig.text("team-gui-teammanagementmenu.text-129")), Map.entry("yellow", GuiConfig.text("team-gui-teammanagementmenu.text-130")), Map.entry("lime", GuiConfig.text("team-gui-teammanagementmenu.text-131")),
+                Map.entry("pink", GuiConfig.text("team-gui-teammanagementmenu.text-132")), Map.entry("gray", GuiConfig.text("team-gui-teammanagementmenu.text-133")), Map.entry("light_gray", GuiConfig.text("team-gui-teammanagementmenu.text-134")),
+                Map.entry("cyan", GuiConfig.text("team-gui-teammanagementmenu.text-135")), Map.entry("purple", GuiConfig.text("team-gui-teammanagementmenu.text-136")), Map.entry("blue", GuiConfig.text("team-gui-teammanagementmenu.text-137")),
+                Map.entry("brown", GuiConfig.text("team-gui-teammanagementmenu.text-138")), Map.entry("green", GuiConfig.text("team-gui-teammanagementmenu.text-139")), Map.entry("red", GuiConfig.text("team-gui-teammanagementmenu.text-140")),
+                Map.entry("black", GuiConfig.text("team-gui-teammanagementmenu.text-141")));
     }
 
     private enum Screen { OVERVIEW, TEAM, ADD_PLAYER, KNOWN_PLAYER, QUICK_PLAYER, TARGET_TEAM, COLOR, CONFIRM }

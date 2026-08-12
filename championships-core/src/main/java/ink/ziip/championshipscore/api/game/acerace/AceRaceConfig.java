@@ -30,6 +30,13 @@ public class AceRaceConfig extends BaseGameConfig {
     @ConfigOption(path = "laps")
     private int laps;
 
+    /** Physical boundary of this course inside Ace Race's shared world. */
+    @ConfigOption(path = "area-pos1", nullable = true)
+    private Vector areaPos1;
+
+    @ConfigOption(path = "area-pos2", nullable = true)
+    private Vector areaPos2;
+
     @ConfigOption(path = "spectator-spawn-point", nullable = true)
     private Location spectatorSpawnPoint;
 
@@ -95,14 +102,12 @@ public class AceRaceConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 17;
+        return 18;
     }
 
     @Override
     protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
                                                   @NotNull YamlConfiguration migratedConfiguration) {
-        migratedConfiguration.set("area-pos1", null);
-        migratedConfiguration.set("area-pos2", null);
         migratedConfiguration.set("void-y", null);
         // Version 11 briefly stored one shared line. Preserve that map by importing it as both
         // gates; the runtime still uses the old one-line direction rule until an admin separates them.
@@ -133,6 +138,13 @@ public class AceRaceConfig extends BaseGameConfig {
         migratedConfiguration.set("points.bonuses.fourth-to-ninth", 140);
         migratedConfiguration.set("points.bonuses.tenth-to-fourteenth", 80);
         migratedConfiguration.set("points.bonuses.fifteenth-to-nineteenth", 35);
+        // Version 18 changed Ace Race from whole-world ownership to independent course regions in
+        // the shared acerace world. Existing maps without a boundary must be reviewed in prepare;
+        // older configurations which already had a valid boundary keep it.
+        if (oldConfiguration.getVector("area-pos1") == null
+                || oldConfiguration.getVector("area-pos2") == null) {
+            migratedConfiguration.set("prepare.dirty", true);
+        }
         // Version 10 introduced a required finish-line crossing, replacing the obsolete rule that
         // the final progress point completes a lap. These bundled rules must supersede the old template.
         migratedConfiguration.set("rules", List.of(
@@ -236,18 +248,6 @@ public class AceRaceConfig extends BaseGameConfig {
             migrated.add("acerace:" + x + ":" + y + ":" + z + ":0.0:0.0");
         }
         migratedConfiguration.set("respawn-points", migrated);
-    }
-
-    /** Ace Race owns its whole world, so it deliberately has no per-map bounding box. */
-    @Override
-    public Vector getAreaPos1() {
-        return null;
-    }
-
-    /** Ace Race owns its whole world, so it deliberately has no per-map bounding box. */
-    @Override
-    public Vector getAreaPos2() {
-        return null;
     }
 
     /** Supplies a mutable root for the guided progress-point editor. */

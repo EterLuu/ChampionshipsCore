@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
@@ -21,8 +23,8 @@ final class BuildMartStampStep extends PrepareStep {
     private final File base;
 
     BuildMartStampStep(File base) {
-        super("stamp", Component.text("生成队伍基地"),
-                Component.text("输入可参赛队伍数；0 号只保留为模板，实际基地从 1 号开始"), Material.DISPENSER,
+        super("stamp", Component.text(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-001")),
+                Component.text(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-002")), Material.DISPENSER,
                 StepCaptureType.STAMP);
         this.base = base;
     }
@@ -32,18 +34,18 @@ final class BuildMartStampStep extends PrepareStep {
     }
 
     @Override public String stamp(@NotNull PrepareSession session, @NotNull Player player, int count) {
-        if (count < 1) return Utils.formatAdminError("队伍数必须大于 0。");
-        if (!base.isFile()) return Utils.formatAdminError("请先保存 0 号基地模板。");
+        if (count < 1) return Utils.formatAdminError(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-003"));
+        if (!base.isFile()) return Utils.formatAdminError(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-004"));
         World world = Bukkit.getWorld(session.getTarget().worldName());
-        if (world == null) return Utils.formatAdminError("地图世界尚未加载。");
+        if (world == null) return Utils.formatAdminError(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-005"));
         if (!session.getTarget().canSaveMap())
-            return Utils.formatAdminError("同一地图仍有游戏实例运行，无法生成。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-006"));
         BuildMartConfig config = (BuildMartConfig) session.getTarget().config();
         if (config.getHubPos1() == null || config.getHubPos2() == null)
-            return Utils.formatAdminError("请先设置资源大厅边界。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-007"));
         Vector baseOrigin = config.getBaseSourceOrigin();
         if (baseOrigin == null)
-            return Utils.formatAdminError("请重新保存一次 0 号基地模板，以记录模板在世界中的位置。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-008"));
         try {
             Vector baseSize = session.getPlugin().getWorldEditManager().getSchematicDimensions(base);
             var previousGrid = config.getBaseGrid();
@@ -57,14 +59,14 @@ final class BuildMartStampStep extends PrepareStep {
             // Index 0 remains the editable source template. Indices 1..N are the bases players actually use.
             ArenaPreparer.stampAdditionalCopies(session.getPlugin(), world, base, grid, count + 1);
         } catch (Exception e) {
-            return Utils.formatAdminError("生成地图失败：&#fff566" + e.getMessage());
+            return Utils.formatAdminError(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-009") + e.getMessage());
         }
         config.setBaseCount(count);
         session.getTarget().config().markPrepareWorldBuilt();
         session.setWorldConfirmed(true);
         session.setStamped(true);
         player.teleport(config.getBaseGrid().origin(0).toLocation(world));
-        return Utils.formatAdminSuccess("已保留 0 号基地模板，并生成 &#fff566" + count
-                + " &#ededed个实际队伍基地；完成点位后请发布。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-buildmart-buildmartstampstep.text-010") + count
+                + GuiConfig.text("prepare-buildmart-buildmartstampstep.text-011"));
     }
 }

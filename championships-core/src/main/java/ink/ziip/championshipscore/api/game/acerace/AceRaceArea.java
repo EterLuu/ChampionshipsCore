@@ -21,7 +21,6 @@ import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.Sound;
-import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.EnderCrystal;
@@ -44,6 +43,7 @@ import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,8 +59,14 @@ import java.util.UUID;
 public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final long LAUNCH_PAD_DELAY_TICKS = 2L;
     private static final int JUMP_BOOST_DURATION_TICKS = 14;
-    private static final int SPEED_BOOST_DURATION_TICKS = 100;
-    private static final int RED_SPEED_DURATION_TICKS = 16;
+    private static final int SPEED_BOOST_DURATION_TICKS = 80;
+    private static final int RED_SPEED_DURATION_TICKS = 10;
+    private static final int ENVIRONMENTAL_EFFECT_DURATION_TICKS = 40;
+    private static final int BASE_SPEED_AMPLIFIER = 0;
+    private static final int YELLOW_SPEED_AMPLIFIER = 2;
+    private static final int RED_SPEED_AMPLIFIER = 7;
+    private static final double MIN_LAUNCH_VERTICAL_MULTIPLIER = 0.8D;
+    private static final double MAX_LAUNCH_VERTICAL_MULTIPLIER = 1.2D;
     private static final double RIPTIDE_EXTRA_MULTIPLIER = 0.03D;
     private static final int SPEED_STATION_RADIUS = 2;
     private static final int WATER_SPEED_STATION_RADIUS = 4;
@@ -583,6 +589,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void beginGameProgress() {
         scheduleRacerVisibilityUnlock();
         giveTeamArmor();
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) applyBaseSpeed(player, true);
+        }
         progressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             refreshEnvironmentalEffects();
             timer = seconds;
@@ -601,6 +611,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (previous == null) previous = current;
         // Apply stations before fall recovery as well: a fast jump into a water ring may cross the
         // station before the next movement event that would otherwise refresh its short effect.
+        handleRedSpeedStation(player, previous, current);
         handleEnvironmentalEffects(player);
         if (hasReachedActiveFallHeight(player) || notInArea(current)) {
             returnToLatestRespawnPoint(player);
@@ -718,6 +729,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     /** Starts a new lap without carrying any ordered gate or respawn marker state across the line. */
     private void resetLapProgress(@NotNull Player player, @NotNull Location movementBaseline) {
         UUID uuid = player.getUniqueId();
+        applyBaseSpeed(player, true);
         nextProgressPoint.put(uuid, 0);
         activeFallHeights.put(uuid, getGameConfig().getStartFallY());
         applyProgressPointEquipment(player, AceRaceEquipment.NONE);
@@ -749,33 +761,33 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     private void handleTrackBlockFeature(@NotNull Player player) {
-        Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
-        Material material = block.getType();
-        if (!isTrackFeature(material)) {
+        Block block = findTrackFeatureBlock(player.getLocation());
+        if (block == null) {
             featureContacts.remove(player.getUniqueId());
-            cancelPendingLaunchPad(player.getUniqueId());
             return;
         }
-        if (!isLaunchPad(material)) cancelPendingLaunchPad(player.getUniqueId());
+        Material material = block.getType();
         TrackFeatureContact featureContact = TrackFeatureContact.from(block);
         if (featureContact.equals(featureContacts.put(player.getUniqueId(), featureContact))) return;
 
         switch (material) {
             case YELLOW_GLAZED_TERRACOTTA -> {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED,
-                        SPEED_BOOST_DURATION_TICKS, 2, true, false, false));
+                        SPEED_BOOST_DURATION_TICKS, YELLOW_SPEED_AMPLIFIER, true, false, false));
                 player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.6F, 1.5F);
                 Utils.sendActionBar(player, MessageConfig.ACE_RACE_SPEED_BOOST);
             }
             case LIME_GLAZED_TERRACOTTA -> {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST,
-                        JUMP_BOOST_DURATION_TICKS, 6, true, false, false));
+                        JUMP_BOOST_DURATION_TICKS, 7, true, false, false));
                 player.playSound(player.getLocation(), Sound.BLOCK_SLIME_BLOCK_FALL, 0.8F, 1.2F);
                 Utils.sendActionBar(player, MessageConfig.ACE_RACE_JUMP_PAD);
             }
-            case RED_WOOL -> scheduleLaunchPlayer(player, material, 2.05D, 0.75D, 1.1F,
+            case RED_WOOL -> scheduleLaunchPlayer(player, launchHorizontalVelocity(material),
+                    launchBaseVerticalVelocity(material), 1.1F,
                     LAUNCH_PAD_DELAY_TICKS);
-            case ORANGE_WOOL -> scheduleLaunchPlayer(player, material, 4D, 1.5D, 1.35F,
+            case ORANGE_WOOL -> scheduleLaunchPlayer(player, launchHorizontalVelocity(material),
+                    launchBaseVerticalVelocity(material), 1.35F,
                     LAUNCH_PAD_DELAY_TICKS);
             default -> {
             }
@@ -793,10 +805,36 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         return material == Material.RED_WOOL || material == Material.ORANGE_WOOL;
     }
 
+    static double launchHorizontalVelocity(@NotNull Material material) {
+        return switch (material) {
+            case RED_WOOL -> 2D;
+            case ORANGE_WOOL -> 4D;
+            default -> throw new IllegalArgumentException("Not an Ace Race launch pad: " + material);
+        };
+    }
+
+    static double launchBaseVerticalVelocity(@NotNull Material material) {
+        return switch (material) {
+            case RED_WOOL -> 0.75D;
+            case ORANGE_WOOL -> 1.5D;
+            default -> throw new IllegalArgumentException("Not an Ace Race launch pad: " + material);
+        };
+    }
+
+    private static @Nullable Block findTrackFeatureBlock(@NotNull Location location) {
+        Block playerBlock = location.getBlock();
+        Block directlyBelow = playerBlock.getRelative(0, -1, 0);
+        if (isTrackFeature(directlyBelow.getType())) return directlyBelow;
+        Block twoBlocksBelow = playerBlock.getRelative(0, -2, 0);
+        if (twoBlocksBelow.getType() == Material.YELLOW_GLAZED_TERRACOTTA) return twoBlocksBelow;
+        return null;
+    }
+
     public void suppressLaunchPadJump(@NotNull Player player, @NotNull Location jumpOrigin) {
+        Block launchPad = jumpOrigin.getBlock().getRelative(0, -1, 0);
         if (getGameStageEnum() != GameStageEnum.PROGRESS || notAreaPlayer(player)
                 || finishedPlayers.contains(player.getUniqueId())
-                || !isLaunchPad(jumpOrigin.getBlock().getRelative(BlockFace.DOWN).getType())) return;
+                || !isLaunchPad(launchPad.getType())) return;
 
         // Cancelling PlayerJumpEvent makes Paper move the player back to the jump origin. Around a
         // delayed pad launch that correction looks like the pad has pulled the player backwards.
@@ -812,29 +850,43 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void refreshEnvironmentalEffects() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.getGameMode() != GameMode.SPECTATOR) handleEnvironmentalEffects(player);
+            if (player != null && !isManagedSpectator(player)) handleEnvironmentalEffects(player);
         }
     }
 
     private void handleEnvironmentalEffects(@NotNull Player player) {
-        boolean nearSpeedStation = isNearStation(player, Material.RED_GLAZED_TERRACOTTA,
-                SPEED_STATION_RADIUS, SPEED_STATION_RADIUS_SQUARED);
-        // The red terracotta commonly forms a ring around a water landing pool. While swimming, use
-        // the wider ring radius so a jump landing in the pool cannot skip the intended boost.
-        if (!nearSpeedStation && player.isInWater()) {
-            nearSpeedStation = isNearStation(player, Material.RED_GLAZED_TERRACOTTA,
-                    WATER_SPEED_STATION_RADIUS, WATER_SPEED_STATION_RADIUS_SQUARED);
+        if (player.isInWater()) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.CONDUIT_POWER,
+                    ENVIRONMENTAL_EFFECT_DURATION_TICKS, 0, true, false, false));
         }
-        if (nearSpeedStation) {
+        applyBaseSpeed(player, false);
+    }
+
+    private void handleRedSpeedStation(@NotNull Player player, @NotNull Location previous,
+                                       @NotNull Location current) {
+        int radius = player.isInWater() ? WATER_SPEED_STATION_RADIUS : SPEED_STATION_RADIUS;
+        double radiusSquared = player.isInWater()
+                ? WATER_SPEED_STATION_RADIUS_SQUARED : SPEED_STATION_RADIUS_SQUARED;
+        boolean currentlyNear = isNearStation(current, Material.RED_GLAZED_TERRACOTTA,
+                radius, radiusSquared);
+        boolean crossedStation = currentlyNear || isNearStationAlongPath(previous, current,
+                Material.RED_GLAZED_TERRACOTTA, radius, radiusSquared);
+        // Refresh while the player remains inside the station, and still grant one full pulse when a
+        // high-speed movement crosses the station between two movement packets.
+        if (crossedStation) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED,
-                    RED_SPEED_DURATION_TICKS, 7, true, false, false));
+                    RED_SPEED_DURATION_TICKS, RED_SPEED_AMPLIFIER, true, false, false));
             player.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE,
                     RED_SPEED_DURATION_TICKS, 0, true, false, false));
         }
-        if (player.isInWater()) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.CONDUIT_POWER, 20, 0, true, false, false));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20, 2, true, false, false));
-        }
+    }
+
+    private void applyBaseSpeed(@NotNull Player player, boolean replaceCurrent) {
+        PotionEffect current = player.getPotionEffect(PotionEffectType.SPEED);
+        if (!replaceCurrent && current != null) return;
+        if (replaceCurrent) player.removePotionEffect(PotionEffectType.SPEED);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED,
+                PotionEffect.INFINITE_DURATION, BASE_SPEED_AMPLIFIER, true, false, false));
     }
 
     /** Each progress segment owns the threshold at which fall recovery becomes active. */
@@ -938,6 +990,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             inventory.setChestplate(null);
         }
         if (equipment != AceRaceEquipment.TRIDENT) removeAllTridents(player);
+        if (equipment != AceRaceEquipment.DOLPHINS_GRACE) {
+            player.removePotionEffect(PotionEffectType.DOLPHINS_GRACE);
+        }
 
         if (equipment == AceRaceEquipment.ELYTRA) {
             if (chestplate == null || chestplate.getType() != Material.ELYTRA) {
@@ -946,6 +1001,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             }
         } else if (equipment == AceRaceEquipment.TRIDENT && !hasTrident(player)) {
             inventory.addItem(createRiptideTrident());
+        } else if (equipment == AceRaceEquipment.DOLPHINS_GRACE) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE,
+                    PotionEffect.INFINITE_DURATION, 0, true, false, false));
         }
     }
 
@@ -963,6 +1021,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             player.sendMessage(MessageConfig.ACE_RACE_RECEIVED_ELYTRA);
         } else if (equipment == AceRaceEquipment.TRIDENT) {
             player.sendMessage(MessageConfig.ACE_RACE_RECEIVED_TRIDENT);
+        } else if (equipment == AceRaceEquipment.DOLPHINS_GRACE) {
+            player.sendMessage(MessageConfig.ACE_RACE_RECEIVED_DOLPHINS_GRACE);
         }
     }
 
@@ -973,9 +1033,24 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         return false;
     }
 
-    private boolean isNearStation(@NotNull Player player, @NotNull Material stationMaterial,
+    private boolean isNearStationAlongPath(@NotNull Location previous, @NotNull Location current,
+                                           @NotNull Material stationMaterial, int radius,
+                                           double radiusSquared) {
+        if (previous.getWorld() == null || !previous.getWorld().equals(current.getWorld())) return false;
+        Vector movement = current.toVector().subtract(previous.toVector());
+        if (movement.lengthSquared() <= 1D) return false;
+        int samples = Math.min(128, Math.max(1, (int) Math.ceil(movement.length())));
+        // The current endpoint was already checked above. Only long movement packets need interior
+        // samples; ordinary sub-block movement therefore keeps the same single station lookup cost.
+        for (int sample = 1; sample < samples; sample++) {
+            Location location = previous.clone().add(movement.clone().multiply(sample / (double) samples));
+            if (isNearStation(location, stationMaterial, radius, radiusSquared)) return true;
+        }
+        return false;
+    }
+
+    private boolean isNearStation(@NotNull Location location, @NotNull Material stationMaterial,
                                   int radius, double radiusSquared) {
-        Location location = player.getLocation();
         if (location.getWorld() == null) return false;
         int x = location.getBlockX();
         int y = location.getBlockY();
@@ -996,10 +1071,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private void launchPlayer(@NotNull Player player, double horizontalVelocity, double verticalVelocity, float pitch) {
         Vector direction = player.getLocation().getDirection();
-        // Preserve the tuned horizontal range while letting pitch scale the pad's original lift:
-        // level aim keeps the old height, looking up approaches double height, and looking down
-        // approaches a flat launch without ever firing the racer into the pad.
-        double aimedVerticalVelocity = Math.max(0D, verticalVelocity * (1D + direction.getY()));
+        // Pitch still adjusts lift, but looking at the floor must retain a useful launch and looking
+        // straight up must not double the pad height.
+        double aimedVerticalVelocity = calculateAimedVerticalVelocity(verticalVelocity, direction.getY());
         direction.setY(0D);
         if (direction.lengthSquared() < 0.0001D) {
             double yawRadians = Math.toRadians(player.getLocation().getYaw());
@@ -1015,8 +1089,14 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         Utils.sendActionBar(player, MessageConfig.ACE_RACE_LAUNCH_PAD);
     }
 
-    private void scheduleLaunchPlayer(@NotNull Player player, @NotNull Material launchPad,
-                                      double horizontalVelocity, double verticalVelocity, float pitch,
+    static double calculateAimedVerticalVelocity(double verticalVelocity, double directionY) {
+        double aimedVelocity = verticalVelocity * (1D + directionY);
+        return Math.max(verticalVelocity * MIN_LAUNCH_VERTICAL_MULTIPLIER,
+                Math.min(verticalVelocity * MAX_LAUNCH_VERTICAL_MULTIPLIER, aimedVelocity));
+    }
+
+    private void scheduleLaunchPlayer(@NotNull Player player, double horizontalVelocity,
+                                      double verticalVelocity, float pitch,
                                       long delayTicks) {
         UUID uuid = player.getUniqueId();
         cancelPendingLaunchPad(uuid);
@@ -1024,8 +1104,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             pendingLaunchPadTasks.remove(uuid);
             if (getGameStageEnum() != GameStageEnum.PROGRESS || finishedPlayers.contains(uuid)
                     || !player.isOnline()) return;
-            Material currentBlock = player.getLocation().getBlock().getRelative(BlockFace.DOWN).getType();
-            if (currentBlock != launchPad) return;
             launchPlayer(player, horizontalVelocity, verticalVelocity, pitch);
         }, delayTicks);
         pendingLaunchPadTasks.put(uuid, task);
@@ -1068,6 +1146,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 .replace("%player%", Utils.formatPlayerName(player))
                 .replace("%place%", String.valueOf(place)));
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1F, 1.4F);
+        player.removePotionEffect(PotionEffectType.SPEED);
+        player.removePotionEffect(PotionEffectType.DOLPHINS_GRACE);
         applyProgressPointEquipment(player, AceRaceEquipment.NONE);
         restoreRacerVisibility(player);
         player.setGameMode(GameMode.SPECTATOR);
@@ -1173,6 +1253,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             if (getGameStageEnum() == GameStageEnum.PROGRESS) {
                 player.setGameMode(GameMode.ADVENTURE);
                 returnToLatestRespawnPoint(player);
+                restoreRacerEquipment(player);
+                applyBaseSpeed(player, true);
             }
         });
     }
@@ -1207,6 +1289,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 player.setGameMode(GameMode.ADVENTURE);
                 returnToLatestRespawnPoint(player);
                 restoreRacerEquipment(player);
+                applyBaseSpeed(player, true);
             }
         } else {
             releaseRacerVisibility(player);
@@ -1597,11 +1680,11 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         return getGameConfig().getSpectatorSpawnPoint();
     }
 
-    /** Ace Race is the sole owner of its world; it has no artificial course boundary. */
+    /** Keeps racers and spectators inside this course's region in the shared Ace Race world. */
     @Override
     public boolean notInArea(Location location) {
-        return location == null || location.getWorld() == null
-                || !getWorldName().equals(location.getWorld().getName());
+        return location == null || getGameConfig().getAreaPos1() == null
+                || getGameConfig().getAreaPos2() == null || super.notInArea(location);
     }
 
     @Override

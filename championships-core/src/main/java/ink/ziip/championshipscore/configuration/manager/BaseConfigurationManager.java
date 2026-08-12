@@ -31,18 +31,10 @@ public abstract class BaseConfigurationManager extends BaseManager {
     }
 
     public void reload() {
-        // Load defaults
+        // Each file is migrated before any of its disk values are validated or exposed to runtime.
         for (BaseConfigurationFile baseConfigurationFile : configs) {
-            baseConfigurationFile.initializeConfiguration(plugin.getFolder());
+            baseConfigurationFile.initializeConfiguration(plugin.getFolder(), isAutoUpgradeEnabled());
         }
-
-        // Check versions
-        for (BaseConfigurationFile baseConfigurationFile : configs) {
-            if (baseConfigurationFile.exists()) {
-                baseConfigurationFile.checkVersion(isAutoUpgradeEnabled());
-            }
-        }
-
     }
 
     /**

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.acerace.AceRaceConfig;
 import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceProgressPointListStep;
@@ -8,6 +10,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceMapPreviewSt
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceLineStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -21,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-/** Guided setup for the dedicated Ace Race world. */
+/** Guided setup for one course region in Ace Race's shared permanent world. */
 public final class AceRacePrepareFlow extends PrepareFlowDefinition {
     @Override public @NotNull String worldName(@NotNull SetupTarget target) { return target.worldName(); }
     @Override public boolean isInCorrectWorld(@NotNull Player player, @NotNull SetupTarget target) {
@@ -36,9 +39,16 @@ public final class AceRacePrepareFlow extends PrepareFlowDefinition {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
-                new StandAndRunStep("spectator_spawn", Component.text("旁观者出生点"), Component.text("站到旁观位置后点击"),
+                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("area-prepare-aceraceprepareflow.text-001")),
+                        Component.text(GuiConfig.text("area-prepare-aceraceprepareflow.text-002")), Material.BEDROCK,
+                        t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
+                        (t, value) -> {
+                            cfg(t).setAreaPos1(value[0]);
+                            cfg(t).setAreaPos2(value[1]);
+                        }, Utils.formatAdminSuccess(GuiConfig.text("area-prepare-aceraceprepareflow.text-003"))),
+                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("area-prepare-aceraceprepareflow.text-004")), Component.text(GuiConfig.text("area-prepare-aceraceprepareflow.text-005")),
                         Material.ENDER_EYE, t -> cfg(t).getSpectatorSpawnPoint() != null,
-                        (t, value) -> cfg(t).setSpectatorSpawnPoint(value), Utils.formatAdminSuccess("已设置旁观者出生点。")),
+                        (t, value) -> cfg(t).setSpectatorSpawnPoint(value), Utils.formatAdminSuccess(GuiConfig.text("area-prepare-aceraceprepareflow.text-006"))),
                 new AceRaceLineStep(true),
                 new AceRaceLineStep(false),
                 new AceRaceProgressPointListStep(),

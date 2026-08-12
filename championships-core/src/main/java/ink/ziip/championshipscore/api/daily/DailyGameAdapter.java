@@ -12,6 +12,8 @@ import java.util.List;
 public interface DailyGameAdapter {
     @NotNull GameTypeEnum game();
     @NotNull DailyRules rules();
+    /** Number of runtime slots that can accept a new session right now. */
+    int availableSlots();
     @Nullable StartResult start(@NotNull List<ChampionshipTeam> teams);
 
     record StartResult(String map, BaseGameInstance instance) {}

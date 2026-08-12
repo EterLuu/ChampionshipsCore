@@ -6,6 +6,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TeamManagerTransientRegistryTest {
@@ -19,6 +21,17 @@ class TeamManagerTransientRegistryTest {
         assertTrue(registry.add(first));
         assertTrue(registry.add(second));
         assertEquals(2, registry.size());
+    }
+
+    @Test
+    void resolvesAdministratorTeamSelectorsByNameOrNumericId() {
+        ChampionshipTeam team = new ChampionshipTeam(42, "OrangeOcelots", "ORANGE", "#ffaa00",
+                Set.of(UUID.fromString("00000000-0000-0000-0000-000000000003")), null);
+
+        assertSame(team, TeamManager.findTeam(Set.of(team), "OrangeOcelots"));
+        assertSame(team, TeamManager.findTeam(Set.of(team), "orangeocelots"));
+        assertSame(team, TeamManager.findTeam(Set.of(team), "42"));
+        assertNull(TeamManager.findTeam(Set.of(team), "43"));
     }
 
     private static ChampionshipTeam team(UUID member) {

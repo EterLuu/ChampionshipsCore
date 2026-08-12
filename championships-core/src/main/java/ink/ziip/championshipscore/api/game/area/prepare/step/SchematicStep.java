@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -56,10 +58,10 @@ public class SchematicStep extends PrepareStep {
         } catch (Exception e) {
             String detail = e.getMessage();
             if (detail == null || detail.isBlank()) detail = e.getClass().getSimpleName();
-            return Utils.formatAdminError("保存模板失败，请检查 WorldEdit 选区：&#fff566" + detail);
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-schematicstep.text-001") + detail);
         }
         session.markDirty();
-        return Utils.formatAdminSuccess("已保存场地模板：&#fff566" + file.getName());
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-schematicstep.text-002") + file.getName());
     }
 
     /** Allows game-specific steps to persist metadata that cannot be recovered reliably from the file. */

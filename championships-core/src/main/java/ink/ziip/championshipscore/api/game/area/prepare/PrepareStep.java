@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -137,11 +139,11 @@ public abstract class PrepareStep {
 
     /** Label shown by the list editor's add button. Custom list steps can describe non-location data. */
     public @NotNull Component listAddLabel() {
-        return Component.text("添加当前点位");
+        return Component.text(GuiConfig.text("area-prepare-preparestep.text-001"));
     }
 
     /** Hint shown below the list editor's add button. */
     public @NotNull Component listAddHint() {
-        return Component.text("站到目标位置后点击");
+        return Component.text(GuiConfig.text("area-prepare-preparestep.text-002"));
     }
 }

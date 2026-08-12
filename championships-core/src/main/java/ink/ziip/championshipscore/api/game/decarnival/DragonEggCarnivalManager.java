@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
+import org.jetbrains.annotations.NotNull;
 
 public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggCarnivalArea> {
 
@@ -62,6 +63,17 @@ public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggC
         DragonEggCarnivalArea dragonEggCarnivalArea = new DragonEggCarnivalArea(plugin, dragonEggCarnivalConfig, true, name);
         areas.put(name, dragonEggCarnivalArea);
 
+        return true;
+    }
+
+    @Override
+    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+        if (areas.containsKey(name)) return false;
+        DragonEggCarnivalConfig config = new DragonEggCarnivalConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        DragonEggCarnivalArea area = new DragonEggCarnivalArea(plugin, config, false, name);
+        areas.put(name, area);
+        area.preloadMap();
         return true;
     }
 

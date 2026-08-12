@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -13,8 +15,8 @@ import org.jetbrains.annotations.NotNull;
 /** Session-only Ace Race course preview showing respawn crystals and progress-line particles. */
 public final class AceRaceMapPreviewStep extends PrepareStep {
     public AceRaceMapPreviewStep() {
-        super("map_preview", Component.text("显示赛道点位预览"),
-                Component.text("切换后显示末地水晶重生点和低频进度线粒子；退出编辑会自动清理"),
+        super("map_preview", Component.text(GuiConfig.text("prepare-step-aceracemappreviewstep.text-001")),
+                Component.text(GuiConfig.text("prepare-step-aceracemappreviewstep.text-002")),
                 Material.END_CRYSTAL, StepCaptureType.TOGGLE);
     }
 
@@ -26,15 +28,15 @@ public final class AceRaceMapPreviewStep extends PrepareStep {
     @Override
     public String stateText(PrepareSession session) {
         AceRaceArea area = area(session);
-        return area != null && area.isMapEditPreviewEnabled() ? "当前：已开启" : "当前：已关闭";
+        return area != null && area.isMapEditPreviewEnabled() ? GuiConfig.text("prepare-step-aceracemappreviewstep.text-003") : GuiConfig.text("prepare-step-aceracemappreviewstep.text-004");
     }
 
     @Override
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         AceRaceArea area = area(session);
-        if (area == null) return "无法找到当前 Ace Race 地图实例。";
+        if (area == null) return GuiConfig.text("prepare-step-aceracemappreviewstep.text-005");
         boolean enabled = area.toggleMapEditPreview(player);
-        return enabled ? "已开启赛道点位预览：水晶可右键编辑重生点。" : "已关闭赛道点位预览。";
+        return enabled ? GuiConfig.text("prepare-step-aceracemappreviewstep.text-006") : GuiConfig.text("prepare-step-aceracemappreviewstep.text-007");
     }
 
     private static AceRaceArea area(PrepareSession session) {

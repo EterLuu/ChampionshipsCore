@@ -22,11 +22,9 @@ public class GameStartMainCommand extends BaseMainCommand {
         addGameSubCommand(GameTypeEnum.SkyWars, new SkyWarsStartMainCommand());
         addGameSubCommand(GameTypeEnum.TGTTOS, new TGTTOSStartMainCommand());
         addGameSubCommand(GameTypeEnum.TNTRun, new TNTRunStartMainCommand());
-        addGameSubCommand(GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalStartSubCommand());
         addGameSubCommand(GameTypeEnum.SnowballShowdown, new SnowBallStartMainCommand());
         addGameSubCommand(GameTypeEnum.ParkourWarrior, new ParkourWarriorStartMainCommand());
         addGameSubCommand(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyStartSubCommand());
-        addGameSubCommand(GameTypeEnum.Dodgebolt, new DodgeboltStartSubCommand());
         addGameSubCommand(GameTypeEnum.AceRace, new AceRaceStartMainCommand());
     }
 }

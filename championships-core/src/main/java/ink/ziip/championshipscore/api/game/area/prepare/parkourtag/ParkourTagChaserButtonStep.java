@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.parkourtag;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
@@ -59,34 +61,34 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         Block source = player.getTargetBlockExact(TARGET_DISTANCE);
         if (source == null || !isWallButton(source)) {
-            return Utils.formatAdminError("请对准 &#fff5668 格内贴在墙上的按钮 &#ededed后再点击设置项。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-001"));
         }
 
         ParkourTagConfig config = (ParkourTagConfig) session.getTarget().config();
         Location sourceLocation = source.getLocation();
         List<Block> buttons = resolveCopies(config, sourceLocation);
         if (buttons.size() != Math.max(1, config.getCopyCount())) {
-            return Utils.formatAdminError("地图世界尚未加载，无法设置追击者按钮。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-002"));
         }
         for (int index = 0; index < buttons.size(); index++) {
             Block button = buttons.get(index);
             if (index > 0 && !canReplaceWithButton(button)) {
-                return Utils.formatAdminError("第 &#fff566" + index
-                        + " &#ededed号场地的对应位置不是空位、告示牌或按钮，无法同步生成按钮。");
+                return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-003") + index
+                        + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-004"));
             }
             BlockFace facing = ((Switch) source.getBlockData()).getFacing();
             if (!button.getRelative(facing.getOppositeFace()).getType().isSolid()) {
-                return Utils.formatAdminError("第 &#fff566" + index
-                        + " &#ededed号场地缺少可供按钮依附的墙面。");
+                return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-003") + index
+                        + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-005"));
             }
             Block label = button.getRelative(BlockFace.DOWN);
             if (!label.getType().isAir() && label.getType() != Material.BIRCH_WALL_SIGN) {
-                return Utils.formatAdminError("第 &#fff566" + index
-                        + " &#ededed号场地按钮下方不是空位，无法生成提示牌。");
+                return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-003") + index
+                        + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-006"));
             }
             if (!label.getRelative(facing.getOppositeFace()).getType().isSolid()) {
-                return Utils.formatAdminError("第 &#fff566" + index
-                        + " &#ededed号场地按钮下方缺少可供告示牌依附的墙面。");
+                return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-003") + index
+                        + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-007"));
             }
         }
 
@@ -97,8 +99,8 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         }
         setter.accept(session.getTarget(), sourceLocation);
         session.markDirty();
-        return Utils.formatAdminSuccess("已设置追击者按钮，并为 &#fff566" + buttons.size()
-                + " &#ededed个场地同步按钮和发光提示牌。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-008") + buttons.size()
+                + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-009"));
     }
 
     private static @NotNull List<Block> resolveCopies(@NotNull ParkourTagConfig config,
@@ -149,9 +151,9 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         Sign sign = (Sign) label.getState();
         var front = sign.getSide(Side.FRONT);
         front.line(0, Component.empty());
-        front.line(1, Component.text("点击上方按钮", NamedTextColor.YELLOW)
+        front.line(1, Component.text(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-010"), NamedTextColor.YELLOW)
                 .decorate(TextDecoration.BOLD));
-        front.line(2, Component.text("成为追击者", NamedTextColor.LIGHT_PURPLE)
+        front.line(2, Component.text(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-011"), NamedTextColor.LIGHT_PURPLE)
                 .decorate(TextDecoration.BOLD));
         front.line(3, Component.empty());
         front.setColor(DyeColor.PURPLE);

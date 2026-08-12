@@ -6,10 +6,9 @@ import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
-
-import java.util.List;
+import org.jetbrains.annotations.NotNull;
 
 @Getter
 @Setter
@@ -23,7 +22,7 @@ public class DragonEggCarnivalConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 3;
+        return 4;
     }
 
     @ConfigOption(path = "name")
@@ -35,21 +34,15 @@ public class DragonEggCarnivalConfig extends BaseGameConfig {
     @ConfigOption(path = "area-pos2")
     private Vector areaPos2;
 
-    @ConfigOption(path = "right-spawn-points")
-    private List<String> rightSpawnPoints;
-
-    @ConfigOption(path = "left-spawn-points")
-    private List<String> leftSpawnPoints;
-
     @ConfigOption(path = "spectator-spawn-point")
     private Location spectatorSpawnPoint;
 
-    @ConfigOption(path = "dragon-spawn-point")
-    private Location dragonSpawnPoint;
-
-    @ConfigOption(path = "dragon-egg-spawn-point")
-    private Location dragonEggSpawnPoint;
-
-    @ConfigOption(path = "kits")
-    private List<ItemStack> kits;
+    @Override
+    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
+                                                  @NotNull YamlConfiguration migratedConfiguration) {
+        for (String removed : new String[]{"right-spawn-point", "left-spawn-point", "right-spawn-points",
+                "left-spawn-points", "dragon-spawn-point", "dragon-egg-spawn-point", "kits"}) {
+            migratedConfiguration.set(removed, null);
+        }
+    }
 }

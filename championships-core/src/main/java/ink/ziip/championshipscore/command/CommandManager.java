@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.command.admin.AdminMainCommand;
 import ink.ziip.championshipscore.command.event.EventMainCommand;
+import ink.ziip.championshipscore.command.finale.FinaleMainCommand;
 import ink.ziip.championshipscore.command.game.GameMainCommand;
 import ink.ziip.championshipscore.command.map.MapMainCommand;
 import ink.ziip.championshipscore.command.rank.RankMainCommand;
@@ -33,6 +34,7 @@ public class CommandManager extends BaseManager {
         mainCommand.addSubCommand(new TeamMainCommand());
         mainCommand.addSubCommand(new GameMainCommand());
         mainCommand.addSubCommand(new EventMainCommand());
+        mainCommand.addSubCommand(new FinaleMainCommand());
         mainCommand.addSubCommand(new MapMainCommand());
         mainCommand.addSubCommand(new SpectateSubCommand());
         mainCommand.addSubCommand(new RankMainCommand());

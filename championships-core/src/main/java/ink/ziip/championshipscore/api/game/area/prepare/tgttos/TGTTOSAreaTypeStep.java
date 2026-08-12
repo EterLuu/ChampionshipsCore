@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.tgttos;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -20,15 +22,15 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
     }
 
     private static final List<Option> OPTIONS = List.of(
-            new Option("BOAT", Material.OAK_BOAT, "BOAT", "橡木船 / 生存"),
-            new Option("ROAD", Material.DIAMOND_PICKAXE, "ROAD", "钻石镐与队伍混凝土 / 生存"),
-            new Option("NONE", Material.BARRIER, "NONE", "无物品 / 冒险"),
-            new Option("ELYTRA", Material.ELYTRA, "ELYTRA", "不可破坏鞘翅 / 冒险")
+            new Option("BOAT", Material.OAK_BOAT, "BOAT", GuiConfig.text("prepare-tgttos-tgttosareatypestep.text-001")),
+            new Option("ROAD", Material.DIAMOND_PICKAXE, "ROAD", GuiConfig.text("prepare-tgttos-tgttosareatypestep.text-002")),
+            new Option("NONE", Material.BARRIER, "NONE", GuiConfig.text("prepare-tgttos-tgttosareatypestep.text-003")),
+            new Option("ELYTRA", Material.ELYTRA, "ELYTRA", GuiConfig.text("prepare-tgttos-tgttosareatypestep.text-004"))
     );
 
     public TGTTOSAreaTypeStep() {
-        super("area_type", Component.text("地图装备类型"),
-                Component.text("打开菜单选择开局模式与物品"), Material.CHEST, StepCaptureType.SELECT);
+        super("area_type", Component.text(GuiConfig.text("prepare-tgttos-tgttosareatypestep.text-005")),
+                Component.text(GuiConfig.text("prepare-tgttos-tgttosareatypestep.text-006")), Material.CHEST, StepCaptureType.SELECT);
     }
 
     public static List<Option> options() {
@@ -45,7 +47,7 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
     public String stateText(PrepareSession session) {
         if (session == null) return null;
         Option option = find(config(session).getAreaType());
-        return option == null ? "未设置" : option.name() + "（" + option.description() + "）";
+        return option == null ? GuiConfig.text("prepare-tgttos-tgttosareatypestep.text-007") : option.name() + "（" + option.description() + "）";
     }
 
     @Override
@@ -57,7 +59,7 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
     public String select(@NotNull PrepareSession session, @NotNull Option option) {
         config(session).setAreaType(option.value());
         session.markDirty();
-        return Utils.formatAdminSuccess("已设置地图装备类型：&#fff566" + option.name()
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-tgttos-tgttosareatypestep.text-008") + option.name()
                 + " &#696969• &#ededed" + option.description());
     }
 

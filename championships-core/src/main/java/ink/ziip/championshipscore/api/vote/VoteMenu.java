@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.vote;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -45,8 +47,8 @@ final class VoteMenu implements Listener {
     void open(@NotNull Player player) {
         Holder holder = new Holder(player.getUniqueId());
         Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE,
-                Component.text("锦标赛选票", NamedTextColor.GOLD)
-                        .append(Component.text(" · 下一场", NamedTextColor.WHITE))
+                Component.text(GuiConfig.text("api-vote-votemenu.text-001"), NamedTextColor.GOLD)
+                        .append(Component.text(GuiConfig.text("api-vote-votemenu.text-002"), NamedTextColor.WHITE))
                         .decorate(TextDecoration.BOLD)
                         .decoration(TextDecoration.ITALIC, false));
         holder.inventory = inventory;
@@ -131,8 +133,8 @@ final class VoteMenu implements Listener {
 
         if (candidates.isEmpty()) {
             inventory.setItem(22, item(Material.GRAY_DYE,
-                    Component.text("本轮暂无候选项目", NamedTextColor.GRAY),
-                    List.of(Component.text("等待场地发布", NamedTextColor.DARK_GRAY)), false, 1));
+                    Component.text(GuiConfig.text("api-vote-votemenu.text-003"), NamedTextColor.GRAY),
+                    List.of(Component.text(GuiConfig.text("api-vote-votemenu.text-004"), NamedTextColor.DARK_GRAY)), false, 1));
         }
 
         inventory.setItem(TIME_SLOT, timeItem());
@@ -140,14 +142,14 @@ final class VoteMenu implements Listener {
         inventory.setItem(TURNOUT_SLOT, turnoutItem(totalVotes));
         inventory.setItem(BALLOT_SLOT, ballotItem(selected));
         inventory.setItem(CLOSE_SLOT, item(Material.BARRIER,
-                Component.text("关闭", NamedTextColor.RED),
+                Component.text(GuiConfig.text("api-vote-votemenu.text-005"), NamedTextColor.RED),
                 List.of(), false, 1));
     }
 
     private ItemStack gameItem(@NotNull GameTypeEnum gameType, boolean selected, int totalVotes, int highestVotes) {
         GameEntry entry = GAME_ENTRIES.getOrDefault(gameType,
                 new GameEntry(Material.PAPER, NamedTextColor.WHITE,
-                        "锦标赛项目", "查看项目规则后作出选择"));
+                        GuiConfig.text("api-vote-votemenu.text-006"), GuiConfig.text("api-vote-votemenu.text-007")));
         int votes = manager.getVoteNums(gameType);
         int percentage = totalVotes == 0 ? 0 : (int) Math.round(votes * 100D / totalVotes);
         int filled = totalVotes == 0 ? 0 : (int) Math.round(votes * VOTE_BAR_LENGTH / (double) totalVotes);
@@ -160,17 +162,17 @@ final class VoteMenu implements Listener {
         lore.add(Component.text("■".repeat(filled), selected ? NamedTextColor.AQUA
                         : leading ? NamedTextColor.GOLD : entry.color)
                 .append(Component.text("□".repeat(VOTE_BAR_LENGTH - filled), NamedTextColor.DARK_GRAY)));
-        lore.add(Component.text(votes + " 票", NamedTextColor.WHITE)
-                .append(Component.text("  ·  " + percentage + "%", NamedTextColor.GRAY)));
+        lore.add(Component.text(votes + GuiConfig.text("api-vote-votemenu.text-008"), NamedTextColor.WHITE)
+                .append(Component.text(GuiConfig.text("common.separator") + percentage + "%", NamedTextColor.GRAY)));
         lore.add(Component.empty());
         if (selected) {
-            lore.add(Component.text("✓  我的选择", NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
-            lore.add(Component.text("点击其他项目即可改票", NamedTextColor.DARK_GRAY));
+            lore.add(Component.text(GuiConfig.text("api-vote-votemenu.text-009"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("api-vote-votemenu.text-010"), NamedTextColor.DARK_GRAY));
         } else if (leading) {
-            lore.add(Component.text("★  当前领跑", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
-            lore.add(Component.text("点击投给此项目", NamedTextColor.YELLOW));
+            lore.add(Component.text(GuiConfig.text("api-vote-votemenu.text-011"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("api-vote-votemenu.text-012"), NamedTextColor.YELLOW));
         } else {
-            lore.add(Component.text("点击投票", NamedTextColor.GREEN));
+            lore.add(Component.text(GuiConfig.text("api-vote-votemenu.text-013"), NamedTextColor.GREEN));
         }
 
         Component marker = selected ? Component.text("✓ ", NamedTextColor.AQUA)
@@ -189,8 +191,8 @@ final class VoteMenu implements Listener {
         return item(Material.CLOCK,
                 Component.text(time, timeColor).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text("投票截止倒计时", NamedTextColor.GRAY),
-                        Component.text("结果将在倒计时结束后锁定", NamedTextColor.DARK_GRAY)
+                        Component.text(GuiConfig.text("api-vote-votemenu.text-014"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-vote-votemenu.text-015"), NamedTextColor.DARK_GRAY)
                 ), false, 1);
     }
 
@@ -200,19 +202,19 @@ final class VoteMenu implements Listener {
                 .toList();
         Component leaderLine;
         if (leaders.isEmpty()) {
-            leaderLine = Component.text("等待第一张选票", NamedTextColor.DARK_GRAY);
+            leaderLine = Component.text(GuiConfig.text("api-vote-votemenu.text-016"), NamedTextColor.DARK_GRAY);
         } else if (leaders.size() == 1) {
-            leaderLine = Component.text("领跑  ", NamedTextColor.GRAY)
+            leaderLine = Component.text(GuiConfig.text("api-vote-votemenu.text-017"), NamedTextColor.GRAY)
                     .append(Component.text(leaders.getFirst().toString(), NamedTextColor.GOLD));
         } else {
-            leaderLine = Component.text(leaders.size() + " 个项目并列领先", NamedTextColor.GOLD);
+            leaderLine = Component.text(leaders.size() + GuiConfig.text("api-vote-votemenu.text-018"), NamedTextColor.GOLD);
         }
 
         return item(Material.NETHER_STAR,
-                Component.text("下一场，由你决定", NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-vote-votemenu.text-019"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(candidates.size() + " 个候选项目", NamedTextColor.WHITE)
-                                .append(Component.text("  ·  " + totalVotes + " 张有效选票", NamedTextColor.GRAY)),
+                        Component.text(candidates.size() + GuiConfig.text("api-vote-votemenu.text-020"), NamedTextColor.WHITE)
+                                .append(Component.text(GuiConfig.text("common.separator") + totalVotes + GuiConfig.text("api-vote-votemenu.text-021"), NamedTextColor.GRAY)),
                         leaderLine
                 ), false, 1);
     }
@@ -224,34 +226,34 @@ final class VoteMenu implements Listener {
         int filled = eligibleVoters == 0 ? 0
                 : Math.min(VOTE_BAR_LENGTH, (int) Math.round(totalVotes * VOTE_BAR_LENGTH / (double) eligibleVoters));
         return item(Material.NAME_TAG,
-                Component.text(totalVotes + " / " + eligibleVoters, NamedTextColor.AQUA)
-                        .append(Component.text("  已投", NamedTextColor.WHITE))
+                Component.text(totalVotes + "/" + eligibleVoters, NamedTextColor.AQUA)
+                        .append(Component.text(GuiConfig.text("api-vote-votemenu.text-022"), NamedTextColor.WHITE))
                         .decorate(TextDecoration.BOLD),
                 List.of(
                         Component.text("■".repeat(filled), NamedTextColor.AQUA)
                                 .append(Component.text("□".repeat(VOTE_BAR_LENGTH - filled), NamedTextColor.DARK_GRAY))
                                 .append(Component.text("  " + percentage + "%", NamedTextColor.GRAY)),
-                        Component.text("参赛者投票进度", NamedTextColor.DARK_GRAY)
+                        Component.text(GuiConfig.text("api-vote-votemenu.text-023"), NamedTextColor.DARK_GRAY)
                 ), false, 1);
     }
 
     private ItemStack ballotItem(GameTypeEnum selected) {
         if (selected == null) {
             return item(Material.PAPER,
-                    Component.text("选票未填写", NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                    Component.text(GuiConfig.text("api-vote-votemenu.text-024"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
                     List.of(
-                            Component.text("从上方选择一个项目", NamedTextColor.WHITE),
-                            Component.text("投票结束前可以随时更改", NamedTextColor.DARK_GRAY)
+                            Component.text(GuiConfig.text("api-vote-votemenu.text-025"), NamedTextColor.WHITE),
+                            Component.text(GuiConfig.text("api-vote-votemenu.text-026"), NamedTextColor.DARK_GRAY)
                     ), false, 1);
         }
 
         GameEntry entry = GAME_ENTRIES.getOrDefault(selected,
-                new GameEntry(Material.PAPER, NamedTextColor.WHITE, "锦标赛项目", ""));
+                new GameEntry(Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("api-vote-votemenu.text-006"), ""));
         return item(Material.WRITABLE_BOOK,
-                Component.text("我的选票", NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-vote-votemenu.text-027"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
                 List.of(
                         Component.text(selected.toString(), entry.color).decorate(TextDecoration.BOLD),
-                        Component.text("选票已记录", NamedTextColor.GREEN)
+                        Component.text(GuiConfig.text("api-vote-votemenu.text-028"), NamedTextColor.GREEN)
                 ), true, 1);
     }
 
@@ -293,27 +295,27 @@ final class VoteMenu implements Listener {
     private static Map<GameTypeEnum, GameEntry> createGameEntries() {
         Map<GameTypeEnum, GameEntry> entries = new EnumMap<>(GameTypeEnum.class);
         entries.put(GameTypeEnum.Bingo, new GameEntry(Material.FILLED_MAP, NamedTextColor.LIGHT_PURPLE,
-                "探索 · 团队协作", "完成共享宾果卡，抢占格子与连线"));
+                GuiConfig.text("api-vote-votemenu.text-029"), GuiConfig.text("api-vote-votemenu.text-030")));
         entries.put(GameTypeEnum.ParkourTag, new GameEntry(Material.GOLDEN_CARROT, NamedTextColor.AQUA,
-                "追逐 · 4v4", "追击者抓捕，逃脱者争取生存时间"));
+                GuiConfig.text("api-vote-votemenu.text-031"), GuiConfig.text("api-vote-votemenu.text-032")));
         entries.put(GameTypeEnum.BattleBox, new GameEntry(Material.WHITE_WOOL, NamedTextColor.GOLD,
-                "战斗 · 4v4", "击败对手，用本队羊毛占领中心"));
+                GuiConfig.text("api-vote-votemenu.text-033"), GuiConfig.text("api-vote-votemenu.text-034")));
         entries.put(GameTypeEnum.TNTRun, new GameEntry(Material.TNT, NamedTextColor.RED,
-                "生存 · 个人赛", "在不断崩落的平台上坚持到最后"));
+                GuiConfig.text("api-vote-votemenu.text-035"), GuiConfig.text("api-vote-votemenu.text-036")));
         entries.put(GameTypeEnum.SnowballShowdown, new GameEntry(Material.SNOWBALL, NamedTextColor.WHITE,
-                "击退 · 生存赛", "用雪球将对手击出逐渐缩小的场地"));
+                GuiConfig.text("api-vote-votemenu.text-037"), GuiConfig.text("api-vote-votemenu.text-038")));
         entries.put(GameTypeEnum.SkyWars, new GameEntry(Material.GRASS_BLOCK, NamedTextColor.YELLOW,
-                "生存 · 团队战", "搜集空岛资源，在收缩边界中交战"));
+                GuiConfig.text("api-vote-votemenu.text-039"), GuiConfig.text("api-vote-votemenu.text-040")));
         entries.put(GameTypeEnum.TGTTOS, new GameEntry(Material.FEATHER, NamedTextColor.LIGHT_PURPLE,
-                "竞速 · 全队完赛", "跨越障碍抵达终点，争夺个人与团队名次"));
+                GuiConfig.text("api-vote-votemenu.text-041"), GuiConfig.text("api-vote-votemenu.text-042")));
         entries.put(GameTypeEnum.ParkourWarrior, new GameEntry(Material.IRON_BOOTS, NamedTextColor.WHITE,
-                "跑酷 · 个人赛", "挑战分支赛道，以难度和完成度计分"));
+                GuiConfig.text("api-vote-votemenu.text-043"), GuiConfig.text("api-vote-votemenu.text-044")));
         entries.put(GameTypeEnum.HotyCodyDusky, new GameEntry(Material.COD, NamedTextColor.AQUA,
-                "传递 · 生存赛", "把烫手鳕鱼传给对手并坚持到最后"));
+                GuiConfig.text("api-vote-votemenu.text-045"), GuiConfig.text("api-vote-votemenu.text-046")));
         entries.put(GameTypeEnum.BuildMart, new GameEntry(Material.CRAFTING_TABLE, NamedTextColor.GOLD,
-                "建造 · 团队协作", "采集材料并分工复原尽可能多的蓝图"));
+                GuiConfig.text("api-vote-votemenu.text-047"), GuiConfig.text("api-vote-votemenu.text-048")));
         entries.put(GameTypeEnum.AceRace, new GameEntry(Material.ELYTRA, NamedTextColor.GREEN,
-                "竞速 · 个人赛", "驾驭鞘翅与三叉戟完成多圈障碍赛道"));
+                GuiConfig.text("api-vote-votemenu.text-049"), GuiConfig.text("api-vote-votemenu.text-050")));
         return Map.copyOf(entries);
     }
 

@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.charset.StandardCharsets;
@@ -59,7 +60,6 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     public void initializeConfiguration(Path pluginFolder) {
         normalizeSerializedLocations(pluginFolder.resolve(getFileName()));
         super.initializeConfiguration(pluginFolder);
-        checkVersion(true);
     }
 
     @Override
@@ -276,29 +276,20 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     }
 
     @Override
-    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) {
-        try {
-            // Preserve every user-owned leaf, including game-specific custom sections which are not
-            // represented by @ConfigOption fields (for example Build Mart's base template). The new
-            // bundled template still supplies newly introduced paths, while its version marker wins.
-            for (String path : yamlConfiguration.getKeys(true)) {
-                if ("dont-edit-this.version".equals(path)) continue;
-                Object value = yamlConfiguration.get(path);
-                if (!(value instanceof ConfigurationSection)) {
-                    configuration.set(path, value);
-                }
+    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) throws IOException {
+        // Preserve every user-owned leaf, including game-specific custom sections which are not
+        // represented by @ConfigOption fields (for example Build Mart's base template). The new
+        // bundled template still supplies newly introduced paths, while its version marker wins.
+        for (String path : yamlConfiguration.getKeys(true)) {
+            if ("dont-edit-this.version".equals(path)) continue;
+            Object value = yamlConfiguration.get(path);
+            if (!(value instanceof ConfigurationSection)) {
+                configuration.set(path, value);
             }
-
-            customizeMigratedConfiguration(yamlConfiguration, configuration);
-
-            configuration.save(configurationPath.toFile());
-
-            // Reload options from the file
-            loadFileOptions();
-        } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "保存",
-                    "配置文件=" + getFileName() + " 保存失败"), exception);
         }
+
+        customizeMigratedConfiguration(yamlConfiguration, configuration);
+        configuration.save(configurationPath.toFile());
     }
 
     /** Per-game hook for version-specific defaults that cannot safely come from a shared map template. */

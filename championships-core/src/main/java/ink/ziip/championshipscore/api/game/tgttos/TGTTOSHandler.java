@@ -97,7 +97,7 @@ public class TGTTOSHandler extends BaseListener {
                     && (event.getCause() == EntityDamageEvent.DamageCause.FLY_INTO_WALL
                     || event.getCause() == EntityDamageEvent.DamageCause.LAVA
                     || event.getCause() == EntityDamageEvent.DamageCause.VOID)
-                    && player.getGameMode() != GameMode.SPECTATOR) {
+                    && !tgttosTeamArea.isManagedSpectator(player)) {
                 event.setCancelled(true);
                 if (event.getCause() == EntityDamageEvent.DamageCause.FLY_INTO_WALL
                         && tgttosTeamArea.isElytraFinishSafeLocation(player.getLocation())) {
@@ -177,7 +177,7 @@ public class TGTTOSHandler extends BaseListener {
         Location location = player.getLocation();
         if (tgttosTeamArea.notInArea(location)) {
             if (tgttosTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                if (player.getGameMode() == GameMode.SPECTATOR) {
+                if (tgttosTeamArea.isManagedSpectator(player)) {
                     if (location.getY() < -64) {
                         player.teleport(tgttosTeamArea.getSpectatorSpawnLocation());
                     }

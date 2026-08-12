@@ -152,7 +152,7 @@ public class BuildMartHandler extends BaseListener {
     }
 
     private void applyFlight(Player player, BuildMartConfig config, Location to) {
-        if (player.getGameMode() == GameMode.SPECTATOR || player.getGameMode() == GameMode.CREATIVE) return;
+        if (buildMartArea.isManagedSpectator(player) || player.getGameMode() == GameMode.CREATIVE) return;
         boolean inHub = config.isInHub(to);
         if (inHub) {
             if (player.getAllowFlight()) {

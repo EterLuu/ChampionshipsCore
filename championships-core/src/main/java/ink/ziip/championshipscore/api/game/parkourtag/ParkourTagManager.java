@@ -150,6 +150,20 @@ public class ParkourTagManager extends BaseGameInstanceManager<ParkourTagArea> {
         areas.put(mapName, instances.getFirst());
     }
 
+    @Override
+    protected void onAreaDetached(@NotNull String name) {
+        instancesByMap.remove(name);
+    }
+
+    @Override
+    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+        if (areas.containsKey(name)) return false;
+        ParkourTagConfig config = new ParkourTagConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        createInstances(name, config);
+        return true;
+    }
+
     public void addChaserTimes(UUID uuid) {
         chaserTimes.put(uuid, chaserTimes.getOrDefault(uuid, 0) + 1);
     }

@@ -106,6 +106,7 @@ Worker 自己维护一个 Adventure Component 记分板，展示剩余时间、�
 <namespace>:bingo:commands:<workerId>
 <namespace>:bingo:events
 <namespace>:bingo:manifest:<matchId>:<epoch>
+<namespace>:core:data-sync
 ```
 
 消费语义为至少一次：
@@ -118,6 +119,12 @@ Worker 自己维护一个 Adventure Component 记分板，展示剩余时间、�
 - Core 的 inbox 与 match 状态在同一 MariaDB 事务中提交；
 - Core 只接受连续 `eventSeq`，任务观察另有连续 `completionSeq`；
 - 最终 `resultHash` 一致后才提交正式积分。
+
+Redis 连接现在由 Core 顶层统一管理，远程 Bingo 不再拥有单独的一份连接配置。每台 Core
+使用持久且唯一的 `instance-id` 建立自己的消费组，因此队伍、成员、玩家身份、积分和轮次变更会
+广播给所有 Core，而不是被多个服务器分摊消费。同步消息只携带版本化失效域，接收端始终从共享
+MariaDB 重载权威数据；每 30 秒的完整对账用于弥补提交后发布失败或 Redis 暂时中断。远程 Bingo
+对局也记录所属 Core 实例，某台 Core 重启时只回收自己的孤儿对局。
 
 积分事务 ID 为：
 
@@ -153,6 +160,19 @@ Worker 的自然世界属于一次性比赛槽。生产配置会在结算后先�
 Core `plugins/ChampionshipsCore/config.yml`：
 
 ```yaml
+redis:
+  enabled: true
+  # 每台 Core 必须唯一；auto 会在各自插件数据目录持久化生成。
+  instance-id: "auto"
+  uri: "redis://redis-host:6379/0"
+  namespace: "championships"
+  consumer-group-prefix: "championships-core"
+  stream-max-length: 100000
+  block-timeout-ms: 2000
+  reclaim-idle-ms: 15000
+  max-deliveries: 8
+  reconciliation-seconds: 30
+
 bingo:
   execution-mode: "REMOTE"      # 远程执行示例；首次联调前保持 LOCAL
   worker-id: "bingo-1"          # 必须与 Worker 一致
@@ -161,14 +181,6 @@ bingo:
   ready-timeout-seconds: 30
   arrival-timeout-seconds: 45
   heartbeat-timeout-seconds: 20
-  redis:
-    uri: "redis://redis-host:6379/0"
-    namespace: "championships"
-    consumer-group: "championships-core"
-    stream-max-length: 100000
-    block-timeout-ms: 2000
-    reclaim-idle-ms: 15000
-    max-deliveries: 8
 ```
 
 Worker `plugins/ChampionshipsBingoWorker/config.yml`：

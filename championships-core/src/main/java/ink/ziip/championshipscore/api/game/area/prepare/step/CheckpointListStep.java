@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
@@ -22,8 +24,8 @@ import java.util.List;
 /** Guided checkpoint editor for Parkour Warrior, including safe per-entry editing and deletion. */
 public final class CheckpointListStep extends PrepareStep {
     public CheckpointListStep() {
-        super("checkpoints", Component.text("跑酷检查点"),
-                Component.text("用当前位置和 WorldEdit 选区添加主检查点；至少需要一个"),
+        super("checkpoints", Component.text(GuiConfig.text("prepare-step-checkpointliststep.text-001")),
+                Component.text(GuiConfig.text("prepare-step-checkpointliststep.text-002")),
                 Material.LIME_CONCRETE, StepCaptureType.LIST);
     }
 
@@ -46,7 +48,7 @@ public final class CheckpointListStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, false);
         } catch (Exception e) {
-            return Utils.formatAdminError("请先用 WorldEdit 选取检查点进入区域。 ");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-checkpointliststep.text-003"));
         }
         ConfigurationSection root = cfg(session.getTarget()).ensureCheckpoints();
         int order = orderedKeys(root).size() + 1;
@@ -62,7 +64,7 @@ public final class CheckpointListStep extends PrepareStep {
         checkpoint.createSection("sub-checkpoints");
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess("已添加检查点 &#696969• 当前 &#fff566" + root.getKeys(false).size() + " &#ededed个");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-checkpointliststep.text-004") + root.getKeys(false).size() + GuiConfig.text("prepare-step-checkpointliststep.text-005"));
     }
 
     @Override public int listCount(@NotNull PrepareSession session) {
@@ -76,10 +78,10 @@ public final class CheckpointListStep extends PrepareStep {
         for (String key : orderedKeys(root)) {
             ConfigurationSection checkpoint = root.getConfigurationSection(key);
             if (checkpoint == null) continue;
-            entries.add(new ListEntry("检查点 #" + checkpoint.getInt("order") + " · "
+            entries.add(new ListEntry(GuiConfig.text("prepare-step-checkpointliststep.text-006") + checkpoint.getInt("order") + GuiConfig.text("common.separator")
                     + checkpoint.getString("name", key), List.of(
-                    "出生点：" + format(Utils.getLocation(checkpoint.getConfigurationSection("spawn"))),
-                    "进入区域：" + format(checkpoint.getVector("enter.pos1")) + " → "
+                    GuiConfig.text("prepare-step-checkpointliststep.text-007") + format(Utils.getLocation(checkpoint.getConfigurationSection("spawn"))),
+                    GuiConfig.text("prepare-step-checkpointliststep.text-008") + format(checkpoint.getVector("enter.pos1")) + " → "
                             + format(checkpoint.getVector("enter.pos2")))));
         }
         return entries;
@@ -91,7 +93,7 @@ public final class CheckpointListStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, false);
         } catch (Exception e) {
-            return Utils.formatAdminError("请先用 WorldEdit 重新选取检查点进入区域。 ");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-checkpointliststep.text-009"));
         }
         ConfigurationSection root = cfg(session.getTarget()).ensureCheckpoints();
         List<String> keys = orderedKeys(root);
@@ -102,7 +104,7 @@ public final class CheckpointListStep extends PrepareStep {
         checkpoint.set("enter.pos2", selection[1]);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess("已更新第 " + (index + 1) + " 个检查点的出生点和进入区域。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-checkpointliststep.text-010") + (index + 1) + GuiConfig.text("prepare-step-checkpointliststep.text-011"));
     }
 
     @Override
@@ -111,13 +113,13 @@ public final class CheckpointListStep extends PrepareStep {
         ConfigurationSection root = cfg(session.getTarget()).ensureCheckpoints();
         List<String> keys = orderedKeys(root);
         if (index < 0 || index >= keys.size() || newOrder < 1 || newOrder > keys.size())
-            return Utils.formatAdminError("序号必须在 1 到 " + keys.size() + " 之间。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-checkpointliststep.text-012") + keys.size() + GuiConfig.text("prepare-step-checkpointliststep.text-013"));
         String moved = keys.remove(index);
         keys.add(newOrder - 1, moved);
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess("已将检查点调整为第 " + newOrder + " 项。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-checkpointliststep.text-014") + newOrder + GuiConfig.text("prepare-step-checkpointliststep.text-015"));
     }
 
     @Override
@@ -130,7 +132,7 @@ public final class CheckpointListStep extends PrepareStep {
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess("已删除第 " + (index + 1) + " 个检查点。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-checkpointliststep.text-016") + (index + 1) + GuiConfig.text("prepare-step-checkpointliststep.text-017"));
     }
 
     private static List<String> orderedKeys(ConfigurationSection root) {
@@ -145,13 +147,13 @@ public final class CheckpointListStep extends PrepareStep {
     }
 
     private static String format(Vector vector) {
-        return vector == null ? "未设置" : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
+        return vector == null ? GuiConfig.text("prepare-step-checkpointliststep.text-018") : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
     }
 
     private static String format(Location location) {
-        return location == null ? "未设置" : location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ();
+        return location == null ? GuiConfig.text("prepare-step-checkpointliststep.text-018") : location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ();
     }
 
-    @Override public @NotNull Component listAddLabel() { return Component.text("添加主检查点"); }
-    @Override public @NotNull Component listAddHint() { return Component.text("站在出生点并选取进入区域后点击"); }
+    @Override public @NotNull Component listAddLabel() { return Component.text(GuiConfig.text("prepare-step-checkpointliststep.text-019")); }
+    @Override public @NotNull Component listAddHint() { return Component.text(GuiConfig.text("prepare-step-checkpointliststep.text-020")); }
 }

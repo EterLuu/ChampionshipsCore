@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.bingo;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
@@ -53,12 +55,12 @@ public class BingoPrepareFlow extends PrepareFlowDefinition {
 
         StandAndRunStep spectator = new StandAndRunStep(
                 "spectator_spawn",
-                Component.text("设置旁观者出生点"),
-                Component.text("站到目标点位后点击"),
+                Component.text(GuiConfig.text("prepare-bingo-bingoprepareflow.text-001")),
+                Component.text(GuiConfig.text("prepare-bingo-bingoprepareflow.text-002")),
                 Material.ENDER_EYE,
                 t -> ((BingoConfig) t.config()).getSpectatorSpawnPoint() != null,
                 (t, loc) -> ((BingoConfig) t.config()).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置旁观者出生点。"));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-bingo-bingoprepareflow.text-003")));
 
         return List.of(confirm, spectator);
     }

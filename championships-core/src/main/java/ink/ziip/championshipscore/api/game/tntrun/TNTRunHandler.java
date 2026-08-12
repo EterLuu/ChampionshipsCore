@@ -47,7 +47,7 @@ public class TNTRunHandler extends BaseListener {
                 return;
             }
             if (stage == GameStageEnum.PROGRESS) {
-                if (player.getGameMode() == GameMode.SPECTATOR) {
+                if (tntRunTeamArea.isManagedSpectator(player)) {
                     if (location.getY() < -64) {
                         player.teleport(getTntRunTeamArea().getSpectatorSpawnLocation());
                     }

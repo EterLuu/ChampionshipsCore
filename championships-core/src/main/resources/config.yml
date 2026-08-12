@@ -1,11 +1,12 @@
 dont-edit-this:
-  version: 14
+  version: 16
 mode: "CHAMPIONSHIP"
 # DAILY opens the self-service game menu and queues. It does not disable /cc event or /cc game start.
 daily:
   enabled-games:
     - "Bingo"
     - "AceRace"
+    - "DragonEggCarnival"
   games:
     Bingo:
       min-players: 2
@@ -21,6 +22,12 @@ daily:
       countdown-seconds: 15
       # Runtime copies share the same physical track and are isolated by player visibility.
       concurrent-instances: 2
+    DragonEggCarnival:
+      min-players: 2
+      max-players: 8
+      team-size: 4
+      teams: 2
+      countdown-seconds: 20
 max-players: 100
 whitelist: [ ]
 weighted-score: false
@@ -56,6 +63,21 @@ database:
   name: "wcc"
   username: "root"
   password: "password"
+# Shared infrastructure for database-cache synchronization and REMOTE Bingo.
+# Every Core data directory gets a persistent ID when instance-id is "auto". Set an explicit unique
+# value when instances share the same data directory or are cloned after first startup.
+redis:
+  enabled: false
+  instance-id: "auto"
+  uri: "redis://127.0.0.1:6379/0"
+  namespace: "championships"
+  consumer-group-prefix: "championships-core"
+  stream-max-length: 100000
+  block-timeout-ms: 2000
+  reclaim-idle-ms: 15000
+  max-deliveries: 8
+  # Full DB reconciliation is the recovery path if publishing is interrupted at commit time.
+  reconciliation-seconds: 30
 team:
   max-members: 4
 lobby:
@@ -79,11 +101,3 @@ bingo:
   arrival-timeout-seconds: 45
   # Running matches are aborted if the worker produces no ordered event or heartbeat in this window.
   heartbeat-timeout-seconds: 20
-  redis:
-    uri: "redis://127.0.0.1:6379/0"
-    namespace: "championships"
-    consumer-group: "championships-core"
-    stream-max-length: 100000
-    block-timeout-ms: 2000
-    reclaim-idle-ms: 15000
-    max-deliveries: 8

@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.worker;
 
 import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
+import com.destroystokyo.paper.event.entity.ProjectileCollideEvent;
+import io.papermc.paper.event.entity.EntityInsideBlockEvent;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.platform.bukkit.text.ChampionshipTabText;
@@ -19,9 +21,15 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
+import org.bukkit.event.entity.EntityMountEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -32,12 +40,26 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
+import org.bukkit.event.player.PlayerBucketEntityEvent;
+import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerShearEntityEvent;
+import org.bukkit.event.player.PlayerUnleashEntityEvent;
+import org.bukkit.event.entity.PlayerLeashEntityEvent;
+import org.bukkit.event.raid.RaidTriggerEvent;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
+import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
+import org.bukkit.event.world.GenericGameEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.projectiles.ProjectileSource;
 
@@ -134,6 +156,61 @@ final class WorkerListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedInteractAtEntity(PlayerInteractAtEntityEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedEntityTarget(EntityTargetEvent event) {
+        if (!(event.getTarget() instanceof Player player)
+                || !registry.isProtectedParticipant(player.getUniqueId())) return;
+        event.setCancelled(true);
+        event.setTarget(null);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedProjectileCollide(ProjectileCollideEvent event) {
+        if (event.getCollidedWith() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedProjectileHit(ProjectileHitEvent event) {
+        if (event.getHitEntity() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedProjectileLaunch(ProjectileLaunchEvent event) {
+        if (event.getEntity().getShooter() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedEntityBlock(EntityChangeBlockEvent event) {
+        if (event.getEntity() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedEntityInteract(EntityInteractEvent event) {
+        if (event.getEntity() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedInsideBlock(EntityInsideBlockEvent event) {
+        if (event.getEntity() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedGameEvent(GenericGameEvent event) {
+        if (event.getEntity() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedPickup(EntityPickupItemEvent event) {
         if (event.getEntity() instanceof Player player
                 && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
@@ -141,6 +218,74 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedArrowPickup(PlayerPickupArrowEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedAttemptPickup(PlayerAttemptPickupItemEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedMount(EntityMountEvent event) {
+        if (event.getEntity() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedVehicleEnter(VehicleEnterEvent event) {
+        if (event.getEntered() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedVehicleCollision(VehicleEntityCollisionEvent event) {
+        if (event.getEntity() instanceof Player player
+                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedArmorStand(PlayerArmorStandManipulateEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedBucketEmpty(PlayerBucketEmptyEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedBucketFill(PlayerBucketFillEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedBucketEntity(PlayerBucketEntityEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedSwapHands(PlayerSwapHandItemsEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedLeash(PlayerLeashEntityEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedShear(PlayerShearEntityEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedUnleash(PlayerUnleashEntityEvent event) {
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onProtectedRaidTrigger(RaidTriggerEvent event) {
         if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
     }
 
@@ -186,6 +331,15 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCompass(PlayerInteractEvent event) {
         if (event.getItem() == null || !registry.canUseBingoUi(event.getPlayer().getUniqueId())) return;
+        Action action = event.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK
+                && action != Action.LEFT_CLICK_AIR && action != Action.LEFT_CLICK_BLOCK) return;
+        boolean rightClick = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
+        if (event.getHand() == EquipmentSlot.HAND
+                && registry.handleSpectatorControl(event.getPlayer(), event.getItem(), rightClick)) {
+            event.setCancelled(true);
+            return;
+        }
         org.bukkit.Material type = event.getItem().getType();
         if (type != org.bukkit.Material.COMPASS && type != org.bukkit.Material.FILLED_MAP) return;
         if (type == org.bukkit.Material.COMPASS
@@ -193,10 +347,6 @@ final class WorkerListener implements Listener {
         Integer selectedTeam = type == org.bukkit.Material.FILLED_MAP
                 ? registry.boundCardTeam(event.getItem()) : null;
         if (type == org.bukkit.Material.FILLED_MAP && selectedTeam == null) return;
-        Action action = event.getAction();
-        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK
-                && action != Action.LEFT_CLICK_AIR && action != Action.LEFT_CLICK_BLOCK) return;
-        boolean rightClick = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
         if (type == org.bukkit.Material.FILLED_MAP && !rightClick) return;
         if (action == Action.RIGHT_CLICK_BLOCK
                 && event.getClickedBlock() != null && event.getClickedBlock().getType().isInteractable()) return;

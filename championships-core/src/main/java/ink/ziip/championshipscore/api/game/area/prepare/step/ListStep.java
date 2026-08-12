@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
@@ -58,14 +60,14 @@ public class ListStep extends PrepareStep {
     public String listAdd(@NotNull PrepareSession session, @NotNull Player player) {
         adder.accept(session.getTarget(), Utils.getLocationConfigString(Utils.centerOnBlock(player.getLocation())));
         session.markDirty();
-        return Utils.formatAdminSuccess("已添加点位 &#696969• &#ededed当前 &#fff566" + listCount(session) + " &#ededed个");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-001") + listCount(session) + GuiConfig.text("prepare-step-liststep.text-002"));
     }
 
     @Override
     public String listClear(@NotNull PrepareSession session, @NotNull Player player) {
         clearer.accept(session.getTarget());
         session.markDirty();
-        return Utils.formatAdminSuccess("已清空点位列表。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-003"));
     }
 
     @Override
@@ -79,7 +81,7 @@ public class ListStep extends PrepareStep {
         List<String> values = values(session);
         for (int i = 0; i < values.size(); i++) {
             String value = values.get(i);
-            entries.add(new ListEntry("点位 " + (i + 1), List.of(formatLocation(value))));
+            entries.add(new ListEntry(GuiConfig.text("prepare-step-liststep.text-004") + (i + 1), List.of(formatLocation(value))));
         }
         return entries;
     }
@@ -91,7 +93,7 @@ public class ListStep extends PrepareStep {
         values.set(index, Utils.getLocationConfigString(Utils.centerOnBlock(player.getLocation())));
         setter.accept(session.getTarget(), values);
         session.markDirty();
-        return Utils.formatAdminSuccess("已更新第 " + (index + 1) + " 个点位。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-005") + (index + 1) + GuiConfig.text("prepare-step-liststep.text-006"));
     }
 
     @Override
@@ -99,12 +101,12 @@ public class ListStep extends PrepareStep {
                                int index, int newOrder) {
         List<String> values = values(session);
         if (index < 0 || index >= values.size() || newOrder < 1 || newOrder > values.size())
-            return Utils.formatAdminError("序号必须在 1 到 " + values.size() + " 之间。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-liststep.text-007") + values.size() + GuiConfig.text("prepare-step-liststep.text-008"));
         String value = values.remove(index);
         values.add(newOrder - 1, value);
         setter.accept(session.getTarget(), values);
         session.markDirty();
-        return Utils.formatAdminSuccess("已将点位调整为第 " + newOrder + " 项。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-009") + newOrder + GuiConfig.text("prepare-step-liststep.text-010"));
     }
 
     @Override
@@ -114,7 +116,7 @@ public class ListStep extends PrepareStep {
         values.remove(index);
         setter.accept(session.getTarget(), values);
         session.markDirty();
-        return Utils.formatAdminSuccess("已删除第 " + (index + 1) + " 个点位。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-011") + (index + 1) + GuiConfig.text("prepare-step-liststep.text-006"));
     }
 
     private List<String> values(@NotNull PrepareSession session) {

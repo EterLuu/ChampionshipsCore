@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -49,7 +51,7 @@ public final class StepMenuGui {
     public static void open(@NotNull Player player, @NotNull PrepareSession session) {
         Holder holder = new Holder(session);
         Inventory inventory = Bukkit.createInventory(holder, 54,
-                Component.text("准备步骤").decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("prepare-gui-stepmenugui.text-001")).decoration(TextDecoration.ITALIC, false));
         holder.inventory = inventory;
         refresh(holder);
         player.openInventory(inventory);
@@ -73,16 +75,16 @@ public final class StepMenuGui {
         }
 
         inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? menuItem(Material.ARROW, "上一页", NamedTextColor.WHITE, "第 " + holder.page + " 页")
-                : menuItem(Material.GRAY_STAINED_GLASS_PANE, "准备步骤", NamedTextColor.DARK_GRAY,
-                "共 " + session.getSteps().size() + " 项"));
-        inventory.setItem(BACK_SLOT, menuItem(Material.BARRIER, "返回热键栏", NamedTextColor.RED,
-                "关闭步骤菜单"));
+                ? menuItem(Material.ARROW, GuiConfig.text("prepare-gui-stepmenugui.text-002"), NamedTextColor.WHITE, GuiConfig.text("prepare-gui-stepmenugui.text-003") + holder.page + GuiConfig.text("prepare-gui-stepmenugui.text-004"))
+                : menuItem(Material.GRAY_STAINED_GLASS_PANE, GuiConfig.text("prepare-gui-stepmenugui.text-001"), NamedTextColor.DARK_GRAY,
+                GuiConfig.text("prepare-gui-stepmenugui.text-005") + session.getSteps().size() + GuiConfig.text("prepare-gui-stepmenugui.text-006")));
+        inventory.setItem(BACK_SLOT, menuItem(Material.BARRIER, GuiConfig.text("prepare-gui-stepmenugui.text-007"), NamedTextColor.RED,
+                GuiConfig.text("prepare-gui-stepmenugui.text-008")));
         inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount
-                ? menuItem(Material.ARROW, "下一页", NamedTextColor.WHITE,
-                "第 " + (holder.page + 2) + " / " + pageCount + " 页")
-                : menuItem(Material.GRAY_STAINED_GLASS_PANE, "已是最后一页", NamedTextColor.DARK_GRAY,
-                "没有更多步骤"));
+                ? menuItem(Material.ARROW, GuiConfig.text("prepare-gui-stepmenugui.text-009"), NamedTextColor.WHITE,
+                GuiConfig.text("prepare-gui-stepmenugui.text-003") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("prepare-gui-stepmenugui.text-004"))
+                : menuItem(Material.GRAY_STAINED_GLASS_PANE, GuiConfig.text("prepare-gui-stepmenugui.text-010"), NamedTextColor.DARK_GRAY,
+                GuiConfig.text("prepare-gui-stepmenugui.text-011")));
     }
 
     public static void handleClick(@NotNull PrepareSessionManager manager, @NotNull InventoryClickEvent event,
@@ -138,17 +140,17 @@ public final class StepMenuGui {
         boolean set = step.isSet(session);
         String customState = step.stateText(session);
         String state = customState != null ? customState : switch (step.captureType()) {
-            case CONFIRM_WORLD -> session.isWorldConfirmed() ? "已确认所在世界" : "待确认";
-            case STAMP -> session.isStamped() ? "已盖章生成" : "待盖章";
-            case LIST -> set ? "已设置（" + step.listCount(session) + " 个）" : "待设置";
-            default -> set ? "已设置" : "待设置";
+            case CONFIRM_WORLD -> session.isWorldConfirmed() ? GuiConfig.text("prepare-gui-stepmenugui.text-012") : GuiConfig.text("prepare-gui-stepmenugui.text-013");
+            case STAMP -> session.isStamped() ? GuiConfig.text("prepare-gui-stepmenugui.text-014") : GuiConfig.text("prepare-gui-stepmenugui.text-015");
+            case LIST -> set ? GuiConfig.text("prepare-gui-stepmenugui.text-016") + step.listCount(session) + GuiConfig.text("prepare-gui-stepmenugui.text-017") : GuiConfig.text("prepare-gui-stepmenugui.text-018");
+            default -> set ? GuiConfig.text("prepare-gui-stepmenugui.text-019") : GuiConfig.text("prepare-gui-stepmenugui.text-018");
         };
         ItemStack item = PrepareKeys.item(step.icon(),
                 Component.text(number + ". ").color(NamedTextColor.GRAY)
                         .append(step.displayName().color(NamedTextColor.WHITE)),
                 List.of(step.description().color(NamedTextColor.GRAY),
                         Component.text(state).color(set ? NamedTextColor.GREEN : NamedTextColor.YELLOW),
-                        Component.text("点击编辑").color(NamedTextColor.AQUA)));
+                        Component.text(GuiConfig.text("prepare-gui-stepmenugui.text-020")).color(NamedTextColor.AQUA)));
         PrepareKeys.setStep(item, step.key());
         return item;
     }

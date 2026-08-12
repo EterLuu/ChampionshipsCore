@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.step.SchematicStep;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
@@ -15,8 +17,8 @@ final class BuildMartBaseSchematicStep extends SchematicStep {
     private final File schematic;
 
     BuildMartBaseSchematicStep(@NotNull File schematic) {
-        super("base_schematic", plugin -> schematic, Component.text("保存 0 号基地模板"),
-                Component.text("在 0 号位置选中完整基地模板；它只用于复制，不会分配给参赛队伍"));
+        super("base_schematic", plugin -> schematic, Component.text(GuiConfig.text("prepare-buildmart-buildmartbaseschematicstep.text-001")),
+                Component.text(GuiConfig.text("prepare-buildmart-buildmartbaseschematicstep.text-002")));
         this.schematic = schematic;
     }
 

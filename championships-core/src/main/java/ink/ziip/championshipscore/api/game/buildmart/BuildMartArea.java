@@ -710,9 +710,9 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     }
 
     private void completeGoldenBuild(ChampionshipTeam team, TeamBuildState state, BuildSlot slot, BuildMartBlueprint blueprint) {
-        int points = pointsForCompletion(blueprint.getStars());
+        int points = pointsForCompletion(BuildMartOrderPool.GOLDEN_SCORE_STARS);
         addPlayerPointsToAllTeamMembers(team, points);
-        state.recordCompletion(blueprint.getStars());
+        state.recordCompletion(BuildMartOrderPool.GOLDEN_SCORE_STARS);
 
         if (slot.getBuildAnchor() != null) ReferenceBuilder.clearBuildArea(slot.getBuildAnchor());
         // Clear only this team's golden slot so they can't re-score; other teams keep building it.
@@ -819,7 +819,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         if (blueprint == null || slot.getBuildAnchor() == null) return;
         double ratio = blueprint.completionRatio(ReferenceBuilder.buildOrigin(slot.getBuildAnchor()));
         if (ratio <= 0) return;
-        int points = (int) Math.round(pointsForCompletion(blueprint.getStars()) * ratio);
+        int scoringStars = slot.isGolden() ? BuildMartOrderPool.GOLDEN_SCORE_STARS : blueprint.getStars();
+        int points = (int) Math.round(pointsForCompletion(scoringStars) * ratio);
         if (points > 0) addPlayerPointsToAllTeamMembers(team, points);
     }
 
@@ -917,7 +918,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     private void disableFlightForAllGamePlayers() {
         for (java.util.UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.getGameMode() != GameMode.CREATIVE && player.getGameMode() != GameMode.SPECTATOR) {
+            if (player != null && player.getGameMode() != GameMode.CREATIVE && !isManagedSpectator(player)) {
                 player.setFlying(false);
                 player.setAllowFlight(false);
             }

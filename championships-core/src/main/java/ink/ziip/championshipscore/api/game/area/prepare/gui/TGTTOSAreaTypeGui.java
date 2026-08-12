@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
@@ -52,7 +54,7 @@ public final class TGTTOSAreaTypeGui {
                             @NotNull TGTTOSAreaTypeStep step) {
         Holder holder = new Holder(session, step);
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text("选择地图装备类型").decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("prepare-gui-tgttosareatypegui.text-001")).decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -107,11 +109,11 @@ public final class TGTTOSAreaTypeGui {
                     : filler());
         }
         inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? menuItem(Material.ARROW, "上一页", NamedTextColor.WHITE)
+                ? menuItem(Material.ARROW, GuiConfig.text("prepare-gui-tgttosareatypegui.text-002"), NamedTextColor.WHITE)
                 : filler());
-        inventory.setItem(BACK_SLOT, menuItem(Material.BARRIER, "返回", NamedTextColor.RED));
+        inventory.setItem(BACK_SLOT, menuItem(Material.BARRIER, GuiConfig.text("prepare-gui-tgttosareatypegui.text-003"), NamedTextColor.RED));
         inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount()
-                ? menuItem(Material.ARROW, "下一页", NamedTextColor.WHITE)
+                ? menuItem(Material.ARROW, GuiConfig.text("prepare-gui-tgttosareatypegui.text-004"), NamedTextColor.WHITE)
                 : filler());
     }
 
@@ -127,7 +129,7 @@ public final class TGTTOSAreaTypeGui {
                     .decoration(TextDecoration.ITALIC, false));
             meta.lore(List.of(Component.text(option.description()).color(NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false),
-                    Component.text(selected ? "当前选择" : "点击选择")
+                    Component.text(selected ? GuiConfig.text("prepare-gui-tgttosareatypegui.text-005") : GuiConfig.text("prepare-gui-tgttosareatypegui.text-006"))
                             .color(selected ? NamedTextColor.GREEN : NamedTextColor.WHITE)
                             .decoration(TextDecoration.ITALIC, false)));
         });

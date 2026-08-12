@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -17,11 +19,11 @@ import org.jetbrains.annotations.NotNull;
 /** Optional editor control for the three-second block disappearance at the final countdown. */
 public final class CountdownBlockDisappearanceStep extends PrepareStep {
     public enum Mode {
-        RANDOM("RANDOM", "随机离散型", Material.SAND),
-        DOOR_EAST_WEST("DOOR_EAST_WEST", "开门式（东西）", Material.OAK_DOOR),
-        DOOR_NORTH_SOUTH("DOOR_NORTH_SOUTH", "开门式（南北）", Material.SPRUCE_DOOR),
-        DOOR_VERTICAL("DOOR_VERTICAL", "开门式（竖直）", Material.IRON_BARS),
-        DIRECT("DIRECT", "直接消失", Material.TNT);
+        RANDOM("RANDOM", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-001"), Material.SAND),
+        DOOR_EAST_WEST("DOOR_EAST_WEST", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-002"), Material.OAK_DOOR),
+        DOOR_NORTH_SOUTH("DOOR_NORTH_SOUTH", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-003"), Material.SPRUCE_DOOR),
+        DOOR_VERTICAL("DOOR_VERTICAL", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-004"), Material.IRON_BARS),
+        DIRECT("DIRECT", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-005"), Material.TNT);
 
         private final String value;
         private final String displayName;
@@ -47,8 +49,8 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
     }
 
     public CountdownBlockDisappearanceStep() {
-        super("countdown_block_disappearance", Component.text("开赛倒计时方块消失（可选）"),
-                Component.text("设置选区与 3 秒内的消失方式；留空则不启用"),
+        super("countdown_block_disappearance", Component.text(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-006")),
+                Component.text(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-007")),
                 Material.CLOCK, StepCaptureType.SELECT);
     }
 
@@ -65,10 +67,10 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
 
     @Override
     public String stateText(PrepareSession session) {
-        if (session == null) return "可选";
+        if (session == null) return GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-008");
         BaseGameConfig config = session.getTarget().config();
-        if (!config.hasCountdownBlockDisappearance()) return "未启用（可选）";
-        return "已启用 · " + Mode.from(config.getCountdownBlockDisappearanceMode()).displayName();
+        if (!config.hasCountdownBlockDisappearance()) return GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-009");
+        return GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-010") + Mode.from(config.getCountdownBlockDisappearanceMode()).displayName();
     }
 
     @Override
@@ -79,33 +81,33 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
 
     public String captureSelection(@NotNull PrepareSession session, @NotNull Player player) {
         if (!session.getFlow().isInCorrectWorld(player, session.getTarget()))
-            return Utils.formatAdminError("请先前往当前地图世界 " + session.getTarget().worldName());
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-011") + session.getTarget().worldName());
         Vector[] selection;
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return Utils.formatAdminError("请先用 WorldEdit 选取两个端点。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-012"));
         }
         long volume = volume(selection[0], selection[1]);
         if (volume <= 0 || volume > CountdownBlockDisappearance.MAX_SELECTION_VOLUME) {
-            return Utils.formatAdminError("选区体积必须在 1 到 "
-                    + CountdownBlockDisappearance.MAX_SELECTION_VOLUME + " 个方块以内。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-013")
+                    + CountdownBlockDisappearance.MAX_SELECTION_VOLUME + GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-014"));
         }
         session.getTarget().config().setCountdownBlockDisappearanceBounds(selection[0], selection[1]);
         session.markDirty();
-        return Utils.formatAdminSuccess("已设置开赛倒计时方块消失选区（" + volume + " 个方块）。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-015") + volume + GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-016"));
     }
 
     public String selectMode(@NotNull PrepareSession session, @NotNull Mode mode) {
         session.getTarget().config().setCountdownBlockDisappearanceMode(mode.value());
         session.markDirty();
-        return Utils.formatAdminSuccess("已设置消失方式：" + mode.displayName() + "。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-017") + mode.displayName() + "。");
     }
 
     public String clearSelection(@NotNull PrepareSession session) {
         session.getTarget().config().clearCountdownBlockDisappearanceBounds();
         session.markDirty();
-        return Utils.formatAdminSuccess("已关闭开赛倒计时方块消失。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-018"));
     }
 
     private static long volume(Vector first, Vector second) {

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.acerace.AceRaceEquipment;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -45,10 +47,11 @@ public final class AceRaceEquipmentGui {
                             @NotNull Consumer<AceRaceEquipment> callback) {
         Holder holder = new Holder(session, callback);
         holder.inventory = Bukkit.createInventory(holder, 9,
-                Component.text("选择下一赛段道具").decoration(TextDecoration.ITALIC, false));
-        holder.inventory.setItem(2, option(Material.BARRIER, AceRaceEquipment.NONE, current));
-        holder.inventory.setItem(4, option(Material.ELYTRA, AceRaceEquipment.ELYTRA, current));
-        holder.inventory.setItem(6, option(Material.TRIDENT, AceRaceEquipment.TRIDENT, current));
+                Component.text(GuiConfig.text("prepare-gui-aceraceequipmentgui.text-001")).decoration(TextDecoration.ITALIC, false));
+        holder.inventory.setItem(1, option(Material.BARRIER, AceRaceEquipment.NONE, current));
+        holder.inventory.setItem(3, option(Material.ELYTRA, AceRaceEquipment.ELYTRA, current));
+        holder.inventory.setItem(5, option(Material.TRIDENT, AceRaceEquipment.TRIDENT, current));
+        holder.inventory.setItem(7, option(Material.HEART_OF_THE_SEA, AceRaceEquipment.DOLPHINS_GRACE, current));
         player.openInventory(holder.inventory);
     }
 
@@ -63,9 +66,10 @@ public final class AceRaceEquipmentGui {
             return;
         }
         AceRaceEquipment equipment = switch (event.getRawSlot()) {
-            case 2 -> AceRaceEquipment.NONE;
-            case 4 -> AceRaceEquipment.ELYTRA;
-            case 6 -> AceRaceEquipment.TRIDENT;
+            case 1 -> AceRaceEquipment.NONE;
+            case 3 -> AceRaceEquipment.ELYTRA;
+            case 5 -> AceRaceEquipment.TRIDENT;
+            case 7 -> AceRaceEquipment.DOLPHINS_GRACE;
             default -> null;
         };
         if (equipment == null) return;
@@ -81,7 +85,7 @@ public final class AceRaceEquipmentGui {
         item.editMeta(meta -> {
             meta.displayName(Component.text(equipment.displayName()).color(NamedTextColor.AQUA)
                     .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(equipment == current ? "当前选择" : "点击选择")
+            meta.lore(List.of(Component.text(equipment == current ? GuiConfig.text("prepare-gui-aceraceequipmentgui.text-002") : GuiConfig.text("prepare-gui-aceraceequipmentgui.text-003"))
                     .color(equipment == current ? NamedTextColor.GREEN : NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
         });

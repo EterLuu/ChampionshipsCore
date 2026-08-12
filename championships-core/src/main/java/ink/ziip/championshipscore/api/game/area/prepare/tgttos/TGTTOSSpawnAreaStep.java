@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.tgttos;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
@@ -46,10 +48,10 @@ public final class TGTTOSSpawnAreaStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return Utils.formatAdminError("请先用 WorldEdit 选取两个端点。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-tgttos-tgttosspawnareastep.text-001"));
         }
         if (selection[0].getBlockY() != selection[1].getBlockY()) {
-            return Utils.formatAdminError("生成区域必须是恰好一格高的 WorldEdit 选区。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-tgttos-tgttosspawnareastep.text-002"));
         }
 
         TGTTOSConfig config = (TGTTOSConfig) session.getTarget().config();
@@ -64,7 +66,7 @@ public final class TGTTOSSpawnAreaStep extends PrepareStep {
         }
         session.markDirty();
         return Utils.formatAdminSuccess(spawnType == SpawnType.CHICKEN
-                ? "已设置鸡生成区域；鸡会随机生成在选区上方一格。"
-                : "已设置玩家生成区域与统一朝向；玩家会随机生成在选区上方一格。");
+                ? GuiConfig.text("prepare-tgttos-tgttosspawnareastep.text-003")
+                : GuiConfig.text("prepare-tgttos-tgttosspawnareastep.text-004"));
     }
 }

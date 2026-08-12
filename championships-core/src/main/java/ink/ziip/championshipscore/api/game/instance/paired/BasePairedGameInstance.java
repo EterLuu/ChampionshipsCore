@@ -8,8 +8,8 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import lombok.Getter;
-import org.bukkit.GameMode;
 import org.bukkit.Instrument;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Note;
 import org.bukkit.Sound;
@@ -92,11 +92,11 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
         Set<Player> players = new LinkedHashSet<>();
         if (rightChampionshipTeam != null)
             for (Player player : rightChampionshipTeam.getOnlinePlayers())
-                if (player.getGameMode() == GameMode.SPECTATOR)
+                if (isManagedSpectator(player))
                     players.add(player);
         if (leftChampionshipTeam != null)
             for (Player player : leftChampionshipTeam.getOnlinePlayers())
-                if (player.getGameMode() == GameMode.SPECTATOR)
+                if (isManagedSpectator(player))
                     players.add(player);
         return players;
     }

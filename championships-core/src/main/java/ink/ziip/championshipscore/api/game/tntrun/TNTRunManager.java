@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
+import org.jetbrains.annotations.NotNull;
 
 public class TNTRunManager extends BaseGameInstanceManager<TNTRunTeamArea> {
 
@@ -61,6 +62,17 @@ public class TNTRunManager extends BaseGameInstanceManager<TNTRunTeamArea> {
         TNTRunTeamArea tntRunArea = new TNTRunTeamArea(plugin, tntRunConfig, true, name);
         areas.put(name, tntRunArea);
 
+        return true;
+    }
+
+    @Override
+    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+        if (areas.containsKey(name)) return false;
+        TNTRunConfig config = new TNTRunConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        TNTRunTeamArea area = new TNTRunTeamArea(plugin, config, false, name);
+        areas.put(name, area);
+        plugin.getServer().getScheduler().runTask(plugin, task -> area.preloadMap());
         return true;
     }
 

@@ -1,9 +1,12 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceProgressPointListStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceRespawnPointListStep;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
@@ -92,7 +95,7 @@ public final class ListStepGui {
                             @NotNull PrepareSession session, @NotNull PrepareStep step) {
         Holder holder = new Holder(step.key());
         Inventory inv = Bukkit.createInventory(holder, 9,
-                Component.text("点位管理：" + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
+                Component.text(GuiConfig.text("prepare-gui-liststepgui.text-001") + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
                         .decoration(TextDecoration.ITALIC, false));
         holder.inventory = inv;
         refresh(inv, session, step);
@@ -102,12 +105,12 @@ public final class ListStepGui {
     private static void refresh(@NotNull Inventory inv, @NotNull PrepareSession session, @NotNull PrepareStep step) {
         inv.setItem(ADD_SLOT, item(Material.LIME_WOOL, step.listAddLabel(), NamedTextColor.GREEN,
                 List.of(step.listAddHint().color(NamedTextColor.GRAY))));
-        inv.setItem(VIEW_SLOT, item(Material.BOOK, Component.text("查看已设置列表"), NamedTextColor.AQUA,
-                List.of(Component.text("逐项编辑序号、实际信息或删除").color(NamedTextColor.GRAY))));
-        inv.setItem(INFO_SLOT, item(Material.PAPER, Component.text("当前点位数：" + step.listCount(session)), NamedTextColor.WHITE,
-                List.of(Component.text(step.isSet(session) ? "已设置" : "未设置").color(NamedTextColor.GRAY))));
-        inv.setItem(BACK_SLOT, item(Material.ARROW, Component.text("返回"), NamedTextColor.WHITE,
-                List.of(Component.text("回到 prepare 物品栏").color(NamedTextColor.GRAY))));
+        inv.setItem(VIEW_SLOT, item(Material.BOOK, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-002")), NamedTextColor.AQUA,
+                List.of(Component.text(GuiConfig.text("prepare-gui-liststepgui.text-003")).color(NamedTextColor.GRAY))));
+        inv.setItem(INFO_SLOT, item(Material.PAPER, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-004") + step.listCount(session)), NamedTextColor.WHITE,
+                List.of(Component.text(step.isSet(session) ? GuiConfig.text("prepare-gui-liststepgui.text-005") : GuiConfig.text("prepare-gui-liststepgui.text-006")).color(NamedTextColor.GRAY))));
+        inv.setItem(BACK_SLOT, item(Material.ARROW, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-007")), NamedTextColor.WHITE,
+                List.of(Component.text(GuiConfig.text("prepare-gui-liststepgui.text-008")).color(NamedTextColor.GRAY))));
     }
 
     public static void handleClick(@NotNull PrepareSessionManager manager, @NotNull InventoryClickEvent event,
@@ -128,7 +131,7 @@ public final class ListStepGui {
         switch (event.getRawSlot()) {
             case ADD_SLOT -> {
                 if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
-                    Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
+                    Utils.sendAdminError(player, GuiConfig.text("prepare-gui-liststepgui.text-009") + session.getTarget().worldName());
                     return;
                 }
                 String message = step.listAdd(session, player);
@@ -150,7 +153,7 @@ public final class ListStepGui {
                                     @NotNull PrepareStep step) {
         EntryHolder holder = new EntryHolder(session, step.key());
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text("已设置列表：" + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
+                Component.text(GuiConfig.text("prepare-gui-liststepgui.text-010") + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
                         .decoration(TextDecoration.ITALIC, false));
         refreshEntries(holder, step);
         player.openInventory(holder.inventory);
@@ -169,21 +172,21 @@ public final class ListStepGui {
                 PrepareStep.ListEntry entry = entries.get(index);
                 List<Component> lore = new ArrayList<>();
                 for (String detail : entry.details()) lore.add(Component.text(detail).color(NamedTextColor.GRAY));
-                lore.add(Component.text("点击编辑此项").color(NamedTextColor.AQUA));
+                lore.add(Component.text(GuiConfig.text("prepare-gui-liststepgui.text-011")).color(NamedTextColor.AQUA));
                 inv.setItem(slot, item(Material.PAPER, Component.text(entry.title()), NamedTextColor.WHITE, lore));
             } else {
                 inv.setItem(slot, filler());
             }
         }
         inv.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? item(Material.ARROW, Component.text("上一页"), NamedTextColor.WHITE,
-                List.of(Component.text("第 " + holder.page + " 页").color(NamedTextColor.GRAY)))
+                ? item(Material.ARROW, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-012")), NamedTextColor.WHITE,
+                List.of(Component.text(GuiConfig.text("prepare-gui-liststepgui.text-013") + holder.page + GuiConfig.text("prepare-gui-liststepgui.text-014")).color(NamedTextColor.GRAY)))
                 : filler());
-        inv.setItem(ENTRY_BACK_SLOT, item(Material.BARRIER, Component.text("返回点位管理"), NamedTextColor.RED,
+        inv.setItem(ENTRY_BACK_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-015")), NamedTextColor.RED,
                 List.of()));
         inv.setItem(NEXT_SLOT, holder.page + 1 < pageCount
-                ? item(Material.ARROW, Component.text("下一页"), NamedTextColor.WHITE,
-                List.of(Component.text("第 " + (holder.page + 2) + " / " + pageCount + " 页").color(NamedTextColor.GRAY)))
+                ? item(Material.ARROW, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-016")), NamedTextColor.WHITE,
+                List.of(Component.text(GuiConfig.text("prepare-gui-liststepgui.text-013") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("prepare-gui-liststepgui.text-014")).color(NamedTextColor.GRAY)))
                 : filler());
     }
 
@@ -231,19 +234,24 @@ public final class ListStepGui {
                                 @NotNull PrepareStep step, int index) {
         EditHolder holder = new EditHolder(session, step.key(), index);
         holder.inventory = Bukkit.createInventory(holder, 9,
-                Component.text("编辑点位 #" + (index + 1)).decoration(TextDecoration.ITALIC, false));
-        holder.inventory.setItem(0, item(Material.NAME_TAG, Component.text("编辑序号"), NamedTextColor.YELLOW,
-                List.of(Component.text("调整此项在列表中的顺序").color(NamedTextColor.GRAY))));
+                Component.text(GuiConfig.text("prepare-gui-liststepgui.text-017") + (index + 1)).decoration(TextDecoration.ITALIC, false));
+        holder.inventory.setItem(0, item(Material.NAME_TAG, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-018")), NamedTextColor.YELLOW,
+                List.of(Component.text(GuiConfig.text("prepare-gui-liststepgui.text-019")).color(NamedTextColor.GRAY))));
         if (step instanceof AceRaceRespawnPointListStep respawnStep) {
-            holder.inventory.setItem(2, item(Material.IRON_BARS, Component.text("编辑所属进度线"), NamedTextColor.LIGHT_PURPLE,
+            holder.inventory.setItem(2, item(Material.IRON_BARS, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-020")), NamedTextColor.LIGHT_PURPLE,
                     List.of(Component.text(respawnStep.bindingText(session, index)).color(NamedTextColor.GRAY),
-                            Component.text("选择该重生点在哪条进度线后").color(NamedTextColor.GRAY))));
+                            Component.text(GuiConfig.text("prepare-gui-liststepgui.text-021")).color(NamedTextColor.GRAY))));
+        } else if (step instanceof AceRaceProgressPointListStep progressPointStep) {
+            holder.inventory.setItem(2, item(Material.HEART_OF_THE_SEA,
+                    Component.text(GuiConfig.text("prepare-gui-liststepgui.text-022")), NamedTextColor.LIGHT_PURPLE,
+                    List.of(Component.text(progressPointStep.equipmentText(session, index)).color(NamedTextColor.GRAY),
+                            Component.text(GuiConfig.text("prepare-gui-liststepgui.text-023")).color(NamedTextColor.GRAY))));
         }
-        holder.inventory.setItem(4, item(Material.COMPASS, Component.text("编辑实际信息"), NamedTextColor.AQUA,
-                List.of(Component.text("使用当前位置/当前选区覆盖").color(NamedTextColor.GRAY))));
-        holder.inventory.setItem(6, item(Material.RED_WOOL, Component.text("删除此项"), NamedTextColor.RED,
-                List.of(Component.text("只删除当前这一项").color(NamedTextColor.GRAY))));
-        holder.inventory.setItem(8, item(Material.ARROW, Component.text("返回列表"), NamedTextColor.WHITE, List.of()));
+        holder.inventory.setItem(4, item(Material.COMPASS, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-024")), NamedTextColor.AQUA,
+                List.of(Component.text(GuiConfig.text("prepare-gui-liststepgui.text-025")).color(NamedTextColor.GRAY))));
+        holder.inventory.setItem(6, item(Material.RED_WOOL, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-026")), NamedTextColor.RED,
+                List.of(Component.text(GuiConfig.text("prepare-gui-liststepgui.text-027")).color(NamedTextColor.GRAY))));
+        holder.inventory.setItem(8, item(Material.ARROW, Component.text(GuiConfig.text("prepare-gui-liststepgui.text-028")), NamedTextColor.WHITE, List.of()));
         player.openInventory(holder.inventory);
     }
 
@@ -263,7 +271,7 @@ public final class ListStepGui {
             return;
         }
         switch (event.getRawSlot()) {
-            case 0 -> AnvilInputGui.openInteger(player, "输入新序号", holder.index + 1, value -> {
+            case 0 -> AnvilInputGui.openInteger(player, GuiConfig.text("prepare-gui-liststepgui.text-029"), holder.index + 1, value -> {
                 String message = step.listSetOrder(session, player, holder.index, value);
                 if (message != null) player.sendMessage(message);
                 openEntries(player, session, step);
@@ -271,10 +279,12 @@ public final class ListStepGui {
             case 2 -> {
                 if (step instanceof AceRaceRespawnPointListStep)
                     AceRaceRespawnPointBindingGui.open(manager, player, session, holder.index);
+                else if (step instanceof AceRaceProgressPointListStep progressPointStep)
+                    progressPointStep.editEquipment(session, player, holder.index);
             }
             case 4 -> {
                 if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
-                    Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
+                    Utils.sendAdminError(player, GuiConfig.text("prepare-gui-liststepgui.text-009") + session.getTarget().worldName());
                     return;
                 }
                 String message = step.listEdit(session, player, holder.index);

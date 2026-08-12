@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 
 /**
@@ -18,6 +19,7 @@ public class ConfigurationManager extends BaseConfigurationManager {
         getConfigs().add(new CCConfig(plugin));
         getConfigs().add(new MessageConfig(plugin));
         getConfigs().add(new ScheduleMessageConfig(plugin));
+        getConfigs().add(new GuiConfig(plugin));
     }
 
     @Override

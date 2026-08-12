@@ -21,8 +21,9 @@ import java.util.List;
 
 /**
  * An immutable build order: a named, star-rated set of {@link BlueprintBlock}s placed relative to a build
- * anchor. Stars drive both the pool it belongs to (1–5 normal, 7 golden) and the points a completion is
- * worth. The block count is the denominator for the completion ratio used when scoring partial builds.
+ * anchor. Stars drive normal-order draw weighting and completion points. Three-star blueprints are also
+ * eligible for the golden plot, where the order context overrides their score to 7 stars. The block count
+ * is the denominator for the completion ratio used when scoring partial builds.
  */
 @Getter
 public class BuildMartBlueprint {

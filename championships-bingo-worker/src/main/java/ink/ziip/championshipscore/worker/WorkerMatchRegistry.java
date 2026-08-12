@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.protocol.transport.DeliveryDisposition;
 import ink.ziip.championshipscore.protocol.transport.InboundDelivery;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.Location;
 import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
@@ -250,6 +251,14 @@ final class WorkerMatchRegistry {
 
     synchronized boolean canUseBingoUi(UUID playerId) {
         return active != null && active.canUseBingoUi(playerId);
+    }
+
+    boolean handleSpectatorControl(Player player, ItemStack item, boolean rightClick) {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        return session != null && session.handleSpectatorControl(player, item, rightClick);
     }
 
     synchronized boolean isProtectedParticipant(UUID playerId) {

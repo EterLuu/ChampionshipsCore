@@ -28,13 +28,15 @@ public final class CommandCatalog {
             new Entry("/cc team", "打开管理员队伍与玩家管理界面"),
             new Entry("/cc team add|delete|info|list|tphere ...", "兼容指令：管理队伍、查看名单与队伍传送"),
             new Entry("/cc team member add|delete <队伍> <玩家>", "管理队伍成员"),
-            new Entry("/cc game start <游戏> ...", "仅为指定队伍启动单局，不播报规则或自动调度观众"),
-            new Entry("/cc event start <游戏> [参数]", "开始正式比赛并管理规则、观众和赛程；再次执行会紧急停止"),
+            new Entry("/cc game start <游戏> ...", "仅为指定队伍启动常规单局，不播报规则或自动调度观众"),
+            new Entry("/cc event start <游戏>", "开始常规正式比赛并管理规则、观众和赛程；再次执行会紧急停止"),
             new Entry("/cc event stop <游戏>", "显式停止正式比赛的赛程任务"),
             new Entry("/cc event reset|undo --confirm", "重置赛程或撤销最近正式比赛"),
+            new Entry("/cc finale <游戏> start <场地> ...", "在指定场地启动已注册的冠军决赛"),
+            new Entry("/cc finale dodgebolt pause|resume|restart-round|eliminate|force-win|stop ...", "躲避箭决赛裁判控制"),
             new Entry("/cc map edit <游戏>", "打开地图准备与编辑界面（可编辑未启用游戏）"),
             new Entry("/cc map blueprint create <名称> <星级>", "从 WorldEdit 选区导出匹配赛建蓝图"),
-            new Entry("/cc admin vote|world|dodgebolt ...", "投票、世界与躲避箭裁判控制"),
+            new Entry("/cc admin vote|world ...", "投票与世界管理"),
             new Entry("/cc admin reload|sudo|teleport|set-max-player ...", "系统维护与现场管理")
     );
 

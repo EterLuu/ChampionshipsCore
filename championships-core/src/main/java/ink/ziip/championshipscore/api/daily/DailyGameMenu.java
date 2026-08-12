@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -133,36 +135,36 @@ public final class DailyGameMenu {
             holder.gamesBySlot.put(slot, game);
         }
         if (games.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text("暂无开放项目", NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text("请等待管理员开放游戏项目", NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-001"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-002"), NamedTextColor.DARK_GRAY)), false));
 
         boolean participating = daily.isQueued(holder.viewer) || daily.session(holder.viewer) != null;
         inventory.setItem(LEAVE_SLOT, item(participating ? Material.REDSTONE_TORCH : Material.GRAY_DYE,
-                Component.text(participating ? "离开当前游玩" : "尚未加入游玩",
+                Component.text(participating ? GuiConfig.text("api-daily-dailygamemenu.text-003") : GuiConfig.text("api-daily-dailygamemenu.text-004"),
                         participating ? NamedTextColor.RED : NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
                 participating ? List.of(
-                        Component.text("同行小队将一起离开", NamedTextColor.YELLOW),
-                        Component.text("若场内无人，游戏将直接结束", NamedTextColor.DARK_GRAY))
-                        : List.of(Component.text("选择上方项目加入匹配", NamedTextColor.DARK_GRAY)), false));
+                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-005"), NamedTextColor.YELLOW),
+                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-006"), NamedTextColor.DARK_GRAY))
+                        : List.of(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-007"), NamedTextColor.DARK_GRAY)), false));
         inventory.setItem(LEADERBOARD_SLOT, leaderboardItem(holder.viewer));
         inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
-                Component.text("刷新", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text("队列与倒计时每秒自动更新", NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-008"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-009"), NamedTextColor.DARK_GRAY)), false));
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text("返回大厅", NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text("关闭", NamedTextColor.RED), List.of(), false));
+                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-010"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
+        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("api-daily-dailygamemenu.text-011"), NamedTextColor.RED), List.of(), false));
     }
 
     private ItemStack partyItem(UUID viewer, DailyPlayerSnapshot snapshot) {
         DailyParty party = daily.partyManager().getParty(viewer);
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("队长  ", NamedTextColor.GRAY)
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-012"), NamedTextColor.GRAY)
                 .append(Component.text(snapshot.partyLeader(), NamedTextColor.AQUA)));
-        lore.add(Component.text("人数  ", NamedTextColor.GRAY)
-                .append(Component.text(snapshot.partySize() + " 人", NamedTextColor.WHITE)));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-013"), NamedTextColor.GRAY)
+                .append(Component.text(snapshot.partySize() + GuiConfig.text("api-daily-dailygamemenu.text-014"), NamedTextColor.WHITE)));
         if (party != null) {
             lore.add(Component.empty());
-            lore.add(Component.text("同行成员", NamedTextColor.GOLD));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-015"), NamedTextColor.GOLD));
             for (UUID member : party.members()) {
                 String name = Bukkit.getOfflinePlayer(member).getName();
                 lore.add(Component.text((member.equals(party.leader()) ? "★ " : "• ")
@@ -171,43 +173,43 @@ public final class DailyGameMenu {
             }
         } else {
             lore.add(Component.empty());
-            lore.add(Component.text("当前以个人身份进入匹配", NamedTextColor.DARK_GRAY));
-            lore.add(Component.text("点击打开组队功能", NamedTextColor.YELLOW));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-016"), NamedTextColor.DARK_GRAY));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-017"), NamedTextColor.YELLOW));
         }
         lore.add(Component.empty());
-        lore.add(Component.text("任意成员都可以为全队改选游戏", NamedTextColor.DARK_GRAY));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-018"), NamedTextColor.DARK_GRAY));
         return playerHead(viewer,
-                Component.text("同行小队", NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, party != null);
+                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-019"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, party != null);
     }
 
     private ItemStack overviewItem(int games, int totalQueued, int activeGames) {
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(games + " 个开放项目", NamedTextColor.WHITE)
-                .append(Component.text("  ·  " + totalQueued + " 人正在等候", NamedTextColor.GRAY)));
-        lore.add(Component.text(activeGames == 0 ? "当前所有项目均可匹配" : activeGames + " 个项目正在游戏中",
+        lore.add(Component.text(games + GuiConfig.text("api-daily-dailygamemenu.text-020"), NamedTextColor.WHITE)
+                .append(Component.text(GuiConfig.text("common.separator") + totalQueued + GuiConfig.text("api-daily-dailygamemenu.text-021"), NamedTextColor.GRAY)));
+        lore.add(Component.text(activeGames == 0 ? GuiConfig.text("api-daily-dailygamemenu.text-022") : activeGames + GuiConfig.text("api-daily-dailygamemenu.text-023"),
                 activeGames == 0 ? NamedTextColor.GREEN : NamedTextColor.GOLD));
-        lore.add(Component.text("无需预先分队，匹配完成后自动组队", NamedTextColor.DARK_GRAY));
-        lore.add(Component.text("点击项目即可加入或为全队改选", NamedTextColor.YELLOW));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-024"), NamedTextColor.DARK_GRAY));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-025"), NamedTextColor.YELLOW));
         return item(Material.NETHER_STAR,
-                Component.text("匹配大厅", NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-026"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
                 lore, false);
     }
 
     private ItemStack statsItem(UUID viewer) {
         DailyStatSnapshot stat = daily.statsManager().stat(viewer, null);
         return item(Material.WRITABLE_BOOK,
-                Component.text("我的战绩", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-027"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text("场次  ", NamedTextColor.GRAY).append(Component.text(stat.gamesPlayed(), NamedTextColor.WHITE)),
-                        Component.text("胜场  ", NamedTextColor.GRAY).append(Component.text(stat.wins(), NamedTextColor.GREEN)),
-                        Component.text("胜率  ", NamedTextColor.GRAY).append(Component.text(winRate(stat), NamedTextColor.YELLOW)),
-                        Component.text("每场成绩独立记录，不继承积分", NamedTextColor.DARK_GRAY)
+                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-028"), NamedTextColor.GRAY).append(Component.text(stat.gamesPlayed(), NamedTextColor.WHITE)),
+                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-029"), NamedTextColor.GRAY).append(Component.text(stat.wins(), NamedTextColor.GREEN)),
+                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-030"), NamedTextColor.GRAY).append(Component.text(winRate(stat), NamedTextColor.YELLOW)),
+                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-031"), NamedTextColor.DARK_GRAY)
                 ), false);
     }
 
     private ItemStack gameItem(UUID viewer, GameTypeEnum game, DailyRules rules) {
         GameStyle style = STYLES.getOrDefault(game,
-                new GameStyle(Material.PAPER, NamedTextColor.WHITE, "游戏项目", "与其他玩家一起完成挑战"));
+                new GameStyle(Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("api-daily-dailygamemenu.text-032"), GuiConfig.text("api-daily-dailygamemenu.text-033")));
         int queued = daily.queueSize(game);
         int queuedGroups = daily.queueGroupCount(game);
         int countdown = daily.queueCountdown(game);
@@ -215,6 +217,8 @@ public final class DailyGameMenu {
         boolean selected = daily.isSelected(viewer, game);
         DailySession active = daily.activeSession(game);
         boolean running = active != null;
+        int activeSessions = daily.activeSessionCount(game);
+        int availableSlots = daily.availableSlotCount(game);
         int needed = Math.max(0, rules.minPlayers() - queued);
         DailyStatSnapshot stat = daily.statsManager().stat(viewer, game);
         List<String> maps = mapNames(game);
@@ -224,53 +228,59 @@ public final class DailyGameMenu {
         lore.add(Component.text(style.description, NamedTextColor.GRAY));
         lore.add(Component.empty());
         if (running) {
-            lore.add(Component.text("游戏状态  ", NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-034"), NamedTextColor.GRAY)
                     .append(Component.text(active.instance().getGameStageEnum().toString(), NamedTextColor.GOLD)));
-            lore.add(Component.text("进行中地图  ", NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-035"), NamedTextColor.GRAY)
                     .append(Component.text(active.map(), NamedTextColor.AQUA))
-                    .append(daily.activeSessionCount(game) > 1
-                            ? Component.text("  ·  " + daily.activeSessionCount(game) + " 场", NamedTextColor.DARK_GRAY)
+                    .append(activeSessions > 1
+                            ? Component.text(GuiConfig.text("common.separator") + activeSessions + GuiConfig.text("api-daily-dailygamemenu.text-036"), NamedTextColor.DARK_GRAY)
                             : Component.empty()));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-037"), NamedTextColor.GRAY)
+                    .append(Component.text(availableSlots > 0
+                                    ? availableSlots + GuiConfig.text("api-daily-dailygamemenu.text-038")
+                                    : GuiConfig.text("api-daily-dailygamemenu.text-039"),
+                            availableSlots > 0 ? NamedTextColor.GREEN : NamedTextColor.GOLD)));
         } else {
-            lore.add(Component.text("游戏状态  ", NamedTextColor.GRAY)
-                    .append(Component.text("可加入匹配", NamedTextColor.GREEN)));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-034"), NamedTextColor.GRAY)
+                    .append(Component.text(availableSlots > 0 ? GuiConfig.text("api-daily-dailygamemenu.text-040") : GuiConfig.text("api-daily-dailygamemenu.text-041"),
+                            availableSlots > 0 ? NamedTextColor.GREEN : NamedTextColor.GOLD)));
         }
         lore.add(Component.empty());
         lore.add(Component.text("■".repeat(filled), countdown >= 0 ? NamedTextColor.GOLD : style.color)
                 .append(Component.text("□".repeat(BAR_LENGTH - filled), NamedTextColor.DARK_GRAY)));
-        lore.add(Component.text(queued + " / " + rules.minPlayers() + " 人达到开场人数", NamedTextColor.WHITE));
+        lore.add(Component.text(queued + "/" + rules.minPlayers() + GuiConfig.text("api-daily-dailygamemenu.text-042"), NamedTextColor.WHITE));
         lore.add(countdown >= 0
-                ? Component.text("即将启程  ", NamedTextColor.GRAY).append(Component.text(countdown + " 秒", NamedTextColor.GOLD))
+                ? Component.text(GuiConfig.text("api-daily-dailygamemenu.text-043"), NamedTextColor.GRAY).append(Component.text(countdown + GuiConfig.text("api-daily-dailygamemenu.text-044"), NamedTextColor.GOLD))
                 : queued > 0 && queuedGroups < 2
-                ? Component.text("还需另一名玩家或同行小队", NamedTextColor.YELLOW)
-                : needed == 0 ? Component.text("正在准备倒计时", NamedTextColor.GREEN)
-                : Component.text("还需 " + needed + " 名同游者", NamedTextColor.YELLOW));
+                ? Component.text(GuiConfig.text("api-daily-dailygamemenu.text-045"), NamedTextColor.YELLOW)
+                : needed == 0 ? Component.text(GuiConfig.text("api-daily-dailygamemenu.text-046"), NamedTextColor.GREEN)
+                : Component.text(GuiConfig.text("api-daily-dailygamemenu.text-047") + needed + GuiConfig.text("api-daily-dailygamemenu.text-048"), NamedTextColor.YELLOW));
         lore.add(Component.empty());
-        lore.add(Component.text("组队规则", NamedTextColor.GOLD));
-        lore.add(Component.text("每队至多 " + rules.teamSize() + " 人  ·  最多 " + rules.teams() + " 队", NamedTextColor.WHITE));
-        lore.add(Component.text("至少需要 2 个独立玩家或同行小队", NamedTextColor.GRAY));
-        lore.add(Component.text("单场容量 " + rules.minPlayers() + "–" + rules.maxPlayers() + " 人", NamedTextColor.GRAY));
-        lore.add(Component.text("地图  ", NamedTextColor.GRAY)
-                .append(Component.text(maps.isEmpty() ? "等待场地" : String.join("、", maps),
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-049"), NamedTextColor.GOLD));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-050") + rules.teamSize() + GuiConfig.text("api-daily-dailygamemenu.text-051") + rules.teams() + GuiConfig.text("api-daily-dailygamemenu.text-052"), NamedTextColor.WHITE));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-053"), NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-054") + rules.minPlayers() + "–" + rules.maxPlayers() + GuiConfig.text("api-daily-dailygamemenu.text-014"), NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-055"), NamedTextColor.GRAY)
+                .append(Component.text(maps.isEmpty() ? GuiConfig.text("api-daily-dailygamemenu.text-056") : String.join("、", maps),
                         maps.isEmpty() ? NamedTextColor.DARK_GRAY : NamedTextColor.AQUA)));
         lore.add(Component.empty());
-        lore.add(Component.text("我的成绩  ", NamedTextColor.GRAY)
-                .append(Component.text(stat.gamesPlayed() + " 场", NamedTextColor.WHITE))
-                .append(Component.text("  ·  " + stat.wins() + " 胜", NamedTextColor.GREEN)));
-        lore.add(Component.text("胜率 " + winRate(stat), NamedTextColor.YELLOW));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-057"), NamedTextColor.GRAY)
+                .append(Component.text(stat.gamesPlayed() + GuiConfig.text("api-daily-dailygamemenu.text-036"), NamedTextColor.WHITE))
+                .append(Component.text(GuiConfig.text("common.separator") + stat.wins() + GuiConfig.text("api-daily-dailygamemenu.text-058"), NamedTextColor.GREEN)));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-059") + winRate(stat), NamedTextColor.YELLOW));
         lore.add(Component.empty());
-        if (running && selected) {
-            lore.add(Component.text("✓  已在候场队列", NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
-            lore.add(Component.text("当前场次结束后将恢复匹配", NamedTextColor.GOLD));
-        } else if (running) {
-            lore.add(Component.text("游戏进行中", NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
-            lore.add(Component.text("当前暂时无法加入匹配", NamedTextColor.RED));
+        if (selected && availableSlots <= 0) {
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-060"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-061"), NamedTextColor.GOLD));
         } else if (selected) {
-            lore.add(Component.text("✓  当前选择", NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
-            lore.add(Component.text("再次点击不会重复加入", NamedTextColor.DARK_GRAY));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-062"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-063"), NamedTextColor.DARK_GRAY));
         } else {
-            lore.add(Component.text("点击加入匹配", NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
-            lore.add(Component.text("同行小队将同步选择", NamedTextColor.DARK_GRAY));
+            lore.add(Component.text(availableSlots > 0 ? GuiConfig.text("api-daily-dailygamemenu.text-064") : GuiConfig.text("api-daily-dailygamemenu.text-065"),
+                    availableSlots > 0 ? NamedTextColor.GREEN : NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(availableSlots > 0
+                    ? GuiConfig.text("api-daily-dailygamemenu.text-066")
+                    : GuiConfig.text("api-daily-dailygamemenu.text-067"), NamedTextColor.DARK_GRAY));
         }
         Component marker = selected ? Component.text("✓ ", NamedTextColor.AQUA)
                 : running ? Component.text("● ", NamedTextColor.GOLD) : Component.empty();
@@ -284,15 +294,15 @@ public final class DailyGameMenu {
         int position = -1;
         for (int index = 0; index < board.size(); index++) if (board.get(index).player().equals(viewer)) { position = index + 1; break; }
         List<Component> lore = new ArrayList<>();
-        if (!board.isEmpty()) lore.add(Component.text("当前领跑  ", NamedTextColor.GRAY)
+        if (!board.isEmpty()) lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-068"), NamedTextColor.GRAY)
                 .append(Component.text(board.getFirst().name(), NamedTextColor.GOLD))
-                .append(Component.text("  ·  " + (long) board.getFirst().value() + " 胜", NamedTextColor.WHITE)));
-        lore.add(Component.text(position < 0 ? "我还没有胜场记录" : "我的胜场榜名次  #" + position,
+                .append(Component.text(GuiConfig.text("common.separator") + (long) board.getFirst().value() + GuiConfig.text("api-daily-dailygamemenu.text-058"), NamedTextColor.WHITE)));
+        lore.add(Component.text(position < 0 ? GuiConfig.text("api-daily-dailygamemenu.text-069") : GuiConfig.text("api-daily-dailygamemenu.text-070") + position,
                 position < 0 ? NamedTextColor.DARK_GRAY : NamedTextColor.AQUA));
         lore.add(Component.empty());
-        lore.add(Component.text("点击查看积分、胜场与竞速纪录", NamedTextColor.YELLOW));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-071"), NamedTextColor.YELLOW));
         return item(Material.GOLD_INGOT,
-                Component.text("排行榜", NamedTextColor.GOLD).decorate(TextDecoration.BOLD), lore, false);
+                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-072"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD), lore, false);
     }
 
     private static String winRate(DailyStatSnapshot stat) {
@@ -304,7 +314,9 @@ public final class DailyGameMenu {
         List<String> maps = game == GameTypeEnum.Bingo
                 ? plugin.getGameManager().getBingoManager().getAreaNameList()
                 : game == GameTypeEnum.AceRace
-                ? plugin.getGameManager().getAceRaceManager().getAreaNameList() : List.of();
+                ? plugin.getGameManager().getAceRaceManager().getAreaNameList()
+                : game == GameTypeEnum.DragonEggCarnival
+                ? plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList() : List.of();
         return maps.stream().sorted(String.CASE_INSENSITIVE_ORDER).limit(3).toList();
     }
 
@@ -355,9 +367,11 @@ public final class DailyGameMenu {
     private static Map<GameTypeEnum, GameStyle> createStyles() {
         Map<GameTypeEnum, GameStyle> styles = new EnumMap<>(GameTypeEnum.class);
         styles.put(GameTypeEnum.Bingo, new GameStyle(Material.FILLED_MAP, NamedTextColor.LIGHT_PURPLE,
-                "探索 · 团队协作", "完成共享宾果任务，争取连线与全收集"));
+                GuiConfig.text("api-daily-dailygamemenu.text-073"), GuiConfig.text("api-daily-dailygamemenu.text-074")));
         styles.put(GameTypeEnum.AceRace, new GameStyle(Material.ELYTRA, NamedTextColor.AQUA,
-                "竞速 · 独立赛道实例", "驾驭鞘翅与三叉戟，挑战最快完整圈"));
+                GuiConfig.text("api-daily-dailygamemenu.text-075"), GuiConfig.text("api-daily-dailygamemenu.text-076")));
+        styles.put(GameTypeEnum.DragonEggCarnival, new GameStyle(Material.DRAGON_EGG, NamedTextColor.LIGHT_PURPLE,
+                GuiConfig.text("api-daily-dailygamemenu.text-077"), GuiConfig.text("api-daily-dailygamemenu.text-078")));
         return Map.copyOf(styles);
     }
 

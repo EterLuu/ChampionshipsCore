@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.battlebox;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -64,8 +66,8 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
         steps.add(new SchematicStep(plugin -> schematic,
-                Component.text("保存场地模板"),
-                Component.text("用 WorldEdit 选取整个场地后点击，保存为 arena.schem")) {
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-001")),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-002"))) {
             @Override
             public String capture(@NotNull ink.ziip.championshipscore.api.game.area.prepare.PrepareSession session,
                                   @NotNull Player player) {
@@ -91,64 +93,64 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                 }));
 
         steps.add(new WeSelectionStep("area_pos",
-                Component.text("0 号场地完整边界"),
-                Component.text("框住手工保留的完整 0 号场地；该最小角决定副本粘贴位置"),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-003")),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-004")),
                 Material.BEDROCK,
                 a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
                 (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess("已设置场地总边界。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-005"))));
 
         steps.add(new StandAndRunStep("spectator_spawn",
-                Component.text("旁观者出生点"),
-                Component.text("站到旁观位置后点击"),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-006")),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-007")),
                 Material.ENDER_EYE,
                 a -> cfg(a).getSpectatorSpawnPoint() != null,
                 (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置旁观者出生点。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-008"))));
 
         steps.add(new StandAndRunStep("right_spawn",
-                Component.text("右侧队伍出生点"),
-                Component.text("站到右侧队伍出生位置后点击"),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-009")),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-010")),
                 Material.GREEN_WOOL,
                 a -> cfg(a).getRightSpawnPoint() != null,
                 (a, loc) -> cfg(a).setRightSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置右侧队伍出生点。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-011"))));
 
         steps.add(new StandAndRunStep("left_spawn",
-                Component.text("左侧队伍出生点"),
-                Component.text("站到左侧队伍出生位置后点击"),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-012")),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-013")),
                 Material.RED_WOOL,
                 a -> cfg(a).getLeftSpawnPoint() != null,
                 (a, loc) -> cfg(a).setLeftSpawnPoint(loc),
-                Utils.formatAdminSuccess("已设置左侧队伍出生点。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-014"))));
 
         steps.add(new StandAndRunStep("right_prepare_spot",
-                Component.text("右侧 PrepareSpot"),
-                Component.text("站到右侧队伍预备位置后点击"),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-015")),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-016")),
                 Material.GREEN_STAINED_GLASS,
                 a -> cfg(a).getRightPrepareSpot() != null,
                 (a, loc) -> cfg(a).setRightPrepareSpot(loc),
-                Utils.formatAdminSuccess("已设置右侧 PrepareSpot。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-017"))));
 
         steps.add(new StandAndRunStep("left_prepare_spot",
-                Component.text("左侧 PrepareSpot"),
-                Component.text("站到左侧队伍预备位置后点击"),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-018")),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-019")),
                 Material.RED_STAINED_GLASS,
                 a -> cfg(a).getLeftPrepareSpot() != null,
                 (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
-                Utils.formatAdminSuccess("已设置左侧 PrepareSpot。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-020"))));
 
         steps.add(new WeSelectionStep("wool_pos",
-                Component.text("羊毛区域"),
-                Component.text("用 WorldEdit 选取羊毛放置区域"),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-021")),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-022")),
                 Material.YELLOW_WOOL,
                 a -> cfg(a).getWoolPos1() != null && cfg(a).getWoolPos2() != null,
                 (a, sel) -> { cfg(a).setWoolPos1(sel[0]); cfg(a).setWoolPos2(sel[1]); },
-                Utils.formatAdminSuccess("已设置羊毛区域。")));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-023"))));
 
         steps.add(new ListStep("potion_spawn_points",
-                Component.text("药水生成点"),
-                Component.text("逐个添加药水生成位置"),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-024")),
+                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-025")),
                 Material.LIME_WOOL,
                 a -> cfg(a).getPotionSpawnPoints(),
                 (a, values) -> cfg(a).setPotionSpawnPoints(values),

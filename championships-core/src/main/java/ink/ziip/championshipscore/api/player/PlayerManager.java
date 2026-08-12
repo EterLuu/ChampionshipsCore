@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.player.dao.PlayerDao;
 import ink.ziip.championshipscore.api.player.dao.PlayerDaoImpl;
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
+import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -66,6 +67,8 @@ public class PlayerManager extends BaseManager {
         cachedPlayers.remove(uuid);
         cachedPlayerName.remove(uuid);
         playerDao.deletePlayer(uuid);
+        plugin.getRedisManager().publishDatabaseChange("player-deleted", DatabaseSyncDomain.PLAYER,
+                DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
     }
 
     public void updatePlayer(@NotNull Player player) {
@@ -82,6 +85,10 @@ public class PlayerManager extends BaseManager {
         plugin.getTeamManager().applyIdentityMigration(migration);
         if (migration.successful() && migration.migratedPointRows() > 0) {
             plugin.getRankManager().refreshAfterPendingPointWrites();
+        }
+        if (migration.successful() && migration.changed()) {
+            plugin.getRedisManager().publishDatabaseChange("player-identity-migrated",
+                    DatabaseSyncDomain.PLAYER, DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
         }
     }
 
@@ -134,6 +141,7 @@ public class PlayerManager extends BaseManager {
         if (playerEntry == null) {
             uuid = Utils.getPlayerUUID(name);
             playerDao.addPlayer(name, uuid);
+            plugin.getRedisManager().publishDatabaseChange("player-created", DatabaseSyncDomain.PLAYER);
         } else {
             uuid = playerEntry.getUuid();
         }
@@ -167,6 +175,12 @@ public class PlayerManager extends BaseManager {
     /** Authoritative historical identities used by administrator player selectors. */
     public @NotNull List<PlayerEntry> getKnownPlayers() {
         return playerDao.getPlayerList();
+    }
+
+    /** Drops database-backed identity lookups after a change published by another Core instance. */
+    public void invalidateDatabaseIdentityCache() {
+        cachedPlayerUUID.clear();
+        cachedPlayerName.clear();
     }
 
     public ChampionshipPlayer getPlayer(@NotNull UUID uuid) {

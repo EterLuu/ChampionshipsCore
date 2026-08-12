@@ -16,13 +16,10 @@ import ink.ziip.championshipscore.protocol.MatchRunMode;
 import ink.ziip.championshipscore.protocol.MatchState;
 import ink.ziip.championshipscore.protocol.transport.DeliveryDisposition;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
-import ink.ziip.championshipscore.redis.RedisConsumerConfig;
 import ink.ziip.championshipscore.redis.RedisMatchConsumer;
 import ink.ziip.championshipscore.redis.RedisMatchTransport;
-import ink.ziip.championshipscore.redis.RedisTransportConfig;
 
 import java.sql.SQLException;
-import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -44,6 +41,7 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     private PluginMessagePlayerRouter router;
     private ScheduledTask heartbeatWatchdog;
     private volatile boolean ready;
+    private volatile boolean transportLifecycleActive;
 
     public RemoteBingoManager(ChampionshipsCore plugin) {
         super(plugin);
@@ -60,19 +58,25 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     @Override
     public void load() {
         if (!plugin.getGameManager().getBingoManager().remoteExecutionConfigured()) return;
+        transportLifecycleActive = true;
         try {
-            RedisTransportConfig redis = redisConfig();
-            transport = new RedisMatchTransport(redis);
             router = new PluginMessagePlayerRouter(plugin, CCConfig.BINGO_PROXY_CHANNEL);
-            RedisConsumerConfig consumerConfig = new RedisConsumerConfig(
-                    CCConfig.BINGO_REDIS_CONSUMER_GROUP, "core-" + plugin.getServer().getPort(), 64,
-                    Duration.ofMillis(CCConfig.BINGO_REDIS_BLOCK_TIMEOUT_MILLIS),
-                    Duration.ofMillis(CCConfig.BINGO_REDIS_RECLAIM_IDLE_MILLIS),
-                    CCConfig.BINGO_REDIS_MAX_DELIVERIES);
-            consumer = new RedisMatchConsumer(redis, consumerConfig, redis.eventStream(), this::consume,
-                    error -> plugin.getLogger().log(Level.SEVERE, "Remote Bingo event consumer failure", error));
-            transport.ping().thenCompose(pong -> consumer.start())
+            plugin.getRedisManager().whenReady().thenCompose(ignored -> {
+                        if (!transportLifecycleActive)
+                            return CompletableFuture.failedFuture(
+                                    new java.util.concurrent.CancellationException("Remote Bingo manager stopped"));
+                        transport = plugin.getRedisManager().matchTransport(CCConfig.BINGO_WORKER_ID);
+                        consumer = plugin.getRedisManager().createMatchEventConsumer(CCConfig.BINGO_WORKER_ID,
+                                this::consume,
+                                error -> plugin.getLogger().log(Level.SEVERE,
+                                        "Remote Bingo event consumer failure", error));
+                        return consumer.start();
+                    })
                     .thenCompose(ignored -> recoverOrphans()).whenComplete((ignored, failure) -> {
+                if (!transportLifecycleActive) {
+                    closeResources();
+                    return;
+                }
                 if (failure != null) {
                     plugin.getLogger().log(Level.SEVERE, "Remote Bingo transport did not become ready", failure);
                     closeResources();
@@ -276,11 +280,6 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         });
     }
 
-    private RedisTransportConfig redisConfig() {
-        return new RedisTransportConfig(CCConfig.BINGO_REDIS_URI, CCConfig.BINGO_REDIS_NAMESPACE,
-                CCConfig.BINGO_WORKER_ID, CCConfig.BINGO_REDIS_STREAM_MAX_LENGTH, Duration.ofSeconds(5));
-    }
-
     public void routeReconnect(Player player, RemoteBingoInstance instance) {
         RemoteBingoMatch match = matches.get(instance.matchId());
         if (match == null || match.state().terminal() || router == null) {
@@ -343,6 +342,7 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
 
     @Override
     public void unload() {
+        transportLifecycleActive = false;
         ready = false;
         if (heartbeatWatchdog != null) heartbeatWatchdog.cancel();
         heartbeatWatchdog = null;
@@ -355,9 +355,8 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     }
 
     private void closeResources() {
-        if (consumer != null) consumer.close();
+        if (consumer != null) plugin.getRedisManager().releaseMatchConsumer(consumer);
         if (router != null) router.close();
-        if (transport != null) transport.close();
         consumer = null;
         router = null;
         transport = null;

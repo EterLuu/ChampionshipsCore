@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
@@ -23,7 +25,7 @@ final class BuildMartFloorSelectionStep extends PrepareStep {
     BuildMartFloorSelectionStep(@NotNull String key, @NotNull Component name,
                                 @NotNull Material icon, @NotNull Predicate<SetupTarget> setPredicate,
                                 @NotNull BiConsumer<SetupTarget, Location> setter) {
-        super(key, name, Component.text("用 WorldEdit 精确选中 7x1x7 地板"), icon,
+        super(key, name, Component.text(GuiConfig.text("prepare-buildmart-buildmartfloorselectionstep.text-001")), icon,
                 StepCaptureType.WE_SELECTION);
         this.setPredicate = setPredicate;
         this.setter = setter;
@@ -40,18 +42,18 @@ final class BuildMartFloorSelectionStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            return Utils.formatAdminError("请先用 WorldEdit 选中 7x1x7 地板。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-buildmart-buildmartfloorselectionstep.text-002"));
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
         Vector max = Vector.getMaximum(selection[0], selection[1]);
         if (max.getBlockX() - min.getBlockX() != 6
                 || max.getBlockY() != min.getBlockY()
                 || max.getBlockZ() - min.getBlockZ() != 6) {
-            return Utils.formatAdminError("选区必须恰好为 7x1x7 地板。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-buildmart-buildmartfloorselectionstep.text-003"));
         }
         setter.accept(session.getTarget(), new Location(player.getWorld(),
                 min.getBlockX(), min.getBlockY(), min.getBlockZ()));
         session.markDirty();
-        return Utils.formatAdminSuccess("已记录地板最低边角。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-buildmart-buildmartfloorselectionstep.text-004"));
     }
 }

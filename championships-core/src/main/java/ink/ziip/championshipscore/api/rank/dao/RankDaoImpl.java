@@ -19,6 +19,10 @@ public class RankDaoImpl implements RankDao {
 
     @Override
     public List<PlayerPointEntry> getPlayerPoints(UUID uuid) {
+        return getPlayerPointsIfAvailable(uuid).orElseGet(Collections::emptyList);
+    }
+
+    public Optional<List<PlayerPointEntry>> getPlayerPointsIfAvailable(UUID uuid) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
                     SELECT `id`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`, `valid`
@@ -49,16 +53,20 @@ public class RankDaoImpl implements RankDao {
                             .build();
                     playerPointEntries.add(playerPointEntry);
                 }
-                return playerPointEntries;
+                return Optional.of(List.copyOf(playerPointEntries));
             }
         } catch (SQLException exception) {
             logFailure("查询玩家积分", exception);
-            return Collections.emptyList();
+            return Optional.empty();
         }
     }
 
     @Override
     public List<PlayerPointEntry> getTeamPlayerPoints(int teamId) {
+        return getTeamPlayerPointsIfAvailable(teamId).orElseGet(Collections::emptyList);
+    }
+
+    public Optional<List<PlayerPointEntry>> getTeamPlayerPointsIfAvailable(int teamId) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
                     SELECT `id`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`, `valid`
@@ -89,11 +97,11 @@ public class RankDaoImpl implements RankDao {
                             .build();
                     playerPointEntries.add(playerPointEntry);
                 }
-                return playerPointEntries;
+                return Optional.of(List.copyOf(playerPointEntries));
             }
         } catch (SQLException exception) {
             logFailure("查询队伍积分", exception);
-            return Collections.emptyList();
+            return Optional.empty();
         }
     }
 

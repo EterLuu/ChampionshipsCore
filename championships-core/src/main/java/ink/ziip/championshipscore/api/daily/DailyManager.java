@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.daily.adapter.AceRaceDailyGameAdapter;
 import ink.ziip.championshipscore.api.daily.adapter.BingoDailyGameAdapter;
+import ink.ziip.championshipscore.api.daily.adapter.DragonEggCarnivalDailyGameAdapter;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoInstance;
@@ -91,6 +92,7 @@ public final class DailyManager extends BaseManager {
         serverMode = ServerMode.parse(CCConfig.MODE);
         adapters.put(GameTypeEnum.Bingo, new BingoDailyGameAdapter(plugin));
         adapters.put(GameTypeEnum.AceRace, new AceRaceDailyGameAdapter(plugin));
+        adapters.put(GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalDailyGameAdapter(plugin));
         for (GameTypeEnum game : enabledGames()) queues.put(game, new DailyQueue(game));
         listener.register();
         tickTask = Bukkit.getScheduler().runTaskTimer(plugin, (Runnable) this::tick, 20L, 20L);
@@ -231,11 +233,6 @@ public final class DailyManager extends BaseManager {
         DailyParty party = partyManager.getParty(requester.getUniqueId());
         Set<UUID> joining = party == null ? Set.of(requester.getUniqueId()) : party.members();
         UUID groupId = party == null ? requester.getUniqueId() : party.id();
-        if (isGameRunning(game)
-                && joining.stream().anyMatch(uuid -> queueByPlayer.get(uuid) != game)) {
-            message(requester, MessageConfig.DAILY_QUEUE_UNAVAILABLE);
-            return false;
-        }
         if (joining.size() > targetRules.teamSize()) {
             message(requester, replace(MessageConfig.DAILY_PARTY_TOO_LARGE,
                     "%limit%", Integer.toString(targetRules.teamSize())));
@@ -407,6 +404,10 @@ public final class DailyManager extends BaseManager {
     public int activeSessionCount(@NotNull GameTypeEnum game) {
         return (int) sessionByInstance.values().stream().filter(session -> session.game() == game).count();
     }
+    public int availableSlotCount(@NotNull GameTypeEnum game) {
+        DailyGameAdapter adapter = adapters.get(game);
+        return adapter == null ? 0 : Math.max(0, adapter.availableSlots());
+    }
     public @Nullable DailySession activeSession(@NotNull GameTypeEnum game) {
         return sessionByInstance.values().stream().filter(session -> session.game() == game)
                 .min(Comparator.comparingLong(DailySession::startedAtMillis)).orElse(null);
@@ -426,6 +427,8 @@ public final class DailyManager extends BaseManager {
         Set<String> maps = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         if (game == GameTypeEnum.Bingo) maps.addAll(plugin.getGameManager().getBingoManager().getAreaNameList());
         else if (game == GameTypeEnum.AceRace) maps.addAll(plugin.getGameManager().getAceRaceManager().getAreaNameList());
+        else if (game == GameTypeEnum.DragonEggCarnival)
+            maps.addAll(plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList());
         maps.addAll(statsManager.recordMaps(game));
         return Set.copyOf(maps);
     }
@@ -527,7 +530,7 @@ public final class DailyManager extends BaseManager {
             return;
         }
         DailyRules rules = rules(queue.game());
-        if (isGameRunning(queue.game())) {
+        if (availableSlotCount(queue.game()) <= 0) {
             queue.countdown(-1);
             refreshWaitingBar(queue, rules);
             return;

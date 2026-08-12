@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.vote;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.RankManager;
@@ -201,8 +202,7 @@ public class VoteManager extends BaseManager {
             return;
         }
 
-        if (gameTypeEnum == null || gameTypeEnum == GameTypeEnum.Dodgebolt
-                || gameTypeEnum == GameTypeEnum.DragonEggCarnival
+        if (gameTypeEnum == null || FinaleGameRegistry.isRegistered(gameTypeEnum)
                 || !plugin.getGameManager().isGameEnabled(gameTypeEnum)
                 || !hasPublishedArea(gameTypeEnum)) {
             player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
@@ -253,8 +253,7 @@ public class VoteManager extends BaseManager {
 
     public boolean canVoteFor(GameTypeEnum gameTypeEnum) {
         return gameTypeEnum != null
-                && gameTypeEnum != GameTypeEnum.Dodgebolt
-                && gameTypeEnum != GameTypeEnum.DragonEggCarnival
+                && !FinaleGameRegistry.isRegistered(gameTypeEnum)
                 && plugin.getGameManager().isGameEnabled(gameTypeEnum)
                 && rankManager.getGameOrder(gameTypeEnum) == -1
                 && hasPublishedArea(gameTypeEnum);

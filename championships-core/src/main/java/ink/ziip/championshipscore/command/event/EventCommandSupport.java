@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,7 +23,8 @@ final class EventCommandSupport {
     }
 
     static boolean canSchedule(@NotNull GameTypeEnum game) {
-        return ChampionshipsCore.getInstance().getScheduleManager().supportsFormalEvent(game);
+        return !FinaleGameRegistry.isRegistered(game)
+                && ChampionshipsCore.getInstance().getScheduleManager().supportsFormalEvent(game);
     }
 
     static @NotNull List<String> enabledFormalGames() {

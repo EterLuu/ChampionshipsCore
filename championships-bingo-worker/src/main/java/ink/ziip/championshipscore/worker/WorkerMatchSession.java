@@ -45,6 +45,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
@@ -89,6 +90,7 @@ final class WorkerMatchSession {
     private final Set<UUID> preparedPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<UUID> bulkScatterPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<TeamCell> completedTeamCells = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, UUID> spectatorTargets = new ConcurrentHashMap<>();
     private final Map<Integer, List<Integer>> completionTeamsByCell = new HashMap<>();
     private final Map<Integer, MapView> cardViews = new HashMap<>();
     private long eventSeq;
@@ -99,11 +101,14 @@ final class WorkerMatchSession {
     private ScheduledTask endTask;
     private ScheduledTask timerTask;
     private ScheduledTask heartbeatTask;
+    private ScheduledTask spectatorSyncTask;
     private ScheduledTask pvpTask;
     private volatile BossBar timerBossBar;
     private volatile boolean pvpEnabled;
     private volatile Integer winnerTeamId;
     private final AtomicBoolean sidebarRefreshPending = new AtomicBoolean();
+    private static final float MIN_SPECTATOR_SPEED = 0.05F;
+    private static final float MAX_SPECTATOR_SPEED = 1.0F;
 
     WorkerMatchSession(Plugin plugin, WorkerConfig config, MatchManifest manifest,
                        DurableEventOutbox events, WorkerReturnRouter returnRouter, Runnable worldReset) {
@@ -497,6 +502,20 @@ final class WorkerMatchSession {
         if (heartbeatTask != null) return;
         heartbeatTask = scheduler.runGlobalTimer(() -> emit(MatchEventType.HEARTBEAT,
                 Map.of("state", state().name(), "online", Integer.toString(onlineParticipantCount()))), 100L, 100L);
+        spectatorSyncTask = scheduler.runGlobalTimer(this::syncSpectators, 20L, 20L);
+    }
+
+    /** Re-issues the read-only card set after reconnects or inventory reconciliation by another plugin. */
+    private void syncSpectators() {
+        if (state().terminal()) return;
+        forEachOnlineParticipant((player, snapshot) -> {
+            if (snapshot.role() == ParticipantRole.SPECTATOR) {
+                applySpectatorState(player);
+                Player target = Bukkit.getPlayer(spectatorTargets.get(player.getUniqueId()));
+                if (target != null && target.getWorld().equals(player.getWorld()))
+                    player.setCompassTarget(target.getLocation());
+            }
+        });
     }
 
     private void beginRunning() {
@@ -619,7 +638,9 @@ final class WorkerMatchSession {
                         .replacement(Component.text(winner.name(), teamColor(winner))));
         Component endTitle = message("game.completion-title");
         Component endSubtitle = message("bingo.game-end-subtitle");
-        forEachOnlinePlayer(player -> {
+        // Spectators are part of the frozen participant roster, so they receive the same authoritative
+        // winner/chat/title result as players before the return route starts.
+        forEachOnlineParticipant((player, snapshot) -> {
             if (winnerMessage != null) player.sendMessage(winnerMessage);
             player.sendActionBar(message("game.end-action-bar", "%game%", gameName()));
             showTitle(player, endTitle, endSubtitle, 1, 20, 1);
@@ -945,7 +966,98 @@ final class WorkerMatchSession {
 
     private void applySpectatorState(Player player) {
         BingoSpectatorService.apply(player);
+        applySpectatorControls(player);
         if (roundPrepared) ensureSpectatorCards(player);
+    }
+
+    boolean handleSpectatorControl(Player player, ItemStack control, boolean rightClick) {
+        PlayerSnapshot snapshot = participants.get(player.getUniqueId());
+        if (snapshot == null || snapshot.role() != ParticipantRole.SPECTATOR || control == null) return false;
+        ItemMeta meta = control.getItemMeta();
+        if (meta == null) return false;
+        String action = meta.getPersistentDataContainer().get(
+                new NamespacedKey(plugin, "spectator_control"), PersistentDataType.STRING);
+        if (action == null) return false;
+        if (action.equals("tracking")) {
+            if (rightClick) {
+                spectatorTargets.remove(player.getUniqueId());
+                spectatorFeedback(player, WorkerGuiConfig.text("spectator.tracking.stopped-feedback"),
+                        NamedTextColor.RED, 0.8F);
+            } else {
+                List<Player> targets = participants.values().stream()
+                        .filter(candidate -> candidate.role() == ParticipantRole.PLAYER)
+                        .map(candidate -> Bukkit.getPlayer(candidate.uuid()))
+                        .filter(java.util.Objects::nonNull)
+                        .sorted(java.util.Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
+                        .toList();
+                if (targets.isEmpty()) {
+                    spectatorFeedback(player, WorkerGuiConfig.text("spectator.tracking.unavailable-feedback"),
+                            NamedTextColor.RED, 0.8F);
+                } else {
+                    UUID current = spectatorTargets.get(player.getUniqueId());
+                    int currentIndex = -1;
+                    for (int index = 0; index < targets.size(); index++) {
+                        if (targets.get(index).getUniqueId().equals(current)) {
+                            currentIndex = index;
+                            break;
+                        }
+                    }
+                    Player target = targets.get((currentIndex + 1) % targets.size());
+                    spectatorTargets.put(player.getUniqueId(), target.getUniqueId());
+                    player.setCompassTarget(target.getLocation());
+                    spectatorFeedback(player, WorkerGuiConfig.text("spectator.tracking.active-feedback",
+                            Map.of("player", target.getName())), NamedTextColor.GREEN, 1.2F);
+                }
+            }
+            applySpectatorControls(player);
+            return true;
+        }
+        if (action.equals("speed")) {
+            float delta = rightClick ? -.05F : .05F;
+            player.setFlySpeed(Math.max(MIN_SPECTATOR_SPEED,
+                    Math.min(MAX_SPECTATOR_SPEED, player.getFlySpeed() + delta)));
+            applySpectatorControls(player);
+            spectatorFeedback(player, WorkerGuiConfig.text("spectator.speed.feedback",
+                            Map.of("speed", spectatorSpeed(player))), NamedTextColor.YELLOW,
+                    delta > 0 ? 1.25F : 0.8F);
+            return true;
+        }
+        return false;
+    }
+
+    private void applySpectatorControls(Player player) {
+        player.getInventory().setItem(1, spectatorControl(Material.COMPASS, "tracking",
+                Component.text(WorkerGuiConfig.text("spectator.tracking.name"), NamedTextColor.GREEN)
+                        .decorate(TextDecoration.BOLD),
+                List.of(Component.text(WorkerGuiConfig.text("spectator.tracking.next"), NamedTextColor.GRAY),
+                        Component.text(WorkerGuiConfig.text("spectator.tracking.stop"), NamedTextColor.GRAY))));
+        player.getInventory().setItem(7, spectatorControl(Material.FEATHER, "speed",
+                Component.text(WorkerGuiConfig.text("spectator.speed.name",
+                                Map.of("speed", spectatorSpeed(player))), NamedTextColor.YELLOW)
+                        .decorate(TextDecoration.BOLD),
+                List.of(Component.text(WorkerGuiConfig.text("spectator.speed.faster"), NamedTextColor.GREEN),
+                        Component.text(WorkerGuiConfig.text("spectator.speed.slower"), NamedTextColor.RED))));
+    }
+
+    private ItemStack spectatorControl(Material material, String action, Component name,
+                                       List<Component> lore) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(name.decoration(TextDecoration.ITALIC, false));
+        meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
+        meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "spectator_control"),
+                PersistentDataType.STRING, action);
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private static String spectatorSpeed(Player player) {
+        return Math.round(player.getFlySpeed() * 100F) + "%";
+    }
+
+    private static void spectatorFeedback(Player player, String message, NamedTextColor color, float pitch) {
+        player.sendActionBar(Component.text(message, color).decorate(TextDecoration.BOLD));
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
     private void resetVitals(Player player) {
@@ -973,6 +1085,7 @@ final class WorkerMatchSession {
             }
             participants.remove(playerId);
             arrived.remove(playerId);
+            spectatorTargets.remove(playerId);
         }
         Player player = plugin.getServer().getPlayer(playerId);
         if (player != null) {
@@ -1041,6 +1154,8 @@ final class WorkerMatchSession {
         if (timerTask != null) timerTask.cancel();
         if (heartbeatTask != null) heartbeatTask.cancel();
         if (pvpTask != null) pvpTask.cancel();
+        if (spectatorSyncTask != null) spectatorSyncTask.cancel();
+        spectatorSyncTask = null;
         hideTimerBossBar();
     }
 

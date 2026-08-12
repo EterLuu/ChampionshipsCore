@@ -302,7 +302,7 @@ public class ParkourTagHandler extends BaseListener {
                 player.teleport(parkourTagArea.getPreparationTeleportLocation(parkourTagArea.getSpectatorSpawnLocation()));
             }
             if (parkourTagArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                if (player.getGameMode() == GameMode.SPECTATOR) {
+                if (parkourTagArea.isManagedSpectator(player)) {
                     if (location.getY() < -64) {
                         player.teleport(parkourTagArea.getSpectatorSpawnLocation());
                     }

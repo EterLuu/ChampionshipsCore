@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -66,7 +68,7 @@ public final class AreaListGui {
         int rows = Math.max(3, Math.min(6, (needed + 8) / 9));
         Holder holder = new Holder(gameType);
         Inventory inv = Bukkit.createInventory(holder, rows * 9,
-                Component.text(gameType + " 场地列表").decoration(TextDecoration.ITALIC, false));
+                Component.text(gameType + GuiConfig.text("prepare-gui-arealistgui.text-001")).decoration(TextDecoration.ITALIC, false));
         holder.setInventory(inv);
 
         int slot = 0;
@@ -80,13 +82,13 @@ public final class AreaListGui {
             }
             ItemStack item = PrepareKeys.item(Material.PAPER,
                     Component.text(name).color(NamedTextColor.WHITE),
-                    List.of(Component.text("配置进度：" + done + "/" + total).color(NamedTextColor.GRAY),
+                    List.of(Component.text(GuiConfig.text("prepare-gui-arealistgui.text-002") + done + "/" + total).color(NamedTextColor.GRAY),
                             Component.text(target != null && target.config().isPrepareReady()
-                                    ? "✅ 已发布" : "⚠ 草稿 / 有未发布修改").color(
+                                    ? GuiConfig.text("prepare-gui-arealistgui.text-003") : GuiConfig.text("prepare-gui-arealistgui.text-004")).color(
                                     target != null && target.config().isPrepareReady()
                                             ? NamedTextColor.GREEN : NamedTextColor.YELLOW),
-                            Component.text("左键进入编辑").color(NamedTextColor.AQUA),
-                            Component.text("右键删除地图配置（保留世界）").color(NamedTextColor.RED)));
+                            Component.text(GuiConfig.text("prepare-gui-arealistgui.text-005")).color(NamedTextColor.AQUA),
+                            Component.text(GuiConfig.text("prepare-gui-arealistgui.text-006")).color(NamedTextColor.RED)));
             inv.setItem(slot, item);
             holder.slotToArea.put(slot, name);
             slot++;
@@ -94,13 +96,13 @@ public final class AreaListGui {
 
         holder.newSlot = slot;
         inv.setItem(slot, PrepareKeys.item(Material.EMERALD,
-                Component.text("新建地图").color(NamedTextColor.GREEN),
-                List.of(Component.text("点击后输入地图名").color(NamedTextColor.GRAY))));
+                Component.text(GuiConfig.text("prepare-gui-arealistgui.text-007")).color(NamedTextColor.GREEN),
+                List.of(Component.text(GuiConfig.text("prepare-gui-arealistgui.text-008")).color(NamedTextColor.GRAY))));
 
         holder.closeSlot = rows * 9 - 1;
         inv.setItem(holder.closeSlot, PrepareKeys.item(Material.BARRIER,
-                Component.text("关闭").color(NamedTextColor.RED),
-                List.of(Component.text("点击关闭菜单").color(NamedTextColor.GRAY))));
+                Component.text(GuiConfig.text("prepare-gui-arealistgui.text-009")).color(NamedTextColor.RED),
+                List.of(Component.text(GuiConfig.text("prepare-gui-arealistgui.text-010")).color(NamedTextColor.GRAY))));
 
         player.openInventory(inv);
     }
@@ -119,7 +121,7 @@ public final class AreaListGui {
                         || holder.deleteConfirmationExpiresAt < System.currentTimeMillis()) {
                     holder.deleteConfirmation = areaName;
                     holder.deleteConfirmationExpiresAt = System.currentTimeMillis() + 30_000L;
-                    player.sendMessage(Component.text("请在 30 秒内再次右键该地图确认删除配置；物理世界不会删除")
+                    player.sendMessage(Component.text(GuiConfig.text("prepare-gui-arealistgui.text-011"))
                             .color(NamedTextColor.RED));
                     return;
                 }

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
@@ -64,7 +66,7 @@ public final class BuildMartMaterialZoneGui {
                             @NotNull PrepareSession session, @NotNull PrepareStep step) {
         Holder holder = new Holder(session, step);
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text("材料区").decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-001")).decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -94,13 +96,13 @@ public final class BuildMartMaterialZoneGui {
                 List<BuildMartMaterialZone> zones = new ArrayList<>(config.getMaterialZones());
                 zones.removeIf(zone -> zone.snapshotId().equals(removed.snapshotId()));
                 if (!config.setMaterialZones(zones)) {
-                    player.sendMessage(Utils.formatAdminError("无法保存材料区配置，请查看服务器日志。"));
+                    player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-002")));
                     return;
                 }
                 config.deleteMaterialZoneSnapshot(removed);
                 session.markDirty();
-                player.sendMessage(Utils.formatAdminSuccess("已删除 &#fff566" + holder.island.displayName()
-                        + "&#ededed 的第 &#fff566" + (index + 1) + "&#ededed 个材料区。"));
+                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-003") + holder.island.displayName()
+                        + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-004") + (index + 1) + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-005")));
                 refresh(holder);
             }
             return;
@@ -117,13 +119,13 @@ public final class BuildMartMaterialZoneGui {
                 if (holder.island != null) return;
                 List<BuildMartMaterialZone> zones = config.getMaterialZones();
                 if (!config.clearMaterialZones()) {
-                    player.sendMessage(Utils.formatAdminError("无法保存材料区配置，请查看服务器日志。"));
+                    player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-002")));
                     return;
                 }
                 zones.forEach(config::deleteMaterialZoneSnapshot);
                 session.markDirty();
                 holder.page = 0;
-                player.sendMessage(Utils.formatAdminSuccess("已清空材料区列表。"));
+                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-006")));
                 refresh(holder);
             }
             case NEXT_SLOT -> {
@@ -151,19 +153,19 @@ public final class BuildMartMaterialZoneGui {
 
     private static void saveCurrentSelection(Player player, Holder holder, BuildMartConfig config) {
         if (!holder.session.getFlow().isInCorrectWorld(player, holder.session.getTarget())) {
-            player.sendMessage(Utils.formatAdminError("请先前往当前地图世界 " + holder.session.getTarget().worldName()));
+            player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-007") + holder.session.getTarget().worldName()));
             return;
         }
         BuildMartMaterialZone pendingSnapshot = null;
         try {
             if (config.getMaterialIslandCenters().size() != BuildMartMaterialIsland.values().length) {
-                player.sendMessage(Utils.formatAdminError("材料岛中心配置不完整，无法自动归类新选区。"));
+                player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-008")));
                 return;
             }
             Vector[] selection = holder.session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
             BuildMartMaterialZone zone = new BuildMartMaterialZone(UUID.randomUUID(), selection[0], selection[1]);
             if (zone.volume() <= 0 || zone.volume() > MAX_VOLUME) {
-                player.sendMessage(Utils.formatAdminError("材料区体积必须在 1 到 " + MAX_VOLUME + " 个方块以内。"));
+                player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-009") + MAX_VOLUME + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-010")));
                 return;
             }
             pendingSnapshot = zone;
@@ -175,7 +177,7 @@ public final class BuildMartMaterialZoneGui {
             boolean saved = replacedIndex < 0 ? config.addMaterialZone(zone) : config.setMaterialZones(zones);
             if (!saved) {
                 config.deleteMaterialZoneSnapshot(zone);
-                player.sendMessage(Utils.formatAdminError("无法保存材料区配置，请查看服务器日志。"));
+                player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-002")));
                 return;
             }
             pendingSnapshot = null;
@@ -189,18 +191,18 @@ public final class BuildMartMaterialZoneGui {
                     .filter(savedZone -> savedZone.snapshotId().equals(zone.snapshotId())).findFirst().orElse(null));
             holder.page = assignedIndex < 0 ? 0 : assignedIndex / PAGE_SIZE;
             if (replacedIndex < 0) {
-                player.sendMessage(Utils.formatAdminSuccess("已保存材料区原样快照（&#fff566" + zone.volume()
-                        + "&#ededed 个方块），自动归入 &#fff566" + islandName(assigned)
-                        + "&#ededed，并更新只读材料清单：&#fff566buildmart/material-manifests/"
+                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-011") + zone.volume()
+                        + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-012") + islandName(assigned)
+                        + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-013")
                         + config.getAreaName() + ".yml"));
             } else {
-                player.sendMessage(Utils.formatAdminSuccess("已更新 &#fff566" + islandName(assigned)
-                        + "&#ededed 的材料区原样快照（&#fff566" + zone.volume() + "&#ededed 个方块）。"));
+                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-014") + islandName(assigned)
+                        + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-015") + zone.volume() + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-016")));
             }
             refresh(holder);
         } catch (Exception exception) {
             if (pendingSnapshot != null) config.deleteMaterialZoneSnapshot(pendingSnapshot);
-            player.sendMessage(Utils.formatAdminError("保存材料区快照失败，请检查 WorldEdit 选区：&#fff566"
+            player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-017")
                     + exception.getMessage()));
         }
     }
@@ -236,30 +238,30 @@ public final class BuildMartMaterialZoneGui {
                 Material dominant = dominantMaterials.get(zone.snapshotId());
                 Material icon = dominant != null && dominant.isItem() ? dominant : Material.STRUCTURE_BLOCK;
                 Component name = dominant == null
-                        ? Component.text((index + 1) + ". 材料区快照")
+                        ? Component.text((index + 1) + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-018"))
                         : Component.text((index + 1) + ". ").append(Component.translatable(dominant.translationKey()));
                 inventory.setItem(slot, item(icon, name,
-                        List.of("范围：" + compact(zone), "完整方块状态将在补充时还原", "点击删除此材料区"),
+                        List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-019") + compact(zone), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-020"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-021")),
                         NamedTextColor.WHITE));
             } else inventory.setItem(slot, filler());
         }
-        inventory.setItem(SET_SELECTION_SLOT, item(Material.GOLDEN_AXE, "保存当前 WorldEdit 选区",
-                List.of("记录选区的完整方块快照", "按水平距离自动归入最近材料岛",
-                        "范围与已有材料区完全相同时更新原快照", "同步更新只读材料清单"), NamedTextColor.YELLOW));
+        inventory.setItem(SET_SELECTION_SLOT, item(Material.GOLDEN_AXE, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-022"),
+                List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-023"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-024"),
+                        GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-025"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-026")), NamedTextColor.YELLOW));
         if (holder.page > 0) {
-            inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW, "上一页",
-                    List.of("前往第 " + holder.page + " 页"), NamedTextColor.WHITE));
+            inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-027"),
+                    List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-028") + holder.page + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-029")), NamedTextColor.WHITE));
         }
         Vector center = config.getMaterialIslandCenters().get(holder.island);
         inventory.setItem(CLEAR_SLOT, item(holder.island.icon(), holder.island.displayName(),
-                center == null ? List.of("中心尚未配置") : List.of("中心：" + compact(center)), NamedTextColor.AQUA));
-        inventory.setItem(PAGE_SLOT, item(Material.PAPER, "第 " + (holder.page + 1) + " / " + pageCount + " 页",
-                List.of(holder.island.displayName(), "共 " + zones.size() + " 个材料区"), NamedTextColor.AQUA));
+                center == null ? List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-030")) : List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-031") + compact(center)), NamedTextColor.AQUA));
+        inventory.setItem(PAGE_SLOT, item(Material.PAPER, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-032") + (holder.page + 1) + " / " + pageCount + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-029"),
+                List.of(holder.island.displayName(), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-033") + zones.size() + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-034")), NamedTextColor.AQUA));
         if (holder.page + 1 < pageCount) {
-            inventory.setItem(NEXT_SLOT, item(Material.ARROW, "下一页",
-                    List.of("前往第 " + (holder.page + 2) + " 页"), NamedTextColor.WHITE));
+            inventory.setItem(NEXT_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-035"),
+                    List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-028") + (holder.page + 2) + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-029")), NamedTextColor.WHITE));
         }
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, "返回岛屿列表", List.of("查看全部 24 个材料岛"), NamedTextColor.WHITE));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-036"), List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-037")), NamedTextColor.WHITE));
     }
 
     private static void refreshIslandOverview(@NotNull Holder holder, @NotNull BuildMartConfig config) {
@@ -273,24 +275,24 @@ public final class BuildMartMaterialZoneGui {
             int count = grouped.getOrDefault(island, List.of()).size();
             Material icon = center == null ? Material.BARRIER : island.icon();
             List<String> lore = center == null
-                    ? List.of("中心尚未配置", "无法自动归类材料区")
-                    : List.of("中心：" + compact(center), "材料区数量：" + count, "点击查看岛内材料区");
+                    ? List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-030"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-038"))
+                    : List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-031") + compact(center), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-039") + count, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-040"));
             inventory.setItem(slot, item(icon, (slot + 1) + ". " + island.displayName(), lore,
                     center == null ? NamedTextColor.RED : NamedTextColor.WHITE));
         }
         for (int slot = islands.length; slot < PAGE_SIZE; slot++) inventory.setItem(slot, filler());
-        inventory.setItem(SET_SELECTION_SLOT, item(Material.GOLDEN_AXE, "保存当前 WorldEdit 选区",
-                List.of("记录选区的完整方块快照", "按水平距离自动归入最近材料岛",
-                        "范围完全相同时更新原快照", "同步更新只读材料清单"), NamedTextColor.YELLOW));
-        inventory.setItem(CLEAR_SLOT, item(Material.RED_WOOL, "清空全部材料区",
-                List.of("删除 24 个岛上的全部材料区"), NamedTextColor.RED));
-        inventory.setItem(PAGE_SLOT, item(Material.COMPASS, "24 个材料岛",
-                List.of("共 " + config.getMaterialZones().size() + " 个材料区"), NamedTextColor.AQUA));
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, "返回", List.of("回到 prepare 物品栏"), NamedTextColor.WHITE));
+        inventory.setItem(SET_SELECTION_SLOT, item(Material.GOLDEN_AXE, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-022"),
+                List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-023"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-024"),
+                        GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-041"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-026")), NamedTextColor.YELLOW));
+        inventory.setItem(CLEAR_SLOT, item(Material.RED_WOOL, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-042"),
+                List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-043")), NamedTextColor.RED));
+        inventory.setItem(PAGE_SLOT, item(Material.COMPASS, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-044"),
+                List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-033") + config.getMaterialZones().size() + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-034")), NamedTextColor.AQUA));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-045"), List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-046")), NamedTextColor.WHITE));
     }
 
     private static @NotNull String islandName(@Nullable BuildMartMaterialIsland island) {
-        return island == null ? "未分类" : island.displayName();
+        return island == null ? GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-047") : island.displayName();
     }
 
     private static int pageCount(int entries) {

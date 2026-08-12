@@ -7,7 +7,6 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Setter;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -138,7 +137,7 @@ public class SnowballShowdownHandler extends BaseListener {
                 snowballShowdownTeamArea.teleportPlayerToSpawnLocation(player);
             }
             if (snowballShowdownTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                if (player.getGameMode() == GameMode.SPECTATOR) {
+                if (snowballShowdownTeamArea.isManagedSpectator(player)) {
                     if (location.getY() < -64) {
                         player.teleport(snowballShowdownTeamArea.getSpectatorSpawnLocation());
                     }

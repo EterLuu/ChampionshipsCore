@@ -7,6 +7,7 @@ import lombok.Getter;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.List;
 
 @Getter
@@ -20,12 +21,12 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 8;
+        return 10;
     }
 
     /** Version 3 onward uses full visual-refresh templates rather than merging individual old panels. */
     @Override
-    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) {
+    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) throws IOException {
         super.loadFromOutdatedConfiguration(new YamlConfiguration());
     }
 

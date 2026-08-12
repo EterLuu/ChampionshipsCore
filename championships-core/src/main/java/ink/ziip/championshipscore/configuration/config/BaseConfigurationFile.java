@@ -49,6 +49,14 @@ public abstract class BaseConfigurationFile {
      * @param pluginFolder the plugin folder path
      */
     public void initializeConfiguration(Path pluginFolder) {
+        initializeConfiguration(pluginFolder, true);
+    }
+
+    /**
+     * Loads bundled defaults, upgrades the raw on-disk file, and only then binds runtime fields.
+     * Validating before the upgrade made every newly added option look missing on the first boot.
+     */
+    public void initializeConfiguration(Path pluginFolder, boolean autoUpgrade) {
         loadDefaultOptions();
 
         configurationPath = saveDefaultConfigurationFile(pluginFolder);
@@ -56,7 +64,7 @@ public abstract class BaseConfigurationFile {
         try {
             configuration.options().indent(2);
             configuration.load(configurationPath.toFile());
-
+            checkVersion(autoUpgrade);
             loadFileOptions();
         } catch (Exception exception) {
             plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "加载",
@@ -306,24 +314,15 @@ public abstract class BaseConfigurationFile {
         }
     }
 
-    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) {
-        try {
-            Field[] fields = getClass().getFields();
-            for (Field field : fields) {
-                ConfigOption co = field.getAnnotation(ConfigOption.class);
-                if (co != null && yamlConfiguration.get(co.path()) != null) {
-                    configuration.set(co.path(), yamlConfiguration.get(co.path()));
-                }
+    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) throws IOException {
+        Field[] fields = getClass().getFields();
+        for (Field field : fields) {
+            ConfigOption co = field.getAnnotation(ConfigOption.class);
+            if (co != null && yamlConfiguration.get(co.path()) != null) {
+                configuration.set(co.path(), yamlConfiguration.get(co.path()));
             }
-
-            configuration.save(configurationPath.toFile());
-
-            // Reload options from the file
-            loadFileOptions();
-        } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "保存",
-                    "配置文件=" + getFileName() + " 保存失败"), exception);
         }
+        configuration.save(configurationPath.toFile());
     }
 
     /**

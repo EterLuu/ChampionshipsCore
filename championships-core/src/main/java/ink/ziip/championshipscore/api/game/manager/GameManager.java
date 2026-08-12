@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
 import ink.ziip.championshipscore.api.game.spectate.SpectateMenu;
+import ink.ziip.championshipscore.api.game.spectate.SpectatorManager;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoManager;
@@ -33,10 +34,11 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.command.MainCommand;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
-import org.bukkit.GameMode;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -53,8 +55,11 @@ public class GameManager extends BaseManager {
     private final Map<UUID, RoundTransitionHold> roundTransitionHolds = new ConcurrentHashMap<>();
     private final Map<UUID, SpectatorTransitionHold> spectatorTransitionHolds = new ConcurrentHashMap<>();
     private final Map<UUID, RemoteBingoInstance> remoteBingoInstances = new ConcurrentHashMap<>();
+    private final Map<BaseGameInstance, Set<ChampionshipTeam>> pendingFinaleAudience = new ConcurrentHashMap<>();
     private final GameManagerHandler gameManagerHandler;
     private final SpectateMenu spectateMenu;
+    @Getter
+    private final SpectatorManager spectatorManager;
     @Getter
     private final BattleBoxManager battleBoxManager;
     @Getter
@@ -99,6 +104,7 @@ public class GameManager extends BaseManager {
         super(championshipsCore);
         gameManagerHandler = new GameManagerHandler(championshipsCore);
         spectateMenu = new SpectateMenu(championshipsCore, this);
+        spectatorManager = new SpectatorManager(championshipsCore, this);
         battleBoxManager = new BattleBoxManager(plugin);
         parkourTagManager = new ParkourTagManager(plugin);
         skyWarsManager = new SkyWarsManager(plugin);
@@ -236,11 +242,14 @@ public class GameManager extends BaseManager {
 
         gameManagerHandler.register();
         spectateMenu.start();
+        spectatorManager.load();
     }
 
     @Override
     public void unload() {
         spectateMenu.stop();
+        spectatorManager.unload();
+        playerSpectatorStatus.clear();
         for (GameTypeEnum gameType : EnumSet.copyOf(loadedGameManagers)) {
             BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
             if (manager != null) manager.unload();
@@ -248,6 +257,7 @@ public class GameManager extends BaseManager {
         loadedGameManagers.clear();
         enabledGames = null;
         spectatorFocus = null;
+        pendingFinaleAudience.clear();
         roundTransitionHolds.clear();
         spectatorTransitionHolds.clear();
         remoteBingoInstances.values().forEach(RemoteBingoInstance::dispose);
@@ -267,6 +277,37 @@ public class GameManager extends BaseManager {
             return;
         }
         forceEndLocalAreas(gameTypeEnum);
+    }
+
+    /** Emergency-stops only formal EVENT ownership, leaving concurrent DAILY/GAME copies untouched. */
+    public void forceEndEventAreas(@NotNull GameTypeEnum gameTypeEnum) {
+        if (gameTypeEnum == GameTypeEnum.Bingo) {
+            boolean hasEventRun = remoteBingoInstances.values().stream()
+                    .anyMatch(instance -> instance.getRunMode() == GameRunMode.EVENT
+                            && instance.getGameStageEnum() != GameStageEnum.WAITING);
+            BaseGameInstanceManager<?> manager = areaManagers.get(gameTypeEnum);
+            if (manager != null) hasEventRun |= manager.getRuntimeInstances().stream()
+                    .anyMatch(instance -> instance.getRunMode() == GameRunMode.EVENT
+                            && instance.getGameStageEnum() != GameStageEnum.WAITING);
+            if (hasEventRun) bingoExecutionRouter.forceEnd("formal-event-force-end");
+            return;
+        }
+        BaseGameInstanceManager<?> manager = areaManagers.get(gameTypeEnum);
+        if (manager == null) return;
+        for (BaseGameInstance instance : manager.getRuntimeInstances()) {
+            if (instance.getRunMode() == GameRunMode.EVENT
+                    && instance.getGameStageEnum() != GameStageEnum.WAITING) {
+                instance.endGameFinally();
+            }
+        }
+    }
+
+    public boolean hasActiveEventAreas(@NotNull GameTypeEnum gameTypeEnum) {
+        BaseGameInstanceManager<?> manager = areaManagers.get(gameTypeEnum);
+        if (manager == null) return false;
+        return manager.getRuntimeInstances().stream()
+                .anyMatch(instance -> instance.isEventRun()
+                        && instance.getGameStageEnum() != GameStageEnum.WAITING);
     }
 
     private void forceEndLocalAreas(@NotNull GameTypeEnum gameTypeEnum) {
@@ -312,13 +353,29 @@ public class GameManager extends BaseManager {
         return started;
     }
 
-    /** Moves every online non-finalist into the final's spectator set without strict-spectator checks. */
-    public void spectateDodgeboltFinal(@NotNull DodgeboltArea area,
-                                       @NotNull ChampionshipTeam rightTeam,
-                                       @NotNull ChampionshipTeam leftTeam) {
+    /** Moves every online non-finalist into a registered final's spectator set. */
+    public synchronized void spectateFinale(@NotNull BaseGameInstance area,
+                                            @NotNull ChampionshipTeam rightTeam,
+                                            @NotNull ChampionshipTeam leftTeam) {
         if (!area.isEventRun()) return;
+        pendingFinaleAudience.put(area, Set.of(rightTeam, leftTeam));
+        spectatorFocus = area;
+        if (!isRegularSpectatingStage(area.getGameStageEnum())) return;
+        activateFinaleAudience(area);
+    }
+
+    /** Compatibility API retained for integrations which used the old Dodgebolt-specific name. */
+    public synchronized void spectateDodgeboltFinal(@NotNull DodgeboltArea area,
+                                                     @NotNull ChampionshipTeam rightTeam,
+                                                     @NotNull ChampionshipTeam leftTeam) {
+        spectateFinale(area, rightTeam, leftTeam);
+    }
+
+    private void activateFinaleAudience(@NotNull BaseGameInstance area) {
+        Set<ChampionshipTeam> finalists = pendingFinaleAudience.remove(area);
+        if (finalists == null) return;
         for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
-            if (rightTeam.isTeamMember(player) || leftTeam.isTeamMember(player)) continue;
+            if (finalists.stream().anyMatch(team -> team.isTeamMember(player))) continue;
             moveSpectatorTo(player, area);
         }
         spectatorFocus = area;
@@ -432,17 +489,8 @@ public class GameManager extends BaseManager {
             }
         }
 
-        for (ChampionshipTeam championshipTeam : championshipTeams) {
-            for (UUID uuid : championshipTeam.getMembers()) {
-                removeSpectator(uuid);
-            }
-        }
-
-        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
-        if (manager == null)
-            return false;
-        if (!(manager.getArea(area) instanceof BaseMultiTeamGameInstance singleTeamArea))
-            return false;
+        BaseMultiTeamGameInstance singleTeamArea = findAvailableMultiTeamInstance(gameTypeEnum, area);
+        if (singleTeamArea == null) return false;
 
         return joinMultiTeamInstanceForTeams(gameTypeEnum, singleTeamArea, showIntroduction,
                 runMode, List.of(championshipTeams));
@@ -521,11 +569,8 @@ public class GameManager extends BaseManager {
             championshipTeams.add(championshipTeam);
         }
 
-        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
-        if (manager == null)
-            return false;
-        if (!(manager.getArea(area) instanceof BaseMultiTeamGameInstance singleTeamArea))
-            return false;
+        BaseMultiTeamGameInstance singleTeamArea = findAvailableMultiTeamInstance(gameTypeEnum, area);
+        if (singleTeamArea == null) return false;
 
         for (UUID playerUUID : players) {
             removeSpectator(playerUUID);
@@ -550,6 +595,21 @@ public class GameManager extends BaseManager {
 
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {
         return joinSingleTeamAreaForAllTeams(gameTypeEnum, area, false);
+    }
+
+    /**
+     * Direct-command variant that also admits explicit players, such as an administrator testing a
+     * map without a formal championship team. Explicit players remain unscored in GAME mode and are
+     * released through the same instance lifecycle as team members.
+     */
+    public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
+                                                  @NotNull Collection<UUID> additionalPlayers) {
+        if (gameTypeEnum == GameTypeEnum.Bingo) {
+            return additionalPlayers.isEmpty()
+                    && bingoExecutionRouter.start(new BingoStartRequest(area, false, GameRunMode.GAME));
+        }
+        return joinSingleTeamAreaForAllTeamsLocal(
+                gameTypeEnum, area, false, GameRunMode.GAME, additionalPlayers);
     }
 
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
@@ -587,17 +647,12 @@ public class GameManager extends BaseManager {
             }
         }
 
-        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-            for (UUID uuid : championshipTeam.getMembers()) {
-                removeSpectator(uuid);
-            }
-        }
+        BaseMultiTeamGameInstance singleTeamArea = findAvailableMultiTeamInstance(gameTypeEnum, area);
+        if (singleTeamArea == null) return false;
 
-        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
-        if (manager == null)
-            return false;
-        if (!(manager.getArea(area) instanceof BaseMultiTeamGameInstance singleTeamArea))
-            return false;
+        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
+            for (UUID uuid : championshipTeam.getMembers()) removeSpectator(uuid);
+        }
 
         singleTeamArea.prepareRunMode(runMode);
         singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
@@ -613,6 +668,75 @@ public class GameManager extends BaseManager {
         singleTeamArea.prepareRunMode(GameRunMode.GAME);
         singleTeamArea.setIntroductionEnabledForNextStart(false);
         return false;
+    }
+
+    private boolean joinSingleTeamAreaForAllTeamsLocal(
+            @NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
+            boolean showIntroduction, @NotNull GameRunMode runMode,
+            @NotNull Collection<UUID> additionalPlayers) {
+        if (!isGameEnabled(gameTypeEnum))
+            return false;
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
+            return false;
+
+        List<ChampionshipTeam> teams = plugin.getTeamManager().getTeamList();
+        LinkedHashSet<UUID> participants = new LinkedHashSet<>();
+        for (ChampionshipTeam championshipTeam : teams) {
+            participants.addAll(championshipTeam.getMembers());
+            if (teamStatus.containsKey(championshipTeam))
+                return false;
+        }
+        participants.addAll(additionalPlayers);
+        // An empty roster used to advance the arena through a convincing but unplayable fake match.
+        if (participants.isEmpty()) return false;
+        for (UUID uuid : participants)
+            if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode)) return false;
+
+        BaseMultiTeamGameInstance singleTeamArea = findAvailableMultiTeamInstance(gameTypeEnum, area);
+        if (singleTeamArea == null) return false;
+
+        for (UUID uuid : participants) removeSpectator(uuid);
+
+        singleTeamArea.prepareRunMode(runMode);
+        singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
+        if (singleTeamArea.tryStartGame(teams, List.copyOf(participants))) {
+            for (ChampionshipTeam championshipTeam : teams) {
+                teamStatus.put(championshipTeam, singleTeamArea);
+            }
+            for (UUID uuid : participants) {
+                playerStatus.put(uuid, singleTeamArea);
+                roundTransitionHolds.remove(uuid);
+                plugin.getVisibilityManager().reconcilePlayer(uuid);
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null && plugin.getSidebarManager() != null)
+                    plugin.getSidebarManager().invalidate(player);
+            }
+            focusSpectatorsOn(singleTeamArea);
+            return true;
+        }
+
+        singleTeamArea.prepareRunMode(GameRunMode.GAME);
+        singleTeamArea.setIntroductionEnabledForNextStart(false);
+        return false;
+    }
+
+    /** Resolves one idle runtime copy for a configured multi-team map, rather than always using copy zero. */
+    @Nullable
+    private BaseMultiTeamGameInstance findAvailableMultiTeamInstance(
+            @NotNull GameTypeEnum gameType, @NotNull String mapName) {
+        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+        if (manager == null) return null;
+        BaseGameInstance representative = manager.getArea(mapName);
+        if (!(representative instanceof BaseMultiTeamGameInstance)) return null;
+        return manager.getRuntimeInstances().stream()
+                .filter(instance -> instance instanceof BaseMultiTeamGameInstance)
+                .filter(instance -> instance.getGameConfig() == representative.getGameConfig())
+                .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
+                .filter(instance -> plugin.getDailyManager() == null
+                        || plugin.getDailyManager().session(instance) == null)
+                .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex))
+                .map(instance -> (BaseMultiTeamGameInstance) instance)
+                .findFirst().orElse(null);
     }
 
     /** Atomically reserves the normal team/player ownership maps for one remote Bingo execution. */
@@ -932,6 +1056,8 @@ public class GameManager extends BaseManager {
 
     /** Clears only mappings owned by the instance being finalized. */
     public void releaseInstanceParticipants(@NotNull BaseGameInstance instance) {
+        spectatorManager.onAreaReleased(instance);
+        pendingFinaleAudience.remove(instance);
         teamStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
         List<UUID> released = playerStatus.entrySet().stream()
                 .filter(entry -> entry.getValue() == instance).map(Map.Entry::getKey).toList();
@@ -957,7 +1083,7 @@ public class GameManager extends BaseManager {
 
     public synchronized boolean spectateArea(@NotNull Player player, @NotNull BaseGameInstance baseArea) {
         UUID uuid = player.getUniqueId();
-        if (!isInstanceActivelyRunning(baseArea)) {
+        if (!canJoinSpectatorArea(player, baseArea)) {
             return false;
         }
         if (playerSpectatorStatus.containsKey(uuid)) {
@@ -968,6 +1094,7 @@ public class GameManager extends BaseManager {
         }
 
         playerSpectatorStatus.put(uuid, baseArea);
+        spectatorManager.prepareExternal(player);
         baseArea.addSpectator(player);
         plugin.getVisibilityManager().reconcilePlayer(uuid);
         if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
@@ -979,8 +1106,14 @@ public class GameManager extends BaseManager {
         spectateMenu.open(player);
     }
 
+    /** Opens the nine-slot spectator quick-controls menu. */
+    public void openSpectatorControls(@NotNull Player player) {
+        spectatorManager.openControls(player);
+    }
+
     /** Applies the same roster restriction as the explicit spectate command. Automatic routing bypasses it. */
     public boolean canManuallySpectate(@NotNull Player player) {
+        if (player.hasPermission(MainCommand.ADMIN_PERMISSION)) return true;
         if (!CCConfig.STRICT_SPECTATOR_RULE) return true;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (plugin.getRankManager().getRound() != 7 && team != null && !player.hasPermission("cc.refuge")) {
@@ -990,26 +1123,82 @@ public class GameManager extends BaseManager {
         return true;
     }
 
-    /** Active runtime instances shown by the spectator menu, including every PKT/BB copy. */
+    /** Lifecycle-active instances used by internal maintenance checks such as map rename protection. */
     public List<BaseGameInstance> getSpectatableInstances() {
+        return getSpectatableInstances(null);
+    }
+
+    /** Instances this viewer may enter, including pre-game arenas for administrators. */
+    public List<BaseGameInstance> getSpectatableInstances(@Nullable Player viewer) {
         List<BaseGameInstance> instances = new ArrayList<>(areaManagers.entrySet().stream()
                 .filter(entry -> isGameEnabled(entry.getKey()) && loadedGameManagers.contains(entry.getKey()))
                 .flatMap(entry -> entry.getValue().getRuntimeInstances().stream()
                         .map(instance -> (BaseGameInstance) instance))
-                .filter(this::isInstanceActivelyRunning)
+                .filter(instance -> viewer == null
+                        ? isInstanceActivelyRunning(instance)
+                        : canJoinSpectatorArea(viewer, instance))
                 .toList());
-        remoteBingoInstances.values().stream().filter(this::isInstanceActivelyRunning).forEach(instances::add);
+        remoteBingoInstances.values().stream()
+                .filter(instance -> viewer == null
+                        ? isInstanceActivelyRunning(instance)
+                        : canJoinSpectatorArea(viewer, instance))
+                .forEach(instances::add);
         instances.sort(Comparator
                 .comparingInt((BaseGameInstance instance) -> instance.getGameTypeEnum().ordinal())
                 .thenComparing(instance -> instance.getGameConfig().getAreaName(),
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
-                .thenComparingInt(this::spectatorInstanceIndex));
+                .thenComparingInt(BaseGameInstance::getCopyIndex)
+                .thenComparing(this::stableInstanceKey));
         return List.copyOf(instances);
+    }
+
+    /** Active copies for one configured map, including Core-side handles for remote Bingo matches. */
+    public @NotNull List<BaseGameInstance> getSpectatableMapInstances(
+            @NotNull GameTypeEnum gameType, @NotNull String mapName) {
+        return getSpectatableInstances().stream()
+                .filter(instance -> instance.getGameTypeEnum() == gameType)
+                .filter(instance -> mapMatches(instance, mapName))
+                .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex)
+                        .thenComparing(this::stableInstanceKey))
+                .toList();
+    }
+
+    /** Copies for one map that the given viewer is currently allowed to enter. */
+    public @NotNull List<BaseGameInstance> getSpectatableMapInstances(
+            @NotNull Player viewer, @NotNull GameTypeEnum gameType, @NotNull String mapName) {
+        return getSpectatableInstances(viewer).stream()
+                .filter(instance -> instance.getGameTypeEnum() == gameType)
+                .filter(instance -> mapMatches(instance, mapName))
+                .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex)
+                        .thenComparing(this::stableInstanceKey))
+                .toList();
+    }
+
+    /** Human-readable identity shared by the GUI, direct command and status messages. */
+    public @NotNull String getSpectatorDisplayName(@NotNull BaseGameInstance instance) {
+        String name = instance.getGameConfig().getAreaName();
+        if (name == null || name.isBlank()) name = instance.getGameConfig().getConfigName();
+        if (instance instanceof RemoteBingoInstance remote)
+            return name + " · 对局 " + remote.matchId().toString().substring(0, 8);
+        if (instance instanceof ParkourTagArea)
+            return name + " · 分区 " + (instance.getCopyIndex() + 1);
+        if (instance instanceof BattleBoxArea)
+            return name + " · 分区 " + (instance.getCopyIndex() + 1);
+        if (instance instanceof ink.ziip.championshipscore.api.game.acerace.AceRaceArea)
+            return name + " · 实例 " + (instance.getCopyIndex() + 1);
+        return name;
+    }
+
+    /** Command token for selecting one copy. Local replicas use their one-based index; remote runs use match ID. */
+    public @NotNull String getSpectatorInstanceToken(@NotNull BaseGameInstance instance) {
+        if (instance instanceof RemoteBingoInstance remote)
+            return remote.matchId().toString().substring(0, 8);
+        return Integer.toString(instance.getCopyIndex() + 1);
     }
 
     /** Selects or switches to one live arena without an intermediate lobby teleport. */
     public synchronized boolean selectSpectatorArea(@NotNull Player player, @NotNull BaseGameInstance target) {
-        if (!isInstanceActivelyRunning(target) || playerStatus.containsKey(player.getUniqueId())) return false;
+        if (!canJoinSpectatorArea(player, target) || playerStatus.containsKey(player.getUniqueId())) return false;
         if (playerSpectatorStatus.get(player.getUniqueId()) == target) return true;
         moveSpectatorTo(player, target);
         return true;
@@ -1018,7 +1207,7 @@ public class GameManager extends BaseManager {
     /** Selects a live arena and teleports directly to a destination inside that same spectator instance. */
     public synchronized boolean selectSpectatorArea(@NotNull Player player, @NotNull BaseGameInstance target,
                                                     @NotNull Location destination) {
-        if (!isInstanceActivelyRunning(target) || playerStatus.containsKey(player.getUniqueId())) return false;
+        if (!canJoinSpectatorArea(player, target) || playerStatus.containsKey(player.getUniqueId())) return false;
         if (playerSpectatorStatus.get(player.getUniqueId()) == target) {
             target.teleportSpectatorAsync(player, destination);
             return true;
@@ -1027,12 +1216,15 @@ public class GameManager extends BaseManager {
         return true;
     }
 
-    private int spectatorInstanceIndex(@NotNull BaseGameInstance instance) {
-        if (instance instanceof ParkourTagArea parkourTag) return parkourTag.getCopyIndex();
-        if (instance instanceof BattleBoxArea battleBox) return battleBox.getCopyIndex();
-        if (instance instanceof ink.ziip.championshipscore.api.game.acerace.AceRaceArea aceRace)
-            return aceRace.getCopyIndex();
-        return 0;
+    private boolean mapMatches(@NotNull BaseGameInstance instance, @NotNull String mapName) {
+        String configName = instance.getGameConfig().getConfigName();
+        String areaName = instance.getGameConfig().getAreaName();
+        return configName != null && configName.equalsIgnoreCase(mapName)
+                || areaName != null && areaName.equalsIgnoreCase(mapName);
+    }
+
+    private @NotNull String stableInstanceKey(@NotNull BaseGameInstance instance) {
+        return instance instanceof RemoteBingoInstance remote ? remote.matchId().toString() : "";
     }
 
     /** Routes an unteamed player joining mid-game to the current spectator focus. */
@@ -1069,14 +1261,29 @@ public class GameManager extends BaseManager {
                 && !isInstanceAvailableForSpectating(expected)) {
             spectatorFocus = null;
         }
-        if (removed) plugin.getVisibilityManager().reconcilePlayer(uuid);
+        if (removed) {
+            Player online = Bukkit.getPlayer(uuid);
+            if (online == null) {
+                spectatorManager.forget(uuid);
+            } else {
+                // The area normally performs this during removeSpectator. Also cover rejected remote
+                // admission and failed async teleports, while not stealing a fast transfer to a new area.
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (playerSpectatorStatus.get(uuid) == null && spectatorManager.areaOf(uuid) == expected)
+                        spectatorManager.leavePresentation(online);
+                });
+            }
+            plugin.getVisibilityManager().reconcilePlayer(uuid);
+        }
     }
 
     private synchronized void focusSpectatorsOn(@NotNull BaseGameInstance startedInstance) {
         if (!startedInstance.isEventRun()) return;
+        spectatorFocus = startedInstance;
+        if (!isRegularSpectatingStage(startedInstance.getGameStageEnum())) return;
         BaseGameInstance current = getCurrentSpectatorFocus();
         BaseGameInstance target = current != null && current.getGameTypeEnum() == startedInstance.getGameTypeEnum()
-                && isInstanceActivelyRunning(current) ? current : startedInstance;
+                && isRegularSpectatingStage(current.getGameStageEnum()) ? current : startedInstance;
         spectatorFocus = target;
         transferHeldSpectatorsTo(target);
 
@@ -1141,6 +1348,7 @@ public class GameManager extends BaseManager {
         if (previous != null) previous.detachSpectator(player);
         if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
         playerSpectatorStatus.put(uuid, target);
+        spectatorManager.prepareExternal(player);
         target.addSpectator(player, destination);
         plugin.getVisibilityManager().reconcilePlayer(uuid);
         if (plugin.getDailyManager() != null) plugin.getDailyManager().attachSpectator(target, uuid);
@@ -1150,14 +1358,14 @@ public class GameManager extends BaseManager {
     @Nullable
     private BaseGameInstance getCurrentSpectatorFocus() {
         BaseGameInstance focus = spectatorFocus;
-        if (isInstanceAvailableForSpectating(focus)) return focus;
+        if (focus != null && isRegularSpectatingStage(focus.getGameStageEnum())) return focus;
 
         for (GameTypeEnum gameType : GameTypeEnum.values()) {
             BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
             if (manager == null) continue;
             BaseGameInstance active = manager.getRuntimeInstances().stream()
                     .filter(BaseGameInstance::isEventRun)
-                    .filter(this::isInstanceActivelyRunning)
+                    .filter(instance -> isRegularSpectatingStage(instance.getGameStageEnum()))
                     .sorted(Comparator.comparing(instance -> instance.getGameConfig().getConfigName(),
                             String.CASE_INSENSITIVE_ORDER))
                     .findFirst().orElse(null);
@@ -1183,6 +1391,36 @@ public class GameManager extends BaseManager {
         };
     }
 
+    /** Called by an instance once rule introduction/preparation is actually available to spectators. */
+    public void onInstancePreparationStarted(@NotNull BaseGameInstance instance) {
+        focusSpectatorsOn(instance);
+        activateFinaleAudience(instance);
+    }
+
+    /** Shared command, menu and area-admission policy. */
+    public boolean canJoinSpectatorArea(@NotNull Player player, @NotNull BaseGameInstance instance) {
+        boolean administrator = player.hasPermission(MainCommand.ADMIN_PERMISSION);
+        if (!isSpectatingStageAllowed(instance.getGameStageEnum(), administrator)) return false;
+        try {
+            Location destination = instance.getSpectatorSpawnLocation();
+            return destination != null && destination.getWorld() != null;
+        } catch (RuntimeException ignored) {
+            // Partially configured map-edit drafts must not break the whole selector/completer.
+            return false;
+        }
+    }
+
+    static boolean isSpectatingStageAllowed(@NotNull GameStageEnum stage, boolean administrator) {
+        if (isRegularSpectatingStage(stage)) return true;
+        return administrator && (stage == GameStageEnum.WAITING || stage == GameStageEnum.LOADING);
+    }
+
+    private static boolean isRegularSpectatingStage(@NotNull GameStageEnum stage) {
+        return stage == GameStageEnum.PREPARATION
+                || stage == GameStageEnum.COUNTDOWN
+                || stage == GameStageEnum.PROGRESS;
+    }
+
     public boolean leaveSpectating(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         if (playerSpectatorStatus.containsKey(uuid)) {
@@ -1191,6 +1429,7 @@ public class GameManager extends BaseManager {
             playerSpectatorStatus.remove(uuid);
             if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
             spectatorTransitionHolds.remove(uuid);
+            spectatorManager.leavePresentation(player);
             plugin.getVisibilityManager().reconcilePlayer(uuid);
             if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
             return true;
@@ -1205,6 +1444,8 @@ public class GameManager extends BaseManager {
             baseArea.removeSpectator(uuid);
             playerSpectatorStatus.remove(uuid);
             if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
+            Player online = Bukkit.getPlayer(uuid);
+            if (online != null) spectatorManager.leavePresentation(online);
             plugin.getVisibilityManager().reconcilePlayer(uuid);
         }
         spectatorTransitionHolds.remove(uuid);
@@ -1216,6 +1457,8 @@ public class GameManager extends BaseManager {
             baseArea.onlyRemoveSpectatorFromList(uuid);
             playerSpectatorStatus.remove(uuid);
             if (plugin.getDailyManager() != null) plugin.getDailyManager().detachSpectator(uuid);
+            Player online = Bukkit.getPlayer(uuid);
+            if (online != null) spectatorManager.leavePresentation(online);
             plugin.getVisibilityManager().reconcilePlayer(uuid);
         }
         spectatorTransitionHolds.remove(uuid);

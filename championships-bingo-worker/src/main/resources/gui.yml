@@ -1,0 +1,15 @@
+dont-edit-this:
+  version: 1
+spectator:
+  tracking:
+    name: "玩家追踪"
+    next: "左键：切换下一名玩家"
+    stop: "右键：停止追踪"
+    stopped-feedback: "已停止玩家追踪"
+    unavailable-feedback: "当前没有可追踪玩家"
+    active-feedback: "正在追踪%player%"
+  speed:
+    name: "飞行速度%speed%"
+    faster: "左键：加速"
+    slower: "右键：减速"
+    feedback: "飞行速度%speed%"

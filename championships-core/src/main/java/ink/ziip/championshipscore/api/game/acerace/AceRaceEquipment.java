@@ -8,7 +8,8 @@ import java.util.Locale;
 public enum AceRaceEquipment {
     NONE("none", "无"),
     ELYTRA("elytra", "鞘翅"),
-    TRIDENT("trident", "三叉戟");
+    TRIDENT("trident", "三叉戟"),
+    DOLPHINS_GRACE("dolphins_grace", "海豚的恩惠");
 
     private final String configValue;
     private final String displayName;

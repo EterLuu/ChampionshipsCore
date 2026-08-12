@@ -8,6 +8,7 @@ import org.bukkit.World;
 import java.util.concurrent.CompletableFuture;
 
 import java.io.File;
+import org.jetbrains.annotations.NotNull;
 
 public final class DodgeboltManager extends BaseGameInstanceManager<DodgeboltArea> {
     public DodgeboltManager(ChampionshipsCore plugin) {
@@ -52,6 +53,17 @@ public final class DodgeboltManager extends BaseGameInstanceManager<DodgeboltAre
         config.saveOptions();
         DodgeboltArea area = new DodgeboltArea(plugin, config, true, name);
         areas.put(name, area);
+        return true;
+    }
+
+    @Override
+    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+        if (areas.containsKey(name)) return false;
+        DodgeboltConfig config = new DodgeboltConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        DodgeboltArea area = new DodgeboltArea(plugin, config, false, name);
+        areas.put(name, area);
+        area.preloadMap();
         return true;
     }
 

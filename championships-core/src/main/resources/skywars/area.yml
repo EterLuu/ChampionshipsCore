@@ -12,7 +12,7 @@ countdown-block-disappearance:
   pos1:
   pos2:
   mode: RANDOM
-# "inline" reads rules from this map file; any other id resolves skywars/variants/<id>.yml.
+# "inline"reads rules from this map file; any other id resolves skywars/variants/<id>.yml.
 variant: inline
 timer: 960
 area-pos1:
@@ -21,9 +21,9 @@ boundary-center-point:
 spectator-spawn-point:
 team-spawn-points: [ ]
 glass-cage: true
-# 边界标准（对应 16 分钟赛制文档）：初始水平 240、上下 ±50（以中心 Y=76 换算为绝对 Y，
-# 新地图需按自己的中心 Y 调整这三个高度）；开局 5 分钟（剩余 11:00）开始分阶段收缩，
-# 每阶段 30 秒内缩到目标值，最后 10 秒完全闭合。
+#边界标准（对应16分钟赛制文档）：初始水平240、上下±50（以中心Y=76换算为绝对Y，
+#新地图需按自己的中心Y调整这三个高度）；开局5分钟（剩余11:00）开始分阶段收缩，
+#每阶段30秒内缩到目标值，最后10秒完全闭合。
 boundary:
   default-height: 126
   middle-height: 76
@@ -47,29 +47,29 @@ scoring:
   player-elimination-survival: 8
   team-elimination-survival: 4
 
-# ── 规则介绍阶段（introduction）────────────────────────────
-# 游戏正式开始前，玩家会先被传送到 introduction-spawn-point，在 45 秒内于聊天框分段播报下面的
-# 规则文案（rules，每个子列表为一段，支持 & 颜色码与 &#RRGGBB 十六进制颜色），期间可以自由参观
-# 场地；结束后传送到正式准备点位，读秒后开始游戏。
-# introduction-spawn-point 留空时使用旁观出生点；把 rules 设为 [] 可跳过该阶段。
+# ──规则介绍阶段（introduction）────────────────────────────
+#游戏正式开始前，玩家会先被传送到introduction-spawn-point，在45秒内于聊天框分段播报下面的
+#规则文案（rules，每个子列表为一段，支持&颜色码与&#RRGGBB十六进制颜色），期间可以自由参观
+#场地；结束后传送到正式准备点位，读秒后开始游戏。
+# introduction-spawn-point留空时使用旁观出生点；把rules设为[]可跳过该阶段。
 introduction-spawn-point:
 rules:
   - - "&#696969==========&r &#ff6b26[&#fff566空岛乱斗&#ff6b26] &#696969==========&r"
     - "&#fff566咻——欢迎来到空岛，千万别往下看！"
-    - "&#ededed一局定胜负，所有队伍同场竞技（16 分钟）"
+    - "&#ededed一局定胜负，所有队伍同场竞技（16分钟）"
     - "&#ededed各队出生在各自的小岛上，向外收集资源"
-    - "&#ededed开局 2 分钟后，每队出生岛会生成专属的&#fff566乐魂"
+    - "&#ededed开局2分钟后，每队出生岛会生成专属的&#fff566乐魂"
     - "&#ededed只有本队队员可以骑乘；全队出局后乐魂也会死亡"
-    - "&#ededed开局 5 分钟后安全空域开始收缩，出圈持续掉血"
+    - "&#ededed开局5分钟后安全空域开始收缩，出圈持续掉血"
     - "&#ededed合成、酿造、附魔，武装自己击落对手！"
-  - - "&#696969==========&r &#fff566积分规则 &#696969==========&r"
-    - "&#ededed每击杀一名对手：&#fff566+40 分"
-    - "&#ededed存活到对局结束：&#fff566+50 分"
+  - - "&#696969==========&r&#fff566积分规则&#696969==========&r"
+    - "&#ededed每击杀一名对手：&#fff566+40分"
+    - "&#ededed存活到对局结束：&#fff566+50分"
     - "&#ededed最终获胜还有额外的胜利奖励分"
-  - - "&#696969==========&r &#fff566小提示 &#696969==========&r"
+  - - "&#696969==========&r&#fff566小提示&#696969==========&r"
     - "&#fff566奖励箱物资固定，越靠中心越豪华"
-    - "&#ededed最中央竞技场的箱子里有 TNT 和鞘翅"
-    - "&#edededTNT 不会自动爆炸，需要手动点燃"
+    - "&#ededed最中央竞技场的箱子里有TNT和鞘翅"
+    - "&#edededTNT不会自动爆炸，需要手动点燃"
     - "&#ededed没有下界和末地，别造传送门"
     - "&#ededed刷怪蛋的怪物会攻击所有玩家"
     - "&#ededed死亡后物品会装进原地的箱子里"

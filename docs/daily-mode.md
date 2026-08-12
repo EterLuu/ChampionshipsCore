@@ -7,7 +7,7 @@
 - `/cc switch daily`：将大厅切换到自由游玩；已有对局不会被中断。
 - `/cc switch championship`：停止接收自由匹配并清空等待队列；已开始的对局继续结算。
 - `/cc event ...` 与 `/cc game start ...`：两个服务器模式下都保留，运行模式仍分别是 `EVENT` 与 `GAME`。
-- `/cc play`：打开游戏选择菜单。目前适配 Bingo 和 AceRace。
+- `/cc play`：打开游戏选择菜单。目前适配 Bingo、AceRace 和龙蛋狂欢。
 - `/cc play leave`：退出等待或正在进行的游戏；同行小队会作为整体退出，场内无人后立即结束实例。远程 Bingo 由 Worker 接收相同命令并通知 Core 完成全队退出。
 - `/cc play leaderboard`：打开榜单分类与详细排名菜单。
 - `/cc daily leave`、`/cc daily stats [游戏]`：兼容入口，用于退出游玩、查看独立统计。
@@ -19,11 +19,11 @@
 
 ## 配置与扩展点
 
-`config.yml` 的 `daily.enabled-games` 是正式比赛游戏列表的日常子集。每个适配器从 `daily.games.<game>` 读取最小人数、最大人数、队伍容量、队伍数量和倒计时；AceRace 还读取 `concurrent-instances`。新增游戏应实现 `DailyGameAdapter`，使用 `DailyRules` 描述队列容量，并由 `DailyManager` 注册。
+`config.yml` 的 `daily.enabled-games` 是正式比赛游戏列表的日常子集。每个适配器从 `daily.games.<game>` 读取最小人数、最大人数、队伍容量、队伍数量和倒计时；AceRace 还读取 `concurrent-instances`。龙蛋狂欢固定分为两队，每张已发布且空闲的末地地图提供一个运行实例。新增游戏应实现 `DailyGameAdapter`，使用 `DailyRules` 描述队列容量，并由 `DailyManager` 注册。
 
 分配器把同行小队视为不可拆分单元：较大的小队优先落位，个人玩家随机补足未满队伍；全部为个人玩家时同样随机分队。分配完成后才创建 `TeamManager` 的临时颜色队伍（红队、绿队、蓝队等），因此不会污染正式队伍缓存和数据库。
 
-AceRace 的并发实例共享同一地图几何和世界。`PlayerIsolationService` 以日常 match ID 隔离玩家可见性，观战者会附着到所观战的实例；离开实例后恢复大厅可见性。
+AceRace 的所有地图位于同一个 `acerace` 世界并以赛道边界隔离；同一地图的并发实例共享地图几何。`PlayerIsolationService` 以日常 match ID 隔离玩家可见性，观战者会附着到所观战的实例；离开实例后恢复大厅可见性。
 
 ## 数据与 PAPI
 
@@ -33,7 +33,7 @@ AceRace 的并发实例共享同一地图几何和世界。`PlayerIsolationServi
 - `daily_match_results`：每场每位玩家的独立战绩，包含该场积分及 Bingo 进度，`matchId + uuid` 保证幂等。
 - `daily_player_records`：按游戏、地图、地图版本、规则版本和纪录类型存储最佳耗时。
 
-Bingo 记录胜场、连线数、完成任务总数和单场最多完成数；AceRace 按地图记录最快单圈和最快完整三圈。单局积分只随该场战绩写入 `daily_match_results`，不会累加、继承或进入大厅展示；自由游玩也不会调用正式积分/轮次持久化。
+Bingo 记录胜场、连线数、完成任务总数和单场最多完成数；AceRace 按地图记录最快单圈和最快完整三圈；龙蛋狂欢按率先完成两项末地进度的队伍记录胜负。单局积分只随该场战绩写入 `daily_match_results`，不会累加、继承或进入大厅展示；自由游玩也不会调用正式积分/轮次持久化。
 
 自由游玩占位符统一使用 `%cc_daily_*%`，包括 `mode`、`party_leader`、`party_size`、`selected_game`、`queue_state`、`queue_players`、`countdown`、`active_game`、`active_map`、`match_id`、`games`、`wins`。旧的 `points`、`best` 为兼容保留但固定返回 `0`。这些占位符只读取快照或缓存，离线/空上下文返回稳定默认值，不在 PAPI 回调线程访问数据库。
 

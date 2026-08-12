@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ToggleStep;
@@ -50,13 +52,13 @@ public class PrepareSession {
 
         PrepareStep introductionSpawn = new StandAndRunStep(
                 "introduction_spawn",
-                Component.text("规则介绍出生点（可覆盖）"),
-                Component.text("站到专用出生点后点击；未单独设置时沿用旁观者出生点"),
+                Component.text(GuiConfig.text("area-prepare-preparesession.text-001")),
+                Component.text(GuiConfig.text("area-prepare-preparesession.text-002")),
                 Material.BOOK,
                 setup -> setup.config().getIntroductionSpawnPoint() != null
                         || setup.config().getSpectatorSpawnPoint() != null,
                 (setup, location) -> setup.config().setIntroductionSpawnPoint(location),
-                Utils.formatAdminSuccess("已设置规则介绍专用出生点。"));
+                Utils.formatAdminSuccess(GuiConfig.text("area-prepare-preparesession.text-003")));
 
         int spectatorSpawn = -1;
         int confirmWorld = -1;
@@ -69,11 +71,11 @@ public class PrepareSession {
 
         PrepareStep introductionMode = new ToggleStep(
                 "introduction_game_mode",
-                Component.text("规则介绍模式"),
-                Component.text("点击切换该地图规则介绍阶段的玩家模式"),
+                Component.text(GuiConfig.text("area-prepare-preparesession.text-004")),
+                Component.text(GuiConfig.text("area-prepare-preparesession.text-005")),
                 Material.RECOVERY_COMPASS,
                 setup -> setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
-                        ? "当前：旁观者模式" : "当前：冒险模式",
+                        ? GuiConfig.text("area-prepare-preparesession.text-006") : GuiConfig.text("area-prepare-preparesession.text-007"),
                 setup -> setup.config().setIntroductionGameMode(
                         setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
                                 ? GameMode.ADVENTURE : GameMode.SPECTATOR));

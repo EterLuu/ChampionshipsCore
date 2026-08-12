@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
+import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.setup.MapSetupTarget;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
@@ -19,6 +20,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extends BaseManager {
@@ -98,6 +100,60 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
             plugin.getLogger().warning("无法删除地图配置 " + name + " | " + exception.getMessage());
             return false;
         }
+    }
+
+    /** Map configuration used by administrative lifecycle operations such as an atomic rename. */
+    @Nullable
+    public BaseGameConfig getMapConfig(@NotNull String name) {
+        T representative = areas.get(name);
+        return representative == null ? null : representative.getGameConfig();
+    }
+
+    /** Only the selected map's runtime copies must be idle; another region in a shared world may run. */
+    public synchronized boolean canRenameArea(@NotNull String name) {
+        T representative = areas.get(name);
+        if (representative == null) return false;
+        BaseGameConfig config = representative.getGameConfig();
+        return getRuntimeInstances().stream()
+                .filter(instance -> instance.getGameConfig() == config)
+                .allMatch(instance -> instance.getGameStageEnum()
+                        == ink.ziip.championshipscore.api.object.stage.GameStageEnum.WAITING);
+    }
+
+    /** Unregisters and disposes one map without deleting its configuration or physical world. */
+    public synchronized boolean detachAreaForRename(@NotNull String name) {
+        T representative = areas.get(name);
+        if (representative == null || !canRenameArea(name)) return false;
+        detachAreaRegistration(name, representative);
+        return true;
+    }
+
+    /** Rollback-only variant which also removes a partially loading replacement instance. */
+    public synchronized boolean forceDetachAreaAfterFailedRename(@NotNull String name) {
+        T representative = areas.get(name);
+        if (representative == null) return true;
+        detachAreaRegistration(name, representative);
+        return true;
+    }
+
+    private void detachAreaRegistration(@NotNull String name, @NotNull T representative) {
+        BaseGameConfig config = representative.getGameConfig();
+        List<T> copies = new ArrayList<>();
+        for (T instance : getRuntimeInstances()) {
+            if (instance.getGameConfig() == config) copies.add(instance);
+        }
+        copies.forEach(BaseGameInstance::dispose);
+        onAreaDetached(name);
+        areas.remove(name, representative);
+    }
+
+    /** Replicated managers remove their secondary map-to-copy registration here. */
+    protected void onAreaDetached(@NotNull String name) {
+    }
+
+    /** Loads an existing renamed configuration. Managers with setup-only add paths may override. */
+    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+        return addArea(name, worldName);
     }
 
     /**

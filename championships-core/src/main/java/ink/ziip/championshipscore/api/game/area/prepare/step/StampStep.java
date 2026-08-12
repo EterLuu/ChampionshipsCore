@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -62,8 +64,8 @@ public class StampStep extends PrepareStep {
                       BiConsumer<PrepareSession, World> preStampCleaner,
                       int maxCount, boolean keepSourceCopy, boolean ignored) {
         super("stamp",
-                Component.text("盖章生成多份地图"),
-                Component.text("输入份数后粘贴 N 份场地并固化为模板"),
+                Component.text(GuiConfig.text("prepare-step-stampstep.text-001")),
+                Component.text(GuiConfig.text("prepare-step-stampstep.text-002")),
                 Material.DISPENSER,
                 StepCaptureType.STAMP);
         this.fileResolver = fileResolver;
@@ -125,22 +127,22 @@ public class StampStep extends PrepareStep {
     @Override
     public String stamp(@NotNull PrepareSession session, @NotNull Player player, int count) {
         if (count < 1) {
-            return Utils.formatAdminError("场地份数必须大于 0。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-stampstep.text-003"));
         }
         if (count > maxCount) {
-            return Utils.formatAdminError("该地图最多只能生成 &#fff566" + maxCount + " &#ededed份场地。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-stampstep.text-004") + maxCount + GuiConfig.text("prepare-step-stampstep.text-005"));
         }
         File file = fileResolver.apply(session.getPlugin());
         if (!file.isFile()) {
-            return Utils.formatAdminError("缺少场地模板，请先完成“保存场地模板”。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-stampstep.text-006"));
         }
         String worldName = session.getTarget().worldName();
         World world = Bukkit.getWorld(worldName);
         if (world == null) {
-            return Utils.formatAdminError("世界 &#fff566" + worldName + " &#ededed尚未加载。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-stampstep.text-007") + worldName + GuiConfig.text("prepare-step-stampstep.text-008"));
         }
         if (!session.getTarget().canSaveMap()) {
-            return Utils.formatAdminError("同一地图仍有游戏实例运行，无法重新生成或保存。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-stampstep.text-009"));
         }
         ArenaGrid resolvedGrid;
         try {
@@ -153,7 +155,7 @@ public class StampStep extends PrepareStep {
                 ArenaPreparer.stampCopies(session.getPlugin(), world, file, resolvedGrid, count);
             if (sizeWriter != null) sizeWriter.accept(session.getTarget(), size);
         } catch (Exception e) {
-            return Utils.formatAdminError("生成场地失败：&#fff566" + e.getMessage());
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-stampstep.text-010") + e.getMessage());
         }
 
         copyCountWriter.accept(session.getTarget(), count);
@@ -163,8 +165,8 @@ public class StampStep extends PrepareStep {
         session.setWorldConfirmed(true);
         session.setStamped(true);
         return Utils.formatAdminSuccess(keepSourceCopy
-                ? "场地总数已设为 &#fff566" + count + "&#ededed；保留 0 号原图并生成了 &#fff566"
-                    + Math.max(0, count - 1) + " &#ededed个副本。"
-                : "已生成 &#fff566" + count + " &#ededed份场地；完成点位后请验证并发布。");
+                ? GuiConfig.text("prepare-step-stampstep.text-011") + count + GuiConfig.text("prepare-step-stampstep.text-012")
+                    + Math.max(0, count - 1) + GuiConfig.text("prepare-step-stampstep.text-013")
+                : GuiConfig.text("prepare-step-stampstep.text-014") + count + GuiConfig.text("prepare-step-stampstep.text-015"));
     }
 }

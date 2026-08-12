@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -23,9 +25,9 @@ final class DailyLobbyItem {
         ItemStack item = new ItemStack(Material.COMPASS);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text("游戏大厅", NamedTextColor.AQUA)
+            meta.displayName(Component.text(GuiConfig.text("api-daily-dailylobbyitem.text-001"), NamedTextColor.AQUA)
                     .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text("右键打开大厅菜单", NamedTextColor.GRAY)
+            meta.lore(List.of(Component.text(GuiConfig.text("api-daily-dailylobbyitem.text-002"), NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
             meta.getPersistentDataContainer().set(MARKER, PersistentDataType.BYTE, (byte) 1);
             item.setItemMeta(meta);

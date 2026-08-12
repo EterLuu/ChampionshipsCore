@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -19,7 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 public class TeamManager extends BaseManager {
     private static final String DAILY_LOBBY_TEAM_ID = "ccd_lobby";
@@ -35,6 +39,10 @@ public class TeamManager extends BaseManager {
     private static final TeamDaoImpl teamDaoImpl = new TeamDaoImpl();
     private final BukkitScheduler scheduler;
     private static Scoreboard scoreboard = null;
+
+    private record FormalTeamSnapshot(int id, String name, String colorName, String colorCode,
+                                      Map<UUID, String> members) {
+    }
 
     static Set<ChampionshipTeam> newTransientTeamRegistry() {
         return Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<>()));
@@ -99,26 +107,127 @@ public class TeamManager extends BaseManager {
 
             ChampionshipTeam championshipTeam = new ChampionshipTeam(id, name, colorName, colorCode, team);
             cachedTeams.put(name, championshipTeam);
+            publishTeamChange("team-created");
             return true;
         }
     }
 
     @Override
     public void load() {
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            for (Team team : scoreboard.getTeams()) {
-                team.unregister();
-            }
+        refreshFormalTeamsFromDatabase().exceptionally(failure -> {
+            plugin.getLogger().log(Level.SEVERE, "Unable to load formal teams from database", failure);
+            return null;
+        });
+    }
 
-            for (TeamEntry teamEntry : teamDaoImpl.getTeamList()) {
-                int teamId = teamEntry.getId();
-                Set<UUID> uuids = new HashSet<>();
-                for (TeamMemberEntry teamMemberEntry : teamDaoImpl.getTeamMembers(teamId)) {
-                    uuids.add(teamMemberEntry.getUuid());
+    /** Reloads the authoritative formal-team snapshot without touching match-scoped DAILY teams. */
+    public CompletionStage<Void> refreshFormalTeamsFromDatabase() {
+        CompletableFuture<List<FormalTeamSnapshot>> query = new CompletableFuture<>();
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            try {
+                List<FormalTeamSnapshot> snapshots = new ArrayList<>();
+                List<TeamEntry> entries = teamDaoImpl.getTeamListIfAvailable()
+                        .orElseThrow(() -> new IllegalStateException("Unable to query formal team list"));
+                for (TeamEntry entry : entries) {
+                    Map<UUID, String> members = new LinkedHashMap<>();
+                    Set<TeamMemberEntry> queriedMembers = teamDaoImpl.getTeamMembersIfAvailable(entry.getId())
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Unable to query members for team " + entry.getId()));
+                    for (TeamMemberEntry member : queriedMembers)
+                        members.put(member.getUuid(), member.getUsername());
+                    snapshots.add(new FormalTeamSnapshot(entry.getId(), entry.getName(), entry.getColorName(),
+                            entry.getColorCode(), Map.copyOf(members)));
                 }
-                addTeam(teamId, teamEntry.getName(), teamEntry.getColorName(), teamEntry.getColorCode(), uuids);
+                query.complete(List.copyOf(snapshots));
+            } catch (RuntimeException failure) {
+                query.completeExceptionally(failure);
             }
         });
+        return query.thenCompose(this::applyFormalTeamSnapshots);
+    }
+
+    private CompletionStage<Void> applyFormalTeamSnapshots(List<FormalTeamSnapshot> snapshots) {
+        CompletableFuture<Void> applied = new CompletableFuture<>();
+        Runnable apply = () -> {
+            try {
+                Set<UUID> changedMembers = new HashSet<>();
+                synchronized (cachedTeams) {
+                    Map<Integer, FormalTeamSnapshot> snapshotById = new HashMap<>();
+                    for (FormalTeamSnapshot snapshot : snapshots) snapshotById.put(snapshot.id(), snapshot);
+
+                    for (ChampionshipTeam cached : List.copyOf(cachedTeams.values())) {
+                        FormalTeamSnapshot snapshot = snapshotById.get(cached.getId());
+                        boolean metadataMatches = snapshot != null
+                                && cached.getName().equals(snapshot.name())
+                                && cached.getColorName().equals(snapshot.colorName())
+                                && cached.getColorCode().equals(snapshot.colorCode());
+                        if (metadataMatches) continue;
+                        // Running games retain their exact team object until the next reconciliation.
+                        if (plugin.getGameManager().getTeamCurrenArea(cached) != null) continue;
+                        cachedTeams.remove(cached.getName(), cached);
+                        changedMembers.addAll(cached.getMembers());
+                        unregister(cached.getTeam());
+                    }
+
+                    for (FormalTeamSnapshot snapshot : snapshots) {
+                        ChampionshipTeam team = getTeamById(snapshot.id());
+                        if (team == null) {
+                            team = createFormalTeam(snapshot);
+                            cachedTeams.put(snapshot.name(), team);
+                            changedMembers.addAll(snapshot.members().keySet());
+                        }
+                        reconcileFormalMembers(team, snapshot.members(), changedMembers);
+                    }
+                }
+                for (UUID playerId : changedMembers) plugin.getVisibilityManager().reconcilePlayer(playerId);
+                applied.complete(null);
+            } catch (RuntimeException failure) {
+                applied.completeExceptionally(failure);
+            }
+        };
+        if (Bukkit.isPrimaryThread()) apply.run();
+        else scheduler.runTask(plugin, apply);
+        return applied;
+    }
+
+    private ChampionshipTeam createFormalTeam(FormalTeamSnapshot snapshot) {
+        Team scoreboardTeam = scoreboard.getTeam(snapshot.colorName());
+        if (scoreboardTeam != null) unregister(scoreboardTeam);
+        scoreboardTeam = scoreboard.registerNewTeam(snapshot.colorName());
+        try {
+            scoreboardTeam.color(Utils.toNamedTextColor(snapshot.colorName(), snapshot.colorCode()));
+        } catch (RuntimeException ignored) {
+        }
+        return new ChampionshipTeam(snapshot.id(), snapshot.name(), snapshot.colorName(), snapshot.colorCode(),
+                snapshot.members().keySet(), scoreboardTeam);
+    }
+
+    private void reconcileFormalMembers(ChampionshipTeam team, Map<UUID, String> authoritative,
+                                        Set<UUID> changedMembers) {
+        Set<UUID> cachedMembers = team.getMembers();
+        for (UUID member : cachedMembers) {
+            if (!authoritative.containsKey(member)) {
+                team.deleteMember(member);
+                changedMembers.add(member);
+            }
+        }
+        for (UUID member : authoritative.keySet()) {
+            if (team.addMember(member)) changedMembers.add(member);
+        }
+
+        Team scoreboardTeam = team.getTeam();
+        for (String entry : Set.copyOf(scoreboardTeam.getEntries())) scoreboardTeam.removeEntry(entry);
+        authoritative.forEach((uuid, username) -> {
+            if (!transientTeamByPlayer.containsKey(uuid)) scoreboardTeam.addEntry(username);
+        });
+    }
+
+    private static void unregister(Team team) {
+        if (team == null) return;
+        try {
+            team.unregister();
+        } catch (IllegalStateException ignored) {
+        }
     }
 
     @Override
@@ -141,7 +250,25 @@ public class TeamManager extends BaseManager {
 
     @Nullable
     public ChampionshipTeam getTeam(@NotNull String name) {
-        return cachedTeams.getOrDefault(name, null);
+        ChampionshipTeam exact = cachedTeams.get(name);
+        if (exact != null) return exact;
+        return findTeam(cachedTeams.values(), name);
+    }
+
+    /**
+     * Resolves administrator-facing team selectors by display name (case-insensitive) or numeric
+     * database id. Most commands tab-complete the display name, while accepting the id keeps the
+     * historical {@code <队伍ID>} command syntax truthful.
+     */
+    static @Nullable ChampionshipTeam findTeam(@NotNull Collection<ChampionshipTeam> teams,
+                                                @NotNull String selector) {
+        for (ChampionshipTeam team : teams) {
+            if (team.getName().equalsIgnoreCase(selector)
+                    || Integer.toString(team.getId()).equals(selector)) {
+                return team;
+            }
+        }
+        return null;
     }
 
     public boolean deleteTeam(@NotNull String name) {
@@ -159,6 +286,7 @@ public class TeamManager extends BaseManager {
         scheduler.runTaskAsynchronously(plugin, () -> {
             teamDaoImpl.deleteTeam(id);
             teamDaoImpl.deleteTeamMembers(id);
+            publishTeamChange("team-deleted");
         });
         return true;
     }
@@ -455,6 +583,7 @@ public class TeamManager extends BaseManager {
             else
                 plugin.getGameManager().removeSpectatingPlayerFromList(uuid);
             plugin.getVisibilityManager().reconcilePlayer(uuid);
+            publishTeamChange("team-member-added");
             return true;
         }
     }
@@ -493,6 +622,7 @@ public class TeamManager extends BaseManager {
             else
                 plugin.getGameManager().removeSpectatingPlayerFromList(uuid);
             plugin.getVisibilityManager().reconcilePlayer(uuid);
+            publishTeamChange("team-member-moved");
             return MemberMoveResult.SUCCESS;
         }
     }
@@ -524,6 +654,7 @@ public class TeamManager extends BaseManager {
         }
         for (TeamMemberEntry member : matchingMembers)
             plugin.getVisibilityManager().reconcilePlayer(member.getUuid());
+        publishTeamChange("team-member-deleted");
         return true;
     }
 
@@ -546,5 +677,9 @@ public class TeamManager extends BaseManager {
                 team.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
             }
         }
+    }
+
+    private void publishTeamChange(String reason) {
+        plugin.getRedisManager().publishDatabaseChange(reason, DatabaseSyncDomain.TEAM);
     }
 }

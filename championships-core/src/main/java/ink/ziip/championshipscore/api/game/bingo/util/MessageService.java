@@ -139,16 +139,24 @@ public final class MessageService {
     }
 
     /**
-     * Makes sure {@code dest} exists and carries every bundled key, without clobbering values the server
-     * owner has edited. The bundled jar resource is the base; on-disk values win for any key present in
-     * both, and any key that exists only in the bundle is filled in. The file is rewritten only when it
-     * is missing or actually gained keys, so a fully-up-to-date, unedited file is left byte-for-byte
-     * alone (the owner's formatting and comments survive).
+     * Makes sure {@code dest} exists and carries every bundled key. A language schema bump replaces the
+     * previous copy so deliberate terminology/style migrations reach running servers; within the same
+     * schema version, administrator overrides win and only missing keys are filled in.
      */
     private void ensureBundled(String resourcePath, File dest) {
         YamlConfiguration bundled = loadResource(resourcePath);
         if (dest.exists()) {
             YamlConfiguration disk = YamlConfiguration.loadConfiguration(dest);
+            int bundledVersion = bundled.getInt("dont-edit-this.version", 0);
+            int diskVersion = disk.getInt("dont-edit-this.version", -1);
+            if (diskVersion < bundledVersion) {
+                try {
+                    bundled.save(dest);
+                } catch (IOException e) {
+                    log.warning("[BingoLang] Failed to upgrade " + dest.getName() + ": " + e.getMessage());
+                }
+                return;
+            }
             int before = countLeaves(disk);
             mergeDefaults(bundled, disk);
             if (countLeaves(disk) == before) return; // no new keys - leave the file untouched

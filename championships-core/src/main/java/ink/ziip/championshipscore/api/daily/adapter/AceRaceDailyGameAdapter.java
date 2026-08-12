@@ -31,19 +31,28 @@ public final class AceRaceDailyGameAdapter implements DailyGameAdapter {
     }
 
     @Override
+    public int availableSlots() {
+        return (int) candidates().stream().count();
+    }
+
+    @Override
     public @Nullable StartResult start(@NotNull List<ChampionshipTeam> teams) {
-        List<AceRaceArea> candidates = plugin.getGameManager().getAceRaceManager().getRuntimeInstances().stream()
-                .filter(area -> area.getGameStageEnum() == GameStageEnum.WAITING)
-                .sorted(Comparator.comparing((AceRaceArea area) -> area.getGameConfig().getConfigName(),
-                                String.CASE_INSENSITIVE_ORDER)
-                        .thenComparingInt(AceRaceArea::getCopyIndex))
-                .toList();
-        for (AceRaceArea area : candidates) {
+        for (AceRaceArea area : candidates()) {
             if (plugin.getGameManager().joinMultiTeamInstanceForTeams(GameTypeEnum.AceRace, area,
                     false, GameRunMode.DAILY, teams)) {
                 return new StartResult(area.getGameConfig().getConfigName(), area);
             }
         }
         return null;
+    }
+
+    private @NotNull List<AceRaceArea> candidates() {
+        return plugin.getGameManager().getAceRaceManager().getRuntimeInstances().stream()
+                .filter(area -> area.getGameStageEnum() == GameStageEnum.WAITING)
+                .filter(area -> plugin.getDailyManager().session(area) == null)
+                .sorted(Comparator.comparing((AceRaceArea area) -> area.getGameConfig().getConfigName(),
+                                String.CASE_INSENSITIVE_ORDER)
+                        .thenComparingInt(AceRaceArea::getCopyIndex))
+                .toList();
     }
 }

@@ -146,4 +146,18 @@ public class BattleBoxManager extends BaseGameInstanceManager<BattleBoxArea> {
         instancesByMap.put(mapName, instances);
         areas.put(mapName, instances.getFirst());
     }
+
+    @Override
+    protected void onAreaDetached(@NotNull String name) {
+        instancesByMap.remove(name);
+    }
+
+    @Override
+    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+        if (areas.containsKey(name)) return false;
+        BattleBoxConfig config = new BattleBoxConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        createInstances(name, config);
+        return true;
+    }
 }

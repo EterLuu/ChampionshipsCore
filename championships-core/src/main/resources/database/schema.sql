@@ -12,7 +12,9 @@ CREATE TABLE IF NOT EXISTS `teams`
     `colorName` VARCHAR(16)  NOT NULL,
     `colorCode` VARCHAR(255) NOT NULL,
 
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_teams_name` (`name`),
+    UNIQUE KEY `uq_teams_color_name` (`colorName`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -64,7 +66,8 @@ CREATE TABLE IF NOT EXISTS `game_status`
     `game`  VARCHAR(255) NOT NULL,
     `order` INTEGER      NOT NULL,
 
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_game_status_game` (`game`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -88,6 +91,7 @@ CREATE TABLE IF NOT EXISTS `remote_bingo_matches`
     `matchId`      VARCHAR(36)  NOT NULL,
     `epoch`        BIGINT       NOT NULL,
     `workerId`     VARCHAR(128) NOT NULL,
+    `ownerInstance` VARCHAR(128) NOT NULL,
     `state`        VARCHAR(32)  NOT NULL,
     `manifest`     LONGBLOB     NOT NULL,
     `updatedAt`    BIGINT       NOT NULL,

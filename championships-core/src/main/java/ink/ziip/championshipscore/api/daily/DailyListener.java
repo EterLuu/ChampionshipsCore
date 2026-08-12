@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.daily;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
+import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
@@ -135,6 +136,11 @@ final class DailyListener extends BaseListener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEnd(SingleGameEndEvent event) {
+        daily.finish(event.getGameInstance());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onTeamEnd(TeamGameEndEvent event) {
         daily.finish(event.getGameInstance());
     }
 }

@@ -3,7 +3,6 @@ package ink.ziip.championshipscore.command.admin;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.command.admin.vote.AdminVoteMainCommand;
 import ink.ziip.championshipscore.command.admin.world.AdminWorldMainCommand;
-import ink.ziip.championshipscore.command.admin.dodgebolt.AdminDodgeboltMainCommand;
 
 public class AdminMainCommand extends BaseMainCommand {
     public AdminMainCommand() {
@@ -15,6 +14,5 @@ public class AdminMainCommand extends BaseMainCommand {
         addSubCommand(new AdminReloadSubCommand());
         addSubCommand(new AdminVisibilitySubCommand());
         addSubCommand(new AdminWorldMainCommand());
-        addSubCommand(new AdminDodgeboltMainCommand());
     }
 }

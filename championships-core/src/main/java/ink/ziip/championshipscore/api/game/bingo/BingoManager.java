@@ -13,6 +13,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSpec;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TierlistLoader;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
+import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -32,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Owns the bingo areas and the one-time bingo subsystem init: localisation, the card pool / tier list /
@@ -222,5 +225,38 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         }
         BingoArea bingoArea = areas.putIfAbsent(name, new BingoArea(plugin, bingoConfig));
         return bingoArea == null;
+    }
+
+    @Override
+    public @Nullable BaseGameConfig getMapConfig(@NotNull String name) {
+        return remoteExecutionConfigured() ? remoteAreaConfigs.get(name) : super.getMapConfig(name);
+    }
+
+    @Override
+    public synchronized boolean canRenameArea(@NotNull String name) {
+        return remoteExecutionConfigured() ? remoteAreaConfigs.containsKey(name) : super.canRenameArea(name);
+    }
+
+    @Override
+    public synchronized boolean detachAreaForRename(@NotNull String name) {
+        if (!remoteExecutionConfigured()) return super.detachAreaForRename(name);
+        return remoteAreaConfigs.remove(name) != null;
+    }
+
+    @Override
+    public synchronized boolean forceDetachAreaAfterFailedRename(@NotNull String name) {
+        if (!remoteExecutionConfigured()) return super.forceDetachAreaAfterFailedRename(name);
+        remoteAreaConfigs.remove(name);
+        return true;
+    }
+
+    @Override
+    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+        if (!remoteExecutionConfigured()) return super.loadAreaAfterRename(name, worldName);
+        if (remoteAreaConfigs.containsKey(name)) return false;
+        BingoConfig config = new BingoConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        remoteAreaConfigs.put(name, config);
+        return true;
     }
 }

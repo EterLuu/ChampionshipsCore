@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -40,7 +42,7 @@ final class DailyPartyMenu {
 
     void open(Player player) {
         PartyHolder holder = new PartyHolder(player.getUniqueId());
-        holder.inventory = Bukkit.createInventory(holder, SIZE, Component.text("组队功能", NamedTextColor.DARK_AQUA)
+        holder.inventory = Bukkit.createInventory(holder, SIZE, Component.text(GuiConfig.text("api-daily-dailypartymenu.text-001"), NamedTextColor.DARK_AQUA)
                 .decorate(TextDecoration.BOLD));
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -76,10 +78,10 @@ final class DailyPartyMenu {
             if (invite != null) {
                 DailyParty party = daily.partyManager().accept(player.getUniqueId());
                 if (party == null) {
-                    daily.message(player.getUniqueId(), "当前无法接受这份邀请。");
+                    daily.message(player.getUniqueId(), GuiConfig.text("api-daily-dailypartymenu.text-002"));
                 } else {
                     for (UUID member : party.members()) {
-                        daily.message(member, player.getName() + " 已加入同行小队。");
+                        daily.message(member, player.getName() + GuiConfig.text("api-daily-dailypartymenu.text-003"));
                     }
                 }
                 refresh(holder);
@@ -90,7 +92,7 @@ final class DailyPartyMenu {
         if (slot == ACTION_SLOT) {
             DailyParty party = daily.partyManager().getParty(player.getUniqueId());
             if (party == null) {
-                daily.message(player.getUniqueId(), "请点击下方在线玩家发送组队邀请。");
+                daily.message(player.getUniqueId(), GuiConfig.text("api-daily-dailypartymenu.text-004"));
                 clickSound(player, 1F);
                 return;
             }
@@ -98,8 +100,8 @@ final class DailyPartyMenu {
                     ? daily.partyManager().disband(player.getUniqueId())
                     : daily.partyManager().leave(player.getUniqueId());
             if (success) daily.message(player.getUniqueId(), party != null && party.isLeader(player.getUniqueId())
-                    ? "同行小队已解散。" : "你已离开同行小队。");
-            else daily.message(player.getUniqueId(), "当前无法修改队伍。");
+                    ? GuiConfig.text("api-daily-dailypartymenu.text-005") : GuiConfig.text("api-daily-dailypartymenu.text-006"));
+            else daily.message(player.getUniqueId(), GuiConfig.text("api-daily-dailypartymenu.text-007"));
             refresh(holder);
             clickSound(player, success ? 1F : 0.8F);
             return;
@@ -107,10 +109,10 @@ final class DailyPartyMenu {
         UUID target = holder.targetsBySlot.get(slot);
         if (target == null) return;
         if (!daily.partyManager().invite(player.getUniqueId(), target)) {
-            daily.message(player.getUniqueId(), "该玩家暂时无法被邀请。");
+            daily.message(player.getUniqueId(), GuiConfig.text("api-daily-dailypartymenu.text-008"));
         } else {
-            daily.message(player.getUniqueId(), "已向 " + playerName(target) + " 发出邀请。");
-            daily.message(target, player.getName() + " 邀请你加入同行小队，请打开游戏大厅接受邀请。");
+            daily.message(player.getUniqueId(), GuiConfig.text("api-daily-dailypartymenu.text-009") + playerName(target) + GuiConfig.text("api-daily-dailypartymenu.text-010"));
+            daily.message(target, player.getName() + GuiConfig.text("api-daily-dailypartymenu.text-011"));
         }
         refresh(holder);
         clickSound(player, 1.1F);
@@ -130,74 +132,88 @@ final class DailyPartyMenu {
         inventory.setItem(INVITE_SLOT, pending == null ? inviteInfoItem(party) : pendingItem(pending));
 
         boolean canManage = party == null || party.isLeader(holder.viewer);
-        List<Player> candidates = new ArrayList<>();
-        if (canManage) {
-            candidates.addAll(Bukkit.getOnlinePlayers().stream()
-                    .filter(player -> !player.getUniqueId().equals(holder.viewer))
-                    .sorted(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
-                    .limit(LAST_PLAYER_SLOT - FIRST_PLAYER_SLOT + 1)
-                    .toList());
-        }
+        List<Player> candidates = new ArrayList<>(Bukkit.getOnlinePlayers().stream()
+                .filter(player -> !player.getUniqueId().equals(holder.viewer))
+                .sorted(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
+                .limit(LAST_PLAYER_SLOT - FIRST_PLAYER_SLOT + 1)
+                .toList());
         int slot = FIRST_PLAYER_SLOT;
         for (Player candidate : candidates) {
-            inventory.setItem(slot, playerItem(candidate, daily.partyUnavailableReason(candidate.getUniqueId())));
-            holder.targetsBySlot.put(slot, candidate.getUniqueId());
+            UUID candidateId = candidate.getUniqueId();
+            DailyParty candidateParty = daily.partyManager().getParty(candidateId);
+            String unavailableReason = daily.partyUnavailableReason(candidateId);
+            inventory.setItem(slot, playerItem(candidate, candidateParty, unavailableReason, canManage));
+            if (canManage && unavailableReason == null) holder.targetsBySlot.put(slot, candidateId);
             slot++;
         }
         if (candidates.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text(canManage ? "暂无可邀请玩家" : "只有队长可以邀请", NamedTextColor.GRAY)
+                Component.text(GuiConfig.text("api-daily-dailypartymenu.text-012"), NamedTextColor.GRAY)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(canManage ? "当前没有其他在线玩家" : "你可以查看当前队伍成员", NamedTextColor.DARK_GRAY))));
+                List.of(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-013"), NamedTextColor.DARK_GRAY))));
 
-        String action = party == null ? "邀请玩家" : party.isLeader(holder.viewer) ? "解散队伍" : "离开队伍";
+        String action = party == null ? GuiConfig.text("api-daily-dailypartymenu.text-014") : party.isLeader(holder.viewer) ? GuiConfig.text("api-daily-dailypartymenu.text-015") : GuiConfig.text("api-daily-dailypartymenu.text-016");
         inventory.setItem(ACTION_SLOT, item(party == null ? Material.LIME_DYE : Material.RED_DYE,
                 Component.text(action, party == null ? NamedTextColor.GREEN : NamedTextColor.RED)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(party == null ? "点击下方玩家发送组队邀请" : "队伍正在匹配或进行游戏时不可修改", NamedTextColor.GRAY))));
+                List.of(Component.text(party == null ? GuiConfig.text("api-daily-dailypartymenu.text-017") : GuiConfig.text("api-daily-dailypartymenu.text-018"), NamedTextColor.GRAY))));
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text("返回大厅", NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of()));
+                Component.text(GuiConfig.text("api-daily-dailypartymenu.text-019"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of()));
         inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
-                Component.text("刷新", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text("更新在线玩家与邀请状态", NamedTextColor.GRAY))));
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text("关闭", NamedTextColor.RED), List.of()));
+                Component.text(GuiConfig.text("api-daily-dailypartymenu.text-020"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-021"), NamedTextColor.GRAY))));
+        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("api-daily-dailypartymenu.text-022"), NamedTextColor.RED), List.of()));
     }
 
     private ItemStack summaryItem(UUID viewer, DailyParty party) {
         List<Component> lore = new ArrayList<>();
         if (party == null) {
-            lore.add(Component.text("你目前没有同行小队", NamedTextColor.GRAY));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-023"), NamedTextColor.GRAY));
             lore.add(Component.empty());
-            lore.add(Component.text("点击下方玩家即可发出邀请", NamedTextColor.GREEN));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-024"), NamedTextColor.GREEN));
         } else {
-            lore.add(Component.text("队长  ", NamedTextColor.GRAY).append(Component.text(playerName(party.leader()), NamedTextColor.AQUA)));
-            lore.add(Component.text("人数  ", NamedTextColor.GRAY).append(Component.text(party.size() + " 人", NamedTextColor.WHITE)));
-            if (party.selectedGame() != null) lore.add(Component.text("选择  ", NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-025"), NamedTextColor.GRAY).append(Component.text(playerName(party.leader()), NamedTextColor.AQUA)));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-026"), NamedTextColor.GRAY).append(Component.text(party.size() + GuiConfig.text("api-daily-dailypartymenu.text-027"), NamedTextColor.WHITE)));
+            if (party.selectedGame() != null) lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-028"), NamedTextColor.GRAY)
                     .append(Component.text(party.selectedGame().toString(), NamedTextColor.YELLOW)));
             lore.add(Component.empty());
             for (UUID member : party.members()) lore.add(Component.text((member.equals(party.leader()) ? "★ " : "• ")
                     + playerName(member), member.equals(viewer) ? NamedTextColor.GREEN : NamedTextColor.WHITE));
         }
-        return playerHead(viewer, Component.text("同行小队", NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore);
+        return playerHead(viewer, Component.text(GuiConfig.text("api-daily-dailypartymenu.text-029"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore);
     }
 
     private ItemStack inviteInfoItem(DailyParty party) {
-        return item(Material.PAPER, Component.text("邀请状态", NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text(party == null ? "暂无待处理邀请" : "点击下方在线玩家发送邀请", NamedTextColor.GRAY)));
+        return item(Material.PAPER, Component.text(GuiConfig.text("api-daily-dailypartymenu.text-030"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(Component.text(party == null ? GuiConfig.text("api-daily-dailypartymenu.text-031") : GuiConfig.text("api-daily-dailypartymenu.text-032"), NamedTextColor.GRAY)));
     }
 
     private ItemStack pendingItem(DailyPartyManager.PendingInvite invite) {
-        return item(Material.WRITABLE_BOOK, Component.text("收到组队邀请", NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(playerName(invite.leader()) + " 邀请你加入同行小队", NamedTextColor.WHITE),
-                        Component.empty(), Component.text("点击接受邀请", NamedTextColor.GREEN).decorate(TextDecoration.BOLD)));
+        return item(Material.WRITABLE_BOOK, Component.text(GuiConfig.text("api-daily-dailypartymenu.text-033"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(Component.text(playerName(invite.leader()) + GuiConfig.text("api-daily-dailypartymenu.text-034"), NamedTextColor.WHITE),
+                        Component.empty(), Component.text(GuiConfig.text("api-daily-dailypartymenu.text-035"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)));
     }
 
-    private ItemStack playerItem(Player player, String unavailableReason) {
-        boolean available = unavailableReason == null;
+    private ItemStack playerItem(Player player, DailyParty party, String unavailableReason, boolean canManage) {
+        boolean available = canManage && unavailableReason == null;
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(available ? "在线 · 可邀请" : "在线 · " + unavailableReason,
-                available ? NamedTextColor.GREEN : NamedTextColor.GOLD));
+        if (party == null) {
+            lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-036"), NamedTextColor.GRAY)
+                    .append(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-037"), NamedTextColor.GREEN)));
+        } else {
+            lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-036"), NamedTextColor.GRAY)
+                    .append(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-038"), NamedTextColor.GOLD)));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-025"), NamedTextColor.GRAY)
+                    .append(Component.text(playerName(party.leader()), NamedTextColor.AQUA)));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-026"), NamedTextColor.GRAY)
+                    .append(Component.text(party.size() + GuiConfig.text("api-daily-dailypartymenu.text-027"), NamedTextColor.WHITE)));
+        }
+        if (party == null && unavailableReason != null) {
+            lore.add(Component.text(GuiConfig.text("api-daily-dailypartymenu.text-039"), NamedTextColor.GRAY)
+                    .append(Component.text(unavailableReason, NamedTextColor.GOLD)));
+        }
         lore.add(Component.empty());
-        lore.add(Component.text(available ? "点击发送组队邀请" : "当前无法发送邀请",
+        lore.add(Component.text(available ? GuiConfig.text("api-daily-dailypartymenu.text-040")
+                        : canManage ? GuiConfig.text("api-daily-dailypartymenu.text-041") : GuiConfig.text("api-daily-dailypartymenu.text-042"),
                 available ? NamedTextColor.YELLOW : NamedTextColor.DARK_GRAY));
         return playerHead(player.getUniqueId(), Component.text(player.getName(), NamedTextColor.WHITE)
                         .decorate(TextDecoration.BOLD),

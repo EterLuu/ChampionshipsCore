@@ -97,8 +97,16 @@ public final class PartySubCommand extends BaseSubCommand {
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                  @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) return complete(List.of("invite", "accept", "leave", "disband", "info"), args[0]);
-        if (args.length == 2 && args[0].equalsIgnoreCase("invite"))
-            return complete(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList(), args[1]);
+        if (args.length == 2 && args[0].equalsIgnoreCase("invite") && sender instanceof Player player) {
+            DailyPartyManager parties = plugin.getDailyManager().partyManager();
+            UUID senderId = player.getUniqueId();
+            return complete(Bukkit.getOnlinePlayers().stream()
+                    .filter(candidate -> !candidate.getUniqueId().equals(senderId))
+                    .filter(candidate -> parties.getParty(candidate.getUniqueId()) == null)
+                    .map(Player::getName)
+                    .sorted(String.CASE_INSENSITIVE_ORDER)
+                    .toList(), args[1]);
+        }
         return List.of();
     }
 }

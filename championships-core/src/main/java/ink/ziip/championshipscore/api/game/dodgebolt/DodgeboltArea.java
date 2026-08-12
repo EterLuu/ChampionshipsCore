@@ -55,6 +55,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     private final Set<Column> activePlatformColumns = new LinkedHashSet<>();
     private final Set<Column> pendingShrinkColumns = new LinkedHashSet<>();
     private final Map<BlockPosition, BlockData> shrinkWarningSnapshot = new LinkedHashMap<>();
+    private final DodgeboltShrinkQueue shrinkQueue = new DodgeboltShrinkQueue();
 
     @Getter private int timer;
     @Getter private int roundNumber;
@@ -68,8 +69,6 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
     private int shotsSinceShrink;
     private int eliminationsThisRound;
-    private int queuedShrinkLayers;
-    private int completedShrinkEvents;
     private int shrinkWarningTicks;
     private int shrinkWarningSeconds;
     private boolean shrinkWarningVisible;
@@ -171,8 +170,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         shotsThisRound = 0;
         shotsSinceShrink = 0;
         eliminationsThisRound = 0;
-        queuedShrinkLayers = 0;
-        completedShrinkEvents = 0;
+        shrinkQueue.clear();
         alivePlayers.clear();
         eliminatedPlayers.clear();
         addRoundPlayers(rightChampionshipTeam);
@@ -307,10 +305,15 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         if (roundWon()) {
             finishRound(aliveCount(DodgeboltSide.RIGHT) > 0 ? DodgeboltSide.RIGHT : DodgeboltSide.LEFT);
         } else {
-            queueShrink(eliminationsThisRound <= 2 ? 2 : 1);
+            queueShrink(shrinkLayersForElimination(eliminationsThisRound));
             updateScoreBar();
         }
         return true;
+    }
+
+    static int shrinkLayersForElimination(int eliminationNumber) {
+        if (eliminationNumber < 1) return 0;
+        return eliminationNumber <= 2 ? 2 : 1;
     }
 
     public boolean pauseMatch(@Nullable Player disconnected) {
@@ -402,7 +405,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
         setGameStageEnum(GameStageEnum.STOPPING);
         cleanupRoundEntities();
-        queuedShrinkLayers = 0;
+        shrinkQueue.clear();
         cancelTask(shrinkTask);
         shrinkTask = null;
         if (winner == DodgeboltSide.RIGHT) rightWins++;
@@ -469,16 +472,16 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     }
 
     private void queueShrink(int layers) {
-        int room = Math.max(0, getGameConfig().getMaxShrinkLevels() - shrinkLevel - queuedShrinkLayers);
-        queuedShrinkLayers += Math.min(Math.max(0, layers), room);
-        if (queuedShrinkLayers == 0 || shrinkTask != null) return;
+        int room = Math.max(0, getGameConfig().getMaxShrinkLevels()
+                - shrinkLevel - shrinkQueue.queuedLayers());
+        if (shrinkQueue.enqueue(layers, room) == 0 || shrinkTask != null) return;
         beginShrinkWarning();
     }
 
     private void beginShrinkWarning() {
         prepareShrinkWarning();
         if (pendingShrinkColumns.isEmpty()) {
-            queuedShrinkLayers = 0;
+            shrinkQueue.clear();
             return;
         }
         shrinkWarningTicks = 0;
@@ -507,7 +510,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         pendingShrinkColumns.clear();
         Set<Column> remaining = new LinkedHashSet<>(activePlatformColumns);
         int availableLayers = Math.max(0, getGameConfig().getMaxShrinkLevels() - shrinkLevel);
-        int layers = Math.min(availableLayers, completedShrinkEvents < 2 ? 2 : 1);
+        int layers = Math.min(availableLayers, shrinkQueue.currentLayers());
         for (int layer = 0; layer < layers; layer++) {
             Set<Column> boundary = findBoundary(remaining);
             if (boundary.isEmpty()) break;
@@ -585,11 +588,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                 }
             }
         }
-        int layersRemoved = completedShrinkEvents < 2 ? 2 : 1;
+        int layersRemoved = shrinkQueue.completeCurrent();
         layersRemoved = Math.min(layersRemoved, getGameConfig().getMaxShrinkLevels() - shrinkLevel);
         shrinkLevel += Math.max(0, layersRemoved);
-        completedShrinkEvents++;
-        queuedShrinkLayers = Math.max(0, queuedShrinkLayers - 1);
         sendActionBarToAllGamePlayers(MessageConfig.DODGEBOLT_SHRINK
                 .replace("%level%", String.valueOf(shrinkLevel))
                 .replace("%max%", String.valueOf(getGameConfig().getMaxShrinkLevels())));
@@ -598,7 +599,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                 .replace("%max%", String.valueOf(getGameConfig().getMaxShrinkLevels())));
         playSoundToAllGamePlayers(Sound.BLOCK_ANVIL_USE, 1.0F, 0.8F);
         updateScoreBar();
-        if (queuedShrinkLayers <= 0 || shrinkLevel >= getGameConfig().getMaxShrinkLevels()) {
+        if (shrinkQueue.isEmpty() || shrinkLevel >= getGameConfig().getMaxShrinkLevels()) {
             cancelShrinkWarning();
         } else {
             prepareShrinkWarning();
@@ -1143,10 +1144,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
     @Override
     protected void applySpectatorGameMode(@NotNull Player player) {
-        player.setGameMode(GameMode.ADVENTURE);
-        player.setFlying(false);
-        player.setAllowFlight(false);
-        player.setCollidable(false);
+        super.applySpectatorGameMode(player);
     }
 
     @Override
@@ -1176,7 +1174,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         leftWins = 0;
         shrinkLevel = 0;
         shotsThisRound = 0;
-        completedShrinkEvents = 0;
+        shrinkQueue.clear();
         paused = false;
         partialRoster = false;
         champion = null;

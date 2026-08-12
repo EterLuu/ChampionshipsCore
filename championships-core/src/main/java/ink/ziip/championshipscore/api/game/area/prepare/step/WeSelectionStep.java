@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
@@ -46,7 +48,7 @@ public class WeSelectionStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            return Utils.formatAdminError("请先用 WorldEdit 选取两个端点。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-weselectionstep.text-001"));
         }
         setter.accept(session.getTarget(), selection);
         session.markDirty();

@@ -89,6 +89,28 @@ final class PendingPointTransactionStore {
         }
     }
 
+    synchronized boolean renameArea(@NotNull GameTypeEnum game, @NotNull String oldArea,
+                                    @NotNull String newArea) {
+        Map<UUID, PlayerPointEntry> replacements = new LinkedHashMap<>();
+        for (Map.Entry<UUID, PlayerPointEntry> pendingEntry : pending.entrySet()) {
+            PlayerPointEntry entry = pendingEntry.getValue();
+            if (entry.getGame() != game || !entry.getArea().equalsIgnoreCase(oldArea)) continue;
+            replacements.put(pendingEntry.getKey(), PlayerPointEntry.builder()
+                    .id(entry.getId()).transactionId(entry.getTransactionId())
+                    .uuid(entry.getUuid()).username(entry.getUsername())
+                    .teamId(entry.getTeamId()).team(entry.getTeam())
+                    .rivalId(entry.getRivalId()).rival(entry.getRival())
+                    .game(entry.getGame()).area(newArea).round(entry.getRound())
+                    .points(entry.getPoints()).time(entry.getTime()).valid(entry.getValid()).build());
+        }
+        if (replacements.isEmpty()) return true;
+        Map<UUID, PlayerPointEntry> originals = new LinkedHashMap<>();
+        replacements.forEach((id, replacement) -> originals.put(id, pending.put(id, replacement)));
+        if (save()) return true;
+        originals.forEach(pending::put);
+        return false;
+    }
+
     private boolean save() {
         YamlConfiguration yaml = new YamlConfiguration();
         for (Map.Entry<String, Map<String, Object>> unreadableEntry : unreadable.entrySet()) {

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -50,7 +52,7 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
-        steps.add(selection("hub", "资源大厅边界", Material.CHEST,
+        steps.add(selection("hub", GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-001"), Material.CHEST,
                 t -> cfg(t).getHubPos1() != null && cfg(t).getHubPos2() != null,
                 (t, v) -> { cfg(t).setHubPos1(v[0]); cfg(t).setHubPos2(v[1]); }));
         steps.add(new BuildMartBaseSchematicStep(base));
@@ -58,13 +60,13 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
 
         steps.add(new BuildMartWindZoneListStep());
         steps.add(new BuildMartMaterialZoneStep());
-        steps.add(point("spectator_spawn", "旁观者出生点", Material.ENDER_EYE,
+        steps.add(point("spectator_spawn", GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-002"), Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l)));
-        steps.add(new StandAndRunStep("hub_portal", Component.text("资源大厅传送门落点"),
-                Component.text("站到从队伍基地传送后应落脚的位置；不要站在传送门方块内"), Material.OBSIDIAN,
+        steps.add(new StandAndRunStep("hub_portal", Component.text(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-003")),
+                Component.text(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-004")), Material.OBSIDIAN,
                 t -> cfg(t).getHubPortalPoint() != null,
-                (t, l) -> cfg(t).setHubPortalPoint(l), Utils.formatAdminSuccess("已设置资源大厅传送门落点。")));
-        steps.add(new BuildMartFloorSelectionStep("golden_display", Component.text("黄金蓝图展示区地板"),
+                (t, l) -> cfg(t).setHubPortalPoint(l), Utils.formatAdminSuccess(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-005"))));
+        steps.add(new BuildMartFloorSelectionStep("golden_display", Component.text(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-006")),
                 Material.GOLD_BLOCK, t -> cfg(t).getGoldenDisplayPoint() != null,
                 (t, l) -> cfg(t).setGoldenDisplayPoint(l)));
 
@@ -86,32 +88,32 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
     private static PrepareStep selection(String key, String name, Material icon,
             java.util.function.Predicate<SetupTarget> predicate,
             java.util.function.BiConsumer<SetupTarget, org.bukkit.util.Vector[]> setter) {
-        return new WeSelectionStep(key, Component.text(name), Component.text("用 WorldEdit 选区后点击"),
-                icon, predicate, setter, Utils.formatAdminSuccess("已设置" + name + "。"));
+        return new WeSelectionStep(key, Component.text(name), Component.text(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-007")),
+                icon, predicate, setter, Utils.formatAdminSuccess(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-008") + name + "。"));
     }
 
     private static PrepareStep point(String key, String name, Material icon,
             java.util.function.Predicate<SetupTarget> predicate,
             java.util.function.BiConsumer<SetupTarget, Location> setter) {
-        return new StandAndRunStep(key, Component.text(name), Component.text("站到目标位置后点击"),
-                icon, predicate, setter, Utils.formatAdminSuccess("已设置" + name + "。"));
+        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-009")),
+                icon, predicate, setter, Utils.formatAdminSuccess(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-008") + name + "。"));
     }
 
     private static PrepareStep basePoint(String key, boolean selectedBlock) {
-        String display = "0 号基地模板 · " + key;
+        String display = GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-010") + key;
         if (selectedBlock) {
             return new SelectedBlockStep("base_" + key, Component.text(display),
-                    Component.text("用 WorldEdit 精确选中提交按钮方块"), Material.STONE_BUTTON,
+                    Component.text(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-011")), Material.STONE_BUTTON,
                     t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l));
         }
         if (!key.equals("portal")) {
             return new BuildMartFloorSelectionStep("base_" + key, Component.text(display), Material.BRICKS,
                     t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l));
         }
-        Component description = Component.text("站到从资源大厅传送后应落脚的位置；不要站在传送门方块内");
+        Component description = Component.text(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-012"));
         return new StandAndRunStep("base_" + key, Component.text(display), description, Material.BRICKS,
                 t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l),
-                Utils.formatAdminSuccess("已设置" + display + "。"));
+                Utils.formatAdminSuccess(GuiConfig.text("prepare-buildmart-buildmartprepareflow.text-008") + display + "。"));
     }
 
     private static BuildMartConfig cfg(SetupTarget target) { return (BuildMartConfig) target.config(); }

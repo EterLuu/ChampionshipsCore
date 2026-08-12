@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
@@ -38,16 +40,16 @@ public class SelectedBlockStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            return Utils.formatAdminError("请先用 WorldEdit 选中一个方块。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-selectedblockstep.text-001"));
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
         Vector max = Vector.getMaximum(selection[0], selection[1]);
         if (min.getBlockX() != max.getBlockX() || min.getBlockY() != max.getBlockY()
                 || min.getBlockZ() != max.getBlockZ())
-            return Utils.formatAdminError("选区必须恰好为一个方块。");
+            return Utils.formatAdminError(GuiConfig.text("prepare-step-selectedblockstep.text-002"));
         setter.accept(session.getTarget(), new Location(player.getWorld(),
                 min.getBlockX(), min.getBlockY(), min.getBlockZ()));
         session.markDirty();
-        return Utils.formatAdminSuccess("已记录选中方块。");
+        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-selectedblockstep.text-003"));
     }
 }

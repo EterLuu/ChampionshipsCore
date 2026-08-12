@@ -7,6 +7,7 @@ import lombok.Getter;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.List;
 
 @Getter
@@ -20,19 +21,17 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 27;
+        return 29;
     }
 
-    /** Keep unrelated rank/vote copy while replacing the unified gameplay and administration copy in v11. */
+    /** Replace every player-facing section so v29's terminology and spacing stay consistent at runtime. */
     @Override
-    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) {
-        for (String section : List.of("command", "team", "member", "reason", "area", "spectator", "game",
+    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) throws IOException {
+        for (String section : List.of("command", "team", "member", "reason", "area", "rank", "spectator", "game",
                 "battlebox", "parkourtag", "skywars", "tgttos", "bingo", "buildmart", "tntrun",
-                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky", "acerace", "daily"))
+                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky", "acerace", "daily", "vote"))
             outdatedConfiguration.set(section, null);
         outdatedConfiguration.set("no-permission", null);
-        outdatedConfiguration.set("vote.start-vote", null);
-        outdatedConfiguration.set("vote.start-vote-subtitle", null);
         super.loadFromOutdatedConfiguration(outdatedConfiguration);
     }
 
@@ -725,6 +724,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "acerace.received-trident")
     public static String ACE_RACE_RECEIVED_TRIDENT;
 
+    @ConfigOption(path = "acerace.received-dolphins-grace")
+    public static String ACE_RACE_RECEIVED_DOLPHINS_GRACE;
+
     @ConfigOption(path = "acerace.lap-completed")
     public static String ACE_RACE_LAP_COMPLETED;
 
@@ -981,9 +983,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "dragoneggcarnival.start-preparation-subtitle")
     public static String DRAGON_EGG_CARNIVAL_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "dragoneggcarnival.game-start-soon")
-    public static String DRAGON_EGG_CARNIVAL_GAME_START_SOON;
-
     @ConfigOption(path = "dragoneggcarnival.game-start-soon-title")
     public static String DRAGON_EGG_CARNIVAL_GAME_START_SOON_TITLE;
 
@@ -999,32 +998,8 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "dragoneggcarnival.game-start-subtitle")
     public static String DRAGON_EGG_CARNIVAL_GAME_START_SUBTITLE;
 
-    @ConfigOption(path = "dragoneggcarnival.game-restart")
-    public static String DRAGON_EGG_CARNIVAL_GAME_RESTART;
-
-    @ConfigOption(path = "dragoneggcarnival.game-restart-title")
-    public static String DRAGON_EGG_CARNIVAL_GAME_RESTART_TITLE;
-
-    @ConfigOption(path = "dragoneggcarnival.game-restart-subtitle")
-    public static String DRAGON_EGG_CARNIVAL_GAME_RESTART_SUBTITLE;
-
-    @ConfigOption(path = "dragoneggcarnival.count-down")
-    public static String DRAGON_EGG_CARNIVAL_COUNT_DOWN;
-
     @ConfigOption(path = "dragoneggcarnival.action-bar-count-down")
     public static String DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN;
-
-    @ConfigOption(path = "dragoneggcarnival.dragon-phase-count-down", nullable = true)
-    public static String DRAGON_EGG_CARNIVAL_DRAGON_PHASE_COUNT_DOWN;
-
-    @ConfigOption(path = "dragoneggcarnival.random-kit-count-down")
-    public static String DRAGON_EGG_CARNIVAL_RANDOM_KIT_COUNT_DOWN;
-
-    @ConfigOption(path = "dragoneggcarnival.random-kit-received")
-    public static String DRAGON_EGG_CARNIVAL_RANDOM_KIT_RECEIVED;
-
-    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawned-action-bar")
-    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_ACTION_BAR;
 
     @ConfigOption(path = "dragoneggcarnival.game-end")
     public static String DRAGON_EGG_CARNIVAL_GAME_END;
@@ -1053,38 +1028,23 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "dragoneggcarnival.out-of-border")
     public static String DRAGON_EGG_CARNIVAL_OUT_OF_BORDER;
 
-    @ConfigOption(path = "dragoneggcarnival.player-pick-up-dragon-egg")
-    public static String DRAGON_EGG_CARNIVAL_PLAYER_PICK_UP_EGG;
-
-    @ConfigOption(path = "dragoneggcarnival.re-spawn-dragon-egg")
-    public static String DRAGON_EGG_CARNIVAL_RE_SPAWN_DRAGON_EGG;
-
-    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawn-soon")
-    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON;
-
-    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawn-soon-title")
-    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON_TITLE;
-
-    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawn-soon-subtitle")
-    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWN_SOON_SUBTITLE;
-
-    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawned")
-    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED;
-
-    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawned-title", nullable = true)
-    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_TITLE;
-
-    @ConfigOption(path = "dragoneggcarnival.dragon-egg-spawned-subtitle", nullable = true)
-    public static String DRAGON_EGG_CARNIVAL_DRAGON_EGG_SPAWNED_SUBTITLE;
-
-    @ConfigOption(path = "dragoneggcarnival.gain-kit")
-    public static String DRAGON_EGG_CARNIVAL_GAIN_KIT;
-
-    @ConfigOption(path = "dragoneggcarnival.player-killed-dragon")
-    public static String DRAGON_EGG_CARNIVAL_PLAYER_KILLED_DRAGON;
-
     @ConfigOption(path = "dragoneggcarnival.win")
     public static String DRAGON_EGG_CARNIVAL_WIN;
+
+    @ConfigOption(path = "dragoneggcarnival.respawn-countdown")
+    public static String DRAGON_EGG_CARNIVAL_RESPAWN_COUNTDOWN;
+
+    @ConfigOption(path = "dragoneggcarnival.respawned")
+    public static String DRAGON_EGG_CARNIVAL_RESPAWNED;
+
+    @ConfigOption(path = "dragoneggcarnival.advancement")
+    public static String DRAGON_EGG_CARNIVAL_ADVANCEMENT;
+
+    @ConfigOption(path = "dragoneggcarnival.crystal-reward")
+    public static String DRAGON_EGG_CARNIVAL_CRYSTAL_REWARD;
+
+    @ConfigOption(path = "dragoneggcarnival.dragon-pressure")
+    public static String DRAGON_EGG_CARNIVAL_DRAGON_PRESSURE;
 
     // Snowball
     @ConfigOption(path = "snowball.start-preparation")

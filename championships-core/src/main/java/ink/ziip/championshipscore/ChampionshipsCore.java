@@ -24,6 +24,7 @@ import ink.ziip.championshipscore.command.CommandManager;
 import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.DatabaseManager;
+import ink.ziip.championshipscore.redis.RedisManager;
 import lombok.AccessLevel;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -47,6 +48,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private ListenerManager listenerManager;
     private ConfigurationManager configurationManager;
     private DatabaseManager databaseManager;
+    private RedisManager redisManager;
     private CommandManager commandManager;
     private WorldEditManager worldEditManager;
     private GameManager gameManager;
@@ -87,7 +89,11 @@ public final class ChampionshipsCore extends JavaPlugin {
         }
 
         configurationManager = new ConfigurationManager(this);
+        // GUI definitions can be referenced by static menu descriptors while the remaining managers
+        // are constructed, so language resources must be ready before those classes initialize.
+        loadManager(configurationManager);
         databaseManager = new DatabaseManager(this);
+        redisManager = new RedisManager(this);
         playerManager = new PlayerManager(this);
         listenerManager = new ListenerManager(this);
         commandManager = new CommandManager(this);
@@ -108,7 +114,6 @@ public final class ChampionshipsCore extends JavaPlugin {
         dailyManager = new DailyManager(this, dailyStatsManager);
 
         // Plugin startup logic
-        loadManager(configurationManager);
         loadManager(databaseManager);
         loadManager(listenerManager);
         loadManager(worldManager);
@@ -116,6 +121,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         loadManager(playerManager);
         loadManager(teamManager);
         loadManager(rankManager);
+        loadManager(redisManager);
 
         loadManager(worldEditManager);
 
@@ -145,6 +151,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         unloadManager(dailyManager);
         unloadManager(dailyStatsManager);
         unloadManager(remoteBingoManager);
+        unloadManager(redisManager);
         unloadManager(gameManager);
         unloadManager(visibilityManager);
         unloadManager(prepareSessionManager);

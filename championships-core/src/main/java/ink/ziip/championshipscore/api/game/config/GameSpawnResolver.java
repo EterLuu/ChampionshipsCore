@@ -46,16 +46,22 @@ public final class GameSpawnResolver {
             case HotyCodyDuskyConfig c -> c.getPlayerSpawnPoint();
             case AceRaceConfig c -> c.getStartSpawnPoint();
             case SnowballShowdownConfig c -> firstSectionLocation(c.getPlayerSpawnPoints());
-            case DragonEggCarnivalConfig c -> firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());
+            case DragonEggCarnivalConfig c -> dragonEggCarnivalSpawn(c);
             case DodgeboltConfig c -> firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());
             default -> null;
-        };
+    };
         Location fallback = location != null ? location : spectator(config);
         if (fallback != null && fallback.getWorld() == null) {
             World world = world(config);
             if (world != null) fallback.setWorld(world);
         }
         return fallback;
+    }
+
+    @Nullable
+    private static Location dragonEggCarnivalSpawn(@NotNull DragonEggCarnivalConfig config) {
+        World world = world(config);
+        return world == null ? null : new Location(world, 100D, 49D, 0D, 90F, 0F);
     }
 
     @Nullable

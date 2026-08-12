@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
@@ -57,7 +59,7 @@ public final class AnvilInputGui {
     }
 
     public static void openName(@NotNull Player player, @NotNull PrepareSessionManager manager, @NotNull GameTypeEnum gameType) {
-        open(player, Mode.NAME, "输入场地名", text -> {
+        open(player, Mode.NAME, GuiConfig.text("prepare-gui-anvilinputgui.text-001"), text -> {
             String error = validateName(manager, gameType, text);
             if (error != null) {
                 player.sendMessage(error);
@@ -69,16 +71,16 @@ public final class AnvilInputGui {
     }
 
     public static void openNumber(@NotNull Player player, @NotNull IntConsumer onCount) {
-        open(player, Mode.NUMBER, "输入份数", text -> {
+        open(player, Mode.NUMBER, GuiConfig.text("prepare-gui-anvilinputgui.text-002"), text -> {
             int n;
             try {
                 n = Integer.parseInt(text);
             } catch (NumberFormatException e) {
-                Utils.sendAdminError(player, "请输入有效数字。");
+                Utils.sendAdminError(player, GuiConfig.text("prepare-gui-anvilinputgui.text-003"));
                 return;
             }
             if (n < 1) {
-                Utils.sendAdminError(player, "份数必须至少为 &#fff5661");
+                Utils.sendAdminError(player, GuiConfig.text("prepare-gui-anvilinputgui.text-004"));
                 return;
             }
             close(player);
@@ -95,7 +97,7 @@ public final class AnvilInputGui {
                 try {
                     value = Integer.parseInt(text);
                 } catch (NumberFormatException e) {
-                    Utils.sendAdminError(player, "请输入有效整数。");
+                    Utils.sendAdminError(player, GuiConfig.text("prepare-gui-anvilinputgui.text-005"));
                     return;
                 }
             }
@@ -112,7 +114,7 @@ public final class AnvilInputGui {
         holder.inventory = inv;
         OPEN_INPUTS.put(player.getUniqueId(), holder);
         inv.setFirstItem(PrepareKeys.item(Material.PAPER, Component.text(prompt),
-                List.of(Component.text("在上方重命名栏输入，再点击右侧结果格确认").color(NamedTextColor.GRAY))));
+                List.of(Component.text(GuiConfig.text("prepare-gui-anvilinputgui.text-006")).color(NamedTextColor.GRAY))));
         view.setMaximumRepairCost(0);
         view.setRepairCost(0);
     }
@@ -141,12 +143,12 @@ public final class AnvilInputGui {
     }
 
     private static @Nullable String validateName(@NotNull PrepareSessionManager manager, @NotNull GameTypeEnum gameType, @Nullable String name) {
-        if (name == null || name.isBlank()) return Utils.formatAdminError("场地名不能为空。");
+        if (name == null || name.isBlank()) return Utils.formatAdminError(GuiConfig.text("prepare-gui-anvilinputgui.text-007"));
         String trimmed = name.trim();
-        if (trimmed.length() > 32) return Utils.formatAdminError("场地名不能超过 &#fff56632 &#ededed个字符。");
-        if (trimmed.matches(".*[\\\\/:*?\"<>|].*")) return Utils.formatAdminError("场地名包含无效字符。");
+        if (trimmed.length() > 32) return Utils.formatAdminError(GuiConfig.text("prepare-gui-anvilinputgui.text-008"));
+        if (trimmed.matches(".*[\\\\/:*?\"<>|].*")) return Utils.formatAdminError(GuiConfig.text("prepare-gui-anvilinputgui.text-009"));
         BaseGameInstanceManager<?> mgr = manager.getPlugin().getGameManager().getAreaManager(gameType);
-        if (mgr != null && mgr.getArea(trimmed) != null) return Utils.formatAdminError("场地 &#fff566" + trimmed + " &#ededed已存在。");
+        if (mgr != null && mgr.getArea(trimmed) != null) return Utils.formatAdminError(GuiConfig.text("prepare-gui-anvilinputgui.text-010") + trimmed + GuiConfig.text("prepare-gui-anvilinputgui.text-011"));
         return null;
     }
 

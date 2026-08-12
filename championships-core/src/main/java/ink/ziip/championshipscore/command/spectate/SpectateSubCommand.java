@@ -14,9 +14,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
+import java.util.Set;
 
 public class SpectateSubCommand extends BaseSubCommand {
     /**
@@ -40,7 +42,8 @@ public class SpectateSubCommand extends BaseSubCommand {
     );
 
     public SpectateSubCommand() {
-        super("spectate", "打开观战菜单或直接选择场地", "/cc spectate [leave | <游戏> <场地>]", PLAYER_PERMISSION);
+        super("spectate", "打开观战菜单或直接选择场地实例",
+                "/cc spectate [leave | <游戏> <场地> [实例]]", PLAYER_PERMISSION);
     }
 
     @Override
@@ -49,13 +52,15 @@ public class SpectateSubCommand extends BaseSubCommand {
             Utils.sendAdminError(sender, "该命令只能由玩家执行");
             return true;
         }
-        if (args.length > 2) {
+        if (args.length > 3) {
             sendUsage(sender);
             return true;
         }
         if (args.length == 0) {
             if (plugin.getGameManager().canManuallySpectate(player)) {
-                plugin.getGameManager().openSpectateMenu(player);
+                if (plugin.getGameManager().getSpectatorManager().isSpectatorLike(player.getUniqueId()))
+                    plugin.getGameManager().openSpectatorControls(player);
+                else plugin.getGameManager().openSpectateMenu(player);
             }
             return true;
         }
@@ -74,7 +79,7 @@ public class SpectateSubCommand extends BaseSubCommand {
 
         if (!plugin.getGameManager().canManuallySpectate(player)) return true;
 
-        if (args.length == 2) {
+        if (args.length == 2 || args.length == 3) {
             GameTypeEnum gameTypeEnum = SPECTATABLE_GAMES.get(args[0].toLowerCase(Locale.ROOT));
             if (gameTypeEnum == null) {
                 sendUsage(sender);
@@ -84,32 +89,21 @@ public class SpectateSubCommand extends BaseSubCommand {
                 Utils.sendAdminError(sender, "该游戏当前未启用");
                 return true;
             }
-            BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
-            if (manager == null) {
-                return true;
-            }
-            BaseGameInstance configuredArea = manager.getArea(args[1]);
-            if (configuredArea == null) {
-                Utils.sendAdminError(sender, "找不到场地 &#fff566" + args[1]);
-                return true;
-            }
-            BaseGameInstance baseArea = manager.getRuntimeInstances().stream()
-                    .filter(instance -> instance.getGameConfig() == configuredArea.getGameConfig())
-                    .filter(plugin.getGameManager()::isInstanceActivelyRunning)
-                    .min(java.util.Comparator.comparingInt(BaseGameInstance::getCopyIndex))
-                    .orElse(null);
+            List<BaseGameInstance> candidates = plugin.getGameManager()
+                    .getSpectatableMapInstances(player, gameTypeEnum, args[1]);
+            BaseGameInstance baseArea = args.length == 2
+                    ? candidates.stream().findFirst().orElse(null)
+                    : candidates.stream()
+                    .filter(instance -> plugin.getGameManager().getSpectatorInstanceToken(instance)
+                            .equalsIgnoreCase(args[2]))
+                    .findFirst().orElse(null);
             if (baseArea == null) {
-                Utils.sendAdminError(sender, "该场地尚未开启或已经结束，当前不可旁观");
+                Utils.sendAdminError(sender, args.length == 3
+                        ? "找不到该场地正在运行的实例：&#fff566" + args[2]
+                        : "该场地尚未开启或已经结束，当前不可旁观");
                 return true;
             }
-            if (plugin.getGameManager().spectateArea(player, baseArea)) {
-                String message = MessageConfig.SPECTATOR_JOIN_AREA
-                        .replace("%game%", gameTypeEnum.toString())
-                        .replace("%area%", baseArea.getGameConfig().getAreaName());
-                sender.sendMessage(message);
-            } else {
-                sender.sendMessage(MessageConfig.SPECTATOR_CANT_JOIN_AREA);
-            }
+            join(player, baseArea);
         }
         return true;
     }
@@ -117,21 +111,17 @@ public class SpectateSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            List<String> returnList = new ArrayList<>();
-            returnList.add("leave");
-            for (Map.Entry<String, GameTypeEnum> entry : SPECTATABLE_GAMES.entrySet()) {
-                if (plugin.getGameManager().isGameEnabled(entry.getValue())) {
-                    returnList.add(entry.getKey());
-                }
-            }
-            return filterStartsWith(returnList, args[0]);
+            // Game-name completion must not depend on live instances. In particular, remote Bingo
+            // may have no synchronized match yet and must still appear as an enabled game option.
+            return firstArgumentCompletions(plugin.getGameManager().getEnabledGames(), args[0]);
         }
+        if (!(sender instanceof Player player)) return Collections.emptyList();
         if (args.length == 2) {
             GameTypeEnum gameTypeEnum = SPECTATABLE_GAMES.get(args[0].toLowerCase(Locale.ROOT));
             if (gameTypeEnum != null) {
                 BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
                 if (manager != null) {
-                    List<String> returnList = plugin.getGameManager().getSpectatableInstances().stream()
+                    List<String> returnList = plugin.getGameManager().getSpectatableInstances(player).stream()
                             .filter(instance -> instance.getGameTypeEnum() == gameTypeEnum)
                             .map(instance -> instance.getGameConfig().getAreaName())
                             .filter(java.util.Objects::nonNull)
@@ -141,6 +131,38 @@ public class SpectateSubCommand extends BaseSubCommand {
                 }
             }
         }
+        if (args.length == 3) {
+            GameTypeEnum gameTypeEnum = SPECTATABLE_GAMES.get(args[0].toLowerCase(Locale.ROOT));
+            if (gameTypeEnum == null) return Collections.emptyList();
+            List<String> instances = plugin.getGameManager().getSpectatableMapInstances(player, gameTypeEnum, args[1])
+                    .stream().map(plugin.getGameManager()::getSpectatorInstanceToken).distinct().toList();
+            return filterStartsWith(instances, args[2]);
+        }
         return Collections.emptyList();
+    }
+
+    static @NotNull List<String> firstArgumentCompletions(@NotNull Set<GameTypeEnum> enabledGames,
+                                                           @NotNull String prefix) {
+        String normalizedPrefix = prefix.toLowerCase(Locale.ROOT);
+        List<String> candidates = new ArrayList<>();
+        if ("leave".startsWith(normalizedPrefix)) candidates.add("leave");
+        SPECTATABLE_GAMES.entrySet().stream()
+                .filter(entry -> enabledGames.contains(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .filter(name -> name.startsWith(normalizedPrefix))
+                .sorted(Comparator.naturalOrder())
+                .forEach(candidates::add);
+        candidates.sort(Comparator.naturalOrder());
+        return List.copyOf(candidates);
+    }
+
+    private void join(@NotNull Player player, @NotNull BaseGameInstance target) {
+        if (plugin.getGameManager().selectSpectatorArea(player, target)) {
+            player.sendMessage(MessageConfig.SPECTATOR_JOIN_AREA
+                    .replace("%game%", target.getGameTypeEnum().toString())
+                    .replace("%area%", plugin.getGameManager().getSpectatorDisplayName(target)));
+        } else {
+            player.sendMessage(MessageConfig.SPECTATOR_CANT_JOIN_AREA);
+        }
     }
 }

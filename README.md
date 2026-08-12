@@ -102,22 +102,23 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 
 ### 龙蛋狂欢（Dragon Egg Carnival）
 
-这是两队参加的五局三胜制决赛。每小局开始时场中央生成龙蛋，并每 10 秒随机发放一次场地配置的装备；任一队夺得龙蛋即可赢下该局。
+这是两队同时进行的一场完整末影龙战。双方分别从 `(100, 49, 0)` 与其镜像平台出发，使用固定钻石装备、无限队伍混凝土和生存物资推进。
 
-若比赛进行到 100 秒仍无人夺蛋，龙蛋消失并生成 60 点生命值的末影龙，同时发放决战物品；击杀末影龙的一方赢下该局。小局之间会原地清理本局实体并恢复龙蛋，率先取得 3 个小局胜场的队伍成为最终胜者。
+队伍率先完成【解放末地】【下一世代】【远程折跃】任意两项即可获胜。摧毁末影水晶会为全队补充末影珍珠并随机提升锋利、保护或力量；每累计造成 20% 末影龙生命值的伤害，会为对手施加 8 秒负面效果。
 
 ### 躲避箭（Dodgebolt）
 
 总积分前两名进行五局三胜决赛。箭命中玩家即淘汰，将对方全队淘汰即可赢下一局；第一局由高顺位队伍获得两箭，后续小局双方各获得一箭。
 
 - 玩家不能越过中央分界，箭在每次射击结束后会消失并刷新到对方半场。
-- 淘汰与累计射箭会推动平台逐层收缩；管理员可使用 `/cc admin dodgebolt` 下的裁判命令处理暂停、重开、淘汰和强制胜利。
+- 淘汰与累计射箭会推动平台逐层收缩；管理员可使用 `/cc finale dodgebolt` 下的裁判命令处理暂停、重开、淘汰和强制胜利。
 - 躲避箭是非积分决赛，不参与普通游戏投票。
 
 ### 王牌竞速（Ace Race）
 
 所有选手在限时内按顺序通过保存点并完成配置圈数。只有正向穿过终点线才会结算一圈；跌落到赛段高度以下时会返回最近保存点。
 
+- 与 TGTTOS 相同，所有 Ace Race 地图可放在同一个 `acerace` 世界中；每张地图通过独立赛道边界隔离。
 - 保存点可以切换鞘翅、激流三叉戟或无装备，并分别配置赛段跌落高度。
 - 黄色/黄绿色带釉陶瓦提供速度或跳跃效果，红色/橙色羊毛提供不同强度的定向弹射。
 - 完赛基础分从 500 分起，每后一名减少 10 分且最低为 80 分；前 19 名另有分段名次奖励，未完赛不得分。
@@ -217,7 +218,7 @@ Bingo 的场地文件还可通过 `permanent-effects` 调整常驻效果，格�
 | --- | --- |
 | `/cc spawn` | 传送回 `lobby.location` |
 | `/cc vote [配置名称]` | 打开投票菜单，或在投票开放期间直接投票 |
-| `/cc spectate <游戏> <场地>` | 观战指定场地 |
+| `/cc spectate <游戏> <场地> [实例]` | 观战指定游戏；一级补全包含所有已启用游戏（含 Bingo），TNTRun/雪球大战可在菜单继续选择具体子场地 |
 | `/cc spectate leave` | 退出观战并返回大厅 |
 | `/cc rank playerboard` | 查看个人积分榜 |
 | `/cc rank teamboard` | 查看队伍积分榜 |
@@ -293,8 +294,8 @@ light_gray cyan purple blue brown green red black
 | --- | --- |
 | 两队对战 | `/cc game start battlebox <场地> <队伍1> <队伍2>` |
 | 两队对战 | `/cc game start parkourtag <场地> <队伍1> <队伍2>` |
-| 两队对战 | `/cc game start dragoneggcarnival <场地> <队伍1> <队伍2>` |
-| 两队对战 | `/cc game start dodgebolt <场地> <队伍1> <队伍2>` |
+| 决赛直接开场 | `/cc finale dragoneggcarnival start-direct <场地> <队伍1> <队伍2>` |
+| 决赛直接开场 | `/cc finale dodgebolt start-direct <场地> <队伍1> <队伍2> [--force]` |
 | 所有队伍 | `/cc game start bingo all <场地>` |
 | 所有队伍 | `/cc game start buildmart all <场地>` |
 | 所有队伍 | `/cc game start skywars all <场地>` |
@@ -307,7 +308,7 @@ light_gray cyan purple blue brown green red black
 
 `/cc game start` 只启动一次测试局，不创建正式赛事轮次，并且只处理命令明确指定的队伍
 （或 `all` 所代表的全部队伍）；它不会播报赛事规则、自动吸纳无队伍玩家旁观，也不会改动
-其他玩家的状态。规则介绍、自动旁观调度和跨轮次观众承接统一由 `/cc event start` 管理。
+其他玩家的状态。常规正式赛的规则介绍、自动旁观调度和跨轮次观众承接由 `/cc event start` 管理；冠军决赛统一由 `/cc finale` 管理。
 
 ### 管理员命令
 
@@ -338,9 +339,12 @@ light_gray cyan purple blue brown green red black
 
 ```text
 /cc map edit <游戏>
+/cc map rename <游戏> <旧场地名> <新场地名>
 ```
 
-命令会打开该游戏的地图列表。“新建地图”只建立尚未绑定世界的草稿，不会创建世界。之后可用 `/cc admin world create` 创建或加载世界，站在目标世界中通过向导的“绑定当前世界”步骤进行绑定；重复执行该步骤可更换绑定。已有地图可左键编辑，右键两次删除地图配置；删除地图不会删除物理世界，世界删除仍只由 `/cc admin world delete` 负责。
+`map edit` 会打开该游戏的地图列表。“新建地图”只建立尚未绑定世界的草稿，不会创建世界。之后可用 `/cc admin world create` 创建或加载世界，站在目标世界中通过向导的“绑定当前世界”步骤进行绑定；重复执行该步骤可更换绑定。已有地图可左键编辑，右键两次删除地图配置；删除地图不会删除物理世界，世界删除仍只由 `/cc admin world delete` 负责。
+
+`map rename` 只接受空闲且未被 prepare 锁定的地图。它会卸载对应运行实例，同时修改配置文件名、配置内 `name` 和运行时登记名，并迁移正式积分及日常赛数据库记录，然后用新名称重新加载；任一步失败都会回滚数据库、配置文件和原登记。
 
 进入编辑会话后，插件会暂存玩家物品栏，并通过热键栏和步骤菜单引导完成世界确认、schematic、复制布局、出生点、范围、检查点、物品列表等游戏专属配置。需要范围的步骤使用 WorldEdit 选区；列表步骤在 GUI 中新增、编辑、排序或删除。完成后先执行校验，再发布地图。
 
@@ -381,7 +385,7 @@ light_gray cyan purple blue brown green red black
 
 1. 确保参与队伍的成员已经加入数据库并上线。
 2. 确认目标场地处于 `WAITING`，没有其他比赛占用队伍或玩家。
-3. 让观众执行 `/cc spectate <游戏> <场地>`。
+3. 让观众执行 `/cc spectate <游戏> <场地> [实例]`，或直接打开 `/cc spectate` 菜单选择。
 4. 使用对应 `/cc game start ...` 命令开赛。
 5. 插件负责准备倒计时、传送、物品和效果初始化、计时、胜负判定与积分记录。
 6. 单场或正式赛最终轮结束后玩家返回大厅并写入积分；正式多轮赛的中间轮留在场地安全点并直接进入下一轮。需要模板复原的地图会在整场结束后重新加载。
@@ -394,7 +398,7 @@ light_gray cyan purple blue brown green red black
 1. `/cc admin vote start` 开放下一项目投票。
 2. 玩家使用 `/cc vote` 打开菜单，或使用 `/cc vote <配置名称>` 直接投票。
 3. `/cc admin vote end` 公布结果。
-4. 管理员执行 `/cc event start <游戏>` 启动正式赛程。
+4. 管理员执行 `/cc event start <游戏>` 启动常规正式赛程，或用 `/cc finale <游戏> start <场地>` 启动冠军决赛。
 5. 调度器广播项目介绍和积分规则，进行 10 秒倒计时。
 6. 游戏结束事件触发下一小轮；小轮之间默认等待 30 秒。
 7. 全部小轮结束后，调度器广播本项目积分和总榜，并将观众移出场地。
@@ -404,8 +408,9 @@ light_gray cyan purple blue brown green red black
 | 命令 | 行为 |
 | --- | --- |
 | `/cc event start <游戏>` | 启动普通正式赛程；同一项目运行中再次执行会紧急停止 |
-| `/cc event start dragoneggcarnival <队伍1> <队伍2>` | 启动指定两队的龙蛋狂欢正式比赛 |
-| `/cc event start Dodgebolt [队伍1 队伍2] [--force]` | 启动躲避箭决赛；自动选择已发布地图，未指定队伍时按总榜选择，`--force` 允许使用在线子阵容 |
+| `/cc finale dragoneggcarnival start <场地> [队伍1 队伍2]` | 在指定场地启动龙蛋狂欢决赛；未指定队伍时按总榜选择前二 |
+| `/cc finale dodgebolt start <场地> [队伍1 队伍2] [--force]` | 在指定场地启动躲避箭决赛；未指定队伍时按总榜选择前二，`--force` 允许使用在线子阵容 |
+| `/cc finale <游戏> cancel` | 取消决赛准备，或强制结束正在进行的正式决赛 |
 | `/cc event stop <游戏>` | 显式停止该项目的赛程任务和运行实例 |
 | `/cc event reset --confirm` | 重置正式比赛轮次和游戏顺序 |
 | `/cc event undo --confirm` | 停止并撤销最近一轮正式比赛及其成绩 |

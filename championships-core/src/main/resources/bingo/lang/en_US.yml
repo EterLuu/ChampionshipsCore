@@ -1,3 +1,5 @@
+dont-edit-this:
+  version: 1
 cmd:
   player_only: "&cOnly players can run this command."
   admin_only: "&cYou do not have permission to run this command."

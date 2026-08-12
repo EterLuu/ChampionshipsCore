@@ -7,211 +7,155 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Setter;
-import org.bukkit.*;
-import org.bukkit.block.Block;
-import org.bukkit.entity.*;
+import org.bukkit.GameMode;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.entity.EnderCrystal;
+import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.EnderDragonPart;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.*;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.event.world.PortalCreateEvent;
+import org.bukkit.projectiles.ProjectileSource;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Setter
 public class DragonEggCarnivalHandler extends BaseListener {
     private DragonEggCarnivalArea dragonEggCarnivalArea;
+    private final Map<UUID, UUID> crystalAttackers = new HashMap<>();
 
     protected DragonEggCarnivalHandler(ChampionshipsCore plugin) {
         super(plugin);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        if (dragonEggCarnivalArea.notAreaPlayer(player)) {
-            return;
-        }
-        if (dragonEggCarnivalArea.isIntroductionPhase()) {
-            return;
-        }
-
-        Location location = player.getLocation();
-        if (dragonEggCarnivalArea.notInArea(location)) {
-            return;
-        }
-
-        if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
-            event.setCancelled(true);
-            return;
-        }
-
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (dragonEggCarnivalArea.notAreaPlayer(player)) {
-            player.removeScoreboardTag("final");
-        }
+        if (dragonEggCarnivalArea.notAreaPlayer(player)) player.removeScoreboardTag("final");
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamaged(EntityDamageEvent event) {
-        if (event.getEntity() instanceof Player player) {
-            if (dragonEggCarnivalArea.notAreaPlayer(player)) {
-                return;
-            }
-
-            Location location = player.getLocation();
-            if (dragonEggCarnivalArea.notInArea(location)) {
-                return;
-            }
-
-            if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
-                event.setCancelled(true);
-                return;
-            }
-
-        }
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (dragonEggCarnivalArea.notAreaPlayer(player)) return;
+        if (dragonEggCarnivalArea.notInArea(player.getLocation())) return;
+        if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        if (dragonEggCarnivalArea.notAreaPlayer(player)) {
-            return;
-        }
-        if (dragonEggCarnivalArea.isIntroductionPhase()) {
-            return;
-        }
+        if (dragonEggCarnivalArea.notAreaPlayer(player) || dragonEggCarnivalArea.isIntroductionPhase()) return;
 
         Location location = player.getLocation();
-        if (dragonEggCarnivalArea.notInArea(location)) {
-            if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PREPARATION
-                    || dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.COUNTDOWN) {
-                player.teleport(dragonEggCarnivalArea.getPreparationTeleportLocation(dragonEggCarnivalArea.getSpectatorSpawnLocation()));
-            }
-            if (dragonEggCarnivalArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
-                if (player.getGameMode() == GameMode.SPECTATOR) {
-                    if (location.getY() <= -64) {
-                        player.teleport(dragonEggCarnivalArea.getSpectatorSpawnLocation());
-                    }
-                    return;
-                } else {
-                    dragonEggCarnivalArea.teleportPlayerToSpawnLocation(player);
-                    ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-                    if (championshipTeam != null)
-                        dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_OUT_OF_BORDER
-                                .replace("%player%", Utils.formatPlayerName(player)));
-                }
-            }
+        if (!dragonEggCarnivalArea.notInArea(location)) return;
+        GameStageEnum stage = dragonEggCarnivalArea.getGameStageEnum();
+        if (stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN) {
+            dragonEggCarnivalArea.teleportPlayerToSpawnLocation(player);
             return;
         }
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onEntityPickupDragonEgg(EntityPickupItemEvent event) {
-        if (event.getItem().getItemStack().getType() != Material.DRAGON_EGG) {
+        if (stage != GameStageEnum.PROGRESS) return;
+        if (dragonEggCarnivalArea.isManagedSpectator(player)) {
+            if (location.getY() <= -64D) player.teleport(dragonEggCarnivalArea.getSpectatorSpawnLocation());
             return;
         }
 
-        LivingEntity livingEntity = event.getEntity();
-        if (livingEntity instanceof Player player) {
-            if (dragonEggCarnivalArea.notAreaPlayer(player)) {
-                return;
-            }
-            if (dragonEggCarnivalArea.getTimer() >= 100)
-                return;
-            if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS)
-                return;
-
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam != null) {
-                player.getInventory().clear();
-                dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_PICK_UP_EGG
-                        .replace("%player%", Utils.formatPlayerName(player)));
-                dragonEggCarnivalArea.endGameInForm(championshipTeam);
-            }
+        dragonEggCarnivalArea.teleportPlayerToSpawnLocation(player);
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (team != null) {
+            dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_OUT_OF_BORDER
+                    .replace("%player%", Utils.formatPlayerName(player)));
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerKilledDragonEgg(EntityDeathEvent event) {
-        if (event.getEntity() instanceof EnderDragon dragon) {
-            Player player = dragon.getKiller();
-            if (player == null)
-                return;
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onCrystalDamaged(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof EnderCrystal crystal)) return;
+        if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) return;
+        if (dragonEggCarnivalArea.notInArea(crystal.getLocation())) return;
+        Player player = causingPlayer(event);
+        if (player == null) player = crystalChainAttacker(event);
+        if (player == null || dragonEggCarnivalArea.notAreaPlayer(player)) return;
+        crystalAttackers.put(crystal.getUniqueId(), player.getUniqueId());
+        Player creditedPlayer = player;
 
-            if (dragonEggCarnivalArea.notAreaPlayer(player))
-                return;
-
-            if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS)
-                return;
-
-            if (dragonEggCarnivalArea.getTimer() < 100)
-                return;
-
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam != null) {
-                event.getDrops().clear();
-                event.setDroppedExp(0);
-                dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_KILLED_DRAGON
-                        .replace("%player%", Utils.formatPlayerName(player)));
-                dragonEggCarnivalArea.endGameInForm(championshipTeam);
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!crystal.isValid() || crystal.isDead()) {
+                dragonEggCarnivalArea.recordCrystalDestroyed(creditedPlayer, crystal.getUniqueId());
             }
-        }
+        });
     }
 
-    /** The dragon is an objective, not a terrain-reset mechanic; keep its block damage out of the arena. */
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onDragonGrief(EntityExplodeEvent event) {
-        if (!(event.getEntity() instanceof EnderDragon)) return;
-        if (!event.getLocation().getWorld().getName().equals(dragonEggCarnivalArea.getWorldName())) return;
-        event.blockList().clear();
-        event.setYield(0);
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDragonDamaged(EntityDamageEvent event) {
+        EnderDragon dragon = switch (event.getEntity()) {
+            case EnderDragon direct -> direct;
+            case EnderDragonPart part -> part.getParent();
+            default -> null;
+        };
+        if (dragon == null || dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) return;
+        if (dragonEggCarnivalArea.notInArea(dragon.getLocation())) return;
+        Player player = causingPlayer(event);
+        if (player == null) player = crystalChainAttacker(event);
+        if (player == null || dragonEggCarnivalArea.notAreaPlayer(player)) return;
+        dragonEggCarnivalArea.recordDragonDamage(player, event.getFinalDamage(), dragon.getMaxHealth());
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onDragonEggFallIntoVoid(EntitySpawnEvent event) {
-        Location location = event.getLocation();
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onAdvancement(PlayerAdvancementDoneEvent event) {
+        Player player = event.getPlayer();
+        if (dragonEggCarnivalArea.notAreaPlayer(player)) return;
+        dragonEggCarnivalArea.recordAdvancement(player, event.getAdvancement().getKey().getKey());
+    }
 
-        if (dragonEggCarnivalArea.notInArea(location)) {
-            return;
-        }
-
-        if (event.getEntity() instanceof FallingBlock fallingBlock) {
-            Location blockLocation = fallingBlock.getLocation();
-            for (int i = 1; i < 60; i++) {
-                Block thisBlock = blockLocation.add(0, -i, 0).getBlock();
-                if (!thisBlock.isEmpty()) {
-                    return;
-                }
-            }
-            Block dragonEgg = dragonEggCarnivalArea.getGameConfig().getDragonEggSpawnPoint().getBlock();
-            dragonEgg.setType(Material.DRAGON_EGG, true);
-            dragonEggCarnivalArea.sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_RE_SPAWN_DRAGON_EGG);
-        }
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTeamConcretePlaced(BlockPlaceEvent event) {
+        Player player = event.getPlayer();
+        if (dragonEggCarnivalArea.notAreaPlayer(player)) return;
+        Material type = event.getItemInHand().getType();
+        if (!type.name().endsWith("_CONCRETE")) return;
+        dragonEggCarnivalArea.replenishTeamConcrete(player, event.getItemInHand());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerEnterPortal(PlayerPortalEvent event) {
-        Player player = event.getPlayer();
-        if (dragonEggCarnivalArea.notAreaPlayer(player)) {
-            return;
-        }
-
-        event.setCancelled(true);
+        if (!dragonEggCarnivalArea.notAreaPlayer(event.getPlayer())
+                || dragonEggCarnivalArea.isManagedSpectator(event.getPlayer())) event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPortalCreate(PortalCreateEvent event) {
-        World world = event.getWorld();
-        if (!world.getName().equals(dragonEggCarnivalArea.getWorldName())) {
-            return;
-        }
+    void resetMatchState() {
+        crystalAttackers.clear();
+    }
 
-        event.setCancelled(true);
+    private static Player causingPlayer(EntityDamageEvent event) {
+        Entity causing = event.getDamageSource().getCausingEntity();
+        if (causing instanceof Player player) return player;
+        Entity direct = event.getDamageSource().getDirectEntity();
+        if (direct instanceof Player player) return player;
+        if (direct instanceof Projectile projectile) {
+            ProjectileSource shooter = projectile.getShooter();
+            if (shooter instanceof Player player) return player;
+        }
+        return null;
+    }
+
+    private Player crystalChainAttacker(EntityDamageEvent event) {
+        Entity causing = event.getDamageSource().getCausingEntity();
+        Entity direct = event.getDamageSource().getDirectEntity();
+        UUID attackerId = causing instanceof EnderCrystal crystal ? crystalAttackers.get(crystal.getUniqueId())
+                : direct instanceof EnderCrystal crystal ? crystalAttackers.get(crystal.getUniqueId()) : null;
+        return attackerId == null ? null : Bukkit.getPlayer(attackerId);
     }
 }

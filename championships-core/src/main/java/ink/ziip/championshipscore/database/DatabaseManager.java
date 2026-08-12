@@ -98,7 +98,9 @@ public class DatabaseManager extends BaseManager {
                 }
                 ensurePointTransactionSchema(connection);
                 ensureIdentityIndexes(connection);
+                ensureSharedDataIndexes(connection);
                 ensureDailyStatsSchema(connection);
+                ensureRemoteBingoSchema(connection);
             } catch (SQLException | IOException e) {
                 throw new IllegalStateException("Failed to create database tables.", e);
             }
@@ -145,6 +147,14 @@ public class DatabaseManager extends BaseManager {
         ensureUniqueIdentityIndex(connection, "team_members", "username", "uq_team_members_username");
     }
 
+    private void ensureSharedDataIndexes(@NotNull Connection connection) throws SQLException {
+        // These checks make concurrent administration on two Core instances resolve at MariaDB,
+        // rather than creating duplicate logical records before Redis invalidation arrives.
+        ensureUniqueIdentityIndex(connection, "teams", "name", "uq_teams_name");
+        ensureUniqueIdentityIndex(connection, "teams", "colorName", "uq_teams_color_name");
+        ensureUniqueIdentityIndex(connection, "game_status", "game", "uq_game_status_game");
+    }
+
     private void ensureDailyStatsSchema(@NotNull Connection connection) throws SQLException {
         // CREATE TABLE IF NOT EXISTS does not update the tables installed by older Core versions.
         ensureColumn(connection, "daily_player_stats", "lineCount", "BIGINT NOT NULL DEFAULT 0");
@@ -152,6 +162,12 @@ public class DatabaseManager extends BaseManager {
         ensureColumn(connection, "daily_player_stats", "maxCompletedTasks", "BIGINT NOT NULL DEFAULT 0");
         ensureColumn(connection, "daily_match_results", "lineCount", "BIGINT NOT NULL DEFAULT 0");
         ensureColumn(connection, "daily_match_results", "completedTasks", "BIGINT NOT NULL DEFAULT 0");
+    }
+
+    private void ensureRemoteBingoSchema(@NotNull Connection connection) throws SQLException {
+        // Existing installations predate multi-Core ownership. NULL legacy rows are intentionally
+        // not claimed by an arbitrary instance; new rows always carry the stable Core instance id.
+        ensureColumn(connection, "remote_bingo_matches", "ownerInstance", "VARCHAR(128) NULL");
     }
 
     private void ensureColumn(@NotNull Connection connection, @NotNull String table,
@@ -180,7 +196,7 @@ public class DatabaseManager extends BaseManager {
         if (duplicateGroups > 0) {
             plugin.getLogger().warning(Utils.formatModuleLog("Database", "IdentityIndex",
                     "暂未创建唯一索引=" + indexName + "，表=" + table + " 字段=" + column
-                            + " 存在冲突组数=" + duplicateGroups + "；玩家登录迁移或人工消歧后将在下次启动重试"));
+                            + " 存在冲突组数=" + duplicateGroups + "；人工消歧后将在下次启动重试"));
             return;
         }
 

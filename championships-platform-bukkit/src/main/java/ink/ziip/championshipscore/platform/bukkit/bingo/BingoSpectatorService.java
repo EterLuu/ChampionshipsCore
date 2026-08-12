@@ -19,6 +19,9 @@ public final class BingoSpectatorService {
         player.setFlying(true);
         player.setCollidable(false);
         player.setInvulnerable(true);
+        player.setAffectsSpawning(false);
+        player.setCanPickupItems(false);
+        player.setSleepingIgnored(true);
         player.addPotionEffect(NIGHT_VISION);
     }
 
@@ -28,5 +31,8 @@ public final class BingoSpectatorService {
         player.setAllowFlight(false);
         player.setCollidable(true);
         player.setInvulnerable(false);
+        player.setAffectsSpawning(true);
+        player.setCanPickupItems(true);
+        player.setSleepingIgnored(false);
     }
 }

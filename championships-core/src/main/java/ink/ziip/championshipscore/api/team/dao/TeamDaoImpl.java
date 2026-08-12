@@ -16,6 +16,11 @@ public class TeamDaoImpl implements TeamDao {
 
     @Override
     public List<TeamEntry> getTeamList() {
+        return getTeamListIfAvailable().orElseGet(Collections::emptyList);
+    }
+
+    /** Distinguishes a valid empty championship from a failed reconciliation query. */
+    public Optional<List<TeamEntry>> getTeamListIfAvailable() {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
                     SELECT `id`, `name`, `colorName`, `colorCode`
@@ -32,11 +37,11 @@ public class TeamDaoImpl implements TeamDao {
                     String colorCode = resultSet.getString("colorCode");
                     teamEntries.add(new TeamEntry(id, name, colorName, colorCode));
                 }
-                return teamEntries;
+                return Optional.of(List.copyOf(teamEntries));
             }
         } catch (SQLException exception) {
             logFailure("查询队伍列表", exception);
-            return Collections.emptyList();
+            return Optional.empty();
         }
     }
 
@@ -89,6 +94,11 @@ public class TeamDaoImpl implements TeamDao {
 
     @Override
     public Set<TeamMemberEntry> getTeamMembers(int teamId) {
+        return getTeamMembersIfAvailable(teamId).orElseGet(Collections::emptySet);
+    }
+
+    /** Distinguishes a team with no members from a failed reconciliation query. */
+    public Optional<Set<TeamMemberEntry>> getTeamMembersIfAvailable(int teamId) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement("""
                     SELECT `id`, `uuid`, `username`, `teamId`
@@ -109,11 +119,11 @@ public class TeamDaoImpl implements TeamDao {
                     members.add(teamMemberEntry);
                 }
 
-                return members;
+                return Optional.of(Set.copyOf(members));
             }
         } catch (SQLException exception) {
             logFailure("查询队伍成员", exception);
-            return Collections.emptySet();
+            return Optional.empty();
         }
     }
 

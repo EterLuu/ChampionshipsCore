@@ -100,4 +100,14 @@ public class AceRaceManager extends BaseGameInstanceManager<AceRaceArea> {
         instancesByMap.put(mapName, instances);
         areas.put(mapName, instances.getFirst());
     }
+
+    @Override
+    protected boolean allowsSharedMapWorlds() {
+        return true;
+    }
+
+    @Override
+    protected void onAreaDetached(@NotNull String name) {
+        instancesByMap.remove(name);
+    }
 }

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -27,7 +29,7 @@ public abstract class PrepareFlowDefinition {
 
     /** Name used for the flow's primary edit location in the prepare UI. */
     public @NotNull String editorLocationName(@NotNull SetupTarget target) {
-        return "0 号场地";
+        return GuiConfig.text("area-prepare-prepareflowdefinition.text-001");
     }
 
     /** Build the step list bound to the given map/configuration target. */
@@ -41,7 +43,7 @@ public abstract class PrepareFlowDefinition {
     public @NotNull List<String> validate(@NotNull PrepareSession session) {
         List<String> errors = new ArrayList<>();
         if (session.getTarget().config().isWorldBindingPending() || !session.isWorldConfirmed())
-            errors.add("绑定当前世界");
+            errors.add(GuiConfig.text("area-prepare-prepareflowdefinition.text-002"));
         for (PrepareStep step : session.getSteps()) {
             if (step.captureType() != StepCaptureType.CONFIRM_WORLD && !step.isSet(session))
                 errors.add(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer

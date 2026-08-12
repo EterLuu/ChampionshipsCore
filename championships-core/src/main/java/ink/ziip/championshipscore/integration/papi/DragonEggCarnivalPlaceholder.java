@@ -42,14 +42,15 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
             if (dragonEggCarnivalArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return String.valueOf(dragonEggCarnivalArea.getLeftTeamPoints());
+            ChampionshipTeam team = displayedTeam(dragonEggCarnivalArea, offlinePlayer, false);
+            return String.valueOf(pointsOf(dragonEggCarnivalArea, team));
         }
         if (params.startsWith("area_team_")) {
             DragonEggCarnivalArea dragonEggCarnivalArea = resolveArea(params, "area_team_", offlinePlayer);
             if (dragonEggCarnivalArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            ChampionshipTeam championshipTeam = dragonEggCarnivalArea.getLeftChampionshipTeam();
+            ChampionshipTeam championshipTeam = displayedTeam(dragonEggCarnivalArea, offlinePlayer, false);
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
@@ -60,47 +61,36 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
             if (dragonEggCarnivalArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            return String.valueOf(dragonEggCarnivalArea.getRightTeamPoints());
+            ChampionshipTeam team = displayedTeam(dragonEggCarnivalArea, offlinePlayer, true);
+            return String.valueOf(pointsOf(dragonEggCarnivalArea, team));
         }
         if (params.startsWith("area_rival_")) {
             DragonEggCarnivalArea dragonEggCarnivalArea = resolveArea(params, "area_rival_", offlinePlayer);
             if (dragonEggCarnivalArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            ChampionshipTeam championshipTeam = dragonEggCarnivalArea.getRightChampionshipTeam();
+            ChampionshipTeam championshipTeam = displayedTeam(dragonEggCarnivalArea, offlinePlayer, true);
             if (championshipTeam == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
             return championshipTeam.getColoredName();
         }
-        if (params.startsWith("playtool_countdown_")) {
-            DragonEggCarnivalArea dragonEggCarnivalArea = resolveArea(params, "playtool_countdown_", offlinePlayer);
-            if (dragonEggCarnivalArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
-                return String.valueOf(0);
-            }
-
-            int elapsed = dragonEggCarnivalArea.getTimer();
-            return String.valueOf(10 - elapsed % 10);
-        }
-        if (params.startsWith("egg_spawn_countdown_")) {
-            DragonEggCarnivalArea dragonEggCarnivalArea = resolveArea(params, "egg_spawn_countdown_", offlinePlayer);
-            if (dragonEggCarnivalArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
-            }
-            if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
-                return String.valueOf(0);
-            }
-
-            int time = 100 - dragonEggCarnivalArea.getTimer();
-            if (time >= 0)
-                return String.valueOf(time);
-            return String.valueOf(0);
-        }
-
         // Placeholder is unknown by the Expansion
         return null;
+    }
+
+    private ChampionshipTeam displayedTeam(DragonEggCarnivalArea area, OfflinePlayer viewer, boolean rival) {
+        ChampionshipTeam own = viewer == null ? null : plugin.getTeamManager().getTeamByPlayer(viewer);
+        if (own != null && (own.equals(area.getRightChampionshipTeam()) || own.equals(area.getLeftChampionshipTeam()))) {
+            if (!rival) return own;
+            return own.equals(area.getRightChampionshipTeam())
+                    ? area.getLeftChampionshipTeam() : area.getRightChampionshipTeam();
+        }
+        return rival ? area.getRightChampionshipTeam() : area.getLeftChampionshipTeam();
+    }
+
+    private static int pointsOf(DragonEggCarnivalArea area, ChampionshipTeam team) {
+        if (team == null) return 0;
+        return team.equals(area.getRightChampionshipTeam()) ? area.getRightTeamPoints() : area.getLeftTeamPoints();
     }
 }

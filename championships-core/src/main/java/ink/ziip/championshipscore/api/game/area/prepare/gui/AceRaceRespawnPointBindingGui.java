@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
@@ -50,7 +52,7 @@ public final class AceRaceRespawnPointBindingGui {
                             @NotNull PrepareSession session, int respawnIndex) {
         Holder holder = new Holder(session, respawnIndex);
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text("选择重生点所属进度线").decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-001")).decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -126,17 +128,17 @@ public final class AceRaceRespawnPointBindingGui {
             }
             boolean selected = progressIndex == current;
             inventory.setItem(slot, item(Material.LIME_STAINED_GLASS_PANE,
-                    "进度线 #" + (progressIndex + 1) + " 后",
+                    GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-002") + (progressIndex + 1) + GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-003"),
                     selected ? NamedTextColor.GREEN : NamedTextColor.AQUA,
-                    selected ? "当前绑定" : "点击绑定到此进度线后"));
+                    selected ? GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-004") : GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-005")));
         }
         inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? item(Material.ARROW, "上一页", NamedTextColor.WHITE, "第 " + holder.page + " 页") : filler());
-        inventory.setItem(BACK_SLOT, item(Material.BARRIER, "返回重生点编辑", NamedTextColor.RED));
-        inventory.setItem(START_SLOT, item(Material.COMPASS, "起点后（不绑定进度线）", current < 0
-                ? NamedTextColor.GREEN : NamedTextColor.YELLOW, current < 0 ? "当前绑定" : "点击选择"));
+                ? item(Material.ARROW, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-006"), NamedTextColor.WHITE, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-007") + holder.page + GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-008")) : filler());
+        inventory.setItem(BACK_SLOT, item(Material.BARRIER, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-009"), NamedTextColor.RED));
+        inventory.setItem(START_SLOT, item(Material.COMPASS, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-010"), current < 0
+                ? NamedTextColor.GREEN : NamedTextColor.YELLOW, current < 0 ? GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-004") : GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-011")));
         inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount
-                ? item(Material.ARROW, "下一页", NamedTextColor.WHITE, "第 " + (holder.page + 2) + " / " + pageCount + " 页")
+                ? item(Material.ARROW, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-012"), NamedTextColor.WHITE, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-007") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-008"))
                 : filler());
     }
 

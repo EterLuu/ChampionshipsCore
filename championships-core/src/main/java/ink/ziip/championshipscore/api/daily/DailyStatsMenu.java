@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -47,7 +49,7 @@ final class DailyStatsMenu {
     void open(Player player) {
         StatsHolder holder = new StatsHolder(player.getUniqueId());
         holder.inventory = Bukkit.createInventory(holder, SIZE,
-                Component.text("个人战绩", NamedTextColor.DARK_AQUA).decorate(TextDecoration.BOLD));
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-001"), NamedTextColor.DARK_AQUA).decorate(TextDecoration.BOLD));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -118,7 +120,7 @@ final class DailyStatsMenu {
     private void openDetail(Player player, GameTypeEnum game) {
         DetailHolder holder = new DetailHolder(player.getUniqueId(), game);
         holder.inventory = Bukkit.createInventory(holder, SIZE,
-                Component.text("个人战绩 · ", NamedTextColor.DARK_AQUA)
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-002"), NamedTextColor.DARK_AQUA)
                         .append(Component.text(game.toString(), gameColor(game)))
                         .decorate(TextDecoration.BOLD));
         refresh(holder);
@@ -144,16 +146,16 @@ final class DailyStatsMenu {
             holder.gamesBySlot.put(slot, game);
         }
         if (games.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text("暂无开放游戏", NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text("完成的记录会一直保留", NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-003"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-004"), NamedTextColor.DARK_GRAY)), false));
 
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text("返回大厅", NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-005"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
         inventory.setItem(LEADERBOARD_SLOT, item(Material.GOLD_INGOT,
-                Component.text("查看排行榜", NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text("查看胜场与个人纪录排名", NamedTextColor.GRAY),
-                        Component.text("点击打开", NamedTextColor.GREEN).decorate(TextDecoration.BOLD)), false));
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text("关闭", NamedTextColor.RED), List.of(), false));
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-006"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-007"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-008"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)), false));
+        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-009"), NamedTextColor.RED), List.of(), false));
     }
 
     private void refresh(DetailHolder holder) {
@@ -169,14 +171,14 @@ final class DailyStatsMenu {
         holder.page = Math.max(0, Math.min(holder.page, holder.pageCount - 1));
 
         if (holder.game == GameTypeEnum.Bingo) {
-            inventory.setItem(20, metricItem(Material.GOLDEN_SWORD, "胜场", stat.wins() + " 场",
-                    "赢得的 Bingo 场次", NamedTextColor.GREEN, stat.wins() > 0));
-            inventory.setItem(22, metricItem(Material.PAINTING, "连线数", stat.lineCount() + " 条",
-                    "所有 Bingo 对局累计完成的连线", NamedTextColor.LIGHT_PURPLE, stat.lineCount() > 0));
-            inventory.setItem(24, metricItem(Material.FILLED_MAP, "完成任务总数", stat.completedTasks() + " 个",
-                    "所有 Bingo 对局累计完成的任务", NamedTextColor.AQUA, stat.completedTasks() > 0));
-            inventory.setItem(31, metricItem(Material.CLOCK, "单场最多完成", stat.maxCompletedTasks() + " 个",
-                    "一场 Bingo 中完成任务数的最高纪录", NamedTextColor.GOLD, stat.maxCompletedTasks() > 0));
+            inventory.setItem(20, metricItem(Material.GOLDEN_SWORD, GuiConfig.text("api-daily-dailystatsmenu.text-010"), stat.wins() + GuiConfig.text("api-daily-dailystatsmenu.text-011"),
+                    GuiConfig.text("api-daily-dailystatsmenu.text-012"), NamedTextColor.GREEN, stat.wins() > 0));
+            inventory.setItem(22, metricItem(Material.PAINTING, GuiConfig.text("api-daily-dailystatsmenu.text-013"), stat.lineCount() + GuiConfig.text("api-daily-dailystatsmenu.text-014"),
+                    GuiConfig.text("api-daily-dailystatsmenu.text-015"), NamedTextColor.LIGHT_PURPLE, stat.lineCount() > 0));
+            inventory.setItem(24, metricItem(Material.FILLED_MAP, GuiConfig.text("api-daily-dailystatsmenu.text-016"), stat.completedTasks() + GuiConfig.text("api-daily-dailystatsmenu.text-017"),
+                    GuiConfig.text("api-daily-dailystatsmenu.text-018"), NamedTextColor.AQUA, stat.completedTasks() > 0));
+            inventory.setItem(31, metricItem(Material.CLOCK, GuiConfig.text("api-daily-dailystatsmenu.text-019"), stat.maxCompletedTasks() + GuiConfig.text("api-daily-dailystatsmenu.text-017"),
+                    GuiConfig.text("api-daily-dailystatsmenu.text-020"), NamedTextColor.GOLD, stat.maxCompletedTasks() > 0));
         } else {
             int from = holder.page * DETAIL_SLOTS.size();
             int to = Math.min(maps.size(), from + DETAIL_SLOTS.size());
@@ -184,49 +186,49 @@ final class DailyStatsMenu {
                 inventory.setItem(DETAIL_SLOTS.get(index - from), mapItem(holder.viewer, holder.game, maps.get(index)));
             }
             if (maps.isEmpty()) inventory.setItem(31, item(Material.GRAY_DYE,
-                    Component.text("暂无细分纪录", NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                    List.of(Component.text("完成对应游戏后，地图纪录会显示在这里", NamedTextColor.DARK_GRAY)), false));
+                    Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-021"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                    List.of(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-022"), NamedTextColor.DARK_GRAY)), false));
         }
 
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text("返回游戏分类", NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-023"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
         inventory.setItem(LEADERBOARD_SLOT, item(Material.GOLD_INGOT,
-                Component.text("查看排行榜", NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text("查看胜场与个人纪录排名", NamedTextColor.GRAY)), false));
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-006"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-007"), NamedTextColor.GRAY)), false));
         if (holder.page > 0) inventory.setItem(48, item(Material.ARROW,
-                Component.text("上一页", NamedTextColor.WHITE), List.of(), false));
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-024"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
-                Component.text("刷新", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text("更新当前游戏的详细纪录", NamedTextColor.GRAY)), false));
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-025"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-026"), NamedTextColor.GRAY)), false));
         if (holder.game == GameTypeEnum.Bingo) {
             inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                    Component.text("全部地图累计", NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                    List.of(Component.text("Bingo 数据按游戏累计，不按地图拆分", NamedTextColor.GRAY)), false));
+                    Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-027"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                    List.of(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-028"), NamedTextColor.GRAY)), false));
         } else {
             inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                    Component.text("第 " + (holder.page + 1) + " / " + holder.pageCount + " 页", NamedTextColor.AQUA)
+                    Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-029") + (holder.page + 1) + " / " + holder.pageCount + GuiConfig.text("api-daily-dailystatsmenu.text-030"), NamedTextColor.AQUA)
                             .decorate(TextDecoration.BOLD),
-                    List.of(Component.text(maps.size() + " 张地图", NamedTextColor.GRAY)), false));
+                    List.of(Component.text(maps.size() + GuiConfig.text("api-daily-dailystatsmenu.text-031"), NamedTextColor.GRAY)), false));
             if (holder.page + 1 < holder.pageCount) inventory.setItem(52, item(Material.ARROW,
-                    Component.text("下一页", NamedTextColor.WHITE), List.of(), false));
+                    Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-032"), NamedTextColor.WHITE), List.of(), false));
         }
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text("关闭", NamedTextColor.RED), List.of(), false));
+        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-009"), NamedTextColor.RED), List.of(), false));
     }
 
     private ItemStack playerSummary(UUID viewer, DailyStatSnapshot stat) {
         List<Component> lore = List.of(
-                line("完成场次  ", stat.gamesPlayed() + " 场", NamedTextColor.WHITE),
-                line("获胜场次  ", stat.wins() + " 场", NamedTextColor.GREEN),
-                line("总胜率  ", winRate(stat), NamedTextColor.YELLOW),
+                line(GuiConfig.text("api-daily-dailystatsmenu.text-033"), stat.gamesPlayed() + GuiConfig.text("api-daily-dailystatsmenu.text-011"), NamedTextColor.WHITE),
+                line(GuiConfig.text("api-daily-dailystatsmenu.text-034"), stat.wins() + GuiConfig.text("api-daily-dailystatsmenu.text-011"), NamedTextColor.GREEN),
+                line(GuiConfig.text("api-daily-dailystatsmenu.text-035"), winRate(stat), NamedTextColor.YELLOW),
                 Component.empty(),
-                Component.text("按游戏分类，点击卡片查看细分", NamedTextColor.GRAY)
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-036"), NamedTextColor.GRAY)
         );
         ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta rawMeta = stack.getItemMeta();
         if (!(rawMeta instanceof SkullMeta meta)) return item(Material.PLAYER_HEAD,
-                Component.text("我的总览", NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, false);
+                Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-037"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, false);
         meta.setOwningPlayer(Bukkit.getOfflinePlayer(viewer));
-        meta.displayName(Component.text("我的总览", NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
+        meta.displayName(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-037"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
         stack.setItemMeta(meta);
@@ -237,36 +239,36 @@ final class DailyStatsMenu {
         DailyStatSnapshot stat = daily.statsManager().stat(viewer, game);
         List<Component> lore = new ArrayList<>();
         if (game == GameTypeEnum.Bingo) {
-            lore.add(line("胜场  ", stat.wins() + " 场", NamedTextColor.GREEN));
-            lore.add(line("连线数  ", stat.lineCount() + " 条", NamedTextColor.LIGHT_PURPLE));
-            lore.add(line("完成任务  ", stat.completedTasks() + " 个", NamedTextColor.AQUA));
-            lore.add(line("单场最多  ", stat.maxCompletedTasks() + " 个", NamedTextColor.GOLD));
+            lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-038"), stat.wins() + GuiConfig.text("api-daily-dailystatsmenu.text-011"), NamedTextColor.GREEN));
+            lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-039"), stat.lineCount() + GuiConfig.text("api-daily-dailystatsmenu.text-014"), NamedTextColor.LIGHT_PURPLE));
+            lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-040"), stat.completedTasks() + GuiConfig.text("api-daily-dailystatsmenu.text-017"), NamedTextColor.AQUA));
+            lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-041"), stat.maxCompletedTasks() + GuiConfig.text("api-daily-dailystatsmenu.text-017"), NamedTextColor.GOLD));
         } else {
-            lore.add(line("完成场次  ", stat.gamesPlayed() + " 场", NamedTextColor.WHITE));
-            lore.add(line("获胜场次  ", stat.wins() + " 场", NamedTextColor.GREEN));
-            lore.add(line("胜率  ", winRate(stat), NamedTextColor.YELLOW));
+            lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-033"), stat.gamesPlayed() + GuiConfig.text("api-daily-dailystatsmenu.text-011"), NamedTextColor.WHITE));
+            lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-034"), stat.wins() + GuiConfig.text("api-daily-dailystatsmenu.text-011"), NamedTextColor.GREEN));
+            lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-042"), winRate(stat), NamedTextColor.YELLOW));
         }
         lore.add(Component.empty());
         lore.add(Component.text(game == GameTypeEnum.Bingo
-                ? "点击查看累计细分数据"
-                : daily.knownMaps(game).size() + " 张地图可查看细分", NamedTextColor.GRAY));
+                ? GuiConfig.text("api-daily-dailystatsmenu.text-043")
+                : daily.knownMaps(game).size() + GuiConfig.text("api-daily-dailystatsmenu.text-044"), NamedTextColor.GRAY));
         lore.add(Component.empty());
-        lore.add(Component.text("点击查看详细战绩", NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-045"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
         return item(gameMaterial(game), Component.text(game.toString(), gameColor(game))
                 .decorate(TextDecoration.BOLD), lore, stat.gamesPlayed() > 0);
     }
 
     private ItemStack gameSummary(GameTypeEnum game, DailyStatSnapshot stat) {
         List<Component> lore = new ArrayList<>();
-        lore.add(line("参与场次  ", stat.gamesPlayed() + " 场", NamedTextColor.WHITE));
-        lore.add(line("获胜场次  ", stat.wins() + " 场", NamedTextColor.GREEN));
-        lore.add(line("胜率  ", winRate(stat), NamedTextColor.YELLOW));
+        lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-046"), stat.gamesPlayed() + GuiConfig.text("api-daily-dailystatsmenu.text-011"), NamedTextColor.WHITE));
+        lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-034"), stat.wins() + GuiConfig.text("api-daily-dailystatsmenu.text-011"), NamedTextColor.GREEN));
+        lore.add(line(GuiConfig.text("api-daily-dailystatsmenu.text-042"), winRate(stat), NamedTextColor.YELLOW));
         if (game == GameTypeEnum.Bingo) {
             lore.add(Component.empty());
-            lore.add(Component.text("下方查看 Bingo 累计细分数据", NamedTextColor.GRAY));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-047"), NamedTextColor.GRAY));
         } else {
             lore.add(Component.empty());
-            lore.add(Component.text("下方按地图查看各项纪录", NamedTextColor.GRAY));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-048"), NamedTextColor.GRAY));
         }
         return item(gameMaterial(game), Component.text(game.toString(), gameColor(game))
                 .decorate(TextDecoration.BOLD), lore, stat.gamesPlayed() > 0);
@@ -285,11 +287,11 @@ final class DailyStatsMenu {
         for (RecordDefinition definition : RECORDS.getOrDefault(game, List.of())) {
             long value = daily.statsManager().bestRecord(viewer, game, map, definition.type());
             if (value >= 0) recorded = true;
-            lore.add(line(definition.label() + "  ", value < 0 ? "暂无纪录" : DailyLeaderboardMenu.formatDuration(value),
+            lore.add(line(definition.label() + "  ", value < 0 ? GuiConfig.text("api-daily-dailystatsmenu.text-049") : DailyLeaderboardMenu.formatDuration(value),
                     value < 0 ? NamedTextColor.DARK_GRAY : definition.color()));
         }
         lore.add(Component.empty());
-        lore.add(Component.text("按地图独立记录", NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailystatsmenu.text-050"), NamedTextColor.GRAY));
         return item(gameMaterial(game), Component.text(map, gameColor(game)).decorate(TextDecoration.BOLD), lore, recorded);
     }
 
@@ -309,8 +311,8 @@ final class DailyStatsMenu {
     private static Map<GameTypeEnum, List<RecordDefinition>> createRecordDefinitions() {
         Map<GameTypeEnum, List<RecordDefinition>> records = new EnumMap<>(GameTypeEnum.class);
         records.put(GameTypeEnum.AceRace, List.of(
-                new RecordDefinition(DailyRecordType.ACERACE_FASTEST_LAP, "最快单圈", NamedTextColor.AQUA),
-                new RecordDefinition(DailyRecordType.ACERACE_FASTEST_THREE_LAPS, "最快完整三圈", NamedTextColor.GOLD)));
+                new RecordDefinition(DailyRecordType.ACERACE_FASTEST_LAP, GuiConfig.text("api-daily-dailystatsmenu.text-051"), NamedTextColor.AQUA),
+                new RecordDefinition(DailyRecordType.ACERACE_FASTEST_THREE_LAPS, GuiConfig.text("api-daily-dailystatsmenu.text-052"), NamedTextColor.GOLD)));
         return Map.copyOf(records);
     }
 

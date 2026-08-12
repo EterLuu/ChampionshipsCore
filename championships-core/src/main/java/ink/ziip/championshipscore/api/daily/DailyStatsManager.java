@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Queue;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -38,6 +41,8 @@ public final class DailyStatsManager extends BaseManager {
     private final Set<MilestoneKey> emittedMilestones = ConcurrentHashMap.newKeySet();
     private final Set<UUID> recordedMatches = ConcurrentHashMap.newKeySet();
     private volatile boolean active;
+    private final Queue<Runnable> databaseTasks = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean databaseTaskRunning = new AtomicBoolean();
 
     public DailyStatsManager(ChampionshipsCore plugin) {
         super(plugin);
@@ -46,7 +51,7 @@ public final class DailyStatsManager extends BaseManager {
     @Override
     public void load() {
         active = true;
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, this::loadCaches);
+        runAsync(this::loadCaches);
     }
 
     @Override
@@ -59,6 +64,7 @@ public final class DailyStatsManager extends BaseManager {
         leaderboards = Map.of();
         emittedMilestones.clear();
         recordedMatches.clear();
+        databaseTasks.clear();
     }
 
     public DailyStatSnapshot stat(UUID player, @Nullable GameTypeEnum game) {
@@ -92,6 +98,26 @@ public final class DailyStatsManager extends BaseManager {
         Set<String> maps = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         records.keySet().stream().filter(key -> key.game() == game).map(RecordKey::map).forEach(maps::add);
         return Set.copyOf(maps);
+    }
+
+    /** Runs after all DAILY writes already submitted before this call. */
+    public void runAfterPendingWrites(@NotNull Runnable task) {
+        runAsync(task);
+    }
+
+    /** Keeps the live record/leaderboard cache aligned with a committed database map rename. */
+    public void renameMap(@NotNull GameTypeEnum game, @NotNull String oldMap, @NotNull String newMap) {
+        Map<RecordKey, Long> moved = new HashMap<>();
+        for (Map.Entry<RecordKey, Long> entry : new ArrayList<>(records.entrySet())) {
+            RecordKey key = entry.getKey();
+            if (key.game() != game || !key.map().equalsIgnoreCase(oldMap)) continue;
+            if (records.remove(key, entry.getValue())) {
+                moved.merge(new RecordKey(key.player(), key.game(), newMap, key.type()),
+                        entry.getValue(), Math::min);
+            }
+        }
+        moved.forEach((key, value) -> records.merge(key, value, Math::min));
+        rebuildLeaderboards();
     }
 
     public static @NotNull String mapSlug(@NotNull String map) {
@@ -262,7 +288,28 @@ public final class DailyStatsManager extends BaseManager {
 
     private void runAsync(Runnable runnable) {
         if (!active || !plugin.isEnabled()) return;
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, runnable);
+        databaseTasks.add(runnable);
+        drainDatabaseTasks();
+    }
+
+    private void drainDatabaseTasks() {
+        if (!databaseTaskRunning.compareAndSet(false, true)) return;
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                Runnable task;
+                while (active && (task = databaseTasks.poll()) != null) {
+                    try {
+                        task.run();
+                    } catch (Exception exception) {
+                        plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                                "DAILY 数据库队列任务失败", exception);
+                    }
+                }
+            } finally {
+                databaseTaskRunning.set(false);
+                if (active && !databaseTasks.isEmpty()) drainDatabaseTasks();
+            }
+        });
     }
 
     private record StatKey(UUID player, GameTypeEnum game) {}

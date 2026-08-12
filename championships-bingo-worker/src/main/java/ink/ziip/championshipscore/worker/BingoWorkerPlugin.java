@@ -33,6 +33,7 @@ public final class BingoWorkerPlugin extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         try {
+            WorkerGuiConfig.load(this);
             workerConfig = WorkerConfig.load(getConfig());
         } catch (RuntimeException invalid) {
             getLogger().log(Level.SEVERE, "Invalid Bingo worker configuration", invalid);

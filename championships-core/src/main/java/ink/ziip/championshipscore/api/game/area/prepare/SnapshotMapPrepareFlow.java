@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -43,7 +45,7 @@ public abstract class SnapshotMapPrepareFlow extends PrepareFlowDefinition {
 
     @Override
     public @NotNull String editorLocationName(@NotNull SetupTarget target) {
-        return "编辑场地";
+        return GuiConfig.text("area-prepare-snapshotmapprepareflow.text-001");
     }
 
     @Override

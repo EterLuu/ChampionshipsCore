@@ -37,4 +37,20 @@ class DailyQueueTest {
 
         assertFalse(queue.canAdd(players, rules));
     }
+
+    @Test
+    void keepsOverflowQueuedForAnotherRuntimeInstance() {
+        DailyQueue queue = new DailyQueue(GameTypeEnum.AceRace);
+        for (int index = 0; index < 4; index++) {
+            UUID player = UUID.randomUUID();
+            assertTrue(queue.add(player, Set.of(player), rules));
+        }
+
+        List<DailyQueue.Group> firstMatch = queue.take(2);
+        List<DailyQueue.Group> secondMatch = queue.take(2);
+
+        assertEquals(2, firstMatch.size());
+        assertEquals(2, secondMatch.size());
+        assertEquals(0, queue.size());
+    }
 }

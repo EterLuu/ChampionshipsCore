@@ -123,7 +123,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
         List<Player> players = new ArrayList<>();
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.getGameMode() == GameMode.SPECTATOR)
+            if (player != null && isManagedSpectator(player))
                 players.add(player);
         }
         return players;
@@ -133,7 +133,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
         for (UUID uuid : gamePlayers) {
             ChampionshipPlayer championshipPlayer = playerManager.getPlayer(uuid);
             Player player = championshipPlayer == null ? null : championshipPlayer.getPlayer();
-            if (player != null && player.getGameMode() != GameMode.SPECTATOR)
+            if (player != null && !isManagedSpectator(player))
                 championshipPlayer.sendActionBar(message);
         }
     }

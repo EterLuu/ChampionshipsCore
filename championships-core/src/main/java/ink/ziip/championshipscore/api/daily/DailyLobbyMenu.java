@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -32,7 +34,7 @@ final class DailyLobbyMenu {
 
     void open(Player player) {
         LobbyHolder holder = new LobbyHolder(player.getUniqueId());
-        holder.inventory = Bukkit.createInventory(holder, SIZE, Component.text("游戏大厅", NamedTextColor.DARK_AQUA)
+        holder.inventory = Bukkit.createInventory(holder, SIZE, Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-001"), NamedTextColor.DARK_AQUA)
                 .decorate(TextDecoration.BOLD));
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -79,48 +81,48 @@ final class DailyLobbyMenu {
         UUID viewer = holder.viewer;
         DailyPlayerSnapshot snapshot = daily.snapshot(viewer);
         inventory.setItem(4, item(Material.NETHER_STAR,
-                Component.text("大厅状态", NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-002"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
                 List.of(
-                        line("当前状态  ", snapshot.queueState(), NamedTextColor.WHITE),
-                        line("当前游戏  ", snapshot.selectedGame(), NamedTextColor.AQUA),
-                        line("同行人数  ", snapshot.partySize() + " 人", NamedTextColor.WHITE),
+                        line(GuiConfig.text("api-daily-dailylobbymenu.text-003"), snapshot.queueState(), NamedTextColor.WHITE),
+                        line(GuiConfig.text("api-daily-dailylobbymenu.text-004"), snapshot.selectedGame(), NamedTextColor.AQUA),
+                        line(GuiConfig.text("api-daily-dailylobbymenu.text-005"), snapshot.partySize() + GuiConfig.text("api-daily-dailylobbymenu.text-006"), NamedTextColor.WHITE),
                         Component.empty(),
-                        Component.text("选择下方功能开始", NamedTextColor.GRAY)
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-007"), NamedTextColor.GRAY)
                 )));
         inventory.setItem(STATS_SLOT, item(Material.WRITABLE_BOOK,
-                Component.text("个人战绩", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-008"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text("查看你的场次、胜场与胜率", NamedTextColor.GRAY),
-                        Component.text("以及各游戏的详细记录", NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-009"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-010"), NamedTextColor.GRAY),
                         Component.empty(),
-                        Component.text("点击查看", NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-011"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
                 )));
         inventory.setItem(MATCH_SLOT, item(Material.COMPASS,
-                Component.text("进入匹配", NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-012"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text("选择想要参加的游戏", NamedTextColor.GRAY),
-                        Component.text("实时查看人数与开场进度", NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-013"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-014"), NamedTextColor.GRAY),
                         Component.empty(),
-                        Component.text("点击进入", NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-015"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
                 )));
         inventory.setItem(PARTY_SLOT, item(Material.PLAYER_HEAD,
-                Component.text("组队功能", NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-016"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text("邀请朋友一起进入匹配", NamedTextColor.GRAY),
-                        Component.text("接受邀请或管理同行小队", NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-017"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-018"), NamedTextColor.GRAY),
                         Component.empty(),
-                        Component.text("点击打开", NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-019"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
                 )));
         inventory.setItem(SPECTATE_SLOT, item(Material.SPYGLASS,
-                Component.text("旁观游戏", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-020"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text("查看当前正在进行的游戏", NamedTextColor.GRAY),
-                        Component.text("并选择可旁观的运行中场地", NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-021"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-022"), NamedTextColor.GRAY),
                         Component.empty(),
-                        Component.text("点击打开", NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
+                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-019"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
                 )));
         inventory.setItem(CLOSE_SLOT, item(Material.BARRIER,
-                Component.text("关闭", NamedTextColor.RED), List.of()));
+                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-023"), NamedTextColor.RED), List.of()));
     }
 
     private static Component line(String label, String value, NamedTextColor color) {

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
@@ -26,9 +28,9 @@ public class ConfirmWorldStep extends PrepareStep {
     public ConfirmWorldStep(@NotNull Predicate<Player> inCorrectWorld, @NotNull String worldName,
                             boolean allowRebind) {
         super("confirm_world",
-                Component.text(allowRebind ? "绑定当前世界" : "确认所在世界"),
-                Component.text(allowRebind ? "点击绑定或更换为当前所在世界"
-                        : "前往 " + worldName + " 世界后点击此项确认"),
+                Component.text(allowRebind ? GuiConfig.text("prepare-step-confirmworldstep.text-001") : GuiConfig.text("prepare-step-confirmworldstep.text-002")),
+                Component.text(allowRebind ? GuiConfig.text("prepare-step-confirmworldstep.text-003")
+                        : GuiConfig.text("prepare-step-confirmworldstep.text-004") + worldName + GuiConfig.text("prepare-step-confirmworldstep.text-005")),
                 Material.COMPASS,
                 StepCaptureType.CONFIRM_WORLD);
         this.inCorrectWorld = inCorrectWorld;
@@ -44,14 +46,14 @@ public class ConfirmWorldStep extends PrepareStep {
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         if (allowRebind) {
             if (!session.getTarget().bindWorld(player.getWorld()))
-                return Utils.formatAdminError("当前世界已被其他地图使用，或地图正在运行，无法绑定。");
+                return Utils.formatAdminError(GuiConfig.text("prepare-step-confirmworldstep.text-006"));
             session.setWorldConfirmed(true);
-            return Utils.formatAdminSuccess("已绑定地图世界：&#fff566" + player.getWorld().getName());
+            return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-confirmworldstep.text-007") + player.getWorld().getName());
         }
         if (inCorrectWorld.test(player)) {
             session.setWorldConfirmed(true);
-            return Utils.formatAdminSuccess("已确认游戏世界。");
+            return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-confirmworldstep.text-008"));
         }
-        return Utils.formatAdminError("请先通过末影珍珠前往目标编辑场地。");
+        return Utils.formatAdminError(GuiConfig.text("prepare-step-confirmworldstep.text-009"));
     }
 }

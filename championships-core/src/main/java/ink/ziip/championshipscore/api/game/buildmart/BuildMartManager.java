@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Owns the Build Mart maps. Per-map configs live in {@code plugin/buildmart/areas/*.yml}; shared
@@ -142,5 +143,18 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
         }
 
         return buildMartArea == null;
+    }
+
+    @Override
+    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+        if (areas.containsKey(name)) return false;
+        BuildMartConfig config = new BuildMartConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        BuildMartArea area = new BuildMartArea(plugin, config);
+        areas.put(name, area);
+        File template = new File(new File(plugin.getDataFolder(), "maps"), config.getConfiguredWorld());
+        if (template.isDirectory()) area.preloadMap();
+        else area.initializeForSetup();
+        return true;
     }
 }

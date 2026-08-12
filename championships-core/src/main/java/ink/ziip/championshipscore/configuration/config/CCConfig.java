@@ -3,8 +3,11 @@ package ink.ziip.championshipscore.configuration.config;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.Location;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.util.List;
 
 @Getter
@@ -18,7 +21,31 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 13;
+        return 16;
+    }
+
+    /** Moves the formerly Bingo-owned Redis connection into the shared Core infrastructure section. */
+    @Override
+    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdated) throws IOException {
+        migrateLegacyRedisConfiguration(outdated);
+        super.loadFromOutdatedConfiguration(outdated);
+    }
+
+    static void migrateLegacyRedisConfiguration(@NotNull YamlConfiguration outdated) {
+        if (!outdated.contains("redis.uri") && outdated.contains("bingo.redis.uri")) {
+            outdated.set("redis.enabled", "REMOTE".equalsIgnoreCase(
+                    outdated.getString("bingo.execution-mode", "LOCAL")));
+            outdated.set("redis.instance-id", "auto");
+            outdated.set("redis.uri", outdated.get("bingo.redis.uri"));
+            outdated.set("redis.namespace", outdated.get("bingo.redis.namespace"));
+            outdated.set("redis.consumer-group-prefix", outdated.get("bingo.redis.consumer-group"));
+            outdated.set("redis.stream-max-length", outdated.get("bingo.redis.stream-max-length"));
+            outdated.set("redis.block-timeout-ms", outdated.get("bingo.redis.block-timeout-ms"));
+            outdated.set("redis.reclaim-idle-ms", outdated.get("bingo.redis.reclaim-idle-ms"));
+            outdated.set("redis.max-deliveries", outdated.get("bingo.redis.max-deliveries"));
+            outdated.set("redis.reconciliation-seconds", 30);
+        }
+        outdated.set("bingo.redis", null);
     }
 
     // Games
@@ -65,6 +92,21 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "daily.games.AceRace.concurrent-instances")
     public static int DAILY_ACERACE_CONCURRENT_INSTANCES;
+
+    @ConfigOption(path = "daily.games.DragonEggCarnival.min-players")
+    public static int DAILY_DRAGON_EGG_CARNIVAL_MIN_PLAYERS;
+
+    @ConfigOption(path = "daily.games.DragonEggCarnival.max-players")
+    public static int DAILY_DRAGON_EGG_CARNIVAL_MAX_PLAYERS;
+
+    @ConfigOption(path = "daily.games.DragonEggCarnival.team-size")
+    public static int DAILY_DRAGON_EGG_CARNIVAL_TEAM_SIZE;
+
+    @ConfigOption(path = "daily.games.DragonEggCarnival.teams")
+    public static int DAILY_DRAGON_EGG_CARNIVAL_TEAMS;
+
+    @ConfigOption(path = "daily.games.DragonEggCarnival.countdown-seconds")
+    public static int DAILY_DRAGON_EGG_CARNIVAL_COUNTDOWN_SECONDS;
 
     // Players
     @ConfigOption(path = "max-players")
@@ -113,6 +155,37 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "database.password")
     public static String DATABASE_PASSWORD;
 
+    // Shared Redis infrastructure. Remote Bingo and cross-server database invalidation use one owner.
+    @ConfigOption(path = "redis.enabled")
+    public static Boolean REDIS_ENABLED;
+
+    @ConfigOption(path = "redis.instance-id")
+    public static String REDIS_INSTANCE_ID;
+
+    @ConfigOption(path = "redis.uri")
+    public static String REDIS_URI;
+
+    @ConfigOption(path = "redis.namespace")
+    public static String REDIS_NAMESPACE;
+
+    @ConfigOption(path = "redis.consumer-group-prefix")
+    public static String REDIS_CONSUMER_GROUP_PREFIX;
+
+    @ConfigOption(path = "redis.stream-max-length")
+    public static long REDIS_STREAM_MAX_LENGTH;
+
+    @ConfigOption(path = "redis.block-timeout-ms")
+    public static long REDIS_BLOCK_TIMEOUT_MILLIS;
+
+    @ConfigOption(path = "redis.reclaim-idle-ms")
+    public static long REDIS_RECLAIM_IDLE_MILLIS;
+
+    @ConfigOption(path = "redis.max-deliveries")
+    public static int REDIS_MAX_DELIVERIES;
+
+    @ConfigOption(path = "redis.reconciliation-seconds")
+    public static long REDIS_RECONCILIATION_SECONDS;
+
     // Team
     @ConfigOption(path = "team.max-members")
     public static int TEAM_MAX_MEMBERS;
@@ -147,24 +220,4 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "bingo.heartbeat-timeout-seconds")
     public static int BINGO_HEARTBEAT_TIMEOUT_SECONDS;
 
-    @ConfigOption(path = "bingo.redis.uri")
-    public static String BINGO_REDIS_URI;
-
-    @ConfigOption(path = "bingo.redis.namespace")
-    public static String BINGO_REDIS_NAMESPACE;
-
-    @ConfigOption(path = "bingo.redis.consumer-group")
-    public static String BINGO_REDIS_CONSUMER_GROUP;
-
-    @ConfigOption(path = "bingo.redis.stream-max-length")
-    public static long BINGO_REDIS_STREAM_MAX_LENGTH;
-
-    @ConfigOption(path = "bingo.redis.block-timeout-ms")
-    public static long BINGO_REDIS_BLOCK_TIMEOUT_MILLIS;
-
-    @ConfigOption(path = "bingo.redis.reclaim-idle-ms")
-    public static long BINGO_REDIS_RECLAIM_IDLE_MILLIS;
-
-    @ConfigOption(path = "bingo.redis.max-deliveries")
-    public static int BINGO_REDIS_MAX_DELIVERIES;
 }

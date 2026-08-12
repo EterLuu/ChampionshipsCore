@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -138,12 +140,12 @@ public final class DailyLeaderboardMenu {
         int totalRows = boards.stream().mapToInt(board -> stats.leaderboard(board.id()).size()).sum();
         inventory.setItem(PLAYER_SLOT, playerSummary(holder.viewer));
         inventory.setItem(OVERVIEW_SLOT, item(Material.NETHER_STAR,
-                Component.text("荣誉榜", NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-001"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(boards.size() + " 个榜单分类", NamedTextColor.WHITE)
-                                .append(Component.text("  ·  " + totalRows + " 条上榜记录", NamedTextColor.GRAY)),
-                        Component.text("积分、胜场与竞速纪录彼此独立", NamedTextColor.DARK_GRAY),
-                        Component.text("计时纪录始终按游戏地图区分", NamedTextColor.YELLOW)
+                        Component.text(boards.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-002"), NamedTextColor.WHITE)
+                                .append(Component.text(GuiConfig.text("common.separator") + totalRows + GuiConfig.text("api-daily-dailyleaderboardmenu.text-003"), NamedTextColor.GRAY)),
+                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-004"), NamedTextColor.DARK_GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-005"), NamedTextColor.YELLOW)
                 ), false));
         inventory.setItem(RECORD_SLOT, personalRecords(holder.viewer));
 
@@ -157,17 +159,17 @@ public final class DailyLeaderboardMenu {
             holder.boardsBySlot.put(slot, board.id());
         }
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text("返回游戏选择", NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
-                List.of(Component.text("继续加入或调整自由匹配", NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-006"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-007"), NamedTextColor.DARK_GRAY)), false));
         if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW,
-                Component.text("上一页", NamedTextColor.WHITE), List.of(), false));
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-008"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(REFRESH_SLOT, refreshItem());
         inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                Component.text("第 " + (holder.page + 1) + " / " + holder.pageCount + " 页", NamedTextColor.AQUA)
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-009") + (holder.page + 1) + "/" + holder.pageCount + GuiConfig.text("api-daily-dailyleaderboardmenu.text-010"), NamedTextColor.AQUA)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(boards.size() + " 个榜单分类", NamedTextColor.GRAY)), false));
+                List.of(Component.text(boards.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-002"), NamedTextColor.GRAY)), false));
         if (holder.page + 1 < holder.pageCount) inventory.setItem(NEXT_SLOT, item(Material.ARROW,
-                Component.text("下一页", NamedTextColor.WHITE), List.of(), false));
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-011"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(CLOSE_SLOT, closeItem());
     }
 
@@ -188,24 +190,24 @@ public final class DailyLeaderboardMenu {
             inventory.setItem(slot, rowItem(entries.get(index), index + 1, holder.viewer));
         }
         if (entries.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text("暂无上榜记录", NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-012"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text("完成一场对应游戏后，纪录会显示在这里", NamedTextColor.DARK_GRAY),
-                        Component.text("排行榜只读取本模式数据", NamedTextColor.YELLOW)
+                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-013"), NamedTextColor.DARK_GRAY),
+                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-014"), NamedTextColor.YELLOW)
                 ), false));
 
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text("返回榜单分类", NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-015"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
                 List.of(Component.text(board.title(), NamedTextColor.DARK_GRAY)), false));
         if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW,
-                Component.text("上一页", NamedTextColor.WHITE), List.of(), false));
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-008"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(REFRESH_SLOT, refreshItem());
         inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                Component.text("第 " + (holder.page + 1) + " / " + holder.pageCount + " 页", NamedTextColor.AQUA)
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-009") + (holder.page + 1) + "/" + holder.pageCount + GuiConfig.text("api-daily-dailyleaderboardmenu.text-010"), NamedTextColor.AQUA)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(entries.size() + " 条有效纪录", NamedTextColor.GRAY)), false));
+                List.of(Component.text(entries.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-016"), NamedTextColor.GRAY)), false));
         if (holder.page + 1 < holder.pageCount) inventory.setItem(NEXT_SLOT, item(Material.ARROW,
-                Component.text("下一页", NamedTextColor.WHITE), List.of(), false));
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-011"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(CLOSE_SLOT, closeItem());
     }
 
@@ -213,30 +215,30 @@ public final class DailyLeaderboardMenu {
         DailyStatSnapshot stat = stats.stat(viewer, null);
         int position = position(stats.leaderboard("wins"), viewer);
         return playerHead(viewer,
-                Component.text("我的榜单名片", NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-017"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text("总榜  ", NamedTextColor.GRAY)
-                                .append(Component.text(position < 0 ? "尚未上榜" : "#" + position,
+                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-018"), NamedTextColor.GRAY)
+                                .append(Component.text(position < 0 ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-019") : "#" + position,
                                         position < 0 ? NamedTextColor.DARK_GRAY : NamedTextColor.GOLD)),
-                        Component.text("战绩  ", NamedTextColor.GRAY).append(Component.text(stat.gamesPlayed() + " 场 · " + stat.wins() + " 胜", NamedTextColor.GREEN)),
-                        Component.text("胜率  ", NamedTextColor.GRAY).append(Component.text(winRate(stat), NamedTextColor.YELLOW)),
+                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-020"), NamedTextColor.GRAY).append(Component.text(stat.gamesPlayed() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-021") + stat.wins() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-022"), NamedTextColor.GREEN)),
+                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-023"), NamedTextColor.GRAY).append(Component.text(winRate(stat), NamedTextColor.YELLOW)),
                         Component.empty(),
-                        Component.text("选择下方分类查看详细名次", NamedTextColor.DARK_GRAY)
+                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-024"), NamedTextColor.DARK_GRAY)
                 ), position > 0);
     }
 
     private ItemStack personalRecords(UUID viewer) {
         List<Component> lore = new ArrayList<>();
-        appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FIRST_LINE, "首次连线");
-        appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FULL_CARD, "全收集");
-        appendPersonalRecords(lore, viewer, GameTypeEnum.AceRace, DailyRecordType.ACERACE_FASTEST_LAP, "最快单圈");
+        appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FIRST_LINE, GuiConfig.text("api-daily-dailyleaderboardmenu.text-025"));
+        appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FULL_CARD, GuiConfig.text("api-daily-dailyleaderboardmenu.text-026"));
+        appendPersonalRecords(lore, viewer, GameTypeEnum.AceRace, DailyRecordType.ACERACE_FASTEST_LAP, GuiConfig.text("api-daily-dailyleaderboardmenu.text-027"));
         appendPersonalRecords(lore, viewer, GameTypeEnum.AceRace,
-                DailyRecordType.ACERACE_FASTEST_THREE_LAPS, "最快完整三圈");
-        if (lore.isEmpty()) lore.add(Component.text("完成 Bingo 或 AceRace 后解锁", NamedTextColor.DARK_GRAY));
+                DailyRecordType.ACERACE_FASTEST_THREE_LAPS, GuiConfig.text("api-daily-dailyleaderboardmenu.text-028"));
+        if (lore.isEmpty()) lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-029"), NamedTextColor.DARK_GRAY));
         lore.add(Component.empty());
-        lore.add(Component.text("不同地图的时间不会混合排名", NamedTextColor.YELLOW));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-030"), NamedTextColor.YELLOW));
         return item(Material.CLOCK,
-                Component.text("我的计时纪录", NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD), lore, false);
+                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-031"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD), lore, false);
     }
 
     private void appendPersonalRecords(List<Component> lore, UUID viewer, GameTypeEnum game,
@@ -244,9 +246,9 @@ public final class DailyLeaderboardMenu {
         for (String map : knownMaps(game)) {
             long record = stats.bestRecord(viewer, game, map, type);
             if (record < 0) continue;
-            lore.add(Component.text(label + "  ", NamedTextColor.GRAY)
+            lore.add(Component.text(label, NamedTextColor.GRAY)
                     .append(Component.text(formatDuration(record), NamedTextColor.GOLD))
-                    .append(Component.text("  ·  " + map, NamedTextColor.DARK_GRAY)));
+                    .append(Component.text(GuiConfig.text("common.separator") + map, NamedTextColor.DARK_GRAY)));
         }
     }
 
@@ -258,24 +260,24 @@ public final class DailyLeaderboardMenu {
         lore.add(Component.text(board.description(), NamedTextColor.GRAY));
         lore.add(Component.empty());
         if (entries.isEmpty()) {
-            lore.add(Component.text("暂无上榜记录", NamedTextColor.DARK_GRAY));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-012"), NamedTextColor.DARK_GRAY));
         } else {
-            lore.add(Component.text("榜首  ", NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-032"), NamedTextColor.GRAY)
                     .append(Component.text(entries.getFirst().name(), NamedTextColor.GOLD))
-                    .append(Component.text("  ·  " + value(entries.getFirst()), NamedTextColor.WHITE)));
+                    .append(Component.text(GuiConfig.text("common.separator") + value(entries.getFirst()), NamedTextColor.WHITE)));
             for (int index = 1; index < Math.min(3, entries.size()); index++) {
                 DailyLeaderboardEntry entry = entries.get(index);
                 lore.add(Component.text("#" + (index + 1) + "  ", NamedTextColor.DARK_GRAY)
                         .append(Component.text(entry.name(), NamedTextColor.WHITE))
-                        .append(Component.text("  ·  " + value(entry), NamedTextColor.GRAY)));
+                        .append(Component.text(GuiConfig.text("common.separator") + value(entry), NamedTextColor.GRAY)));
             }
         }
         lore.add(Component.empty());
-        lore.add(Component.text(viewerPosition < 0 ? "我的名次  尚未上榜" : "我的名次  #" + viewerPosition,
+        lore.add(Component.text(viewerPosition < 0 ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-033") : GuiConfig.text("api-daily-dailyleaderboardmenu.text-034") + viewerPosition,
                 viewerPosition < 0 ? NamedTextColor.DARK_GRAY : NamedTextColor.AQUA));
-        lore.add(Component.text(entries.size() + " 位玩家上榜", NamedTextColor.DARK_GRAY));
+        lore.add(Component.text(entries.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-035"), NamedTextColor.DARK_GRAY));
         lore.add(Component.empty());
-        lore.add(Component.text("点击查看完整榜单", NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+        lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-036"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
         Component marker = viewerPosition > 0 ? Component.text("✓ ", NamedTextColor.AQUA) : Component.empty();
         return item(board.material(), marker.append(Component.text(board.title(), board.color()))
                 .decorate(TextDecoration.BOLD), lore, viewerPosition > 0);
@@ -285,11 +287,11 @@ public final class DailyLeaderboardMenu {
         int viewerPosition = position(entries, viewer);
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text(board.category(), NamedTextColor.GRAY));
-        lore.add(Component.text(entries.size() + " 位玩家拥有有效记录", NamedTextColor.WHITE));
-        if (!entries.isEmpty()) lore.add(Component.text("榜首  ", NamedTextColor.GRAY)
+        lore.add(Component.text(entries.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-037"), NamedTextColor.WHITE));
+        if (!entries.isEmpty()) lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-032"), NamedTextColor.GRAY)
                 .append(Component.text(entries.getFirst().name(), NamedTextColor.GOLD))
-                .append(Component.text("  ·  " + value(entries.getFirst()), NamedTextColor.WHITE)));
-        lore.add(Component.text(viewerPosition < 0 ? "我尚未上榜" : "我的名次  #" + viewerPosition,
+                .append(Component.text(GuiConfig.text("common.separator") + value(entries.getFirst()), NamedTextColor.WHITE)));
+        lore.add(Component.text(viewerPosition < 0 ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-038") : GuiConfig.text("api-daily-dailyleaderboardmenu.text-034") + viewerPosition,
                 viewerPosition < 0 ? NamedTextColor.DARK_GRAY : NamedTextColor.AQUA));
         return item(board.material(), Component.text(board.title(), board.color()).decorate(TextDecoration.BOLD), lore,
                 viewerPosition > 0);
@@ -305,12 +307,12 @@ public final class DailyLeaderboardMenu {
                 .append(Component.text(entry.name(), entry.player().equals(viewer) ? NamedTextColor.GREEN : NamedTextColor.WHITE))
                 .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(entry.duration() ? "最佳用时  " : "榜单数值  ", NamedTextColor.GRAY)
+        lore.add(Component.text(entry.duration() ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-039") : GuiConfig.text("api-daily-dailyleaderboardmenu.text-040"), NamedTextColor.GRAY)
                 .append(Component.text(value(entry), NamedTextColor.GOLD)));
-        if (rank <= 3) lore.add(Component.text(rank == 1 ? "★ 当前榜首" : "◆ 领奖台纪录", rankColor));
+        if (rank <= 3) lore.add(Component.text(rank == 1 ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-041") : GuiConfig.text("api-daily-dailyleaderboardmenu.text-042"), rankColor));
         if (entry.player().equals(viewer)) {
             lore.add(Component.empty());
-            lore.add(Component.text("这是你的纪录", NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-043"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
         }
         meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
         meta.setEnchantmentGlintOverride(entry.player().equals(viewer));
@@ -321,24 +323,24 @@ public final class DailyLeaderboardMenu {
     private List<Board> boards() {
         List<Board> boards = new ArrayList<>();
         boards.add(new Board("wins", MessageConfig.DAILY_LEADERBOARD_WINS, Material.GOLDEN_SWORD,
-                NamedTextColor.GREEN, "综合战绩", "累计所有模式项目的胜场"));
+                NamedTextColor.GREEN, GuiConfig.text("api-daily-dailyleaderboardmenu.text-044"), GuiConfig.text("api-daily-dailyleaderboardmenu.text-045")));
         for (String map : knownMaps(GameTypeEnum.Bingo)) {
             String slug = DailyStatsManager.mapSlug(map);
             boards.add(new Board("bingo_first_line_" + slug, replace(
                     MessageConfig.DAILY_LEADERBOARD_BINGO_FIRST_LINE, "%map%", map), Material.MAP,
-                    NamedTextColor.LIGHT_PURPLE, "宾果 · " + map, "从开场到首次完成任意连线的最快时间"));
+                    NamedTextColor.LIGHT_PURPLE, GuiConfig.text("api-daily-dailyleaderboardmenu.text-046") + map, GuiConfig.text("api-daily-dailyleaderboardmenu.text-047")));
             boards.add(new Board("bingo_full_card_" + slug, replace(
                     MessageConfig.DAILY_LEADERBOARD_BINGO_FULL_CARD, "%map%", map), Material.FILLED_MAP,
-                    NamedTextColor.GOLD, "宾果 · " + map, "从开场到完成整张卡片的最快时间"));
+                    NamedTextColor.GOLD, GuiConfig.text("api-daily-dailyleaderboardmenu.text-046") + map, GuiConfig.text("api-daily-dailyleaderboardmenu.text-048")));
         }
         for (String map : knownMaps(GameTypeEnum.AceRace)) {
             String slug = DailyStatsManager.mapSlug(map);
             boards.add(new Board("acerace_fastest_lap_" + slug, replace(
                     MessageConfig.DAILY_LEADERBOARD_ACERACE_FASTEST_LAP, "%map%", map), Material.CLOCK,
-                    NamedTextColor.AQUA, "王牌竞速 · " + map, "该地图完整合法单圈的最快时间"));
+                    NamedTextColor.AQUA, GuiConfig.text("api-daily-dailyleaderboardmenu.text-049") + map, GuiConfig.text("api-daily-dailyleaderboardmenu.text-050")));
             boards.add(new Board("acerace_fastest_three_laps_" + slug, replace(
                     MessageConfig.DAILY_LEADERBOARD_ACERACE_FASTEST_THREE_LAPS, "%map%", map), Material.CLOCK,
-                    NamedTextColor.GOLD, "王牌竞速 · " + map, "该地图完整三圈的最快时间"));
+                    NamedTextColor.GOLD, GuiConfig.text("api-daily-dailyleaderboardmenu.text-049") + map, GuiConfig.text("api-daily-dailyleaderboardmenu.text-051")));
         }
         return List.copyOf(boards);
     }
@@ -354,7 +356,7 @@ public final class DailyLeaderboardMenu {
 
     private Board findBoard(String id) {
         return boards().stream().filter(board -> board.id().equals(id)).findFirst()
-                .orElse(new Board(id, id, Material.PAPER, NamedTextColor.WHITE, "本模式", "历史榜单"));
+                .orElse(new Board(id, id, Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("api-daily-dailyleaderboardmenu.text-052"), GuiConfig.text("api-daily-dailyleaderboardmenu.text-053")));
     }
 
     private static void drawBorder(Inventory inventory) {
@@ -364,12 +366,12 @@ public final class DailyLeaderboardMenu {
     }
 
     private static ItemStack refreshItem() {
-        return item(Material.CLOCK, Component.text("刷新", NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text("榜单读取内存缓存，不会阻塞游戏", NamedTextColor.DARK_GRAY)), false);
+        return item(Material.CLOCK, Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-054"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-055"), NamedTextColor.DARK_GRAY)), false);
     }
 
     private static ItemStack closeItem() {
-        return item(Material.BARRIER, Component.text("关闭", NamedTextColor.RED), List.of(), false);
+        return item(Material.BARRIER, Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-056"), NamedTextColor.RED), List.of(), false);
     }
 
     private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
@@ -430,7 +432,7 @@ public final class DailyLeaderboardMenu {
     }
 
     private static String value(DailyLeaderboardEntry entry) {
-        return entry.duration() ? formatDuration((long) entry.value()) : (long) entry.value() + " 胜";
+        return entry.duration() ? formatDuration((long) entry.value()) : (long) entry.value() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-022");
     }
 
     private static String winRate(DailyStatSnapshot stat) {

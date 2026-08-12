@@ -91,11 +91,21 @@ public final class CCLogManager implements AutoCloseable {
         private void run() {
             try {
                 boolean stop = false;
+                long lastFlush = System.nanoTime();
                 while (!stop) {
-                    Item item = queue.take();
+                    Item item = queue.poll(1, TimeUnit.SECONDS);
                     if (item instanceof Entry entry) write(entry);
-                    else if (item instanceof Barrier barrier) { writer.flush(); barrier.latch.countDown(); }
-                    else stop = true;
+                    else if (item instanceof Barrier barrier) {
+                        writer.flush();
+                        lastFlush = System.nanoTime();
+                        barrier.latch.countDown();
+                    } else if (item == Stop.INSTANCE) stop = true;
+
+                    long now = System.nanoTime();
+                    if (!stop && (item == null || now - lastFlush >= TimeUnit.SECONDS.toNanos(1))) {
+                        writer.flush();
+                        lastFlush = now;
+                    }
                 }
                 Item item;
                 while ((item = queue.poll()) != null) {
