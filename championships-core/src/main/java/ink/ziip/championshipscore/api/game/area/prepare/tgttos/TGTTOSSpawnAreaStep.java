@@ -48,10 +48,10 @@ public final class TGTTOSSpawnAreaStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-tgttos-tgttosspawnareastep.text-001"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.games.tgttos.steps.spawn-area.please-use-worldedit-to-select-two-endpoints-first"));
         }
         if (selection[0].getBlockY() != selection[1].getBlockY()) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-tgttos-tgttosspawnareastep.text-002"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.games.tgttos.steps.spawn-area.the-generated-area-must-be-a-worldedit-selection-that-is-exactly-one-block-high"));
         }
 
         TGTTOSConfig config = (TGTTOSConfig) session.getTarget().config();
@@ -66,7 +66,7 @@ public final class TGTTOSSpawnAreaStep extends PrepareStep {
         }
         session.markDirty();
         return Utils.formatAdminSuccess(spawnType == SpawnType.CHICKEN
-                ? GuiConfig.text("prepare-tgttos-tgttosspawnareastep.text-003")
-                : GuiConfig.text("prepare-tgttos-tgttosspawnareastep.text-004"));
+                ? GuiConfig.text("map-editor.games.tgttos.steps.spawn-area.chicken-spawn-area-set")
+                : GuiConfig.text("map-editor.games.tgttos.steps.spawn-area.player-spawn-area-set"));
     }
 }

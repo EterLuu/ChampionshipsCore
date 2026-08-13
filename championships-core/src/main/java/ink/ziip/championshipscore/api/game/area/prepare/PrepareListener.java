@@ -226,6 +226,7 @@ public class PrepareListener extends BaseListener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        AnvilInputGui.close(event.getPlayer());
         if (manager.getSession(event.getPlayer()) != null) {
             manager.exitSession(event.getPlayer());
         }

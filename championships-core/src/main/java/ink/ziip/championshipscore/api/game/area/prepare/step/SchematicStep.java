@@ -58,10 +58,10 @@ public class SchematicStep extends PrepareStep {
         } catch (Exception e) {
             String detail = e.getMessage();
             if (detail == null || detail.isBlank()) detail = e.getClass().getSimpleName();
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-schematicstep.text-001") + detail);
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.schematic.failed-to-save-template-please-check-worldedit-selection") + detail);
         }
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-schematicstep.text-002") + file.getName());
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.schematic.venue-template-saved") + file.getName());
     }
 
     /** Allows game-specific steps to persist metadata that cannot be recovered reliably from the file. */

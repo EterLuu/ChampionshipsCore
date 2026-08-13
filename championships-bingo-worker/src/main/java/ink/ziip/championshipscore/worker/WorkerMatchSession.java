@@ -43,6 +43,8 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Note;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -78,6 +80,8 @@ final class WorkerMatchSession {
     private final WorkerReturnRouter returnRouter;
     private final Runnable worldReset;
     private final PlatformScheduler scheduler;
+    private final NamespacedKey cardKey;
+    private final NamespacedKey spectatorControlKey;
     private final SafeScatterService scatter;
     private final MatchStateMachine lifecycle = new MatchStateMachine();
     private final BingoScoringEngine scoring;
@@ -119,6 +123,8 @@ final class WorkerMatchSession {
         this.returnRouter = returnRouter;
         this.worldReset = worldReset;
         this.scheduler = new PlatformScheduler(plugin);
+        this.cardKey = new NamespacedKey(plugin, "bingo_card");
+        this.spectatorControlKey = new NamespacedKey(plugin, "spectator_control");
         this.scatter = new SafeScatterService(plugin);
         this.scoring = new BingoScoringEngine(manifest);
         this.objectives = new WorkerObjectives(manifest.tasks());
@@ -751,7 +757,7 @@ final class WorkerMatchSession {
     Integer boundCardTeam(ItemStack item) {
         if (item == null || item.getType() != Material.FILLED_MAP) return null;
         String value = item.getItemMeta().getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "bingo_card"), PersistentDataType.STRING);
+                cardKey, PersistentDataType.STRING);
         if (value == null) return null;
         String prefix = manifest.matchId() + ":";
         if (!value.startsWith(prefix)) return null;
@@ -843,7 +849,6 @@ final class WorkerMatchSession {
     private ItemStack cardItem(int teamId) {
         MapView view = cardViews.get(teamId);
         if (view == null) return null;
-        NamespacedKey key = new NamespacedKey(plugin, "bingo_card");
         ItemStack card = new ItemStack(Material.FILLED_MAP);
         card.editMeta(MapMeta.class, meta -> {
             meta.setMapView(view);
@@ -852,7 +857,7 @@ final class WorkerMatchSession {
                     .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
             meta.lore(List.of(message("card.map_hint")
                     .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)));
-            meta.getPersistentDataContainer().set(key, PersistentDataType.STRING,
+            meta.getPersistentDataContainer().set(cardKey, PersistentDataType.STRING,
                     manifest.matchId() + ":" + teamId);
         });
         return card;
@@ -976,7 +981,7 @@ final class WorkerMatchSession {
         ItemMeta meta = control.getItemMeta();
         if (meta == null) return false;
         String action = meta.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "spectator_control"), PersistentDataType.STRING);
+                spectatorControlKey, PersistentDataType.STRING);
         if (action == null) return false;
         if (action.equals("tracking")) {
             if (rightClick) {
@@ -1045,7 +1050,7 @@ final class WorkerMatchSession {
         ItemMeta meta = item.getItemMeta();
         meta.displayName(name.decoration(TextDecoration.ITALIC, false));
         meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
-        meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "spectator_control"),
+        meta.getPersistentDataContainer().set(spectatorControlKey,
                 PersistentDataType.STRING, action);
         item.setItemMeta(meta);
         return item;
@@ -1061,7 +1066,8 @@ final class WorkerMatchSession {
     }
 
     private void resetVitals(Player player) {
-        player.setHealth(Math.min(20.0, player.getMaxHealth()));
+        AttributeInstance maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
+        player.setHealth(Math.min(20.0, maxHealth == null ? player.getHealth() : maxHealth.getValue()));
         player.setFoodLevel(20);
         player.setFireTicks(0);
         player.setFallDistance(0F);

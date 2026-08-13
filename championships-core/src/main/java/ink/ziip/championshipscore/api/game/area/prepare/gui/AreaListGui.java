@@ -68,7 +68,7 @@ public final class AreaListGui {
         int rows = Math.max(3, Math.min(6, (needed + 8) / 9));
         Holder holder = new Holder(gameType);
         Inventory inv = Bukkit.createInventory(holder, rows * 9,
-                Component.text(gameType + GuiConfig.text("prepare-gui-arealistgui.text-001")).decoration(TextDecoration.ITALIC, false));
+                Component.text(gameType + GuiConfig.text("map-editor.menus.area-list.venue-list")).decoration(TextDecoration.ITALIC, false));
         holder.setInventory(inv);
 
         int slot = 0;
@@ -82,13 +82,13 @@ public final class AreaListGui {
             }
             ItemStack item = PrepareKeys.item(Material.PAPER,
                     Component.text(name).color(NamedTextColor.WHITE),
-                    List.of(Component.text(GuiConfig.text("prepare-gui-arealistgui.text-002") + done + "/" + total).color(NamedTextColor.GRAY),
+                    List.of(Component.text(GuiConfig.text("map-editor.menus.area-list.configuration-progress") + done + "/" + total).color(NamedTextColor.GRAY),
                             Component.text(target != null && target.config().isPrepareReady()
-                                    ? GuiConfig.text("prepare-gui-arealistgui.text-003") : GuiConfig.text("prepare-gui-arealistgui.text-004")).color(
+                                    ? GuiConfig.text("map-editor.menus.area-list.published") : GuiConfig.text("map-editor.menus.area-list.draft-with-unpublished-changes")).color(
                                     target != null && target.config().isPrepareReady()
                                             ? NamedTextColor.GREEN : NamedTextColor.YELLOW),
-                            Component.text(GuiConfig.text("prepare-gui-arealistgui.text-005")).color(NamedTextColor.AQUA),
-                            Component.text(GuiConfig.text("prepare-gui-arealistgui.text-006")).color(NamedTextColor.RED)));
+                            Component.text(GuiConfig.text("map-editor.menus.area-list.left-click-to-enter-editing")).color(NamedTextColor.AQUA),
+                            Component.text(GuiConfig.text("map-editor.menus.area-list.right-click-to-delete-map-configuration-keep-world")).color(NamedTextColor.RED)));
             inv.setItem(slot, item);
             holder.slotToArea.put(slot, name);
             slot++;
@@ -96,13 +96,13 @@ public final class AreaListGui {
 
         holder.newSlot = slot;
         inv.setItem(slot, PrepareKeys.item(Material.EMERALD,
-                Component.text(GuiConfig.text("prepare-gui-arealistgui.text-007")).color(NamedTextColor.GREEN),
-                List.of(Component.text(GuiConfig.text("prepare-gui-arealistgui.text-008")).color(NamedTextColor.GRAY))));
+                Component.text(GuiConfig.text("map-editor.menus.area-list.create-new-map")).color(NamedTextColor.GREEN),
+                List.of(Component.text(GuiConfig.text("map-editor.menus.area-list.click-and-enter-the-map-name")).color(NamedTextColor.GRAY))));
 
         holder.closeSlot = rows * 9 - 1;
         inv.setItem(holder.closeSlot, PrepareKeys.item(Material.BARRIER,
-                Component.text(GuiConfig.text("prepare-gui-arealistgui.text-009")).color(NamedTextColor.RED),
-                List.of(Component.text(GuiConfig.text("prepare-gui-arealistgui.text-010")).color(NamedTextColor.GRAY))));
+                Component.text(GuiConfig.text("map-editor.menus.area-list.close")).color(NamedTextColor.RED),
+                List.of(Component.text(GuiConfig.text("map-editor.menus.area-list.click-to-close-menu")).color(NamedTextColor.GRAY))));
 
         player.openInventory(inv);
     }
@@ -121,7 +121,7 @@ public final class AreaListGui {
                         || holder.deleteConfirmationExpiresAt < System.currentTimeMillis()) {
                     holder.deleteConfirmation = areaName;
                     holder.deleteConfirmationExpiresAt = System.currentTimeMillis() + 30_000L;
-                    player.sendMessage(Component.text(GuiConfig.text("prepare-gui-arealistgui.text-011"))
+                    player.sendMessage(Component.text(GuiConfig.text("map-editor.menus.area-list.delete-map-confirmation"))
                             .color(NamedTextColor.RED));
                     return;
                 }

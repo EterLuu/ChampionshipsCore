@@ -57,7 +57,7 @@ public final class CountdownBlockDisappearanceGui {
                             @NotNull CountdownBlockDisappearanceStep step) {
         Holder holder = new Holder(session, step);
         holder.inventory = Bukkit.createInventory(holder, 27,
-                Component.text(GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-001")).decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("map-editor.menus.countdown-blocks.the-countdown-block-disappears")).decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -107,9 +107,9 @@ public final class CountdownBlockDisappearanceGui {
         Vector first = config.getCountdownBlockDisappearancePos1();
         Vector second = config.getCountdownBlockDisappearancePos2();
         boolean enabled = first != null && second != null;
-        String selection = enabled ? GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-002") + volume(first, second) + GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-003") : GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-004");
-        inventory.setItem(SELECTION_SLOT, item(Material.GOLDEN_AXE, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-005"),
-                NamedTextColor.AQUA, selection, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-006")));
+        String selection = enabled ? GuiConfig.text("map-editor.menus.countdown-blocks.already-set") + volume(first, second) + GuiConfig.text("map-editor.menus.countdown-blocks.blocks") : GuiConfig.text("map-editor.menus.countdown-blocks.not-set-function-turned-off");
+        inventory.setItem(SELECTION_SLOT, item(Material.GOLDEN_AXE, GuiConfig.text("map-editor.menus.countdown-blocks.set-the-current-worldedit-selection"),
+                NamedTextColor.AQUA, selection, GuiConfig.text("map-editor.menus.countdown-blocks.click-to-read-the-current-selection")));
 
         CountdownBlockDisappearanceStep.Mode current =
                 CountdownBlockDisappearanceStep.Mode.from(config.getCountdownBlockDisappearanceMode());
@@ -118,9 +118,9 @@ public final class CountdownBlockDisappearanceGui {
         inventory.setItem(NORTH_SOUTH_SLOT, modeItem(CountdownBlockDisappearanceStep.Mode.DOOR_NORTH_SOUTH, current, enabled));
         inventory.setItem(VERTICAL_SLOT, modeItem(CountdownBlockDisappearanceStep.Mode.DOOR_VERTICAL, current, enabled));
         inventory.setItem(DIRECT_SLOT, modeItem(CountdownBlockDisappearanceStep.Mode.DIRECT, current, enabled));
-        inventory.setItem(CLEAR_SLOT, item(Material.BARRIER, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-007"), NamedTextColor.RED,
-                GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-008")));
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-009"), NamedTextColor.WHITE, GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-010")));
+        inventory.setItem(CLEAR_SLOT, item(Material.BARRIER, GuiConfig.text("map-editor.menus.countdown-blocks.close-and-clear-selection"), NamedTextColor.RED,
+                GuiConfig.text("map-editor.menus.countdown-blocks.delete-the-saved-block-and-disappear-the-selection")));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.menus.countdown-blocks.return"), NamedTextColor.WHITE, GuiConfig.text("map-editor.menus.countdown-blocks.return-to-preparation-steps")));
         for (int slot : new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 18, 19, 20, 21, 23, 24, 25, 26})
             inventory.setItem(slot, filler());
     }
@@ -129,8 +129,8 @@ public final class CountdownBlockDisappearanceGui {
                                       @NotNull CountdownBlockDisappearanceStep.Mode current,
                                       boolean enabled) {
         return item(mode.icon(), mode.displayName(), mode == current ? NamedTextColor.GREEN : NamedTextColor.WHITE,
-                mode == current ? GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-011") : GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-012"),
-                enabled ? GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-013") : GuiConfig.text("prepare-gui-countdownblockdisappearancegui.text-014"));
+                mode == current ? GuiConfig.text("map-editor.menus.countdown-blocks.current-approach") : GuiConfig.text("map-editor.menus.countdown-blocks.click-to-select"),
+                enabled ? GuiConfig.text("map-editor.menus.countdown-blocks.will-be-completed-3-seconds-before-the-countdown-to-the-start-of-the-game") : GuiConfig.text("map-editor.menus.countdown-blocks.please-set-up-worldedit-selection-first"));
     }
 
     private static ItemStack item(@NotNull Material material, @NotNull String name,

@@ -51,7 +51,7 @@ public final class StepMenuGui {
     public static void open(@NotNull Player player, @NotNull PrepareSession session) {
         Holder holder = new Holder(session);
         Inventory inventory = Bukkit.createInventory(holder, 54,
-                Component.text(GuiConfig.text("prepare-gui-stepmenugui.text-001")).decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("map-editor.menus.step-list.preparatory-steps")).decoration(TextDecoration.ITALIC, false));
         holder.inventory = inventory;
         refresh(holder);
         player.openInventory(inventory);
@@ -75,16 +75,16 @@ public final class StepMenuGui {
         }
 
         inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? menuItem(Material.ARROW, GuiConfig.text("prepare-gui-stepmenugui.text-002"), NamedTextColor.WHITE, GuiConfig.text("prepare-gui-stepmenugui.text-003") + holder.page + GuiConfig.text("prepare-gui-stepmenugui.text-004"))
-                : menuItem(Material.GRAY_STAINED_GLASS_PANE, GuiConfig.text("prepare-gui-stepmenugui.text-001"), NamedTextColor.DARK_GRAY,
-                GuiConfig.text("prepare-gui-stepmenugui.text-005") + session.getSteps().size() + GuiConfig.text("prepare-gui-stepmenugui.text-006")));
-        inventory.setItem(BACK_SLOT, menuItem(Material.BARRIER, GuiConfig.text("prepare-gui-stepmenugui.text-007"), NamedTextColor.RED,
-                GuiConfig.text("prepare-gui-stepmenugui.text-008")));
+                ? menuItem(Material.ARROW, GuiConfig.text("map-editor.menus.step-list.previous-page"), NamedTextColor.WHITE, GuiConfig.text("map-editor.menus.step-list.ordinal-prefix") + holder.page + GuiConfig.text("map-editor.menus.step-list.page-suffix"))
+                : menuItem(Material.GRAY_STAINED_GLASS_PANE, GuiConfig.text("map-editor.menus.step-list.preparatory-steps"), NamedTextColor.DARK_GRAY,
+                GuiConfig.text("map-editor.menus.step-list.total-prefix") + session.getSteps().size() + GuiConfig.text("map-editor.menus.step-list.item-suffix")));
+        inventory.setItem(BACK_SLOT, menuItem(Material.BARRIER, GuiConfig.text("map-editor.menus.step-list.return-to-hotkey-bar"), NamedTextColor.RED,
+                GuiConfig.text("map-editor.menus.step-list.close-step-menu")));
         inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount
-                ? menuItem(Material.ARROW, GuiConfig.text("prepare-gui-stepmenugui.text-009"), NamedTextColor.WHITE,
-                GuiConfig.text("prepare-gui-stepmenugui.text-003") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("prepare-gui-stepmenugui.text-004"))
-                : menuItem(Material.GRAY_STAINED_GLASS_PANE, GuiConfig.text("prepare-gui-stepmenugui.text-010"), NamedTextColor.DARK_GRAY,
-                GuiConfig.text("prepare-gui-stepmenugui.text-011")));
+                ? menuItem(Material.ARROW, GuiConfig.text("map-editor.menus.step-list.next-page"), NamedTextColor.WHITE,
+                GuiConfig.text("map-editor.menus.step-list.ordinal-prefix") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("map-editor.menus.step-list.page-suffix"))
+                : menuItem(Material.GRAY_STAINED_GLASS_PANE, GuiConfig.text("map-editor.menus.step-list.already-the-last-page"), NamedTextColor.DARK_GRAY,
+                GuiConfig.text("map-editor.menus.step-list.no-more-steps")));
     }
 
     public static void handleClick(@NotNull PrepareSessionManager manager, @NotNull InventoryClickEvent event,
@@ -140,17 +140,17 @@ public final class StepMenuGui {
         boolean set = step.isSet(session);
         String customState = step.stateText(session);
         String state = customState != null ? customState : switch (step.captureType()) {
-            case CONFIRM_WORLD -> session.isWorldConfirmed() ? GuiConfig.text("prepare-gui-stepmenugui.text-012") : GuiConfig.text("prepare-gui-stepmenugui.text-013");
-            case STAMP -> session.isStamped() ? GuiConfig.text("prepare-gui-stepmenugui.text-014") : GuiConfig.text("prepare-gui-stepmenugui.text-015");
-            case LIST -> set ? GuiConfig.text("prepare-gui-stepmenugui.text-016") + step.listCount(session) + GuiConfig.text("prepare-gui-stepmenugui.text-017") : GuiConfig.text("prepare-gui-stepmenugui.text-018");
-            default -> set ? GuiConfig.text("prepare-gui-stepmenugui.text-019") : GuiConfig.text("prepare-gui-stepmenugui.text-018");
+            case CONFIRM_WORLD -> session.isWorldConfirmed() ? GuiConfig.text("map-editor.menus.step-list.confirmed-world") : GuiConfig.text("map-editor.menus.step-list.to-be-confirmed");
+            case STAMP -> session.isStamped() ? GuiConfig.text("map-editor.menus.step-list.stamped-and-generated") : GuiConfig.text("map-editor.menus.step-list.to-be-stamped");
+            case LIST -> set ? GuiConfig.text("map-editor.menus.step-list.already-set") + step.listCount(session) + GuiConfig.text("map-editor.menus.step-list.item-count-suffix") : GuiConfig.text("map-editor.menus.step-list.to-be-set");
+            default -> set ? GuiConfig.text("map-editor.menus.step-list.set-status") : GuiConfig.text("map-editor.menus.step-list.to-be-set");
         };
         ItemStack item = PrepareKeys.item(step.icon(),
                 Component.text(number + ". ").color(NamedTextColor.GRAY)
                         .append(step.displayName().color(NamedTextColor.WHITE)),
                 List.of(step.description().color(NamedTextColor.GRAY),
                         Component.text(state).color(set ? NamedTextColor.GREEN : NamedTextColor.YELLOW),
-                        Component.text(GuiConfig.text("prepare-gui-stepmenugui.text-020")).color(NamedTextColor.AQUA)));
+                        Component.text(GuiConfig.text("map-editor.menus.step-list.click-to-edit")).color(NamedTextColor.AQUA)));
         PrepareKeys.setStep(item, step.key());
         return item;
     }

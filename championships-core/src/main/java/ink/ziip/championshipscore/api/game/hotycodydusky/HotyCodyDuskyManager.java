@@ -37,7 +37,7 @@ public class HotyCodyDuskyManager extends BaseGameInstanceManager<HotyCodyDuskyT
     public void unload() {
         for (HotyCodyDuskyTeamArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+                area.abortAndReset();
             }
         }
         clearAreas();

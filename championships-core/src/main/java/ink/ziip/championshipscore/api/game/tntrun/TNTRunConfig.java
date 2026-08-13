@@ -116,10 +116,10 @@ public class TNTRunConfig extends BaseGameConfig {
     @Override
     protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
                                                   @NotNull YamlConfiguration migratedConfiguration) {
-        // Prepared copies must be anchored to the hand-built source selection. Older prepared maps did
-        // not persist that selection and therefore derived every generated copy from the wrong origin.
-        if (oldConfiguration.getInt("copies", 0) > 0
-                && (!oldConfiguration.contains("area-pos1") || !oldConfiguration.contains("area-pos2"))) {
+        // A copy-based map is runtime-complete when it already persists the explicit grid, schematic
+        // dimensions and copy-0 spawn. The WorldEdit selection is prepare-only metadata in that case;
+        // requiring it would incorrectly lock previously published maps whose runtime layout is sound.
+        if (requiresCopyLayoutRepublish(oldConfiguration)) {
             migratedConfiguration.set("prepare.published", false);
             migratedConfiguration.set("prepare.dirty", true);
         }
@@ -136,5 +136,15 @@ public class TNTRunConfig extends BaseGameConfig {
                 && !oldConfiguration.getStringList("spawn-points").isEmpty()) {
             migratedConfiguration.set("prepare.dirty", false);
         }
+    }
+
+    static boolean requiresCopyLayoutRepublish(@NotNull YamlConfiguration configuration) {
+        boolean hasCompleteCopyLayout = configuration.getVector("copy-layout.origin") != null
+                && configuration.getVector("copy-layout.step") != null
+                && configuration.getVector("copy-size") != null
+                && configuration.get("copy-spawn") != null;
+        return configuration.getInt("copies", 0) > 0
+                && !hasCompleteCopyLayout
+                && (!configuration.contains("area-pos1") || !configuration.contains("area-pos2"));
     }
 }

@@ -104,7 +104,7 @@ public final class RedisStreamConsumer implements AutoCloseable {
     private void readNew() {
         if (!running()) return;
         XReadArgs args = new XReadArgs().count(consumerConfig.batchSize()).block(consumerConfig.blockTimeout());
-        reads.xreadgroup(consumer, args, XReadArgs.StreamOffset.lastConsumed(stream))
+        reads.xreadgroup(consumer, args, streamOffsets(XReadArgs.StreamOffset.lastConsumed(stream)))
                 .whenComplete((messages, error) -> {
                     if (!running()) return;
                     if (error != null) {
@@ -184,6 +184,10 @@ public final class RedisStreamConsumer implements AutoCloseable {
     private static boolean isBusyGroup(Throwable error) {
         return error instanceof RedisCommandExecutionException && error.getMessage() != null
                 && error.getMessage().contains("BUSYGROUP");
+    }
+    @SafeVarargs
+    private static <K> XReadArgs.StreamOffset<K>[] streamOffsets(XReadArgs.StreamOffset<K>... offsets) {
+        return offsets;
     }
     private static String requireText(String value, String name) {
         Objects.requireNonNull(value, name);

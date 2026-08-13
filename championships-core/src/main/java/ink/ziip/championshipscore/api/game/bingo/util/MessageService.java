@@ -29,14 +29,14 @@ public final class MessageService {
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
 
     /** The live instance, exposed so deeply-nested render code can localize text statically. */
-    private static MessageService instance;
+    private static volatile MessageService instance;
 
     private final Plugin plugin;
     private final Logger log;
-    private String prefix = "";
-    private String locale = "zh_CN";
-    private YamlConfiguration current = new YamlConfiguration();
-    private YamlConfiguration fallback = new YamlConfiguration();
+    private volatile String prefix = "";
+    private volatile String locale = "zh_CN";
+    private volatile YamlConfiguration current = new YamlConfiguration();
+    private volatile YamlConfiguration fallback = new YamlConfiguration();
 
     public MessageService(Plugin plugin, String prefix, String locale) {
         this.plugin = plugin;
@@ -52,10 +52,19 @@ public final class MessageService {
     }
 
     public void reload(String newPrefix, String newLocale) {
-        this.prefix = color(newPrefix == null ? "" : newPrefix);
-        this.locale = (newLocale == null || newLocale.isBlank()) ? "zh_CN" : newLocale;
-        this.current = load(this.locale);
-        this.fallback = load(this.locale.equalsIgnoreCase("zh_CN") ? "en_US" : "zh_CN");
+        String loadedPrefix = color(newPrefix == null ? "" : newPrefix);
+        String loadedLocale = (newLocale == null || newLocale.isBlank()) ? "zh_CN" : newLocale;
+        YamlConfiguration loadedCurrent = load(loadedLocale);
+        YamlConfiguration loadedFallback = load(loadedLocale.equalsIgnoreCase("zh_CN") ? "en_US" : "zh_CN");
+        this.prefix = loadedPrefix;
+        this.locale = loadedLocale;
+        this.current = loadedCurrent;
+        this.fallback = loadedFallback;
+    }
+
+    /** Releases the static rendering bridge only when it still points at this manager-owned instance. */
+    public void close() {
+        if (instance == this) instance = null;
     }
 
     /** Whether a lang key resolves (current locale or fallback), without logging a miss like {@link #tr}. */

@@ -90,13 +90,9 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         }
 
         handler.register();
-        boolean started = plugin.getGameManager().joinSingleTeamAreaForAllTeams(
-                gameTypeEnum, getArea(), true, GameRunMode.EVENT);
-        if (!started) {
-            plugin.getLogger().warning(Utils.formatGameLog(gameTypeEnum, getArea(),
-                    "调度", "中止", "首轮启动失败，执行端未就绪或参赛者不可用"));
-            endSchedule();
-        }
+        plugin.getGameManager().joinSingleTeamAreaForAllTeamsAsync(
+                gameTypeEnum, getArea(), true, GameRunMode.EVENT)
+                .thenAccept(started -> handleStartResult(started, "首轮启动失败，执行端未就绪或参赛者不可用"));
     }
 
     public void endSchedule() {
@@ -142,15 +138,11 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
             }
 
             if (timer == 0) {
-                boolean started = plugin.getGameManager()
-                        .joinSingleTeamAreaForAllTeams(gameTypeEnum, getArea(), false, GameRunMode.EVENT);
                 if (startTask != null)
                     startTask.cancel();
-                if (!started) {
-                    plugin.getLogger().warning(Utils.formatGameLog(gameTypeEnum, getArea(),
-                            "调度", "中止", "下一轮启动失败，已释放轮间玩家"));
-                    endSchedule();
-                }
+                plugin.getGameManager().joinSingleTeamAreaForAllTeamsAsync(
+                                gameTypeEnum, getArea(), false, GameRunMode.EVENT)
+                        .thenAccept(started -> handleStartResult(started, "下一轮启动失败，已释放轮间玩家"));
             }
             timer--;
         }, 0, 20L);
@@ -158,6 +150,17 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
 
     public boolean hasNextRound() {
         return enabled && subRound < getTotalRounds();
+    }
+
+    private void handleStartResult(boolean started, String failureMessage) {
+        if (!enabled) {
+            if (started) plugin.getGameManager().forceEndAreas(gameTypeEnum);
+            return;
+        }
+        if (started) return;
+        plugin.getLogger().warning(Utils.formatGameLog(gameTypeEnum, getArea(),
+                "调度", "中止", failureMessage));
+        endSchedule();
     }
 
     public abstract String getArea();

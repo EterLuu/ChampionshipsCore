@@ -22,16 +22,15 @@ public class BingoStartAllSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        String message = MessageConfig.GAME_SINGLE_GAME_START_FAILED;
-
-        if (plugin.getGameManager().joinSingleTeamAreaForAllTeams(GameTypeEnum.Bingo, args[0]))
-            message = MessageConfig.GAME_SINGLE_GAME_START_SUCCESSFUL;
-
-        message = message
-                .replace("%game%", GameTypeEnum.Bingo.toString())
-                .replace("%area%", args[0]);
-
-        sender.sendMessage(message);
+        plugin.getGameManager().joinSingleTeamAreaForAllTeamsAsync(
+                GameTypeEnum.Bingo, args[0], false,
+                ink.ziip.championshipscore.api.object.game.GameRunMode.GAME).thenAccept(started -> {
+            String message = (started ? MessageConfig.GAME_SINGLE_GAME_START_SUCCESSFUL
+                    : MessageConfig.GAME_SINGLE_GAME_START_FAILED)
+                    .replace("%game%", GameTypeEnum.Bingo.toString())
+                    .replace("%area%", args[0]);
+            sender.sendMessage(message);
+        });
         return true;
     }
 

@@ -56,7 +56,9 @@ public final class PluginMessagePlayerRouter implements PlayerRoutingGateway, Au
                     player.getUniqueId(), target, false, "player-offline"));
         }
         CompletableFuture<RouteReceipt> result = new CompletableFuture<>();
-        scheduler.runEntity(player, () -> {
+        Runnable unavailable = () -> result.complete(
+                new RouteReceipt(player.getUniqueId(), target, false, "player-retired"));
+        boolean scheduled = scheduler.runEntity(player, () -> {
             if (!player.isOnline()) {
                 result.complete(new RouteReceipt(player.getUniqueId(), target, false, "player-offline"));
                 return;
@@ -67,7 +69,8 @@ public final class PluginMessagePlayerRouter implements PlayerRoutingGateway, Au
             } catch (RuntimeException failure) {
                 result.completeExceptionally(failure);
             }
-        });
+        }, unavailable);
+        if (!scheduled) unavailable.run();
         return result;
     }
 

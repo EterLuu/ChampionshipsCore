@@ -29,6 +29,7 @@ public final class CommandCatalog {
             new Entry("/cc team add|delete|info|list|tphere ...", "兼容指令：管理队伍、查看名单与队伍传送"),
             new Entry("/cc team member add|delete <队伍> <玩家>", "管理队伍成员"),
             new Entry("/cc game start <游戏> ...", "仅为指定队伍启动常规单局，不播报规则或自动调度观众"),
+            new Entry("/cc game stop <游戏> <场地> <实例> --confirm", "精确结束一个运行实例；已开赛则正常结算"),
             new Entry("/cc event start <游戏>", "开始常规正式比赛并管理规则、观众和赛程；再次执行会紧急停止"),
             new Entry("/cc event stop <游戏>", "显式停止正式比赛的赛程任务"),
             new Entry("/cc event reset|undo --confirm", "重置赛程或撤销最近正式比赛"),

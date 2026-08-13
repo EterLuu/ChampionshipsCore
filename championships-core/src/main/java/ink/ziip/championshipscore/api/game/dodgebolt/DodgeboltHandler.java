@@ -47,7 +47,6 @@ public final class DodgeboltHandler extends BaseListener {
     public void onShoot(EntityShootBowEvent event) {
         if (!(event.getEntity() instanceof Player player) || area.notAreaPlayer(player)) return;
         if (!area.canShoot(player, event.getConsumable())) {
-            event.setConsumeItem(false);
             event.setCancelled(true);
             Utils.sendActionBar(player, MessageConfig.DODGEBOLT_CANT_SHOOT);
             return;
@@ -115,8 +114,8 @@ public final class DodgeboltHandler extends BaseListener {
         if (!area.notAreaPlayer(event.getPlayer())) event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveHigh(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (area.notAreaPlayer(player) || event.getTo() == null) return;
         if (area.isIntroductionPhase()) return;

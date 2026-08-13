@@ -4,14 +4,10 @@ import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
 import org.bukkit.Statistic;
 import org.bukkit.entity.EntityType;
 import org.bukkit.map.MapCanvas;
-import org.bukkit.map.MapCursorCollection;
-import org.bukkit.map.MapFont;
-import org.bukkit.map.MapView;
 import org.junit.jupiter.api.Test;
 
-import java.awt.Color;
-import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class WorkerCardMapRendererTest {
     @Test
     void amountCoordinatesMatchLocalRendererForItemsAndStatistics() {
-        RecordingCanvas canvas = new RecordingCanvas();
+        List<TextDraw> text = new ArrayList<>();
+        MapCanvas canvas = recordingCanvas(text);
 
         WorkerCardMapRenderer.drawAmount(canvas, 2, 3, 4, false);
         WorkerCardMapRenderer.drawAmount(canvas, 2, 3, 12, true);
@@ -31,7 +28,7 @@ class WorkerCardMapRendererTest {
                 new TextDraw(70, 92, "§58;4"),
                 new TextDraw(64, 92, "§47;12"),
                 new TextDraw(63, 91, "§58;12")
-        ), canvas.text);
+        ), text);
     }
 
     @Test
@@ -64,21 +61,23 @@ class WorkerCardMapRendererTest {
     private record TextDraw(int x, int y, String text) {
     }
 
-    private static final class RecordingCanvas implements MapCanvas {
-        private final List<TextDraw> text = new ArrayList<>();
-
-        @Override public MapView getMapView() { return null; }
-        @Override public MapCursorCollection getCursors() { return new MapCursorCollection(); }
-        @Override public void setCursors(MapCursorCollection cursors) { }
-        @Override public void setPixelColor(int x, int y, Color color) { }
-        @Override public Color getPixelColor(int x, int y) { return null; }
-        @Override public Color getBasePixelColor(int x, int y) { return null; }
-        @Override public void setPixel(int x, int y, byte color) { }
-        @Override public byte getPixel(int x, int y) { return 0; }
-        @Override public byte getBasePixel(int x, int y) { return 0; }
-        @Override public void drawImage(int x, int y, Image image) { }
-        @Override public void drawText(int x, int y, MapFont font, String text) {
-            this.text.add(new TextDraw(x, y, text));
-        }
+    private static MapCanvas recordingCanvas(List<TextDraw> text) {
+        return (MapCanvas) Proxy.newProxyInstance(MapCanvas.class.getClassLoader(),
+                new Class<?>[]{MapCanvas.class}, (proxy, method, arguments) -> {
+                    if (method.getName().equals("drawText")) {
+                        text.add(new TextDraw((int) arguments[0], (int) arguments[1], (String) arguments[3]));
+                    }
+                    Class<?> returnType = method.getReturnType();
+                    if (!returnType.isPrimitive() || returnType == void.class) return null;
+                    if (returnType == boolean.class) return false;
+                    if (returnType == byte.class) return (byte) 0;
+                    if (returnType == short.class) return (short) 0;
+                    if (returnType == int.class) return 0;
+                    if (returnType == long.class) return 0L;
+                    if (returnType == float.class) return 0F;
+                    if (returnType == double.class) return 0D;
+                    if (returnType == char.class) return '\0';
+                    throw new IllegalStateException("Unsupported primitive return type: " + returnType);
+                });
     }
 }

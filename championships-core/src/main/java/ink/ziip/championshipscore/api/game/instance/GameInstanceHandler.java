@@ -112,8 +112,8 @@ public class GameInstanceHandler extends BaseListener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (event.getTo() != null && event.getTo().getY() < -50
                 && isIntroductionParticipant(player)) {

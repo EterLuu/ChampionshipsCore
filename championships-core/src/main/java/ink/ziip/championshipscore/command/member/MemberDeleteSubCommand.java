@@ -33,18 +33,17 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
                 sender.sendMessage(message);
                 return true;
             }
-            if (plugin.getTeamManager().deleteTeamMember(args[1], args[0])) {
-                String message = MessageConfig.MEMBER_SUCCESSFULLY_DELETED
+            plugin.getTeamManager().deleteTeamMember(args[1], args[0]).thenAccept(deleted -> {
+                String message = deleted
+                        ? MessageConfig.MEMBER_SUCCESSFULLY_DELETED
                         .replace("%team%", championshipTeam.getColoredName())
-                        .replace("%player%", Utils.formatPlayerNameOnly(args[1]));
-                sender.sendMessage(message);
-            } else {
-                String message = MessageConfig.MEMBER_DELETED_FAILED
+                        .replace("%player%", Utils.formatPlayerNameOnly(args[1]))
+                        : MessageConfig.MEMBER_DELETED_FAILED
                         .replace("%team%", args[0])
                         .replace("%player%", Utils.formatPlayerName(args[1]))
                         .replace("%reason%", MessageConfig.REASON_MEMBER_DOES_NOT_EXIST);
                 sender.sendMessage(message);
-            }
+            });
         }
         return true;
     }

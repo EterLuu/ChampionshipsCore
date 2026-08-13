@@ -68,7 +68,7 @@ public class BattleBoxManager extends BaseGameInstanceManager<BattleBoxArea> {
         for (List<BattleBoxArea> instances : instancesByMap.values()) {
             for (BattleBoxArea instance : instances) {
                 if (instance.getGameStageEnum() != GameStageEnum.WAITING) {
-                    instance.endGameFinally();
+                    instance.abortAndReset();
                 }
             }
         }

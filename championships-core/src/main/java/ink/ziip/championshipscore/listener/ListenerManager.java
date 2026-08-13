@@ -4,9 +4,9 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 
 public class ListenerManager extends BaseManager {
-    private static PlayerListener playerListener;
-    private static ProtectionListener protectionListener;
-    private static PortalGuardListener portalGuardListener;
+    private PlayerListener playerListener;
+    private ProtectionListener protectionListener;
+    private PortalGuardListener portalGuardListener;
 
     public ListenerManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);

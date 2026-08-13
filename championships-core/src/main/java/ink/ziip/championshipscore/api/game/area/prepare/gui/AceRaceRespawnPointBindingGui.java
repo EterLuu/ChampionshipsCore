@@ -52,7 +52,7 @@ public final class AceRaceRespawnPointBindingGui {
                             @NotNull PrepareSession session, int respawnIndex) {
         Holder holder = new Holder(session, respawnIndex);
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text(GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-001")).decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.select-the-progress-line-to-which-the-respawn-point-belongs")).decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -128,17 +128,17 @@ public final class AceRaceRespawnPointBindingGui {
             }
             boolean selected = progressIndex == current;
             inventory.setItem(slot, item(Material.LIME_STAINED_GLASS_PANE,
-                    GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-002") + (progressIndex + 1) + GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-003"),
+                    GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.progress-line") + (progressIndex + 1) + GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.after-suffix"),
                     selected ? NamedTextColor.GREEN : NamedTextColor.AQUA,
-                    selected ? GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-004") : GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-005")));
+                    selected ? GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.current-binding") : GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.after-clicking-to-bind-to-this-progress-line")));
         }
         inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? item(Material.ARROW, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-006"), NamedTextColor.WHITE, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-007") + holder.page + GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-008")) : filler());
-        inventory.setItem(BACK_SLOT, item(Material.BARRIER, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-009"), NamedTextColor.RED));
-        inventory.setItem(START_SLOT, item(Material.COMPASS, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-010"), current < 0
-                ? NamedTextColor.GREEN : NamedTextColor.YELLOW, current < 0 ? GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-004") : GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-011")));
+                ? item(Material.ARROW, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.previous-page"), NamedTextColor.WHITE, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.ordinal-prefix") + holder.page + GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.page-suffix")) : filler());
+        inventory.setItem(BACK_SLOT, item(Material.BARRIER, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.back-to-respawn-editor"), NamedTextColor.RED));
+        inventory.setItem(START_SLOT, item(Material.COMPASS, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.after-starting-point-no-progress-line-bound"), current < 0
+                ? NamedTextColor.GREEN : NamedTextColor.YELLOW, current < 0 ? GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.current-binding") : GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.click-to-select")));
         inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount
-                ? item(Material.ARROW, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-012"), NamedTextColor.WHITE, GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-007") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("prepare-gui-aceracerespawnpointbindinggui.text-008"))
+                ? item(Material.ARROW, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.next-page"), NamedTextColor.WHITE, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.ordinal-prefix") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.page-suffix"))
                 : filler());
     }
 

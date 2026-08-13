@@ -86,7 +86,7 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
     public void unload() {
         for (BuildMartArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+                area.abortAndReset();
             }
         }
         clearAreas();

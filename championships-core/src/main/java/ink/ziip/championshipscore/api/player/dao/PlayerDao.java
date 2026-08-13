@@ -21,8 +21,6 @@ public interface PlayerDao {
     @NotNull
     List<PlayerEntry> getPlayerList();
 
-    void deletePlayer(UUID uuid);
-
     /** Reconciles every same-name persistent identity with the UUID received during login. */
     @NotNull
     PlayerIdentityMigrationResult synchronizeIdentity(@NotNull String name, @NotNull UUID currentUuid);

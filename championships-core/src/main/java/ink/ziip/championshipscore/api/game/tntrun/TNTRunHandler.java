@@ -28,8 +28,8 @@ public class TNTRunHandler extends BaseListener {
         super(plugin);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (tntRunTeamArea.notAreaPlayer(player)) {
             return;
@@ -39,8 +39,8 @@ public class TNTRunHandler extends BaseListener {
         }
 
         Location location = player.getLocation();
+        GameStageEnum stage = tntRunTeamArea.getGameStageEnum();
         if (tntRunTeamArea.notInArea(location)) {
-            GameStageEnum stage = tntRunTeamArea.getGameStageEnum();
             if (stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN) {
                 tntRunTeamArea.teleportPlayerToSpawnPoint(player);
                 player.setFallDistance(0f);
@@ -60,7 +60,10 @@ public class TNTRunHandler extends BaseListener {
                     player.setGameMode(GameMode.SPECTATOR);
                 });
             }
+            return;
         }
+        // Foot-block probing is intentionally handled by TNTRunTeamArea's tested async polling task;
+        // this routed event remains responsible only for authoritative boundary/death handling.
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

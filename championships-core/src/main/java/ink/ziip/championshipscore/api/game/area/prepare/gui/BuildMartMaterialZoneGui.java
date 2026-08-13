@@ -66,7 +66,7 @@ public final class BuildMartMaterialZoneGui {
                             @NotNull PrepareSession session, @NotNull PrepareStep step) {
         Holder holder = new Holder(session, step);
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-001")).decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-area")).decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -96,13 +96,13 @@ public final class BuildMartMaterialZoneGui {
                 List<BuildMartMaterialZone> zones = new ArrayList<>(config.getMaterialZones());
                 zones.removeIf(zone -> zone.snapshotId().equals(removed.snapshotId()));
                 if (!config.setMaterialZones(zones)) {
-                    player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-002")));
+                    player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.unable-to-save-material-area-configuration-please-check-server-logs")));
                     return;
                 }
                 config.deleteMaterialZoneSnapshot(removed);
                 session.markDirty();
-                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-003") + holder.island.displayName()
-                        + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-004") + (index + 1) + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-005")));
+                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.deleted") + holder.island.displayName()
+                        + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.ordinal-infix") + (index + 1) + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.deleted-material-zone-count-suffix")));
                 refresh(holder);
             }
             return;
@@ -119,13 +119,13 @@ public final class BuildMartMaterialZoneGui {
                 if (holder.island != null) return;
                 List<BuildMartMaterialZone> zones = config.getMaterialZones();
                 if (!config.clearMaterialZones()) {
-                    player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-002")));
+                    player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.unable-to-save-material-area-configuration-please-check-server-logs")));
                     return;
                 }
                 zones.forEach(config::deleteMaterialZoneSnapshot);
                 session.markDirty();
                 holder.page = 0;
-                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-006")));
+                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-area-list-cleared")));
                 refresh(holder);
             }
             case NEXT_SLOT -> {
@@ -153,19 +153,19 @@ public final class BuildMartMaterialZoneGui {
 
     private static void saveCurrentSelection(Player player, Holder holder, BuildMartConfig config) {
         if (!holder.session.getFlow().isInCorrectWorld(player, holder.session.getTarget())) {
-            player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-007") + holder.session.getTarget().worldName()));
+            player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.please-go-to-the-current-map-world-first") + holder.session.getTarget().worldName()));
             return;
         }
         BuildMartMaterialZone pendingSnapshot = null;
         try {
             if (config.getMaterialIslandCenters().size() != BuildMartMaterialIsland.values().length) {
-                player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-008")));
+                player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-island-centers-incomplete")));
                 return;
             }
             Vector[] selection = holder.session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
             BuildMartMaterialZone zone = new BuildMartMaterialZone(UUID.randomUUID(), selection[0], selection[1]);
             if (zone.volume() <= 0 || zone.volume() > MAX_VOLUME) {
-                player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-009") + MAX_VOLUME + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-010")));
+                player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.the-material-area-volume-must-be-between-1-and") + MAX_VOLUME + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.within-blocks")));
                 return;
             }
             pendingSnapshot = zone;
@@ -177,7 +177,7 @@ public final class BuildMartMaterialZoneGui {
             boolean saved = replacedIndex < 0 ? config.addMaterialZone(zone) : config.setMaterialZones(zones);
             if (!saved) {
                 config.deleteMaterialZoneSnapshot(zone);
-                player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-002")));
+                player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.unable-to-save-material-area-configuration-please-check-server-logs")));
                 return;
             }
             pendingSnapshot = null;
@@ -191,18 +191,18 @@ public final class BuildMartMaterialZoneGui {
                     .filter(savedZone -> savedZone.snapshotId().equals(zone.snapshotId())).findFirst().orElse(null));
             holder.page = assignedIndex < 0 ? 0 : assignedIndex / PAGE_SIZE;
             if (replacedIndex < 0) {
-                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-011") + zone.volume()
-                        + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-012") + islandName(assigned)
-                        + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-013")
+                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.a-snapshot-of-the-saved-material-area-as-it-is") + zone.volume()
+                        + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.squares-automatically-classified") + islandName(assigned)
+                        + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.and-update-the-read-only-material-manifest-buildmart-material-manifests")
                         + config.getAreaName() + ".yml"));
             } else {
-                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-014") + islandName(assigned)
-                        + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-015") + zone.volume() + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-016")));
+                player.sendMessage(Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.updated") + islandName(assigned)
+                        + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.a-snapshot-of-the-material-area-as-it-is") + zone.volume() + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.blocks")));
             }
             refresh(holder);
         } catch (Exception exception) {
             if (pendingSnapshot != null) config.deleteMaterialZoneSnapshot(pendingSnapshot);
-            player.sendMessage(Utils.formatAdminError(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-017")
+            player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.failed-to-save-material-area-snapshot-please-check-worldedit-selection")
                     + exception.getMessage()));
         }
     }
@@ -238,30 +238,30 @@ public final class BuildMartMaterialZoneGui {
                 Material dominant = dominantMaterials.get(zone.snapshotId());
                 Material icon = dominant != null && dominant.isItem() ? dominant : Material.STRUCTURE_BLOCK;
                 Component name = dominant == null
-                        ? Component.text((index + 1) + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-018"))
+                        ? Component.text((index + 1) + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-area-snapshot"))
                         : Component.text((index + 1) + ". ").append(Component.translatable(dominant.translationKey()));
                 inventory.setItem(slot, item(icon, name,
-                        List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-019") + compact(zone), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-020"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-021")),
+                        List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.range") + compact(zone), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.full-block-status-will-be-restored-upon-replenishment"), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.click-to-delete-this-material-area")),
                         NamedTextColor.WHITE));
             } else inventory.setItem(slot, filler());
         }
-        inventory.setItem(SET_SELECTION_SLOT, item(Material.GOLDEN_AXE, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-022"),
-                List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-023"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-024"),
-                        GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-025"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-026")), NamedTextColor.YELLOW));
+        inventory.setItem(SET_SELECTION_SLOT, item(Material.GOLDEN_AXE, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.save-current-worldedit-selection"),
+                List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.record-a-full-block-snapshot-of-the-selection"), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.automatically-classified-into-the-nearest-material-island-according-to-horizontal-distance"),
+                        GuiConfig.text("map-editor.games.build-mart.menus.material-zones.update-the-original-snapshot-when-the-range-is-exactly-the-same-as-the-existing-material-area"), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.synchronously-update-the-read-only-material-list")), NamedTextColor.YELLOW));
         if (holder.page > 0) {
-            inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-027"),
-                    List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-028") + holder.page + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-029")), NamedTextColor.WHITE));
+            inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.previous-page"),
+                    List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.go-to") + holder.page + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.page-suffix")), NamedTextColor.WHITE));
         }
         Vector center = config.getMaterialIslandCenters().get(holder.island);
         inventory.setItem(CLEAR_SLOT, item(holder.island.icon(), holder.island.displayName(),
-                center == null ? List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-030")) : List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-031") + compact(center)), NamedTextColor.AQUA));
-        inventory.setItem(PAGE_SLOT, item(Material.PAPER, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-032") + (holder.page + 1) + " / " + pageCount + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-029"),
-                List.of(holder.island.displayName(), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-033") + zones.size() + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-034")), NamedTextColor.AQUA));
+                center == null ? List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.the-center-has-not-been-configured-yet")) : List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.center") + compact(center)), NamedTextColor.AQUA));
+        inventory.setItem(PAGE_SLOT, item(Material.PAPER, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.ordinal-prefix") + (holder.page + 1) + " / " + pageCount + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.page-suffix"),
+                List.of(holder.island.displayName(), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.total-prefix") + zones.size() + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-zone-count-suffix")), NamedTextColor.AQUA));
         if (holder.page + 1 < pageCount) {
-            inventory.setItem(NEXT_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-035"),
-                    List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-028") + (holder.page + 2) + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-029")), NamedTextColor.WHITE));
+            inventory.setItem(NEXT_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.next-page"),
+                    List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.go-to") + (holder.page + 2) + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.page-suffix")), NamedTextColor.WHITE));
         }
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-036"), List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-037")), NamedTextColor.WHITE));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.return-to-island-list"), List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.view-all-24-material-islands")), NamedTextColor.WHITE));
     }
 
     private static void refreshIslandOverview(@NotNull Holder holder, @NotNull BuildMartConfig config) {
@@ -275,24 +275,24 @@ public final class BuildMartMaterialZoneGui {
             int count = grouped.getOrDefault(island, List.of()).size();
             Material icon = center == null ? Material.BARRIER : island.icon();
             List<String> lore = center == null
-                    ? List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-030"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-038"))
-                    : List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-031") + compact(center), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-039") + count, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-040"));
+                    ? List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.the-center-has-not-been-configured-yet"), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.unable-to-automatically-classify-material-areas"))
+                    : List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.center") + compact(center), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.number-of-material-areas") + count, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.click-to-view-the-material-area-on-the-island"));
             inventory.setItem(slot, item(icon, (slot + 1) + ". " + island.displayName(), lore,
                     center == null ? NamedTextColor.RED : NamedTextColor.WHITE));
         }
         for (int slot = islands.length; slot < PAGE_SIZE; slot++) inventory.setItem(slot, filler());
-        inventory.setItem(SET_SELECTION_SLOT, item(Material.GOLDEN_AXE, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-022"),
-                List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-023"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-024"),
-                        GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-041"), GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-026")), NamedTextColor.YELLOW));
-        inventory.setItem(CLEAR_SLOT, item(Material.RED_WOOL, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-042"),
-                List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-043")), NamedTextColor.RED));
-        inventory.setItem(PAGE_SLOT, item(Material.COMPASS, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-044"),
-                List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-033") + config.getMaterialZones().size() + GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-034")), NamedTextColor.AQUA));
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-045"), List.of(GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-046")), NamedTextColor.WHITE));
+        inventory.setItem(SET_SELECTION_SLOT, item(Material.GOLDEN_AXE, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.save-current-worldedit-selection"),
+                List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.record-a-full-block-snapshot-of-the-selection"), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.automatically-classified-into-the-nearest-material-island-according-to-horizontal-distance"),
+                        GuiConfig.text("map-editor.games.build-mart.menus.material-zones.update-the-original-snapshot-when-the-range-is-exactly-the-same"), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.synchronously-update-the-read-only-material-list")), NamedTextColor.YELLOW));
+        inventory.setItem(CLEAR_SLOT, item(Material.RED_WOOL, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.clear-all-material-areas"),
+                List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.delete-all-material-areas-on-24-islands")), NamedTextColor.RED));
+        inventory.setItem(PAGE_SLOT, item(Material.COMPASS, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-island-count-label"),
+                List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.total-prefix") + config.getMaterialZones().size() + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-zone-count-suffix")), NamedTextColor.AQUA));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.return"), List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.return-to-prepare-inventory")), NamedTextColor.WHITE));
     }
 
     private static @NotNull String islandName(@Nullable BuildMartMaterialIsland island) {
-        return island == null ? GuiConfig.text("prepare-gui-buildmartmaterialzonegui.text-047") : island.displayName();
+        return island == null ? GuiConfig.text("map-editor.games.build-mart.menus.material-zones.uncategorized") : island.displayName();
     }
 
     private static int pageCount(int entries) {

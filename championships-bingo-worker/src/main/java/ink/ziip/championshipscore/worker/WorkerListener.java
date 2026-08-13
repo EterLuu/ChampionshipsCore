@@ -1,7 +1,6 @@
 package ink.ziip.championshipscore.worker;
 
 import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
-import com.destroystokyo.paper.event.entity.ProjectileCollideEvent;
 import io.papermc.paper.event.entity.EntityInsideBlockEvent;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
@@ -166,12 +165,6 @@ final class WorkerListener implements Listener {
                 || !registry.isProtectedParticipant(player.getUniqueId())) return;
         event.setCancelled(true);
         event.setTarget(null);
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onProtectedProjectileCollide(ProjectileCollideEvent event) {
-        if (event.getCollidedWith() instanceof Player player
-                && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -348,8 +341,7 @@ final class WorkerListener implements Listener {
                 ? registry.boundCardTeam(event.getItem()) : null;
         if (type == org.bukkit.Material.FILLED_MAP && selectedTeam == null) return;
         if (type == org.bukkit.Material.FILLED_MAP && !rightClick) return;
-        if (action == Action.RIGHT_CLICK_BLOCK
-                && event.getClickedBlock() != null && event.getClickedBlock().getType().isInteractable()) return;
+        if (action == Action.RIGHT_CLICK_BLOCK) return;
         if (type == org.bukkit.Material.FILLED_MAP && event.getHand() == EquipmentSlot.HAND
                 && isOffhandWeapon(event.getPlayer().getInventory().getItemInOffHand().getType())) return;
         event.setCancelled(true);

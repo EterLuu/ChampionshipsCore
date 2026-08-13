@@ -12,12 +12,17 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class DatabaseManager extends BaseManager {
     private static final String DATA_POOL_NAME = "ChampionshipsCoreHikariPool";
     private String driverClass;
-    private HikariDataSource dataSource;
+    private volatile HikariDataSource dataSource;
     private volatile boolean shuttingDown;
+    private final AtomicLong lifecycleGeneration = new AtomicLong();
 
     public DatabaseManager(@NotNull ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -25,7 +30,12 @@ public class DatabaseManager extends BaseManager {
 
     @Override
     public void load() {
+        lifecycleGeneration.incrementAndGet();
         shuttingDown = false;
+        configureAndInitialize();
+    }
+
+    private void configureAndInitialize() {
         if (CCConfig.DATABASE_TYPE.equals("MARIADB")) {
             this.driverClass = "org.mariadb.jdbc.Driver";
             // The pool holds connections open for their whole lifetime, so the driver's
@@ -41,6 +51,22 @@ public class DatabaseManager extends BaseManager {
         initialize();
     }
 
+    /** Establishes the pool and applies schema migrations without blocking the server thread. */
+    public CompletionStage<Void> loadAsync() {
+        shuttingDown = false;
+        long generation = lifecycleGeneration.incrementAndGet();
+        return CompletableFuture.runAsync(() -> {
+            if (shuttingDown || generation != lifecycleGeneration.get())
+                throw new CancellationException("Database bootstrap cancelled");
+            configureAndInitialize();
+            if (shuttingDown || generation != lifecycleGeneration.get()) {
+                HikariDataSource current = dataSource;
+                if (current != null && !current.isClosed()) current.close();
+                throw new CancellationException("Database bootstrap cancelled");
+            }
+        });
+    }
+
     private void preloadClass(String className) {
         try {
             Class.forName(className);
@@ -50,6 +76,7 @@ public class DatabaseManager extends BaseManager {
 
     @Override
     public void unload() {
+        lifecycleGeneration.incrementAndGet();
         shuttingDown = true;
         if (dataSource != null) {
             if (!dataSource.isClosed()) {

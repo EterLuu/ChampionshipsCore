@@ -9,7 +9,6 @@ import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
@@ -49,10 +48,7 @@ public final class CardItemListener extends BaseListener {
         String teamId = meta.getPersistentDataContainer().get(CardMapItem.CARD_KEY, PersistentDataType.STRING);
         if (teamId == null) return;
 
-        if (a == Action.RIGHT_CLICK_BLOCK) {
-            Block block = event.getClickedBlock();
-            if (block != null && isInteractable(block)) return;
-        }
+        if (a == Action.RIGHT_CLICK_BLOCK) return;
         if (event.getHand() == EquipmentSlot.HAND
                 && isOffhandWeapon(event.getPlayer().getInventory().getItemInOffHand().getType())) return;
 
@@ -79,12 +75,6 @@ public final class CardItemListener extends BaseListener {
             case SHIELD, TRIDENT, BOW, CROSSBOW -> true;
             default -> false;
         };
-    }
-
-    /** Bukkit currently deprecates this predicate without exposing an equivalent replacement. */
-    @SuppressWarnings("deprecation")
-    private static boolean isInteractable(Block block) {
-        return block.getType().isInteractable();
     }
 
     /** The card map is a bound tool, not loot — players cannot drop it. */

@@ -60,6 +60,7 @@ public final class DailyManager extends BaseManager {
     private final Map<UUID, GameTypeEnum> queueByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, DailySession> sessionByPlayer = new ConcurrentHashMap<>();
     private final Map<BaseGameInstance, DailySession> sessionByInstance = new ConcurrentHashMap<>();
+    private final Map<GameTypeEnum, PendingDailyStart> pendingStarts = new EnumMap<>(GameTypeEnum.class);
     private final Set<BaseGameInstance> settlingInstances = ConcurrentHashMap.newKeySet();
     private final Map<UUID, DailyPlayerSnapshot> snapshots = new ConcurrentHashMap<>();
     private final Map<GameTypeEnum, BossBar> waitingBars = new EnumMap<>(GameTypeEnum.class);
@@ -74,6 +75,11 @@ public final class DailyManager extends BaseManager {
     private final PlayerIsolationService isolationService;
     private volatile ServerMode serverMode = ServerMode.CHAMPIONSHIP;
     private BukkitTask tickTask;
+
+    private record PendingDailyStart(DailyQueue queue, DailyRules rules,
+                                     List<DailyQueue.Group> selected,
+                                     List<ChampionshipTeam> teams) {
+    }
 
     public DailyManager(ChampionshipsCore plugin, DailyStatsManager statsManager) {
         super(plugin);
@@ -107,6 +113,9 @@ public final class DailyManager extends BaseManager {
         closeOpenMenus();
         listener.unRegister();
         for (DailySession session : Set.copyOf(sessionByInstance.values())) cleanup(session);
+        for (PendingDailyStart pending : List.copyOf(pendingStarts.values()))
+            pending.teams().forEach(plugin.getTeamManager()::removeTransientTeam);
+        pendingStarts.clear();
         queues.clear();
         queueByPlayer.clear();
         snapshots.clear();
@@ -139,6 +148,25 @@ public final class DailyManager extends BaseManager {
         for (Player player : Bukkit.getOnlinePlayers()) syncLobbyItem(player);
         rebuildSnapshots();
         if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidateAll();
+    }
+
+    /** Applies hot-reloadable DAILY mode/rules without re-registering its listener or tick task. */
+    public synchronized void reloadConfiguration() {
+        ServerMode configuredMode = ServerMode.parse(CCConfig.MODE);
+        Set<GameTypeEnum> configuredGames = enabledGames();
+        boolean gamesChanged = !queues.keySet().equals(configuredGames);
+        if (gamesChanged) {
+            clearQueues("DAILY 游戏配置已重载，请重新加入匹配");
+            queues.clear();
+            for (GameTypeEnum game : configuredGames) queues.put(game, new DailyQueue(game));
+        }
+        if (serverMode != configuredMode) {
+            serverMode = configuredMode;
+            if (configuredMode == ServerMode.CHAMPIONSHIP) clearQueues("服务器已切换到正式比赛模式");
+            if (configuredMode != ServerMode.DAILY) closeOpenMenus();
+        }
+        rebuildSnapshots();
+        for (Player player : Bukkit.getOnlinePlayers()) syncLobbyItem(player);
     }
 
     public Set<GameTypeEnum> enabledGames() {
@@ -588,12 +616,35 @@ public final class DailyManager extends BaseManager {
         }
 
         DailyGameAdapter adapter = adapters.get(queue.game());
-        DailyGameAdapter.StartResult started = adapter == null ? null : adapter.start(teams);
-        if (started == null || started.instance() == null) {
+        PendingDailyStart pending = new PendingDailyStart(queue, rules, List.copyOf(selected), List.copyOf(teams));
+        if (adapter == null || pendingStarts.putIfAbsent(queue.game(), pending) != null) {
             teams.forEach(plugin.getTeamManager()::removeTransientTeam);
             queue.restore(selected, rules);
-            queue.countdown(5);
-            broadcast(queue.players(), MessageConfig.DAILY_QUEUE_NO_ARENA);
+            return;
+        }
+        adapter.start(teams).whenComplete((started, failure) -> Bukkit.getScheduler().runTask(plugin,
+                () -> finishStart(pending, started, failure)));
+    }
+
+    private void finishStart(@NotNull PendingDailyStart pending,
+                             @Nullable DailyGameAdapter.StartResult started,
+                             @Nullable Throwable failure) {
+        if (!pendingStarts.remove(pending.queue().game(), pending)) return;
+        DailyQueue queue = pending.queue();
+        DailyRules rules = pending.rules();
+        List<ChampionshipTeam> teams = pending.teams();
+        List<DailyQueue.Group> selected = pending.selected();
+        if (failure != null) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                    Utils.formatModuleLog("Daily", "启动", "异步启动失败=" + queue.game()), failure);
+        }
+        if (started == null || started.instance() == null) {
+            teams.forEach(plugin.getTeamManager()::removeTransientTeam);
+            if (queues.get(queue.game()) == queue) {
+                queue.restore(selected, rules);
+                queue.countdown(5);
+                broadcast(queue.players(), MessageConfig.DAILY_QUEUE_NO_ARENA);
+            }
             return;
         }
 

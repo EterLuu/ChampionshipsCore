@@ -7,7 +7,9 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Modified under <a href="https://github.com/AlessioDP/ADP-Core">ADP-Core</a>
@@ -30,11 +32,19 @@ public abstract class BaseConfigurationManager extends BaseManager {
     public void unload() {
     }
 
-    public void reload() {
+    public boolean reload() {
+        Map<BaseConfigurationFile, String> snapshots = new IdentityHashMap<>();
+        for (BaseConfigurationFile configurationFile : configs)
+            snapshots.put(configurationFile, configurationFile.captureRuntimeConfiguration());
+
         // Each file is migrated before any of its disk values are validated or exposed to runtime.
         for (BaseConfigurationFile baseConfigurationFile : configs) {
-            baseConfigurationFile.initializeConfiguration(plugin.getFolder(), isAutoUpgradeEnabled());
+            if (baseConfigurationFile.initializeConfigurationChecked(plugin.getFolder(), isAutoUpgradeEnabled()))
+                continue;
+            snapshots.forEach(BaseConfigurationFile::restoreRuntimeConfiguration);
+            return false;
         }
+        return true;
     }
 
     /**

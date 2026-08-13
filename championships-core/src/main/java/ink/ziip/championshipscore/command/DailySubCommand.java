@@ -42,9 +42,8 @@ public final class DailySubCommand extends BaseSubCommand {
     }
 
     private GameTypeEnum parseGame(String value) {
-        for (GameTypeEnum game : plugin.getDailyManager().enabledGames())
-            if (game.name().equalsIgnoreCase(value)) return game;
-        return null;
+        GameTypeEnum game = GameTypeEnum.fromCommand(value);
+        return game != null && plugin.getDailyManager().enabledGames().contains(game) ? game : null;
     }
 
     private void message(CommandSender sender, String value) {
@@ -57,7 +56,7 @@ public final class DailySubCommand extends BaseSubCommand {
                                                  @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) return complete(List.of("leave", "stats"), args[0]);
         if (args.length == 2 && args[0].equalsIgnoreCase("stats"))
-            return complete(plugin.getDailyManager().enabledGames().stream().map(Enum::name).toList(), args[1]);
+            return complete(plugin.getDailyManager().enabledGames().stream().map(GameTypeEnum::commandName).toList(), args[1]);
         return List.of();
     }
 }

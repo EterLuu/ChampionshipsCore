@@ -74,8 +74,7 @@ public final class BingoCompassListener extends BaseListener {
         if (area == null || area.getGameStageEnum() != GameStageEnum.PROGRESS) return;
         ItemStack item = event.getItem();
         if (item == null || item.getType() != Material.COMPASS) return;
-        if (a == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null
-                && event.getClickedBlock().getType().isInteractable()) return;
+        if (a == Action.RIGHT_CLICK_BLOCK) return;
 
         event.setCancelled(true);
         openTeleportMenu(player, area);
@@ -94,7 +93,7 @@ public final class BingoCompassListener extends BaseListener {
             teammates.add(target);
         }
         if (teammates.isEmpty()) {
-            player.sendMessage(Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-001")).color(NamedTextColor.YELLOW));
+            player.sendMessage(Component.text(GuiConfig.text("games.bingo.compass.there-are-currently-no-online-teammates-to-teleport-to")).color(NamedTextColor.YELLOW));
             return;
         }
         teammates.sort(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER));
@@ -102,7 +101,7 @@ public final class BingoCompassListener extends BaseListener {
         int rows = Math.max(1, Math.min(6, (teammates.size() + 8) / 9));
         CompassHolder holder = new CompassHolder();
         Inventory inv = Bukkit.createInventory(holder, rows * 9,
-                Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-002")).decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("games.bingo.compass.teleport-to-teammates")).decoration(TextDecoration.ITALIC, false));
         holder.setInventory(inv);
 
         for (int i = 0; i < teammates.size() && i < rows * 9; i++) {
@@ -117,7 +116,7 @@ public final class BingoCompassListener extends BaseListener {
         item.editMeta(meta -> {
             meta.displayName(Utils.toComponent(Utils.formatPlayerName(target))
                     .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-003")).color(NamedTextColor.GRAY)
+            meta.lore(List.of(Component.text(GuiConfig.text("games.bingo.compass.click-to-teleport-to-this-teammate")).color(NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
             if (TARGET_KEY != null) {
                 meta.getPersistentDataContainer().set(TARGET_KEY, PersistentDataType.STRING,
@@ -146,13 +145,13 @@ public final class BingoCompassListener extends BaseListener {
         }
         Player target = Bukkit.getPlayer(targetId);
         if (target == null || !target.isOnline() || area.notAreaPlayer(target)) {
-            player.sendMessage(Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-004")).color(NamedTextColor.YELLOW));
+            player.sendMessage(Component.text(GuiConfig.text("games.bingo.compass.this-teammate-is-no-longer-reachable")).color(NamedTextColor.YELLOW));
             player.closeInventory();
             return;
         }
         player.closeInventory();
         player.teleportAsync(target.getLocation());
-        player.sendMessage(Component.text(GuiConfig.text("game-bingo-bingocompasslistener.text-005"), NamedTextColor.AQUA)
+        player.sendMessage(Component.text(GuiConfig.text("games.bingo.compass.sent-to"), NamedTextColor.AQUA)
                 .append(Utils.toComponent(Utils.formatPlayerName(target))));
     }
 

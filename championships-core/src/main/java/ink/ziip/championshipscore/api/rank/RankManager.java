@@ -10,8 +10,6 @@ import ink.ziip.championshipscore.api.rank.dao.RankDaoImpl;
 import ink.ziip.championshipscore.api.rank.entry.GameStatusEntry;
 import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
-import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
@@ -34,23 +32,33 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RankManager extends BaseManager {
+    public record PointSubmission(@NotNull UUID transactionId, @NotNull UUID playerId,
+                                  @Nullable ChampionshipTeam rival, @NotNull GameTypeEnum game,
+                                  @NotNull String area, @NotNull String round, double points) {
+    }
+
+    private record FrozenPointSubmission(UUID transactionId, UUID playerId,
+                                         int teamId, String teamName, int rivalId, String rivalName,
+                                         GameTypeEnum game, String area, String round, double points) {
+    }
     private static final long JOIN_RECAP_WINDOW_MILLIS = 10 * 60 * 1000L;
     /** Registered finale games decide the champion and never alter regular-season ranking data. */
     private static final Set<GameTypeEnum> SCORING_GAMES =
             Collections.unmodifiableSet(EnumSet.complementOf(EnumSet.copyOf(FinaleGameRegistry.gameTypes())));
-    private static final Map<ChampionshipTeam, Double> teamPoints = new ConcurrentHashMap<>();
-    private static final Map<UUID, Double> playerPoints = new ConcurrentHashMap<>();
-    private static final Map<ChampionshipTeam, Integer> teamRank = new ConcurrentHashMap<>();
-    private static final Map<UUID, Integer> playerRank = new ConcurrentHashMap<>();
+    private final Map<ChampionshipTeam, Double> teamPoints = new ConcurrentHashMap<>();
+    private final Map<UUID, Double> playerPoints = new ConcurrentHashMap<>();
+    private final Map<ChampionshipTeam, Integer> teamRank = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> playerRank = new ConcurrentHashMap<>();
     /**
      * Published as one immutable snapshot. Clearing and repopulating a shared map exposed a transient
      * round 0 to PlaceholderAPI on every periodic database refresh.
      */
-    private static volatile Map<GameTypeEnum, Integer> gameOrder = Map.of();
-    private static final Map<GameTypeEnum, BigDecimal> gameWeight = new ConcurrentHashMap<>();
-    private static final Map<GameTypeEnum, Double> gameTotalPoints = new ConcurrentHashMap<>();
+    private volatile Map<GameTypeEnum, Integer> gameOrder = Map.of();
+    /** The same immutable database snapshot backing all total and per-game presentation paths. */
+    private volatile List<PlayerPointEntry> validPointSnapshot = List.of();
+    private final Map<GameTypeEnum, BigDecimal> gameWeight = new ConcurrentHashMap<>();
+    private final Map<GameTypeEnum, Double> gameTotalPoints = new ConcurrentHashMap<>();
     private final RankDaoImpl rankDao = new RankDaoImpl();
-    private final TeamDaoImpl teamDao = new TeamDaoImpl();
     private final PlayerDaoImpl playerDao = new PlayerDaoImpl();
     private final BukkitScheduler scheduler = Bukkit.getScheduler();
     private final Queue<Runnable> rankTaskQueue = new ConcurrentLinkedQueue<>();
@@ -77,9 +85,7 @@ public class RankManager extends BaseManager {
     @Override
     public void load() {
         List<PlayerPointEntry> pendingEntries = pendingPointTransactions.load();
-        for (PlayerPointEntry entry : pendingEntries) {
-            enqueueRankTask(() -> commitPointTransaction(entry));
-        }
+        if (!pendingEntries.isEmpty()) enqueueRankTask(() -> commitPointTransactions(pendingEntries));
         if (!pendingEntries.isEmpty()) {
             plugin.getLogger().info(Utils.formatModuleLog("Rank", "暂存事务",
                     "恢复待提交积分事务=" + pendingEntries.size()));
@@ -91,6 +97,7 @@ public class RankManager extends BaseManager {
     public void unload() {
         if (updateTask != null)
             updateTask.cancel();
+        validPointSnapshot = List.of();
     }
 
     public int getPlayerRank(Player player) {
@@ -143,17 +150,19 @@ public class RankManager extends BaseManager {
         return teamPoints.getOrDefault(championshipTeam, -1D);
     }
 
-    private void updateTeamPoints() {
+    private void updateTeamPoints(@NotNull List<PlayerPointEntry> pointSnapshot) {
         EnumMap<GameTypeEnum, Double> refreshedGameTotals = new EnumMap<>(GameTypeEnum.class);
         for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             refreshedGameTotals.put(gameTypeEnum, 0D);
         }
 
+        Map<Integer, List<PlayerPointEntry>> pointsByTeamId = new HashMap<>();
+        for (PlayerPointEntry point : pointSnapshot) {
+            pointsByTeamId.computeIfAbsent(point.getTeamId(), ignored -> new ArrayList<>()).add(point);
+        }
         Map<ChampionshipTeam, List<PlayerPointEntry>> entriesByTeam = new HashMap<>();
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-            List<PlayerPointEntry> entries = rankDao.getTeamPlayerPointsIfAvailable(championshipTeam.getId())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Unable to query points for team " + championshipTeam.getId()));
+            List<PlayerPointEntry> entries = pointsByTeamId.getOrDefault(championshipTeam.getId(), List.of());
             entriesByTeam.put(championshipTeam, entries);
             for (PlayerPointEntry entry : entries) {
                 if (entry.getValid() == 1 && isScoringGame(entry.getGame())) {
@@ -201,15 +210,16 @@ public class RankManager extends BaseManager {
         teamRankString = stringBuilder.toString();
     }
 
-    private void updatePlayerPoint() {
+    private void updatePlayerPoint(@NotNull List<PlayerPointEntry> pointSnapshot) {
+        Map<UUID, List<PlayerPointEntry>> pointsByPlayer = new HashMap<>();
+        for (PlayerPointEntry point : pointSnapshot) {
+            pointsByPlayer.computeIfAbsent(point.getUuid(), ignored -> new ArrayList<>()).add(point);
+        }
         Map<UUID, Double> refreshedPlayerPoints = new HashMap<>();
         for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-            Set<TeamMemberEntry> members = teamDao.getTeamMembersIfAvailable(championshipTeam.getId())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Unable to query members for team " + championshipTeam.getId()));
-            for (TeamMemberEntry teamMemberEntry : members) {
-                UUID uuid = teamMemberEntry.getUuid();
-                refreshedPlayerPoints.put(uuid, calculatePlayerPoints(uuid));
+            for (UUID uuid : championshipTeam.getMembers()) {
+                refreshedPlayerPoints.put(uuid,
+                        calculateFinalPoints(pointsByPlayer.getOrDefault(uuid, List.of())));
             }
         }
         playerPoints.keySet().removeIf(uuid -> !refreshedPlayerPoints.containsKey(uuid));
@@ -339,55 +349,79 @@ public class RankManager extends BaseManager {
     }
 
     public void addPlayerPoints(UUID uuid, ChampionshipTeam rival, GameTypeEnum gameTypeEnum, String area, double points) {
-        addPlayerPointsWithTransaction(UUID.randomUUID(), uuid, rival, gameTypeEnum, area, "scc", points);
+        addPlayerPointsWithTransaction(UUID.randomUUID(), uuid, rival, gameTypeEnum, area, "scc", points)
+                .exceptionally(failure -> {
+                    plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                            Utils.formatModuleLog("Rank", "积分", "积分提交失败 玩家=" + uuid), failure);
+                    return false;
+                });
     }
 
     /**
      * Idempotent score entry point for remote game replay. Callers derive {@code transactionId} from
      * match/epoch/sequence/player/award-kind and may safely retry the same write after Redis redelivery.
      */
-    public boolean addPlayerPointsWithTransaction(
+    public CompletionStage<Boolean> addPlayerPointsWithTransaction(
             @NotNull UUID transactionId, @NotNull UUID uuid, ChampionshipTeam rival,
             @NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
             @NotNull String round, double points) {
-        if (!isScoringGame(gameTypeEnum)) return false;
-        ChampionshipTeam championshipTeam = plugin.getTeamManager().getFormalTeamByPlayer(uuid);
-        if (rival == null) {
-            rival = championshipTeam;
-        }
-        PlayerEntry playerEntry = playerDao.getPlayer(uuid);
-        if (playerEntry == null)
-            return false;
-        if (championshipTeam != null) {
-            PlayerPointEntry playerPointEntry = PlayerPointEntry.builder()
-                    .transactionId(transactionId)
-                    .uuid(playerEntry.getUuid())
-                    .username(playerEntry.getName())
-                    .teamId(championshipTeam.getId())
-                    .team(championshipTeam.getName())
-                    .rivalId(rival.getId())
-                    .rival(rival.getName())
-                    .game(gameTypeEnum)
-                    .area(area)
-                    .round(round)
-                    .points(points)
-                    .time(Utils.getCurrentTimeString())
-                    .build();
-
-            if (!pendingPointTransactions.stage(playerPointEntry)) {
-                plugin.getLogger().severe(Utils.formatModuleLog("Rank", "暂存事务",
-                        "积分未入队：无法持久化事务=" + playerPointEntry.getTransactionId()));
-                return false;
-            }
-            enqueueRankTask(() -> commitPointTransaction(playerPointEntry));
-            return true;
-        }
-        return false;
+        return addPlayerPointsBatch(List.of(new PointSubmission(transactionId, uuid, rival,
+                gameTypeEnum, area, round, points)));
     }
 
-    private void commitPointTransaction(@NotNull PlayerPointEntry entry) {
-        if (rankDao.addPlayerPoint(entry)) {
-            pendingPointTransactions.complete(entry.getTransactionId());
+    /** Freezes team ownership on the server thread, then performs DB lookup and durable IO in rank order. */
+    public CompletionStage<Boolean> addPlayerPointsBatch(@NotNull Collection<PointSubmission> submissions) {
+        List<FrozenPointSubmission> frozen = new ArrayList<>();
+        for (PointSubmission submission : submissions) {
+            if (!isScoringGame(submission.game())) continue;
+            ChampionshipTeam team = plugin.getTeamManager().getFormalTeamByPlayer(submission.playerId());
+            if (team == null) return CompletableFuture.completedFuture(false);
+            ChampionshipTeam rival = submission.rival() == null ? team : submission.rival();
+            frozen.add(new FrozenPointSubmission(submission.transactionId(), submission.playerId(),
+                    team.getId(), team.getName(), rival.getId(), rival.getName(), submission.game(),
+                    submission.area(), submission.round(), submission.points()));
+        }
+        if (frozen.isEmpty()) return CompletableFuture.completedFuture(true);
+
+        CompletableFuture<Boolean> accepted = new CompletableFuture<>();
+        enqueueRankTask(() -> {
+            try {
+                List<PlayerPointEntry> entries = new ArrayList<>(frozen.size());
+                String timestamp = Utils.getCurrentTimeString();
+                for (FrozenPointSubmission submission : frozen) {
+                    PlayerEntry player = playerDao.getPlayer(submission.playerId());
+                    if (player == null) {
+                        accepted.complete(false);
+                        return;
+                    }
+                    entries.add(PlayerPointEntry.builder()
+                            .transactionId(submission.transactionId()).uuid(player.getUuid())
+                            .username(player.getName()).teamId(submission.teamId())
+                            .team(submission.teamName()).rivalId(submission.rivalId())
+                            .rival(submission.rivalName()).game(submission.game()).area(submission.area())
+                            .round(submission.round()).points(submission.points()).time(timestamp).build());
+                }
+                if (!pendingPointTransactions.stageAll(entries)) {
+                    plugin.getLogger().severe(Utils.formatModuleLog("Rank", "暂存事务",
+                            "整批积分未入队：无法持久化事务数=" + entries.size()));
+                    accepted.complete(false);
+                    return;
+                }
+                commitPointTransactions(entries);
+                accepted.complete(true);
+            } catch (Throwable failure) {
+                accepted.completeExceptionally(failure);
+                if (failure instanceof RuntimeException runtime) throw runtime;
+                throw new RuntimeException(failure);
+            }
+        });
+        return accepted;
+    }
+
+    private void commitPointTransactions(@NotNull List<PlayerPointEntry> entries) {
+        if (rankDao.addPlayerPoints(entries)) {
+            pendingPointTransactions.completeAll(entries.stream()
+                    .map(PlayerPointEntry::getTransactionId).toList());
             publishRankChange("player-points-added");
         }
     }
@@ -528,8 +562,11 @@ public class RankManager extends BaseManager {
 
     private void refreshRankingsNow() {
         updateGameOrder();
-        updateTeamPoints();
-        updatePlayerPoint();
+        List<PlayerPointEntry> pointSnapshot = rankDao.getAllValidPlayerPoints()
+                .orElseThrow(() -> new IllegalStateException("Unable to query valid point snapshot"));
+        validPointSnapshot = pointSnapshot;
+        updateTeamPoints(pointSnapshot);
+        updatePlayerPoint(pointSnapshot);
     }
 
     /** Runs rank database work in submission order on one Bukkit async worker. */
@@ -558,12 +595,6 @@ public class RankManager extends BaseManager {
                     drainRankTaskQueue();
             }
         });
-    }
-
-    private double calculatePlayerPoints(UUID uuid) {
-        List<PlayerPointEntry> entries = rankDao.getPlayerPointsIfAvailable(uuid)
-                .orElseThrow(() -> new IllegalStateException("Unable to query points for player " + uuid));
-        return calculateFinalPoints(entries);
     }
 
     /** Applies the same game-normalization weight and round multiplier used by the spreadsheet's K column. */
@@ -600,11 +631,10 @@ public class RankManager extends BaseManager {
 
     private double getTeamPoints(ChampionshipTeam championshipTeam, GameTypeEnum gameTypeEnum) {
         if (!isScoringGame(gameTypeEnum)) return 0D;
-        List<PlayerPointEntry> playerPointEntries = rankDao.getTeamPlayerPoints(championshipTeam.getId());
-
         double points = 0;
-        for (PlayerPointEntry playerPointEntry : playerPointEntries) {
-            if (playerPointEntry.getValid() == 1 && playerPointEntry.getGame() == gameTypeEnum) {
+        for (PlayerPointEntry playerPointEntry : validPointSnapshot) {
+            if (playerPointEntry.getTeamId() == championshipTeam.getId()
+                    && playerPointEntry.getGame() == gameTypeEnum) {
                 points += playerPointEntry.getPoints();
             }
         }

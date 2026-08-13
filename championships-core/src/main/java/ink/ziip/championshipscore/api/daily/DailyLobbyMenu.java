@@ -34,7 +34,7 @@ final class DailyLobbyMenu {
 
     void open(Player player) {
         LobbyHolder holder = new LobbyHolder(player.getUniqueId());
-        holder.inventory = Bukkit.createInventory(holder, SIZE, Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-001"), NamedTextColor.DARK_AQUA)
+        holder.inventory = Bukkit.createInventory(holder, SIZE, Component.text(GuiConfig.text("daily.menus.lobby.game-lobby"), NamedTextColor.DARK_AQUA)
                 .decorate(TextDecoration.BOLD));
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -81,48 +81,48 @@ final class DailyLobbyMenu {
         UUID viewer = holder.viewer;
         DailyPlayerSnapshot snapshot = daily.snapshot(viewer);
         inventory.setItem(4, item(Material.NETHER_STAR,
-                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-002"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.lobby.lobby-status"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
                 List.of(
-                        line(GuiConfig.text("api-daily-dailylobbymenu.text-003"), snapshot.queueState(), NamedTextColor.WHITE),
-                        line(GuiConfig.text("api-daily-dailylobbymenu.text-004"), snapshot.selectedGame(), NamedTextColor.AQUA),
-                        line(GuiConfig.text("api-daily-dailylobbymenu.text-005"), snapshot.partySize() + GuiConfig.text("api-daily-dailylobbymenu.text-006"), NamedTextColor.WHITE),
+                        line(GuiConfig.text("daily.menus.lobby.current-status"), snapshot.queueState(), NamedTextColor.WHITE),
+                        line(GuiConfig.text("daily.menus.lobby.current-game"), snapshot.selectedGame(), NamedTextColor.AQUA),
+                        line(GuiConfig.text("daily.menus.lobby.number-of-people-traveling-together"), snapshot.partySize() + GuiConfig.text("daily.menus.lobby.player-count-suffix"), NamedTextColor.WHITE),
                         Component.empty(),
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-007"), NamedTextColor.GRAY)
+                        Component.text(GuiConfig.text("daily.menus.lobby.select-a-function-below-to-get-started"), NamedTextColor.GRAY)
                 )));
         inventory.setItem(STATS_SLOT, item(Material.WRITABLE_BOOK,
-                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-008"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.lobby.personal-record"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-009"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-010"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("daily.menus.lobby.check-your-games-wins-and-winning-percentage"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("daily.menus.lobby.and-detailed-records-of-each-game"), NamedTextColor.GRAY),
                         Component.empty(),
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-011"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
+                        Component.text(GuiConfig.text("daily.menus.lobby.click-to-view"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
                 )));
         inventory.setItem(MATCH_SLOT, item(Material.COMPASS,
-                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-012"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.lobby.enter-matching"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-013"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-014"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("daily.menus.lobby.choose-the-game-you-want-to-participate-in"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("daily.menus.lobby.check-the-number-of-people-and-opening-progress-in-real-time"), NamedTextColor.GRAY),
                         Component.empty(),
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-015"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
+                        Component.text(GuiConfig.text("daily.menus.lobby.click-to-enter"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
                 )));
         inventory.setItem(PARTY_SLOT, item(Material.PLAYER_HEAD,
-                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-016"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.lobby.team-function"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-017"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-018"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("daily.menus.lobby.invite-friends-to-join-the-match"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("daily.menus.lobby.accept-invitations-or-manage-partys"), NamedTextColor.GRAY),
                         Component.empty(),
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-019"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
+                        Component.text(GuiConfig.text("daily.menus.lobby.click-to-open"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
                 )));
         inventory.setItem(SPECTATE_SLOT, item(Material.SPYGLASS,
-                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-020"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.lobby.spectator-game"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-021"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-022"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("daily.menus.lobby.view-currently-playing-games"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("daily.menus.lobby.and-select-live-venues-to-spectate-on"), NamedTextColor.GRAY),
                         Component.empty(),
-                        Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-019"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
+                        Component.text(GuiConfig.text("daily.menus.lobby.click-to-open"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)
                 )));
         inventory.setItem(CLOSE_SLOT, item(Material.BARRIER,
-                Component.text(GuiConfig.text("api-daily-dailylobbymenu.text-023"), NamedTextColor.RED), List.of()));
+                Component.text(GuiConfig.text("daily.menus.lobby.close"), NamedTextColor.RED), List.of()));
     }
 
     private static Component line(String label, String value, NamedTextColor color) {

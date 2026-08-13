@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
@@ -40,7 +41,8 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     @Getter
     private final Map<UUID, Location> playerSpawnLocations = new ConcurrentHashMap<>();
     @Getter
-    private final List<UUID> deathPlayer = new ArrayList<>();
+    private final List<UUID> deathPlayer = new CopyOnWriteArrayList<>();
+    private final Map<Block, Integer> pendingBlockRemovals = new ConcurrentHashMap<>();
     @Getter
     private int timer;
     private BukkitTask startGamePreparationTask;
@@ -48,7 +50,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     private BukkitTask handlePlayerMoveTask;
     private BukkitTask tntGeneratorTask;
     private int tntTimer;
-    private int terrainGeneration;
+    private volatile int terrainGeneration;
 
     public TNTRunTeamArea(ChampionshipsCore plugin, TNTRunConfig tntRunConfig, boolean firstTime, String areaName) {
         super(plugin, GameTypeEnum.TNTRun, new TNTRunHandler(plugin), tntRunConfig);
@@ -85,6 +87,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         terrainGeneration++;
         playerSpawnLocations.clear();
         deathPlayer.clear();
+        pendingBlockRemovals.clear();
 
         startGamePreparationTask = null;
         startGameProgressTask = null;
@@ -248,6 +251,9 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
                 tntTimer = 9;
 
+                // Candidate selection stays off the game thread. Entity creation and tracking are
+                // dispatched back below, matching the path proven under 64-player formal events.
+                final int tntRainGeneration = terrainGeneration;
                 tntGeneratorTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
 
                     int i = 0;
@@ -266,27 +272,23 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
                             tntLocation.add(ThreadLocalRandom.current().nextInt(-30, 30), 15, ThreadLocalRandom.current().nextInt(-30, 30));
                         }
 
-                        final Location finalTNTLocation = tntLocation;
+                        final Location finalTntLocation = tntLocation;
                         scheduler.runTaskLater(plugin, () -> {
-                            World world = finalTNTLocation.getWorld();
+                            if (tntRainGeneration != terrainGeneration
+                                    || getGameStageEnum() != GameStageEnum.PROGRESS) return;
+                            World world = finalTntLocation.getWorld();
                             if (world != null) {
-                                TNTPrimed tntPrimed = (TNTPrimed) world.spawnEntity(finalTNTLocation, EntityType.TNT);
+                                TNTPrimed tntPrimed = (TNTPrimed) world.spawnEntity(finalTntLocation, EntityType.TNT);
                                 tntPrimed.setFuseTicks(200);
                                 scheduler.runTaskTimer(plugin, (task) -> {
-                                    if (!tntPrimed.isValid()) {
-                                        task.cancel();
-                                        return;
-                                    }
-                                    if (tntPrimed.getFuseTicks() <= 0) {
+                                    if (!tntPrimed.isValid() || tntPrimed.getFuseTicks() <= 0) {
                                         task.cancel();
                                         return;
                                     }
 
                                     Location tntTraceLocation = tntPrimed.getLocation();
-                                    if (getBlockUnderLocation(tntTraceLocation, 0.8) != null) {
-                                        tntPrimed.setFuseTicks(0);
-                                    }
-                                    if (notInArea(tntTraceLocation)) {
+                                    if (getBlockUnderLocation(tntTraceLocation, 0.8) != null
+                                            || notInArea(tntTraceLocation)) {
                                         tntPrimed.setFuseTicks(0);
                                     }
                                 }, 0, 1L);
@@ -306,6 +308,9 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
             }
         }, this::endGame);
 
+        // Intentional performance exception: this proven 64-player path keeps repeated foot-block
+        // probing away from the game thread. Delayed world mutation remains on the server thread and
+        // pendingBlockRemovals is concurrent so duplicate probes cannot create duplicate tasks.
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
         handlePlayerMoveTask = scheduler.runTaskTimerAsynchronously(plugin, () -> gamePlayersCopy.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
@@ -351,7 +356,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         return false;
     }
 
-    private void handlePlayerMove(@NotNull Player player) {
+    void handlePlayerMove(@NotNull Player player) {
         destroyBlock(player.getLocation());
     }
 
@@ -426,15 +431,15 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
         Block block = getBlockUnderLocation(location, 0.3);
 
-        if (block != null) {
-            final Block destroyBlock = block;
-            final int generation = terrainGeneration;
+        final int generation = terrainGeneration;
+        if (block != null && pendingBlockRemovals.putIfAbsent(block, generation) == null) {
             scheduler.runTaskLater(plugin, () -> {
-                if (generation != terrainGeneration || getGameStageEnum() != GameStageEnum.PROGRESS)
-                    return;
-                world.playSound(location, Sound.BLOCK_SAND_BREAK, 3, 1);
-                destroyBlock.setType(Material.AIR);
-                destroyBlock.getRelative(BlockFace.DOWN).setType(Material.AIR);
+                if (pendingBlockRemovals.remove(block, generation)
+                        && generation == terrainGeneration && getGameStageEnum() == GameStageEnum.PROGRESS) {
+                    world.playSound(location, Sound.BLOCK_SAND_BREAK, 3, 1);
+                    block.setType(Material.AIR);
+                    block.getRelative(BlockFace.DOWN).setType(Material.AIR);
+                }
             }, 8);
         }
     }
@@ -453,7 +458,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         if (tntGeneratorTask != null)
             tntGeneratorTask.cancel();
 
-        calculatePoints();
+        if (isSettlementAllowed()) calculatePoints();
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -464,7 +469,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        publishGameEndEvent(new SingleGameEndEvent(this, gameTeams));
         finishPostGameAfterEndEvent();
     }
 

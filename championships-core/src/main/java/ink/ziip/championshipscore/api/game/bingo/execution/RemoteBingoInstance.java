@@ -71,7 +71,7 @@ public final class RemoteBingoInstance extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.END || getGameStageEnum() == GameStageEnum.WAITING) return;
         setGameStageEnum(GameStageEnum.END);
         beginPostGameSettlement();
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, List.copyOf(gameTeams)));
+        publishGameEndEvent(new SingleGameEndEvent(this, List.copyOf(gameTeams)));
         finishPostGameAfterEndEvent();
     }
 

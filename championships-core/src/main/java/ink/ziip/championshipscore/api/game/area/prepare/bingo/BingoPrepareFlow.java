@@ -55,12 +55,12 @@ public class BingoPrepareFlow extends PrepareFlowDefinition {
 
         StandAndRunStep spectator = new StandAndRunStep(
                 "spectator_spawn",
-                Component.text(GuiConfig.text("prepare-bingo-bingoprepareflow.text-001")),
-                Component.text(GuiConfig.text("prepare-bingo-bingoprepareflow.text-002")),
+                Component.text(GuiConfig.text("map-editor.games.bingo.setup.set-the-spawn-point-of-spectators")),
+                Component.text(GuiConfig.text("map-editor.games.bingo.setup.after-reaching-the-target-point-click")),
                 Material.ENDER_EYE,
                 t -> ((BingoConfig) t.config()).getSpectatorSpawnPoint() != null,
                 (t, loc) -> ((BingoConfig) t.config()).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("prepare-bingo-bingoprepareflow.text-003")));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.bingo.setup.spectator-spawn-point-has-been-set")));
 
         return List.of(confirm, spectator);
     }

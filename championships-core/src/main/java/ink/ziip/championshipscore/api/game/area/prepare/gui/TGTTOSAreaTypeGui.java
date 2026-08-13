@@ -54,7 +54,7 @@ public final class TGTTOSAreaTypeGui {
                             @NotNull TGTTOSAreaTypeStep step) {
         Holder holder = new Holder(session, step);
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text(GuiConfig.text("prepare-gui-tgttosareatypegui.text-001")).decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("map-editor.games.tgttos.menus.area-type.select-map-equipment-type")).decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -109,11 +109,11 @@ public final class TGTTOSAreaTypeGui {
                     : filler());
         }
         inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? menuItem(Material.ARROW, GuiConfig.text("prepare-gui-tgttosareatypegui.text-002"), NamedTextColor.WHITE)
+                ? menuItem(Material.ARROW, GuiConfig.text("map-editor.games.tgttos.menus.area-type.previous-page"), NamedTextColor.WHITE)
                 : filler());
-        inventory.setItem(BACK_SLOT, menuItem(Material.BARRIER, GuiConfig.text("prepare-gui-tgttosareatypegui.text-003"), NamedTextColor.RED));
+        inventory.setItem(BACK_SLOT, menuItem(Material.BARRIER, GuiConfig.text("map-editor.games.tgttos.menus.area-type.return"), NamedTextColor.RED));
         inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount()
-                ? menuItem(Material.ARROW, GuiConfig.text("prepare-gui-tgttosareatypegui.text-004"), NamedTextColor.WHITE)
+                ? menuItem(Material.ARROW, GuiConfig.text("map-editor.games.tgttos.menus.area-type.next-page"), NamedTextColor.WHITE)
                 : filler());
     }
 
@@ -129,7 +129,7 @@ public final class TGTTOSAreaTypeGui {
                     .decoration(TextDecoration.ITALIC, false));
             meta.lore(List.of(Component.text(option.description()).color(NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false),
-                    Component.text(selected ? GuiConfig.text("prepare-gui-tgttosareatypegui.text-005") : GuiConfig.text("prepare-gui-tgttosareatypegui.text-006"))
+                    Component.text(selected ? GuiConfig.text("map-editor.games.tgttos.menus.area-type.current-selection") : GuiConfig.text("map-editor.games.tgttos.menus.area-type.click-to-select"))
                             .color(selected ? NamedTextColor.GREEN : NamedTextColor.WHITE)
                             .decoration(TextDecoration.ITALIC, false)));
         });

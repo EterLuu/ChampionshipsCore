@@ -32,8 +32,8 @@ public class ParkourWarriorHandler extends BaseListener {
         super(plugin);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (parkourWarriorTeamArea.notAreaPlayer(player)) {
             return;

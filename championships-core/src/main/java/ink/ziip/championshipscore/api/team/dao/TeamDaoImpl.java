@@ -93,6 +93,38 @@ public class TeamDaoImpl implements TeamDao {
     }
 
     @Override
+    public boolean deleteTeamCascade(int teamId) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            connection.setAutoCommit(false);
+            try (PreparedStatement members = connection.prepareStatement(
+                    "DELETE FROM `team_members` WHERE `teamId`=?");
+                 PreparedStatement team = connection.prepareStatement(
+                         "DELETE FROM `teams` WHERE `id`=?")) {
+                members.setInt(1, teamId);
+                members.executeUpdate();
+                team.setInt(1, teamId);
+                int deleted = team.executeUpdate();
+                if (deleted != 1) {
+                    connection.rollback();
+                    return false;
+                }
+                connection.commit();
+                return true;
+            } catch (SQLException failure) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+                throw failure;
+            }
+        } catch (SQLException exception) {
+            logFailure("事务删除队伍", exception);
+            return false;
+        }
+    }
+
+    @Override
     public Set<TeamMemberEntry> getTeamMembers(int teamId) {
         return getTeamMembersIfAvailable(teamId).orElseGet(Collections::emptySet);
     }

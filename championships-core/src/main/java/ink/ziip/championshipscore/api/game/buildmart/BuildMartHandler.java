@@ -74,8 +74,8 @@ public class BuildMartHandler extends BaseListener {
                 || stage == GameStageEnum.PROGRESS;
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public void onMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveNormal(PlayerMoveEvent event) {
         boolean gameRunning = running();
         if (!gameRunning && !boundaryActive()) return;
         Location to = event.getTo();

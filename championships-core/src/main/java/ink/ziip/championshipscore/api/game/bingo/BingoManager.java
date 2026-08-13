@@ -32,7 +32,10 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,6 +52,7 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     private final List<Listener> globalListeners = new ArrayList<>();
     private final Map<String, BingoConfig> remoteAreaConfigs = new ConcurrentHashMap<>();
     private volatile boolean taskPoolReady;
+    private BingoExecutionMode configuredExecutionMode;
 
     public BingoManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -56,8 +60,16 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
 
     @Override
     public void load() {
+        taskPoolReady = false;
+        configuredExecutionMode = parseExecutionMode(CCConfig.BINGO_EXECUTION_MODE);
         File bingoDir = new File(plugin.getDataFolder(), "bingo");
         bingoDir.mkdirs();
+        YamlConfiguration config = loadGlobalConfig(bingoDir);
+        if (config == null) return;
+
+        // Localisation must exist before any area renders task names.
+        messageService = new MessageService(plugin, config.getString("prefix", ""), config.getString("locale", "zh_CN"));
+
         boolean remote = remoteExecutionConfigured();
         if (!remote) {
             boolean worldsReady = loadBingoWorld(WorldManager.BINGO_OVERWORLD, World.Environment.NORMAL);
@@ -69,11 +81,6 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
                 return;
             }
         }
-        YamlConfiguration config = loadGlobalConfig(bingoDir);
-
-        // Localisation must exist before any area renders task names.
-        messageService = new MessageService(plugin, config.getString("prefix", ""), config.getString("locale", "zh_CN"));
-
         if (!remote) {
             // Global GUI + portal listeners are execution-plane features and remain local-only.
             registerGlobal(new CardMenuListener());
@@ -92,21 +99,43 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         // Defer pool/atlas initialization to the first tick, when advancements, recipes and the map
         // palette are all available.
         new PlatformScheduler(plugin).runGlobal(() -> {
-            TierlistLoader.load(plugin, config.getString("cards.tierlist", "default"));
-            TagFilterLoader.load(plugin, config);
-            String selected = config.getString("cards.selected", "default");
-            TaskPoolSpec spec = TaskPoolLoader.load(plugin, selected);
-            TaskPoolSource.set(spec, selected);
-            // Fixed difficulty distribution EASY:MEDIUM:ADVANCED:HARD:VERY_HARD; weight 0 excludes a
-            // tier. Default [3,5,2,1,0] = 3:5:2:1 with VERY_HARD excluded.
-            TaskGenerator.setDifficultyWeights(readDifficultyWeights(config));
-            // Exclude kit-trivialised objectives (items the kit provides, possession-granted advancements)
-            // from every generated card, in code rather than a static tag file.
-            TaskGenerator.setKitFilter(BingoStarterKit::trivialises);
+            taskPoolReady = applyContentConfiguration(config);
             if (!remote) TaskImageAtlas.ensureLoaded();
-            taskPoolReady = true;
-
         });
+    }
+
+    /** Reloads the Bingo language and objective sources after active matches have been reset. */
+    public CompletionStage<Boolean> reloadContentConfiguration() {
+        if (messageService == null) return CompletableFuture.completedFuture(true);
+        taskPoolReady = false;
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                YamlConfiguration config = loadGlobalConfig(new File(plugin.getDataFolder(), "bingo"));
+                result.complete(config != null && applyContentConfiguration(config));
+            } catch (RuntimeException failure) {
+                plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(GameTypeEnum.Bingo, "-",
+                        "重载", "内容", "Bingo 内容配置重载失败"), failure);
+                result.complete(false);
+            }
+        });
+        return result;
+    }
+
+    private boolean applyContentConfiguration(@NotNull YamlConfiguration config) {
+        MessageService service = messageService;
+        if (service == null) return false;
+        service.reload(config.getString("prefix", ""), config.getString("locale", "zh_CN"));
+        TierlistLoader.load(plugin, config.getString("cards.tierlist", "default"));
+        TagFilterLoader.load(plugin, config);
+        String selected = config.getString("cards.selected", "default");
+        TaskPoolSpec spec = TaskPoolLoader.load(plugin, selected);
+        TaskPoolSource.set(spec, selected);
+        TaskGenerator.setDifficultyWeights(readDifficultyWeights(config));
+        TaskGenerator.setKitFilter(BingoStarterKit::trivialises);
+        boolean ready = !spec.isEmpty();
+        taskPoolReady = ready;
+        return ready;
     }
 
     private void loadRemoteAreaConfigs(File areasFolder) {
@@ -122,11 +151,16 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     }
 
     public boolean remoteExecutionConfigured() {
+        BingoExecutionMode configured = configuredExecutionMode;
+        if (configured != null) return configured == BingoExecutionMode.REMOTE;
+        return parseExecutionMode(CCConfig.BINGO_EXECUTION_MODE) == BingoExecutionMode.REMOTE;
+    }
+
+    private static BingoExecutionMode parseExecutionMode(String value) {
         try {
-            return BingoExecutionMode.valueOf(CCConfig.BINGO_EXECUTION_MODE.trim().toUpperCase())
-                    == BingoExecutionMode.REMOTE;
+            return BingoExecutionMode.valueOf(value.trim().toUpperCase());
         } catch (RuntimeException ignored) {
-            return false;
+            return BingoExecutionMode.LOCAL;
         }
     }
 
@@ -154,7 +188,7 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         }
     }
 
-    private YamlConfiguration loadGlobalConfig(File bingoDir) {
+    private @Nullable YamlConfiguration loadGlobalConfig(File bingoDir) {
         File configFile = new File(bingoDir, "config.yml");
         if (!configFile.exists()) {
             try (InputStream in = plugin.getResource("bingo/config.yml")) {
@@ -164,7 +198,16 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
                         "无法写出 bingo/config.yml | " + e.getMessage()));
             }
         }
-        return YamlConfiguration.loadConfiguration(configFile);
+        if (!configFile.isFile()) return null;
+        try {
+            YamlConfiguration config = new YamlConfiguration();
+            config.load(configFile);
+            return config;
+        } catch (Exception failure) {
+            plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "配置",
+                    "无法解析 bingo/config.yml"), failure);
+            return null;
+        }
     }
 
     /**
@@ -189,9 +232,10 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     @Override
     public void unload() {
         taskPoolReady = false;
+        configuredExecutionMode = null;
         for (BingoArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+                area.abortAndReset();
             }
         }
         for (Listener listener : globalListeners) {
@@ -205,6 +249,10 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         if (compassListener != null) {
             compassListener.unRegister();
             compassListener = null;
+        }
+        if (messageService != null) {
+            messageService.close();
+            messageService = null;
         }
         clearAreas();
         remoteAreaConfigs.clear();

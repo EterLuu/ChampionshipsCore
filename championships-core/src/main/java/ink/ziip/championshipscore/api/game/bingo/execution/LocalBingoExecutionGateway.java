@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.api.game.bingo.execution;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -27,12 +29,13 @@ public final class LocalBingoExecutionGateway implements BingoExecutionGateway {
     }
 
     @Override
-    public boolean start(BingoStartRequest request) {
-        return starter.test(Objects.requireNonNull(request, "request"));
+    public CompletionStage<Boolean> start(BingoStartRequest request) {
+        return CompletableFuture.completedFuture(starter.test(Objects.requireNonNull(request, "request")));
     }
 
     @Override
-    public void forceEnd(String reason) {
+    public CompletionStage<Void> forceEnd(String reason) {
         forceEnder.accept(Objects.requireNonNull(reason, "reason"));
+        return CompletableFuture.completedFuture(null);
     }
 }

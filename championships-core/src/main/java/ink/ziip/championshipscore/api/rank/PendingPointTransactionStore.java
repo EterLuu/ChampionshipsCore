@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,19 +75,37 @@ final class PendingPointTransactionStore {
     }
 
     synchronized boolean stage(@NotNull PlayerPointEntry entry) {
-        UUID transactionId = entry.getTransactionId();
-        if (transactionId == null) throw new IllegalArgumentException("Score transaction id is required");
-        pending.put(transactionId, entry);
+        return stageAll(List.of(entry));
+    }
+
+    /** Atomically stages a whole settlement and persists the write-ahead file once. */
+    synchronized boolean stageAll(@NotNull List<PlayerPointEntry> entries) {
+        Map<UUID, PlayerPointEntry> previous = new LinkedHashMap<>();
+        for (PlayerPointEntry entry : entries) {
+            UUID transactionId = entry.getTransactionId();
+            if (transactionId == null) throw new IllegalArgumentException("Score transaction id is required");
+            previous.put(transactionId, pending.put(transactionId, entry));
+        }
         if (save()) return true;
-        pending.remove(transactionId);
+        previous.forEach((transactionId, entry) -> {
+            if (entry == null) pending.remove(transactionId);
+            else pending.put(transactionId, entry);
+        });
         return false;
     }
 
     synchronized void complete(@NotNull UUID transactionId) {
-        PlayerPointEntry removed = pending.remove(transactionId);
-        if (removed != null && !save()) {
-            pending.put(transactionId, removed);
+        completeAll(List.of(transactionId));
+    }
+
+    /** Acknowledges a committed database batch with a single atomic file replacement. */
+    synchronized void completeAll(@NotNull Collection<UUID> transactionIds) {
+        Map<UUID, PlayerPointEntry> removed = new LinkedHashMap<>();
+        for (UUID transactionId : transactionIds) {
+            PlayerPointEntry entry = pending.remove(transactionId);
+            if (entry != null) removed.put(transactionId, entry);
         }
+        if (!removed.isEmpty() && !save()) removed.forEach(pending::put);
     }
 
     synchronized boolean renameArea(@NotNull GameTypeEnum game, @NotNull String oldArea,

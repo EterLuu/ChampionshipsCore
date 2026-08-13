@@ -28,9 +28,9 @@ public class ConfirmWorldStep extends PrepareStep {
     public ConfirmWorldStep(@NotNull Predicate<Player> inCorrectWorld, @NotNull String worldName,
                             boolean allowRebind) {
         super("confirm_world",
-                Component.text(allowRebind ? GuiConfig.text("prepare-step-confirmworldstep.text-001") : GuiConfig.text("prepare-step-confirmworldstep.text-002")),
-                Component.text(allowRebind ? GuiConfig.text("prepare-step-confirmworldstep.text-003")
-                        : GuiConfig.text("prepare-step-confirmworldstep.text-004") + worldName + GuiConfig.text("prepare-step-confirmworldstep.text-005")),
+                Component.text(allowRebind ? GuiConfig.text("map-editor.steps.world-confirmation.bind-to-current-world") : GuiConfig.text("map-editor.steps.world-confirmation.confirm-the-world")),
+                Component.text(allowRebind ? GuiConfig.text("map-editor.steps.world-confirmation.click-to-bind-or-change-to-the-current-world")
+                        : GuiConfig.text("map-editor.steps.world-confirmation.go-to") + worldName + GuiConfig.text("map-editor.steps.world-confirmation.click-this-to-confirm-after-entering-the-world")),
                 Material.COMPASS,
                 StepCaptureType.CONFIRM_WORLD);
         this.inCorrectWorld = inCorrectWorld;
@@ -46,14 +46,14 @@ public class ConfirmWorldStep extends PrepareStep {
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         if (allowRebind) {
             if (!session.getTarget().bindWorld(player.getWorld()))
-                return Utils.formatAdminError(GuiConfig.text("prepare-step-confirmworldstep.text-006"));
+                return Utils.formatAdminError(GuiConfig.text("map-editor.steps.world-confirmation.the-current-world-is-already-used-by-another-map-or-the-map-is-running-cannot-be-bound"));
             session.setWorldConfirmed(true);
-            return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-confirmworldstep.text-007") + player.getWorld().getName());
+            return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.world-confirmation.bound-map-world") + player.getWorld().getName());
         }
         if (inCorrectWorld.test(player)) {
             session.setWorldConfirmed(true);
-            return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-confirmworldstep.text-008"));
+            return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.world-confirmation.confirmed-game-world"));
         }
-        return Utils.formatAdminError(GuiConfig.text("prepare-step-confirmworldstep.text-009"));
+        return Utils.formatAdminError(GuiConfig.text("map-editor.steps.world-confirmation.please-go-to-the-target-editing-site-through-the-ender-pearl-first"));
     }
 }

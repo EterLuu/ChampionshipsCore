@@ -36,7 +36,7 @@ public class TGTTOSManager extends BaseGameInstanceManager<TGTTOSTeamArea> {
     public void unload() {
         for (TGTTOSTeamArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+                area.abortAndReset();
             }
         }
         clearAreas();

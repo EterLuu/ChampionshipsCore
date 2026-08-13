@@ -28,11 +28,11 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
-        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("area-prepare-dragoneggcarnivalprepareflow.text-001")), Component.text(GuiConfig.text("area-prepare-dragoneggcarnivalprepareflow.text-002")),
+        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.site-boundaries")), Component.text(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.use-worldedit-to-select-the-complete-game-area")),
                 Material.BEDROCK, t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("area-prepare-dragoneggcarnivalprepareflow.text-003"))));
-        steps.add(location("spectator_spawn", GuiConfig.text("area-prepare-dragoneggcarnivalprepareflow.text-004"), Material.ENDER_EYE,
-                t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l), GuiConfig.text("area-prepare-dragoneggcarnivalprepareflow.text-005")));
+                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.site-boundaries-set"))));
+        steps.add(location("spectator_spawn", GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.spectator-spawn-point"), Material.ENDER_EYE,
+                t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l), GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.spectator-spawn-point-has-been-set")));
         return steps;
     }
 
@@ -41,15 +41,15 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
         List<String> errors = new ArrayList<>(super.validate(session));
         World world = Bukkit.getWorld(session.getTarget().worldName());
         if (world != null && world.getEnvironment() != World.Environment.THE_END)
-            errors.add(GuiConfig.text("area-prepare-dragoneggcarnivalprepareflow.text-006"));
+            errors.add(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.the-map-world-must-be-an-end-environment"));
         DragonEggCarnivalConfig config = cfg(session.getTarget());
         if (config.getAreaPos1() != null && config.getAreaPos2() != null
                 && !coversRequiredFightRegion(config.getAreaPos1(), config.getAreaPos2()))
-            errors.add(GuiConfig.text("area-prepare-dragoneggcarnivalprepareflow.text-007"));
+            errors.add(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.the-site-boundary-needs-to-cover-the-fixed-dragon-battle-area-x-z-104-104-y-0-128"));
         Location spectator = config.getSpectatorSpawnPoint();
         if (spectator != null && spectator.getWorld() != null
                 && !spectator.getWorld().getName().equals(session.getTarget().worldName()))
-            errors.add(GuiConfig.text("area-prepare-dragoneggcarnivalprepareflow.text-008"));
+            errors.add(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.the-spawn-point-of-the-spectator-must-be-in-the-current-map-world"));
         return errors;
     }
 
@@ -66,7 +66,7 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
     private static DragonEggCarnivalConfig cfg(SetupTarget target) { return (DragonEggCarnivalConfig) target.config(); }
     private static PrepareStep location(String key, String name, Material icon, java.util.function.Predicate<SetupTarget> set,
                                         java.util.function.BiConsumer<SetupTarget, Location> setter, String done) {
-        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("area-prepare-dragoneggcarnivalprepareflow.text-009")), icon, set, setter,
+        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.after-reaching-the-target-position-click")), icon, set, setter,
                 Utils.formatAdminSuccess(done));
     }
 }

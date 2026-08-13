@@ -2,7 +2,6 @@ package ink.ziip.championshipscore.api.team;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
-import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -16,9 +15,11 @@ import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ChampionshipTeam {
-    private final Set<UUID> members = new HashSet<>();
+    private final Set<UUID> members = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, String> memberNames = new ConcurrentHashMap<>();
     @Getter
     private int id;
     @Getter
@@ -29,7 +30,6 @@ public class ChampionshipTeam {
     private String colorCode;
     @Getter
     private Team team;
-    private TeamDaoImpl teamDao;
 
     private ChampionshipTeam() {
     }
@@ -40,7 +40,6 @@ public class ChampionshipTeam {
         this.colorName = colorName;
         this.colorCode = colorCode;
         this.team = team;
-        this.teamDao = new TeamDaoImpl();
     }
 
     protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members, Team team) {
@@ -50,26 +49,21 @@ public class ChampionshipTeam {
         this.colorCode = colorCode;
         this.addMembers(members);
         this.team = team;
-        this.teamDao = new TeamDaoImpl();
+    }
+
+    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName,
+                               @NotNull String colorCode, @NotNull Map<UUID, String> members, Team team) {
+        this(id, name, colorName, colorCode, team);
+        members.forEach(this::addMember);
     }
 
     protected boolean addMember(@NotNull UUID uuid) {
-        synchronized (members) {
-            if (members.contains(uuid)) {
-                return false;
-            }
-            members.add(uuid);
-        }
-        return true;
+        return addMember(uuid, "unknown");
     }
 
-    protected boolean addMember(@NotNull Player player) {
-        UUID uuid = player.getUniqueId();
-        return addMember(uuid);
-    }
-
-    protected boolean addMember(@NotNull String name) {
-        return addMember(ChampionshipsCore.getInstance().getPlayerManager().getPlayerUUID(name));
+    protected boolean addMember(@NotNull UUID uuid, @NotNull String username) {
+        memberNames.put(uuid, username);
+        return members.add(uuid);
     }
 
     protected void addMembers(@NotNull Set<UUID> members) {
@@ -79,6 +73,7 @@ public class ChampionshipTeam {
     }
 
     protected boolean deleteMember(@NotNull UUID uuid) {
+        memberNames.remove(uuid);
         return members.remove(uuid);
     }
 
@@ -99,7 +94,10 @@ public class ChampionshipTeam {
 
     /** Returns the authoritative persisted identity for every member, including offline players. */
     public List<TeamMemberEntry> getTeamMemberEntries() {
-        return List.copyOf(teamDao.getTeamMembers(getId()));
+        return members.stream()
+                .map(uuid -> new TeamMemberEntry(0, uuid, memberNames.getOrDefault(uuid, "unknown"), id))
+                .sorted(Comparator.comparing(TeamMemberEntry::getUsername, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     public List<UUID> getOfflineMembers() {

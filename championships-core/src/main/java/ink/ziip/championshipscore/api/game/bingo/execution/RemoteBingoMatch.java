@@ -23,6 +23,7 @@ import ink.ziip.championshipscore.protocol.transport.MatchCommandPublisher;
 import ink.ziip.championshipscore.protocol.transport.PlayerRoutingGateway;
 import ink.ziip.championshipscore.protocol.transport.RouteReceipt;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 
 import java.time.Clock;
 import java.util.HashSet;
@@ -45,6 +46,7 @@ final class RemoteBingoMatch {
     private final PlayerRoutingGateway router;
     private final String workerServer;
     private final BingoScoringEngine scoring;
+    private final PlatformScheduler scheduler;
     private final MatchStateMachine lifecycle = new MatchStateMachine();
     private final Set<UUID> arrivedPlayers = new HashSet<>();
     private final Set<UUID> addedSpectators = new HashSet<>();
@@ -52,6 +54,8 @@ final class RemoteBingoMatch {
     private final List<PendingAward> pendingAwards = new ArrayList<>();
     private final Map<UUID, CompletableFuture<Boolean>> spectatorAddAcks = new ConcurrentHashMap<>();
     private final Map<UUID, CompletableFuture<Boolean>> spectatorRemoveAcks = new ConcurrentHashMap<>();
+    private final CompletableFuture<Void> terminal = new CompletableFuture<>();
+    private boolean normalStopRequested;
     private long lastEventSeq;
     private long lastActivityMillis = System.currentTimeMillis();
 
@@ -64,6 +68,7 @@ final class RemoteBingoMatch {
         this.router = router;
         this.workerServer = workerServer;
         this.scoring = new BingoScoringEngine(manifest);
+        this.scheduler = new PlatformScheduler(plugin);
     }
 
     MatchManifest manifest() {
@@ -76,6 +81,16 @@ final class RemoteBingoMatch {
 
     synchronized MatchState state() {
         return lifecycle.state();
+    }
+
+    CompletableFuture<Void> terminalFuture() {
+        return terminal;
+    }
+
+    synchronized boolean markNormalStopRequested() {
+        if (normalStopRequested) return false;
+        normalStopRequested = true;
+        return true;
     }
 
     synchronized void markPreparing() {
@@ -95,7 +110,7 @@ final class RemoteBingoMatch {
             case SPECTATOR_REMOVED -> completed(() -> acknowledgeSpectator(event, spectatorRemoveAcks));
             case STARTED -> completed(this::markStarted);
             case TASK_COMPLETED -> completed(() -> applyCompletion(event));
-            case FINISHED -> completed(() -> finish(event));
+            case FINISHED -> finish(event);
             case PREPARE_FAILED, FAILED, ABORTED -> completed(this::abort);
             case PLAYER_LEFT -> onPlayerLeft(event);
             case HEARTBEAT -> CompletableFuture.completedFuture(true);
@@ -242,22 +257,30 @@ final class RemoteBingoMatch {
         return true;
     }
 
-    private boolean finish(MatchEvent event) {
+    private CompletionStage<Boolean> finish(MatchEvent event) {
         BingoResult local = scoring.result();
         if (!local.resultHash().equals(required(event, "resultHash"))) {
             throw new IllegalStateException("Worker/Core Bingo result hash mismatch for " + manifest.matchId());
         }
+        List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions = new ArrayList<>();
         if (instance.isEventRun()) {
             for (PendingAward pending : pendingAwards) {
                 PlayerAward award = pending.award();
                 UUID transactionId = DeterministicIds.scoreTransaction(manifest.matchId(), manifest.epoch(),
                         pending.completionSeq(), award.playerId(), award.kind());
-                boolean staged = plugin.getRankManager().addPlayerPointsWithTransaction(transactionId,
-                        award.playerId(), null, GameTypeEnum.Bingo, instance.getGameConfig().getAreaName(),
-                        manifest.matchId() + ":" + manifest.epoch(), award.points());
-                if (!staged) return false;
+                submissions.add(new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
+                        transactionId, award.playerId(), null, GameTypeEnum.Bingo,
+                        instance.getGameConfig().getAreaName(),
+                        manifest.matchId() + ":" + manifest.epoch(), award.points()));
             }
         }
+        return plugin.getRankManager().addPlayerPointsBatch(submissions)
+                .thenCompose(staged -> staged
+                        ? scheduler.supplyGlobal(this::finishAccepted)
+                        : CompletableFuture.completedFuture(false));
+    }
+
+    private boolean finishAccepted() {
         synchronized (this) {
             if (lifecycle.state() != MatchState.RUNNING) return false;
             lifecycle.transitionTo(MatchState.SETTLING);
@@ -266,6 +289,7 @@ final class RemoteBingoMatch {
         }
         if (instance.isEventRun()) plugin.getRankManager().refreshAfterPendingPointWrites();
         instance.completeFromRemote();
+        terminal.complete(null);
         return true;
     }
 
@@ -274,7 +298,12 @@ final class RemoteBingoMatch {
             if (!lifecycle.state().terminal()) lifecycle.transitionTo(MatchState.ABORTED);
             completeSpectatorAcks(false);
         }
+        terminal.complete(null);
         return true;
+    }
+
+    void abortLocally() {
+        abort();
     }
 
     private void completeSpectatorAcks(boolean value) {

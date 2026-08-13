@@ -72,7 +72,7 @@ public class ParkourTagManager extends BaseGameInstanceManager<ParkourTagArea> {
         for (List<ParkourTagArea> instances : instancesByMap.values()) {
             for (ParkourTagArea instance : instances) {
                 if (instance.getGameStageEnum() != GameStageEnum.WAITING) {
-                    instance.endGameFinally();
+                    instance.abortAndReset();
                 }
             }
         }

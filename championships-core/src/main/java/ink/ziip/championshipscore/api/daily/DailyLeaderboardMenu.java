@@ -140,12 +140,12 @@ public final class DailyLeaderboardMenu {
         int totalRows = boards.stream().mapToInt(board -> stats.leaderboard(board.id()).size()).sum();
         inventory.setItem(PLAYER_SLOT, playerSummary(holder.viewer));
         inventory.setItem(OVERVIEW_SLOT, item(Material.NETHER_STAR,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-001"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.leaderboards.honor-roll"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(boards.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-002"), NamedTextColor.WHITE)
-                                .append(Component.text(GuiConfig.text("common.separator") + totalRows + GuiConfig.text("api-daily-dailyleaderboardmenu.text-003"), NamedTextColor.GRAY)),
-                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-004"), NamedTextColor.DARK_GRAY),
-                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-005"), NamedTextColor.YELLOW)
+                        Component.text(boards.size() + GuiConfig.text("daily.menus.leaderboards.list-categories"), NamedTextColor.WHITE)
+                                .append(Component.text(GuiConfig.text("common.separator") + totalRows + GuiConfig.text("daily.menus.leaderboards.records-on-the-list"), NamedTextColor.GRAY)),
+                        Component.text(GuiConfig.text("daily.menus.leaderboards.points-wins-and-racing-records-are-independent-of-each-other"), NamedTextColor.DARK_GRAY),
+                        Component.text(GuiConfig.text("daily.menus.leaderboards.timing-records-are-always-differentiated-by-game-map"), NamedTextColor.YELLOW)
                 ), false));
         inventory.setItem(RECORD_SLOT, personalRecords(holder.viewer));
 
@@ -159,17 +159,17 @@ public final class DailyLeaderboardMenu {
             holder.boardsBySlot.put(slot, board.id());
         }
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-006"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-007"), NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text("daily.menus.leaderboards.return-to-game-selection"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.leaderboards.continue-to-add-or-adjust-free-matching"), NamedTextColor.DARK_GRAY)), false));
         if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-008"), NamedTextColor.WHITE), List.of(), false));
+                Component.text(GuiConfig.text("daily.menus.leaderboards.previous-page"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(REFRESH_SLOT, refreshItem());
         inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-009") + (holder.page + 1) + "/" + holder.pageCount + GuiConfig.text("api-daily-dailyleaderboardmenu.text-010"), NamedTextColor.AQUA)
+                Component.text(GuiConfig.text("daily.menus.leaderboards.ordinal-prefix") + (holder.page + 1) + "/" + holder.pageCount + GuiConfig.text("daily.menus.leaderboards.page-suffix"), NamedTextColor.AQUA)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(boards.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-002"), NamedTextColor.GRAY)), false));
+                List.of(Component.text(boards.size() + GuiConfig.text("daily.menus.leaderboards.list-categories"), NamedTextColor.GRAY)), false));
         if (holder.page + 1 < holder.pageCount) inventory.setItem(NEXT_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-011"), NamedTextColor.WHITE), List.of(), false));
+                Component.text(GuiConfig.text("daily.menus.leaderboards.next-page"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(CLOSE_SLOT, closeItem());
     }
 
@@ -190,24 +190,24 @@ public final class DailyLeaderboardMenu {
             inventory.setItem(slot, rowItem(entries.get(index), index + 1, holder.viewer));
         }
         if (entries.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-012"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.leaderboards.no-list-record-yet"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-013"), NamedTextColor.DARK_GRAY),
-                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-014"), NamedTextColor.YELLOW)
+                        Component.text(GuiConfig.text("daily.menus.leaderboards.after-completing-a-corresponding-game-the-record-will-be-displayed-here"), NamedTextColor.DARK_GRAY),
+                        Component.text(GuiConfig.text("daily.menus.leaderboards.the-ranking-list-only-reads-data-in-this-mode"), NamedTextColor.YELLOW)
                 ), false));
 
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-015"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.leaderboards.return-to-list-category"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
                 List.of(Component.text(board.title(), NamedTextColor.DARK_GRAY)), false));
         if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-008"), NamedTextColor.WHITE), List.of(), false));
+                Component.text(GuiConfig.text("daily.menus.leaderboards.previous-page"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(REFRESH_SLOT, refreshItem());
         inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-009") + (holder.page + 1) + "/" + holder.pageCount + GuiConfig.text("api-daily-dailyleaderboardmenu.text-010"), NamedTextColor.AQUA)
+                Component.text(GuiConfig.text("daily.menus.leaderboards.ordinal-prefix") + (holder.page + 1) + "/" + holder.pageCount + GuiConfig.text("daily.menus.leaderboards.page-suffix"), NamedTextColor.AQUA)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(entries.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-016"), NamedTextColor.GRAY)), false));
+                List.of(Component.text(entries.size() + GuiConfig.text("daily.menus.leaderboards.valid-records"), NamedTextColor.GRAY)), false));
         if (holder.page + 1 < holder.pageCount) inventory.setItem(NEXT_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-011"), NamedTextColor.WHITE), List.of(), false));
+                Component.text(GuiConfig.text("daily.menus.leaderboards.next-page"), NamedTextColor.WHITE), List.of(), false));
         inventory.setItem(CLOSE_SLOT, closeItem());
     }
 
@@ -215,30 +215,30 @@ public final class DailyLeaderboardMenu {
         DailyStatSnapshot stat = stats.stat(viewer, null);
         int position = position(stats.leaderboard("wins"), viewer);
         return playerHead(viewer,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-017"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.leaderboards.my-list-business-card"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-018"), NamedTextColor.GRAY)
-                                .append(Component.text(position < 0 ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-019") : "#" + position,
+                        Component.text(GuiConfig.text("daily.menus.leaderboards.overall-list"), NamedTextColor.GRAY)
+                                .append(Component.text(position < 0 ? GuiConfig.text("daily.menus.leaderboards.not-yet-on-the-list") : "#" + position,
                                         position < 0 ? NamedTextColor.DARK_GRAY : NamedTextColor.GOLD)),
-                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-020"), NamedTextColor.GRAY).append(Component.text(stat.gamesPlayed() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-021") + stat.wins() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-022"), NamedTextColor.GREEN)),
-                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-023"), NamedTextColor.GRAY).append(Component.text(winRate(stat), NamedTextColor.YELLOW)),
+                        Component.text(GuiConfig.text("daily.menus.leaderboards.record"), NamedTextColor.GRAY).append(Component.text(stat.gamesPlayed() + GuiConfig.text("daily.menus.leaderboards.match-count-suffix") + stat.wins() + GuiConfig.text("daily.menus.leaderboards.win-count-suffix"), NamedTextColor.GREEN)),
+                        Component.text(GuiConfig.text("daily.menus.leaderboards.winning-rate"), NamedTextColor.GRAY).append(Component.text(winRate(stat), NamedTextColor.YELLOW)),
                         Component.empty(),
-                        Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-024"), NamedTextColor.DARK_GRAY)
+                        Component.text(GuiConfig.text("daily.menus.leaderboards.select-the-category-below-to-view-detailed-rankings"), NamedTextColor.DARK_GRAY)
                 ), position > 0);
     }
 
     private ItemStack personalRecords(UUID viewer) {
         List<Component> lore = new ArrayList<>();
-        appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FIRST_LINE, GuiConfig.text("api-daily-dailyleaderboardmenu.text-025"));
-        appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FULL_CARD, GuiConfig.text("api-daily-dailyleaderboardmenu.text-026"));
-        appendPersonalRecords(lore, viewer, GameTypeEnum.AceRace, DailyRecordType.ACERACE_FASTEST_LAP, GuiConfig.text("api-daily-dailyleaderboardmenu.text-027"));
+        appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FIRST_LINE, GuiConfig.text("daily.menus.leaderboards.first-connection"));
+        appendPersonalRecords(lore, viewer, GameTypeEnum.Bingo, DailyRecordType.BINGO_FULL_CARD, GuiConfig.text("daily.menus.leaderboards.all-collection"));
+        appendPersonalRecords(lore, viewer, GameTypeEnum.AceRace, DailyRecordType.ACERACE_FASTEST_LAP, GuiConfig.text("daily.menus.leaderboards.fastest-lap"));
         appendPersonalRecords(lore, viewer, GameTypeEnum.AceRace,
-                DailyRecordType.ACERACE_FASTEST_THREE_LAPS, GuiConfig.text("api-daily-dailyleaderboardmenu.text-028"));
-        if (lore.isEmpty()) lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-029"), NamedTextColor.DARK_GRAY));
+                DailyRecordType.ACERACE_FASTEST_THREE_LAPS, GuiConfig.text("daily.menus.leaderboards.fastest-three-complete-laps"));
+        if (lore.isEmpty()) lore.add(Component.text(GuiConfig.text("daily.menus.leaderboards.unlocked-after-completing-bingo-or-ace-race"), NamedTextColor.DARK_GRAY));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-030"), NamedTextColor.YELLOW));
+        lore.add(Component.text(GuiConfig.text("daily.menus.leaderboards.times-from-different-maps-will-not-be-mixed-in-rankings"), NamedTextColor.YELLOW));
         return item(Material.CLOCK,
-                Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-031"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD), lore, false);
+                Component.text(GuiConfig.text("daily.menus.leaderboards.my-time-record"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD), lore, false);
     }
 
     private void appendPersonalRecords(List<Component> lore, UUID viewer, GameTypeEnum game,
@@ -260,9 +260,9 @@ public final class DailyLeaderboardMenu {
         lore.add(Component.text(board.description(), NamedTextColor.GRAY));
         lore.add(Component.empty());
         if (entries.isEmpty()) {
-            lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-012"), NamedTextColor.DARK_GRAY));
+            lore.add(Component.text(GuiConfig.text("daily.menus.leaderboards.no-list-record-yet"), NamedTextColor.DARK_GRAY));
         } else {
-            lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-032"), NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("daily.menus.leaderboards.top-of-the-list"), NamedTextColor.GRAY)
                     .append(Component.text(entries.getFirst().name(), NamedTextColor.GOLD))
                     .append(Component.text(GuiConfig.text("common.separator") + value(entries.getFirst()), NamedTextColor.WHITE)));
             for (int index = 1; index < Math.min(3, entries.size()); index++) {
@@ -273,11 +273,11 @@ public final class DailyLeaderboardMenu {
             }
         }
         lore.add(Component.empty());
-        lore.add(Component.text(viewerPosition < 0 ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-033") : GuiConfig.text("api-daily-dailyleaderboardmenu.text-034") + viewerPosition,
+        lore.add(Component.text(viewerPosition < 0 ? GuiConfig.text("daily.menus.leaderboards.my-ranking-has-not-been-listed-yet") : GuiConfig.text("daily.menus.leaderboards.my-ranking") + viewerPosition,
                 viewerPosition < 0 ? NamedTextColor.DARK_GRAY : NamedTextColor.AQUA));
-        lore.add(Component.text(entries.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-035"), NamedTextColor.DARK_GRAY));
+        lore.add(Component.text(entries.size() + GuiConfig.text("daily.menus.leaderboards.players-on-the-list"), NamedTextColor.DARK_GRAY));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-036"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+        lore.add(Component.text(GuiConfig.text("daily.menus.leaderboards.click-to-view-the-complete-list"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
         Component marker = viewerPosition > 0 ? Component.text("✓ ", NamedTextColor.AQUA) : Component.empty();
         return item(board.material(), marker.append(Component.text(board.title(), board.color()))
                 .decorate(TextDecoration.BOLD), lore, viewerPosition > 0);
@@ -287,11 +287,11 @@ public final class DailyLeaderboardMenu {
         int viewerPosition = position(entries, viewer);
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text(board.category(), NamedTextColor.GRAY));
-        lore.add(Component.text(entries.size() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-037"), NamedTextColor.WHITE));
-        if (!entries.isEmpty()) lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-032"), NamedTextColor.GRAY)
+        lore.add(Component.text(entries.size() + GuiConfig.text("daily.menus.leaderboards.players-have-valid-records"), NamedTextColor.WHITE));
+        if (!entries.isEmpty()) lore.add(Component.text(GuiConfig.text("daily.menus.leaderboards.top-of-the-list"), NamedTextColor.GRAY)
                 .append(Component.text(entries.getFirst().name(), NamedTextColor.GOLD))
                 .append(Component.text(GuiConfig.text("common.separator") + value(entries.getFirst()), NamedTextColor.WHITE)));
-        lore.add(Component.text(viewerPosition < 0 ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-038") : GuiConfig.text("api-daily-dailyleaderboardmenu.text-034") + viewerPosition,
+        lore.add(Component.text(viewerPosition < 0 ? GuiConfig.text("daily.menus.leaderboards.i-m-not-on-the-list-yet") : GuiConfig.text("daily.menus.leaderboards.my-ranking") + viewerPosition,
                 viewerPosition < 0 ? NamedTextColor.DARK_GRAY : NamedTextColor.AQUA));
         return item(board.material(), Component.text(board.title(), board.color()).decorate(TextDecoration.BOLD), lore,
                 viewerPosition > 0);
@@ -307,12 +307,12 @@ public final class DailyLeaderboardMenu {
                 .append(Component.text(entry.name(), entry.player().equals(viewer) ? NamedTextColor.GREEN : NamedTextColor.WHITE))
                 .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(entry.duration() ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-039") : GuiConfig.text("api-daily-dailyleaderboardmenu.text-040"), NamedTextColor.GRAY)
+        lore.add(Component.text(entry.duration() ? GuiConfig.text("daily.menus.leaderboards.best-time-to-use") : GuiConfig.text("daily.menus.leaderboards.list-value"), NamedTextColor.GRAY)
                 .append(Component.text(value(entry), NamedTextColor.GOLD)));
-        if (rank <= 3) lore.add(Component.text(rank == 1 ? GuiConfig.text("api-daily-dailyleaderboardmenu.text-041") : GuiConfig.text("api-daily-dailyleaderboardmenu.text-042"), rankColor));
+        if (rank <= 3) lore.add(Component.text(rank == 1 ? GuiConfig.text("daily.menus.leaderboards.current-top-list") : GuiConfig.text("daily.menus.leaderboards.podium-record"), rankColor));
         if (entry.player().equals(viewer)) {
             lore.add(Component.empty());
-            lore.add(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-043"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("daily.menus.leaderboards.this-is-your-record"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
         }
         meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
         meta.setEnchantmentGlintOverride(entry.player().equals(viewer));
@@ -323,24 +323,24 @@ public final class DailyLeaderboardMenu {
     private List<Board> boards() {
         List<Board> boards = new ArrayList<>();
         boards.add(new Board("wins", MessageConfig.DAILY_LEADERBOARD_WINS, Material.GOLDEN_SWORD,
-                NamedTextColor.GREEN, GuiConfig.text("api-daily-dailyleaderboardmenu.text-044"), GuiConfig.text("api-daily-dailyleaderboardmenu.text-045")));
+                NamedTextColor.GREEN, GuiConfig.text("daily.menus.leaderboards.overall-record"), GuiConfig.text("daily.menus.leaderboards.accumulate-wins-in-all-mode-events")));
         for (String map : knownMaps(GameTypeEnum.Bingo)) {
             String slug = DailyStatsManager.mapSlug(map);
             boards.add(new Board("bingo_first_line_" + slug, replace(
                     MessageConfig.DAILY_LEADERBOARD_BINGO_FIRST_LINE, "%map%", map), Material.MAP,
-                    NamedTextColor.LIGHT_PURPLE, GuiConfig.text("api-daily-dailyleaderboardmenu.text-046") + map, GuiConfig.text("api-daily-dailyleaderboardmenu.text-047")));
+                    NamedTextColor.LIGHT_PURPLE, GuiConfig.text("daily.menus.leaderboards.bingo") + map, GuiConfig.text("daily.menus.leaderboards.fastest-time-from-opening-to-first-completion-of-any-connection")));
             boards.add(new Board("bingo_full_card_" + slug, replace(
                     MessageConfig.DAILY_LEADERBOARD_BINGO_FULL_CARD, "%map%", map), Material.FILLED_MAP,
-                    NamedTextColor.GOLD, GuiConfig.text("api-daily-dailyleaderboardmenu.text-046") + map, GuiConfig.text("api-daily-dailyleaderboardmenu.text-048")));
+                    NamedTextColor.GOLD, GuiConfig.text("daily.menus.leaderboards.bingo") + map, GuiConfig.text("daily.menus.leaderboards.fastest-time-from-opening-to-completing-the-entire-card")));
         }
         for (String map : knownMaps(GameTypeEnum.AceRace)) {
             String slug = DailyStatsManager.mapSlug(map);
             boards.add(new Board("acerace_fastest_lap_" + slug, replace(
                     MessageConfig.DAILY_LEADERBOARD_ACERACE_FASTEST_LAP, "%map%", map), Material.CLOCK,
-                    NamedTextColor.AQUA, GuiConfig.text("api-daily-dailyleaderboardmenu.text-049") + map, GuiConfig.text("api-daily-dailyleaderboardmenu.text-050")));
+                    NamedTextColor.AQUA, GuiConfig.text("daily.menus.leaderboards.ace-racing") + map, GuiConfig.text("daily.menus.leaderboards.fastest-time-for-a-complete-legal-lap-of-the-map")));
             boards.add(new Board("acerace_fastest_three_laps_" + slug, replace(
                     MessageConfig.DAILY_LEADERBOARD_ACERACE_FASTEST_THREE_LAPS, "%map%", map), Material.CLOCK,
-                    NamedTextColor.GOLD, GuiConfig.text("api-daily-dailyleaderboardmenu.text-049") + map, GuiConfig.text("api-daily-dailyleaderboardmenu.text-051")));
+                    NamedTextColor.GOLD, GuiConfig.text("daily.menus.leaderboards.ace-racing") + map, GuiConfig.text("daily.menus.leaderboards.the-fastest-time-to-complete-three-laps-of-the-map")));
         }
         return List.copyOf(boards);
     }
@@ -356,7 +356,7 @@ public final class DailyLeaderboardMenu {
 
     private Board findBoard(String id) {
         return boards().stream().filter(board -> board.id().equals(id)).findFirst()
-                .orElse(new Board(id, id, Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("api-daily-dailyleaderboardmenu.text-052"), GuiConfig.text("api-daily-dailyleaderboardmenu.text-053")));
+                .orElse(new Board(id, id, Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("daily.menus.leaderboards.this-mode"), GuiConfig.text("daily.menus.leaderboards.historical-list")));
     }
 
     private static void drawBorder(Inventory inventory) {
@@ -366,12 +366,12 @@ public final class DailyLeaderboardMenu {
     }
 
     private static ItemStack refreshItem() {
-        return item(Material.CLOCK, Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-054"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-055"), NamedTextColor.DARK_GRAY)), false);
+        return item(Material.CLOCK, Component.text(GuiConfig.text("daily.menus.leaderboards.refresh"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.leaderboards.list-reading-memory-cache-does-not-block-the-game"), NamedTextColor.DARK_GRAY)), false);
     }
 
     private static ItemStack closeItem() {
-        return item(Material.BARRIER, Component.text(GuiConfig.text("api-daily-dailyleaderboardmenu.text-056"), NamedTextColor.RED), List.of(), false);
+        return item(Material.BARRIER, Component.text(GuiConfig.text("daily.menus.leaderboards.close"), NamedTextColor.RED), List.of(), false);
     }
 
     private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
@@ -432,7 +432,7 @@ public final class DailyLeaderboardMenu {
     }
 
     private static String value(DailyLeaderboardEntry entry) {
-        return entry.duration() ? formatDuration((long) entry.value()) : (long) entry.value() + GuiConfig.text("api-daily-dailyleaderboardmenu.text-022");
+        return entry.duration() ? formatDuration((long) entry.value()) : (long) entry.value() + GuiConfig.text("daily.menus.leaderboards.win-count-suffix");
     }
 
     private static String winRate(DailyStatSnapshot stat) {

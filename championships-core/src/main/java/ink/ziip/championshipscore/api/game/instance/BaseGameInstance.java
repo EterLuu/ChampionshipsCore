@@ -20,8 +20,10 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
@@ -52,6 +54,7 @@ public abstract class BaseGameInstance {
     private volatile CompletableFuture<Void> startPreloadFuture = CompletableFuture.completedFuture(null);
     private boolean roundTransitionPending;
     private boolean forceTerminalEnd;
+    private boolean settlementSuppressed;
     private GameRunMode runMode = GameRunMode.GAME;
     private boolean postGamePending;
     private boolean postGameFinalizing;
@@ -117,6 +120,19 @@ public abstract class BaseGameInstance {
 
         setGameStageEnum(GameStageEnum.WAITING);
         logGame(Level.INFO, "流程", "场地已重置，等待下一场");
+    }
+
+    public final void routePlayerMoveLow(@NotNull PlayerMoveEvent event) {
+        gameInstanceHandler.handleRoutedPlayerMoveLow(event);
+        gameHandler.handleRoutedPlayerMoveLow(event);
+    }
+
+    public final void routePlayerMoveNormal(@NotNull PlayerMoveEvent event) {
+        gameHandler.handleRoutedPlayerMoveNormal(event);
+    }
+
+    public final void routePlayerMoveHigh(@NotNull PlayerMoveEvent event) {
+        gameHandler.handleRoutedPlayerMoveHigh(event);
     }
 
     /** Permanently releases listeners and UI owned by this instance when its manager unloads it. */
@@ -243,12 +259,19 @@ public abstract class BaseGameInstance {
     }
 
     public void addPlayerPointsToDatabase() {
-        if (runMode != GameRunMode.EVENT)
+        if (settlementSuppressed || runMode != GameRunMode.EVENT)
             return;
+        List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions = new ArrayList<>();
         for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
             if (playerPointEntry.getValue() != 0)
-                plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), null, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+                submissions.add(new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
+                        UUID.randomUUID(), playerPointEntry.getKey(), null, gameTypeEnum,
+                        gameConfig.getAreaName(), "scc", playerPointEntry.getValue()));
         }
+        plugin.getRankManager().addPlayerPointsBatch(submissions).exceptionally(failure -> {
+            logGame(Level.SEVERE, "积分", "批量积分提交失败 | " + failure.getMessage());
+            return false;
+        });
         plugin.getRankManager().refreshAfterPendingPointWrites();
     }
 
@@ -362,7 +385,10 @@ public abstract class BaseGameInstance {
             return false;
         }
 
-        getGameConfig().initializeConfiguration(plugin.getFolder());
+        if (!getGameConfig().reloadConfigurationChecked(plugin.getFolder())) {
+            logGame(Level.SEVERE, "配置", "地图配置重载失败，场地保持禁用 " + getWorldName());
+            return false;
+        }
         getGameHandler().register();
         setGameStageEnum(GameStageEnum.WAITING);
         long finishedAt = System.nanoTime();
@@ -395,7 +421,8 @@ public abstract class BaseGameInstance {
     public final CompletableFuture<Boolean> loadPublishedMapOrDraft(World.Environment environment) {
         if (!Bukkit.isPrimaryThread())
             return runOnMain(() -> loadPublishedMapOrDraft(environment));
-        getGameConfig().initializeConfiguration(plugin.getFolder());
+        if (!getGameConfig().reloadConfigurationChecked(plugin.getFolder()))
+            return CompletableFuture.completedFuture(false);
         if (getGameConfig().isWorldBindingPending()) {
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
@@ -1103,6 +1130,10 @@ public abstract class BaseGameInstance {
 
     protected void announceGameEnd(String title, String subtitle) {
         clearBossBars();
+        if (settlementSuppressed) {
+            logGame(Level.INFO, "流程", "本局已作废，不执行结算公告");
+            return;
+        }
         sendActionBarToAllGamePlayers(MessageConfig.GAME_END_ACTION_BAR
                 .replace("%game%", gameTypeEnum.toString()));
         boolean hasNextRound = isEventRun() && plugin.getScheduleManager() != null
@@ -1112,6 +1143,16 @@ public abstract class BaseGameInstance {
                 : MessageConfig.GAME_ROUND_END_TITLE;
         sendTitleToAllGamePlayers(completionTitle, subtitle);
         logGame(Level.INFO, "流程", "游戏结束，开始结算");
+    }
+
+    /** Emits a normal completion event only when this run is actually being settled. */
+    protected final void publishGameEndEvent(@NotNull Event event) {
+        if (!settlementSuppressed) Bukkit.getPluginManager().callEvent(event);
+    }
+
+    /** Shared guard for specialised settlement implementations such as paired-team scoring. */
+    protected final boolean isSettlementAllowed() {
+        return !settlementSuppressed;
     }
 
     /** Cancels a running rule-introduction phase (task + flag); safe to call at any time. */
@@ -1287,6 +1328,33 @@ public abstract class BaseGameInstance {
         } finally {
             forceTerminalEnd = false;
         }
+    }
+
+    /**
+     * Cancels a partial run and restores its arena without awarding points or publishing completion
+     * events. The returned future completes only after an asynchronous template/world restore has
+     * finished and the instance is ready again.
+     */
+    public CompletableFuture<Boolean> abortAndReset() {
+        if (!Bukkit.isPrimaryThread()) return runOnMain(this::abortAndReset);
+        if (disposed) return CompletableFuture.completedFuture(false);
+        if (getGameStageEnum() == GameStageEnum.WAITING)
+            return CompletableFuture.completedFuture(true);
+        if (!activeMapLoad.isDone()) return activeMapLoad.thenApply(Boolean.TRUE::equals);
+
+        settlementSuppressed = true;
+        try {
+            endGameFinally();
+            // A few implementations legitimately ignore END. If there is no reset already in flight,
+            // force the common reset so an interrupted transition cannot remain stuck in END.
+            if (getGameStageEnum() != GameStageEnum.WAITING && activeMapLoad.isDone()) resetGame();
+        } finally {
+            settlementSuppressed = false;
+        }
+
+        CompletableFuture<Boolean> completion = activeMapLoad;
+        return completion.thenApply(success -> Boolean.TRUE.equals(success)
+                && getGameStageEnum() == GameStageEnum.WAITING);
     }
 
     public void removeSpectator(@NotNull UUID uuid) {

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.manager;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
@@ -13,6 +14,7 @@ import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoManager;
 import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionRouter;
+import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionMode;
 import ink.ziip.championshipscore.api.game.bingo.execution.BingoStartRequest;
 import ink.ziip.championshipscore.api.game.bingo.execution.LocalBingoExecutionGateway;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoInstance;
@@ -45,10 +47,26 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class GameManager extends BaseManager {
+    public enum GameStopResult {
+        SETTLEMENT_STARTED,
+        PRE_START_ABORTED,
+        NOT_ACTIVE,
+        NOT_REGISTERED,
+        FAILED
+    }
+
+    public record ReloadReport(int reusedInstances, int resetInstances, int failedResets,
+                               int reloadedConfigurations, int failedConfigurations,
+                               int enabledManagers, int disabledManagers,
+                               int remoteMatchesStopped) {
+    }
+
     private final Map<UUID, BaseGameInstance> playerSpectatorStatus = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, BaseGameInstance> teamStatus = new ConcurrentHashMap<>();
     private final Map<UUID, BaseGameInstance> playerStatus = new ConcurrentHashMap<>();
@@ -229,6 +247,140 @@ public class GameManager extends BaseManager {
         return enabledGames;
     }
 
+    /** Immutable snapshot taken before ConfigurationManager replaces the global config values. */
+    public Set<GameTypeEnum> enabledGamesSnapshot() {
+        return Set.copyOf(getEnabledGames());
+    }
+
+    /**
+     * Reconciles global game enablement without tearing down unchanged maps. Idle instances retain
+     * their worlds, listeners and loaded templates; only non-WAITING instances are force-reset.
+     * Managers are loaded/unloaded solely when enabled-games actually changes.
+     */
+    public CompletionStage<ReloadReport> hotReload(@NotNull Set<GameTypeEnum> previouslyEnabled) {
+        if (!Bukkit.isPrimaryThread())
+            throw new IllegalStateException("GameManager hot reload must run on the server thread");
+
+        enabledGames = null;
+        Set<GameTypeEnum> currentlyEnabled = Set.copyOf(getEnabledGames());
+        Set<GameTypeEnum> managersToDisable = EnumSet.noneOf(GameTypeEnum.class);
+        for (GameTypeEnum gameType : previouslyEnabled) {
+            if (!currentlyEnabled.contains(gameType) && loadedGameManagers.contains(gameType))
+                managersToDisable.add(gameType);
+        }
+        Set<GameTypeEnum> managersToEnable = EnumSet.noneOf(GameTypeEnum.class);
+        for (GameTypeEnum gameType : currentlyEnabled) {
+            if (!loadedGameManagers.contains(gameType)) managersToEnable.add(gameType);
+        }
+
+        int resetInstances = 0;
+        int remoteMatchesStopped = 0;
+
+        Set<ink.ziip.championshipscore.api.game.config.BaseGameConfig> activeConfigurations =
+                Collections.newSetFromMap(new IdentityHashMap<>());
+        for (GameTypeEnum gameType : Set.copyOf(loadedGameManagers)) {
+            if (managersToDisable.contains(gameType)) continue;
+            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            if (manager == null) continue;
+            for (BaseGameInstance instance : manager.getRuntimeInstances()) {
+                if (instance.getGameStageEnum() != GameStageEnum.WAITING)
+                    activeConfigurations.add(instance.getGameConfig());
+            }
+        }
+
+        int reloadedConfigurations = 0;
+        int failedConfigurations = 0;
+        int reusedInstances = 0;
+        Set<ink.ziip.championshipscore.api.game.config.BaseGameConfig> visitedConfigurations =
+                Collections.newSetFromMap(new IdentityHashMap<>());
+        List<CompletableFuture<Boolean>> resets = new ArrayList<>();
+        for (GameTypeEnum gameType : Set.copyOf(loadedGameManagers)) {
+            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            if (manager == null) continue;
+            boolean disabling = managersToDisable.contains(gameType);
+            for (BaseGameInstance instance : manager.getRuntimeInstances()) {
+                if (instance.getGameStageEnum() == GameStageEnum.WAITING) {
+                    if (!disabling && !activeConfigurations.contains(instance.getGameConfig())
+                            && visitedConfigurations.add(instance.getGameConfig())) {
+                        if (instance.getGameConfig().reloadConfigurationChecked(plugin.getFolder()))
+                            reloadedConfigurations++;
+                        else
+                            failedConfigurations++;
+                    }
+                    if (!disabling) reusedInstances++;
+                    continue;
+                }
+                if (plugin.getDailyManager() != null) plugin.getDailyManager().abort(instance);
+                resets.add(instance.abortAndReset());
+                resetInstances++;
+            }
+        }
+
+        for (RemoteBingoInstance instance : remoteBingoInstances.values()) {
+            if (instance.getGameStageEnum() != GameStageEnum.WAITING) remoteMatchesStopped++;
+        }
+        CompletableFuture<Void> remoteStop = remoteMatchesStopped > 0
+                ? bingoExecutionRouter.forceEnd("configuration-reload").toCompletableFuture()
+                : CompletableFuture.completedFuture(null);
+
+        int finalReusedInstances = reusedInstances;
+        int finalResetInstances = resetInstances;
+        int finalRemoteMatchesStopped = remoteMatchesStopped;
+        int finalReloadedConfigurations = reloadedConfigurations;
+        int finalFailedConfigurations = failedConfigurations;
+        CompletableFuture<?>[] operations = new CompletableFuture<?>[resets.size() + 1];
+        for (int index = 0; index < resets.size(); index++) operations[index] = resets.get(index);
+        operations[operations.length - 1] = remoteStop;
+        CompletableFuture<ReloadReport> result = new CompletableFuture<>();
+        CompletableFuture.allOf(operations).whenComplete((ignored, operationFailure) -> {
+            Runnable finish = () -> {
+                try {
+                    int failedResets = (int) resets.stream()
+                            .filter(reset -> reset.isCompletedExceptionally() || !Boolean.TRUE.equals(reset.getNow(false)))
+                            .count();
+                    int disabledManagers = 0;
+                    if (managersToDisable.contains(GameTypeEnum.Bingo)
+                            && plugin.getRemoteBingoManager() != null) {
+                        plugin.getRemoteBingoManager().unload();
+                    }
+                    for (GameTypeEnum gameType : managersToDisable) {
+                        if (!loadedGameManagers.remove(gameType)) continue;
+                        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+                        if (manager != null) manager.unload();
+                        disabledManagers++;
+                    }
+                    int enabledManagers = 0;
+                    for (GameTypeEnum gameType : managersToEnable) {
+                        if (loadGameManager(gameType)) enabledManagers++;
+                    }
+                    if (managersToEnable.contains(GameTypeEnum.Bingo)
+                            && loadedGameManagers.contains(GameTypeEnum.Bingo)
+                            && plugin.getRemoteBingoManager() != null) {
+                        plugin.getRemoteBingoManager().load();
+                    }
+                    if (operationFailure != null) {
+                        result.completeExceptionally(operationFailure);
+                        return;
+                    }
+                    result.complete(new ReloadReport(finalReusedInstances, finalResetInstances, failedResets,
+                            finalReloadedConfigurations, finalFailedConfigurations,
+                            enabledManagers, disabledManagers, finalRemoteMatchesStopped));
+                } catch (Throwable failure) {
+                    result.completeExceptionally(failure);
+                }
+            };
+            if (Bukkit.isPrimaryThread()) finish.run();
+            else {
+                try {
+                    Bukkit.getScheduler().runTask(plugin, finish);
+                } catch (RuntimeException schedulingFailure) {
+                    result.completeExceptionally(schedulingFailure);
+                }
+            }
+        });
+        return result;
+    }
+
     @Override
     public void load() {
         for (GameTypeEnum gameType : areaManagers.keySet()) {
@@ -318,6 +470,114 @@ public class GameManager extends BaseManager {
                 instance.endGameFinally();
             }
         }
+    }
+
+    /**
+     * Every exact runtime target which an administrator can stop. This deliberately includes
+     * pre-start stages so a stuck preload/countdown can be reset without touching sibling copies.
+     */
+    public @NotNull List<BaseGameInstance> getStoppableInstances() {
+        List<BaseGameInstance> instances = new ArrayList<>();
+        for (Map.Entry<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> entry
+                : areaManagers.entrySet()) {
+            if (!loadedGameManagers.contains(entry.getKey())) continue;
+            entry.getValue().getRuntimeInstances().stream()
+                    .filter(instance -> isStoppableStage(instance.getGameStageEnum()))
+                    .forEach(instances::add);
+        }
+        remoteBingoInstances.values().stream()
+                .filter(instance -> isStoppableStage(instance.getGameStageEnum()))
+                .forEach(instances::add);
+        instances.sort(Comparator
+                .comparingInt((BaseGameInstance instance) -> instance.getGameTypeEnum().ordinal())
+                .thenComparing(this::canonicalMapName, String.CASE_INSENSITIVE_ORDER)
+                .thenComparingInt(BaseGameInstance::getCopyIndex)
+                .thenComparing(this::stableInstanceKey));
+        return List.copyOf(instances);
+    }
+
+    /** Active copies matching one configured map, including one exact remote Bingo match. */
+    public @NotNull List<BaseGameInstance> getStoppableMapInstances(
+            @NotNull GameTypeEnum gameType, @NotNull String mapName) {
+        return getStoppableInstances().stream()
+                .filter(instance -> instance.getGameTypeEnum() == gameType)
+                .filter(instance -> mapMatches(instance, mapName))
+                .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex)
+                        .thenComparing(this::stableInstanceKey))
+                .toList();
+    }
+
+    /**
+     * Stops one still-registered target only. A played game uses its ordinary end path so scoring,
+     * end events and result presentation remain intact; a pre-start run is aborted without points.
+     */
+    public CompletionStage<GameStopResult> stopGameInstance(@NotNull BaseGameInstance target,
+                                                             @NotNull String reason) {
+        if (!Bukkit.isPrimaryThread()) {
+            CompletableFuture<GameStopResult> result = new CompletableFuture<>();
+            Bukkit.getScheduler().runTask(plugin, () -> stopGameInstance(target, reason)
+                    .whenComplete((value, failure) -> {
+                        if (failure == null) result.complete(value);
+                        else result.completeExceptionally(failure);
+                    }));
+            return result;
+        }
+        if (!isRegisteredRuntimeInstance(target))
+            return CompletableFuture.completedFuture(GameStopResult.NOT_REGISTERED);
+
+        GameStageEnum stage = target.getGameStageEnum();
+        if (!isStoppableStage(stage))
+            return CompletableFuture.completedFuture(GameStopResult.NOT_ACTIVE);
+
+        boolean settle = settlesOnAdministrativeStop(stage);
+        if (target instanceof RemoteBingoInstance remote) {
+            return plugin.getRemoteBingoManager().stopMatch(remote.matchId(), reason, settle)
+                    .thenApply(stopped -> stopped
+                            ? (settle ? GameStopResult.SETTLEMENT_STARTED : GameStopResult.PRE_START_ABORTED)
+                            : GameStopResult.FAILED);
+        }
+
+        if (!settle) {
+            return target.abortAndReset().thenApply(reset -> reset
+                    ? GameStopResult.PRE_START_ABORTED : GameStopResult.FAILED);
+        }
+
+        try {
+            // This is intentionally the normal end entry, not endGameFinally(): the latter suppresses
+            // the visible result phase and is reserved for emergency lifecycle teardown.
+            target.endGame();
+            return CompletableFuture.completedFuture(
+                    isStoppableStage(target.getGameStageEnum())
+                            ? GameStopResult.FAILED : GameStopResult.SETTLEMENT_STARTED);
+        } catch (RuntimeException failure) {
+            plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(target.getGameTypeEnum(),
+                    canonicalMapName(target), stage.name(), "管理员停止", "正常结算入口异常"), failure);
+            return CompletableFuture.completedFuture(GameStopResult.FAILED);
+        }
+    }
+
+    static boolean isStoppableStage(@NotNull GameStageEnum stage) {
+        return stage == GameStageEnum.LOADING || stage == GameStageEnum.PREPARATION
+                || stage == GameStageEnum.COUNTDOWN || stage == GameStageEnum.PROGRESS
+                || stage == GameStageEnum.STOPPING;
+    }
+
+    static boolean settlesOnAdministrativeStop(@NotNull GameStageEnum stage) {
+        return stage == GameStageEnum.PROGRESS || stage == GameStageEnum.STOPPING;
+    }
+
+    private boolean isRegisteredRuntimeInstance(@NotNull BaseGameInstance target) {
+        if (target instanceof RemoteBingoInstance remote)
+            return remoteBingoInstances.get(remote.matchId()) == remote;
+        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(target.getGameTypeEnum());
+        return manager != null && manager.getRuntimeInstances().stream().anyMatch(instance -> instance == target);
+    }
+
+    private @NotNull String canonicalMapName(@NotNull BaseGameInstance instance) {
+        String configName = instance.getGameConfig().getConfigName();
+        if (configName != null && !configName.isBlank()) return configName;
+        String areaName = instance.getGameConfig().getAreaName();
+        return areaName == null ? "" : areaName;
     }
 
     public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam rightChampionshipTeam, @NotNull ChampionshipTeam leftChampionshipTeam) {
@@ -532,11 +792,21 @@ public class GameManager extends BaseManager {
     }
 
     /** Public-play Bingo entry that carries an explicit transient roster through local or remote execution. */
-    public boolean joinBingoForTeams(@NotNull String area, boolean showIntroduction,
-                                     @NotNull GameRunMode runMode,
-                                     @NotNull List<ChampionshipTeam> teams) {
-        if (teams.isEmpty()) return false;
+    public CompletionStage<Boolean> joinBingoForTeams(@NotNull String area, boolean showIntroduction,
+                                                      @NotNull GameRunMode runMode,
+                                                      @NotNull List<ChampionshipTeam> teams) {
+        if (teams.isEmpty()) return CompletableFuture.completedFuture(false);
         return bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode, teams));
+    }
+
+    /** Async-safe start surface used by schedules and commands; remote mode waits for its manifest row. */
+    public CompletionStage<Boolean> joinSingleTeamAreaForAllTeamsAsync(
+            @NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
+            boolean showIntroduction, @NotNull GameRunMode runMode) {
+        if (gameTypeEnum == GameTypeEnum.Bingo)
+            return bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode));
+        return CompletableFuture.completedFuture(joinSingleTeamAreaForAllTeamsLocal(
+                gameTypeEnum, area, showIntroduction, runMode));
     }
 
     public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, List<UUID> players) {
@@ -605,8 +875,9 @@ public class GameManager extends BaseManager {
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                                   @NotNull Collection<UUID> additionalPlayers) {
         if (gameTypeEnum == GameTypeEnum.Bingo) {
-            return additionalPlayers.isEmpty()
-                    && bingoExecutionRouter.start(new BingoStartRequest(area, false, GameRunMode.GAME));
+            return additionalPlayers.isEmpty() && bingoExecutionRouter.mode() == BingoExecutionMode.LOCAL
+                    && bingoExecutionRouter.start(new BingoStartRequest(area, false, GameRunMode.GAME))
+                    .toCompletableFuture().getNow(false);
         }
         return joinSingleTeamAreaForAllTeamsLocal(
                 gameTypeEnum, area, false, GameRunMode.GAME, additionalPlayers);
@@ -620,7 +891,9 @@ public class GameManager extends BaseManager {
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                                   boolean showIntroduction, @NotNull GameRunMode runMode) {
         if (gameTypeEnum == GameTypeEnum.Bingo) {
-            return bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode));
+            return bingoExecutionRouter.mode() == BingoExecutionMode.LOCAL
+                    && bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode))
+                    .toCompletableFuture().getNow(false);
         }
         return joinSingleTeamAreaForAllTeamsLocal(gameTypeEnum, area, showIntroduction, runMode);
     }
@@ -1010,6 +1283,8 @@ public class GameManager extends BaseManager {
     private boolean isPlayerUnavailableForStart(UUID uuid, GameTypeEnum gameType, boolean showIntroduction,
                                                 GameRunMode requestedMode) {
         if (playerStatus.containsKey(uuid)) return true;
+        ChampionshipTeam formalTeam = plugin.getTeamManager().getFormalTeamByPlayer(uuid);
+        if (formalTeam != null && plugin.getTeamManager().isMutationPending(formalTeam)) return true;
         RoundTransitionHold hold = roundTransitionHolds.get(uuid);
         if (hold == null) return false;
         return requestedMode != GameRunMode.EVENT || showIntroduction
@@ -1116,7 +1391,8 @@ public class GameManager extends BaseManager {
         if (player.hasPermission(MainCommand.ADMIN_PERMISSION)) return true;
         if (!CCConfig.STRICT_SPECTATOR_RULE) return true;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (plugin.getRankManager().getRound() != 7 && team != null && !player.hasPermission("cc.refuge")) {
+        if (plugin.getRankManager().getRound() != 7 && team != null
+                && !player.hasPermission(ChampionshipPermissions.REFEREE)) {
             player.sendMessage(ink.ziip.championshipscore.configuration.config.message.MessageConfig.SPECTATOR_IS_PLAYER);
             return false;
         }

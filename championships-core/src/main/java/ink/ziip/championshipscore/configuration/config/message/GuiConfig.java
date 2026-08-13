@@ -9,8 +9,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /** Configurable text used by inventory menus, hotbar controls and map-preparation screens. */
 public final class GuiConfig extends BaseConfigurationFile {
@@ -32,7 +36,7 @@ public final class GuiConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 1;
+        return 3;
     }
 
     @Override
@@ -43,11 +47,22 @@ public final class GuiConfig extends BaseConfigurationFile {
     /** Preserve administrator overrides while filling new GUI keys from future bundled versions. */
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration previous) throws IOException {
+        Properties aliases = legacyAliases();
         for (String key : previous.getKeys(true)) {
-            if (!previous.isConfigurationSection(key) && !key.equals("dont-edit-this.version"))
-                configuration.set(key, previous.get(key));
+            if (!previous.isConfigurationSection(key) && !key.equals("dont-edit-this.version")) {
+                configuration.set(aliases.getProperty(key, key), previous.get(key));
+            }
         }
-        super.loadFromOutdatedConfiguration(new YamlConfiguration());
+        configuration.save(configurationPath.toFile());
+    }
+
+    private Properties legacyAliases() throws IOException {
+        Properties aliases = new Properties();
+        try (InputStream input = plugin.getResource("gui-legacy-aliases.properties")) {
+            if (input == null) throw new IOException("Missing gui-legacy-aliases.properties");
+            aliases.load(new InputStreamReader(input, StandardCharsets.UTF_8));
+        }
+        return aliases;
     }
 
     public static @NotNull String text(@NotNull String path) {

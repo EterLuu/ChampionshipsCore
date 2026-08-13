@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.execution;
 
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Runtime execution selector. It deliberately starts in LOCAL mode; installing a remote gateway is a
@@ -34,13 +35,13 @@ public final class BingoExecutionRouter implements BingoExecutionGateway {
     }
 
     @Override
-    public boolean start(BingoStartRequest request) {
+    public CompletionStage<Boolean> start(BingoStartRequest request) {
         return active.start(Objects.requireNonNull(request, "request"));
     }
 
     @Override
-    public void forceEnd(String reason) {
-        active.forceEnd(Objects.requireNonNull(reason, "reason"));
+    public CompletionStage<Void> forceEnd(String reason) {
+        return active.forceEnd(Objects.requireNonNull(reason, "reason"));
     }
 
     private static BingoExecutionGateway requireMode(

@@ -53,19 +53,27 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
 
     @Override
     public void addPlayerPointsToDatabase() {
-        if (!isEventRun())
-            return;
+        if (!isEventRun()) return;
+        // The base implementation owns the abort/settlement guard and the ordinary single-team path.
+        // Paired games build rival-aware rows below, so expose the same guard through this helper.
+        if (!isSettlementAllowed()) return;
+        List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions = new ArrayList<>();
         for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
             if (playerPointEntry.getValue() != 0) {
                 ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(playerPointEntry.getKey());
                 if (championshipTeam != null) {
                     if (championshipTeam.equals(rightChampionshipTeam))
-                        plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), leftChampionshipTeam, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+                        submissions.add(new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
+                                UUID.randomUUID(), playerPointEntry.getKey(), leftChampionshipTeam,
+                                gameTypeEnum, gameConfig.getAreaName(), "scc", playerPointEntry.getValue()));
                     if (championshipTeam.equals(leftChampionshipTeam))
-                        plugin.getRankManager().addPlayerPoints(playerPointEntry.getKey(), rightChampionshipTeam, gameTypeEnum, gameConfig.getAreaName(), playerPointEntry.getValue());
+                        submissions.add(new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
+                                UUID.randomUUID(), playerPointEntry.getKey(), rightChampionshipTeam,
+                                gameTypeEnum, gameConfig.getAreaName(), "scc", playerPointEntry.getValue()));
                 }
             }
         }
+        plugin.getRankManager().addPlayerPointsBatch(submissions).exceptionally(failure -> false);
         plugin.getRankManager().refreshAfterPendingPointWrites();
     }
 

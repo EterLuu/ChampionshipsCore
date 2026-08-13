@@ -40,16 +40,16 @@ public class SelectedBlockStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-selectedblockstep.text-001"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.selected-block.please-use-worldedit-to-select-a-block-first"));
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
         Vector max = Vector.getMaximum(selection[0], selection[1]);
         if (min.getBlockX() != max.getBlockX() || min.getBlockY() != max.getBlockY()
                 || min.getBlockZ() != max.getBlockZ())
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-selectedblockstep.text-002"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.selected-block.the-selection-must-be-exactly-one-square"));
         setter.accept(session.getTarget(), new Location(player.getWorld(),
                 min.getBlockX(), min.getBlockY(), min.getBlockZ()));
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-selectedblockstep.text-003"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.selected-block.checked-box-recorded"));
     }
 }

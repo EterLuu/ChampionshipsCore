@@ -58,6 +58,14 @@ public final class RedisManager extends BaseManager {
     private BukkitTask reconciliationTask;
     private BukkitTask connectionRetryTask;
     private String instanceId;
+    private boolean configuredEnabled;
+    private String configuredUri;
+    private String configuredNamespace;
+    private String configuredGroupPrefix;
+    private long configuredStreamMaxLength;
+    private long configuredBlockTimeoutMillis;
+    private long configuredReclaimIdleMillis;
+    private int configuredMaxDeliveries;
 
     public RedisManager(ChampionshipsCore plugin) {
         super(plugin);
@@ -65,15 +73,23 @@ public final class RedisManager extends BaseManager {
 
     @Override
     public void load() {
-        if (!Boolean.TRUE.equals(CCConfig.REDIS_ENABLED)) {
+        configuredEnabled = Boolean.TRUE.equals(CCConfig.REDIS_ENABLED);
+        configuredUri = CCConfig.REDIS_URI;
+        configuredNamespace = CCConfig.REDIS_NAMESPACE;
+        configuredGroupPrefix = CCConfig.REDIS_CONSUMER_GROUP_PREFIX;
+        configuredStreamMaxLength = CCConfig.REDIS_STREAM_MAX_LENGTH;
+        configuredBlockTimeoutMillis = CCConfig.REDIS_BLOCK_TIMEOUT_MILLIS;
+        configuredReclaimIdleMillis = CCConfig.REDIS_RECLAIM_IDLE_MILLIS;
+        configuredMaxDeliveries = CCConfig.REDIS_MAX_DELIVERIES;
+        if (!configuredEnabled) {
             readyFuture.completeExceptionally(new IllegalStateException("Redis is disabled"));
             plugin.getLogger().info(Utils.formatModuleLog("Redis", "启动", "统一Redis管理器未启用"));
             return;
         }
         try {
             instanceId = resolveInstanceId();
-            connectionConfig = new RedisConnectionConfig(CCConfig.REDIS_URI, CCConfig.REDIS_NAMESPACE,
-                    instanceId, CCConfig.REDIS_STREAM_MAX_LENGTH, Duration.ofSeconds(5));
+            connectionConfig = new RedisConnectionConfig(configuredUri, configuredNamespace,
+                    instanceId, configuredStreamMaxLength, Duration.ofSeconds(5));
             long interval = Math.max(5L, CCConfig.REDIS_RECONCILIATION_SECONDS) * 20L;
             reconciliationTask = plugin.getServer().getScheduler().runTaskTimer(plugin,
                     this::reconcileDatabaseCaches, interval, interval);
@@ -96,9 +112,9 @@ public final class RedisManager extends BaseManager {
             candidatePublisher = new RedisStreamPublisher(connectionConfig);
             RedisConsumerConfig consumerConfig = new RedisConsumerConfig(
                     syncGroup(), instanceId, 64,
-                    Duration.ofMillis(CCConfig.REDIS_BLOCK_TIMEOUT_MILLIS),
-                    Duration.ofMillis(CCConfig.REDIS_RECLAIM_IDLE_MILLIS),
-                    CCConfig.REDIS_MAX_DELIVERIES);
+                    Duration.ofMillis(configuredBlockTimeoutMillis),
+                    Duration.ofMillis(configuredReclaimIdleMillis),
+                    configuredMaxDeliveries);
             // A brand-new Core has already loaded the authoritative DB snapshot, so its new group
             // starts at the current tail. Existing stable groups still resume their pending cursor.
             candidateConsumer = new RedisStreamConsumer(connectionConfig, consumerConfig,
@@ -165,7 +181,7 @@ public final class RedisManager extends BaseManager {
         DatabaseSyncEvent event = new DatabaseSyncEvent(UUID.randomUUID(),
                 instanceId == null ? "starting" : instanceId, System.currentTimeMillis(), domains, reason);
         if (!ready.get() || publisher == null) {
-            if (Boolean.TRUE.equals(CCConfig.REDIS_ENABLED)) pendingPublications.add(event);
+            if (configuredEnabled) pendingPublications.add(event);
             return;
         }
         publish(event);
@@ -183,9 +199,9 @@ public final class RedisManager extends BaseManager {
         requireReady();
         RedisTransportConfig transportConfig = matchTransportConfig(workerId);
         RedisConsumerConfig consumerConfig = new RedisConsumerConfig(
-                RedisGroupNames.bingoEvents(CCConfig.REDIS_CONSUMER_GROUP_PREFIX, instanceId),
-                instanceId, 64, Duration.ofMillis(CCConfig.REDIS_BLOCK_TIMEOUT_MILLIS),
-                Duration.ofMillis(CCConfig.REDIS_RECLAIM_IDLE_MILLIS), CCConfig.REDIS_MAX_DELIVERIES);
+                RedisGroupNames.bingoEvents(configuredGroupPrefix, instanceId),
+                instanceId, 64, Duration.ofMillis(configuredBlockTimeoutMillis),
+                Duration.ofMillis(configuredReclaimIdleMillis), configuredMaxDeliveries);
         RedisMatchConsumer consumer = new RedisMatchConsumer(transportConfig, consumerConfig,
                 transportConfig.eventStream(), handler, errors);
         matchConsumers.add(consumer);
@@ -264,12 +280,12 @@ public final class RedisManager extends BaseManager {
 
     private String dataSyncStream() { return connectionConfig.key("core:data-sync"); }
     private String syncGroup() {
-        return RedisGroupNames.databaseSync(CCConfig.REDIS_CONSUMER_GROUP_PREFIX, instanceId);
+        return RedisGroupNames.databaseSync(configuredGroupPrefix, instanceId);
     }
 
     private RedisTransportConfig matchTransportConfig(String workerId) {
-        return new RedisTransportConfig(CCConfig.REDIS_URI, CCConfig.REDIS_NAMESPACE, workerId,
-                CCConfig.REDIS_STREAM_MAX_LENGTH, Duration.ofSeconds(5));
+        return new RedisTransportConfig(configuredUri, configuredNamespace, workerId,
+                configuredStreamMaxLength, Duration.ofSeconds(5));
     }
 
     private String resolveInstanceId() {

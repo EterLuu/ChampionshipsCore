@@ -114,22 +114,6 @@ public class PlayerDaoImpl implements PlayerDao {
     }
 
     @Override
-    public void deletePlayer(UUID uuid) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("""
-                    DELETE
-                    FROM `players`
-                    WHERE `uuid`=?
-                    """)) {
-                statement.setString(1, uuid.toString());
-                statement.executeUpdate();
-            }
-        } catch (SQLException exception) {
-            logFailure("删除玩家", exception);
-        }
-    }
-
-    @Override
     @NotNull
     public PlayerIdentityMigrationResult synchronizeIdentity(@NotNull String name, @NotNull UUID currentUuid) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {

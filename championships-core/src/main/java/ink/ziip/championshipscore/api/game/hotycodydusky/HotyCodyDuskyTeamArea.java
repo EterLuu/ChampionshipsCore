@@ -69,7 +69,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
             codySelectionTask = null;
         }
 
-        calculatePoints();
+        if (isSettlementAllowed()) calculatePoints();
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -81,7 +81,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        publishGameEndEvent(new SingleGameEndEvent(this, gameTeams));
         finishPostGameAfterEndEvent();
     }
 

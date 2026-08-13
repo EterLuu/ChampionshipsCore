@@ -14,6 +14,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /** Starts one idle published End arena with exactly two transient DAILY teams. */
 public final class DragonEggCarnivalDailyGameAdapter implements DailyGameAdapter {
@@ -43,15 +45,15 @@ public final class DragonEggCarnivalDailyGameAdapter implements DailyGameAdapter
     }
 
     @Override
-    public @Nullable StartResult start(@NotNull List<ChampionshipTeam> teams) {
-        if (teams.size() != 2) return null;
+    public @NotNull CompletionStage<StartResult> start(@NotNull List<ChampionshipTeam> teams) {
+        if (teams.size() != 2) return CompletableFuture.completedFuture(null);
         for (DragonEggCarnivalArea area : candidates()) {
             if (plugin.getGameManager().joinTeamArea(GameTypeEnum.DragonEggCarnival,
                     area.getGameConfig().getConfigName(), teams.get(0), teams.get(1), false, GameRunMode.DAILY)) {
-                return new StartResult(area.getGameConfig().getConfigName(), area);
+                return CompletableFuture.completedFuture(new StartResult(area.getGameConfig().getConfigName(), area));
             }
         }
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     private @NotNull List<DragonEggCarnivalArea> candidates() {

@@ -52,13 +52,13 @@ public class PrepareSession {
 
         PrepareStep introductionSpawn = new StandAndRunStep(
                 "introduction_spawn",
-                Component.text(GuiConfig.text("area-prepare-preparesession.text-001")),
-                Component.text(GuiConfig.text("area-prepare-preparesession.text-002")),
+                Component.text(GuiConfig.text("map-editor.session.rule-introduction-spawn-point-can-be-covered")),
+                Component.text(GuiConfig.text("map-editor.session.rules-spawn-selection-hint")),
                 Material.BOOK,
                 setup -> setup.config().getIntroductionSpawnPoint() != null
                         || setup.config().getSpectatorSpawnPoint() != null,
                 (setup, location) -> setup.config().setIntroductionSpawnPoint(location),
-                Utils.formatAdminSuccess(GuiConfig.text("area-prepare-preparesession.text-003")));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.session.rules-have-been-set-to-introduce-dedicated-spawn-points")));
 
         int spectatorSpawn = -1;
         int confirmWorld = -1;
@@ -71,11 +71,11 @@ public class PrepareSession {
 
         PrepareStep introductionMode = new ToggleStep(
                 "introduction_game_mode",
-                Component.text(GuiConfig.text("area-prepare-preparesession.text-004")),
-                Component.text(GuiConfig.text("area-prepare-preparesession.text-005")),
+                Component.text(GuiConfig.text("map-editor.session.rule-introduction-mode")),
+                Component.text(GuiConfig.text("map-editor.session.click-to-switch-to-the-player-mode-in-the-introduction-stage-of-the-map-rules")),
                 Material.RECOVERY_COMPASS,
                 setup -> setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
-                        ? GuiConfig.text("area-prepare-preparesession.text-006") : GuiConfig.text("area-prepare-preparesession.text-007"),
+                        ? GuiConfig.text("map-editor.session.current-spectator-mode") : GuiConfig.text("map-editor.session.current-adventure-mode"),
                 setup -> setup.config().setIntroductionGameMode(
                         setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
                                 ? GameMode.ADVENTURE : GameMode.SPECTATOR));

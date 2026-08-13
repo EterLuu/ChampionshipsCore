@@ -121,8 +121,8 @@ public class SnowballShowdownHandler extends BaseListener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (snowballShowdownTeamArea.notAreaPlayer(player)) {
             return;

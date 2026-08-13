@@ -814,11 +814,11 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
 
-        if (winningTeam != null) {
+        if (isSettlementAllowed() && winningTeam != null) {
             Utils.sendMessageToAllPlayers(MessageConfig.DRAGON_EGG_CARNIVAL_WIN
                     .replace("%team%", winningTeam.getColoredName()));
         }
-        Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
+        publishGameEndEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
         finishPostGameAfterEndEvent();
     }
 

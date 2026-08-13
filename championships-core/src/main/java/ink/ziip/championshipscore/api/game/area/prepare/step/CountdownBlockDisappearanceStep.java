@@ -19,11 +19,11 @@ import org.jetbrains.annotations.NotNull;
 /** Optional editor control for the three-second block disappearance at the final countdown. */
 public final class CountdownBlockDisappearanceStep extends PrepareStep {
     public enum Mode {
-        RANDOM("RANDOM", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-001"), Material.SAND),
-        DOOR_EAST_WEST("DOOR_EAST_WEST", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-002"), Material.OAK_DOOR),
-        DOOR_NORTH_SOUTH("DOOR_NORTH_SOUTH", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-003"), Material.SPRUCE_DOOR),
-        DOOR_VERTICAL("DOOR_VERTICAL", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-004"), Material.IRON_BARS),
-        DIRECT("DIRECT", GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-005"), Material.TNT);
+        RANDOM("RANDOM", GuiConfig.text("map-editor.steps.countdown-blocks.random-discrete-type"), Material.SAND),
+        DOOR_EAST_WEST("DOOR_EAST_WEST", GuiConfig.text("map-editor.steps.countdown-blocks.open-door-thing"), Material.OAK_DOOR),
+        DOOR_NORTH_SOUTH("DOOR_NORTH_SOUTH", GuiConfig.text("map-editor.steps.countdown-blocks.open-door-type-north-and-south"), Material.SPRUCE_DOOR),
+        DOOR_VERTICAL("DOOR_VERTICAL", GuiConfig.text("map-editor.steps.countdown-blocks.open-door-type-vertical"), Material.IRON_BARS),
+        DIRECT("DIRECT", GuiConfig.text("map-editor.steps.countdown-blocks.disappear-directly"), Material.TNT);
 
         private final String value;
         private final String displayName;
@@ -49,8 +49,8 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
     }
 
     public CountdownBlockDisappearanceStep() {
-        super("countdown_block_disappearance", Component.text(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-006")),
-                Component.text(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-007")),
+        super("countdown_block_disappearance", Component.text(GuiConfig.text("map-editor.steps.countdown-blocks.the-countdown-block-for-the-start-of-the-game-disappears-optional")),
+                Component.text(GuiConfig.text("map-editor.steps.countdown-blocks.set-the-selection-and-how-to-disappear-within-3-seconds-leave-it-blank-to-disable-it")),
                 Material.CLOCK, StepCaptureType.SELECT);
     }
 
@@ -67,10 +67,10 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
 
     @Override
     public String stateText(PrepareSession session) {
-        if (session == null) return GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-008");
+        if (session == null) return GuiConfig.text("map-editor.steps.countdown-blocks.optional");
         BaseGameConfig config = session.getTarget().config();
-        if (!config.hasCountdownBlockDisappearance()) return GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-009");
-        return GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-010") + Mode.from(config.getCountdownBlockDisappearanceMode()).displayName();
+        if (!config.hasCountdownBlockDisappearance()) return GuiConfig.text("map-editor.steps.countdown-blocks.not-enabled-optional");
+        return GuiConfig.text("map-editor.steps.countdown-blocks.enabled") + Mode.from(config.getCountdownBlockDisappearanceMode()).displayName();
     }
 
     @Override
@@ -81,33 +81,33 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
 
     public String captureSelection(@NotNull PrepareSession session, @NotNull Player player) {
         if (!session.getFlow().isInCorrectWorld(player, session.getTarget()))
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-011") + session.getTarget().worldName());
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.countdown-blocks.please-go-to-the-current-map-world-first") + session.getTarget().worldName());
         Vector[] selection;
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-012"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.countdown-blocks.please-use-worldedit-to-select-two-endpoints-first"));
         }
         long volume = volume(selection[0], selection[1]);
         if (volume <= 0 || volume > CountdownBlockDisappearance.MAX_SELECTION_VOLUME) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-013")
-                    + CountdownBlockDisappearance.MAX_SELECTION_VOLUME + GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-014"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.countdown-blocks.the-selection-volume-must-be-between-1-and")
+                    + CountdownBlockDisappearance.MAX_SELECTION_VOLUME + GuiConfig.text("map-editor.steps.countdown-blocks.within-blocks"));
         }
         session.getTarget().config().setCountdownBlockDisappearanceBounds(selection[0], selection[1]);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-015") + volume + GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-016"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.countdown-blocks.the-start-countdown-box-has-been-set-to-disappear-from-the-selection-area") + volume + GuiConfig.text("map-editor.steps.countdown-blocks.blocks"));
     }
 
     public String selectMode(@NotNull PrepareSession session, @NotNull Mode mode) {
         session.getTarget().config().setCountdownBlockDisappearanceMode(mode.value());
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-017") + mode.displayName() + "。");
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.countdown-blocks.disappearance-method-set") + mode.displayName() + "。");
     }
 
     public String clearSelection(@NotNull PrepareSession session) {
         session.getTarget().config().clearCountdownBlockDisappearanceBounds();
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-countdownblockdisappearancestep.text-018"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.countdown-blocks.closed-start-countdown-box-disappears"));
     }
 
     private static long volume(Vector first, Vector second) {

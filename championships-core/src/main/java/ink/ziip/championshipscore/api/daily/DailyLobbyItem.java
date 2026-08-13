@@ -25,9 +25,9 @@ final class DailyLobbyItem {
         ItemStack item = new ItemStack(Material.COMPASS);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text(GuiConfig.text("api-daily-dailylobbyitem.text-001"), NamedTextColor.AQUA)
+            meta.displayName(Component.text(GuiConfig.text("daily.hotbar.lobby.game-lobby"), NamedTextColor.AQUA)
                     .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(GuiConfig.text("api-daily-dailylobbyitem.text-002"), NamedTextColor.GRAY)
+            meta.lore(List.of(Component.text(GuiConfig.text("daily.hotbar.lobby.right-click-to-open-lobby-menu"), NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
             meta.getPersistentDataContainer().set(MARKER, PersistentDataType.BYTE, (byte) 1);
             item.setItemMeta(meta);

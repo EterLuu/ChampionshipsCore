@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -19,8 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class MainCommand implements TabExecutor, TabCompleter {
 
-    public static final String PLAYER_PERMISSION = "cc.player";
-    public static final String ADMIN_PERMISSION = "cc.admin";
+    public static final String PLAYER_PERMISSION = ChampionshipPermissions.PLAYER;
+    public static final String ADMIN_PERMISSION = ChampionshipPermissions.ADMIN;
 
     protected final ChampionshipsCore plugin = ChampionshipsCore.getInstance();
     protected final Map<String, BaseMainCommand> subCommandMap;

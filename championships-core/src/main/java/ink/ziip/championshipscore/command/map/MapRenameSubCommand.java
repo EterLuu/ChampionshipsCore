@@ -65,15 +65,11 @@ public final class MapRenameSubCommand extends BaseSubCommand {
 
     private List<String> gameNames() {
         List<String> names = new ArrayList<>();
-        for (GameTypeEnum game : GameTypeEnum.values()) names.add(game.name());
+        for (GameTypeEnum game : GameTypeEnum.values()) names.add(game.commandName());
         return names;
     }
 
     private static @Nullable GameTypeEnum parseGame(@NotNull String raw) {
-        String normalized = raw.replace("_", "").replace("-", "");
-        for (GameTypeEnum game : GameTypeEnum.values()) {
-            if (game.name().replace("_", "").replace("-", "").equalsIgnoreCase(normalized)) return game;
-        }
-        return null;
+        return GameTypeEnum.fromCommand(raw);
     }
 }

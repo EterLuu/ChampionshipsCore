@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
     private static final int ELYTRA_START_DOWNWARD_SAFE_BLOCKS = 3;
+    private static final double GROUND_COLLISION_PROBE_DEPTH = 0.05D;
     @Getter
     private final List<BlockState> blockStates = new ArrayList<>();
     @Getter
@@ -192,10 +193,10 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayers(getTeamPointsRank());
+        if (isSettlementAllowed()) sendMessageToAllGamePlayers(getTeamPointsRank());
         addPlayerPointsToDatabase();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        publishGameEndEvent(new SingleGameEndEvent(this, gameTeams));
 
         finishPostGameAfterEndEvent();
     }
@@ -297,7 +298,8 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
             elytraAirbornePlayers.add(uuid);
             return false;
         }
-        if (!player.isOnGround()) {
+        Location groundProbe = player.getLocation().clone().subtract(0D, GROUND_COLLISION_PROBE_DEPTH, 0D);
+        if (!player.collidesAt(groundProbe)) {
             return false;
         }
         return elytraAirbornePlayers.remove(uuid) && !isElytraLandingSafe(player.getLocation());

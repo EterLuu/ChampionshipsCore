@@ -135,36 +135,36 @@ public final class DailyGameMenu {
             holder.gamesBySlot.put(slot, game);
         }
         if (games.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-001"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-002"), NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text("daily.menus.game-selection.no-open-games-yet"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.game-selection.please-wait-for-the-administrator-to-open-the-game-game"), NamedTextColor.DARK_GRAY)), false));
 
         boolean participating = daily.isQueued(holder.viewer) || daily.session(holder.viewer) != null;
         inventory.setItem(LEAVE_SLOT, item(participating ? Material.REDSTONE_TORCH : Material.GRAY_DYE,
-                Component.text(participating ? GuiConfig.text("api-daily-dailygamemenu.text-003") : GuiConfig.text("api-daily-dailygamemenu.text-004"),
+                Component.text(participating ? GuiConfig.text("daily.menus.game-selection.leave-current-game") : GuiConfig.text("daily.menus.game-selection.not-yet-join-the-game"),
                         participating ? NamedTextColor.RED : NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
                 participating ? List.of(
-                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-005"), NamedTextColor.YELLOW),
-                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-006"), NamedTextColor.DARK_GRAY))
-                        : List.of(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-007"), NamedTextColor.DARK_GRAY)), false));
+                        Component.text(GuiConfig.text("daily.menus.game-selection.the-accompanying-team-will-leave-together"), NamedTextColor.YELLOW),
+                        Component.text(GuiConfig.text("daily.menus.game-selection.if-there-is-no-one-on-the-field-the-game-will-end-directly"), NamedTextColor.DARK_GRAY))
+                        : List.of(Component.text(GuiConfig.text("daily.menus.game-selection.select-the-item-above-to-join-the-match"), NamedTextColor.DARK_GRAY)), false));
         inventory.setItem(LEADERBOARD_SLOT, leaderboardItem(holder.viewer));
         inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
-                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-008"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-009"), NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text("daily.menus.game-selection.refresh"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.game-selection.queue-and-countdown-automatically-updated-every-second"), NamedTextColor.DARK_GRAY)), false));
         inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-010"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("api-daily-dailygamemenu.text-011"), NamedTextColor.RED), List.of(), false));
+                Component.text(GuiConfig.text("daily.menus.game-selection.return-to-lobby"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
+        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("daily.menus.game-selection.close"), NamedTextColor.RED), List.of(), false));
     }
 
     private ItemStack partyItem(UUID viewer, DailyPlayerSnapshot snapshot) {
         DailyParty party = daily.partyManager().getParty(viewer);
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-012"), NamedTextColor.GRAY)
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.captain"), NamedTextColor.GRAY)
                 .append(Component.text(snapshot.partyLeader(), NamedTextColor.AQUA)));
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-013"), NamedTextColor.GRAY)
-                .append(Component.text(snapshot.partySize() + GuiConfig.text("api-daily-dailygamemenu.text-014"), NamedTextColor.WHITE)));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.number-of-people"), NamedTextColor.GRAY)
+                .append(Component.text(snapshot.partySize() + GuiConfig.text("daily.menus.game-selection.player-count-suffix"), NamedTextColor.WHITE)));
         if (party != null) {
             lore.add(Component.empty());
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-015"), NamedTextColor.GOLD));
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.peer-members"), NamedTextColor.GOLD));
             for (UUID member : party.members()) {
                 String name = Bukkit.getOfflinePlayer(member).getName();
                 lore.add(Component.text((member.equals(party.leader()) ? "★ " : "• ")
@@ -173,43 +173,43 @@ public final class DailyGameMenu {
             }
         } else {
             lore.add(Component.empty());
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-016"), NamedTextColor.DARK_GRAY));
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-017"), NamedTextColor.YELLOW));
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.currently-entering-matches-as-an-individual"), NamedTextColor.DARK_GRAY));
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.click-to-open-the-team-function"), NamedTextColor.YELLOW));
         }
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-018"), NamedTextColor.DARK_GRAY));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.any-member-can-change-the-game-for-the-whole-team"), NamedTextColor.DARK_GRAY));
         return playerHead(viewer,
-                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-019"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, party != null);
+                Component.text(GuiConfig.text("daily.menus.game-selection.party"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, party != null);
     }
 
     private ItemStack overviewItem(int games, int totalQueued, int activeGames) {
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(games + GuiConfig.text("api-daily-dailygamemenu.text-020"), NamedTextColor.WHITE)
-                .append(Component.text(GuiConfig.text("common.separator") + totalQueued + GuiConfig.text("api-daily-dailygamemenu.text-021"), NamedTextColor.GRAY)));
-        lore.add(Component.text(activeGames == 0 ? GuiConfig.text("api-daily-dailygamemenu.text-022") : activeGames + GuiConfig.text("api-daily-dailygamemenu.text-023"),
+        lore.add(Component.text(games + GuiConfig.text("daily.menus.game-selection.open-games"), NamedTextColor.WHITE)
+                .append(Component.text(GuiConfig.text("common.separator") + totalQueued + GuiConfig.text("daily.menus.game-selection.people-are-waiting"), NamedTextColor.GRAY)));
+        lore.add(Component.text(activeGames == 0 ? GuiConfig.text("daily.menus.game-selection.all-current-games-are-eligible") : activeGames + GuiConfig.text("daily.menus.game-selection.items-are-in-play"),
                 activeGames == 0 ? NamedTextColor.GREEN : NamedTextColor.GOLD));
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-024"), NamedTextColor.DARK_GRAY));
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-025"), NamedTextColor.YELLOW));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.no-need-to-form-a-team-in-advance-automatically-form-a-team-after-matching-is-completed"), NamedTextColor.DARK_GRAY));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.click-on-an-item-to-join-or-change-it-for-the-entire-team"), NamedTextColor.YELLOW));
         return item(Material.NETHER_STAR,
-                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-026"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.game-selection.match-lobby"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
                 lore, false);
     }
 
     private ItemStack statsItem(UUID viewer) {
         DailyStatSnapshot stat = daily.statsManager().stat(viewer, null);
         return item(Material.WRITABLE_BOOK,
-                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-027"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("daily.menus.game-selection.my-record"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-028"), NamedTextColor.GRAY).append(Component.text(stat.gamesPlayed(), NamedTextColor.WHITE)),
-                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-029"), NamedTextColor.GRAY).append(Component.text(stat.wins(), NamedTextColor.GREEN)),
-                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-030"), NamedTextColor.GRAY).append(Component.text(winRate(stat), NamedTextColor.YELLOW)),
-                        Component.text(GuiConfig.text("api-daily-dailygamemenu.text-031"), NamedTextColor.DARK_GRAY)
+                        Component.text(GuiConfig.text("daily.menus.game-selection.number-of-sessions"), NamedTextColor.GRAY).append(Component.text(stat.gamesPlayed(), NamedTextColor.WHITE)),
+                        Component.text(GuiConfig.text("daily.menus.game-selection.victory"), NamedTextColor.GRAY).append(Component.text(stat.wins(), NamedTextColor.GREEN)),
+                        Component.text(GuiConfig.text("daily.menus.game-selection.winning-rate"), NamedTextColor.GRAY).append(Component.text(winRate(stat), NamedTextColor.YELLOW)),
+                        Component.text(GuiConfig.text("daily.menus.game-selection.each-game-s-results-are-recorded-independently-points-are-not-inherited"), NamedTextColor.DARK_GRAY)
                 ), false);
     }
 
     private ItemStack gameItem(UUID viewer, GameTypeEnum game, DailyRules rules) {
         GameStyle style = STYLES.getOrDefault(game,
-                new GameStyle(Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("api-daily-dailygamemenu.text-032"), GuiConfig.text("api-daily-dailygamemenu.text-033")));
+                new GameStyle(Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("daily.menus.game-selection.game-items"), GuiConfig.text("daily.menus.game-selection.complete-challenges-with-other-players")));
         int queued = daily.queueSize(game);
         int queuedGroups = daily.queueGroupCount(game);
         int countdown = daily.queueCountdown(game);
@@ -228,59 +228,59 @@ public final class DailyGameMenu {
         lore.add(Component.text(style.description, NamedTextColor.GRAY));
         lore.add(Component.empty());
         if (running) {
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-034"), NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.game-state"), NamedTextColor.GRAY)
                     .append(Component.text(active.instance().getGameStageEnum().toString(), NamedTextColor.GOLD)));
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-035"), NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.map-in-progress"), NamedTextColor.GRAY)
                     .append(Component.text(active.map(), NamedTextColor.AQUA))
                     .append(activeSessions > 1
-                            ? Component.text(GuiConfig.text("common.separator") + activeSessions + GuiConfig.text("api-daily-dailygamemenu.text-036"), NamedTextColor.DARK_GRAY)
+                            ? Component.text(GuiConfig.text("common.separator") + activeSessions + GuiConfig.text("daily.menus.game-selection.match-count-suffix"), NamedTextColor.DARK_GRAY)
                             : Component.empty()));
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-037"), NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.instance-capacity"), NamedTextColor.GRAY)
                     .append(Component.text(availableSlots > 0
-                                    ? availableSlots + GuiConfig.text("api-daily-dailygamemenu.text-038")
-                                    : GuiConfig.text("api-daily-dailygamemenu.text-039"),
+                                    ? availableSlots + GuiConfig.text("daily.menus.game-selection.idle-instances")
+                                    : GuiConfig.text("daily.menus.game-selection.all-instances-are-in-use"),
                             availableSlots > 0 ? NamedTextColor.GREEN : NamedTextColor.GOLD)));
         } else {
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-034"), NamedTextColor.GRAY)
-                    .append(Component.text(availableSlots > 0 ? GuiConfig.text("api-daily-dailygamemenu.text-040") : GuiConfig.text("api-daily-dailygamemenu.text-041"),
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.game-state"), NamedTextColor.GRAY)
+                    .append(Component.text(availableSlots > 0 ? GuiConfig.text("daily.menus.game-selection.can-be-added-to-the-match") : GuiConfig.text("daily.menus.game-selection.waiting-for-idle-instance"),
                             availableSlots > 0 ? NamedTextColor.GREEN : NamedTextColor.GOLD)));
         }
         lore.add(Component.empty());
         lore.add(Component.text("■".repeat(filled), countdown >= 0 ? NamedTextColor.GOLD : style.color)
                 .append(Component.text("□".repeat(BAR_LENGTH - filled), NamedTextColor.DARK_GRAY)));
-        lore.add(Component.text(queued + "/" + rules.minPlayers() + GuiConfig.text("api-daily-dailygamemenu.text-042"), NamedTextColor.WHITE));
+        lore.add(Component.text(queued + "/" + rules.minPlayers() + GuiConfig.text("daily.menus.game-selection.the-number-of-people-reaches-the-opening-number"), NamedTextColor.WHITE));
         lore.add(countdown >= 0
-                ? Component.text(GuiConfig.text("api-daily-dailygamemenu.text-043"), NamedTextColor.GRAY).append(Component.text(countdown + GuiConfig.text("api-daily-dailygamemenu.text-044"), NamedTextColor.GOLD))
+                ? Component.text(GuiConfig.text("daily.menus.game-selection.about-to-depart"), NamedTextColor.GRAY).append(Component.text(countdown + GuiConfig.text("daily.menus.game-selection.seconds"), NamedTextColor.GOLD))
                 : queued > 0 && queuedGroups < 2
-                ? Component.text(GuiConfig.text("api-daily-dailygamemenu.text-045"), NamedTextColor.YELLOW)
-                : needed == 0 ? Component.text(GuiConfig.text("api-daily-dailygamemenu.text-046"), NamedTextColor.GREEN)
-                : Component.text(GuiConfig.text("api-daily-dailygamemenu.text-047") + needed + GuiConfig.text("api-daily-dailygamemenu.text-048"), NamedTextColor.YELLOW));
+                ? Component.text(GuiConfig.text("daily.menus.game-selection.requires-another-player-or-party"), NamedTextColor.YELLOW)
+                : needed == 0 ? Component.text(GuiConfig.text("daily.menus.game-selection.preparing-for-countdown"), NamedTextColor.GREEN)
+                : Component.text(GuiConfig.text("daily.menus.game-selection.still-need") + needed + GuiConfig.text("daily.menus.game-selection.fellow-traveler"), NamedTextColor.YELLOW));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-049"), NamedTextColor.GOLD));
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-050") + rules.teamSize() + GuiConfig.text("api-daily-dailygamemenu.text-051") + rules.teams() + GuiConfig.text("api-daily-dailygamemenu.text-052"), NamedTextColor.WHITE));
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-053"), NamedTextColor.GRAY));
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-054") + rules.minPlayers() + "–" + rules.maxPlayers() + GuiConfig.text("api-daily-dailygamemenu.text-014"), NamedTextColor.GRAY));
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-055"), NamedTextColor.GRAY)
-                .append(Component.text(maps.isEmpty() ? GuiConfig.text("api-daily-dailygamemenu.text-056") : String.join("、", maps),
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.team-rules"), NamedTextColor.GOLD));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.each-team-has-at-most") + rules.teamSize() + GuiConfig.text("daily.menus.game-selection.people-most") + rules.teams() + GuiConfig.text("daily.menus.game-selection.team-count-suffix"), NamedTextColor.WHITE));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.requires-at-least-2-independent-players-or-companion-squads"), NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.single-field-capacity") + rules.minPlayers() + "–" + rules.maxPlayers() + GuiConfig.text("daily.menus.game-selection.player-count-suffix"), NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.map"), NamedTextColor.GRAY)
+                .append(Component.text(maps.isEmpty() ? GuiConfig.text("daily.menus.game-selection.waiting-place") : String.join("、", maps),
                         maps.isEmpty() ? NamedTextColor.DARK_GRAY : NamedTextColor.AQUA)));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-057"), NamedTextColor.GRAY)
-                .append(Component.text(stat.gamesPlayed() + GuiConfig.text("api-daily-dailygamemenu.text-036"), NamedTextColor.WHITE))
-                .append(Component.text(GuiConfig.text("common.separator") + stat.wins() + GuiConfig.text("api-daily-dailygamemenu.text-058"), NamedTextColor.GREEN)));
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-059") + winRate(stat), NamedTextColor.YELLOW));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.my-results"), NamedTextColor.GRAY)
+                .append(Component.text(stat.gamesPlayed() + GuiConfig.text("daily.menus.game-selection.match-count-suffix"), NamedTextColor.WHITE))
+                .append(Component.text(GuiConfig.text("common.separator") + stat.wins() + GuiConfig.text("daily.menus.game-selection.win-count-suffix"), NamedTextColor.GREEN)));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.win-rate-value") + winRate(stat), NamedTextColor.YELLOW));
         lore.add(Component.empty());
         if (selected && availableSlots <= 0) {
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-060"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-061"), NamedTextColor.GOLD));
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.already-in-the-waiting-queue"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.matching-will-be-automatically-resumed-after-the-instance-becomes-idle"), NamedTextColor.GOLD));
         } else if (selected) {
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-062"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
-            lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-063"), NamedTextColor.DARK_GRAY));
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.current-selection"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.clicking-again-will-not-join-again"), NamedTextColor.DARK_GRAY));
         } else {
-            lore.add(Component.text(availableSlots > 0 ? GuiConfig.text("api-daily-dailygamemenu.text-064") : GuiConfig.text("api-daily-dailygamemenu.text-065"),
+            lore.add(Component.text(availableSlots > 0 ? GuiConfig.text("daily.menus.game-selection.click-to-join-the-match") : GuiConfig.text("daily.menus.game-selection.click-to-join-the-waiting-room"),
                     availableSlots > 0 ? NamedTextColor.GREEN : NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
             lore.add(Component.text(availableSlots > 0
-                    ? GuiConfig.text("api-daily-dailygamemenu.text-066")
-                    : GuiConfig.text("api-daily-dailygamemenu.text-067"), NamedTextColor.DARK_GRAY));
+                    ? GuiConfig.text("daily.menus.game-selection.the-party-will-be-selected-simultaneously")
+                    : GuiConfig.text("daily.menus.game-selection.the-countdown-starts-automatically-after-the-instance-becomes-idle"), NamedTextColor.DARK_GRAY));
         }
         Component marker = selected ? Component.text("✓ ", NamedTextColor.AQUA)
                 : running ? Component.text("● ", NamedTextColor.GOLD) : Component.empty();
@@ -294,15 +294,15 @@ public final class DailyGameMenu {
         int position = -1;
         for (int index = 0; index < board.size(); index++) if (board.get(index).player().equals(viewer)) { position = index + 1; break; }
         List<Component> lore = new ArrayList<>();
-        if (!board.isEmpty()) lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-068"), NamedTextColor.GRAY)
+        if (!board.isEmpty()) lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.current-leader"), NamedTextColor.GRAY)
                 .append(Component.text(board.getFirst().name(), NamedTextColor.GOLD))
-                .append(Component.text(GuiConfig.text("common.separator") + (long) board.getFirst().value() + GuiConfig.text("api-daily-dailygamemenu.text-058"), NamedTextColor.WHITE)));
-        lore.add(Component.text(position < 0 ? GuiConfig.text("api-daily-dailygamemenu.text-069") : GuiConfig.text("api-daily-dailygamemenu.text-070") + position,
+                .append(Component.text(GuiConfig.text("common.separator") + (long) board.getFirst().value() + GuiConfig.text("daily.menus.game-selection.win-count-suffix"), NamedTextColor.WHITE)));
+        lore.add(Component.text(position < 0 ? GuiConfig.text("daily.menus.game-selection.i-dont-have-a-win-record-yet") : GuiConfig.text("daily.menus.game-selection.my-win-list-ranking") + position,
                 position < 0 ? NamedTextColor.DARK_GRAY : NamedTextColor.AQUA));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("api-daily-dailygamemenu.text-071"), NamedTextColor.YELLOW));
+        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection.click-to-view-points-wins-and-racing-records"), NamedTextColor.YELLOW));
         return item(Material.GOLD_INGOT,
-                Component.text(GuiConfig.text("api-daily-dailygamemenu.text-072"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD), lore, false);
+                Component.text(GuiConfig.text("daily.menus.game-selection.ranking-list"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD), lore, false);
     }
 
     private static String winRate(DailyStatSnapshot stat) {
@@ -367,11 +367,11 @@ public final class DailyGameMenu {
     private static Map<GameTypeEnum, GameStyle> createStyles() {
         Map<GameTypeEnum, GameStyle> styles = new EnumMap<>(GameTypeEnum.class);
         styles.put(GameTypeEnum.Bingo, new GameStyle(Material.FILLED_MAP, NamedTextColor.LIGHT_PURPLE,
-                GuiConfig.text("api-daily-dailygamemenu.text-073"), GuiConfig.text("api-daily-dailygamemenu.text-074")));
+                GuiConfig.text("daily.menus.game-selection.explore-teamwork"), GuiConfig.text("daily.menus.game-selection.complete-shared-bingo-tasks-strive-for-connections-and-full-collection")));
         styles.put(GameTypeEnum.AceRace, new GameStyle(Material.ELYTRA, NamedTextColor.AQUA,
-                GuiConfig.text("api-daily-dailygamemenu.text-075"), GuiConfig.text("api-daily-dailygamemenu.text-076")));
+                GuiConfig.text("daily.menus.game-selection.racing-independent-track-instance"), GuiConfig.text("daily.menus.game-selection.controlling-the-elytra-and-trident-challenge-the-fastest-complete-lap")));
         styles.put(GameTypeEnum.DragonEggCarnival, new GameStyle(Material.DRAGON_EGG, NamedTextColor.LIGHT_PURPLE,
-                GuiConfig.text("api-daily-dailygamemenu.text-077"), GuiConfig.text("api-daily-dailygamemenu.text-078")));
+                GuiConfig.text("daily.menus.game-selection.confrontation-original-end-dragon-battle"), GuiConfig.text("daily.menus.game-selection.compete-for-three-end-game-progressions-be-the-first-to-complete-two-of-them")));
         return Map.copyOf(styles);
     }
 

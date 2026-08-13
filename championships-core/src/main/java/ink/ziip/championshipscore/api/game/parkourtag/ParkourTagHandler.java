@@ -286,8 +286,8 @@ public class ParkourTagHandler extends BaseListener {
         event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (parkourTagArea.notAreaPlayer(player)) {
             return;

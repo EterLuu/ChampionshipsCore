@@ -522,7 +522,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         setBingoPvP(true); // restore world PvP for between rounds / next round
 
         // Resolve the winner and stamp the outcome so the card-map renderer paints the win overlay.
-        if (round != null) {
+        if (isSettlementAllowed() && round != null) {
             ChampionshipTeam winner = round.resolveTopScore();
             RoundOutcome.OutcomeType type = winner == null
                     ? RoundOutcome.OutcomeType.DRAW : RoundOutcome.OutcomeType.TOP_SCORE;
@@ -546,10 +546,10 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayers(getTeamPointsRank());
+        if (isSettlementAllowed()) sendMessageToAllGamePlayers(getTeamPointsRank());
         addPlayerPointsToDatabase();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        publishGameEndEvent(new SingleGameEndEvent(this, gameTeams));
 
         finishPostGameAfterEndEvent();
     }

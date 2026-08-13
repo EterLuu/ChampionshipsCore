@@ -36,7 +36,7 @@ public class ParkourWarriorManager extends BaseGameInstanceManager<ParkourWarrio
     public void unload() {
         for (ParkourWarriorTeamArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+                area.abortAndReset();
             }
         }
         clearAreas();

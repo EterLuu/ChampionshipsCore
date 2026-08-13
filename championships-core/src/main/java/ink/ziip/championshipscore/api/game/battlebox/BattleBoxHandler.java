@@ -204,8 +204,8 @@ public class BattleBoxHandler extends BaseListener {
         event.setDropItems(false);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (battleBoxArea.notAreaPlayer(player)) {
             return;

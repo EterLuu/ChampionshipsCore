@@ -44,7 +44,7 @@ public class SkyWarsManager extends BaseGameInstanceManager<SkyWarsTeamArea> {
     public void unload() {
         for (SkyWarsTeamArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+                area.abortAndReset();
             }
         }
         clearAreas();

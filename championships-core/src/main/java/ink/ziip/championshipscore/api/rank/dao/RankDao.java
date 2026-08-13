@@ -10,11 +10,13 @@ import java.util.UUID;
 
 public interface RankDao {
 
-    List<PlayerPointEntry> getPlayerPoints(UUID uuid);
-
-    List<PlayerPointEntry> getTeamPlayerPoints(int teamId);
+    /** One authoritative snapshot used by the periodic ranking rebuild. */
+    Optional<List<PlayerPointEntry>> getAllValidPlayerPoints();
 
     boolean addPlayerPoint(PlayerPointEntry playerPointEntry);
+
+    /** Commits one settlement atomically; duplicate transaction ids remain successful/idempotent. */
+    boolean addPlayerPoints(List<PlayerPointEntry> playerPointEntries);
 
     /** Empty means the query failed; a present empty list is a valid event with zero rounds. */
     Optional<List<GameStatusEntry>> getGameStatusList();

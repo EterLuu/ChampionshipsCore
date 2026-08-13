@@ -487,8 +487,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 spawned.setPersistent(false);
                 int binding = markerIndex < respawnProgressPointBindings.size()
                         ? respawnProgressPointBindings.get(markerIndex) : -1;
-                spawned.setCustomName(binding < 0
-                        ? "起点后" : "进度点 #" + (binding + 1) + " 后");
+                spawned.customName(net.kyori.adventure.text.Component.text(binding < 0
+                        ? "起点后" : "进度点 #" + (binding + 1) + " 后"));
                 spawned.setCustomNameVisible(true);
                 spawned.getPersistentDataContainer().set(mapEditPreviewAreaKey,
                         PersistentDataType.STRING, areaName);
@@ -1236,9 +1236,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
-        sendMessageToAllGamePlayers(getTeamPointsRank());
+        if (isSettlementAllowed()) sendMessageToAllGamePlayers(getTeamPointsRank());
         addPlayerPointsToDatabase();
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        publishGameEndEvent(new SingleGameEndEvent(this, gameTeams));
         finishPostGameAfterEndEvent();
     }
 

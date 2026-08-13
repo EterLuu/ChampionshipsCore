@@ -21,16 +21,17 @@ public class TeamDeleteSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        if (plugin.getTeamManager().deleteTeam(args[0])) {
-            String message = MessageConfig.TEAM_SUCCESSFULLY_DELETED
-                    .replace("%team%", args[0]);
-            sender.sendMessage(message);
-        } else {
-            String message = MessageConfig.TEAM_DELETED_FAILED
-                    .replace("%team%", args[0])
-                    .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
-            sender.sendMessage(message);
-        }
+        plugin.getTeamManager().deleteTeam(args[0]).thenAccept(result -> {
+            if (result == ink.ziip.championshipscore.api.team.TeamManager.TeamDeletionResult.DELETED) {
+                sender.sendMessage(MessageConfig.TEAM_SUCCESSFULLY_DELETED.replace("%team%", args[0]));
+                return;
+            }
+            String reason = result == ink.ziip.championshipscore.api.team.TeamManager.TeamDeletionResult.ACTIVE
+                    ? "队伍正在比赛中" : result == ink.ziip.championshipscore.api.team.TeamManager.TeamDeletionResult.FAILED
+                    ? "数据库事务失败" : MessageConfig.REASON_TEAM_DOES_NOT_EXIST;
+            sender.sendMessage(MessageConfig.TEAM_DELETED_FAILED.replace("%team%", args[0])
+                    .replace("%reason%", reason));
+        });
         return true;
     }
 

@@ -206,7 +206,7 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
-        calculatePoints();
+        if (isSettlementAllowed()) calculatePoints();
 
         announceGameEnd(MessageConfig.SNOWBALL_GAME_END_TITLE, MessageConfig.SNOWBALL_GAME_END_SUBTITLE);
 
@@ -218,7 +218,7 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        publishGameEndEvent(new SingleGameEndEvent(this, gameTeams));
 
         finishPostGameAfterEndEvent();
     }

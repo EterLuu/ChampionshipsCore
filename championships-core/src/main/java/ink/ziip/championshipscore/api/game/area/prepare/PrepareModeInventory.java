@@ -81,12 +81,12 @@ public final class PrepareModeInventory {
         int total = session.totalSteps();
 
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-001") + game + GuiConfig.text("area-prepare-preparemodeinventory.text-002") + session.getAreaName()).color(NamedTextColor.GRAY));
-        lore.add(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-003") + session.getFlow().worldName(session.getTarget())
-                        + (inWorld ? GuiConfig.text("area-prepare-preparemodeinventory.text-004") : GuiConfig.text("area-prepare-preparemodeinventory.text-005"))).color(inWorld ? NamedTextColor.GREEN : NamedTextColor.RED));
-        lore.add(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-006") + done + "/" + total).color(NamedTextColor.AQUA));
+        lore.add(Component.text(GuiConfig.text("map-editor.toolbar.game") + game + GuiConfig.text("map-editor.toolbar.map") + session.getAreaName()).color(NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.text("map-editor.toolbar.target-world") + session.getFlow().worldName(session.getTarget())
+                        + (inWorld ? GuiConfig.text("map-editor.toolbar.already-in-the-correct-world") : GuiConfig.text("map-editor.toolbar.please-go-to-this-world"))).color(inWorld ? NamedTextColor.GREEN : NamedTextColor.RED));
+        lore.add(Component.text(GuiConfig.text("map-editor.toolbar.progress") + done + "/" + total).color(NamedTextColor.AQUA));
         lore.add(Component.text(session.getTarget().config().isPrepareReady()
-                ? GuiConfig.text("area-prepare-preparemodeinventory.text-007") : GuiConfig.text("area-prepare-preparemodeinventory.text-008"))
+                ? GuiConfig.text("map-editor.toolbar.status-published") : GuiConfig.text("map-editor.toolbar.status-draft-with-unpublished-changes"))
                 .color(session.getTarget().config().isPrepareReady() ? NamedTextColor.GREEN : NamedTextColor.YELLOW));
 
         List<String> pending = new ArrayList<>();
@@ -94,45 +94,45 @@ public final class PrepareModeInventory {
             if (!step.isSet(session)) pending.add(plain(step.displayName()));
         }
         if (pending.isEmpty()) {
-            lore.add(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-009")).color(NamedTextColor.GREEN));
+            lore.add(Component.text(GuiConfig.text("map-editor.toolbar.all-steps-completed")).color(NamedTextColor.GREEN));
         } else {
-            lore.add(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-010")).color(NamedTextColor.YELLOW));
+            lore.add(Component.text(GuiConfig.text("map-editor.toolbar.to-do")).color(NamedTextColor.YELLOW));
             for (String p : pending) lore.add(Component.text("• " + p).color(NamedTextColor.YELLOW));
         }
-        return PrepareKeys.item(Material.PAPER, Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-011")).color(NamedTextColor.WHITE), lore);
+        return PrepareKeys.item(Material.PAPER, Component.text(GuiConfig.text("map-editor.toolbar.map-preparation-mode")).color(NamedTextColor.WHITE), lore);
     }
 
     private static ItemStack teleportItem(@NotNull PrepareSession session) {
         String destination = session.getFlow().editorLocationName(session.getTarget());
         ItemStack item = PrepareKeys.item(Material.ENDER_PEARL,
-                Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-012") + destination).color(NamedTextColor.AQUA),
-                List.of(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-013") + session.getFlow().worldName(session.getTarget())
-                        + GuiConfig.text("area-prepare-preparemodeinventory.text-014") + destination).color(NamedTextColor.GRAY)));
+                Component.text(GuiConfig.text("map-editor.toolbar.send-to") + destination).color(NamedTextColor.AQUA),
+                List.of(Component.text(GuiConfig.text("map-editor.toolbar.go-to") + session.getFlow().worldName(session.getTarget())
+                        + GuiConfig.text("map-editor.toolbar.world-go-to") + destination).color(NamedTextColor.GRAY)));
         PrepareKeys.setAction(item, "teleport");
         return item;
     }
 
     private static ItemStack stepsItem(@NotNull PrepareSession session) {
         ItemStack item = PrepareKeys.item(Material.CHEST,
-                Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-015")).color(NamedTextColor.AQUA),
-                List.of(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-016")).color(NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-017") + session.totalSteps()).color(NamedTextColor.GRAY)));
+                Component.text(GuiConfig.text("map-editor.toolbar.editing-preparation-steps")).color(NamedTextColor.AQUA),
+                List.of(Component.text(GuiConfig.text("map-editor.toolbar.open-multi-line-step-menu")).color(NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("map-editor.toolbar.number-of-steps") + session.totalSteps()).color(NamedTextColor.GRAY)));
         PrepareKeys.setAction(item, "steps");
         return item;
     }
 
     private static ItemStack exitItem() {
         ItemStack item = PrepareKeys.item(Material.BARRIER,
-                Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-018")).color(NamedTextColor.RED),
-                List.of(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-019")).color(NamedTextColor.GRAY)));
+                Component.text(GuiConfig.text("map-editor.toolbar.exit-map-preparation-mode")).color(NamedTextColor.RED),
+                List.of(Component.text(GuiConfig.text("map-editor.toolbar.restore-inventory-and-exit")).color(NamedTextColor.GRAY)));
         PrepareKeys.setAction(item, "exit");
         return item;
     }
 
     private static ItemStack validateItem() {
         ItemStack item = PrepareKeys.item(Material.SPYGLASS,
-                Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-020")).color(NamedTextColor.YELLOW),
-                List.of(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-021")).color(NamedTextColor.GRAY)));
+                Component.text(GuiConfig.text("map-editor.toolbar.check-map")).color(NamedTextColor.YELLOW),
+                List.of(Component.text(GuiConfig.text("map-editor.toolbar.list-all-required-steps-that-are-not-completed")).color(NamedTextColor.GRAY)));
         PrepareKeys.setAction(item, "validate");
         return item;
     }
@@ -140,9 +140,9 @@ public final class PrepareModeInventory {
     private static ItemStack publishItem(PrepareSession session) {
         boolean ready = session.getTarget().config().isPrepareReady();
         ItemStack item = PrepareKeys.item(ready ? Material.LIME_DYE : Material.YELLOW_DYE,
-                Component.text(ready ? GuiConfig.text("area-prepare-preparemodeinventory.text-022") : GuiConfig.text("area-prepare-preparemodeinventory.text-023"))
+                Component.text(ready ? GuiConfig.text("map-editor.toolbar.map-published") : GuiConfig.text("map-editor.toolbar.verify-and-publish"))
                         .color(ready ? NamedTextColor.GREEN : NamedTextColor.GOLD),
-                List.of(Component.text(ready ? GuiConfig.text("area-prepare-preparemodeinventory.text-024") : GuiConfig.text("area-prepare-preparemodeinventory.text-025"))
+                List.of(Component.text(ready ? GuiConfig.text("map-editor.toolbar.release-again-to-generate-a-new-revision") : GuiConfig.text("map-editor.toolbar.after-the-verification-is-passed-the-world-is-solidified-and-the-game-is-allowed-to-start"))
                         .color(NamedTextColor.GRAY)));
         PrepareKeys.setAction(item, "publish");
         return item;
@@ -150,9 +150,9 @@ public final class PrepareModeInventory {
 
     private static ItemStack saveDraftItem() {
         ItemStack item = PrepareKeys.item(Material.WRITABLE_BOOK,
-                Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-026")).color(NamedTextColor.GOLD),
-                List.of(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-027")).color(NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-028")).color(NamedTextColor.YELLOW)));
+                Component.text(GuiConfig.text("map-editor.toolbar.save-draft")).color(NamedTextColor.GOLD),
+                List.of(Component.text(GuiConfig.text("map-editor.toolbar.save-current-block-changes-does-not-require-all-points-to-be-completed")).color(NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("map-editor.toolbar.the-draft-is-still-unavailable-for-competition-publish-after-completing-the-configuration")).color(NamedTextColor.YELLOW)));
         PrepareKeys.setAction(item, "save-draft");
         return item;
     }
@@ -160,8 +160,8 @@ public final class PrepareModeInventory {
     /** Untagged on purpose: WorldEdit's wand interact handlers must not be cancelled. */
     private static ItemStack wandItem() {
         return PrepareKeys.item(Material.WOODEN_AXE,
-                Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-029")).color(NamedTextColor.GOLD),
-                List.of(Component.text(GuiConfig.text("area-prepare-preparemodeinventory.text-030")).color(NamedTextColor.GRAY)));
+                Component.text(GuiConfig.text("map-editor.toolbar.worldedit-selection-tool")).color(NamedTextColor.GOLD),
+                List.of(Component.text(GuiConfig.text("map-editor.toolbar.left-click-to-select-pos1-right-click-to-select-pos2-for-border-template-step")).color(NamedTextColor.GRAY)));
     }
 
     private static String plain(Component c) {

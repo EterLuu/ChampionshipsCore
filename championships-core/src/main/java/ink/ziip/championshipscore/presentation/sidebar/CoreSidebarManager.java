@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.presentation.sidebar;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
@@ -167,7 +168,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         }
 
         List<MapDescriptor> maps = mapsIn(player.getWorld());
-        if (player.hasPermission("cc.admin") && !maps.isEmpty()) {
+        if (player.hasPermission(ChampionshipPermissions.ADMIN) && !maps.isEmpty()) {
             return renderMapStatus(player, maps, config);
         }
         return renderTemplate(player, config.lobby(), Map.of());

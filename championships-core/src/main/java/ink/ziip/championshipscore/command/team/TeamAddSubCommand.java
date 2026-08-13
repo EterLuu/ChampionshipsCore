@@ -21,16 +21,12 @@ public class TeamAddSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        if (plugin.getTeamManager().addTeam(args[0], args[1], args[2])) {
-            String message = MessageConfig.TEAM_SUCCESSFULLY_ADDED
-                    .replace("%team%", args[0]);
+        plugin.getTeamManager().addTeam(args[0], args[1], args[2]).thenAccept(created -> {
+            String message = (created ? MessageConfig.TEAM_SUCCESSFULLY_ADDED
+                    : MessageConfig.TEAM_ADDED_FAILED).replace("%team%", args[0]);
+            if (!created) message = message.replace("%reason%", MessageConfig.REASON_TEAM_ALREADY_EXIST);
             sender.sendMessage(message);
-        } else {
-            String message = MessageConfig.TEAM_ADDED_FAILED
-                    .replace("%team%", args[0])
-                    .replace("%reason%", MessageConfig.REASON_TEAM_ALREADY_EXIST);
-            sender.sendMessage(message);
-        }
+        });
         return true;
     }
 

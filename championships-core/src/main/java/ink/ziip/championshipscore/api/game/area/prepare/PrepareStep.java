@@ -139,11 +139,11 @@ public abstract class PrepareStep {
 
     /** Label shown by the list editor's add button. Custom list steps can describe non-location data. */
     public @NotNull Component listAddLabel() {
-        return Component.text(GuiConfig.text("area-prepare-preparestep.text-001"));
+        return Component.text(GuiConfig.text("map-editor.steps.location.add-current-point"));
     }
 
     /** Hint shown below the list editor's add button. */
     public @NotNull Component listAddHint() {
-        return Component.text(GuiConfig.text("area-prepare-preparestep.text-002"));
+        return Component.text(GuiConfig.text("map-editor.steps.location.after-reaching-the-target-position-click"));
     }
 }

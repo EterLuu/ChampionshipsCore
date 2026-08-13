@@ -110,7 +110,7 @@ public final class RedisMatchConsumer implements AutoCloseable {
     private void readNew() {
         if (!running()) return;
         XReadArgs args = new XReadArgs().count(consumerConfig.batchSize()).block(consumerConfig.blockTimeout());
-        reads.xreadgroup(consumer, args, XReadArgs.StreamOffset.lastConsumed(stream))
+        reads.xreadgroup(consumer, args, streamOffsets(XReadArgs.StreamOffset.lastConsumed(stream)))
                 .whenComplete((messages, error) -> {
                     if (!running()) return;
                     if (error != null) {
@@ -219,6 +219,11 @@ public final class RedisMatchConsumer implements AutoCloseable {
         String message = error.getMessage();
         String text = error.getClass().getSimpleName() + (message == null ? "" : ":" + message);
         return text.length() <= 512 ? text : text.substring(0, 512);
+    }
+
+    @SafeVarargs
+    private static <K> XReadArgs.StreamOffset<K>[] streamOffsets(XReadArgs.StreamOffset<K>... offsets) {
+        return offsets;
     }
 
     private static String requireText(String value, String name) {

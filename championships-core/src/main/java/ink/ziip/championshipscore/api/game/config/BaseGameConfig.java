@@ -62,6 +62,15 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         super.initializeConfiguration(pluginFolder);
     }
 
+    /** Reloads this live map config atomically while leaving its world and listeners untouched. */
+    public boolean reloadConfigurationChecked(Path pluginFolder) {
+        String previous = captureRuntimeConfiguration();
+        normalizeSerializedLocations(pluginFolder.resolve(getFileName()));
+        if (super.initializeConfigurationChecked(pluginFolder, true)) return true;
+        if (previous != null) restoreRuntimeConfiguration(previous);
+        return false;
+    }
+
     @Override
     public String getFileName() {
         return getFolderName() + getConfigName() + ".yml";

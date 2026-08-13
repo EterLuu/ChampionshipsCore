@@ -37,8 +37,8 @@ public class AceRaceHandler extends BaseListener {
         super(plugin);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (aceRaceArea.notAreaPlayer(player)) return;
         if (aceRaceArea.isIntroductionPhase()) return;

@@ -16,6 +16,9 @@ public interface TeamDao {
 
     void deleteTeam(int teamId);
 
+    /** Atomically deletes members and their owning team. */
+    boolean deleteTeamCascade(int teamId);
+
     Set<TeamMemberEntry> getTeamMembers(int teamId);
 
     @Nullable

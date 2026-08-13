@@ -61,34 +61,34 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         Block source = player.getTargetBlockExact(TARGET_DISTANCE);
         if (source == null || !isWallButton(source)) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-001"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.please-aim-at-the-button-posted-on-the-wall-within-8-squares-and-then-click-the-setting-item"));
         }
 
         ParkourTagConfig config = (ParkourTagConfig) session.getTarget().config();
         Location sourceLocation = source.getLocation();
         List<Block> buttons = resolveCopies(config, sourceLocation);
         if (buttons.size() != Math.max(1, config.getCopyCount())) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-002"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.map-world-not-loaded-yet-can-t-set-chaser-button"));
         }
         for (int index = 0; index < buttons.size(); index++) {
             Block button = buttons.get(index);
             if (index > 0 && !canReplaceWithButton(button)) {
-                return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-003") + index
-                        + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-004"));
+                return Utils.formatAdminError(GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.ordinal-prefix") + index
+                        + GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.invalid-mirrored-chaser-button-position"));
             }
             BlockFace facing = ((Switch) source.getBlockData()).getFacing();
             if (!button.getRelative(facing.getOppositeFace()).getType().isSolid()) {
-                return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-003") + index
-                        + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-005"));
+                return Utils.formatAdminError(GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.ordinal-prefix") + index
+                        + GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.venue-no-lacks-wall-surface-for-buttons-to-attach-to"));
             }
             Block label = button.getRelative(BlockFace.DOWN);
             if (!label.getType().isAir() && label.getType() != Material.BIRCH_WALL_SIGN) {
-                return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-003") + index
-                        + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-006"));
+                return Utils.formatAdminError(GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.ordinal-prefix") + index
+                        + GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.there-is-no-empty-space-under-the-field-button-the-prompt-card-cannot-be-generated"));
             }
             if (!label.getRelative(facing.getOppositeFace()).getType().isSolid()) {
-                return Utils.formatAdminError(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-003") + index
-                        + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-007"));
+                return Utils.formatAdminError(GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.ordinal-prefix") + index
+                        + GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.there-is-no-wall-below-the-venue-button-for-the-notice-board-to-attach-to"));
             }
         }
 
@@ -99,8 +99,8 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         }
         setter.accept(session.getTarget(), sourceLocation);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-008") + buttons.size()
-                + GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-009"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.chaser-button-set-and-for") + buttons.size()
+                + GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.venue-synchronization-buttons-and-illuminated-prompt-signs"));
     }
 
     private static @NotNull List<Block> resolveCopies(@NotNull ParkourTagConfig config,
@@ -151,9 +151,9 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         Sign sign = (Sign) label.getState();
         var front = sign.getSide(Side.FRONT);
         front.line(0, Component.empty());
-        front.line(1, Component.text(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-010"), NamedTextColor.YELLOW)
+        front.line(1, Component.text(GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.click-the-button-above"), NamedTextColor.YELLOW)
                 .decorate(TextDecoration.BOLD));
-        front.line(2, Component.text(GuiConfig.text("prepare-parkourtag-parkourtagchaserbuttonstep.text-011"), NamedTextColor.LIGHT_PURPLE)
+        front.line(2, Component.text(GuiConfig.text("map-editor.games.parkour-tag.steps.chaser-button.become-a-chaser"), NamedTextColor.LIGHT_PURPLE)
                 .decorate(TextDecoration.BOLD));
         front.line(3, Component.empty());
         front.setColor(DyeColor.PURPLE);

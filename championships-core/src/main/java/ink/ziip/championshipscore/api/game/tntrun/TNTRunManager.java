@@ -39,7 +39,7 @@ public class TNTRunManager extends BaseGameInstanceManager<TNTRunTeamArea> {
     public void unload() {
         for (TNTRunTeamArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+                area.abortAndReset();
             }
         }
         clearAreas();

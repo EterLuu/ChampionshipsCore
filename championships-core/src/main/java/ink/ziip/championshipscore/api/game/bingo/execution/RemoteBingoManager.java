@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.entity.Player;
@@ -33,15 +34,22 @@ import org.bukkit.entity.Player;
 /** Optional Core control plane. LOCAL mode never constructs Redis or proxy resources. */
 public final class RemoteBingoManager extends BaseManager implements BingoExecutionGateway {
     private final Map<UUID, RemoteBingoMatch> matches = new ConcurrentHashMap<>();
+    private final Map<UUID, PendingStart> pendingStarts = new ConcurrentHashMap<>();
     private final PlatformScheduler scheduler;
     private final BingoManifestFactory manifests;
     private final RemoteBingoStore store;
     private RedisMatchTransport transport;
     private RedisMatchConsumer consumer;
     private PluginMessagePlayerRouter router;
+    private String configuredWorkerId;
+    private String configuredProxyChannel;
     private ScheduledTask heartbeatWatchdog;
     private volatile boolean ready;
     private volatile boolean transportLifecycleActive;
+
+    private record PendingStart(MatchManifest manifest, RemoteBingoInstance instance,
+                                CompletableFuture<Boolean> result, AtomicBoolean cancelled) {
+    }
 
     public RemoteBingoManager(ChampionshipsCore plugin) {
         super(plugin);
@@ -58,15 +66,17 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     @Override
     public void load() {
         if (!plugin.getGameManager().getBingoManager().remoteExecutionConfigured()) return;
+        configuredWorkerId = CCConfig.BINGO_WORKER_ID;
+        configuredProxyChannel = CCConfig.BINGO_PROXY_CHANNEL;
         transportLifecycleActive = true;
         try {
-            router = new PluginMessagePlayerRouter(plugin, CCConfig.BINGO_PROXY_CHANNEL);
+            router = new PluginMessagePlayerRouter(plugin, configuredProxyChannel);
             plugin.getRedisManager().whenReady().thenCompose(ignored -> {
                         if (!transportLifecycleActive)
                             return CompletableFuture.failedFuture(
                                     new java.util.concurrent.CancellationException("Remote Bingo manager stopped"));
-                        transport = plugin.getRedisManager().matchTransport(CCConfig.BINGO_WORKER_ID);
-                        consumer = plugin.getRedisManager().createMatchEventConsumer(CCConfig.BINGO_WORKER_ID,
+                        transport = plugin.getRedisManager().matchTransport(configuredWorkerId);
+                        consumer = plugin.getRedisManager().createMatchEventConsumer(configuredWorkerId,
                                 this::consume,
                                 error -> plugin.getLogger().log(Level.SEVERE,
                                         "Remote Bingo event consumer failure", error));
@@ -86,7 +96,7 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                     ready = true;
                     plugin.getGameManager().getBingoExecutionRouter().activateRemote(this);
                     heartbeatWatchdog = scheduler.runGlobalTimer(this::checkWorkerHeartbeats, 100L, 100L);
-                    plugin.getLogger().info("Remote Bingo control plane ready; worker=" + CCConfig.BINGO_WORKER_ID);
+                    plugin.getLogger().info("Remote Bingo control plane ready; worker=" + configuredWorkerId);
                 });
             });
         } catch (RuntimeException failure) {
@@ -100,16 +110,17 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         if (!ready || !plugin.getGameManager().getBingoManager().isTaskPoolReady()) return false;
         BingoConfig config = plugin.getGameManager().getBingoManager().getRemoteConfig(request.area());
         return config != null
+                && pendingStarts.isEmpty()
                 && matches.values().stream().noneMatch(match -> !match.state().terminal())
                 && plugin.getGameManager().canReserveRemoteBingo(
                         request.runMode(), request.showIntroduction(), teams(request));
     }
 
     @Override
-    public boolean start(BingoStartRequest request) {
-        if (!canStart(request)) return false;
+    public CompletionStage<Boolean> start(BingoStartRequest request) {
+        if (!canStart(request)) return CompletableFuture.completedFuture(false);
         BingoConfig config = plugin.getGameManager().getBingoManager().getRemoteConfig(request.area());
-        if (config == null) return false;
+        if (config == null) return CompletableFuture.completedFuture(false);
 
         UUID matchId = UUID.randomUUID();
         long epoch = 1L;
@@ -117,34 +128,79 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         if (!plugin.getGameManager().reserveRemoteBingo(
                 instance, request.runMode(), request.showIntroduction(), teams(request))) {
             instance.dispose();
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
         Set<UUID> spectators = plugin.getGameManager().reserveRemoteBingoSpectators(instance);
         MatchManifest manifest;
         try {
-            manifest = manifests.create(matchId, epoch, CCConfig.BINGO_WORKER_ID, config,
+            manifest = manifests.create(matchId, epoch, configuredWorkerId, config,
                     request.runMode(), teams(request), spectators,
                     request.showIntroduction());
-            store.create(manifest);
-        } catch (RuntimeException | SQLException failure) {
+        } catch (RuntimeException failure) {
             plugin.getLogger().log(Level.SEVERE, "Unable to freeze remote Bingo manifest", failure);
             plugin.getGameManager().abortRemoteBingo(instance);
-            return false;
+            return CompletableFuture.completedFuture(false);
+        }
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        PendingStart pending = new PendingStart(manifest, instance, result, new AtomicBoolean());
+        pendingStarts.put(matchId, pending);
+        CompletableFuture.runAsync(() -> {
+            try {
+                store.create(manifest);
+            } catch (SQLException failure) {
+                throw new java.util.concurrent.CompletionException(failure);
+            }
+        }).whenComplete((ignored, failure) -> {
+            try {
+                scheduler.runGlobal(() -> finishPendingStart(pending, failure));
+            } catch (RuntimeException schedulingFailure) {
+                pendingStarts.remove(matchId, pending);
+                pending.result().complete(false);
+                if (failure == null)
+                    updateStateAsync(manifest.matchId(), manifest.epoch(), MatchState.ABORTED);
+                plugin.getLogger().log(Level.WARNING,
+                        "Remote Bingo start completed while the Core scheduler was unavailable", schedulingFailure);
+            }
+        });
+        return result;
+    }
+
+    private void finishPendingStart(PendingStart pending, Throwable failure) {
+        MatchManifest manifest = pending.manifest();
+        pendingStarts.remove(manifest.matchId(), pending);
+        if (failure != null) {
+            plugin.getLogger().log(Level.SEVERE, "Unable to persist remote Bingo manifest", failure);
+            plugin.getGameManager().abortRemoteBingo(pending.instance());
+            pending.result().complete(false);
+            return;
+        }
+        if (pending.cancelled().get() || !ready || !transportLifecycleActive) {
+            plugin.getGameManager().abortRemoteBingo(pending.instance());
+            updateStateAsync(manifest.matchId(), manifest.epoch(), MatchState.ABORTED)
+                    .whenComplete((ignored, stateFailure) -> pending.result().complete(false));
+            return;
         }
 
-        RemoteBingoMatch match = new RemoteBingoMatch(plugin, manifest, instance, transport, router,
-                CCConfig.BINGO_WORKER_SERVER);
-        match.markPreparing();
-        matches.put(matchId, match);
-        updateState(match);
-        MatchCommand prepare = MatchMessages.command(matchId, epoch, MatchCommandType.PREPARE);
-        transport.publishManifest(manifest).thenCompose(ignored -> transport.publishCommand(prepare))
-                .whenComplete((ignored, failure) -> {
-                    if (failure != null) failMatch(match, "prepare-publish-failed", failure);
-                });
-        scheduler.runGlobalLater(() -> timeout(match, MatchState.PREPARING, "ready-timeout"),
-                CCConfig.BINGO_READY_TIMEOUT_SECONDS * 20L);
-        return true;
+        try {
+            RemoteBingoMatch match = new RemoteBingoMatch(plugin, manifest, pending.instance(), transport, router,
+                    CCConfig.BINGO_WORKER_SERVER);
+            match.markPreparing();
+            matches.put(manifest.matchId(), match);
+            updateState(match);
+            MatchCommand prepare = MatchMessages.command(manifest.matchId(), manifest.epoch(), MatchCommandType.PREPARE);
+            transport.publishManifest(manifest).thenCompose(ignored -> transport.publishCommand(prepare))
+                    .whenComplete((ignored, publishFailure) -> {
+                        if (publishFailure != null) failMatch(match, "prepare-publish-failed", publishFailure);
+                    });
+            scheduler.runGlobalLater(() -> timeout(match, MatchState.PREPARING, "ready-timeout"),
+                    CCConfig.BINGO_READY_TIMEOUT_SECONDS * 20L);
+            pending.result().complete(true);
+        } catch (RuntimeException activationFailure) {
+            plugin.getLogger().log(Level.SEVERE, "Unable to activate persisted remote Bingo", activationFailure);
+            plugin.getGameManager().abortRemoteBingo(pending.instance());
+            updateStateAsync(manifest.matchId(), manifest.epoch(), MatchState.ABORTED)
+                    .whenComplete((ignored, stateFailure) -> pending.result().complete(false));
+        }
     }
 
     private java.util.List<ink.ziip.championshipscore.api.team.ChampionshipTeam> teams(BingoStartRequest request) {
@@ -152,16 +208,75 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     }
 
     @Override
-    public void forceEnd(String reason) {
+    public CompletionStage<Void> forceEnd(String reason) {
+        java.util.List<CompletableFuture<?>> publications = new java.util.ArrayList<>();
+        for (PendingStart pending : Set.copyOf(pendingStarts.values())) {
+            pending.cancelled().set(true);
+            scheduler.runGlobal(() -> plugin.getGameManager().abortRemoteBingo(pending.instance()));
+            publications.add(pending.result().handle((ignored, failure) -> null));
+        }
         for (RemoteBingoMatch match : Set.copyOf(matches.values())) {
             if (match.state() != MatchState.RUNNING) {
                 failMatch(match, reason, null);
+                publications.add(match.terminalFuture());
                 continue;
             }
-            transport.publishCommand(match.forceEndCommand(reason)).whenComplete((ignored, failure) -> {
-                if (failure != null) failMatch(match, reason + "-publish-failed", failure);
-            });
+            publications.add(requestNormalStop(match, reason).handle((ignored, failure) -> null)
+                    .toCompletableFuture());
         }
+        return CompletableFuture.allOf(publications.toArray(CompletableFuture[]::new));
+    }
+
+    /**
+     * Stops one UUID-selected match only. Running matches ask the worker to finish and publish its
+     * authoritative result; pre-start reservations are aborted because no valid score exists yet.
+     */
+    public CompletionStage<Boolean> stopMatch(UUID matchId, String reason, boolean normalSettlement) {
+        PendingStart pending = pendingStarts.get(matchId);
+        if (pending != null) {
+            if (normalSettlement || !pending.cancelled().compareAndSet(false, true))
+                return CompletableFuture.completedFuture(false);
+            scheduler.runGlobal(() -> plugin.getGameManager().abortRemoteBingo(pending.instance()));
+            return CompletableFuture.completedFuture(true);
+        }
+
+        RemoteBingoMatch match = matches.get(matchId);
+        if (match == null || match.state().terminal()) return CompletableFuture.completedFuture(false);
+        if (normalSettlement) {
+            if (match.state() != MatchState.RUNNING) return CompletableFuture.completedFuture(false);
+            return requestNormalStop(match, reason);
+        }
+
+        failMatch(match, reason, null);
+        return match.terminalFuture()
+                .orTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .thenApply(ignored -> true)
+                .exceptionally(failure -> false);
+    }
+
+    private CompletionStage<Boolean> requestNormalStop(RemoteBingoMatch match, String reason) {
+        if (transport == null) {
+            failMatch(match, reason + "-normal-stop-transport-unavailable", null);
+            return match.terminalFuture().handle((ignored, failure) -> false);
+        }
+        if (!match.markNormalStopRequested()) {
+            return match.terminalFuture().handle((ignored, failure) ->
+                    failure == null && match.state() == MatchState.FINISHED);
+        }
+        return transport.publishCommand(match.forceEndCommand(reason))
+                .handle((ignored, publishFailure) -> {
+                    if (publishFailure != null)
+                        failMatch(match, reason + "-normal-stop-publish-failed", publishFailure);
+                    return publishFailure == null;
+                })
+                .thenCompose(published -> match.terminalFuture()
+                        .orTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                        .handle((ignored, terminalFailure) -> {
+                            if (terminalFailure != null)
+                                failMatch(match, reason + "-normal-stop-terminal-timeout", terminalFailure);
+                            return published && terminalFailure == null
+                                    && match.state() == MatchState.FINISHED;
+                        }));
     }
 
     private CompletionStage<DeliveryDisposition> consume(
@@ -230,28 +345,37 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     }
 
     private void failMatch(RemoteBingoMatch match, String reason, Throwable failure) {
+        scheduler.runGlobal(() -> failMatchOnGlobal(match, reason, failure));
+    }
+
+    private void failMatchOnGlobal(RemoteBingoMatch match, String reason, Throwable failure) {
         if (!matches.remove(match.manifest().matchId(), match)) return;
+        match.abortLocally();
         if (failure != null) plugin.getLogger().log(Level.SEVERE,
                 "Remote Bingo failed match=" + match.manifest().matchId() + " reason=" + reason, failure);
         if (transport != null) transport.publishCommand(match.abortCommand(reason));
-        scheduler.runGlobal(() -> plugin.getGameManager().abortRemoteBingo(match.instance()));
-        try {
-            store.updateState(match.manifest().matchId(), match.manifest().epoch(), MatchState.ABORTED);
-        } catch (SQLException databaseFailure) {
-            plugin.getLogger().log(Level.SEVERE, "Unable to persist aborted remote Bingo", databaseFailure);
-        }
+        plugin.getGameManager().abortRemoteBingo(match.instance());
+        updateStateAsync(match.manifest().matchId(), match.manifest().epoch(), MatchState.ABORTED)
+                .exceptionally(databaseFailure -> {
+                    plugin.getLogger().log(Level.SEVERE, "Unable to persist aborted remote Bingo", databaseFailure);
+                    return null;
+                });
     }
 
     private void updateState(RemoteBingoMatch match) {
-        CompletableFuture.runAsync(() -> {
+        updateStateAsync(match.manifest().matchId(), match.manifest().epoch(), match.state()).exceptionally(failure -> {
+            failMatch(match, "state-persistence-failed", failure);
+            return null;
+        });
+    }
+
+    private CompletionStage<Void> updateStateAsync(UUID matchId, long epoch, MatchState state) {
+        return CompletableFuture.runAsync(() -> {
             try {
-                store.updateState(match.manifest().matchId(), match.manifest().epoch(), match.state());
+                store.updateState(matchId, epoch, state);
             } catch (SQLException failure) {
                 throw new java.util.concurrent.CompletionException(failure);
             }
-        }).exceptionally(failure -> {
-            failMatch(match, "state-persistence-failed", failure);
-            return null;
         });
     }
 
@@ -347,11 +471,19 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         if (heartbeatWatchdog != null) heartbeatWatchdog.cancel();
         heartbeatWatchdog = null;
         plugin.getGameManager().getBingoExecutionRouter().activateLocal();
+        for (PendingStart pending : Set.copyOf(pendingStarts.values())) {
+            pending.cancelled().set(true);
+            plugin.getGameManager().abortRemoteBingo(pending.instance());
+            pending.result().complete(false);
+        }
+        pendingStarts.clear();
         for (RemoteBingoMatch match : Set.copyOf(matches.values())) {
-            failMatch(match, "core-shutdown", null);
+            failMatchOnGlobal(match, "core-shutdown", null);
         }
         matches.clear();
         closeResources();
+        configuredWorkerId = null;
+        configuredProxyChannel = null;
     }
 
     private void closeResources() {

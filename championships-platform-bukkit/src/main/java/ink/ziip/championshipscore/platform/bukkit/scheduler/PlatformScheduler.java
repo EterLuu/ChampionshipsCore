@@ -54,8 +54,12 @@ public final class PlatformScheduler {
                 TimeUnit.MILLISECONDS);
     }
 
-    public void runEntity(Entity entity, Runnable task) {
-        Objects.requireNonNull(entity, "entity").getScheduler().execute(plugin, task, null, 1L);
+    public boolean runEntity(Entity entity, Runnable task) {
+        return runEntity(entity, task, null);
+    }
+
+    public boolean runEntity(Entity entity, Runnable task, Runnable retired) {
+        return Objects.requireNonNull(entity, "entity").getScheduler().execute(plugin, task, retired, 1L);
     }
 
     public void runEntityLater(Entity entity, Runnable task, long delayTicks) {

@@ -66,8 +66,8 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
         steps.add(new SchematicStep(plugin -> schematic,
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-001")),
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-002"))) {
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.save-venue-template")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.use-worldedit-to-select-the-entire-venue-and-click-save-as-arena-schem"))) {
             @Override
             public String capture(@NotNull ink.ziip.championshipscore.api.game.area.prepare.PrepareSession session,
                                   @NotNull Player player) {
@@ -93,64 +93,64 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                 }));
 
         steps.add(new WeSelectionStep("area_pos",
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-003")),
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-004")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.template-arena-boundary-name")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.frame-the-complete-hand-preserved-site-0-this-minimum-angle-determines-where-the-copy-will-be-pasted")),
                 Material.BEDROCK,
                 a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
                 (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-005"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.general-site-boundary-set"))));
 
         steps.add(new StandAndRunStep("spectator_spawn",
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-006")),
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-007")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.spectator-spawn-point")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-in-a-spectator-position-and-click")),
                 Material.ENDER_EYE,
                 a -> cfg(a).getSpectatorSpawnPoint() != null,
                 (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-008"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.spectator-spawn-point-has-been-set"))));
 
         steps.add(new StandAndRunStep("right_spawn",
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-009")),
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-010")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.the-team-s-spawn-point-on-the-right")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-at-the-birth-position-of-the-team-on-the-right-and-click")),
                 Material.GREEN_WOOL,
                 a -> cfg(a).getRightSpawnPoint() != null,
                 (a, loc) -> cfg(a).setRightSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-011"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.the-spawn-point-of-the-team-on-the-right-has-been-set"))));
 
         steps.add(new StandAndRunStep("left_spawn",
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-012")),
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-013")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.spawn-point-of-the-left-team")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-at-the-birth-position-of-the-left-team-and-click")),
                 Material.RED_WOOL,
                 a -> cfg(a).getLeftSpawnPoint() != null,
                 (a, loc) -> cfg(a).setLeftSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-014"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.the-spawn-point-of-the-left-team-has-been-set"))));
 
         steps.add(new StandAndRunStep("right_prepare_spot",
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-015")),
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-016")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.right-team-ready-point")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-at-the-team-s-ready-position-on-the-right-and-click")),
                 Material.GREEN_STAINED_GLASS,
                 a -> cfg(a).getRightPrepareSpot() != null,
                 (a, loc) -> cfg(a).setRightPrepareSpot(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-017"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.right-team-ready-point-set"))));
 
         steps.add(new StandAndRunStep("left_prepare_spot",
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-018")),
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-019")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.left-team-ready-point")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-at-the-team-s-ready-position-on-the-left-and-click")),
                 Material.RED_STAINED_GLASS,
                 a -> cfg(a).getLeftPrepareSpot() != null,
                 (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-020"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.left-team-ready-point-set"))));
 
         steps.add(new WeSelectionStep("wool_pos",
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-021")),
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-022")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.wool-area")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.use-worldedit-to-select-the-wool-placement-area")),
                 Material.YELLOW_WOOL,
                 a -> cfg(a).getWoolPos1() != null && cfg(a).getWoolPos2() != null,
                 (a, sel) -> { cfg(a).setWoolPos1(sel[0]); cfg(a).setWoolPos2(sel[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-023"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.wool-area-set"))));
 
         steps.add(new ListStep("potion_spawn_points",
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-024")),
-                Component.text(GuiConfig.text("prepare-battlebox-battleboxprepareflow.text-025")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.potion-spawn-point")),
+                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.add-potion-spawn-locations-one-by-one")),
                 Material.LIME_WOOL,
                 a -> cfg(a).getPotionSpawnPoints(),
                 (a, values) -> cfg(a).setPotionSpawnPoints(values),

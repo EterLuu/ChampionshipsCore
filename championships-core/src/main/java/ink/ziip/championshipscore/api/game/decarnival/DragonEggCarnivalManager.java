@@ -40,7 +40,7 @@ public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggC
     public void unload() {
         for (DragonEggCarnivalArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+                area.abortAndReset();
             }
         }
         clearAreas();

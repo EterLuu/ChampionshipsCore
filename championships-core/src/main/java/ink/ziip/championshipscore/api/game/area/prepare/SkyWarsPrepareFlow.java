@@ -26,21 +26,21 @@ public final class SkyWarsPrepareFlow extends SnapshotMapPrepareFlow {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
-        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("area-prepare-skywarsprepareflow.text-001")),
-                Component.text(GuiConfig.text("area-prepare-skywarsprepareflow.text-002")), Material.BEDROCK,
+        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.map-borders")),
+                Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.use-worldedit-to-select-the-complete-boundary-of-this-empty-island")), Material.BEDROCK,
                 t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
                 (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("area-prepare-skywarsprepareflow.text-003"))));
-        steps.add(new StandAndRunStep("boundary_center", Component.text(GuiConfig.text("area-prepare-skywarsprepareflow.text-004")),
-                Component.text(GuiConfig.text("area-prepare-skywarsprepareflow.text-005")), Material.COMPASS,
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.sky-wars.setup.map-boundaries-set"))));
+        steps.add(new StandAndRunStep("boundary_center", Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.border-center-point")),
+                Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.stand-at-the-center-of-the-horizontal-border-and-the-shrink-effect-and-click")), Material.COMPASS,
                 t -> cfg(t).getBoundaryCenterPoint() != null, (t, l) -> cfg(t).setBoundaryCenterPoint(l),
-                Utils.formatAdminSuccess(GuiConfig.text("area-prepare-skywarsprepareflow.text-006"))));
-        steps.add(new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("area-prepare-skywarsprepareflow.text-007")),
-                Component.text(GuiConfig.text("area-prepare-skywarsprepareflow.text-008")), Material.ENDER_EYE,
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.sky-wars.setup.boundary-center-point-set"))));
+        steps.add(new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.spectator-spawn-point")),
+                Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.stand-in-a-spectator-position-and-click")), Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l),
-                Utils.formatAdminSuccess(GuiConfig.text("area-prepare-skywarsprepareflow.text-009"))));
-        steps.add(new ListStep("team_spawn_points", Component.text(GuiConfig.text("area-prepare-skywarsprepareflow.text-010")),
-                Component.text(GuiConfig.text("area-prepare-skywarsprepareflow.text-011")), Material.LIME_WOOL,
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.sky-wars.setup.spectator-spawn-point-has-been-set"))));
+        steps.add(new ListStep("team_spawn_points", Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.team-spawn-point")),
+                Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.add-spawn-positions-for-each-team-one-by-one")), Material.LIME_WOOL,
                 t -> list(t), (t, values) -> cfg(t).setTeamSpawnPoints(values),
                 t -> list(t).isEmpty(), (t, s) -> { List<String> l = list(t); l.add(s); cfg(t).setTeamSpawnPoints(l); },
                 t -> cfg(t).setTeamSpawnPoints(new ArrayList<>()), t -> list(t).size()));

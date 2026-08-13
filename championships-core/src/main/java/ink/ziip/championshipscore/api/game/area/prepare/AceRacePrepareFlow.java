@@ -39,16 +39,16 @@ public final class AceRacePrepareFlow extends PrepareFlowDefinition {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
-                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("area-prepare-aceraceprepareflow.text-001")),
-                        Component.text(GuiConfig.text("area-prepare-aceraceprepareflow.text-002")), Material.BEDROCK,
+                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.games.ace-race.setup.track-boundary")),
+                        Component.text(GuiConfig.text("map-editor.games.ace-race.setup.use-worldedit-to-select-the-complete-area-of-this-track")), Material.BEDROCK,
                         t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
                         (t, value) -> {
                             cfg(t).setAreaPos1(value[0]);
                             cfg(t).setAreaPos2(value[1]);
-                        }, Utils.formatAdminSuccess(GuiConfig.text("area-prepare-aceraceprepareflow.text-003"))),
-                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("area-prepare-aceraceprepareflow.text-004")), Component.text(GuiConfig.text("area-prepare-aceraceprepareflow.text-005")),
+                        }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.ace-race.setup.track-boundaries-set"))),
+                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.games.ace-race.setup.spectator-spawn-point")), Component.text(GuiConfig.text("map-editor.games.ace-race.setup.stand-in-a-spectator-position-and-click")),
                         Material.ENDER_EYE, t -> cfg(t).getSpectatorSpawnPoint() != null,
-                        (t, value) -> cfg(t).setSpectatorSpawnPoint(value), Utils.formatAdminSuccess(GuiConfig.text("area-prepare-aceraceprepareflow.text-006"))),
+                        (t, value) -> cfg(t).setSpectatorSpawnPoint(value), Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.ace-race.setup.spectator-spawn-point-has-been-set"))),
                 new AceRaceLineStep(true),
                 new AceRaceLineStep(false),
                 new AceRaceProgressPointListStep(),

@@ -67,9 +67,11 @@ public final class ChampionshipsCore extends JavaPlugin {
     private CCLogManager logManager;
     @Getter(AccessLevel.NONE)
     private final Set<BaseManager> startedManagers = Collections.newSetFromMap(new IdentityHashMap<>());
+    private long bootstrapGeneration;
 
     @Override
     public void onEnable() {
+        long generation = ++bootstrapGeneration;
         instance = this;
         loaded = true;
         logManager = CCLogManager.install(this);
@@ -113,8 +115,40 @@ public final class ChampionshipsCore extends JavaPlugin {
         dailyStatsManager = new DailyStatsManager(this);
         dailyManager = new DailyManager(this, dailyStatsManager);
 
+        // Database connection and schema migration may take seconds and must not freeze the server.
+        // The remaining managers are activated on the server thread only after this prerequisite succeeds.
+        startedManagers.add(databaseManager);
+        databaseManager.loadAsync().whenComplete((ignored, failure) -> {
+            try {
+                getServer().getScheduler().runTask(this,
+                        () -> finishBootstrap(generation, failure));
+            } catch (RuntimeException schedulingFailure) {
+                getLogger().log(Level.SEVERE, "Unable to finish ChampionshipsCore bootstrap", schedulingFailure);
+            }
+        });
+    }
+
+    private void finishBootstrap(long generation, Throwable failure) {
+        if (generation != bootstrapGeneration || !loaded || !isEnabled()) return;
+        if (failure != null) {
+            loaded = false;
+            if (logManager != null) logManager.important(Utils.formatModuleLog("Bootstrap", "数据库",
+                    "数据库初始化或迁移失败，ChampionshipsCore 已关闭"));
+            getLogger().log(Level.SEVERE, "Database bootstrap failed", failure);
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+        try {
+            finishManagerBootstrap();
+        } catch (RuntimeException bootstrapFailure) {
+            loaded = false;
+            getLogger().log(Level.SEVERE, "Manager bootstrap failed; disabling ChampionshipsCore", bootstrapFailure);
+            Bukkit.getPluginManager().disablePlugin(this);
+        }
+    }
+
+    private void finishManagerBootstrap() {
         // Plugin startup logic
-        loadManager(databaseManager);
         loadManager(listenerManager);
         loadManager(worldManager);
 
@@ -139,6 +173,11 @@ public final class ChampionshipsCore extends JavaPlugin {
         loadManager(scheduleManager);
         loadManager(sidebarManager);
 
+        if (!getServer().getOnlineMode()) {
+            getLogger().warning(Utils.formatModuleLog("Security", "OfflineMode",
+                    "服务器处于 offline-mode；必须仅允许可信代理访问后端端口，并由代理或认证层完成可信身份校验"));
+        }
+
         String readyMessage = Utils.formatModuleLog("Bootstrap", "启动", "加载完成 | 模式=" + CCConfig.MODE);
         if (logManager != null) logManager.important(readyMessage);
         else getLogger().log(Level.INFO, readyMessage);
@@ -146,6 +185,8 @@ public final class ChampionshipsCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        loaded = false;
+        bootstrapGeneration++;
         // Plugin shutdown logic
         unloadManager(sidebarManager);
         unloadManager(dailyManager);
@@ -164,8 +205,6 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         unloadManager(worldEditManager);
         unloadManager(worldManager);
-
-        loaded = false;
 
         unloadManager(configurationManager);
         unloadManager(databaseManager);

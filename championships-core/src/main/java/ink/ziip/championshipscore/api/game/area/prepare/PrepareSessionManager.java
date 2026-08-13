@@ -108,6 +108,7 @@ public class PrepareSessionManager extends BaseManager {
         sessions.clear();
         mapLocks.clear();
         snapshots.clear();
+        AnvilInputGui.closeAll();
         if (listener != null) listener.unRegister();
     }
 

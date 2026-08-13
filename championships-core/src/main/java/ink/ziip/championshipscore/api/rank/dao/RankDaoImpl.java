@@ -8,7 +8,6 @@ import ink.ziip.championshipscore.util.Utils;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,139 +17,92 @@ public class RankDaoImpl implements RankDao {
     private final ChampionshipsCore plugin = ChampionshipsCore.getInstance();
 
     @Override
-    public List<PlayerPointEntry> getPlayerPoints(UUID uuid) {
-        return getPlayerPointsIfAvailable(uuid).orElseGet(Collections::emptyList);
-    }
-
-    public Optional<List<PlayerPointEntry>> getPlayerPointsIfAvailable(UUID uuid) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT `id`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`, `valid`
-                    FROM `player_points`
-                    WHERE `uuid`=?
-                    """)) {
-
-                statement.setString(1, uuid.toString());
-
-                List<PlayerPointEntry> playerPointEntries = new ArrayList<>();
-
-                final ResultSet resultSet = statement.executeQuery();
-                while (resultSet.next()) {
-                    PlayerPointEntry playerPointEntry = PlayerPointEntry.builder()
-                            .id(resultSet.getInt("id"))
-                            .uuid(UUID.fromString(resultSet.getString("uuid")))
-                            .username(resultSet.getString("username"))
-                            .teamId(resultSet.getInt("teamId"))
-                            .team(resultSet.getString("team"))
-                            .rivalId(resultSet.getInt("rivalId"))
-                            .rival(resultSet.getString("rival"))
-                            .game(GameTypeEnum.valueOf(resultSet.getString("game")))
-                            .area(resultSet.getString("area"))
-                            .round(resultSet.getString("round"))
-                            .points(resultSet.getDouble("points"))
-                            .time(resultSet.getString("time"))
-                            .valid(resultSet.getInt("valid"))
-                            .build();
-                    playerPointEntries.add(playerPointEntry);
-                }
-                return Optional.of(List.copyOf(playerPointEntries));
-            }
+    public Optional<List<PlayerPointEntry>> getAllValidPlayerPoints() {
+        try (Connection connection = plugin.getDatabaseManager().getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT `id`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`, `valid`
+                     FROM `player_points`
+                     WHERE `valid`=1
+                     """);
+             ResultSet resultSet = statement.executeQuery()) {
+            List<PlayerPointEntry> entries = new ArrayList<>();
+            while (resultSet.next()) entries.add(readPlayerPoint(resultSet));
+            return Optional.of(List.copyOf(entries));
         } catch (SQLException exception) {
-            logFailure("查询玩家积分", exception);
+            logFailure("查询有效积分快照", exception);
             return Optional.empty();
         }
     }
 
-    @Override
-    public List<PlayerPointEntry> getTeamPlayerPoints(int teamId) {
-        return getTeamPlayerPointsIfAvailable(teamId).orElseGet(Collections::emptyList);
-    }
-
-    public Optional<List<PlayerPointEntry>> getTeamPlayerPointsIfAvailable(int teamId) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("""
-                    SELECT `id`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`, `valid`
-                    FROM `player_points`
-                    WHERE `teamId`=?
-                    """)) {
-
-                statement.setInt(1, teamId);
-
-                List<PlayerPointEntry> playerPointEntries = new ArrayList<>();
-
-                final ResultSet resultSet = statement.executeQuery();
-                while (resultSet.next()) {
-                    PlayerPointEntry playerPointEntry = PlayerPointEntry.builder()
-                            .id(resultSet.getInt("id"))
-                            .uuid(UUID.fromString(resultSet.getString("uuid")))
-                            .username(resultSet.getString("username"))
-                            .teamId(resultSet.getInt("teamId"))
-                            .team(resultSet.getString("team"))
-                            .rivalId(resultSet.getInt("rivalId"))
-                            .rival(resultSet.getString("rival"))
-                            .game(GameTypeEnum.valueOf(resultSet.getString("game")))
-                            .area(resultSet.getString("area"))
-                            .round(resultSet.getString("round"))
-                            .points(resultSet.getDouble("points"))
-                            .time(resultSet.getString("time"))
-                            .valid(resultSet.getInt("valid"))
-                            .build();
-                    playerPointEntries.add(playerPointEntry);
-                }
-                return Optional.of(List.copyOf(playerPointEntries));
-            }
-        } catch (SQLException exception) {
-            logFailure("查询队伍积分", exception);
-            return Optional.empty();
-        }
+    private static PlayerPointEntry readPlayerPoint(ResultSet resultSet) throws SQLException {
+        return PlayerPointEntry.builder()
+                .id(resultSet.getInt("id"))
+                .uuid(UUID.fromString(resultSet.getString("uuid")))
+                .username(resultSet.getString("username"))
+                .teamId(resultSet.getInt("teamId"))
+                .team(resultSet.getString("team"))
+                .rivalId(resultSet.getInt("rivalId"))
+                .rival(resultSet.getString("rival"))
+                .game(GameTypeEnum.valueOf(resultSet.getString("game")))
+                .area(resultSet.getString("area"))
+                .round(resultSet.getString("round"))
+                .points(resultSet.getDouble("points"))
+                .time(resultSet.getString("time"))
+                .valid(resultSet.getInt("valid"))
+                .build();
     }
 
     @Override
     public boolean addPlayerPoint(PlayerPointEntry playerPointEntry) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("""
-                    INSERT INTO `player_points` (`transactionId`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-                    ON DUPLICATE KEY UPDATE `transactionId`=VALUES(`transactionId`);
-                    """, Statement.RETURN_GENERATED_KEYS)) {
-                int teamId = playerPointEntry.getTeamId();
-                int rivalID = playerPointEntry.getRivalId();
-                String username = playerPointEntry.getUsername();
-                String teamName = playerPointEntry.getTeam();
-                String rivalName = playerPointEntry.getRival();
-                String gameName = playerPointEntry.getGame().name();
-                String areaName = playerPointEntry.getArea();
-                double points = playerPointEntry.getPoints();
-                statement.setString(1, playerPointEntry.getTransactionId().toString());
-                statement.setString(2, playerPointEntry.getUuid().toString());
-                statement.setString(3, username);
-                statement.setInt(4, teamId);
-                statement.setString(5, teamName);
-                statement.setInt(6, rivalID);
-                statement.setString(7, rivalName);
-                statement.setString(8, gameName);
-                statement.setString(9, areaName);
-                statement.setString(10, playerPointEntry.getRound());
-                statement.setDouble(11, points);
-                statement.setString(12, playerPointEntry.getTime());
+        return addPlayerPoints(List.of(playerPointEntry));
+    }
 
-                int affectedRows = statement.executeUpdate();
-                if (affectedRows > 0) {
-                    try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("Database", "积分",
-                                    "玩家=" + username + " 队伍=" + teamName + " 游戏=" + gameName
-                                            + " 场地=" + areaName + " 变更=" + points));
-                            generatedKeys.getInt(1);
-                        } else {
-                        }
+    @Override
+    public boolean addPlayerPoints(List<PlayerPointEntry> playerPointEntries) {
+        if (playerPointEntries.isEmpty()) return true;
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement statement = connection.prepareStatement("""
+                        INSERT INTO `player_points` (`transactionId`, `uuid`, `username`, `teamId`, `team`, `rivalId`, `rival`, `game`, `area`, `round`, `points`, `time`)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                        ON DUPLICATE KEY UPDATE `transactionId`=VALUES(`transactionId`);
+                        """)) {
+                    for (PlayerPointEntry entry : playerPointEntries) {
+                        statement.setString(1, entry.getTransactionId().toString());
+                        statement.setString(2, entry.getUuid().toString());
+                        statement.setString(3, entry.getUsername());
+                        statement.setInt(4, entry.getTeamId());
+                        statement.setString(5, entry.getTeam());
+                        statement.setInt(6, entry.getRivalId());
+                        statement.setString(7, entry.getRival());
+                        statement.setString(8, entry.getGame().name());
+                        statement.setString(9, entry.getArea());
+                        statement.setString(10, entry.getRound());
+                        statement.setDouble(11, entry.getPoints());
+                        statement.setString(12, entry.getTime());
+                        statement.addBatch();
                     }
-                } else {
+                    statement.executeBatch();
                 }
-                return true;
+                connection.commit();
+                for (PlayerPointEntry entry : playerPointEntries) {
+                    plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("Database", "积分",
+                            "玩家=" + entry.getUsername() + " 队伍=" + entry.getTeam()
+                                    + " 游戏=" + entry.getGame().name() + " 场地=" + entry.getArea()
+                                    + " 变更=" + entry.getPoints()));
+                }
+            } catch (SQLException failure) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+                throw failure;
             }
+            return true;
         } catch (SQLException exception) {
-            logFailure("写入玩家积分", exception);
+            logFailure("批量写入玩家积分", exception);
             return false;
         }
     }

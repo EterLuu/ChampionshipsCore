@@ -12,6 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /** Explicit-roster bridge for both local and remote Bingo execution. */
 public final class BingoDailyGameAdapter implements DailyGameAdapter {
@@ -34,14 +36,21 @@ public final class BingoDailyGameAdapter implements DailyGameAdapter {
     }
 
     @Override
-    public @Nullable StartResult start(@NotNull List<ChampionshipTeam> teams) {
+    public @NotNull CompletionStage<StartResult> start(@NotNull List<ChampionshipTeam> teams) {
         List<String> maps = plugin.getGameManager().getBingoManager().getAreaNameList().stream().sorted().toList();
+        CompletionStage<StartResult> attempt = CompletableFuture.completedFuture(null);
         for (String map : maps) {
-            if (!plugin.getGameManager().joinBingoForTeams(map, false, GameRunMode.DAILY, teams)) continue;
-            BaseGameInstance instance = teams.getFirst().getMembers().stream().findFirst()
-                    .map(plugin.getGameManager()::getBasePlayerArea).orElse(null);
-            if (instance != null) return new StartResult(map, instance);
+            attempt = attempt.thenCompose(started -> {
+                if (started != null) return CompletableFuture.completedFuture(started);
+                return plugin.getGameManager().joinBingoForTeams(map, false, GameRunMode.DAILY, teams)
+                        .thenApply(accepted -> {
+                            if (!accepted) return null;
+                            BaseGameInstance instance = teams.getFirst().getMembers().stream().findFirst()
+                                    .map(plugin.getGameManager()::getBasePlayerArea).orElse(null);
+                            return instance == null ? null : new StartResult(map, instance);
+                        });
+            });
         }
-        return null;
+        return attempt;
     }
 }

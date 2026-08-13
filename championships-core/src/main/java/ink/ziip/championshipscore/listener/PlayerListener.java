@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.listener;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -16,6 +17,7 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -25,9 +27,22 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class PlayerListener extends BaseListener {
+    private final AtomicInteger onlinePlayerCount;
+    private final Set<NamespacedKey> recipeKeys;
+
     protected PlayerListener(ChampionshipsCore plugin) {
         super(plugin);
+        onlinePlayerCount = new AtomicInteger(plugin.getServer().getOnlinePlayers().size());
+        Set<NamespacedKey> discovered = new HashSet<>();
+        plugin.getServer().recipeIterator().forEachRemaining(recipe -> {
+            if (recipe instanceof Keyed keyedRecipe) discovered.add(keyedRecipe.getKey());
+        });
+        recipeKeys = Set.copyOf(discovered);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -35,7 +50,7 @@ public class PlayerListener extends BaseListener {
         Player player = event.getPlayer();
         PlayerPresentation presentation = presentation(player);
         final Component messageOverride;
-        if (player.hasPermission("cc.refuge")) {
+        if (player.hasPermission(ChampionshipPermissions.REFEREE)) {
             // Referees may colour their own message; identity still follows the same contract as TAB.
             String typed = PlainTextComponentSerializer.plainText().serialize(event.message());
             messageOverride = Utils.toComponent("&f" + typed);
@@ -59,7 +74,7 @@ public class PlayerListener extends BaseListener {
         boolean hasResolvedTeam = migration.successful() && !migration.hasTeamConflict()
                 && migration.resolvedTeamId() != null;
 
-        if (Bukkit.getOnlinePlayers().size() >= CCConfig.MAX_PLAYERS) {
+        if (onlinePlayerCount.get() >= CCConfig.MAX_PLAYERS) {
             if (CCConfig.WHITELIST.contains(name))
                 return;
 
@@ -74,6 +89,7 @@ public class PlayerListener extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
+        onlinePlayerCount.incrementAndGet();
         Player player = event.getPlayer();
         PlayerManager playerManager = ChampionshipsCore.getInstance().getPlayerManager();
         playerManager.updatePlayer(player);
@@ -89,15 +105,12 @@ public class PlayerListener extends BaseListener {
                 plugin.getRankManager().replayRecentRankingSummary(player);
         }, 40L);
 
-        plugin.getServer().recipeIterator().forEachRemaining(recipe -> {
-            if (recipe instanceof Keyed keyedRecipe) {
-                player.discoverRecipe(keyedRecipe.getKey());
-            }
-        });
+        player.discoverRecipes(recipeKeys);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
+        onlinePlayerCount.updateAndGet(current -> Math.max(0, current - 1));
         Player player = event.getPlayer();
         PlayerPresentation presentation = presentation(player);
         event.quitMessage(Component.translatable("multiplayer.player.left",

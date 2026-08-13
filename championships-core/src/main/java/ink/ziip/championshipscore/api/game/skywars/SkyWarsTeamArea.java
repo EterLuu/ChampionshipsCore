@@ -386,7 +386,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
     protected void startBorderShrink() {
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
-        borderCheckTask = scheduler.runTaskTimerAsynchronously(plugin, () -> {
+        borderCheckTask = scheduler.runTaskTimer(plugin, () -> {
             Location center = mapGeometry().getBoundaryCenter();
 
             for (UUID uuid : gamePlayersCopy) {
@@ -408,7 +408,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                     }
 
                     if (distance >= radius || location.getY() > height || location.getY() < low) {
-                        scheduler.runTask(plugin, () -> player.damage(1));
+                        player.damage(1);
                         championshipPlayer.setRedScreen();
                         championshipPlayer.sendActionBar(MessageConfig.SKY_WARS_OUT_OF_BORDER);
                     } else {
@@ -431,6 +431,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     }
 
     private void setParticles(Player player, boolean byAngle) {
+        // Intentionally asynchronous: with 64 players this visual-only path can produce more than
+        // twenty thousand one-particle sends per second. It has been exercised in formal events and
+        // must not consume the authoritative game thread; damage and border state remain synchronous.
         scheduler.runTaskAsynchronously(plugin, () -> {
             Location center = mapGeometry().getBoundaryCenter();
             Location location = player.getLocation();
@@ -443,7 +446,6 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             double y = location.getY();
 
             if (world != null) {
-
                 double alpha = Math.atan2(z1 - z, x1 - x);
 
                 for (double h = y - 3; h < y + 5; h++) {
@@ -461,7 +463,8 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                         double x2 = center.getX() + radius * Math.cos(beta);
                         double z2 = center.getZ() + radius * Math.sin(beta);
                         Location particleLoc = new Location(center.getWorld(), x2, h, z2);
-                        player.spawnParticle(Particle.DUST, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
+                        player.spawnParticle(Particle.DUST, particleLoc, 1,
+                                new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
                     }
                 }
             }
@@ -469,6 +472,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     }
 
     private void setHeightParticles(Player player, double y) {
+        // Same intentional visual-only exception as setParticles; see the 64-player note above.
         scheduler.runTaskAsynchronously(plugin, () -> {
             Location location = player.getLocation();
             World world = location.getWorld();
@@ -478,7 +482,8 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                         double x2 = location.getX() + radius * Math.cos(beta);
                         double z2 = location.getZ() + radius * Math.sin(beta);
                         Location particleLoc = new Location(location.getWorld(), x2, y, z2);
-                        player.spawnParticle(Particle.DUST, particleLoc, 1, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
+                        player.spawnParticle(Particle.DUST, particleLoc, 1,
+                                new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
                     }
                 }
             }
@@ -497,7 +502,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         removeSpawnedHappyGhasts();
         teamSpawnLocations.clear();
 
-        calculatePoints();
+        if (isSettlementAllowed()) calculatePoints();
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -508,7 +513,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        publishGameEndEvent(new SingleGameEndEvent(this, gameTeams));
         finishPostGameAfterEndEvent();
     }
 

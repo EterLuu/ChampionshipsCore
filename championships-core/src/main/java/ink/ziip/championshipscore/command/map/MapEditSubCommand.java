@@ -66,7 +66,7 @@ public final class MapEditSubCommand extends BaseSubCommand {
     private List<String> supportedGames() {
         List<String> names = new ArrayList<>();
         for (GameTypeEnum game : GameTypeEnum.values()) {
-            if (plugin.getPrepareSessionManager().supports(game)) names.add(game.name());
+            if (plugin.getPrepareSessionManager().supports(game)) names.add(game.commandName());
         }
         return names;
     }
@@ -76,12 +76,6 @@ public final class MapEditSubCommand extends BaseSubCommand {
     }
 
     private static @Nullable GameTypeEnum parseGame(@NotNull String raw) {
-        String normalized = raw.replace("_", "").replace("-", "");
-        for (GameTypeEnum game : GameTypeEnum.values()) {
-            if (game.name().replace("_", "").replace("-", "").equalsIgnoreCase(normalized)) {
-                return game;
-            }
-        }
-        return null;
+        return GameTypeEnum.fromCommand(raw);
     }
 }

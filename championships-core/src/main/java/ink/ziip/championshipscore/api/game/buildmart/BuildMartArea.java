@@ -333,9 +333,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         MapMeta meta = item.getItemMeta() instanceof MapMeta mapMeta ? mapMeta : null;
         if (meta != null) {
             MapView view = Bukkit.getMap(mapId);
-            if (view == null) {
-                meta.setMapId(mapId);
-            } else {
+            if (view != null) {
                 view.setTrackingPosition(false);
                 view.setUnlimitedTracking(false);
                 if (view.getRenderers().stream().noneMatch(BuildMartSelfMapRenderer.class::isInstance)) {
@@ -904,12 +902,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
 
-        settleEndGame();
-
-        sendMessageToAllGamePlayers(getTeamPointsRank());
+        if (isSettlementAllowed()) {
+            settleEndGame();
+            sendMessageToAllGamePlayers(getTeamPointsRank());
+        }
         addPlayerPointsToDatabase();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        publishGameEndEvent(new SingleGameEndEvent(this, gameTeams));
 
         finishPostGameAfterEndEvent();
     }

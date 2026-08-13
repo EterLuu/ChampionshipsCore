@@ -16,31 +16,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
 
 public class SpectateSubCommand extends BaseSubCommand {
-    /**
-     * Maps the spectate keyword to its game type. Only games with a spectatable area
-     * manager appear here; the {@code leave} keyword is intentionally absent.
-     */
-    private static final Map<String, GameTypeEnum> SPECTATABLE_GAMES = Map.ofEntries(
-            Map.entry("bingo", GameTypeEnum.Bingo),
-            Map.entry("battlebox", GameTypeEnum.BattleBox),
-            Map.entry("parkourtag", GameTypeEnum.ParkourTag),
-            Map.entry("skywars", GameTypeEnum.SkyWars),
-            Map.entry("tgttos", GameTypeEnum.TGTTOS),
-            Map.entry("tntrun", GameTypeEnum.TNTRun),
-            Map.entry("snowball", GameTypeEnum.SnowballShowdown),
-            Map.entry("dragoneggcarnival", GameTypeEnum.DragonEggCarnival),
-            Map.entry("parkourwarrior", GameTypeEnum.ParkourWarrior),
-            Map.entry("hotycodydusky", GameTypeEnum.HotyCodyDusky),
-            Map.entry("buildmart", GameTypeEnum.BuildMart),
-            Map.entry("dodgebolt", GameTypeEnum.Dodgebolt),
-            Map.entry("acerace", GameTypeEnum.AceRace)
-    );
-
     public SpectateSubCommand() {
         super("spectate", "打开观战菜单或直接选择场地实例",
                 "/cc spectate [leave | <游戏> <场地> [实例]]", PLAYER_PERMISSION);
@@ -80,7 +59,7 @@ public class SpectateSubCommand extends BaseSubCommand {
         if (!plugin.getGameManager().canManuallySpectate(player)) return true;
 
         if (args.length == 2 || args.length == 3) {
-            GameTypeEnum gameTypeEnum = SPECTATABLE_GAMES.get(args[0].toLowerCase(Locale.ROOT));
+            GameTypeEnum gameTypeEnum = GameTypeEnum.fromCommand(args[0]);
             if (gameTypeEnum == null) {
                 sendUsage(sender);
                 return true;
@@ -117,7 +96,7 @@ public class SpectateSubCommand extends BaseSubCommand {
         }
         if (!(sender instanceof Player player)) return Collections.emptyList();
         if (args.length == 2) {
-            GameTypeEnum gameTypeEnum = SPECTATABLE_GAMES.get(args[0].toLowerCase(Locale.ROOT));
+            GameTypeEnum gameTypeEnum = GameTypeEnum.fromCommand(args[0]);
             if (gameTypeEnum != null) {
                 BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
                 if (manager != null) {
@@ -132,7 +111,7 @@ public class SpectateSubCommand extends BaseSubCommand {
             }
         }
         if (args.length == 3) {
-            GameTypeEnum gameTypeEnum = SPECTATABLE_GAMES.get(args[0].toLowerCase(Locale.ROOT));
+            GameTypeEnum gameTypeEnum = GameTypeEnum.fromCommand(args[0]);
             if (gameTypeEnum == null) return Collections.emptyList();
             List<String> instances = plugin.getGameManager().getSpectatableMapInstances(player, gameTypeEnum, args[1])
                     .stream().map(plugin.getGameManager()::getSpectatorInstanceToken).distinct().toList();
@@ -146,9 +125,8 @@ public class SpectateSubCommand extends BaseSubCommand {
         String normalizedPrefix = prefix.toLowerCase(Locale.ROOT);
         List<String> candidates = new ArrayList<>();
         if ("leave".startsWith(normalizedPrefix)) candidates.add("leave");
-        SPECTATABLE_GAMES.entrySet().stream()
-                .filter(entry -> enabledGames.contains(entry.getValue()))
-                .map(Map.Entry::getKey)
+        enabledGames.stream()
+                .map(GameTypeEnum::commandName)
                 .filter(name -> name.startsWith(normalizedPrefix))
                 .sorted(Comparator.naturalOrder())
                 .forEach(candidates::add);

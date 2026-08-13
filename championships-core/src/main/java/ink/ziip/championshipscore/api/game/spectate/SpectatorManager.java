@@ -2,7 +2,6 @@ package ink.ziip.championshipscore.api.game.spectate;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
-import com.destroystokyo.paper.event.entity.ProjectileCollideEvent;
 import io.papermc.paper.event.entity.EntityInsideBlockEvent;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
@@ -106,6 +105,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
 
     @Override
     public void load() {
+        if (trackingTask != null) return;
         Bukkit.getPluginManager().registerEvents(this, plugin);
         trackingTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updateTracking, 10L, 10L);
     }
@@ -178,7 +178,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (!isSpectatorLike(player.getUniqueId())) return;
         ControlHolder holder = new ControlHolder(player.getUniqueId(), ControlScreen.MAIN);
         holder.inventory = Bukkit.createInventory(holder, MAIN_SIZE,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-001"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
+                Component.text(GuiConfig.text("spectator.controls.spectator-control"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
                         .decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -217,13 +217,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
             event.setCancelled(true);
     }
 
-    /** Paper fires this before projectile collision is resolved, so arrows and tridents pass through. */
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onProjectileCollide(@NotNull ProjectileCollideEvent event) {
-        if (isProtectedSpectator(event.getCollidedWith())) event.setCancelled(true);
-    }
-
-    /** Defensive fallback for projectiles produced by implementations which only expose the hit event. */
+    /** Cancelling the modern hit event keeps projectiles from affecting protected spectators. */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProjectileHit(@NotNull ProjectileHitEvent event) {
         if (isProtectedSpectator(event.getHitEntity())) event.setCancelled(true);
@@ -296,11 +290,11 @@ public final class SpectatorManager extends BaseManager implements Listener {
             case 3 -> openTeamControls(player);
             case 4 -> {
                 togglePlayers(player, session);
-                feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-002"), NamedTextColor.WHITE, 1.0F);
+                feedback(player, GuiConfig.text("spectator.controls.the-display-status-of-players-in-the-field-has-been-switched"), NamedTextColor.WHITE, 1.0F);
             }
             case 5 -> {
                 if (gameManager.leaveSpectating(player))
-                    feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-003"), NamedTextColor.RED, 0.8F);
+                    feedback(player, GuiConfig.text("spectator.controls.exited-from-watching-the-game"), NamedTextColor.RED, 0.8F);
             }
             case 7 -> adjustFlySpeed(player, rightClick ? -.05F : .05F);
             case 8 -> Bukkit.getScheduler().runTask(plugin, () -> openMainMenu(player));
@@ -507,8 +501,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
             applyExternalControlItems(player, session);
         } else {
             player.getInventory().setItem(8, item(Material.COMPASS,
-                    Component.text(GuiConfig.text("game-spectate-spectatormanager.text-001"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                    List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-004"), NamedTextColor.GRAY)), true));
+                    Component.text(GuiConfig.text("spectator.controls.spectator-control"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                    List.of(Component.text(GuiConfig.text("spectator.controls.turn-on-spectator-controls"), NamedTextColor.GRAY)), true));
         }
     }
 
@@ -564,32 +558,32 @@ public final class SpectatorManager extends BaseManager implements Listener {
 
     private void applyExternalControlItems(@NotNull Player player, @NotNull SpectatorSession session) {
         player.getInventory().setItem(0, item(session.nightVision() ? Material.SEA_LANTERN : Material.COAL,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-005"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-006"), NamedTextColor.GRAY)), session.nightVision()));
+                Component.text(GuiConfig.text("spectator.controls.night-vision"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-toggle-night-vision"), NamedTextColor.GRAY)), session.nightVision()));
         player.getInventory().setItem(1, item(Material.COMPASS,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-007"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-008"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("game-spectate-spectatormanager.text-009"), NamedTextColor.GRAY)), session.following()));
+                Component.text(GuiConfig.text("spectator.controls.player-tracking"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("spectator.controls.left-click-switch-to-next-player"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("spectator.controls.right-click-stop-tracking"), NamedTextColor.GRAY)), session.following()));
         player.getInventory().setItem(2, item(Material.ENDER_PEARL,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-010"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-011"), NamedTextColor.GRAY)), false));
+                Component.text(GuiConfig.text("spectator.controls.go-to-track-player"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-transfer-to-the-current-tracking-target"), NamedTextColor.GRAY)), false));
         player.getInventory().setItem(3, item(Material.WHITE_WOOL,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-012"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-013"), NamedTextColor.GRAY)), false));
+                Component.text(GuiConfig.text("spectator.controls.team-position"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-select-team-position"), NamedTextColor.GRAY)), false));
         player.getInventory().setItem(4, item(Material.GLASS,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-014"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-015"), NamedTextColor.GRAY)), false));
+                Component.text(GuiConfig.text("spectator.controls.show-hide-players"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-switch-all-players-in-the-field"), NamedTextColor.GRAY)), false));
         player.getInventory().setItem(5, item(Material.RED_DYE,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-016"), NamedTextColor.RED).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-017"), NamedTextColor.GRAY)), false));
+                Component.text(GuiConfig.text("spectator.controls.quit-watching-the-game"), NamedTextColor.RED).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-return-to-the-lobby"), NamedTextColor.GRAY)), false));
         player.getInventory().setItem(7, item(Material.FEATHER,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-018") + speedText(player), NamedTextColor.YELLOW)
+                Component.text(GuiConfig.text("spectator.controls.flight-speed") + speedText(player), NamedTextColor.YELLOW)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-019"), NamedTextColor.GREEN),
-                        Component.text(GuiConfig.text("game-spectate-spectatormanager.text-020"), NamedTextColor.RED)), false));
+                List.of(Component.text(GuiConfig.text("spectator.controls.left-click-acceleration"), NamedTextColor.GREEN),
+                        Component.text(GuiConfig.text("spectator.controls.right-click-slow-down"), NamedTextColor.RED)), false));
         player.getInventory().setItem(8, item(Material.SPYGLASS,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-021"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-022"), NamedTextColor.GRAY)), true));
+                Component.text(GuiConfig.text("spectator.controls.choose-a-viewing-venue"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-open-venue-list"), NamedTextColor.GRAY)), true));
     }
 
     private void toggleNightVision(@NotNull Player player, @NotNull SpectatorSession session) {
@@ -599,7 +593,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         SpectatorSession updated = session.withNightVision(enabled);
         sessions.put(player.getUniqueId(), updated);
         if (updated.external()) applyExternalControlItems(player, updated);
-        feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-023") + (enabled ? GuiConfig.text("game-spectate-spectatormanager.text-024") : GuiConfig.text("game-spectate-spectatormanager.text-025")),
+        feedback(player, GuiConfig.text("spectator.controls.night-vision-is-gone") + (enabled ? GuiConfig.text("spectator.controls.turn-on") : GuiConfig.text("spectator.controls.close")),
                 enabled ? NamedTextColor.GREEN : NamedTextColor.RED, enabled ? 1.2F : 0.8F);
     }
 
@@ -609,12 +603,12 @@ public final class SpectatorManager extends BaseManager implements Listener {
             SpectatorSession updated = session.withTarget(null, false);
             sessions.put(player.getUniqueId(), updated);
             applyExternalControlItems(player, updated);
-            feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-026"), NamedTextColor.RED, 0.8F);
+            feedback(player, GuiConfig.text("spectator.controls.player-tracking-stopped"), NamedTextColor.RED, 0.8F);
             return;
         }
         List<Player> targets = playersInArea(session.area(), player.getUniqueId());
         if (targets.isEmpty()) {
-            feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-027"), NamedTextColor.RED, 0.8F);
+            feedback(player, GuiConfig.text("spectator.controls.there-are-currently-no-trackable-players-in-the-field"), NamedTextColor.RED, 0.8F);
             return;
         }
         int current = -1;
@@ -629,23 +623,23 @@ public final class SpectatorManager extends BaseManager implements Listener {
         sessions.put(player.getUniqueId(), updated);
         player.setCompassTarget(target.getLocation());
         applyExternalControlItems(player, updated);
-        feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-028") + target.getName(), NamedTextColor.GREEN, 1.2F);
+        feedback(player, GuiConfig.text("spectator.controls.tracking") + target.getName(), NamedTextColor.GREEN, 1.2F);
     }
 
     private void teleportToTrackingTarget(@NotNull Player player, @NotNull SpectatorSession session) {
         Player target = session.target() == null ? null : Bukkit.getPlayer(session.target());
         if (target == null || session.area() == null || !playersInArea(session.area(), player.getUniqueId()).contains(target)) {
-            feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-029"), NamedTextColor.RED, 0.8F);
+            feedback(player, GuiConfig.text("spectator.controls.please-use-the-tracking-compass-to-select-a-player-first"), NamedTextColor.RED, 0.8F);
             return;
         }
         player.teleportAsync(target.getLocation());
-        feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-030") + target.getName(), NamedTextColor.LIGHT_PURPLE, 1.2F);
+        feedback(player, GuiConfig.text("spectator.controls.already-visited") + target.getName(), NamedTextColor.LIGHT_PURPLE, 1.2F);
     }
 
     private void openTeamControls(@NotNull Player player) {
         ControlHolder holder = new ControlHolder(player.getUniqueId(), ControlScreen.TEAMS);
         holder.inventory = Bukkit.createInventory(holder, MAIN_SIZE,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-031"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
+                Component.text(GuiConfig.text("spectator.controls.select-team-position"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
                         .decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -656,7 +650,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         player.setFlySpeed(speed);
         SpectatorSession session = sessions.get(player.getUniqueId());
         if (session != null && session.external()) applyExternalControlItems(player, session);
-        feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-018") + speedText(player), NamedTextColor.YELLOW,
+        feedback(player, GuiConfig.text("spectator.controls.flight-speed") + speedText(player), NamedTextColor.YELLOW,
                 delta > 0 ? 1.25F : 0.8F);
     }
 
@@ -692,11 +686,11 @@ public final class SpectatorManager extends BaseManager implements Listener {
                 Player target = targets.get(i);
                 holder.inventory.setItem(i, item(Material.PLAYER_HEAD,
                         Component.text(target.getName(), NamedTextColor.WHITE),
-                        List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-032"), NamedTextColor.GRAY)), false));
+                        List.of(Component.text(GuiConfig.text("spectator.controls.click-to-send-and-set-as-tracking-target"), NamedTextColor.GRAY)), false));
                 holder.targets.put(i, target.getUniqueId());
             }
-            holder.inventory.setItem(7, item(Material.ARROW, Component.text(GuiConfig.text("game-spectate-spectatormanager.text-033"), NamedTextColor.YELLOW), List.of(), false));
-            holder.inventory.setItem(8, item(Material.BARRIER, Component.text(GuiConfig.text("game-spectate-spectatormanager.text-025"), NamedTextColor.RED), List.of(), false));
+            holder.inventory.setItem(7, item(Material.ARROW, Component.text(GuiConfig.text("spectator.controls.return"), NamedTextColor.YELLOW), List.of(), false));
+            holder.inventory.setItem(8, item(Material.BARRIER, Component.text(GuiConfig.text("spectator.controls.close"), NamedTextColor.RED), List.of(), false));
             return;
         }
         if (holder.screen == ControlScreen.TEAMS) {
@@ -707,28 +701,28 @@ public final class SpectatorManager extends BaseManager implements Listener {
                     holder.teams.put(i, team);
                     holder.inventory.setItem(i, item(Material.WHITE_WOOL,
                             Component.text(team.getName(), NamedTextColor.WHITE),
-                            List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-034"), NamedTextColor.GRAY)), false));
+                            List.of(Component.text(GuiConfig.text("spectator.controls.click-to-go-to-the-team-s-spawn-point"), NamedTextColor.GRAY)), false));
                 }
             }
-            holder.inventory.setItem(7, item(Material.ARROW, Component.text(GuiConfig.text("game-spectate-spectatormanager.text-033"), NamedTextColor.YELLOW), List.of(), false));
-            holder.inventory.setItem(8, item(Material.BARRIER, Component.text(GuiConfig.text("game-spectate-spectatormanager.text-025"), NamedTextColor.RED), List.of(), false));
+            holder.inventory.setItem(7, item(Material.ARROW, Component.text(GuiConfig.text("spectator.controls.return"), NamedTextColor.YELLOW), List.of(), false));
+            holder.inventory.setItem(8, item(Material.BARRIER, Component.text(GuiConfig.text("spectator.controls.close"), NamedTextColor.RED), List.of(), false));
             return;
         }
         holder.inventory.setItem(0, item(session.nightVision() ? Material.SEA_LANTERN : Material.COAL,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-035") + (session.nightVision() ? GuiConfig.text("game-spectate-spectatormanager.text-024") : GuiConfig.text("game-spectate-spectatormanager.text-025")), NamedTextColor.AQUA), List.of(), session.nightVision()));
+                Component.text(GuiConfig.text("spectator.controls.night-vision-status-label") + (session.nightVision() ? GuiConfig.text("spectator.controls.turn-on") : GuiConfig.text("spectator.controls.close")), NamedTextColor.AQUA), List.of(), session.nightVision()));
         holder.inventory.setItem(1, item(session.following() ? Material.COMPASS : Material.RECOVERY_COMPASS,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-036") + (session.following() ? GuiConfig.text("game-spectate-spectatormanager.text-024") : GuiConfig.text("game-spectate-spectatormanager.text-025")), NamedTextColor.GREEN), List.of(), session.following()));
-        holder.inventory.setItem(2, item(Material.ENDER_PEARL, Component.text(GuiConfig.text("game-spectate-spectatormanager.text-037"), NamedTextColor.LIGHT_PURPLE), List.of(), false));
-        holder.inventory.setItem(3, item(Material.WHITE_WOOL, Component.text(GuiConfig.text("game-spectate-spectatormanager.text-038"), NamedTextColor.GOLD), List.of(), false));
-        holder.inventory.setItem(4, item(Material.GLASS, Component.text(GuiConfig.text("game-spectate-spectatormanager.text-039"), NamedTextColor.WHITE), List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-040"), NamedTextColor.GRAY)), false));
-        holder.inventory.setItem(5, item(Material.GLASS_PANE, Component.text(GuiConfig.text("game-spectate-spectatormanager.text-041"), NamedTextColor.WHITE), List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-042"), NamedTextColor.GRAY)), false));
+                Component.text(GuiConfig.text("spectator.controls.player-tracking-status-label") + (session.following() ? GuiConfig.text("spectator.controls.turn-on") : GuiConfig.text("spectator.controls.close")), NamedTextColor.GREEN), List.of(), session.following()));
+        holder.inventory.setItem(2, item(Material.ENDER_PEARL, Component.text(GuiConfig.text("spectator.controls.player-teleport"), NamedTextColor.LIGHT_PURPLE), List.of(), false));
+        holder.inventory.setItem(3, item(Material.WHITE_WOOL, Component.text(GuiConfig.text("spectator.controls.team-selection"), NamedTextColor.GOLD), List.of(), false));
+        holder.inventory.setItem(4, item(Material.GLASS, Component.text(GuiConfig.text("spectator.controls.player-hide-show"), NamedTextColor.WHITE), List.of(Component.text(GuiConfig.text("spectator.controls.click-to-switch-all-players"), NamedTextColor.GRAY)), false));
+        holder.inventory.setItem(5, item(Material.GLASS_PANE, Component.text(GuiConfig.text("spectator.controls.team-hide-show"), NamedTextColor.WHITE), List.of(Component.text(GuiConfig.text("spectator.controls.click-to-switch-the-currently-selected-team"), NamedTextColor.GRAY)), false));
         holder.inventory.setItem(6, item(Material.FEATHER,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-018") + speedText(player), NamedTextColor.YELLOW),
-                List.of(Component.text(GuiConfig.text("game-spectate-spectatormanager.text-019"), NamedTextColor.GREEN),
-                        Component.text(GuiConfig.text("game-spectate-spectatormanager.text-020"), NamedTextColor.RED)), false));
+                Component.text(GuiConfig.text("spectator.controls.flight-speed") + speedText(player), NamedTextColor.YELLOW),
+                List.of(Component.text(GuiConfig.text("spectator.controls.left-click-acceleration"), NamedTextColor.GREEN),
+                        Component.text(GuiConfig.text("spectator.controls.right-click-slow-down"), NamedTextColor.RED)), false));
         holder.inventory.setItem(7, item(Material.SPYGLASS,
-                Component.text(GuiConfig.text("game-spectate-spectatormanager.text-021"), NamedTextColor.AQUA), List.of(), false));
-        holder.inventory.setItem(8, item(Material.BARRIER, Component.text(GuiConfig.text("game-spectate-spectatormanager.text-025"), NamedTextColor.RED), List.of(), false));
+                Component.text(GuiConfig.text("spectator.controls.choose-a-viewing-venue"), NamedTextColor.AQUA), List.of(), false));
+        holder.inventory.setItem(8, item(Material.BARRIER, Component.text(GuiConfig.text("spectator.controls.close"), NamedTextColor.RED), List.of(), false));
     }
 
     private void clickControl(@NotNull Player player, @NotNull ControlHolder holder, int slot,
@@ -764,7 +758,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
             case 1 -> {
                 SpectatorSession updated = session.withFollowing(!session.following());
                 sessions.put(player.getUniqueId(), updated);
-                feedback(player, GuiConfig.text("game-spectate-spectatormanager.text-043") + (updated.following() ? GuiConfig.text("game-spectate-spectatormanager.text-024") : GuiConfig.text("game-spectate-spectatormanager.text-025")),
+                feedback(player, GuiConfig.text("spectator.controls.player-tracking-has-been") + (updated.following() ? GuiConfig.text("spectator.controls.turn-on") : GuiConfig.text("spectator.controls.close")),
                         updated.following() ? NamedTextColor.GREEN : NamedTextColor.RED,
                         updated.following() ? 1.2F : 0.8F);
             }

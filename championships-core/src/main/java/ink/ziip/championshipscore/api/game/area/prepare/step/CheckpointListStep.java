@@ -24,8 +24,8 @@ import java.util.List;
 /** Guided checkpoint editor for Parkour Warrior, including safe per-entry editing and deletion. */
 public final class CheckpointListStep extends PrepareStep {
     public CheckpointListStep() {
-        super("checkpoints", Component.text(GuiConfig.text("prepare-step-checkpointliststep.text-001")),
-                Component.text(GuiConfig.text("prepare-step-checkpointliststep.text-002")),
+        super("checkpoints", Component.text(GuiConfig.text("map-editor.steps.checkpoints.parkour-checkpoint")),
+                Component.text(GuiConfig.text("map-editor.steps.checkpoints.add-a-master-checkpoint-with-the-current-position-and-worldedit-selection-at-least-one-is-required")),
                 Material.LIME_CONCRETE, StepCaptureType.LIST);
     }
 
@@ -48,7 +48,7 @@ public final class CheckpointListStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, false);
         } catch (Exception e) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-checkpointliststep.text-003"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.checkpoints.please-use-worldedit-to-select-the-checkpoint-to-enter-the-area-first"));
         }
         ConfigurationSection root = cfg(session.getTarget()).ensureCheckpoints();
         int order = orderedKeys(root).size() + 1;
@@ -64,7 +64,7 @@ public final class CheckpointListStep extends PrepareStep {
         checkpoint.createSection("sub-checkpoints");
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-checkpointliststep.text-004") + root.getKeys(false).size() + GuiConfig.text("prepare-step-checkpointliststep.text-005"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.checkpoint-added-current") + root.getKeys(false).size() + GuiConfig.text("map-editor.steps.checkpoints.item-count-suffix"));
     }
 
     @Override public int listCount(@NotNull PrepareSession session) {
@@ -78,10 +78,10 @@ public final class CheckpointListStep extends PrepareStep {
         for (String key : orderedKeys(root)) {
             ConfigurationSection checkpoint = root.getConfigurationSection(key);
             if (checkpoint == null) continue;
-            entries.add(new ListEntry(GuiConfig.text("prepare-step-checkpointliststep.text-006") + checkpoint.getInt("order") + GuiConfig.text("common.separator")
+            entries.add(new ListEntry(GuiConfig.text("map-editor.steps.checkpoints.checkpoint") + checkpoint.getInt("order") + GuiConfig.text("common.separator")
                     + checkpoint.getString("name", key), List.of(
-                    GuiConfig.text("prepare-step-checkpointliststep.text-007") + format(Utils.getLocation(checkpoint.getConfigurationSection("spawn"))),
-                    GuiConfig.text("prepare-step-checkpointliststep.text-008") + format(checkpoint.getVector("enter.pos1")) + " → "
+                    GuiConfig.text("map-editor.steps.checkpoints.spawn-point") + format(Utils.getLocation(checkpoint.getConfigurationSection("spawn"))),
+                    GuiConfig.text("map-editor.steps.checkpoints.enter-area") + format(checkpoint.getVector("enter.pos1")) + " → "
                             + format(checkpoint.getVector("enter.pos2")))));
         }
         return entries;
@@ -93,7 +93,7 @@ public final class CheckpointListStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, false);
         } catch (Exception e) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-checkpointliststep.text-009"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.checkpoints.please-use-worldedit-to-reselect-the-checkpoint-to-enter-the-area"));
         }
         ConfigurationSection root = cfg(session.getTarget()).ensureCheckpoints();
         List<String> keys = orderedKeys(root);
@@ -104,7 +104,7 @@ public final class CheckpointListStep extends PrepareStep {
         checkpoint.set("enter.pos2", selection[1]);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-checkpointliststep.text-010") + (index + 1) + GuiConfig.text("prepare-step-checkpointliststep.text-011"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.updated") + (index + 1) + GuiConfig.text("map-editor.steps.checkpoints.checkpoint-spawn-points-and-entry-areas"));
     }
 
     @Override
@@ -113,13 +113,13 @@ public final class CheckpointListStep extends PrepareStep {
         ConfigurationSection root = cfg(session.getTarget()).ensureCheckpoints();
         List<String> keys = orderedKeys(root);
         if (index < 0 || index >= keys.size() || newOrder < 1 || newOrder > keys.size())
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-checkpointliststep.text-012") + keys.size() + GuiConfig.text("prepare-step-checkpointliststep.text-013"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.checkpoints.the-serial-number-must-be-between-1-and") + keys.size() + GuiConfig.text("map-editor.steps.checkpoints.range-end-suffix"));
         String moved = keys.remove(index);
         keys.add(newOrder - 1, moved);
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-checkpointliststep.text-014") + newOrder + GuiConfig.text("prepare-step-checkpointliststep.text-015"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.the-checkpoint-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.steps.checkpoints.item-suffix"));
     }
 
     @Override
@@ -132,7 +132,7 @@ public final class CheckpointListStep extends PrepareStep {
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-checkpointliststep.text-016") + (index + 1) + GuiConfig.text("prepare-step-checkpointliststep.text-017"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.deleted") + (index + 1) + GuiConfig.text("map-editor.steps.checkpoints.checkpoint-count-suffix"));
     }
 
     private static List<String> orderedKeys(ConfigurationSection root) {
@@ -147,13 +147,13 @@ public final class CheckpointListStep extends PrepareStep {
     }
 
     private static String format(Vector vector) {
-        return vector == null ? GuiConfig.text("prepare-step-checkpointliststep.text-018") : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
+        return vector == null ? GuiConfig.text("map-editor.steps.checkpoints.not-set") : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
     }
 
     private static String format(Location location) {
-        return location == null ? GuiConfig.text("prepare-step-checkpointliststep.text-018") : location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ();
+        return location == null ? GuiConfig.text("map-editor.steps.checkpoints.not-set") : location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ();
     }
 
-    @Override public @NotNull Component listAddLabel() { return Component.text(GuiConfig.text("prepare-step-checkpointliststep.text-019")); }
-    @Override public @NotNull Component listAddHint() { return Component.text(GuiConfig.text("prepare-step-checkpointliststep.text-020")); }
+    @Override public @NotNull Component listAddLabel() { return Component.text(GuiConfig.text("map-editor.steps.checkpoints.add-master-checkpoint")); }
+    @Override public @NotNull Component listAddHint() { return Component.text(GuiConfig.text("map-editor.steps.checkpoints.stand-at-the-spawn-point-and-select-the-area-to-enter-and-click")); }
 }

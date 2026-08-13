@@ -12,7 +12,7 @@ class ConfigurationInitializationOrderTest {
     void upgradeRunsBeforeRuntimeBinding() throws Exception {
         String source = Files.readString(Path.of("src/main/java/ink/ziip/championshipscore/configuration/config/"
                 + "BaseConfigurationFile.java"));
-        int initializer = source.indexOf("public void initializeConfiguration(Path pluginFolder, boolean autoUpgrade)");
+        int initializer = source.indexOf("public boolean initializeConfigurationChecked(Path pluginFolder, boolean autoUpgrade)");
         int upgrade = source.indexOf("checkVersion(autoUpgrade);", initializer);
         int binding = source.indexOf("loadFileOptions();", initializer);
 

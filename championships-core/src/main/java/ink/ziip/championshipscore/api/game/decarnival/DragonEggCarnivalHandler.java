@@ -11,6 +11,8 @@ import org.bukkit.GameMode;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.EnderDragonPart;
@@ -54,8 +56,8 @@ public class DragonEggCarnivalHandler extends BaseListener {
         if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.PROGRESS) event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (dragonEggCarnivalArea.notAreaPlayer(player) || dragonEggCarnivalArea.isIntroductionPhase()) return;
 
@@ -110,7 +112,9 @@ public class DragonEggCarnivalHandler extends BaseListener {
         Player player = causingPlayer(event);
         if (player == null) player = crystalChainAttacker(event);
         if (player == null || dragonEggCarnivalArea.notAreaPlayer(player)) return;
-        dragonEggCarnivalArea.recordDragonDamage(player, event.getFinalDamage(), dragon.getMaxHealth());
+        AttributeInstance maxHealth = dragon.getAttribute(Attribute.MAX_HEALTH);
+        double maximumHealth = maxHealth == null ? dragon.getHealth() : maxHealth.getValue();
+        dragonEggCarnivalArea.recordDragonDamage(player, event.getFinalDamage(), maximumHealth);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

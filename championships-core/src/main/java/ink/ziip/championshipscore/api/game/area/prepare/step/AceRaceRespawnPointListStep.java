@@ -17,8 +17,8 @@ import java.util.List;
 /** Edits course-ordered markers which are bound to Ace Race progress segments at load time. */
 public final class AceRaceRespawnPointListStep extends ListStep {
     public AceRaceRespawnPointListStep() {
-        super("respawn_points", Component.text(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-001")),
-                Component.text(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-002")),
+        super("respawn_points", Component.text(GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.racing-spawn-point")),
+                Component.text(GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.stage-binding-and-save-behavior")),
                 Material.RECOVERY_COMPASS,
                 target -> cfg(target).ensureRespawnPoints(),
                 (target, values) -> cfg(target).setRespawnPoints(values),
@@ -76,11 +76,11 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         AceRaceConfig config = cfg(session.getTarget());
         int count = config.ensureRespawnPoints().size();
         if (index < 0 || index >= count || newOrder < 1 || newOrder > count)
-            return ink.ziip.championshipscore.util.Utils.formatAdminError(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-003") + count + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-004"));
+            return ink.ziip.championshipscore.util.Utils.formatAdminError(GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.the-serial-number-must-be-between-1-and") + count + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.range-end-suffix"));
         config.moveRespawnPoint(index, newOrder);
         session.markDirty();
         String result = ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-005") + newOrder + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-006"));
+                GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.the-point-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.item-suffix"));
         reload(session);
         return result;
     }
@@ -92,16 +92,16 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         config.removeRespawnPoint(index);
         session.markDirty();
         String result = ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-007") + (index + 1) + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-008"));
+                GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.deleted") + (index + 1) + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.points"));
         reload(session);
         return result;
     }
 
     public String bindingText(@NotNull PrepareSession session, int index) {
         AceRaceArea area = area(session);
-        if (area == null || area.getRespawnPointIndexForConfig(index) < 0) return GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-009");
+        if (area == null || area.getRespawnPointIndexForConfig(index) < 0) return GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.the-corresponding-progress-line-not-loaded");
         int binding = area.getRespawnPointBinding(index);
-        return binding < 0 ? GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-010") : GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-011") + (binding + 1) + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-012");
+        return binding < 0 ? GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.the-corresponding-progress-line-after-the-starting-point") : GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.belonging-progress-line") + (binding + 1) + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.after-suffix");
     }
 
     public String setBinding(@NotNull PrepareSession session, int index, int binding) {
@@ -109,7 +109,7 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         if (area == null || !area.setRespawnPointBinding(index, binding)) return null;
         session.markDirty();
         return ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-013") + (binding < 0 ? GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-014") : GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-015") + (binding + 1) + GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-012")) + "。");
+                GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.this-spawn-point-has-been-bound-to") + (binding < 0 ? GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.after-starting-point") : GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.progress-line") + (binding + 1) + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.after-suffix")) + "。");
     }
 
     public int currentBinding(@NotNull PrepareSession session, int index) {
@@ -123,11 +123,11 @@ public final class AceRaceRespawnPointListStep extends ListStep {
 
     @Override
     public @NotNull Component listAddLabel() {
-        return Component.text(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-016"));
+        return Component.text(GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.add-spawn-point"));
     }
 
     @Override
     public @NotNull Component listAddHint() {
-        return Component.text(GuiConfig.text("prepare-step-aceracerespawnpointliststep.text-017"));
+        return Component.text(GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.respawn-point-selection-hint"));
     }
 }

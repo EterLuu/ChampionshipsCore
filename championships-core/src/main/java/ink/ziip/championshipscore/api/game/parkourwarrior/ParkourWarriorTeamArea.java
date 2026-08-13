@@ -501,7 +501,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
-        calculatePoints();
+        if (isSettlementAllowed()) calculatePoints();
 
         cleanInventoryForAllGamePlayers();
 
@@ -520,10 +520,10 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
         resetPlayerHealthFoodEffectLevelInventory();
 
-        sendMessageToAllGamePlayers(getTeamPointsRank());
+        if (isSettlementAllowed()) sendMessageToAllGamePlayers(getTeamPointsRank());
         addPlayerPointsToDatabase();
 
-        Bukkit.getPluginManager().callEvent(new SingleGameEndEvent(this, gameTeams));
+        publishGameEndEvent(new SingleGameEndEvent(this, gameTeams));
 
         finishPostGameAfterEndEvent();
     }

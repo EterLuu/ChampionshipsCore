@@ -292,8 +292,8 @@ public class SkyWarsHandler extends BaseListener {
 
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    @Override
+    public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         if (skyWarsArea.notAreaPlayer(player)) {
             return;

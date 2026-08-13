@@ -450,7 +450,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END) return;
         cancelRoundTasks();
         setGameStageEnum(GameStageEnum.END);
-        if (champion != null) {
+        if (isSettlementAllowed() && champion != null) {
             String score = rightWins + " - " + leftWins;
             Utils.sendMessageToAllPlayers(MessageConfig.DODGEBOLT_CHAMPION
                     .replace("%team%", champion.getColoredName()).replace("%score%", score));
@@ -458,7 +458,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                     MessageConfig.DODGEBOLT_CHAMPION_SUBTITLE
                             .replace("%team%", champion.getColoredName()).replace("%score%", score), 100);
             launchChampionFireworks(champion);
-        } else {
+        } else if (isSettlementAllowed()) {
             Utils.sendMessageToAllPlayers(MessageConfig.DODGEBOLT_STOPPED);
         }
         // Keep the unified "game over" title authoritative; champion details remain in chat/fireworks.
@@ -467,7 +467,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
         beginPostGameSettlement();
-        Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
+        publishGameEndEvent(new TeamGameEndEvent(rightChampionshipTeam, leftChampionshipTeam, this));
         finishPostGameAfterEndEvent();
     }
 

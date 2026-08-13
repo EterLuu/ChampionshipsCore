@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,12 +30,12 @@ class BingoExecutionRouterTest {
         BingoExecutionRouter router = new BingoExecutionRouter(local);
 
         assertTrue(router.canStart(EVENT));
-        assertTrue(router.start(EVENT));
+        assertTrue(router.start(EVENT).toCompletableFuture().join());
         router.forceEnd("local-stop");
 
         router.activateRemote(remote);
         assertFalse(router.canStart(EVENT));
-        assertFalse(router.start(EVENT));
+        assertFalse(router.start(EVENT).toCompletableFuture().join());
         router.forceEnd("event-stop");
 
         assertEquals(List.of("local-stop"), local.forceEndReasons);
@@ -64,14 +66,15 @@ class BingoExecutionRouterTest {
         }
 
         @Override
-        public boolean start(BingoStartRequest request) {
+        public CompletionStage<Boolean> start(BingoStartRequest request) {
             starts++;
-            return available;
+            return CompletableFuture.completedFuture(available);
         }
 
         @Override
-        public void forceEnd(String reason) {
+        public CompletionStage<Void> forceEnd(String reason) {
             forceEndReasons.add(reason);
+            return CompletableFuture.completedFuture(null);
         }
     }
 }

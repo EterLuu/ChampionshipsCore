@@ -152,6 +152,12 @@ public class GameManagerHandler extends BaseListener {
     /** Returns untracked lobby players before the void can kill them. Game instances own their own fall handling. */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onLobbyFall(PlayerMoveEvent event) {
+        if (!positionChanged(event)) return;
+        BaseGameInstance routedArea = routedArea(event);
+        if (routedArea != null) {
+            routedArea.routePlayerMoveLow(event);
+            return;
+        }
         if (event.getTo() == null || event.getTo().getY() > 0D || !lobbyAvailable()) return;
         Player player = event.getPlayer();
         if (!event.getTo().getWorld().equals(CCConfig.LOBBY_LOCATION.getWorld())) return;
@@ -163,6 +169,34 @@ public class GameManagerHandler extends BaseListener {
         player.setFallDistance(0F);
         player.setVelocity(new org.bukkit.util.Vector());
         player.teleport(CCConfig.LOBBY_LOCATION);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onRoutedMoveNormal(PlayerMoveEvent event) {
+        if (!positionChanged(event)) return;
+        BaseGameInstance area = routedArea(event);
+        if (area != null) area.routePlayerMoveNormal(event);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onRoutedMoveHigh(PlayerMoveEvent event) {
+        if (!positionChanged(event)) return;
+        BaseGameInstance area = routedArea(event);
+        if (area != null) area.routePlayerMoveHigh(event);
+    }
+
+    private BaseGameInstance routedArea(PlayerMoveEvent event) {
+        UUID uuid = event.getPlayer().getUniqueId();
+        BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(uuid);
+        return area != null ? area : plugin.getGameManager().getSpectatorManager().areaOf(uuid);
+    }
+
+    private static boolean positionChanged(PlayerMoveEvent event) {
+        if (event.getTo() == null) return false;
+        return event.getFrom().getWorld() != event.getTo().getWorld()
+                || event.getFrom().getX() != event.getTo().getX()
+                || event.getFrom().getY() != event.getTo().getY()
+                || event.getFrom().getZ() != event.getTo().getZ();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

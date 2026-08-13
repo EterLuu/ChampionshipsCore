@@ -260,7 +260,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
         if (woolCheckerTask != null)
             woolCheckerTask.cancel();
 
-        if (match != null) calculatePoints(match);
+        if (isSettlementAllowed() && match != null) calculatePoints(match);
         addPlayerPointsToDatabase();
 
         announceGameEnd(MessageConfig.BATTLE_BOX_GAME_END_TITLE, MessageConfig.BATTLE_BOX_GAME_END_SUBTITLE);
@@ -274,7 +274,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
         ChampionshipTeam right = getRightChampionshipTeam();
         ChampionshipTeam left = getLeftChampionshipTeam();
         if (right != null && left != null) {
-            Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(right, left, this));
+            publishGameEndEvent(new TeamGameEndEvent(right, left, this));
         }
 
         finishPostGameAfterEndEvent();

@@ -47,7 +47,7 @@ public final class AceRaceEquipmentGui {
                             @NotNull Consumer<AceRaceEquipment> callback) {
         Holder holder = new Holder(session, callback);
         holder.inventory = Bukkit.createInventory(holder, 9,
-                Component.text(GuiConfig.text("prepare-gui-aceraceequipmentgui.text-001")).decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("map-editor.games.ace-race.menus.equipment.select-equipment-for-next-stage")).decoration(TextDecoration.ITALIC, false));
         holder.inventory.setItem(1, option(Material.BARRIER, AceRaceEquipment.NONE, current));
         holder.inventory.setItem(3, option(Material.ELYTRA, AceRaceEquipment.ELYTRA, current));
         holder.inventory.setItem(5, option(Material.TRIDENT, AceRaceEquipment.TRIDENT, current));
@@ -85,7 +85,7 @@ public final class AceRaceEquipmentGui {
         item.editMeta(meta -> {
             meta.displayName(Component.text(equipment.displayName()).color(NamedTextColor.AQUA)
                     .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(equipment == current ? GuiConfig.text("prepare-gui-aceraceequipmentgui.text-002") : GuiConfig.text("prepare-gui-aceraceequipmentgui.text-003"))
+            meta.lore(List.of(Component.text(equipment == current ? GuiConfig.text("map-editor.games.ace-race.menus.equipment.current-selection") : GuiConfig.text("map-editor.games.ace-race.menus.equipment.click-to-select"))
                     .color(equipment == current ? NamedTextColor.GREEN : NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
         });

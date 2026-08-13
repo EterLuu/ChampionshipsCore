@@ -48,7 +48,7 @@ public class WeSelectionStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-weselectionstep.text-001"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.worldedit-selection.please-use-worldedit-to-select-two-endpoints-first"));
         }
         setter.accept(session.getTarget(), selection);
         session.markDirty();

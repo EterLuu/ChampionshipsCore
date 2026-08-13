@@ -17,14 +17,16 @@ import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerManager extends BaseManager {
-    private static final Map<UUID, ChampionshipPlayer> cachedPlayers = new ConcurrentHashMap<>();
-    private static final Map<String, UUID> cachedPlayerUUID = new ConcurrentHashMap<>();
-    private static final Map<UUID, String> cachedPlayerName = new ConcurrentHashMap<>();
-    private static final Map<UUID, PlayerIdentityMigrationResult> pendingIdentityMigrations = new ConcurrentHashMap<>();
-    private static final Map<String, Object> identityLocks = new ConcurrentHashMap<>();
+    private final Map<UUID, ChampionshipPlayer> cachedPlayers = new ConcurrentHashMap<>();
+    private final Map<String, UUID> cachedPlayerUUID = new ConcurrentHashMap<>();
+    private final Map<UUID, String> cachedPlayerName = new ConcurrentHashMap<>();
+    private final Map<UUID, PlayerIdentityMigrationResult> pendingIdentityMigrations = new ConcurrentHashMap<>();
+    private final Map<String, Object> identityLocks = new ConcurrentHashMap<>();
     private final PlayerDao playerDao;
 
     public PlayerManager(ChampionshipsCore championshipsCore) {
@@ -56,19 +58,6 @@ public class PlayerManager extends BaseManager {
     public void addPlayer(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         addPlayer(uuid);
-    }
-
-    public void deletePlayer(@NotNull UUID uuid) {
-        if (!cachedPlayers.containsKey(uuid))
-            return;
-        String name = cachedPlayerName.get(uuid);
-        if (name != null)
-            cachedPlayerUUID.remove(normalizeName(name), uuid);
-        cachedPlayers.remove(uuid);
-        cachedPlayerName.remove(uuid);
-        playerDao.deletePlayer(uuid);
-        plugin.getRedisManager().publishDatabaseChange("player-deleted", DatabaseSyncDomain.PLAYER,
-                DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
     }
 
     public void updatePlayer(@NotNull Player player) {
@@ -121,60 +110,62 @@ public class PlayerManager extends BaseManager {
         return result;
     }
 
-    public UUID getPlayerUUID(@NotNull String name) {
+    /** Resolves an offline identity without blocking the server thread on SQL or profile lookup. */
+    public CompletionStage<UUID> resolvePlayerUUID(@NotNull String name) {
         String normalizedName = normalizeName(name);
-        Player onlinePlayer = Bukkit.getOnlinePlayers().stream()
-                .filter(player -> player.getName().equalsIgnoreCase(name))
-                .findFirst()
-                .orElse(null);
-        if (onlinePlayer != null) {
-            cacheIdentity(onlinePlayer.getName(), onlinePlayer.getUniqueId(), java.util.Set.of());
-            return onlinePlayer.getUniqueId();
+        Player online = Bukkit.getOnlinePlayers().stream()
+                .filter(player -> player.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+        if (online != null) {
+            cacheIdentity(online.getName(), online.getUniqueId(), java.util.Set.of());
+            return CompletableFuture.completedFuture(online.getUniqueId());
         }
+        UUID cached = cachedPlayerUUID.get(normalizedName);
+        if (cached != null) return CompletableFuture.completedFuture(cached);
 
-        if (cachedPlayerUUID.containsKey(normalizedName))
-            return cachedPlayerUUID.get(normalizedName);
-
-        UUID uuid = null;
-
-        PlayerEntry playerEntry = playerDao.getPlayer(name);
-        if (playerEntry == null) {
-            uuid = Utils.getPlayerUUID(name);
-            playerDao.addPlayer(name, uuid);
-            plugin.getRedisManager().publishDatabaseChange("player-created", DatabaseSyncDomain.PLAYER);
-        } else {
-            uuid = playerEntry.getUuid();
-        }
-
-        cachedPlayerUUID.put(normalizedName, uuid);
-        cachedPlayerName.put(uuid, name);
-
-        return uuid;
+        CompletableFuture<UUID> resolved = new CompletableFuture<>();
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                PlayerEntry playerEntry = playerDao.getPlayer(name);
+                UUID uuid;
+                if (playerEntry == null) {
+                    uuid = Utils.getPlayerUUID(name);
+                    playerDao.addPlayer(name, uuid);
+                    plugin.getRedisManager().publishDatabaseChange("player-created", DatabaseSyncDomain.PLAYER);
+                } else {
+                    uuid = playerEntry.getUuid();
+                }
+                cachedPlayerUUID.put(normalizedName, uuid);
+                cachedPlayerName.put(uuid, name);
+                resolved.complete(uuid);
+            } catch (Throwable failure) {
+                resolved.completeExceptionally(failure);
+            }
+        });
+        return resolved;
     }
 
     public String getPlayerName(@NotNull UUID uuid) {
-        if (cachedPlayerName.containsKey(uuid))
-            return cachedPlayerName.get(uuid);
-
-        String name = null;
-
-        PlayerEntry playerEntry = playerDao.getPlayer(uuid);
-        if (playerEntry != null) {
-            name = playerEntry.getName();
-        }
-
-        if (name == null) {
-            return "unknown";
-        }
-
-        cachedPlayerName.put(uuid, name);
-
-        return name;
+        return getCachedPlayerName(uuid);
     }
 
-    /** Authoritative historical identities used by administrator player selectors. */
-    public @NotNull List<PlayerEntry> getKnownPlayers() {
-        return playerDao.getPlayerList();
+    /** Non-blocking identity lookup for presentation paths which must never query the database. */
+    public @NotNull String getCachedPlayerName(@NotNull UUID uuid) {
+        Player online = Bukkit.getPlayer(uuid);
+        if (online != null) return online.getName();
+        return cachedPlayerName.getOrDefault(uuid, "unknown");
+    }
+
+    /** Loads historical identities away from the server thread for GUI selectors. */
+    public CompletionStage<List<PlayerEntry>> getKnownPlayersAsync() {
+        CompletableFuture<List<PlayerEntry>> result = new CompletableFuture<>();
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                result.complete(List.copyOf(playerDao.getPlayerList()));
+            } catch (Throwable failure) {
+                result.completeExceptionally(failure);
+            }
+        });
+        return result;
     }
 
     /** Drops database-backed identity lookups after a change published by another Core instance. */
@@ -194,9 +185,9 @@ public class PlayerManager extends BaseManager {
         return getPlayer(player.getUniqueId());
     }
 
-    @Nullable
-    public ChampionshipPlayer getPlayer(@NotNull String name) {
-        return getPlayer(getPlayerUUID(name));
+    /** Seeds the non-blocking identity cache from an authoritative team/database snapshot. */
+    public void cacheKnownIdentity(@NotNull String username, @NotNull UUID currentUuid) {
+        cacheIdentity(username, currentUuid, java.util.Set.of());
     }
 
     private void cacheIdentity(@NotNull String username, @NotNull UUID currentUuid,

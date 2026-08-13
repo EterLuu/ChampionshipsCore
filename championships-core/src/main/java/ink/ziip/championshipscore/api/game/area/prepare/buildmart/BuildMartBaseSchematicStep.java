@@ -17,8 +17,8 @@ final class BuildMartBaseSchematicStep extends SchematicStep {
     private final File schematic;
 
     BuildMartBaseSchematicStep(@NotNull File schematic) {
-        super("base_schematic", plugin -> schematic, Component.text(GuiConfig.text("prepare-buildmart-buildmartbaseschematicstep.text-001")),
-                Component.text(GuiConfig.text("prepare-buildmart-buildmartbaseschematicstep.text-002")));
+        super("base_schematic", plugin -> schematic, Component.text(GuiConfig.text("map-editor.games.build-mart.steps.base-template.save-base-0-template")),
+                Component.text(GuiConfig.text("map-editor.games.build-mart.steps.base-template.template-base-selection-hint")));
         this.schematic = schematic;
     }
 

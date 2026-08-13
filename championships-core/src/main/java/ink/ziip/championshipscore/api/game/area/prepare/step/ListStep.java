@@ -60,14 +60,14 @@ public class ListStep extends PrepareStep {
     public String listAdd(@NotNull PrepareSession session, @NotNull Player player) {
         adder.accept(session.getTarget(), Utils.getLocationConfigString(Utils.centerOnBlock(player.getLocation())));
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-001") + listCount(session) + GuiConfig.text("prepare-step-liststep.text-002"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.list-editor.points-added-current") + listCount(session) + GuiConfig.text("map-editor.steps.list-editor.item-count-suffix"));
     }
 
     @Override
     public String listClear(@NotNull PrepareSession session, @NotNull Player player) {
         clearer.accept(session.getTarget());
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-003"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.list-editor.point-list-cleared"));
     }
 
     @Override
@@ -81,7 +81,7 @@ public class ListStep extends PrepareStep {
         List<String> values = values(session);
         for (int i = 0; i < values.size(); i++) {
             String value = values.get(i);
-            entries.add(new ListEntry(GuiConfig.text("prepare-step-liststep.text-004") + (i + 1), List.of(formatLocation(value))));
+            entries.add(new ListEntry(GuiConfig.text("map-editor.steps.list-editor.point") + (i + 1), List.of(formatLocation(value))));
         }
         return entries;
     }
@@ -93,7 +93,7 @@ public class ListStep extends PrepareStep {
         values.set(index, Utils.getLocationConfigString(Utils.centerOnBlock(player.getLocation())));
         setter.accept(session.getTarget(), values);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-005") + (index + 1) + GuiConfig.text("prepare-step-liststep.text-006"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.list-editor.updated") + (index + 1) + GuiConfig.text("map-editor.steps.list-editor.points"));
     }
 
     @Override
@@ -101,12 +101,12 @@ public class ListStep extends PrepareStep {
                                int index, int newOrder) {
         List<String> values = values(session);
         if (index < 0 || index >= values.size() || newOrder < 1 || newOrder > values.size())
-            return Utils.formatAdminError(GuiConfig.text("prepare-step-liststep.text-007") + values.size() + GuiConfig.text("prepare-step-liststep.text-008"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.list-editor.the-serial-number-must-be-between-1-and") + values.size() + GuiConfig.text("map-editor.steps.list-editor.range-end-suffix"));
         String value = values.remove(index);
         values.add(newOrder - 1, value);
         setter.accept(session.getTarget(), values);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-009") + newOrder + GuiConfig.text("prepare-step-liststep.text-010"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.list-editor.the-point-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.steps.list-editor.item-suffix"));
     }
 
     @Override
@@ -116,7 +116,7 @@ public class ListStep extends PrepareStep {
         values.remove(index);
         setter.accept(session.getTarget(), values);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("prepare-step-liststep.text-011") + (index + 1) + GuiConfig.text("prepare-step-liststep.text-006"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.list-editor.deleted") + (index + 1) + GuiConfig.text("map-editor.steps.list-editor.points"));
     }
 
     private List<String> values(@NotNull PrepareSession session) {

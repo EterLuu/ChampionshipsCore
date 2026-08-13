@@ -36,7 +36,7 @@ public class SnowballShowdownManager extends BaseGameInstanceManager<SnowballSho
     public void unload() {
         for (SnowballShowdownTeamArea area : areas.values()) {
             if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.endGameFinally();
+                area.abortAndReset();
             }
         }
         clearAreas();

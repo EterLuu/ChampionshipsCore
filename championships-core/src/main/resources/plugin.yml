@@ -18,3 +18,6 @@ permissions:
   cc.admin:
     description: ChampionshipsCore event and administration commands.
     default: op
+  cc.refuge:
+    description: ChampionshipsCore referee presentation and game-flow bypasses.
+    default: false

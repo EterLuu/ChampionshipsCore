@@ -45,7 +45,7 @@ public class AceRaceManager extends BaseGameInstanceManager<AceRaceArea> {
     @Override
     public void unload() {
         for (AceRaceArea area : getRuntimeInstances()) {
-            if (area.getGameStageEnum() != GameStageEnum.WAITING) area.endGameFinally();
+            if (area.getGameStageEnum() != GameStageEnum.WAITING) area.abortAndReset();
         }
         clearAreas();
         instancesByMap.clear();

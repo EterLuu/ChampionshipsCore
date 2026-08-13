@@ -34,18 +34,17 @@ public class MemberAddSubCommand extends BaseSubCommand {
                 sender.sendMessage(message);
                 return true;
             }
-            if (plugin.getTeamManager().addTeamMember(args[1], championshipTeam)) {
-                String message = MessageConfig.MEMBER_SUCCESSFULLY_ADDED
+            plugin.getTeamManager().addTeamMember(args[1], championshipTeam).thenAccept(added -> {
+                String message = added
+                        ? MessageConfig.MEMBER_SUCCESSFULLY_ADDED
                         .replace("%team%", championshipTeam.getColoredName())
-                        .replace("%player%", Utils.formatPlayerNameOnly(args[1]));
-                sender.sendMessage(message);
-            } else {
-                String message = MessageConfig.MEMBER_ADDED_FAILED
+                        .replace("%player%", Utils.formatPlayerNameOnly(args[1]))
+                        : MessageConfig.MEMBER_ADDED_FAILED
                         .replace("%team%", args[0])
                         .replace("%player%", Utils.formatPlayerName(args[1]))
                         .replace("%reason%", MessageConfig.REASON_MEMBER_ALREADY_EXIST);
                 sender.sendMessage(message);
-            }
+            });
         }
         return true;
     }

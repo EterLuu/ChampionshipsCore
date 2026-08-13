@@ -14,6 +14,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /** Chooses one idle lightweight runtime slot; all slots may share the exact physical track. */
 public final class AceRaceDailyGameAdapter implements DailyGameAdapter {
@@ -36,14 +38,14 @@ public final class AceRaceDailyGameAdapter implements DailyGameAdapter {
     }
 
     @Override
-    public @Nullable StartResult start(@NotNull List<ChampionshipTeam> teams) {
+    public @NotNull CompletionStage<StartResult> start(@NotNull List<ChampionshipTeam> teams) {
         for (AceRaceArea area : candidates()) {
             if (plugin.getGameManager().joinMultiTeamInstanceForTeams(GameTypeEnum.AceRace, area,
                     false, GameRunMode.DAILY, teams)) {
-                return new StartResult(area.getGameConfig().getConfigName(), area);
+                return CompletableFuture.completedFuture(new StartResult(area.getGameConfig().getConfigName(), area));
             }
         }
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     private @NotNull List<AceRaceArea> candidates() {

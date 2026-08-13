@@ -35,15 +35,15 @@ public final class ParkourWarriorPrepareFlow extends PrepareFlowDefinition {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
-                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("area-prepare-parkourwarriorprepareflow.text-001")), Component.text(GuiConfig.text("area-prepare-parkourwarriorprepareflow.text-002")),
+                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.games.parkour-warrior.setup.track-boundary")), Component.text(GuiConfig.text("map-editor.games.parkour-warrior.setup.use-worldedit-to-select-the-complete-area-of-the-parkour-track")),
                         Material.BEDROCK, t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                        (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("area-prepare-parkourwarriorprepareflow.text-003"))),
-                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("area-prepare-parkourwarriorprepareflow.text-004")), Component.text(GuiConfig.text("area-prepare-parkourwarriorprepareflow.text-005")),
+                        (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-warrior.setup.track-boundaries-set"))),
+                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.games.parkour-warrior.setup.spectator-spawn-point")), Component.text(GuiConfig.text("map-editor.games.parkour-warrior.setup.stand-in-a-spectator-position-and-click")),
                         Material.ENDER_EYE, t -> cfg(t).getSpectatorSpawnPoint() != null,
-                        (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("area-prepare-parkourwarriorprepareflow.text-006"))),
-                new StandAndRunStep("player_spawn", Component.text(GuiConfig.text("area-prepare-parkourwarriorprepareflow.text-007")), Component.text(GuiConfig.text("area-prepare-parkourwarriorprepareflow.text-008")),
+                        (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-warrior.setup.spectator-spawn-point-has-been-set"))),
+                new StandAndRunStep("player_spawn", Component.text(GuiConfig.text("map-editor.games.parkour-warrior.setup.player-spawn-point")), Component.text(GuiConfig.text("map-editor.games.parkour-warrior.setup.after-standing-at-the-starting-point-of-the-track-click")),
                         Material.PLAYER_HEAD, t -> cfg(t).getPlayerSpawnPoint() != null,
-                        (t, l) -> cfg(t).setPlayerSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("area-prepare-parkourwarriorprepareflow.text-009"))),
+                        (t, l) -> cfg(t).setPlayerSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-warrior.setup.player-spawn-point-has-been-set"))),
                 new CheckpointListStep());
     }
     private static ParkourWarriorConfig cfg(SetupTarget target) { return (ParkourWarriorConfig) target.config(); }

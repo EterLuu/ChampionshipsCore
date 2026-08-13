@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -59,7 +60,7 @@ public final class AnvilInputGui {
     }
 
     public static void openName(@NotNull Player player, @NotNull PrepareSessionManager manager, @NotNull GameTypeEnum gameType) {
-        open(player, Mode.NAME, GuiConfig.text("prepare-gui-anvilinputgui.text-001"), text -> {
+        open(player, Mode.NAME, GuiConfig.text("map-editor.menus.input.enter-venue-name"), text -> {
             String error = validateName(manager, gameType, text);
             if (error != null) {
                 player.sendMessage(error);
@@ -71,16 +72,16 @@ public final class AnvilInputGui {
     }
 
     public static void openNumber(@NotNull Player player, @NotNull IntConsumer onCount) {
-        open(player, Mode.NUMBER, GuiConfig.text("prepare-gui-anvilinputgui.text-002"), text -> {
+        open(player, Mode.NUMBER, GuiConfig.text("map-editor.menus.input.enter-the-number-of-copies"), text -> {
             int n;
             try {
                 n = Integer.parseInt(text);
             } catch (NumberFormatException e) {
-                Utils.sendAdminError(player, GuiConfig.text("prepare-gui-anvilinputgui.text-003"));
+                Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.input.please-enter-valid-numbers"));
                 return;
             }
             if (n < 1) {
-                Utils.sendAdminError(player, GuiConfig.text("prepare-gui-anvilinputgui.text-004"));
+                Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.input.number-of-copies-must-be-at-least-1"));
                 return;
             }
             close(player);
@@ -97,7 +98,7 @@ public final class AnvilInputGui {
                 try {
                     value = Integer.parseInt(text);
                 } catch (NumberFormatException e) {
-                    Utils.sendAdminError(player, GuiConfig.text("prepare-gui-anvilinputgui.text-005"));
+                    Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.input.please-enter-a-valid-integer"));
                     return;
                 }
             }
@@ -114,7 +115,7 @@ public final class AnvilInputGui {
         holder.inventory = inv;
         OPEN_INPUTS.put(player.getUniqueId(), holder);
         inv.setFirstItem(PrepareKeys.item(Material.PAPER, Component.text(prompt),
-                List.of(Component.text(GuiConfig.text("prepare-gui-anvilinputgui.text-006")).color(NamedTextColor.GRAY))));
+                List.of(Component.text(GuiConfig.text("map-editor.menus.input.enter-in-the-rename-field-above-then-click-on-the-result-box-on-the-right-to-confirm")).color(NamedTextColor.GRAY))));
         view.setMaximumRepairCost(0);
         view.setRepairCost(0);
     }
@@ -142,13 +143,23 @@ public final class AnvilInputGui {
         }
     }
 
+    /** Clears every callback and inventory reference during plugin shutdown. */
+    public static void closeAll() {
+        for (UUID playerId : List.copyOf(OPEN_INPUTS.keySet())) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) close(player);
+        }
+        OPEN_INPUTS.values().forEach(holder -> holder.inventory.clear());
+        OPEN_INPUTS.clear();
+    }
+
     private static @Nullable String validateName(@NotNull PrepareSessionManager manager, @NotNull GameTypeEnum gameType, @Nullable String name) {
-        if (name == null || name.isBlank()) return Utils.formatAdminError(GuiConfig.text("prepare-gui-anvilinputgui.text-007"));
+        if (name == null || name.isBlank()) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.venue-name-cannot-be-empty"));
         String trimmed = name.trim();
-        if (trimmed.length() > 32) return Utils.formatAdminError(GuiConfig.text("prepare-gui-anvilinputgui.text-008"));
-        if (trimmed.matches(".*[\\\\/:*?\"<>|].*")) return Utils.formatAdminError(GuiConfig.text("prepare-gui-anvilinputgui.text-009"));
+        if (trimmed.length() > 32) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.venue-name-cannot-exceed-32-characters"));
+        if (trimmed.matches(".*[\\\\/:*?\"<>|].*")) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.venue-name-contains-invalid-characters"));
         BaseGameInstanceManager<?> mgr = manager.getPlugin().getGameManager().getAreaManager(gameType);
-        if (mgr != null && mgr.getArea(trimmed) != null) return Utils.formatAdminError(GuiConfig.text("prepare-gui-anvilinputgui.text-010") + trimmed + GuiConfig.text("prepare-gui-anvilinputgui.text-011"));
+        if (mgr != null && mgr.getArea(trimmed) != null) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.venue") + trimmed + GuiConfig.text("map-editor.menus.input.already-exists"));
         return null;
     }
 

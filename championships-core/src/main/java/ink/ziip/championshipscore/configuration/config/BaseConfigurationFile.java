@@ -49,7 +49,7 @@ public abstract class BaseConfigurationFile {
      * @param pluginFolder the plugin folder path
      */
     public void initializeConfiguration(Path pluginFolder) {
-        initializeConfiguration(pluginFolder, true);
+        initializeConfigurationChecked(pluginFolder, true);
     }
 
     /**
@@ -57,18 +57,43 @@ public abstract class BaseConfigurationFile {
      * Validating before the upgrade made every newly added option look missing on the first boot.
      */
     public void initializeConfiguration(Path pluginFolder, boolean autoUpgrade) {
-        loadDefaultOptions();
+        initializeConfigurationChecked(pluginFolder, autoUpgrade);
+    }
 
-        configurationPath = saveDefaultConfigurationFile(pluginFolder);
-        configuration = new YamlConfiguration();
+    /** Same initialization contract with an explicit success result for atomic runtime reloads. */
+    public boolean initializeConfigurationChecked(Path pluginFolder, boolean autoUpgrade) {
         try {
+            loadDefaultOptions();
+            configurationPath = saveDefaultConfigurationFile(pluginFolder);
+            configuration = new YamlConfiguration();
             configuration.options().indent(2);
             configuration.load(configurationPath.toFile());
             checkVersion(autoUpgrade);
             loadFileOptions();
+            return true;
         } catch (Exception exception) {
             plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "加载",
                     "配置文件=" + getFileName() + " 加载失败"), exception);
+            return false;
+        }
+    }
+
+    /** Captures the effective runtime document so a multi-file reload can roll back atomically. */
+    public String captureRuntimeConfiguration() {
+        return configuration == null ? null : configuration.saveToString();
+    }
+
+    /** Restores both the parsed document and any static/custom runtime fields backed by it. */
+    public void restoreRuntimeConfiguration(String snapshot) {
+        if (snapshot == null) return;
+        try {
+            YamlConfiguration restored = new YamlConfiguration();
+            restored.options().indent(2);
+            restored.loadFromString(snapshot);
+            configuration = restored;
+            loadFileOptions();
+        } catch (InvalidConfigurationException exception) {
+            throw new IllegalStateException("Unable to restore runtime configuration " + getFileName(), exception);
         }
     }
 

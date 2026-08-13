@@ -334,7 +334,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
         // A forced stop can happen during preparation or the final countdown, before
         // chasers have been assigned.  That is not a played match and must not score.
-        if (match != null && getGameStageEnum() == GameStageEnum.PROGRESS
+        if (isSettlementAllowed() && match != null && getGameStageEnum() == GameStageEnum.PROGRESS
                 && match.getRightAreaChaser() != null && match.getLeftAreaChaser() != null)
             calculatePoints(match);
         addPlayerPointsToDatabase();
@@ -353,7 +353,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         ChampionshipTeam right = getRightChampionshipTeam();
         ChampionshipTeam left = getLeftChampionshipTeam();
         if (right != null && left != null) {
-            Bukkit.getPluginManager().callEvent(new TeamGameEndEvent(right, left, this));
+            publishGameEndEvent(new TeamGameEndEvent(right, left, this));
         }
 
         finishPostGameAfterEndEvent();

@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 /** Small game-specific boundary; queueing, parties, teams, persistence and UI stay reusable. */
 public interface DailyGameAdapter {
@@ -14,7 +15,7 @@ public interface DailyGameAdapter {
     @NotNull DailyRules rules();
     /** Number of runtime slots that can accept a new session right now. */
     int availableSlots();
-    @Nullable StartResult start(@NotNull List<ChampionshipTeam> teams);
+    @NotNull CompletionStage<StartResult> start(@NotNull List<ChampionshipTeam> teams);
 
     record StartResult(String map, BaseGameInstance instance) {}
 }
