@@ -49,12 +49,10 @@ public class BattleBoxManager extends BaseGameInstanceManager<BattleBoxArea> {
                         continue;
                     }
                     if (worldName == null || worldName.isBlank()) worldName = "battlebox";
-                    if (!loadedWorlds.add(worldName)) {
-                        plugin.getLogger().severe("BattleBox 地图 " + name + " 与其他配置共用世界 "
-                                + worldName + "，已跳过以防实例重叠");
+                    if (loadedWorlds.add(worldName) && !loadArenaWorld(worldName)) {
+                        loadedWorlds.remove(worldName);
                         continue;
                     }
-                    if (!loadArenaWorld(worldName)) continue;
                     BattleBoxConfig config = new BattleBoxConfig(plugin, name);
                     config.initializeConfiguration(plugin.getFolder());
                     createInstances(name, config);
@@ -150,6 +148,11 @@ public class BattleBoxManager extends BaseGameInstanceManager<BattleBoxArea> {
     @Override
     protected void onAreaDetached(@NotNull String name) {
         instancesByMap.remove(name);
+    }
+
+    @Override
+    protected boolean allowsSharedMapWorlds() {
+        return true;
     }
 
     @Override

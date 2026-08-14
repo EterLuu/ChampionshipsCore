@@ -32,9 +32,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.UnaryOperator;
 
 public class WorldEditManager extends BaseManager {
     private final WorldEdit worldEdit;
@@ -164,6 +169,52 @@ public class WorldEditManager extends BaseManager {
     public record SchematicBlockInventory(long volume, long nonAirBlocks,
                                           @NotNull Map<String, Long> materials,
                                           @NotNull Map<String, Long> blockData) {
+    }
+
+    /** Atomically rewrites transformed block states in a schematic; unchanged files are not rewritten. */
+    public static int rewriteSchematicBlockStates(@NotNull File file,
+                                                   @NotNull UnaryOperator<String> transformer) throws IOException {
+        if (!file.isFile()) throw new IOException("schematic not found: " + file.getName());
+        ClipboardFormat format = ClipboardFormats.findByFile(file);
+        if (format == null) throw new IOException("unknown schematic format: " + file.getName());
+
+        Clipboard clipboard;
+        try (ClipboardReader reader = format.getReader(new FileInputStream(file))) {
+            clipboard = reader.read();
+        }
+        int changed = 0;
+        try {
+            for (BlockVector3 position : clipboard) {
+                BlockState current = clipboard.getBlock(position);
+                String replacement = transformer.apply(current.getAsString());
+                if (replacement.equals(current.getAsString())) continue;
+                clipboard.setBlock(position, BlockState.get(replacement));
+                changed++;
+            }
+            if (changed == 0) return 0;
+
+            File parent = file.getParentFile();
+            Path temporary = Files.createTempFile(parent.toPath(), file.getName() + ".", ".tmp");
+            try {
+                try (ClipboardWriter writer = format.getWriter(new FileOutputStream(temporary.toFile()))) {
+                    writer.write(clipboard);
+                }
+                try {
+                    Files.move(temporary, file.toPath(), StandardCopyOption.REPLACE_EXISTING,
+                            StandardCopyOption.ATOMIC_MOVE);
+                } catch (AtomicMoveNotSupportedException ignored) {
+                    Files.move(temporary, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+            } finally {
+                Files.deleteIfExists(temporary);
+            }
+            return changed;
+        } catch (Exception exception) {
+            throw exception instanceof IOException io ? io
+                    : new IOException("failed to rewrite schematic " + file.getName(), exception);
+        } finally {
+            clipboard.close();
+        }
     }
 
     /**

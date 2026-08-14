@@ -78,6 +78,7 @@ final class WorkerMatchSession {
     private final MatchManifest manifest;
     private final DurableEventOutbox events;
     private final WorkerReturnRouter returnRouter;
+    private final WorkerWorldController worlds;
     private final Runnable worldReset;
     private final PlatformScheduler scheduler;
     private final NamespacedKey cardKey;
@@ -115,12 +116,14 @@ final class WorkerMatchSession {
     private static final float MAX_SPECTATOR_SPEED = 1.0F;
 
     WorkerMatchSession(Plugin plugin, WorkerConfig config, MatchManifest manifest,
-                       DurableEventOutbox events, WorkerReturnRouter returnRouter, Runnable worldReset) {
+                       DurableEventOutbox events, WorkerReturnRouter returnRouter,
+                       WorkerWorldController worlds, Runnable worldReset) {
         this.plugin = plugin;
         this.config = config;
         this.manifest = manifest;
         this.events = events;
         this.returnRouter = returnRouter;
+        this.worlds = worlds;
         this.worldReset = worldReset;
         this.scheduler = new PlatformScheduler(plugin);
         this.cardKey = new NamespacedKey(plugin, "bingo_card");
@@ -246,6 +249,7 @@ final class WorkerMatchSession {
                 || plugin.getServer().getWorld(config.end()) == null) {
             return failPreparation("required-world-not-loaded");
         }
+        if (!worlds.freeze()) return failPreparation("unable-to-freeze-worlds");
         if (!manifest.configHash().equals(BingoManifestHasher.hash(manifest))) {
             return failPreparation("manifest-config-hash-mismatch");
         }
@@ -468,7 +472,7 @@ final class WorkerMatchSession {
             abort("overworld-unavailable-before-scatter");
             return;
         }
-        world.setTime(9000L);
+        world.setTime(WorkerWorldController.START_TIME);
         roundPrepared = true;
         updateSidebar();
         List<Player> players = new ArrayList<>();
@@ -534,8 +538,22 @@ final class WorkerMatchSession {
     private void completeBeginRunning() {
         synchronized (this) {
             if (lifecycle.state() != MatchState.COUNTDOWN) return;
-            lifecycle.transitionTo(MatchState.RUNNING);
-            startedAtMillis = System.currentTimeMillis();
+        }
+        if (!worlds.startMatch()) {
+            abort("worlds-unavailable-before-start");
+            return;
+        }
+        boolean transitioned;
+        synchronized (this) {
+            transitioned = lifecycle.state() == MatchState.COUNTDOWN;
+            if (transitioned) {
+                lifecycle.transitionTo(MatchState.RUNNING);
+                startedAtMillis = System.currentTimeMillis();
+            }
+        }
+        if (!transitioned) {
+            worlds.freeze();
+            return;
         }
         updateSidebar();
         Component startTitle = message("bingo.game-start-title");
@@ -624,6 +642,7 @@ final class WorkerMatchSession {
             result = scoring.result();
         }
         cancelTasks();
+        worlds.freeze();
         setPvp(true);
         Map<String, String> attributes = new LinkedHashMap<>();
         attributes.put("reason", reason);
@@ -663,6 +682,7 @@ final class WorkerMatchSession {
             lifecycle.transitionTo(MatchState.ABORTED);
         }
         cancelTasks();
+        worlds.freeze();
         setPvp(true);
         CompletionStage<MatchEvent> published = emit(MatchEventType.ABORTED, Map.of("reason", reason));
         routeEveryoneBack();
@@ -986,7 +1006,7 @@ final class WorkerMatchSession {
         if (action.equals("tracking")) {
             if (rightClick) {
                 spectatorTargets.remove(player.getUniqueId());
-                spectatorFeedback(player, WorkerGuiConfig.text("spectator.tracking.stopped-feedback"),
+                spectatorFeedback(player, message("spectator.tracking.stopped-feedback"),
                         NamedTextColor.RED, 0.8F);
             } else {
                 List<Player> targets = participants.values().stream()
@@ -996,7 +1016,7 @@ final class WorkerMatchSession {
                         .sorted(java.util.Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
                         .toList();
                 if (targets.isEmpty()) {
-                    spectatorFeedback(player, WorkerGuiConfig.text("spectator.tracking.unavailable-feedback"),
+                    spectatorFeedback(player, message("spectator.tracking.unavailable-feedback"),
                             NamedTextColor.RED, 0.8F);
                 } else {
                     UUID current = spectatorTargets.get(player.getUniqueId());
@@ -1010,8 +1030,8 @@ final class WorkerMatchSession {
                     Player target = targets.get((currentIndex + 1) % targets.size());
                     spectatorTargets.put(player.getUniqueId(), target.getUniqueId());
                     player.setCompassTarget(target.getLocation());
-                    spectatorFeedback(player, WorkerGuiConfig.text("spectator.tracking.active-feedback",
-                            Map.of("player", target.getName())), NamedTextColor.GREEN, 1.2F);
+                    spectatorFeedback(player, message("spectator.tracking.active-feedback",
+                            "%player%", target.getName()), NamedTextColor.GREEN, 1.2F);
                 }
             }
             applySpectatorControls(player);
@@ -1022,8 +1042,8 @@ final class WorkerMatchSession {
             player.setFlySpeed(Math.max(MIN_SPECTATOR_SPEED,
                     Math.min(MAX_SPECTATOR_SPEED, player.getFlySpeed() + delta)));
             applySpectatorControls(player);
-            spectatorFeedback(player, WorkerGuiConfig.text("spectator.speed.feedback",
-                            Map.of("speed", spectatorSpeed(player))), NamedTextColor.YELLOW,
+            spectatorFeedback(player, message("spectator.speed.feedback",
+                            "%speed%", spectatorSpeed(player)), NamedTextColor.YELLOW,
                     delta > 0 ? 1.25F : 0.8F);
             return true;
         }
@@ -1032,16 +1052,16 @@ final class WorkerMatchSession {
 
     private void applySpectatorControls(Player player) {
         player.getInventory().setItem(1, spectatorControl(Material.COMPASS, "tracking",
-                Component.text(WorkerGuiConfig.text("spectator.tracking.name"), NamedTextColor.GREEN)
+                message("spectator.tracking.name").color(NamedTextColor.GREEN)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(WorkerGuiConfig.text("spectator.tracking.next"), NamedTextColor.GRAY),
-                        Component.text(WorkerGuiConfig.text("spectator.tracking.stop"), NamedTextColor.GRAY))));
+                List.of(message("spectator.tracking.next").color(NamedTextColor.GRAY),
+                        message("spectator.tracking.stop").color(NamedTextColor.GRAY))));
         player.getInventory().setItem(7, spectatorControl(Material.FEATHER, "speed",
-                Component.text(WorkerGuiConfig.text("spectator.speed.name",
-                                Map.of("speed", spectatorSpeed(player))), NamedTextColor.YELLOW)
+                message("spectator.speed.name", "%speed%", spectatorSpeed(player))
+                        .color(NamedTextColor.YELLOW)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(WorkerGuiConfig.text("spectator.speed.faster"), NamedTextColor.GREEN),
-                        Component.text(WorkerGuiConfig.text("spectator.speed.slower"), NamedTextColor.RED))));
+                List.of(message("spectator.speed.faster").color(NamedTextColor.GREEN),
+                        message("spectator.speed.slower").color(NamedTextColor.RED))));
     }
 
     private ItemStack spectatorControl(Material material, String action, Component name,
@@ -1060,8 +1080,8 @@ final class WorkerMatchSession {
         return Math.round(player.getFlySpeed() * 100F) + "%";
     }
 
-    private static void spectatorFeedback(Player player, String message, NamedTextColor color, float pitch) {
-        player.sendActionBar(Component.text(message, color).decorate(TextDecoration.BOLD));
+    private static void spectatorFeedback(Player player, Component message, NamedTextColor color, float pitch) {
+        player.sendActionBar(message.color(color).decorate(TextDecoration.BOLD));
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
@@ -1112,6 +1132,7 @@ final class WorkerMatchSession {
         synchronized (this) {
             lifecycle.transitionTo(MatchState.ABORTED);
         }
+        worlds.freeze();
         CompletionStage<MatchEvent> published = emit(MatchEventType.PREPARE_FAILED, Map.of("reason", reason));
         worldReset.run();
         return published.thenApply(ignored -> false);

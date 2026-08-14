@@ -170,9 +170,9 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
     public boolean canEditMap(String name) {
         T representative = areas.get(name);
         if (representative == null) return false;
-        String worldName = representative.getWorldName();
+        BaseGameConfig config = representative.getGameConfig();
         return getRuntimeInstances().stream()
-                .filter(instance -> worldName.equals(instance.getWorldName()))
+                .filter(instance -> instance.getGameConfig() == config)
                 .allMatch(instance -> instance.getGameStageEnum()
                         == ink.ziip.championshipscore.api.object.stage.GameStageEnum.WAITING);
     }
@@ -192,6 +192,11 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
     /** Shared-world games can keep several independent map regions in one physical world. */
     protected boolean allowsSharedMapWorlds() {
         return false;
+    }
+
+    /** Public capability query used by admin tooling and architecture tests. */
+    public final boolean supportsSharedMapWorlds() {
+        return allowsSharedMapWorlds();
     }
 
     /** Loads and takes ownership of a void arena world for this enabled game. */

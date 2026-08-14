@@ -37,8 +37,7 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
     private final Map<UUID, PlayerVisibilityState> states = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> sessionByPlayer = new ConcurrentHashMap<>();
     private final Set<VisibilityPair> hiddenPairs = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, Set<UUID>> manuallyHiddenPlayers = new ConcurrentHashMap<>();
-    private final Map<UUID, Set<Integer>> manuallyHiddenTeams = new ConcurrentHashMap<>();
+    private final Map<UUID, PlayerVisibilityFilter> spectatorFilters = new ConcurrentHashMap<>();
 
     public PlayerVisibilityManager(ChampionshipsCore plugin) {
         super(plugin);
@@ -59,8 +58,7 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
         });
         states.clear();
         sessionByPlayer.clear();
-        manuallyHiddenPlayers.clear();
-        manuallyHiddenTeams.clear();
+        spectatorFilters.clear();
     }
 
     public void setState(@NotNull UUID viewerId, @NotNull PlayerVisibilityState state) {
@@ -143,38 +141,25 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
         for (UUID playerId : affected) reconcilePlayer(playerId);
     }
 
-    /** A player-facing override used by the spectator controls. It intentionally wins over game policy. */
-    public void setPlayerHidden(@NotNull UUID viewerId, @NotNull UUID targetId, boolean hidden) {
-        if (viewerId.equals(targetId)) return;
-        manuallyHiddenPlayers.computeIfAbsent(viewerId, ignored -> ConcurrentHashMap.newKeySet());
-        Set<UUID> hiddenPlayers = manuallyHiddenPlayers.get(viewerId);
-        if (hidden) hiddenPlayers.add(targetId);
-        else hiddenPlayers.remove(targetId);
-        if (hiddenPlayers.isEmpty()) manuallyHiddenPlayers.remove(viewerId, hiddenPlayers);
-        reconcilePair(viewerId, targetId);
-    }
-
-    public void setTeamHidden(@NotNull UUID viewerId, int teamId, boolean hidden) {
-        manuallyHiddenTeams.computeIfAbsent(viewerId, ignored -> ConcurrentHashMap.newKeySet());
-        Set<Integer> hiddenTeams = manuallyHiddenTeams.get(viewerId);
-        if (hidden) hiddenTeams.add(teamId);
-        else hiddenTeams.remove(teamId);
-        if (hiddenTeams.isEmpty()) manuallyHiddenTeams.remove(viewerId, hiddenTeams);
+    /** Shows only the selected players to one spectator. This intentionally wins over game policy. */
+    public void showOnlyPlayers(@NotNull UUID viewerId, @NotNull Set<UUID> playerIds) {
+        Set<UUID> selected = new HashSet<>(playerIds);
+        selected.remove(viewerId);
+        if (selected.isEmpty()) return;
+        spectatorFilters.put(viewerId, PlayerVisibilityFilter.players(selected));
         reconcileViewer(viewerId);
     }
 
-    public boolean isPlayerHidden(@NotNull UUID viewerId, @NotNull UUID targetId) {
-        return manuallyHiddenPlayers.getOrDefault(viewerId, Set.of()).contains(targetId);
+    /** Shows only members of the selected teams to one spectator. */
+    public void showOnlyTeams(@NotNull UUID viewerId, @NotNull Set<Integer> teamIds) {
+        if (teamIds.isEmpty()) return;
+        spectatorFilters.put(viewerId, PlayerVisibilityFilter.teams(teamIds));
+        reconcileViewer(viewerId);
     }
 
-    public boolean isTeamHidden(@NotNull UUID viewerId, int teamId) {
-        return manuallyHiddenTeams.getOrDefault(viewerId, Set.of()).contains(teamId);
-    }
-
+    /** Restores the normal all-visible spectator presentation. */
     public void clearManualOverrides(@NotNull UUID viewerId) {
-        manuallyHiddenPlayers.remove(viewerId);
-        manuallyHiddenTeams.remove(viewerId);
-        reconcileViewer(viewerId);
+        if (spectatorFilters.remove(viewerId) != null) reconcileViewer(viewerId);
     }
 
     public boolean sameSession(@NotNull UUID first, @NotNull UUID second) {
@@ -262,9 +247,9 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
                 || participant == null || viewer != null && viewer.getGameMode() == GameMode.SPECTATOR;
         ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(viewerId);
         ChampionshipTeam targetTeam = plugin.getTeamManager().getTeamByPlayer(targetId);
-        if (manuallyHiddenPlayers.getOrDefault(viewerId, Set.of()).contains(targetId)) return false;
-        if (targetTeam != null && manuallyHiddenTeams.getOrDefault(viewerId, Set.of()).contains(targetTeam.getId()))
-            return false;
+        PlayerVisibilityFilter spectatorFilter = spectatorFilters.get(viewerId);
+        if (spectatorFilter != null)
+            return spectatorFilter.allows(targetId, targetTeam == null ? null : targetTeam.getId());
         BaseGameInstance targetSpectatorArea = plugin.getGameManager().getPlayerSpectatorStatus(targetId);
         BaseGameInstance targetParticipantArea = plugin.getGameManager().getBasePlayerArea(targetId);
         boolean targetIsCorrespondingSpectator = participant != null && (targetSpectatorArea == participant

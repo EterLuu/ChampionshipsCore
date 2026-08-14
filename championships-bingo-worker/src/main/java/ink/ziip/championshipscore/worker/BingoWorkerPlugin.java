@@ -7,8 +7,6 @@ import ink.ziip.championshipscore.redis.RedisMatchConsumer;
 import ink.ziip.championshipscore.redis.RedisMatchTransport;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
-import org.bukkit.GameRules;
-import org.bukkit.Difficulty;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -28,12 +26,12 @@ public final class BingoWorkerPlugin extends JavaPlugin {
     private WorkerMatchRegistry registry;
     private PlatformScheduler scheduler;
     private WorkerChampionshipPlaceholder placeholder;
+    private WorkerWorldController worlds;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         try {
-            WorkerGuiConfig.load(this);
             workerConfig = WorkerConfig.load(getConfig());
         } catch (RuntimeException invalid) {
             getLogger().log(Level.SEVERE, "Invalid Bingo worker configuration", invalid);
@@ -55,6 +53,7 @@ public final class BingoWorkerPlugin extends JavaPlugin {
         if (!isEnabled()) return;
 
         try {
+            worlds = new WorkerWorldController(this, workerConfig);
             if (!loadWorlds()) {
                 throw new IllegalStateException("Unable to load all configured Bingo dimensions");
             }
@@ -63,7 +62,7 @@ public final class BingoWorkerPlugin extends JavaPlugin {
             outbox.initialize();
             router = new PluginMessagePlayerRouter(this, workerConfig.proxyChannel());
             returnRouter = new WorkerReturnRouter(this, router, workerConfig.returnServer());
-            registry = new WorkerMatchRegistry(this, workerConfig, outbox, returnRouter);
+            registry = new WorkerMatchRegistry(this, workerConfig, outbox, returnRouter, worlds);
             if (getCommand("cc") != null) getCommand("cc").setExecutor(new WorkerPlayCommand(registry));
             registerPlaceholderApi();
             getServer().getPluginManager().registerEvents(new WorkerListener(this, registry), this);
@@ -104,19 +103,7 @@ public final class BingoWorkerPlugin extends JavaPlugin {
         World world = getServer().getWorld(name);
         if (world == null) world = new WorldCreator(name).environment(environment).createWorld();
         if (world == null) return false;
-        world.setDifficulty(Difficulty.NORMAL);
-        world.setSpawnFlags(true, true);
-        world.setAutoSave(true);
-        world.setGameRule(GameRules.SPAWN_MOBS, true);
-        world.setGameRule(GameRules.MOB_GRIEFING, true);
-        world.setGameRule(GameRules.SPECTATORS_GENERATE_CHUNKS, false);
-        world.setGameRule(GameRules.KEEP_INVENTORY, true);
-        world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
-        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-        world.setGameRule(GameRules.SHOW_DEATH_MESSAGES, false);
-        world.setGameRule(GameRules.PVP, true);
-        world.setGameRule(GameRules.ADVANCE_TIME, true);
-        world.setGameRule(GameRules.LOCATOR_BAR, false);
+        worlds.configureAndFreeze(world);
         return true;
     }
 

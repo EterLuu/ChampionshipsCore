@@ -36,7 +36,9 @@ public final class CommandCatalog {
             new Entry("/cc finale <游戏> start <场地> ...", "在指定场地启动已注册的冠军决赛"),
             new Entry("/cc finale dodgebolt pause|resume|restart-round|eliminate|force-win|stop ...", "躲避箭决赛裁判控制"),
             new Entry("/cc map edit <游戏>", "打开地图准备与编辑界面（可编辑未启用游戏）"),
-            new Entry("/cc map blueprint create <名称> <星级>", "从 WorldEdit 选区导出匹配赛建蓝图"),
+            new Entry("/cc map blueprint create <名称> [覆盖星级]", "导出、自动归类并审查匹配赛建蓝图"),
+            new Entry("/cc map blueprint audit <名称|all> [地图] [页码]", "审查蓝图难度和材料覆盖"),
+            new Entry("/cc map blueprint preview <名称|all> [地图] [页码]", "预览单张或全库蓝图审查"),
             new Entry("/cc admin vote|world ...", "投票与世界管理"),
             new Entry("/cc admin reload|sudo|teleport|set-max-player ...", "系统维护与现场管理")
     );

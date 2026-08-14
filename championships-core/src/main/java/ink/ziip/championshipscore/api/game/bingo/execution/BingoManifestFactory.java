@@ -146,6 +146,10 @@ public final class BingoManifestFactory {
                 "card.completed_by", "card.completed_at", "card.occupied_by", "compass.item_name",
                 "compass.item_hint", "compass.menu_title", "compass.teammate_hint",
                 "compass.no_teammates", "compass.target_offline", "compass.teleport_success",
+                "spectator.tracking.name", "spectator.tracking.next", "spectator.tracking.stop",
+                "spectator.tracking.stopped-feedback", "spectator.tracking.unavailable-feedback",
+                "spectator.tracking.active-feedback", "spectator.speed.name", "spectator.speed.faster",
+                "spectator.speed.slower", "spectator.speed.feedback",
                 "board.title", "board.separator", "board.current_game", "board.remaining_time",
                 "board.status_waiting", "board.status_preparing", "board.status_finished",
                 "board.teams_header", "board.team_score", "board.own_team_score", "board.footer")) {

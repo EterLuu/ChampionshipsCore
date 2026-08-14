@@ -2,7 +2,6 @@ package ink.ziip.championshipscore.api.game.buildmart;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartOrderPool;
-import ink.ziip.championshipscore.api.game.config.MapWorldNames;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -38,6 +37,18 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
 
         // Defer the area scan to the first tick so the static world and any shared data are ready.
         plugin.getServer().getScheduler().runTask(plugin, task -> {
+            try {
+                BuildMartCopperAssetMigrator.Result migrated = BuildMartCopperAssetMigrator.migrate(buildMartDir);
+                if (migrated.changed()) {
+                    plugin.getLogger().info(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "迁移", "铜方块",
+                            "蓝图文件=" + migrated.blueprintFiles() + " 蓝图方块=" + migrated.blueprintBlocks()
+                                    + " 材料快照=" + migrated.schematicFiles() + " 材料方块="
+                                    + migrated.schematicBlocks()));
+                }
+            } catch (Exception exception) {
+                plugin.getLogger().severe(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "迁移", "铜方块",
+                        "持久化资产迁移失败 | " + exception.getMessage()));
+            }
             File blueprintsFolder = new File(buildMartDir, "blueprints");
             blueprintsFolder.mkdirs();
             copyExampleBlueprints(blueprintsFolder);
@@ -57,26 +68,24 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
                     if (raw.contains("world-name") && (worldName == null || worldName.isBlank())) {
                         BuildMartConfig config = new BuildMartConfig(plugin, name);
                         config.initializeConfiguration(plugin.getFolder());
+                        BuildMartMaterialManifest.write(plugin, config);
                         BuildMartArea area = new BuildMartArea(plugin, config);
                         areas.put(name, area);
                         area.initializeForSetup();
                         continue;
                     }
                     if (worldName == null || worldName.isBlank()) worldName = "buildmart";
-                    if (!loadedWorlds.add(worldName)) {
-                        plugin.getLogger().severe("BuildMart 地图 " + name + " 与其他配置共用世界 "
-                                + worldName + "，已跳过以防地图互相覆盖");
+                    if (loadedWorlds.add(worldName) && !loadArenaWorld(worldName)) {
+                        loadedWorlds.remove(worldName);
                         continue;
                     }
-                    if (!loadArenaWorld(worldName)) continue;
 
                     BuildMartConfig config = new BuildMartConfig(plugin, name);
                     config.initializeConfiguration(plugin.getFolder());
+                    BuildMartMaterialManifest.write(plugin, config);
                     BuildMartArea area = new BuildMartArea(plugin, config);
                     areas.put(name, area);
-                    File template = new File(new File(plugin.getDataFolder(), "maps"), worldName);
-                    if (template.isDirectory()) area.preloadMap();
-                    else area.initializeForSetup();
+                    area.initializeForSetup();
                 }
             }
         });
@@ -132,6 +141,7 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
         buildMartConfig.initializeConfiguration(plugin.getFolder());
         buildMartConfig.setAreaName(name);
         buildMartConfig.setWorldName("");
+        buildMartConfig.useRowLayoutForDraft();
         buildMartConfig.saveOptions();
 
         BuildMartArea newArea = new BuildMartArea(plugin, buildMartConfig);
@@ -152,9 +162,12 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
         config.initializeConfiguration(plugin.getFolder());
         BuildMartArea area = new BuildMartArea(plugin, config);
         areas.put(name, area);
-        File template = new File(new File(plugin.getDataFolder(), "maps"), config.getConfiguredWorld());
-        if (template.isDirectory()) area.preloadMap();
-        else area.initializeForSetup();
+        area.initializeForSetup();
+        return true;
+    }
+
+    @Override
+    protected boolean allowsSharedMapWorlds() {
         return true;
     }
 }

@@ -29,6 +29,9 @@ public class BuildMartOrderPool {
     private final List<BuildMartBlueprint> normal = new ArrayList<>();
     @Getter
     private final List<BuildMartBlueprint> golden = new ArrayList<>();
+    /** Every structurally loadable file, including ratings outside the playable 1-5 pool. */
+    @Getter
+    private final List<BuildMartBlueprint> all = new ArrayList<>();
     private final Map<String, BuildMartBlueprint> byId = new HashMap<>();
 
     /** Scans {@code blueprintsDir} for {@code *.yml} blueprints and sorts them into the two pools. */
@@ -40,6 +43,7 @@ public class BuildMartOrderPool {
                 BuildMartBlueprint blueprint = BuildMartBlueprint.load(plugin, file);
                 if (blueprint == null) continue;
                 pool.byId.put(blueprint.getId(), blueprint);
+                pool.all.add(blueprint);
                 int stars = blueprint.getStars();
                 if (isNormalRating(stars)) {
                     pool.normal.add(blueprint);

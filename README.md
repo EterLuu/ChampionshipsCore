@@ -348,7 +348,7 @@ light_gray cyan purple blue brown green red black
 
 进入编辑会话后，插件会暂存玩家物品栏，并通过热键栏和步骤菜单引导完成世界确认、schematic、复制布局、出生点、范围、检查点、物品列表等游戏专属配置。需要范围的步骤使用 WorldEdit 选区；列表步骤在 GUI 中新增、编辑、排序或删除。完成后先执行校验，再发布地图。
 
-发布会保存当前物理世界；需要模板重置的游戏还会更新 `plugins/ChampionshipsCore/maps/` 下的地图快照。未发布、存在未保存修改或正被其他管理员锁定的地图不能开赛。同一张地图同一时间只允许一名管理员编辑；正常退出会恢复原物品栏，意外掉线后的快照会在下次加入时恢复。
+发布会保存当前物理世界。未发布、存在未保存修改或正被其他管理员锁定的地图不能开赛。同一张地图同一时间只允许一名管理员编辑；正常退出会恢复原物品栏，意外掉线后的快照会在下次加入时恢复。
 
 推荐流程：
 
@@ -359,7 +359,7 @@ light_gray cyan purple blue brown green red black
 5. 退出编辑模式，使用 `/cc game start ...` 进行单局测试。
 6. 检查观战边界、比赛结束、地图重置、大厅返回和积分写入。
 
-斗战方框、跑酷追击和 TNT飞跃使用 `schematics/arena.schem` 生成复制场地；匹配赛建保留管理员手建的资源大厅，只选择其边界，并使用 `schematics/base.schem` 生成队伍基地。匹配赛建 0 号基地只作模板，实际队伍从 1 号基地开始分配；大厅与基地各设置一个传送门落点即可双向路由。复制数量、布局和所有锚点都由各自的向导步骤配置。
+斗战方框、跑酷追击和 TNT飞跃使用 `schematics/arena.schem` 生成复制场地；匹配赛建保留管理员手建的资源大厅，只选择其边界，并使用 `schematics/base.schem` 生成队伍基地。这四类游戏允许多张地图绑定到同一个物理世界，各地图通过各自的选区、锚点和直线复制布局占用互不重叠的区域；TNTRun 与匹配赛建赛后只恢复本地图的 schematic 区域，不会重载共享世界。匹配赛建 0 号基地只作模板，实际队伍从 1 号基地开始分配；大厅与基地各设置一个传送门落点即可双向路由。复制数量、布局和所有锚点都由各自的向导步骤配置。
 
 跑酷追击的每个复制场地是一整个双赛道对局单元：对局位 A、B 各有一个准备点；赛道 1 同时承载 A 队追击者与 B 队逃跑者，赛道 2 同时承载 B 队追击者与 A 队逃跑者。每条赛道分别配置一个完整活动边界、一个追击者出生点和一组逃跑者出生点，不存在彼此独立的“追击区”和“逃跑区”。
 
@@ -370,12 +370,25 @@ light_gray cyan purple blue brown green red black
 用 WorldEdit 选择成品建筑后执行：
 
 ```text
-/cc map blueprint create <蓝图名> <星级>
+/cc map blueprint create <蓝图名> [覆盖星级]
+/cc map blueprint audit <蓝图名|all> [地图] [页码]
+/cc map blueprint preview <蓝图名|all> [地图] [页码]
 ```
 
 插件会忽略空气，把方块保存为相对选区最小角的偏移并立即重载蓝图库。蓝图长、宽、高均不能超过 7 格，文件位于 `buildmart/blueprints/<名称>.yml`；目录为空时会写出三个示例蓝图。
 
+匹配赛建中的铜不会自然氧化，蓝图匹配和材料审查不区分涂蜡状态。保存蓝图时会去除全部铜蜡层；凡是不能由同氧化阶段完整铜块即时合成或切石获得的部件（铜栏杆、铜链、铜箱、铜门、铜傀儡雕像、铜灯笼、铜活板门、避雷针），都会统一成未氧化版本。保存材料区时也会把涂蜡铜快照规范化为同氧化阶段的普通铜。
+
 保存匹配赛建材料区时，插件会扫描当前选区并生成 `buildmart/material-manifests/<地图>.yml`。该文件按材料区和总计记录非空气方块的 `minecraft:<material>` 数量，同时保留精确 `BlockData` 数量，供检查全部建筑的材料需求是否被资源大厅覆盖；它是生成结果，不参与游戏配置读取或运行时逻辑。
+
+可使用 `scripts/buildmart_blueprint_audit.py` 检查单张蓝图或整个蓝图目录。脚本会结合方块数、材料种类、材料岛数量、高度、离散结构、方向和其他 `BlockData` 复杂度生成难度分数，并依据材料清单报告直接覆盖、可合成覆盖和未覆盖材料。例如：
+
+```text
+python3 scripts/buildmart_blueprint_audit.py <蓝图文件或目录> \
+  --manifest <material-manifests/地图.yml> \
+  --area-config <areas/地图.yml> \
+  --markdown /tmp/buildmart-audit.md --csv /tmp/buildmart-audit.csv
+```
 
 ## 比赛流程
 

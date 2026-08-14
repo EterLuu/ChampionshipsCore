@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.tntrun;
 import io.papermc.paper.registry.keys.EnchantmentKeys;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
+import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -29,6 +30,7 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.io.File;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
@@ -64,9 +66,10 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         }
     }
 
-    /** Preloads a clean arena at startup and immediately after each completed game. */
-    public void preloadMap() {
-        loadPublishedMapOrDraft(World.Environment.NORMAL);
+    /** Registers this map against its already loaded shared world. */
+    public void initializeInSharedWorld() {
+        getGameHandler().register();
+        setGameStageEnum(GameStageEnum.WAITING);
     }
 
     @Override
@@ -94,9 +97,41 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         handlePlayerMoveTask = null;
         tntGeneratorTask = null;
 
-        // Every round must start from the published template. Restoring only blocks removed by
-        // player movement misses TNT explosion damage, entities and other world state during events.
-        preloadMap();
+        // Restore only this map's copies. Unloading the physical world would interrupt other maps that
+        // deliberately occupy independent regions in the same TNTRun world.
+        World world = Bukkit.getWorld(getWorldName());
+        File schematic = new File(new File(new File(plugin.getDataFolder(), "tntrun/schematics"),
+                getGameConfig().getConfigName()), "arena.schem");
+        if (world == null || !schematic.isFile() || getGameConfig().getCopies() < 1) {
+            if (canUseExclusiveLegacyReload()) {
+                logGame(Level.WARNING, "重置", "旧版单地图缺少完整盖章元数据，回退为独占世界模板重载");
+                loadPublishedMapOrDraft(World.Environment.NORMAL);
+                return;
+            }
+            logGame(Level.SEVERE, "重置", "共享世界地图无法局部恢复：世界、arena.schem 或副本数量无效");
+            setGameStageEnum(GameStageEnum.END);
+            return;
+        }
+        try {
+            ArenaPreparer.restoreCopies(plugin, world, schematic, getGameConfig().getCopyGrid(),
+                    getGameConfig().getCopies());
+            setGameStageEnum(GameStageEnum.WAITING);
+        } catch (Exception exception) {
+            logGame(Level.SEVERE, "重置", "局部恢复失败，地图保持禁用 | " + exception.getMessage());
+            setGameStageEnum(GameStageEnum.END);
+        }
+    }
+
+    private boolean canUseExclusiveLegacyReload() {
+        File template = new File(new File(plugin.getDataFolder(), "maps"), getWorldName());
+        ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager<?> manager =
+                plugin.getGameManager().getTntRunManager();
+        long mapsInWorld = manager.getRuntimeInstances().stream()
+                .filter(instance -> getWorldName().equals(instance.getWorldName()))
+                .map(instance -> instance.getGameConfig())
+                .distinct()
+                .count();
+        return mapsInWorld <= 1 && getGameConfig().isPrepareReady() && template.isDirectory();
     }
 
     @Override

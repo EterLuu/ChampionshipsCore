@@ -60,14 +60,16 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final long LAUNCH_PAD_DELAY_TICKS = 2L;
     private static final int JUMP_BOOST_DURATION_TICKS = 14;
     private static final int SPEED_BOOST_DURATION_TICKS = 80;
-    private static final int RED_SPEED_DURATION_TICKS = 10;
+    private static final int RED_SPEED_DURATION_TICKS = 6;
     private static final int ENVIRONMENTAL_EFFECT_DURATION_TICKS = 40;
     private static final int BASE_SPEED_AMPLIFIER = 0;
     private static final int YELLOW_SPEED_AMPLIFIER = 2;
     private static final int RED_SPEED_AMPLIFIER = 7;
+    private static final int DEPTH_STRIDER_LEVEL = 3;
+    private static final int DOLPHINS_GRACE_DEPTH_STRIDER_LEVEL = 1;
     private static final double MIN_LAUNCH_VERTICAL_MULTIPLIER = 0.8D;
     private static final double MAX_LAUNCH_VERTICAL_MULTIPLIER = 1.2D;
-    private static final double RIPTIDE_EXTRA_MULTIPLIER = 0.03D;
+    private static final double RIPTIDE_EXTRA_MULTIPLIER = 0.01D;
     private static final int SPEED_STATION_RADIUS = 2;
     private static final int WATER_SPEED_STATION_RADIUS = 4;
     private static final double SPEED_STATION_RADIUS_SQUARED = SPEED_STATION_RADIUS * SPEED_STATION_RADIUS;
@@ -591,7 +593,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         giveTeamArmor();
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null) applyBaseSpeed(player, true);
+            if (player != null) handleEnvironmentalEffects(player);
         }
         progressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             refreshEnvironmentalEffects();
@@ -609,10 +611,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (current == null) return;
         Location previous = lastMoveLocations.put(uuid, current.clone());
         if (previous == null) previous = current;
+        handleEnvironmentalEffects(player);
         // Apply stations before fall recovery as well: a fast jump into a water ring may cross the
         // station before the next movement event that would otherwise refresh its short effect.
         handleRedSpeedStation(player, previous, current);
-        handleEnvironmentalEffects(player);
         if (hasReachedActiveFallHeight(player) || notInArea(current)) {
             returnToLatestRespawnPoint(player);
             return;
@@ -729,8 +731,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     /** Starts a new lap without carrying any ordered gate or respawn marker state across the line. */
     private void resetLapProgress(@NotNull Player player, @NotNull Location movementBaseline) {
         UUID uuid = player.getUniqueId();
-        applyBaseSpeed(player, true);
         nextProgressPoint.put(uuid, 0);
+        player.removePotionEffect(PotionEffectType.SPEED);
+        handleEnvironmentalEffects(player);
         activeFallHeights.put(uuid, getGameConfig().getStartFallY());
         applyProgressPointEquipment(player, AceRaceEquipment.NONE);
         Location start = getGameConfig().getStartSpawnPoint();
@@ -858,6 +861,16 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (player.isInWater()) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.CONDUIT_POWER,
                     ENVIRONMENTAL_EFFECT_DURATION_TICKS, 0, true, false, false));
+            applyWaterEnvironmentSpeed(player);
+            return;
+        }
+        applyBaseSpeed(player, false);
+    }
+
+    private void applyWaterEnvironmentSpeed(@NotNull Player player) {
+        PotionEffect current = player.getPotionEffect(PotionEffectType.SPEED);
+        if (current != null && current.getAmplifier() == YELLOW_SPEED_AMPLIFIER) {
+            player.removePotionEffect(PotionEffectType.SPEED);
         }
         applyBaseSpeed(player, false);
     }
@@ -933,10 +946,21 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         ItemMeta meta = boots.getItemMeta();
         if (meta != null) {
             meta.setUnbreakable(true);
-            meta.addEnchant(Enchants.get(EnchantmentKeys.DEPTH_STRIDER), 3, true);
+            meta.addEnchant(Enchants.get(EnchantmentKeys.DEPTH_STRIDER), DEPTH_STRIDER_LEVEL, true);
             boots.setItemMeta(meta);
         }
         return boots;
+    }
+
+    private static void setDepthStriderLevel(@NotNull PlayerInventory inventory, int level) {
+        ItemStack boots = inventory.getBoots();
+        if (boots == null) return;
+        ItemMeta meta = boots.getItemMeta();
+        if (meta == null) return;
+        meta.removeEnchant(Enchants.get(EnchantmentKeys.DEPTH_STRIDER));
+        meta.addEnchant(Enchants.get(EnchantmentKeys.DEPTH_STRIDER), level, true);
+        boots.setItemMeta(meta);
+        inventory.setBoots(boots);
     }
 
     /** Returns whether at least one trident was removed from any player inventory slot. */
@@ -984,6 +1008,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private void applyProgressPointEquipment(@NotNull Player player, @NotNull AceRaceEquipment equipment) {
         PlayerInventory inventory = player.getInventory();
+        setDepthStriderLevel(inventory, equipment == AceRaceEquipment.DOLPHINS_GRACE
+                ? DOLPHINS_GRACE_DEPTH_STRIDER_LEVEL : DEPTH_STRIDER_LEVEL);
         ItemStack chestplate = inventory.getChestplate();
         if (equipment != AceRaceEquipment.ELYTRA
                 && chestplate != null && chestplate.getType() == Material.ELYTRA) {
@@ -1004,6 +1030,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         } else if (equipment == AceRaceEquipment.DOLPHINS_GRACE) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE,
                     PotionEffect.INFINITE_DURATION, 0, true, false, false));
+            if (player.isInWater()) applyWaterEnvironmentSpeed(player);
         }
     }
 

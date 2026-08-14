@@ -16,6 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -47,6 +48,17 @@ public class BuildMartHandler extends BaseListener {
 
     private boolean running() {
         return buildMartArea != null && buildMartArea.getGameStageEnum() == GameStageEnum.PROGRESS;
+    }
+
+    /** Copper is a stable building material in Build Mart and never advances through oxidation stages. */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onCopperOxidation(BlockFormEvent event) {
+        if (buildMartArea == null || !event.getBlock().getWorld().getName().equals(buildMartArea.getWorldName())) {
+            return;
+        }
+        if (BuildMartCopperPolicy.isForwardOxidation(event.getBlock().getType(), event.getNewState().getType())) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)

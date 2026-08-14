@@ -31,6 +31,21 @@ public final class ArenaPreparer {
         stampCopies(plugin, world, schematic, grid, count, 1);
     }
 
+    /**
+     * Restores one map's stamped copies without unloading its physical world. This is the runtime reset
+     * path for shared-world maps: entities inside the map copies are removed first, then the authoritative
+     * schematic (including air and captured decorative entities) is pasted back into every copy.
+     */
+    public static void restoreCopies(ChampionshipsCore plugin, World world, File schematic,
+                                     ArenaGrid grid, int count) throws IOException {
+        Vector size = plugin.getWorldEditManager().getSchematicDimensions(schematic);
+        validateNonOverlappingCopies(grid, count, size);
+        for (BoundingBox box : copyBoxes(grid, count, size)) {
+            world.getNearbyEntities(box, entity -> !(entity instanceof Player)).forEach(entity -> entity.remove());
+        }
+        stampCopies(plugin, world, schematic, grid, count, 0);
+    }
+
     private static void stampCopies(ChampionshipsCore plugin, World world, File schematic,
                                     ArenaGrid grid, int count, int firstCopy) throws IOException {
         Vector size = plugin.getWorldEditManager().getSchematicDimensions(schematic);

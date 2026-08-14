@@ -1,7 +1,6 @@
 package ink.ziip.championshipscore.command.map;
 
 import ink.ziip.championshipscore.api.game.area.rename.MapRenameService;
-import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.util.Utils;
@@ -10,7 +9,6 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,7 +30,7 @@ public final class MapRenameSubCommand extends BaseSubCommand {
         }
         GameTypeEnum game = parseGame(args[0]);
         if (game == null) {
-            Utils.sendAdminError(sender, "未知游戏，可用：&#fff566" + String.join(", ", gameNames()));
+            Utils.sendAdminError(sender, "未知游戏，可用：&#fff566" + String.join(", ", allGameNames()));
             return true;
         }
         if (!plugin.getGameManager().isGameManagerLoaded(game)) {
@@ -55,18 +53,17 @@ public final class MapRenameSubCommand extends BaseSubCommand {
         if (args.length == 1) return filterStartsWith(gameNames(), args[0]);
         if (args.length == 2) {
             GameTypeEnum game = parseGame(args[0]);
-            BaseGameInstanceManager<?> manager = game == null ? null
-                    : plugin.getGameManager().getAreaManager(game);
-            return manager == null ? Collections.emptyList()
-                    : filterStartsWith(manager.getAreaNameList(), args[1]);
+            return filterStartsWith(enabledAreaNames(game), args[1]);
         }
         return Collections.emptyList();
     }
 
     private List<String> gameNames() {
-        List<String> names = new ArrayList<>();
-        for (GameTypeEnum game : GameTypeEnum.values()) names.add(game.commandName());
-        return names;
+        return enabledGameNames();
+    }
+
+    private List<String> allGameNames() {
+        return java.util.Arrays.stream(GameTypeEnum.values()).map(GameTypeEnum::commandName).toList();
     }
 
     private static @Nullable GameTypeEnum parseGame(@NotNull String raw) {

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -149,6 +150,53 @@ public final class BuildMartMaterialManifest {
             if (dominant != null) result.put(snapshotId, dominant);
         }
         return Map.copyOf(result);
+    }
+
+    /** Material and resource-island data consumed by the in-game blueprint auditor. */
+    public static @NotNull AuditInventory readAuditInventory(@NotNull BuildMartConfig config) {
+        File file = config.getMaterialManifestFile();
+        if (!file.isFile()) return new AuditInventory(false, Map.of(), Map.of());
+
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        Map<UUID, BuildMartMaterialIsland> islands = new LinkedHashMap<>();
+        for (BuildMartMaterialZone zone : config.getMaterialZones()) {
+            BuildMartMaterialIsland island = config.classifyMaterialZone(zone);
+            if (island != null) islands.put(zone.snapshotId(), island);
+        }
+
+        Map<Material, Long> totals = new LinkedHashMap<>();
+        if (yaml.getConfigurationSection("totals.materials") != null) {
+            for (String key : yaml.getConfigurationSection("totals.materials").getKeys(false)) {
+                Material material = Material.matchMaterial(key);
+                long count = yaml.getLong("totals.materials." + key);
+                if (material != null && !material.isAir() && count > 0L) {
+                    totals.merge(BuildMartCopperPolicy.withoutWax(material), count, Long::sum);
+                }
+            }
+        }
+
+        Map<Material, Set<BuildMartMaterialIsland>> materialIslands = new LinkedHashMap<>();
+        for (Map<?, ?> row : yaml.getMapList("zones")) {
+            UUID snapshotId = parseUuid(row.get("snapshot-id"));
+            BuildMartMaterialIsland island = snapshotId == null ? null : islands.get(snapshotId);
+            if (island == null || !(row.get("materials") instanceof Map<?, ?> materials)) continue;
+            for (Map.Entry<?, ?> entry : materials.entrySet()) {
+                if (!(entry.getValue() instanceof Number number) || number.longValue() < 1L) continue;
+                Material material = Material.matchMaterial(String.valueOf(entry.getKey()));
+                if (material != null && !material.isAir()) {
+                    material = BuildMartCopperPolicy.withoutWax(material);
+                    materialIslands.computeIfAbsent(material, ignored -> new java.util.LinkedHashSet<>())
+                            .add(island);
+                }
+            }
+        }
+        Map<Material, Set<BuildMartMaterialIsland>> immutableIslands = new LinkedHashMap<>();
+        materialIslands.forEach((material, values) -> immutableIslands.put(material, Set.copyOf(values)));
+        return new AuditInventory(true, Map.copyOf(totals), Map.copyOf(immutableIslands));
+    }
+
+    public record AuditInventory(boolean available, @NotNull Map<Material, Long> materials,
+                                 @NotNull Map<Material, Set<BuildMartMaterialIsland>> islandsByMaterial) {
     }
 
     private static @NotNull ZoneInventory scanSnapshot(@NotNull ChampionshipsCore plugin,

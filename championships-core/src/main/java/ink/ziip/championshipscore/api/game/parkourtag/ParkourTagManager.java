@@ -53,12 +53,10 @@ public class ParkourTagManager extends BaseGameInstanceManager<ParkourTagArea> {
                         continue;
                     }
                     if (worldName == null || worldName.isBlank()) worldName = "parkourtag";
-                    if (!loadedWorlds.add(worldName)) {
-                        plugin.getLogger().severe("ParkourTag 地图 " + name + " 与其他配置共用世界 "
-                                + worldName + "，已跳过以防实例重叠");
+                    if (loadedWorlds.add(worldName) && !loadArenaWorld(worldName)) {
+                        loadedWorlds.remove(worldName);
                         continue;
                     }
-                    if (!loadArenaWorld(worldName)) continue;
                     ParkourTagConfig config = new ParkourTagConfig(plugin, name);
                     config.initializeConfiguration(plugin.getFolder());
                     createInstances(name, config);
@@ -153,6 +151,11 @@ public class ParkourTagManager extends BaseGameInstanceManager<ParkourTagArea> {
     @Override
     protected void onAreaDetached(@NotNull String name) {
         instancesByMap.remove(name);
+    }
+
+    @Override
+    protected boolean allowsSharedMapWorlds() {
+        return true;
     }
 
     @Override

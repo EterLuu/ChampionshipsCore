@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 
-/** Builds the 0th base template plus N playable team-base copies around the hand-built hub. */
+/** Builds the 0th base template plus N playable team-base copies on the persisted map layout. */
 final class BuildMartStampStep extends PrepareStep {
     private final File base;
 
@@ -51,7 +51,7 @@ final class BuildMartStampStep extends PrepareStep {
             var previousGrid = config.getBaseGrid();
             Vector previousBaseSize = config.getBaseSchematicSize();
             // The persisted count excludes the 0th source template, so clear only physical copies 1..N.
-            // Include one extra old ring index so maps stamped before copy 0 became the true centre do not
+            // Include one extra historical index so maps stamped before copy 0 became the true source do not
             // leave their final generated base behind after the layout is corrected.
             ArenaPreparer.clearAdditionalCopies(session.getPlugin(), world, previousGrid, config.getBaseCount() + 2,
                     previousBaseSize);

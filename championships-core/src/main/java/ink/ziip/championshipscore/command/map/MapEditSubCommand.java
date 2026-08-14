@@ -59,20 +59,21 @@ public final class MapEditSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                  @NotNull String label, @NotNull String[] args) {
-        if (args.length == 1) return filterStartsWith(supportedGames(), args[0]);
+        if (args.length == 1) return filterStartsWith(supportedGames(true), args[0]);
         return Collections.emptyList();
     }
 
-    private List<String> supportedGames() {
+    private List<String> supportedGames(boolean enabledOnly) {
         List<String> names = new ArrayList<>();
         for (GameTypeEnum game : GameTypeEnum.values()) {
-            if (plugin.getPrepareSessionManager().supports(game)) names.add(game.commandName());
+            if ((!enabledOnly || plugin.getGameManager().isGameEnabled(game))
+                    && plugin.getPrepareSessionManager().supports(game)) names.add(game.commandName());
         }
         return names;
     }
 
     private String supportedNames() {
-        return String.join(", ", supportedGames());
+        return String.join(", ", supportedGames(false));
     }
 
     private static @Nullable GameTypeEnum parseGame(@NotNull String raw) {

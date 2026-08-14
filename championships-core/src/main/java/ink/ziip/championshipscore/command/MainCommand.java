@@ -2,6 +2,8 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.ChampionshipPermissions;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -141,5 +143,17 @@ public class MainCommand implements TabExecutor, TabCompleter {
         }
         Collections.sort(out);
         return out;
+    }
+
+    /** Games exposed through TAB always follow the live enabled-games set. */
+    protected List<String> enabledGameNames() {
+        return GameTabCompletion.gameNames(plugin.getGameManager().getEnabledGames());
+    }
+
+    /** A disabled game's maps never leak through a later argument's completion. */
+    protected List<String> enabledAreaNames(@Nullable GameTypeEnum game) {
+        BaseGameInstanceManager<?> manager = game == null ? null : plugin.getGameManager().getAreaManager(game);
+        return GameTabCompletion.mapNames(game, plugin.getGameManager().getEnabledGames(),
+                manager == null ? List.of() : manager.getAreaNameList());
     }
 }

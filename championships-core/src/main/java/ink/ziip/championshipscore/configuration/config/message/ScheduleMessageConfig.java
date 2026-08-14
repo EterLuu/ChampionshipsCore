@@ -21,7 +21,7 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 10;
+        return 11;
     }
 
     /** Version 3 onward uses full visual-refresh templates rather than merging individual old panels. */
@@ -105,6 +105,4 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "next-round-soon")
     public static List<String> NEXT_ROUND_SOON;
 
-    @ConfigOption(path = "round-end")
-    public static List<String> ROUND_END;
 }

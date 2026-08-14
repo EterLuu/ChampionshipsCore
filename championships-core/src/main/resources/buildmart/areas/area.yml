@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 16
+  version: 17
 name: "area"
 world-name:
 prepare:
@@ -21,7 +21,16 @@ prepare-time: 10
 base-count: 8
 # Filled by prepare from the resource-hub boundary and base.schem. The resource hub is hand-built in place and
 # never saved or replayed as a schematic.
-copy-layout: {}
+copy-layout:
+  # Build Mart places the playable team bases in a chunk-aligned row; prepare fills the coordinates below.
+  type: ROW
+  # Legacy RING fields remain nullable so an old configuration is never relocated implicitly.
+  center:
+  source-origin:
+  spacing:
+  generated-origin:
+  step:
+  base-size:
 # Legacy fields retained for old map files. Build Mart uses the resource-hub selection plus the stamped
 # base template cuboids as its playable boundary; no single whole-map selection is required.
 area-pos1:
@@ -34,7 +43,7 @@ hub-pos2:
 # Landing point used when players enter a team-base Nether portal. Set this beside the resource-hub portal,
 # not inside its purple portal block.
 hub-portal-point:
-# Optional wind vent cuboids. Players standing above any selection are slowly lifted toward absolute Y=180.
+# Optional wind vent cuboids. Non-gliding players above any selection are rapidly lifted toward absolute Y=200.
 wind-zones: []
 # Anchor where the current golden blueprint is pasted in the hub for players to observe.
 golden-display-point:

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.buildmart.blueprint;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.buildmart.BuildMartCopperPolicy;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
@@ -9,7 +10,9 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Fence;
 import org.bukkit.block.data.type.Gate;
 import org.bukkit.block.data.type.TrapDoor;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -78,17 +81,33 @@ public class BuildMartBlueprint {
      *       must match.</li>
      *   <li>Trapdoor open ({@code open=true}): a vertical full-height panel, so {@code half} is ignored;
      *       {@code facing} must match.</li>
+     *   <li>Fence: connections to neighbouring blocks are ignored; material and waterlogged state remain
+     *       strict.</li>
      *   <li>Fence gate: 180°-symmetric, so {@code facing} is axis-only ({@code N≡S, E≡W}) in any state;
      *       {@code in_wall}, {@code open} and {@code powered} stay strict.</li>
      *   <li>Covered ({@code covered=true}, i.e. an occluding block sits above): grass block ↔ dirt, and
      *       warped/crimson nylium ↔ netherrack, are interchangeable (the occluded top face is the only
      *       difference; these blocks are stateless). The two nylium colours are not interchangeable.</li>
+     *   <li>Ageable blocks ignore their current growth age. All their other block-data properties still
+     *       have to match.</li>
+     *   <li>Waxed and unwaxed forms of the same copper block are equivalent; oxidation stage and all other
+     *       block-data properties remain strict.</li>
      * </ul>
      * Doors are intentionally left strict.
      */
-    private static boolean blockMatches(BlockData reference, BlockData placed, boolean covered) {
+    static boolean blockMatches(BlockData reference, BlockData placed, boolean covered) {
         if (covered && isCoveredSubstitution(reference.getMaterial(), placed.getMaterial())) {
             return true;
+        }
+        reference = BuildMartCopperPolicy.withoutWax(reference);
+        placed = BuildMartCopperPolicy.withoutWax(placed);
+        if (reference instanceof Ageable && placed instanceof Ageable) {
+            reference = withoutAge(reference);
+            placed = withoutAge(placed);
+        }
+        if (reference instanceof Fence refFence && placed instanceof Fence placedFence) {
+            return reference.getMaterial() == placed.getMaterial()
+                    && refFence.isWaterlogged() == placedFence.isWaterlogged();
         }
         if (reference instanceof TrapDoor refTrap && placed instanceof TrapDoor placedTrap) {
             if (reference.getMaterial() != placed.getMaterial()) return false;
@@ -111,6 +130,13 @@ public class BuildMartBlueprint {
                     && refGate.isPowered() == placedGate.isPowered();
         }
         return reference.matches(placed);
+    }
+
+    /** Returns a detached copy whose growth age is normalised while preserving every other property. */
+    private static BlockData withoutAge(BlockData data) {
+        Ageable copy = (Ageable) data.clone();
+        copy.setAge(0);
+        return copy;
     }
 
     /**

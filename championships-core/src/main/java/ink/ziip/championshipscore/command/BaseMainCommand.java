@@ -11,8 +11,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BaseMainCommand extends MainCommand {
+
+    private final Map<String, GameTypeEnum> gameSubCommands = new ConcurrentHashMap<>();
 
     @Getter
     protected final String commandName;
@@ -41,8 +45,15 @@ public class BaseMainCommand extends MainCommand {
      * disabled games disappear from command execution, help listing and tab completion entirely.
      */
     protected void addGameSubCommand(GameTypeEnum gameTypeEnum, BaseMainCommand subCommand) {
-        if (plugin.getGameManager().isGameEnabled(gameTypeEnum))
+        if (plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
             addSubCommand(subCommand);
+            gameSubCommands.put(subCommand.getCommandName(), gameTypeEnum);
+        }
+    }
+
+    private boolean isTabVisible(@NotNull BaseMainCommand subCommand) {
+        GameTypeEnum game = gameSubCommands.get(subCommand.getCommandName());
+        return game == null || plugin.getGameManager().isGameEnabled(game);
     }
 
     /**
@@ -81,13 +92,13 @@ public class BaseMainCommand extends MainCommand {
         if (args.length == 1) {
             List<String> visible = new ArrayList<>();
             for (BaseMainCommand subCommand : subCommandMap.values()) {
-                visible.add(subCommand.getCommandName());
+                if (isTabVisible(subCommand)) visible.add(subCommand.getCommandName());
             }
             return filterStartsWith(visible, args[0]);
         }
 
         BaseMainCommand subCommand = findSubCommand(args[0]);
-        if (subCommand != null) {
+        if (subCommand != null && isTabVisible(subCommand)) {
             return subCommand.onTabComplete(sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }
 

@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.buildmart;
 import io.papermc.paper.registry.keys.EnchantmentKeys;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
+import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartOrderPool;
@@ -23,6 +24,10 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.ExperienceOrb;
+import org.bukkit.entity.Firework;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -46,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.io.File;
 import java.util.logging.Level;
 
 /**
@@ -90,11 +96,6 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         super(plugin, GameTypeEnum.BuildMart, new BuildMartHandler(plugin), buildMartConfig);
 
         getGameHandler().setBuildMartArea(this);
-    }
-
-    /** Preloads a clean arena at startup and immediately after each completed game. */
-    public void preloadMap() {
-        loadMap(World.Environment.NORMAL);
     }
 
     /** Makes a newly created, not-yet-templated map editable by prepare without deleting its world. */
@@ -153,14 +154,38 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         materialRefillTask = null;
         if (windVentTask != null) windVentTask.cancel();
         windVentTask = null;
+        restoreMapRegion();
         teamStates.clear();
         seatByTeam.clear();
         baseCache.clear();
         currentGolden = null;
         goldenArmedAt.clear();
+    }
 
-        // Rebuild the arena from the template for the next round (also wipes dropped items / placed blocks).
-        preloadMap();
+    /** Restores only this Build Mart map, preserving other map regions in the shared physical world. */
+    private void restoreMapRegion() {
+        World world = Bukkit.getWorld(getWorldName());
+        File schematic = new File(new File(new File(plugin.getDataFolder(), "buildmart/schematics"),
+                getGameConfig().getConfigName()), "base.schem");
+        if (world == null || !schematic.isFile() || getGameConfig().getBaseCount() < 1)
+            throw new IllegalStateException("Build Mart 局部重置缺少世界、base.schem 或基地数量");
+        try {
+            ArenaPreparer.restoreCopies(plugin, world, schematic, getGameConfig().getBaseGrid(),
+                    getGameConfig().getBaseCount() + 1);
+            Location goldenDisplay = getGameConfig().getGoldenDisplayPoint();
+            if (currentGolden != null && goldenDisplay != null)
+                ReferenceBuilder.clear(currentGolden, goldenDisplay);
+            restoreMaterialZones(world);
+            org.bukkit.util.BoundingBox hub = getGameConfig().resolveMapGeometry().getHub();
+            if (hub != null) {
+                world.getNearbyEntities(hub, entity -> entity instanceof Item
+                                || entity instanceof ExperienceOrb || entity instanceof Projectile
+                                || entity instanceof Firework)
+                        .forEach(entity -> entity.remove());
+            }
+        } catch (Exception exception) {
+            throw new IllegalStateException("Build Mart 地图区域重置失败", exception);
+        }
     }
 
     /** Live build state for a team, or {@code null} outside a round / for non-participants. */
@@ -287,6 +312,10 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             return;
         World world = Bukkit.getWorld(getWorldName());
         if (world == null) return;
+        restoreMaterialZones(world);
+    }
+
+    private void restoreMaterialZones(@NotNull World world) {
         for (BuildMartMaterialZone zone : getGameConfig().getMaterialZones()) {
             try {
                 plugin.getWorldEditManager().pasteSchematic(world,
@@ -422,11 +451,12 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         if (config.getWindZones().isEmpty()) return;
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player == null || player.isGliding() || !config.isAboveWindZone(player.getLocation())) continue;
-            double remaining = 180.0 - player.getLocation().getY();
-            if (remaining <= 0.0) continue;
+            if (player == null) continue;
+            if (!BuildMartWindVentPolicy.affectsPlayer(player.isGliding(),
+                    config.isAboveWindZone(player.getLocation()))) continue;
+            double upward = BuildMartWindVentPolicy.upwardVelocity(player.getLocation().getY());
+            if (upward <= 0.0) continue;
             Vector current = player.getVelocity();
-            double upward = Math.min(2.0, remaining);
             if (current.getY() < upward)
                 player.setVelocity(new Vector(current.getX(), upward, current.getZ()));
         }

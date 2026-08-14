@@ -97,7 +97,7 @@ public class SpectateSubCommand extends BaseSubCommand {
         if (!(sender instanceof Player player)) return Collections.emptyList();
         if (args.length == 2) {
             GameTypeEnum gameTypeEnum = GameTypeEnum.fromCommand(args[0]);
-            if (gameTypeEnum != null) {
+            if (gameTypeEnum != null && plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
                 BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
                 if (manager != null) {
                     List<String> returnList = plugin.getGameManager().getSpectatableInstances(player).stream()
@@ -112,7 +112,8 @@ public class SpectateSubCommand extends BaseSubCommand {
         }
         if (args.length == 3) {
             GameTypeEnum gameTypeEnum = GameTypeEnum.fromCommand(args[0]);
-            if (gameTypeEnum == null) return Collections.emptyList();
+            if (gameTypeEnum == null || !plugin.getGameManager().isGameEnabled(gameTypeEnum))
+                return Collections.emptyList();
             List<String> instances = plugin.getGameManager().getSpectatableMapInstances(player, gameTypeEnum, args[1])
                     .stream().map(plugin.getGameManager()::getSpectatorInstanceToken).distinct().toList();
             return filterStartsWith(instances, args[2]);

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
 import ink.ziip.championshipscore.api.game.arena.ArenaLayoutPlanner;
+import ink.ziip.championshipscore.api.game.arena.SourceAnchoredRowArenaGrid;
 import ink.ziip.championshipscore.api.game.arena.SourceAnchoredRingArenaGrid;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigOption;
@@ -27,9 +28,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Per-map Build Mart configuration. The arena is restored from {@code plugin/maps/<world-name>}.
- * Geometry is split between the hand-built central resource market and a single base template. Copy 0 is
- * reserved for that template; the playable team bases begin at copy 1.
+ * Per-map Build Mart configuration inside a persistent shared physical world. Geometry is split between
+ * the hand-built central resource market and a single base template. Copy 0 is reserved for that template;
+ * the playable team bases begin at copy 1 and runtime reset restores only this map's configured regions.
  */
 @Getter
 @Setter
@@ -43,7 +44,7 @@ public class BuildMartConfig extends BaseGameConfig {
 
     @Override
     public int getLatestVersion() {
-        return 16;
+        return 17;
     }
 
     @ConfigOption(path = "name")
@@ -68,16 +69,30 @@ public class BuildMartConfig extends BaseGameConfig {
     @ConfigOption(path = "copy-layout.center", nullable = true)
     private Vector copyLayoutCenter;
 
+    /** New maps use ROW. RING remains readable only so an old physical map is never moved implicitly. */
+    @ConfigOption(path = "copy-layout.type")
+    private String copyLayoutType = "ROW";
+
     @ConfigOption(path = "copy-layout.source-origin", nullable = true)
     private Vector baseSourceOrigin;
 
     @ConfigOption(path = "copy-layout.spacing", nullable = true)
     private Integer copyLayoutSpacing;
 
+    @ConfigOption(path = "copy-layout.generated-origin", nullable = true)
+    private Vector copyLayoutGeneratedOrigin;
+
+    @ConfigOption(path = "copy-layout.step", nullable = true)
+    private Vector copyLayoutStep;
+
     @ConfigOption(path = "copy-layout.base-size", nullable = true)
     private Vector baseSchematicSize;
 
     public @NotNull ArenaGrid getBaseGrid() {
+        if (isRowLayout() && baseSourceOrigin != null && copyLayoutGeneratedOrigin != null
+                && copyLayoutStep != null) {
+            return new SourceAnchoredRowArenaGrid(baseSourceOrigin, copyLayoutGeneratedOrigin, copyLayoutStep);
+        }
         Vector center = copyLayoutCenter == null ? hubGridCenter() : copyLayoutCenter.clone();
         Vector source = baseSourceOrigin == null ? center.clone() : baseSourceOrigin.clone();
         int spacing = copyLayoutSpacing == null ? BuildMartLayout.SPACING : copyLayoutSpacing;
@@ -85,16 +100,60 @@ public class BuildMartConfig extends BaseGameConfig {
     }
 
     /**
-     * Keeps copy 0 at the source schematic's original minimum corner and centres all generated copies on
-     * the resource hub. The ring radius includes the complete hub/base footprint plus isolation padding.
+     * Keeps copy 0 at the source schematic's original minimum corner. ROW maps generate their playable
+     * copies east of all configured infrastructure; legacy RING maps retain their physical coordinates.
      */
     public @NotNull ArenaGrid prepareBaseGrid(@NotNull Vector baseOrigin, @NotNull Vector baseSize) {
+        if (isRowLayout()) {
+            baseSourceOrigin = baseOrigin.clone();
+            baseSchematicSize = baseSize.clone();
+            copyLayoutGeneratedOrigin = BuildMartRowLayoutPlanner.generatedOrigin(baseOrigin,
+                    configuredInfrastructureMaxX(baseOrigin, baseSize));
+            copyLayoutStep = BuildMartRowLayoutPlanner.step(baseSize);
+            copyLayoutCenter = null;
+            copyLayoutSpacing = null;
+            return getBaseGrid();
+        }
         Vector hubCenter = hubGridCenter();
         copyLayoutCenter = new Vector(hubCenter.getX(), baseOrigin.getY(), hubCenter.getZ());
         baseSourceOrigin = baseOrigin.clone();
         copyLayoutSpacing = ArenaLayoutPlanner.ringSpacing(hubFootprint(), baseSize);
         baseSchematicSize = baseSize.clone();
         return getBaseGrid();
+    }
+
+    public boolean isRowLayout() {
+        return "ROW".equalsIgnoreCase(copyLayoutType);
+    }
+
+    /** New maps opt into row placement before their first schematic is captured. */
+    public void useRowLayoutForDraft() {
+        copyLayoutType = "ROW";
+        copyLayoutCenter = null;
+        copyLayoutSpacing = null;
+    }
+
+    /** Highest known infrastructure coordinate, used to keep a freshly generated row clear of the hub. */
+    public double configuredInfrastructureMaxX(@NotNull Vector baseOrigin, @NotNull Vector baseSize) {
+        double max = baseOrigin.getX() + baseSize.getBlockX();
+        max = maxX(max, areaPos1, areaPos2, hubPos1, hubPos2);
+        max = maxX(max, spectatorSpawnPoint, hubPortalPoint, goldenDisplayPoint, getIntroductionSpawnPoint());
+        for (WindZone zone : windZones) max = maxX(max, zone.pos1(), zone.pos2());
+        for (BuildMartMaterialZone zone : getMaterialZones()) max = Math.max(max, zone.maxX());
+        for (Vector center : materialIslandCenters.values()) max = Math.max(max, center.getX());
+        return max;
+    }
+
+    private static double maxX(double current, Vector... vectors) {
+        double max = current;
+        for (Vector vector : vectors) if (vector != null) max = Math.max(max, vector.getX());
+        return max;
+    }
+
+    private static double maxX(double current, Location... locations) {
+        double max = current;
+        for (Location location : locations) if (location != null) max = Math.max(max, location.getX());
+        return max;
     }
 
     /** Records copy 0's real selection corner and invalidates copies made from an older template. */
@@ -150,7 +209,7 @@ public class BuildMartConfig extends BaseGameConfig {
     private Vector windZonePos1;
     private Vector windZonePos2;
 
-    /** Horizontal/vertical cuboids occupied by wind-vent blocks. Players above any are lifted toward Y=180. */
+    /** Horizontal/vertical cuboids occupied by wind-vent blocks. Players above any are lifted toward Y=200. */
     private List<WindZone> windZones = List.of();
 
     /** Persisted centres of the 24 physical material islands, keyed by their stable semantic identity. */
@@ -279,7 +338,7 @@ public class BuildMartConfig extends BaseGameConfig {
         return false;
     }
 
-    /** True when a location is in the vent's vertical column, including the lift path up to Y=180. */
+    /** True when a location is in the vent's vertical column, including the lift path up to Y=200. */
     private boolean isInWindColumn(@NotNull Location location) {
         if (windZones.isEmpty() || location.getWorld() == null
                 || !location.getWorld().getName().equals(getConfiguredWorld())) return false;
@@ -288,7 +347,8 @@ public class BuildMartConfig extends BaseGameConfig {
             Vector max = Vector.getMaximum(zone.pos1(), zone.pos2());
             if (location.getX() >= min.getX() && location.getX() <= max.getX() + 1.0
                     && location.getZ() >= min.getZ() && location.getZ() <= max.getZ() + 1.0
-                    && location.getY() >= min.getY() && location.getY() <= 181.0) return true;
+                    && location.getY() >= min.getY()
+                    && location.getY() <= BuildMartWindVentPolicy.TOP_Y + 1.0) return true;
         }
         return false;
     }
@@ -620,6 +680,13 @@ public class BuildMartConfig extends BaseGameConfig {
                 && oldConfiguration.getMapList("material-islands").isEmpty()
                 && "area".equalsIgnoreCase(oldConfiguration.getString("name", ""))) {
             migratedConfiguration.set("material-islands", materialIslandRows(legacyAreaMaterialIslandCenters()));
+        }
+        if (oldConfiguration.getInt("dont-edit-this.version", 0) < 17) {
+            // A configuration upgrade must never reinterpret an old physical ring as a row. Such maps must
+            // be rebuilt and published through the normal prepare flow before their anchors can change.
+            migratedConfiguration.set("copy-layout.type", "RING");
+            migratedConfiguration.set("copy-layout.generated-origin", null);
+            migratedConfiguration.set("copy-layout.step", null);
         }
     }
 

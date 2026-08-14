@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -12,6 +13,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SidebarConfigurationTest {
+    @Test
+    void selectsTopEightAndAppendsOutOfRangeViewerLikeBingo() {
+        List<Integer> ranked = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+        assertEquals(List.of(1, 2, 3, 4, 5, 6, 7, 8, 10),
+                CoreSidebarManager.selectRankingRows(ranked, 10));
+        assertEquals(List.of(1, 2, 3, 4, 5, 6, 7, 8),
+                CoreSidebarManager.selectRankingRows(ranked, 3));
+    }
+
     @Test
     void bundledConfigurationCoversEveryGameAndWorkerBingo() throws URISyntaxException {
         File resource = new File(requireResource().toURI());

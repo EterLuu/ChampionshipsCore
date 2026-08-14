@@ -93,12 +93,13 @@ public final class GameStopSubCommand extends BaseSubCommand {
                                                  @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
             List<String> games = plugin.getGameManager().getStoppableInstances().stream()
-                    .map(BaseGameInstance::getGameTypeEnum).distinct()
+                    .map(BaseGameInstance::getGameTypeEnum)
+                    .filter(plugin.getGameManager()::isGameEnabled).distinct()
                     .map(GameTypeEnum::commandName).toList();
             return complete(games, args[0]);
         }
         GameTypeEnum game = GameTypeEnum.fromCommand(args[0]);
-        if (game == null) return Collections.emptyList();
+        if (game == null || !plugin.getGameManager().isGameEnabled(game)) return Collections.emptyList();
         if (args.length == 2) {
             List<String> areas = plugin.getGameManager().getStoppableInstances().stream()
                     .filter(instance -> instance.getGameTypeEnum() == game)
