@@ -32,6 +32,7 @@ final class WorkerMatchRegistry {
     private final DurableEventOutbox events;
     private final WorkerReturnRouter returnRouter;
     private final WorkerWorldResetCoordinator worldReset;
+    private final WorkerWorldController worlds;
     private final PlatformScheduler scheduler;
     private final Set<NamespacedKey> recipeKeys;
     private final Map<UUID, MatchManifest> manifests = new HashMap<>();
@@ -40,11 +41,12 @@ final class WorkerMatchRegistry {
     private boolean worldSlotConsumed;
 
     WorkerMatchRegistry(Plugin plugin, WorkerConfig config, DurableEventOutbox events,
-                        WorkerReturnRouter returnRouter) {
+                        WorkerReturnRouter returnRouter, WorkerWorldController worlds) {
         this.plugin = plugin;
         this.config = config;
         this.events = events;
         this.returnRouter = returnRouter;
+        this.worlds = worlds;
         this.scheduler = new PlatformScheduler(plugin);
         this.recipeKeys = loadRecipeKeys(plugin);
         this.worldReset = config.allowWorldReuseWithoutReset()
@@ -109,7 +111,7 @@ final class WorkerMatchRegistry {
             }
             if (!active.state().terminal()) return CompletableFuture.completedFuture(false);
         }
-        active = new WorkerMatchSession(plugin, config, manifest, events, returnRouter,
+        active = new WorkerMatchSession(plugin, config, manifest, events, returnRouter, worlds,
                 worldReset == null ? () -> { } : worldReset::request);
         if (worldSlotConsumed && !config.allowWorldReuseWithoutReset()) {
             return active.rejectPreparation("world-slot-requires-reset");

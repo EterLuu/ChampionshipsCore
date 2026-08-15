@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.api.vote;
 
+import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import net.kyori.adventure.text.Component;
@@ -29,6 +31,7 @@ import java.util.Map;
 
 /** Live voting inventory backed directly by {@link VoteManager}. */
 final class VoteMenu implements Listener {
+    private static final String MENU_PATH = MenuId.VOTING_BALLOT.path();
     private static final int INVENTORY_SIZE = 54;
     private static final int TIME_SLOT = 1;
     private static final int OVERVIEW_SLOT = 4;
@@ -46,11 +49,10 @@ final class VoteMenu implements Listener {
 
     void open(@NotNull Player player) {
         Holder holder = new Holder(player.getUniqueId());
-        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE,
-                Component.text(GuiConfig.text("voting.menu.tournament-ballot"), NamedTextColor.GOLD)
-                        .append(Component.text(GuiConfig.text("voting.menu.next-game"), NamedTextColor.WHITE))
-                        .decorate(TextDecoration.BOLD)
-                        .decoration(TextDecoration.ITALIC, false));
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, INVENTORY_SIZE,
+                "&6&l" + GuiConfig.text("voting.menus.ballot.copy.tournament-ballot")
+                        + "&f" + GuiConfig.text("voting.menus.ballot.copy.next-game"), candidateSlots(11));
+        Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.inventory = inventory;
         refresh(holder);
         player.openInventory(inventory);
@@ -85,7 +87,7 @@ final class VoteMenu implements Listener {
             return;
         }
 
-        if (event.getRawSlot() == CLOSE_SLOT) {
+        if (event.getRawSlot() == slot("close", CLOSE_SLOT)) {
             player.closeInventory();
             return;
         }
@@ -112,19 +114,22 @@ final class VoteMenu implements Listener {
         inventory.clear();
         holder.gamesBySlot.clear();
 
-        ItemStack border = item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of(), false, 1);
-        for (int slot = 0; slot < 9; slot++) inventory.setItem(slot, border);
-        for (int slot = 45; slot < INVENTORY_SIZE; slot++) inventory.setItem(slot, border);
+        ItemStack border = configured("border", null, Map.of(),
+                item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of(), false, 1));
+        for (int slot : GuiConfig.slots(MENU_PATH + ".layout.border",
+                List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 45, 46, 47, 48, 49, 50, 51, 52, 53)))
+            if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, border);
 
         List<GameTypeEnum> candidates = List.of(GameTypeEnum.values()).stream()
                 .filter(manager::canVoteFor)
                 .toList();
-        List<Integer> slots = candidateSlots(candidates.size());
+        List<Integer> slots = GuiConfig.slots(MENU_PATH + ".layout.content",
+                candidateSlots(candidates.size()));
         int totalVotes = manager.getTotalVoteCount();
         int highestVotes = candidates.stream().mapToInt(manager::getVoteNums).max().orElse(0);
         GameTypeEnum selected = manager.getPlayerVote(holder.viewer);
 
-        for (int index = 0; index < candidates.size(); index++) {
+        for (int index = 0; index < candidates.size() && index < slots.size(); index++) {
             GameTypeEnum gameType = candidates.get(index);
             int slot = slots.get(index);
             inventory.setItem(slot, gameItem(gameType, selected == gameType, totalVotes, highestVotes));
@@ -132,24 +137,33 @@ final class VoteMenu implements Listener {
         }
 
         if (candidates.isEmpty()) {
-            inventory.setItem(22, item(Material.GRAY_DYE,
-                    Component.text(GuiConfig.text("voting.menu.there-are-currently-no-candidate-games-in-this-round"), NamedTextColor.GRAY),
-                    List.of(Component.text(GuiConfig.text("voting.menu.waiting-for-venue-release"), NamedTextColor.DARK_GRAY)), false, 1));
+            inventory.setItem(slot("empty", 22), configured("empty", null, Map.of(), item(Material.GRAY_DYE,
+                    Component.text(GuiConfig.text("voting.menus.ballot.copy.there-are-currently-no-candidate-games-in-this-round"), NamedTextColor.GRAY),
+                    List.of(Component.text(GuiConfig.text("voting.menus.ballot.copy.waiting-for-venue-release"), NamedTextColor.DARK_GRAY)), false, 1)));
         }
 
-        inventory.setItem(TIME_SLOT, timeItem());
-        inventory.setItem(OVERVIEW_SLOT, overviewItem(candidates, totalVotes, highestVotes));
-        inventory.setItem(TURNOUT_SLOT, turnoutItem(totalVotes));
-        inventory.setItem(BALLOT_SLOT, ballotItem(selected));
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER,
-                Component.text(GuiConfig.text("voting.menu.close"), NamedTextColor.RED),
-                List.of(), false, 1));
+        int remaining = Math.max(0, manager.getRemainingSeconds());
+        String remainingText = String.format(Locale.ROOT, "%d:%02d", remaining / 60, remaining % 60);
+        int eligible = manager.getEligibleVoterCount();
+        int turnoutPercentage = eligible == 0 ? 0 : (int) Math.round(totalVotes * 100D / eligible);
+        inventory.setItem(slot("time", TIME_SLOT), configured("time", null,
+                Map.of("time", remainingText), timeItem()));
+        inventory.setItem(slot("overview", OVERVIEW_SLOT), configured("overview", null,
+                Map.of("candidates", candidates.size(), "votes", totalVotes),
+                overviewItem(candidates, totalVotes, highestVotes)));
+        inventory.setItem(slot("turnout", TURNOUT_SLOT), configured("turnout", null,
+                Map.of("votes", totalVotes, "eligible", eligible, "percentage", turnoutPercentage), turnoutItem(totalVotes)));
+        inventory.setItem(slot("my-ballot", BALLOT_SLOT), configured("my-ballot",
+                selected == null ? "empty" : "selected", Map.of("game", selected == null ? "" : selected.toString()), ballotItem(selected)));
+        inventory.setItem(slot("close", CLOSE_SLOT), configured("close", null, Map.of(), item(Material.BARRIER,
+                Component.text(GuiConfig.text("voting.menus.ballot.copy.close"), NamedTextColor.RED),
+                List.of(), false, 1)));
     }
 
     private ItemStack gameItem(@NotNull GameTypeEnum gameType, boolean selected, int totalVotes, int highestVotes) {
         GameEntry entry = GAME_ENTRIES.getOrDefault(gameType,
                 new GameEntry(Material.PAPER, NamedTextColor.WHITE,
-                        GuiConfig.text("voting.menu.championship-events"), GuiConfig.text("voting.menu.make-your-selection-after-reviewing-the-game-rules")));
+                        GuiConfig.text("voting.menus.ballot.copy.championship-events"), GuiConfig.text("voting.menus.ballot.copy.make-your-selection-after-reviewing-the-game-rules")));
         int votes = manager.getVoteNums(gameType);
         int percentage = totalVotes == 0 ? 0 : (int) Math.round(votes * 100D / totalVotes);
         int filled = totalVotes == 0 ? 0 : (int) Math.round(votes * VOTE_BAR_LENGTH / (double) totalVotes);
@@ -162,17 +176,17 @@ final class VoteMenu implements Listener {
         lore.add(Component.text("■".repeat(filled), selected ? NamedTextColor.AQUA
                         : leading ? NamedTextColor.GOLD : entry.color)
                 .append(Component.text("□".repeat(VOTE_BAR_LENGTH - filled), NamedTextColor.DARK_GRAY)));
-        lore.add(Component.text(votes + GuiConfig.text("voting.menu.ticket"), NamedTextColor.WHITE)
+        lore.add(Component.text(votes + GuiConfig.text("voting.menus.ballot.copy.ticket"), NamedTextColor.WHITE)
                 .append(Component.text(GuiConfig.text("common.separator") + percentage + "%", NamedTextColor.GRAY)));
         lore.add(Component.empty());
         if (selected) {
-            lore.add(Component.text(GuiConfig.text("voting.menu.my-choice"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
-            lore.add(Component.text(GuiConfig.text("voting.menu.click-on-other-items-to-change-your-ticket"), NamedTextColor.DARK_GRAY));
+            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.my-choice"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.click-on-other-items-to-change-your-ticket"), NamedTextColor.DARK_GRAY));
         } else if (leading) {
-            lore.add(Component.text(GuiConfig.text("voting.menu.current-leader"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
-            lore.add(Component.text(GuiConfig.text("voting.menu.click-to-vote-for-this-game"), NamedTextColor.YELLOW));
+            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.current-leader"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
+            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.click-to-vote-for-this-game"), NamedTextColor.YELLOW));
         } else {
-            lore.add(Component.text(GuiConfig.text("voting.menu.click-to-vote"), NamedTextColor.GREEN));
+            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.click-to-vote"), NamedTextColor.GREEN));
         }
 
         Component marker = selected ? Component.text("✓ ", NamedTextColor.AQUA)
@@ -180,7 +194,19 @@ final class VoteMenu implements Listener {
         Component name = marker.append(Component.text(gameType.toString(), entry.color))
                 .decorate(TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false);
-        return item(entry.material, name, lore, selected, 1);
+        String state = selected ? "selected" : leading ? "leading" : "available";
+        return configured("candidate", state, Map.of("game", gameType.toString(), "category", entry.category,
+                "description", entry.description, "votes", votes, "percentage", percentage),
+                item(entry.material, name, lore, selected, 1));
+    }
+
+    private static int slot(String item, int fallback) {
+        return ConfiguredGui.slot(MENU_PATH + ".items." + item, fallback);
+    }
+
+    private static ItemStack configured(String item, String state, Map<String, ?> placeholders,
+                                        ItemStack fallback) {
+        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders, fallback);
     }
 
     private ItemStack timeItem() {
@@ -191,8 +217,8 @@ final class VoteMenu implements Listener {
         return item(Material.CLOCK,
                 Component.text(time, timeColor).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(GuiConfig.text("voting.menu.countdown-to-voting-deadline"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("voting.menu.results-will-be-locked-after-the-countdown-ends"), NamedTextColor.DARK_GRAY)
+                        Component.text(GuiConfig.text("voting.menus.ballot.copy.countdown-to-voting-deadline"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("voting.menus.ballot.copy.results-will-be-locked-after-the-countdown-ends"), NamedTextColor.DARK_GRAY)
                 ), false, 1);
     }
 
@@ -202,19 +228,19 @@ final class VoteMenu implements Listener {
                 .toList();
         Component leaderLine;
         if (leaders.isEmpty()) {
-            leaderLine = Component.text(GuiConfig.text("voting.menu.waiting-for-the-first-ballot"), NamedTextColor.DARK_GRAY);
+            leaderLine = Component.text(GuiConfig.text("voting.menus.ballot.copy.waiting-for-the-first-ballot"), NamedTextColor.DARK_GRAY);
         } else if (leaders.size() == 1) {
-            leaderLine = Component.text(GuiConfig.text("voting.menu.leading-the-way"), NamedTextColor.GRAY)
+            leaderLine = Component.text(GuiConfig.text("voting.menus.ballot.copy.leading-the-way"), NamedTextColor.GRAY)
                     .append(Component.text(leaders.getFirst().toString(), NamedTextColor.GOLD));
         } else {
-            leaderLine = Component.text(leaders.size() + GuiConfig.text("voting.menu.games-tied-for-the-lead"), NamedTextColor.GOLD);
+            leaderLine = Component.text(leaders.size() + GuiConfig.text("voting.menus.ballot.copy.games-tied-for-the-lead"), NamedTextColor.GOLD);
         }
 
         return item(Material.NETHER_STAR,
-                Component.text(GuiConfig.text("voting.menu.next-game-it-s-up-to-you"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("voting.menus.ballot.copy.next-game-it-s-up-to-you"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
                 List.of(
-                        Component.text(candidates.size() + GuiConfig.text("voting.menu.candidate-games"), NamedTextColor.WHITE)
-                                .append(Component.text(GuiConfig.text("common.separator") + totalVotes + GuiConfig.text("voting.menu.valid-votes"), NamedTextColor.GRAY)),
+                        Component.text(candidates.size() + GuiConfig.text("voting.menus.ballot.copy.candidate-games"), NamedTextColor.WHITE)
+                                .append(Component.text(GuiConfig.text("common.separator") + totalVotes + GuiConfig.text("voting.menus.ballot.copy.valid-votes"), NamedTextColor.GRAY)),
                         leaderLine
                 ), false, 1);
     }
@@ -227,33 +253,33 @@ final class VoteMenu implements Listener {
                 : Math.min(VOTE_BAR_LENGTH, (int) Math.round(totalVotes * VOTE_BAR_LENGTH / (double) eligibleVoters));
         return item(Material.NAME_TAG,
                 Component.text(totalVotes + "/" + eligibleVoters, NamedTextColor.AQUA)
-                        .append(Component.text(GuiConfig.text("voting.menu.already-invested"), NamedTextColor.WHITE))
+                        .append(Component.text(GuiConfig.text("voting.menus.ballot.copy.already-invested"), NamedTextColor.WHITE))
                         .decorate(TextDecoration.BOLD),
                 List.of(
                         Component.text("■".repeat(filled), NamedTextColor.AQUA)
                                 .append(Component.text("□".repeat(VOTE_BAR_LENGTH - filled), NamedTextColor.DARK_GRAY))
                                 .append(Component.text("  " + percentage + "%", NamedTextColor.GRAY)),
-                        Component.text(GuiConfig.text("voting.menu.contestant-voting-progress"), NamedTextColor.DARK_GRAY)
+                        Component.text(GuiConfig.text("voting.menus.ballot.copy.contestant-voting-progress"), NamedTextColor.DARK_GRAY)
                 ), false, 1);
     }
 
     private ItemStack ballotItem(GameTypeEnum selected) {
         if (selected == null) {
             return item(Material.PAPER,
-                    Component.text(GuiConfig.text("voting.menu.ballot-is-not-filled-in"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                    Component.text(GuiConfig.text("voting.menus.ballot.copy.ballot-is-not-filled-in"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
                     List.of(
-                            Component.text(GuiConfig.text("voting.menu.select-an-item-from-above"), NamedTextColor.WHITE),
-                            Component.text(GuiConfig.text("voting.menu.can-be-changed-at-any-time-before-voting-closes"), NamedTextColor.DARK_GRAY)
+                            Component.text(GuiConfig.text("voting.menus.ballot.copy.select-an-item-from-above"), NamedTextColor.WHITE),
+                            Component.text(GuiConfig.text("voting.menus.ballot.copy.can-be-changed-at-any-time-before-voting-closes"), NamedTextColor.DARK_GRAY)
                     ), false, 1);
         }
 
         GameEntry entry = GAME_ENTRIES.getOrDefault(selected,
-                new GameEntry(Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("voting.menu.championship-events"), ""));
+                new GameEntry(Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("voting.menus.ballot.copy.championship-events"), ""));
         return item(Material.WRITABLE_BOOK,
-                Component.text(GuiConfig.text("voting.menu.my-vote"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                Component.text(GuiConfig.text("voting.menus.ballot.copy.my-vote"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
                 List.of(
                         Component.text(selected.toString(), entry.color).decorate(TextDecoration.BOLD),
-                        Component.text(GuiConfig.text("voting.menu.ballot-recorded"), NamedTextColor.GREEN)
+                        Component.text(GuiConfig.text("voting.menus.ballot.copy.ballot-recorded"), NamedTextColor.GREEN)
                 ), true, 1);
     }
 
@@ -295,27 +321,27 @@ final class VoteMenu implements Listener {
     private static Map<GameTypeEnum, GameEntry> createGameEntries() {
         Map<GameTypeEnum, GameEntry> entries = new EnumMap<>(GameTypeEnum.class);
         entries.put(GameTypeEnum.Bingo, new GameEntry(Material.FILLED_MAP, NamedTextColor.LIGHT_PURPLE,
-                GuiConfig.text("voting.menu.explore-teamwork"), GuiConfig.text("voting.menu.complete-the-shared-bingo-card-seize-the-grid-and-connect")));
+                GuiConfig.text("voting.menus.ballot.copy.explore-teamwork"), GuiConfig.text("voting.menus.ballot.copy.complete-the-shared-bingo-card-seize-the-grid-and-connect")));
         entries.put(GameTypeEnum.ParkourTag, new GameEntry(Material.GOLDEN_CARROT, NamedTextColor.AQUA,
-                GuiConfig.text("voting.menu.chase-4v4"), GuiConfig.text("voting.menu.chaser-capture-escapers-fight-for-time-to-survive")));
+                GuiConfig.text("voting.menus.ballot.copy.chase-4v4"), GuiConfig.text("voting.menus.ballot.copy.chaser-capture-escapers-fight-for-time-to-survive")));
         entries.put(GameTypeEnum.BattleBox, new GameEntry(Material.WHITE_WOOL, NamedTextColor.GOLD,
-                GuiConfig.text("voting.menu.battle-4v4"), GuiConfig.text("voting.menu.defeat-the-opponent-occupy-the-center-with-your-team-s-wool")));
+                GuiConfig.text("voting.menus.ballot.copy.battle-4v4"), GuiConfig.text("voting.menus.ballot.copy.defeat-the-opponent-occupy-the-center-with-your-team-s-wool")));
         entries.put(GameTypeEnum.TNTRun, new GameEntry(Material.TNT, NamedTextColor.RED,
-                GuiConfig.text("voting.menu.survival-individual-competition"), GuiConfig.text("voting.menu.persevere-until-the-end-on-the-collapsing-platform")));
+                GuiConfig.text("voting.menus.ballot.copy.survival-individual-competition"), GuiConfig.text("voting.menus.ballot.copy.persevere-until-the-end-on-the-collapsing-platform")));
         entries.put(GameTypeEnum.SnowballShowdown, new GameEntry(Material.SNOWBALL, NamedTextColor.WHITE,
-                GuiConfig.text("voting.menu.knock-back-survival-match"), GuiConfig.text("voting.menu.use-snowballs-to-knock-your-opponents-out-of-the-shrinking-field")));
+                GuiConfig.text("voting.menus.ballot.copy.knock-back-survival-match"), GuiConfig.text("voting.menus.ballot.copy.use-snowballs-to-knock-your-opponents-out-of-the-shrinking-field")));
         entries.put(GameTypeEnum.SkyWars, new GameEntry(Material.GRASS_BLOCK, NamedTextColor.YELLOW,
-                GuiConfig.text("voting.menu.survival-team-battle"), GuiConfig.text("voting.menu.collect-empty-island-resources-fight-in-shrinking-borders")));
+                GuiConfig.text("voting.menus.ballot.copy.survival-team-battle"), GuiConfig.text("voting.menus.ballot.copy.collect-empty-island-resources-fight-in-shrinking-borders")));
         entries.put(GameTypeEnum.TGTTOS, new GameEntry(Material.FEATHER, NamedTextColor.LIGHT_PURPLE,
-                GuiConfig.text("voting.menu.racing-complete-the-race-as-a-team"), GuiConfig.text("voting.menu.overcome-obstacles-and-reach-the-finish-line-compete-for-individual-and-team-rankings")));
+                GuiConfig.text("voting.menus.ballot.copy.racing-complete-the-race-as-a-team"), GuiConfig.text("voting.menus.ballot.copy.overcome-obstacles-and-reach-the-finish-line-compete-for-individual-and-team-rankings")));
         entries.put(GameTypeEnum.ParkourWarrior, new GameEntry(Material.IRON_BOOTS, NamedTextColor.WHITE,
-                GuiConfig.text("voting.menu.parkour-individual-competition"), GuiConfig.text("voting.menu.challenge-branch-tracks-scored-by-difficulty-and-completion")));
+                GuiConfig.text("voting.menus.ballot.copy.parkour-individual-competition"), GuiConfig.text("voting.menus.ballot.copy.challenge-branch-tracks-scored-by-difficulty-and-completion")));
         entries.put(GameTypeEnum.HotyCodyDusky, new GameEntry(Material.COD, NamedTextColor.AQUA,
-                GuiConfig.text("voting.menu.pass-survival-race"), GuiConfig.text("voting.menu.pass-the-hot-cod-to-your-opponent-and-hold-on-until-the-end")));
+                GuiConfig.text("voting.menus.ballot.copy.pass-survival-race"), GuiConfig.text("voting.menus.ballot.copy.pass-the-hot-cod-to-your-opponent-and-hold-on-until-the-end")));
         entries.put(GameTypeEnum.BuildMart, new GameEntry(Material.CRAFTING_TABLE, NamedTextColor.GOLD,
-                GuiConfig.text("voting.menu.build-teamwork"), GuiConfig.text("voting.menu.collect-materials-and-divide-the-work-to-restore-as-many-blueprints-as-possible")));
+                GuiConfig.text("voting.menus.ballot.copy.build-teamwork"), GuiConfig.text("voting.menus.ballot.copy.collect-materials-and-divide-the-work-to-restore-as-many-blueprints-as-possible")));
         entries.put(GameTypeEnum.AceRace, new GameEntry(Material.ELYTRA, NamedTextColor.GREEN,
-                GuiConfig.text("voting.menu.racing-individual-competition"), GuiConfig.text("voting.menu.control-the-elytra-and-trident-to-complete-multiple-laps-of-the-obstacle-course")));
+                GuiConfig.text("voting.menus.ballot.copy.racing-individual-competition"), GuiConfig.text("voting.menus.ballot.copy.control-the-elytra-and-trident-to-complete-multiple-laps-of-the-obstacle-course")));
         return Map.copyOf(entries);
     }
 

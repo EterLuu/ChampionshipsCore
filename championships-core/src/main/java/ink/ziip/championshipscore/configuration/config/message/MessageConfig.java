@@ -21,10 +21,10 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 29;
+        return 32;
     }
 
-    /** Replace every player-facing section so v29's terminology and spacing stay consistent at runtime. */
+    /** Replace every player-facing section so v30's terminology and spacing stay consistent at runtime. */
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) throws IOException {
         for (String section : List.of("command", "team", "member", "reason", "area", "rank", "spectator", "game",
@@ -98,21 +98,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "daily.match-aborted") public static String DAILY_MATCH_ABORTED;
     @ConfigOption(path = "daily.bossbar.waiting") public static String DAILY_BOSSBAR_WAITING;
     @ConfigOption(path = "daily.bossbar.countdown") public static String DAILY_BOSSBAR_COUNTDOWN;
-    @ConfigOption(path = "daily.menu.game-title") public static String DAILY_MENU_GAME_TITLE;
-    @ConfigOption(path = "daily.menu.leaderboard-title") public static String DAILY_MENU_LEADERBOARD_TITLE;
-    @ConfigOption(path = "daily.menu.board-title") public static String DAILY_MENU_BOARD_TITLE;
-    @ConfigOption(path = "daily.menu.queue-players") public static String DAILY_MENU_QUEUE_PLAYERS;
-    @ConfigOption(path = "daily.menu.team-limit") public static String DAILY_MENU_TEAM_LIMIT;
-    @ConfigOption(path = "daily.menu.party-selection") public static String DAILY_MENU_PARTY_SELECTION;
-    @ConfigOption(path = "daily.menu.current-selection") public static String DAILY_MENU_CURRENT_SELECTION;
-    @ConfigOption(path = "daily.menu.click-to-queue") public static String DAILY_MENU_CLICK_TO_QUEUE;
-    @ConfigOption(path = "daily.menu.click-to-view") public static String DAILY_MENU_CLICK_TO_VIEW;
-    @ConfigOption(path = "daily.menu.back") public static String DAILY_MENU_BACK;
-    @ConfigOption(path = "daily.leaderboard.wins") public static String DAILY_LEADERBOARD_WINS;
-    @ConfigOption(path = "daily.leaderboard.bingo-first-line") public static String DAILY_LEADERBOARD_BINGO_FIRST_LINE;
-    @ConfigOption(path = "daily.leaderboard.bingo-full-card") public static String DAILY_LEADERBOARD_BINGO_FULL_CARD;
-    @ConfigOption(path = "daily.leaderboard.acerace-fastest-lap") public static String DAILY_LEADERBOARD_ACERACE_FASTEST_LAP;
-    @ConfigOption(path = "daily.leaderboard.acerace-fastest-three-laps") public static String DAILY_LEADERBOARD_ACERACE_FASTEST_THREE_LAPS;
     @ConfigOption(path = "daily.leaderboard.row-count") public static String DAILY_LEADERBOARD_ROW_COUNT;
     @ConfigOption(path = "daily.leaderboard.row-time") public static String DAILY_LEADERBOARD_ROW_TIME;
     @ConfigOption(path = "daily.leaderboard.empty") public static String DAILY_LEADERBOARD_EMPTY;
@@ -155,31 +140,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "reason.member-already-exist")
     public static String REASON_MEMBER_ALREADY_EXIST;
-
-    @ConfigOption(path = "reason.area-already-exist")
-    public static String REASON_AREA_ALREADY_EXIST;
-
-    @ConfigOption(path = "reason.area-not-in-waiting-status")
-    public static String REASON_AREA_NOT_IN_WAITING_STATUS;
-
-    // Area
-    @ConfigOption(path = "area.successfully-added")
-    public static String AREA_SUCCESSFULLY_ADDED;
-
-    @ConfigOption(path = "area.added-failed")
-    public static String AREA_ADDED_FAILED;
-
-    @ConfigOption(path = "area.successfully-saved")
-    public static String AREA_SUCCESSFULLY_SAVED;
-
-    @ConfigOption(path = "area.saved-failed")
-    public static String AREA_SAVED_FAILED;
-
-    @ConfigOption(path = "area.setting-option-succeeded")
-    public static String AREA_SETTING_OPTION_SUCCEEDED;
-
-    @ConfigOption(path = "area.setting-option-failed")
-    public static String AREA_SETTING_OPTION_FAILED;
 
     // Area status
     @ConfigOption(path = "area-status.waiting")
@@ -231,9 +191,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "rank.not-player")
     public static String RANK_NOT_PLAYER;
 
-    @ConfigOption(path = "rank.no-record")
-    public static String RANK_NO_RECORD;
-
     @ConfigOption(path = "rank.final-board-bar")
     public static String RANK_FINAL_BOARD_BAR;
 
@@ -271,12 +228,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "game.team-game-start-failed")
     public static String GAME_TEAM_GAME_START_FAILED;
-
-    @ConfigOption(path = "game.single-team-game-start-successful")
-    public static String GAME_SINGLE_TEAM_GAME_START_SUCCESSFUL;
-
-    @ConfigOption(path = "game.single-team-game-start-failed")
-    public static String GAME_SINGLE_TEAM_GAME_START_FAILED;
 
     @ConfigOption(path = "game.single-game-start-successful")
     public static String GAME_SINGLE_GAME_START_SUCCESSFUL;
@@ -335,12 +286,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.introduction-title")
     public static String GAME_INTRODUCTION_TITLE;
 
-    @ConfigOption(path = "game.round-preparation-title")
-    public static String GAME_ROUND_PREPARATION_TITLE;
-
-    @ConfigOption(path = "game.round-preparation-subtitle")
-    public static String GAME_ROUND_PREPARATION_SUBTITLE;
-
     @ConfigOption(path = "game.round-preparation-action-bar")
     public static String GAME_ROUND_PREPARATION_ACTION_BAR;
 
@@ -349,9 +294,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "game.start-count-down-subtitle")
     public static String GAME_START_COUNT_DOWN_SUBTITLE;
-
-    @ConfigOption(path = "game.start-count-down-action-bar")
-    public static String GAME_START_COUNT_DOWN_ACTION_BAR;
 
     @ConfigOption(path = "game.start-action-bar")
     public static String GAME_START_ACTION_BAR;
@@ -378,20 +320,8 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "battlebox.start-preparation-subtitle")
     public static String BATTLE_BOX_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "battlebox.game-start-soon")
-    public static String BATTLE_BOX_GAME_START_SOON;
-
     @ConfigOption(path = "battlebox.game-start-soon-title")
     public static String BATTLE_BOX_GAME_START_SOON_TITLE;
-
-    @ConfigOption(path = "battlebox.game-start-soon-subtitle")
-    public static String BATTLE_BOX_GAME_START_SOON_SUBTITLE;
-
-    @ConfigOption(path = "battlebox.count-down")
-    public static String BATTLE_BOX_COUNT_DOWN;
-
-    @ConfigOption(path = "battlebox.game-start")
-    public static String BATTLE_BOX_GAME_START;
 
     @ConfigOption(path = "battlebox.game-start-title")
     public static String BATTLE_BOX_GAME_START_TITLE;
@@ -454,29 +384,14 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourtag.start-preparation-subtitle")
     public static String PARKOUR_TAG_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "parkourtag.game-start-soon")
-    public static String PARKOUR_TAG_GAME_START_SOON;
-
     @ConfigOption(path = "parkourtag.game-start-soon-title")
     public static String PARKOUR_TAG_GAME_START_SOON_TITLE;
-
-    @ConfigOption(path = "parkourtag.game-start-soon-subtitle")
-    public static String PARKOUR_TAG_GAME_START_SOON_SUBTITLE;
-
-    @ConfigOption(path = "parkourtag.count-down")
-    public static String PARKOUR_TAG_COUNT_DOWN;
-
-    @ConfigOption(path = "parkourtag.game-start")
-    public static String PARKOUR_TAG_GAME_START;
 
     @ConfigOption(path = "parkourtag.game-start-title")
     public static String PARKOUR_TAG_GAME_START_TITLE;
 
     @ConfigOption(path = "parkourtag.game-start-subtitle")
     public static String PARKOUR_TAG_GAME_START_SUBTITLE;
-
-    @ConfigOption(path = "parkourtag.game-end")
-    public static String PARKOUR_TAG_GAME_END;
 
     @ConfigOption(path = "parkourtag.game-end-title")
     public static String PARKOUR_TAG_GAME_END_TITLE;
@@ -529,12 +444,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourtag.kits.use-wind-charge-failed")
     public static String PARKOUR_TAG_KITS_USE_WIND_CHARGE_FAILED;
 
-    @ConfigOption(path = "parkourtag.boss-bar.chaser")
-    public static String PARKOUR_TAG_BOSS_BAR_CHASER;
-
-    @ConfigOption(path = "parkourtag.boss-bar.escaper")
-    public static String PARKOUR_TAG_BOSS_BAR_ESCAPER;
-
     // SkyWars
     @ConfigOption(path = "skywars.start-preparation")
     public static String SKY_WARS_START_PREPARATION;
@@ -545,29 +454,14 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "skywars.start-preparation-subtitle")
     public static String SKY_WARS_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "skywars.game-start-soon")
-    public static String SKY_WARS_GAME_START_SOON;
-
     @ConfigOption(path = "skywars.game-start-soon-title")
     public static String SKY_WARS_GAME_START_SOON_TITLE;
-
-    @ConfigOption(path = "skywars.game-start-soon-subtitle")
-    public static String SKY_WARS_GAME_START_SOON_SUBTITLE;
-
-    @ConfigOption(path = "skywars.count-down")
-    public static String SKY_WARS_COUNT_DOWN;
-
-    @ConfigOption(path = "skywars.game-start")
-    public static String SKY_WARS_GAME_START;
 
     @ConfigOption(path = "skywars.game-start-title")
     public static String SKY_WARS_GAME_START_TITLE;
 
     @ConfigOption(path = "skywars.game-start-subtitle")
     public static String SKY_WARS_GAME_START_SUBTITLE;
-
-    @ConfigOption(path = "skywars.game-end")
-    public static String SKY_WARS_GAME_END;
 
     @ConfigOption(path = "skywars.game-end-title")
     public static String SKY_WARS_GAME_END_TITLE;
@@ -648,29 +542,14 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "tgttos.start-preparation-subtitle")
     public static String TGTTOS_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "tgttos.game-start-soon")
-    public static String TGTTOS_GAME_START_SOON;
-
     @ConfigOption(path = "tgttos.game-start-soon-title")
     public static String TGTTOS_GAME_START_SOON_TITLE;
-
-    @ConfigOption(path = "tgttos.game-start-soon-subtitle")
-    public static String TGTTOS_GAME_START_SOON_SUBTITLE;
-
-    @ConfigOption(path = "tgttos.count-down")
-    public static String TGTTOS_COUNT_DOWN;
-
-    @ConfigOption(path = "tgttos.game-start")
-    public static String TGTTOS_GAME_START;
 
     @ConfigOption(path = "tgttos.game-start-title")
     public static String TGTTOS_GAME_START_TITLE;
 
     @ConfigOption(path = "tgttos.game-start-subtitle")
     public static String TGTTOS_GAME_START_SUBTITLE;
-
-    @ConfigOption(path = "tgttos.game-end")
-    public static String TGTTOS_GAME_END;
 
     @ConfigOption(path = "tgttos.game-end-title")
     public static String TGTTOS_GAME_END_TITLE;
@@ -689,9 +568,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tgttos.fall-into-void")
     public static String TGTTOS_FALL_INTO_VOID;
-
-    @ConfigOption(path = "tgttos.elytra-eliminated")
-    public static String TGTTOS_ELYTRA_ELIMINATED;
 
     // Ace Race
     @ConfigOption(path = "acerace.start-preparation")
@@ -804,26 +680,17 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "buildmart.start-preparation-subtitle", nullable = true)
     public static String BUILD_MART_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "buildmart.game-start", nullable = true)
-    public static String BUILD_MART_GAME_START;
-
     @ConfigOption(path = "buildmart.game-start-title", nullable = true)
     public static String BUILD_MART_GAME_START_TITLE;
 
     @ConfigOption(path = "buildmart.game-start-subtitle", nullable = true)
     public static String BUILD_MART_GAME_START_SUBTITLE;
 
-    @ConfigOption(path = "buildmart.game-end", nullable = true)
-    public static String BUILD_MART_GAME_END;
-
     @ConfigOption(path = "buildmart.game-end-title", nullable = true)
     public static String BUILD_MART_GAME_END_TITLE;
 
     @ConfigOption(path = "buildmart.game-end-subtitle", nullable = true)
     public static String BUILD_MART_GAME_END_SUBTITLE;
-
-    @ConfigOption(path = "buildmart.action-bar-count-down", nullable = true)
-    public static String BUILD_MART_ACTION_BAR_COUNT_DOWN;
 
     @ConfigOption(path = "buildmart.build-completed", nullable = true)
     public static String BUILD_MART_BUILD_COMPLETED;
@@ -937,23 +804,14 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "tntrun.start-preparation-subtitle")
     public static String TNT_RUN_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "tntrun.game-start")
-    public static String TNT_RUN_GAME_START;
-
     @ConfigOption(path = "tntrun.game-start-title")
     public static String TNT_RUN_GAME_START_TITLE;
 
     @ConfigOption(path = "tntrun.game-start-subtitle")
     public static String TNT_RUN_GAME_START_SUBTITLE;
 
-    @ConfigOption(path = "tntrun.count-down")
-    public static String TNT_RUN_COUNT_DOWN;
-
     @ConfigOption(path = "tntrun.action-bar-count-down")
     public static String TNT_RUN_ACTION_BAR_COUNT_DOWN;
-
-    @ConfigOption(path = "tntrun.game-end")
-    public static String TNT_RUN_GAME_END;
 
     @ConfigOption(path = "tntrun.game-end-title")
     public static String TNT_RUN_GAME_END_TITLE;
@@ -986,12 +844,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "dragoneggcarnival.game-start-soon-title")
     public static String DRAGON_EGG_CARNIVAL_GAME_START_SOON_TITLE;
 
-    @ConfigOption(path = "dragoneggcarnival.game-start-soon-subtitle")
-    public static String DRAGON_EGG_CARNIVAL_GAME_START_SOON_SUBTITLE;
-
-    @ConfigOption(path = "dragoneggcarnival.game-start")
-    public static String DRAGON_EGG_CARNIVAL_GAME_START;
-
     @ConfigOption(path = "dragoneggcarnival.game-start-title")
     public static String DRAGON_EGG_CARNIVAL_GAME_START_TITLE;
 
@@ -1000,9 +852,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "dragoneggcarnival.action-bar-count-down")
     public static String DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN;
-
-    @ConfigOption(path = "dragoneggcarnival.game-end")
-    public static String DRAGON_EGG_CARNIVAL_GAME_END;
 
     @ConfigOption(path = "dragoneggcarnival.game-end-title")
     public static String DRAGON_EGG_CARNIVAL_GAME_END_TITLE;
@@ -1056,17 +905,8 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "snowball.start-preparation-subtitle")
     public static String SNOWBALL_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "snowball.game-start-soon")
-    public static String SNOWBALL_GAME_START_SOON;
-
     @ConfigOption(path = "snowball.game-start-soon-title")
     public static String SNOWBALL_GAME_START_SOON_TITLE;
-
-    @ConfigOption(path = "snowball.game-start-soon-subtitle")
-    public static String SNOWBALL_GAME_START_SOON_SUBTITLE;
-
-    @ConfigOption(path = "snowball.game-start")
-    public static String SNOWBALL_GAME_START;
 
     @ConfigOption(path = "snowball.game-start-title")
     public static String SNOWBALL_GAME_START_TITLE;
@@ -1074,17 +914,11 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "snowball.game-start-subtitle")
     public static String SNOWBALL_GAME_START_SUBTITLE;
 
-    @ConfigOption(path = "snowball.game-end")
-    public static String SNOWBALL_GAME_END;
-
     @ConfigOption(path = "snowball.game-end-title")
     public static String SNOWBALL_GAME_END_TITLE;
 
     @ConfigOption(path = "snowball.game-end-subtitle")
     public static String SNOWBALL_GAME_END_SUBTITLE;
-
-    @ConfigOption(path = "snowball.count-down")
-    public static String SNOWBALL_COUNT_DOWN;
 
     @ConfigOption(path = "snowball.action-bar-count-down")
     public static String SNOWBALL_ACTION_BAR_COUNT_DOWN;
@@ -1101,7 +935,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "snowball.player-leave")
     public static String SNOWBALL_PLAYER_LEAVE;
 
-
     // Parkour Warrior
     @ConfigOption(path = "parkourwarrior.start-preparation")
     public static String PARKOUR_WARRIOR_START_PREPARATION;
@@ -1112,29 +945,14 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourwarrior.start-preparation-subtitle")
     public static String PARKOUR_WARRIOR_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "parkourwarrior.game-start-soon")
-    public static String PARKOUR_WARRIOR_GAME_START_SOON;
-
     @ConfigOption(path = "parkourwarrior.game-start-soon-title")
     public static String PARKOUR_WARRIOR_GAME_START_SOON_TITLE;
-
-    @ConfigOption(path = "parkourwarrior.game-start-soon-subtitle")
-    public static String PARKOUR_WARRIOR_GAME_START_SOON_SUBTITLE;
-
-    @ConfigOption(path = "parkourwarrior.count-down")
-    public static String PARKOUR_WARRIOR_COUNT_DOWN;
-
-    @ConfigOption(path = "parkourwarrior.game-start")
-    public static String PARKOUR_WARRIOR_GAME_START;
 
     @ConfigOption(path = "parkourwarrior.game-start-title")
     public static String PARKOUR_WARRIOR_GAME_START_TITLE;
 
     @ConfigOption(path = "parkourwarrior.game-start-subtitle")
     public static String PARKOUR_WARRIOR_GAME_START_SUBTITLE;
-
-    @ConfigOption(path = "parkourwarrior.game-end")
-    public static String PARKOUR_WARRIOR_GAME_END;
 
     @ConfigOption(path = "parkourwarrior.game-end-title")
     public static String PARKOUR_WARRIOR_GAME_END_TITLE;
@@ -1163,9 +981,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourwarrior.arrived-at-end-point")
     public static String PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED;
 
-    @ConfigOption(path = "parkourwarrior.team-arrived-at-end-point")
-    public static String PARKOUR_WARRIOR_TEAM_ARRIVED_AT_POINT;
-
     @ConfigOption(path = "parkourwarrior.fall-into-void")
     public static String PARKOUR_WARRIOR_FALL_INTO_VOID;
 
@@ -1181,7 +996,6 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "parkourwarrior.start-sudden-death-subtitle", nullable = true)
     public static String PARKOUR_WARRIOR_START_SUDDEN_DEATH_SUBTITLE;
 
-
     // Hoty Cody Dusky
     @ConfigOption(path = "hotycodydusky.start-preparation")
     public static String HOTY_CODY_DUSKY_START_PREPARATION;
@@ -1192,17 +1006,8 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "hotycodydusky.start-preparation-subtitle")
     public static String HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "hotycodydusky.game-start-soon")
-    public static String HOTY_CODY_DUSKY_GAME_START_SOON;
-
     @ConfigOption(path = "hotycodydusky.game-start-soon-title")
     public static String HOTY_CODY_DUSKY_GAME_START_SOON_TITLE;
-
-    @ConfigOption(path = "hotycodydusky.game-start-soon-subtitle")
-    public static String HOTY_CODY_DUSKY_GAME_START_SOON_SUBTITLE;
-
-    @ConfigOption(path = "hotycodydusky.game-start")
-    public static String HOTY_CODY_DUSKY_GAME_START;
 
     @ConfigOption(path = "hotycodydusky.game-start-title")
     public static String HOTY_CODY_DUSKY_GAME_START_TITLE;
@@ -1210,17 +1015,11 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "hotycodydusky.game-start-subtitle")
     public static String HOTY_CODY_DUSKY_GAME_START_SUBTITLE;
 
-    @ConfigOption(path = "hotycodydusky.game-end")
-    public static String HOTY_CODY_DUSKY_GAME_END;
-
     @ConfigOption(path = "hotycodydusky.game-end-title")
     public static String HOTY_CODY_DUSKY_GAME_END_TITLE;
 
     @ConfigOption(path = "hotycodydusky.game-end-subtitle")
     public static String HOTY_CODY_DUSKY_GAME_END_SUBTITLE;
-
-    @ConfigOption(path = "hotycodydusky.count-down")
-    public static String HOTY_CODY_DUSKY_COUNT_DOWN;
 
     @ConfigOption(path = "hotycodydusky.action-bar-count-down")
     public static String HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN;
@@ -1239,13 +1038,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "hotycodydusky.whole-team-was-killed")
     public static String HOTY_CODY_DUSKY_WHOLE_TEAM_WAS_KILLED;
-
-    @ConfigOption(path = "hotycodydusky.boss-bar.chaser")
-    public static String HOTY_CODY_DUSKY_BOSS_BAR_CHASER;
-
-    @ConfigOption(path = "hotycodydusky.boss-bar.escaper")
-    public static String HOTY_CODY_DUSKY_BOSS_BAR_ESCAPER;
-
 
     // Placeholder
     @ConfigOption(path = "placeholder.none")
@@ -1290,9 +1082,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "vote.vote-failed-not-player")
     public static String VOTE_VOTE_FAILED_NOT_PLAYER;
-
-    @ConfigOption(path = "vote.vote-board-bar")
-    public static String VOTE_VOTE_BOARD_BAR;
 
     @ConfigOption(path = "vote.vote-board-row")
     public static String VOTE_VOTE_BOARD_ROW;

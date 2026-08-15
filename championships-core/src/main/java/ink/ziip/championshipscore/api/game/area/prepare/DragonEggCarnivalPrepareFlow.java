@@ -28,11 +28,11 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
-        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.site-boundaries")), Component.text(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.use-worldedit-to-select-the-complete-game-area")),
+        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.copy.site-boundaries")), Component.text(GuiConfig.text("map-editor.copy.use-worldedit-to-select-the-complete-game-area")),
                 Material.BEDROCK, t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.site-boundaries-set"))));
-        steps.add(location("spectator_spawn", GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.spectator-spawn-point"), Material.ENDER_EYE,
-                t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l), GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.spectator-spawn-point-has-been-set")));
+                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.site-boundaries-set"))));
+        steps.add(location("spectator_spawn", GuiConfig.text("map-editor.copy.spectator-spawn-point"), Material.ENDER_EYE,
+                t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l), GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set")));
         return steps;
     }
 
@@ -66,7 +66,7 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
     private static DragonEggCarnivalConfig cfg(SetupTarget target) { return (DragonEggCarnivalConfig) target.config(); }
     private static PrepareStep location(String key, String name, Material icon, java.util.function.Predicate<SetupTarget> set,
                                         java.util.function.BiConsumer<SetupTarget, Location> setter, String done) {
-        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.after-reaching-the-target-position-click")), icon, set, setter,
+        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.copy.after-reaching-the-target-position-click")), icon, set, setter,
                 Utils.formatAdminSuccess(done));
     }
 }

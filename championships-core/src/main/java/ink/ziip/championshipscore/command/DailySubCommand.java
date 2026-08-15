@@ -34,7 +34,7 @@ public final class DailySubCommand extends BaseSubCommand {
             if (args.length > 1 && game == null) { message(sender, "&c未知游戏。"); return true; }
             DailyStatSnapshot stat = plugin.getDailyManager().statsManager().stat(player.getUniqueId(), game);
             message(sender, "&e" + (game == null ? "综合" : game.name()) + " &7| &f场次 " + stat.gamesPlayed()
-                    + " &7| &a胜场 " + stat.wins());
+                    + " &7| &b具体数据请打开个人战绩菜单查看");
             return true;
         }
         sendUsage(sender);

@@ -47,7 +47,7 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
     public String stateText(PrepareSession session) {
         if (session == null) return null;
         Option option = find(config(session).getAreaType());
-        return option == null ? GuiConfig.text("map-editor.games.tgttos.steps.area-type.not-set") : option.name() + "（" + option.description() + "）";
+        return option == null ? GuiConfig.text("map-editor.copy.not-set") : option.name() + "（" + option.description() + "）";
     }
 
     @Override

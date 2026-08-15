@@ -361,7 +361,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             int completedLines = round.countCompletedLines(team);
             int completedTasks = round.completedCount(team);
             plugin.getDailyManager().statsManager().recordBingoProgress(
-                    this, team, completedLines, completedTasks);
+                    this, team, completedLines, completedTasks, round.countFirstCompletions(team));
             if (completedLines > 0) {
                 plugin.getDailyManager().statsManager().recordTeamMilestone(this, team,
                         DailyRecordType.BINGO_FIRST_LINE, elapsedMillis, player.getUniqueId());

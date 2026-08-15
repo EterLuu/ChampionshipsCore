@@ -9,6 +9,7 @@ import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.WanderingTrader;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -77,6 +78,7 @@ public class WorldManager extends BaseManager {
         lobby.setSpawnFlags(false, true);
         lobby.setAutoSave(true);
         lobby.setGameRule(GameRules.SPAWN_MOBS, true);
+        disableWanderingTraders(lobby);
         lobby.setGameRule(GameRules.PVP, true);
         lobby.setGameRule(GameRules.SEND_COMMAND_FEEDBACK, false);
         lobby.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
@@ -146,6 +148,7 @@ public class WorldManager extends BaseManager {
         world.setGameRule(GameRules.PVP, true);
         world.setGameRule(GameRules.SEND_COMMAND_FEEDBACK, false);
         world.setGameRule(GameRules.SPAWN_MOBS, false);
+        disableWanderingTraders(world);
         world.setGameRule(GameRules.MOB_GRIEFING, true);
         world.setGameRule(GameRules.SHOW_DEATH_MESSAGES, false);
         world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
@@ -182,6 +185,7 @@ public class WorldManager extends BaseManager {
         world.setSpawnFlags(true, true);
         world.setAutoSave(true);
         world.setGameRule(GameRules.SPAWN_MOBS, true);
+        disableWanderingTraders(world);
         world.setGameRule(GameRules.MOB_GRIEFING, true);
         world.setGameRule(GameRules.SPECTATORS_GENERATE_CHUNKS, false);
         world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
@@ -197,6 +201,18 @@ public class WorldManager extends BaseManager {
                         + " naturalAnimals=" + world.getAllowAnimals()
                         + " spawnMobs=" + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
         return true;
+    }
+
+    /**
+     * Wandering traders are not part of any lobby or minigame and can otherwise persist across
+     * world reloads even after natural spawning is disabled. The gamerule blocks future spawns;
+     * removing loaded traders also cleans up entities created before this policy was applied.
+     */
+    private void disableWanderingTraders(World world) {
+        world.setGameRule(GameRules.SPAWN_WANDERING_TRADERS, false);
+        for (WanderingTrader trader : world.getEntitiesByClass(WanderingTrader.class)) {
+            trader.remove();
+        }
     }
 
     public static boolean isBingoWorldName(String name) {

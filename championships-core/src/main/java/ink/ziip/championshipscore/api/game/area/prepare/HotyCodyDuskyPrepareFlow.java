@@ -34,15 +34,15 @@ public final class HotyCodyDuskyPrepareFlow extends PrepareFlowDefinition {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
-                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.site-boundaries")), Component.text(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.use-worldedit-to-select-the-complete-game-area")),
+                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.copy.site-boundaries")), Component.text(GuiConfig.text("map-editor.copy.use-worldedit-to-select-the-complete-game-area")),
                         Material.BEDROCK, t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                        (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.site-boundaries-set"))),
-                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.spectator-spawn-point")), Component.text(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.stand-in-a-spectator-position-and-click")),
+                        (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.site-boundaries-set"))),
+                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")), Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")),
                         Material.ENDER_EYE, t -> cfg(t).getSpectatorSpawnPoint() != null,
-                        (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.spectator-spawn-point-has-been-set"))),
-                new StandAndRunStep("player_spawn", Component.text(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.player-spawn-point")), Component.text(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.click-after-standing-at-the-birth-position")),
+                        (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set"))),
+                new StandAndRunStep("player_spawn", Component.text(GuiConfig.text("map-editor.copy.player-spawn-point")), Component.text(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.click-after-standing-at-the-birth-position")),
                         Material.PLAYER_HEAD, t -> cfg(t).getPlayerSpawnPoint() != null,
-                        (t, l) -> cfg(t).setPlayerSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.hoty-cody-dusky.setup.player-spawn-point-has-been-set"))));
+                        (t, l) -> cfg(t).setPlayerSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.player-spawn-point-has-been-set"))));
     }
     private static HotyCodyDuskyConfig cfg(SetupTarget target) { return (HotyCodyDuskyConfig) target.config(); }
 }

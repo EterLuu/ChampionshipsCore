@@ -2,6 +2,8 @@ package ink.ziip.championshipscore.api.daily.dao;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.daily.DailyRecordType;
+import ink.ziip.championshipscore.api.daily.entry.DailyMapStatEntry;
+import ink.ziip.championshipscore.api.daily.entry.DailyMatchAggregateEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyMatchResultEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyStatEntry;
@@ -85,8 +87,69 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
     }
 
     @Override
-    public boolean saveMatch(@NotNull List<DailyMatchResultEntry> results) {
-        if (results.isEmpty()) return true;
+    public @NotNull List<DailyMapStatEntry> getPlayerMapStats() {
+        try (Connection connection = plugin.getDatabaseManager().getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT `uuid`, `username`, `game`, `map`, `gamesPlayed`, `wins`,
+                            `maxTasks`, `maxLines`, `maxFirstTasks`, `maxDragonDamage`,
+                            `firstLiberate`, `firstNextGen`, `firstGateway`, `updatedAt`
+                     FROM `daily_map_player_stats`
+                     """);
+             ResultSet result = statement.executeQuery()) {
+            List<DailyMapStatEntry> entries = new ArrayList<>();
+            while (result.next()) {
+                try {
+                    entries.add(new DailyMapStatEntry(
+                            UUID.fromString(result.getString("uuid")), result.getString("username"),
+                            GameTypeEnum.valueOf(result.getString("game")), result.getString("map"),
+                            result.getLong("gamesPlayed"), result.getLong("wins"),
+                            result.getLong("maxTasks"), result.getLong("maxLines"),
+                            result.getLong("maxFirstTasks"), result.getDouble("maxDragonDamage"),
+                            result.getLong("firstLiberate"), result.getLong("firstNextGen"),
+                            result.getLong("firstGateway"), result.getLong("updatedAt")));
+                } catch (IllegalArgumentException exception) {
+                    logFailure("解析日常地图统计", exception);
+                }
+            }
+            return entries;
+        } catch (SQLException exception) {
+            logFailure("查询日常地图统计", exception);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public @NotNull List<DailyMatchAggregateEntry> getMatchResultMapAggregates() {
+        try (Connection connection = plugin.getDatabaseManager().getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT `uuid`, `game`, `map`, COUNT(*) AS `gamesPlayed`,
+                            COALESCE(SUM(`won`), 0) AS `wins`,
+                            MAX(`lineCount`) AS `maxLines`, MAX(`completedTasks`) AS `maxCompletedTasks`
+                     FROM `daily_match_results`
+                     GROUP BY `uuid`, `game`, `map`
+                     """);
+             ResultSet result = statement.executeQuery()) {
+            List<DailyMatchAggregateEntry> entries = new ArrayList<>();
+            while (result.next()) {
+                try {
+                    entries.add(new DailyMatchAggregateEntry(
+                            UUID.fromString(result.getString("uuid")),
+                            GameTypeEnum.valueOf(result.getString("game")), result.getString("map"),
+                            result.getLong("gamesPlayed"), result.getLong("wins"),
+                            result.getLong("maxLines"), result.getLong("maxCompletedTasks")));
+                } catch (IllegalArgumentException exception) {
+                    logFailure("解析日常历史地图聚合", exception);
+                }
+            }
+            return entries;
+        } catch (SQLException exception) {
+            logFailure("查询日常历史地图聚合", exception);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public boolean saveMatch(@NotNull List<DailyMatchResultEntry> results) {        if (results.isEmpty()) return true;
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             connection.setAutoCommit(false);
             try (PreparedStatement result = connection.prepareStatement("""
@@ -167,6 +230,52 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
             return true;
         } catch (SQLException exception) {
             logFailure("保存日常纪录", exception);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean saveMapStats(@NotNull List<DailyMapStatEntry> stats) {
+        if (stats.isEmpty()) return true;
+        try (Connection connection = plugin.getDatabaseManager().getConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO `daily_map_player_stats`
+                     (`uuid`,`username`,`game`,`map`,`gamesPlayed`,`wins`,`maxTasks`,`maxLines`,
+                      `maxFirstTasks`,`maxDragonDamage`,`firstLiberate`,`firstNextGen`,`firstGateway`,`updatedAt`)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     ON DUPLICATE KEY UPDATE `username`=VALUES(`username`),
+                     `gamesPlayed`=`gamesPlayed`+VALUES(`gamesPlayed`),
+                     `wins`=`wins`+VALUES(`wins`),
+                     `maxTasks`=GREATEST(`maxTasks`,VALUES(`maxTasks`)),
+                     `maxLines`=GREATEST(`maxLines`,VALUES(`maxLines`)),
+                     `maxFirstTasks`=GREATEST(`maxFirstTasks`,VALUES(`maxFirstTasks`)),
+                     `maxDragonDamage`=GREATEST(`maxDragonDamage`,VALUES(`maxDragonDamage`)),
+                     `firstLiberate`=`firstLiberate`+VALUES(`firstLiberate`),
+                     `firstNextGen`=`firstNextGen`+VALUES(`firstNextGen`),
+                     `firstGateway`=`firstGateway`+VALUES(`firstGateway`),
+                     `updatedAt`=VALUES(`updatedAt`)
+                     """)) {
+            for (DailyMapStatEntry entry : stats) {
+                statement.setString(1, entry.uuid().toString());
+                statement.setString(2, entry.username());
+                statement.setString(3, entry.game().name());
+                statement.setString(4, entry.map());
+                statement.setLong(5, entry.gamesPlayed());
+                statement.setLong(6, entry.wins());
+                statement.setLong(7, entry.maxTasks());
+                statement.setLong(8, entry.maxLines());
+                statement.setLong(9, entry.maxFirstTasks());
+                statement.setDouble(10, entry.maxDragonDamage());
+                statement.setLong(11, entry.firstLiberate());
+                statement.setLong(12, entry.firstNextGen());
+                statement.setLong(13, entry.firstGateway());
+                statement.setLong(14, entry.updatedAt());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+            return true;
+        } catch (SQLException exception) {
+            logFailure("保存日常地图统计", exception);
             return false;
         }
     }

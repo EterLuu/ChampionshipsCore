@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
@@ -27,6 +29,7 @@ import java.util.List;
 
 /** Safe list editor: add, inspect, edit, reorder, or remove one configured row at a time. */
 public final class ListStepGui {
+    private static final String MENU_PATH = MenuId.MAP_EDITOR_LIST_EDITOR.path();
     private static final int ADD_SLOT = 0;
     private static final int VIEW_SLOT = 1;
     private static final int INFO_SLOT = 4;
@@ -95,7 +98,7 @@ public final class ListStepGui {
                             @NotNull PrepareSession session, @NotNull PrepareStep step) {
         Holder holder = new Holder(step.key());
         Inventory inv = Bukkit.createInventory(holder, 9,
-                Component.text(GuiConfig.text("map-editor.menus.list-editor.point-management") + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
+                Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.point-management") + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
                         .decoration(TextDecoration.ITALIC, false));
         holder.inventory = inv;
         refresh(inv, session, step);
@@ -105,12 +108,19 @@ public final class ListStepGui {
     private static void refresh(@NotNull Inventory inv, @NotNull PrepareSession session, @NotNull PrepareStep step) {
         inv.setItem(ADD_SLOT, item(Material.LIME_WOOL, step.listAddLabel(), NamedTextColor.GREEN,
                 List.of(step.listAddHint().color(NamedTextColor.GRAY))));
-        inv.setItem(VIEW_SLOT, item(Material.BOOK, Component.text(GuiConfig.text("map-editor.menus.list-editor.view-the-set-list")), NamedTextColor.AQUA,
-                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.edit-serial-number-item-by-item-actual-information-or-delete")).color(NamedTextColor.GRAY))));
-        inv.setItem(INFO_SLOT, item(Material.PAPER, Component.text(GuiConfig.text("map-editor.menus.list-editor.current-number-of-points") + step.listCount(session)), NamedTextColor.WHITE,
-                List.of(Component.text(step.isSet(session) ? GuiConfig.text("map-editor.menus.list-editor.already-set") : GuiConfig.text("map-editor.menus.list-editor.not-set")).color(NamedTextColor.GRAY))));
-        inv.setItem(BACK_SLOT, item(Material.ARROW, Component.text(GuiConfig.text("map-editor.menus.list-editor.return")), NamedTextColor.WHITE,
-                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.return-to-prepare-inventory")).color(NamedTextColor.GRAY))));
+        inv.setItem(VIEW_SLOT, configured("view", null, java.util.Map.of(), Material.BOOK,
+                Component.text(GuiConfig.text(MENU_PATH + ".copy.view-the-set-list")),
+                List.of(Component.text(GuiConfig.text(MENU_PATH + ".copy.edit-serial-number-item-by-item-actual-information-or-delete")).color(NamedTextColor.GRAY))));
+        inv.setItem(INFO_SLOT, item(Material.PAPER, Component.text(GuiConfig.text(MENU_PATH + ".copy.current-number-of-points") + step.listCount(session)), NamedTextColor.WHITE,
+                List.of(Component.text(step.isSet(session) ? GuiConfig.text("map-editor.copy.already-set") : GuiConfig.text("map-editor.copy.not-set")).color(NamedTextColor.GRAY))));
+        inv.setItem(BACK_SLOT, configured("back", null, java.util.Map.of(), Material.ARROW,
+                Component.text(GuiConfig.text("map-editor.copy.return")),
+                List.of(Component.text(GuiConfig.text("map-editor.copy.return-to-prepare-toolbar")).color(NamedTextColor.GRAY))));
+    }
+
+    private static ItemStack configured(@NotNull String item, String state, @NotNull java.util.Map<String, ?> placeholders,
+                                        @NotNull Material material, @NotNull Component title, @NotNull List<Component> lore) {
+        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders, material, title, lore, false);
     }
 
     public static void handleClick(@NotNull PrepareSessionManager manager, @NotNull InventoryClickEvent event,
@@ -131,7 +141,7 @@ public final class ListStepGui {
         switch (event.getRawSlot()) {
             case ADD_SLOT -> {
                 if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
-                    Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.list-editor.please-go-to-the-current-map-world-first") + session.getTarget().worldName());
+                    Utils.sendAdminError(player, GuiConfig.text("map-editor.copy.please-go-to-the-current-map-world-first") + session.getTarget().worldName());
                     return;
                 }
                 String message = step.listAdd(session, player);
@@ -153,7 +163,7 @@ public final class ListStepGui {
                                     @NotNull PrepareStep step) {
         EntryHolder holder = new EntryHolder(session, step.key());
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text(GuiConfig.text("map-editor.menus.list-editor.list-set") + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
+                Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.list-set") + PlainTextComponentSerializer.plainText().serialize(step.displayName()))
                         .decoration(TextDecoration.ITALIC, false));
         refreshEntries(holder, step);
         player.openInventory(holder.inventory);
@@ -172,21 +182,21 @@ public final class ListStepGui {
                 PrepareStep.ListEntry entry = entries.get(index);
                 List<Component> lore = new ArrayList<>();
                 for (String detail : entry.details()) lore.add(Component.text(detail).color(NamedTextColor.GRAY));
-                lore.add(Component.text(GuiConfig.text("map-editor.menus.list-editor.click-to-edit-this")).color(NamedTextColor.AQUA));
+                lore.add(Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.click-to-edit-this")).color(NamedTextColor.AQUA));
                 inv.setItem(slot, item(Material.PAPER, Component.text(entry.title()), NamedTextColor.WHITE, lore));
             } else {
                 inv.setItem(slot, filler());
             }
         }
         inv.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? item(Material.ARROW, Component.text(GuiConfig.text("map-editor.menus.list-editor.previous-page")), NamedTextColor.WHITE,
-                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.ordinal-prefix") + holder.page + GuiConfig.text("map-editor.menus.list-editor.page-suffix")).color(NamedTextColor.GRAY)))
+                ? item(Material.ARROW, Component.text(GuiConfig.text("map-editor.copy.previous-page")), NamedTextColor.WHITE,
+                List.of(Component.text(GuiConfig.text("map-editor.copy.ordinal-prefix") + holder.page + GuiConfig.text("map-editor.copy.page-suffix")).color(NamedTextColor.GRAY)))
                 : filler());
-        inv.setItem(ENTRY_BACK_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("map-editor.menus.list-editor.return-to-point-management")), NamedTextColor.RED,
+        inv.setItem(ENTRY_BACK_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.return-to-point-management")), NamedTextColor.RED,
                 List.of()));
         inv.setItem(NEXT_SLOT, holder.page + 1 < pageCount
-                ? item(Material.ARROW, Component.text(GuiConfig.text("map-editor.menus.list-editor.next-page")), NamedTextColor.WHITE,
-                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.ordinal-prefix") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("map-editor.menus.list-editor.page-suffix")).color(NamedTextColor.GRAY)))
+                ? item(Material.ARROW, Component.text(GuiConfig.text("map-editor.copy.next-page")), NamedTextColor.WHITE,
+                List.of(Component.text(GuiConfig.text("map-editor.copy.ordinal-prefix") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("map-editor.copy.page-suffix")).color(NamedTextColor.GRAY)))
                 : filler());
     }
 
@@ -234,24 +244,24 @@ public final class ListStepGui {
                                 @NotNull PrepareStep step, int index) {
         EditHolder holder = new EditHolder(session, step.key(), index);
         holder.inventory = Bukkit.createInventory(holder, 9,
-                Component.text(GuiConfig.text("map-editor.menus.list-editor.edit-point") + (index + 1)).decoration(TextDecoration.ITALIC, false));
-        holder.inventory.setItem(0, item(Material.NAME_TAG, Component.text(GuiConfig.text("map-editor.menus.list-editor.edit-serial-number")), NamedTextColor.YELLOW,
-                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.adjust-the-order-of-this-item-in-the-list")).color(NamedTextColor.GRAY))));
+                Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.edit-point") + (index + 1)).decoration(TextDecoration.ITALIC, false));
+        holder.inventory.setItem(0, item(Material.NAME_TAG, Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.edit-serial-number")), NamedTextColor.YELLOW,
+                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.adjust-the-order-of-this-item-in-the-list")).color(NamedTextColor.GRAY))));
         if (step instanceof AceRaceRespawnPointListStep respawnStep) {
-            holder.inventory.setItem(2, item(Material.IRON_BARS, Component.text(GuiConfig.text("map-editor.menus.list-editor.edit-own-progress-line")), NamedTextColor.LIGHT_PURPLE,
+            holder.inventory.setItem(2, item(Material.IRON_BARS, Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.edit-own-progress-line")), NamedTextColor.LIGHT_PURPLE,
                     List.of(Component.text(respawnStep.bindingText(session, index)).color(NamedTextColor.GRAY),
-                            Component.text(GuiConfig.text("map-editor.menus.list-editor.select-which-progress-line-the-respawn-point-is-behind")).color(NamedTextColor.GRAY))));
+                            Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.select-which-progress-line-the-respawn-point-is-behind")).color(NamedTextColor.GRAY))));
         } else if (step instanceof AceRaceProgressPointListStep progressPointStep) {
             holder.inventory.setItem(2, item(Material.HEART_OF_THE_SEA,
-                    Component.text(GuiConfig.text("map-editor.menus.list-editor.edit-stage-equipment")), NamedTextColor.LIGHT_PURPLE,
+                    Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.edit-stage-equipment")), NamedTextColor.LIGHT_PURPLE,
                     List.of(Component.text(progressPointStep.equipmentText(session, index)).color(NamedTextColor.GRAY),
-                            Component.text(GuiConfig.text("map-editor.menus.list-editor.do-not-modify-line-selection-and-drop-height")).color(NamedTextColor.GRAY))));
+                            Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.do-not-modify-line-selection-and-drop-height")).color(NamedTextColor.GRAY))));
         }
-        holder.inventory.setItem(4, item(Material.COMPASS, Component.text(GuiConfig.text("map-editor.menus.list-editor.edit-actual-information")), NamedTextColor.AQUA,
-                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.use-current-position-current-selection-override")).color(NamedTextColor.GRAY))));
-        holder.inventory.setItem(6, item(Material.RED_WOOL, Component.text(GuiConfig.text("map-editor.menus.list-editor.delete-this-item")), NamedTextColor.RED,
-                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.only-delete-the-current-item")).color(NamedTextColor.GRAY))));
-        holder.inventory.setItem(8, item(Material.ARROW, Component.text(GuiConfig.text("map-editor.menus.list-editor.return-to-list")), NamedTextColor.WHITE, List.of()));
+        holder.inventory.setItem(4, item(Material.COMPASS, Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.edit-actual-information")), NamedTextColor.AQUA,
+                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.use-current-position-current-selection-override")).color(NamedTextColor.GRAY))));
+        holder.inventory.setItem(6, item(Material.RED_WOOL, Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.delete-this-item")), NamedTextColor.RED,
+                List.of(Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.only-delete-the-current-item")).color(NamedTextColor.GRAY))));
+        holder.inventory.setItem(8, item(Material.ARROW, Component.text(GuiConfig.text("map-editor.menus.list-editor.copy.return-to-list")), NamedTextColor.WHITE, List.of()));
         player.openInventory(holder.inventory);
     }
 
@@ -271,7 +281,7 @@ public final class ListStepGui {
             return;
         }
         switch (event.getRawSlot()) {
-            case 0 -> AnvilInputGui.openInteger(player, GuiConfig.text("map-editor.menus.list-editor.enter-new-serial-number"), holder.index + 1, value -> {
+            case 0 -> AnvilInputGui.openInteger(player, GuiConfig.text("map-editor.menus.list-editor.copy.enter-new-serial-number"), holder.index + 1, value -> {
                 String message = step.listSetOrder(session, player, holder.index, value);
                 if (message != null) player.sendMessage(message);
                 openEntries(player, session, step);
@@ -284,7 +294,7 @@ public final class ListStepGui {
             }
             case 4 -> {
                 if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
-                    Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.list-editor.please-go-to-the-current-map-world-first") + session.getTarget().worldName());
+                    Utils.sendAdminError(player, GuiConfig.text("map-editor.copy.please-go-to-the-current-map-world-first") + session.getTarget().worldName());
                     return;
                 }
                 String message = step.listEdit(session, player, holder.index);

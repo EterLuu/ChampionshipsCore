@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
@@ -19,13 +21,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /** Categorized personal records: game cards first, map-level details on the second screen. */
 final class DailyStatsMenu {
+    private static final String MENU_PATH = MenuId.DAILY_STATISTICS.path();
     private static final int SIZE = 54;
     private static final int SUMMARY_SLOT = 4;
     private static final int BACK_SLOT = 45;
@@ -37,8 +40,8 @@ final class DailyStatsMenu {
     private static final List<Integer> GAME_SLOTS_TWO = List.of(21, 23);
     private static final List<Integer> GAME_SLOTS_THREE = List.of(20, 22, 24);
     private static final List<Integer> GAME_SLOTS_MANY = List.of(20, 22, 24, 29, 31, 33);
-    private static final List<Integer> DETAIL_SLOTS = createDetailSlots();
-    private static final Map<GameTypeEnum, List<RecordDefinition>> RECORDS = createRecordDefinitions();
+    /** Map cards per detail page: three centered rows of at most seven items. */
+    static final int MAP_PAGE_SIZE = 21;
 
     private final DailyManager daily;
 
@@ -49,7 +52,7 @@ final class DailyStatsMenu {
     void open(Player player) {
         StatsHolder holder = new StatsHolder(player.getUniqueId());
         holder.inventory = Bukkit.createInventory(holder, SIZE,
-                Component.text(GuiConfig.text("daily.menus.statistics.personal-record"), NamedTextColor.DARK_AQUA).decorate(TextDecoration.BOLD));
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.personal-record"), NamedTextColor.DARK_AQUA).decorate(TextDecoration.BOLD));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -102,8 +105,6 @@ final class DailyStatsMenu {
         } else if (slot == REFRESH_SLOT) {
             refresh(holder);
             clickSound(player, 1.1F);
-        } else if (slot == PAGE_SLOT) {
-            clickSound(player, 0.9F);
         } else if (slot == CLOSE_SLOT) {
             player.closeInventory();
         } else if (slot == 48 && holder.page > 0) {
@@ -120,7 +121,7 @@ final class DailyStatsMenu {
     private void openDetail(Player player, GameTypeEnum game) {
         DetailHolder holder = new DetailHolder(player.getUniqueId(), game);
         holder.inventory = Bukkit.createInventory(holder, SIZE,
-                Component.text(GuiConfig.text("daily.menus.statistics.statistics-header-prefix"), NamedTextColor.DARK_AQUA)
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.statistics-header-prefix"), NamedTextColor.DARK_AQUA)
                         .append(Component.text(game.toString(), gameColor(game)))
                         .decorate(TextDecoration.BOLD));
         refresh(holder);
@@ -146,16 +147,16 @@ final class DailyStatsMenu {
             holder.gamesBySlot.put(slot, game);
         }
         if (games.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text(GuiConfig.text("daily.menus.statistics.no-open-games-yet"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.statistics.completed-records-will-be-retained-forever"), NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.no-open-games-yet"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.completed-records-will-be-retained-forever"), NamedTextColor.DARK_GRAY)), false));
 
-        inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("daily.menus.statistics.return-to-lobby"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
-        inventory.setItem(LEADERBOARD_SLOT, item(Material.GOLD_INGOT,
-                Component.text(GuiConfig.text("daily.menus.statistics.view-the-leaderboard"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.statistics.view-win-and-personal-record-rankings"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("daily.menus.statistics.click-to-open"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)), false));
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("daily.menus.statistics.close"), NamedTextColor.RED), List.of(), false));
+        inventory.setItem(BACK_SLOT, configured("back", null, Map.of(), item(Material.ARROW,
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.return-to-lobby"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
+        inventory.setItem(LEADERBOARD_SLOT, configured("leaderboard", null, Map.of(), item(Material.GOLD_INGOT,
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.view-the-leaderboard"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.view-game-data-and-personal-record-rankings"), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.click-to-open"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)), false)));
+        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.close"), NamedTextColor.RED), List.of(), false)));
     }
 
     private void refresh(DetailHolder holder) {
@@ -165,133 +166,107 @@ final class DailyStatsMenu {
 
         DailyStatSnapshot stat = daily.statsManager().stat(holder.viewer, holder.game);
         inventory.setItem(SUMMARY_SLOT, gameSummary(holder.game, stat));
-        List<String> maps = holder.game == GameTypeEnum.Bingo ? List.of()
-                : daily.knownMaps(holder.game).stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
-        holder.pageCount = Math.max(1, (maps.size() + DETAIL_SLOTS.size() - 1) / DETAIL_SLOTS.size());
+        List<String> maps = daily.knownMaps(holder.game).stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
+        holder.pageCount = Math.max(1, (maps.size() + MAP_PAGE_SIZE - 1) / MAP_PAGE_SIZE);
         holder.page = Math.max(0, Math.min(holder.page, holder.pageCount - 1));
 
-        if (holder.game == GameTypeEnum.Bingo) {
-            inventory.setItem(20, metricItem(Material.GOLDEN_SWORD, GuiConfig.text("daily.menus.statistics.victory"), stat.wins() + GuiConfig.text("daily.menus.statistics.match-count-suffix"),
-                    GuiConfig.text("daily.menus.statistics.bingo-sessions-won"), NamedTextColor.GREEN, stat.wins() > 0));
-            inventory.setItem(22, metricItem(Material.PAINTING, GuiConfig.text("daily.menus.statistics.number-of-connections"), stat.lineCount() + GuiConfig.text("daily.menus.statistics.record-count-suffix"),
-                    GuiConfig.text("daily.menus.statistics.cumulative-completed-connections-across-all-bingo-games"), NamedTextColor.LIGHT_PURPLE, stat.lineCount() > 0));
-            inventory.setItem(24, metricItem(Material.FILLED_MAP, GuiConfig.text("daily.menus.statistics.total-tasks-completed"), stat.completedTasks() + GuiConfig.text("daily.menus.statistics.item-count-suffix"),
-                    GuiConfig.text("daily.menus.statistics.cumulative-completed-tasks-for-all-bingo-games"), NamedTextColor.AQUA, stat.completedTasks() > 0));
-            inventory.setItem(31, metricItem(Material.CLOCK, GuiConfig.text("daily.menus.statistics.most-completed-in-a-single-game"), stat.maxCompletedTasks() + GuiConfig.text("daily.menus.statistics.item-count-suffix"),
-                    GuiConfig.text("daily.menus.statistics.highest-number-of-tasks-completed-in-a-bingo-game"), NamedTextColor.GOLD, stat.maxCompletedTasks() > 0));
-        } else {
-            int from = holder.page * DETAIL_SLOTS.size();
-            int to = Math.min(maps.size(), from + DETAIL_SLOTS.size());
-            for (int index = from; index < to; index++) {
-                inventory.setItem(DETAIL_SLOTS.get(index - from), mapItem(holder.viewer, holder.game, maps.get(index)));
-            }
-            if (maps.isEmpty()) inventory.setItem(31, item(Material.GRAY_DYE,
-                    Component.text(GuiConfig.text("daily.menus.statistics.no-subdivision-records-yet"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                    List.of(Component.text(GuiConfig.text("daily.menus.statistics.after-completing-the-corresponding-game-the-map-record-will-be-displayed-here"), NamedTextColor.DARK_GRAY)), false));
+        int from = holder.page * MAP_PAGE_SIZE;
+        int to = Math.min(maps.size(), from + MAP_PAGE_SIZE);
+        List<Integer> slots = mapSlots(to - from);
+        for (int index = from; index < to; index++) {
+            inventory.setItem(slots.get(index - from), mapItem(holder.viewer, holder.game, maps.get(index)));
         }
+        if (maps.isEmpty()) inventory.setItem(31, item(Material.GRAY_DYE,
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.no-subdivision-records-yet"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.after-completing-the-corresponding-game-the-map-record-will-be-displayed-here"), NamedTextColor.DARK_GRAY)), false));
 
-        inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("daily.menus.statistics.return-to-game-category"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false));
-        inventory.setItem(LEADERBOARD_SLOT, item(Material.GOLD_INGOT,
-                Component.text(GuiConfig.text("daily.menus.statistics.view-the-leaderboard"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.statistics.view-win-and-personal-record-rankings"), NamedTextColor.GRAY)), false));
-        if (holder.page > 0) inventory.setItem(48, item(Material.ARROW,
-                Component.text(GuiConfig.text("daily.menus.statistics.previous-page"), NamedTextColor.WHITE), List.of(), false));
-        inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
-                Component.text(GuiConfig.text("daily.menus.statistics.refresh"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.statistics.update-the-detailed-records-of-the-current-game"), NamedTextColor.GRAY)), false));
-        if (holder.game == GameTypeEnum.Bingo) {
-            inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                    Component.text(GuiConfig.text("daily.menus.statistics.all-maps-accumulated"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                    List.of(Component.text(GuiConfig.text("daily.menus.statistics.bingo-data-accumulated-by-game-not-split-by-map"), NamedTextColor.GRAY)), false));
-        } else {
-            inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                    Component.text(GuiConfig.text("daily.menus.statistics.ordinal-prefix") + (holder.page + 1) + " / " + holder.pageCount + GuiConfig.text("daily.menus.statistics.page-suffix"), NamedTextColor.AQUA)
-                            .decorate(TextDecoration.BOLD),
-                    List.of(Component.text(maps.size() + GuiConfig.text("daily.menus.statistics.map"), NamedTextColor.GRAY)), false));
-            if (holder.page + 1 < holder.pageCount) inventory.setItem(52, item(Material.ARROW,
-                    Component.text(GuiConfig.text("daily.menus.statistics.next-page"), NamedTextColor.WHITE), List.of(), false));
-        }
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("daily.menus.statistics.close"), NamedTextColor.RED), List.of(), false));
+        inventory.setItem(BACK_SLOT, configured("back", null, Map.of(), item(Material.ARROW,
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.return-to-game-category"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
+        inventory.setItem(LEADERBOARD_SLOT, configured("leaderboard", null, Map.of(), item(Material.GOLD_INGOT,
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.view-the-leaderboard"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.view-game-data-and-personal-record-rankings"), NamedTextColor.GRAY)), false)));
+        if (holder.page > 0) inventory.setItem(48, configured("previous", null, Map.of(), item(Material.ARROW,
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.previous-page"), NamedTextColor.WHITE), List.of(), false)));
+        inventory.setItem(REFRESH_SLOT, configured("refresh", null, Map.of(), item(Material.CLOCK,
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.refresh"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.update-the-detailed-records-of-the-current-game"), NamedTextColor.GRAY)), false)));
+        inventory.setItem(PAGE_SLOT, configured("page", null,
+                Map.of("page", holder.page + 1, "pages", holder.pageCount), item(Material.PAPER,
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.ordinal-prefix") + (holder.page + 1) + " / " + holder.pageCount + GuiConfig.text("daily.menus.statistics-screen.copy.page-suffix"), NamedTextColor.AQUA)
+                        .decorate(TextDecoration.BOLD),
+                List.of(Component.text(maps.size() + GuiConfig.text("daily.menus.statistics-screen.copy.map"), NamedTextColor.GRAY)), false)));
+        if (holder.page + 1 < holder.pageCount) inventory.setItem(52, configured("next", null, Map.of(), item(Material.ARROW,
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.next-page"), NamedTextColor.WHITE), List.of(), false)));
+        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.close"), NamedTextColor.RED), List.of(), false)));
     }
 
     private ItemStack playerSummary(UUID viewer, DailyStatSnapshot stat) {
         List<Component> lore = List.of(
-                line(GuiConfig.text("daily.menus.statistics.complete-session"), stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics.match-count-suffix"), NamedTextColor.WHITE),
-                line(GuiConfig.text("daily.menus.statistics.wins"), stat.wins() + GuiConfig.text("daily.menus.statistics.match-count-suffix"), NamedTextColor.GREEN),
-                line(GuiConfig.text("daily.menus.statistics.overall-winning-rate"), winRate(stat), NamedTextColor.YELLOW),
+                line(GuiConfig.text("daily.menus.statistics-screen.copy.complete-session"), stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics-screen.copy.match-count-suffix"), NamedTextColor.WHITE),
                 Component.empty(),
-                Component.text(GuiConfig.text("daily.menus.statistics.sort-by-game-click-on-card-to-see-breakdown"), NamedTextColor.GRAY)
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.sort-by-game-click-on-card-to-see-breakdown"), NamedTextColor.GRAY)
         );
         ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta rawMeta = stack.getItemMeta();
         if (!(rawMeta instanceof SkullMeta meta)) return item(Material.PLAYER_HEAD,
-                Component.text(GuiConfig.text("daily.menus.statistics.my-overview"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, false);
+                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.my-overview"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, false);
         meta.setOwningPlayer(Bukkit.getOfflinePlayer(viewer));
-        meta.displayName(Component.text(GuiConfig.text("daily.menus.statistics.my-overview"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
+        meta.displayName(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.my-overview"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
         stack.setItemMeta(meta);
         return stack;
     }
 
+    /** Game card: this game's best value of every metric across all maps, plus games played. */
     private ItemStack gameItem(UUID viewer, GameTypeEnum game) {
         DailyStatSnapshot stat = daily.statsManager().stat(viewer, game);
         List<Component> lore = new ArrayList<>();
-        if (game == GameTypeEnum.Bingo) {
-            lore.add(line(GuiConfig.text("daily.menus.statistics.wins-label"), stat.wins() + GuiConfig.text("daily.menus.statistics.match-count-suffix"), NamedTextColor.GREEN));
-            lore.add(line(GuiConfig.text("daily.menus.statistics.lines-completed-label"), stat.lineCount() + GuiConfig.text("daily.menus.statistics.record-count-suffix"), NamedTextColor.LIGHT_PURPLE));
-            lore.add(line(GuiConfig.text("daily.menus.statistics.complete-the-task"), stat.completedTasks() + GuiConfig.text("daily.menus.statistics.item-count-suffix"), NamedTextColor.AQUA));
-            lore.add(line(GuiConfig.text("daily.menus.statistics.most-in-a-single-game"), stat.maxCompletedTasks() + GuiConfig.text("daily.menus.statistics.item-count-suffix"), NamedTextColor.GOLD));
-        } else {
-            lore.add(line(GuiConfig.text("daily.menus.statistics.complete-session"), stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics.match-count-suffix"), NamedTextColor.WHITE));
-            lore.add(line(GuiConfig.text("daily.menus.statistics.wins"), stat.wins() + GuiConfig.text("daily.menus.statistics.match-count-suffix"), NamedTextColor.GREEN));
-            lore.add(line(GuiConfig.text("daily.menus.statistics.winning-rate"), winRate(stat), NamedTextColor.YELLOW));
+        boolean recorded = stat.gamesPlayed() > 0;
+        for (DailyMetric metric : DailyMetric.forGame(game)) {
+            double value = daily.statsManager().metricValue(viewer, null, metric);
+            if (!Double.isNaN(value)) recorded = true;
+            lore.add(line(GuiConfig.text(metric.labelKey()) + "  ",
+                    Double.isNaN(value) ? GuiConfig.text("daily.menus.statistics-screen.copy.no-record-yet")
+                            : DailyMetric.format(metric, value),
+                    Double.isNaN(value) ? NamedTextColor.DARK_GRAY : metricColor(metric)));
         }
+        lore.add(line(GuiConfig.text("daily.menus.statistics-screen.copy.participate-in-sessions"),
+                stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics-screen.copy.match-count-suffix"), NamedTextColor.WHITE));
         lore.add(Component.empty());
-        lore.add(Component.text(game == GameTypeEnum.Bingo
-                ? GuiConfig.text("daily.menus.statistics.click-to-view-cumulative-breakdown-data")
-                : daily.knownMaps(game).size() + GuiConfig.text("daily.menus.statistics.maps-to-view-subdivisions"), NamedTextColor.GRAY));
+        lore.add(Component.text(daily.knownMaps(game).size() + GuiConfig.text("daily.menus.statistics-screen.copy.maps-to-view-subdivisions"), NamedTextColor.GRAY));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("daily.menus.statistics.click-to-view-detailed-results"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+        lore.add(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.click-to-view-detailed-results"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
         return item(gameMaterial(game), Component.text(game.toString(), gameColor(game))
-                .decorate(TextDecoration.BOLD), lore, stat.gamesPlayed() > 0);
+                .decorate(TextDecoration.BOLD), lore, recorded);
     }
 
     private ItemStack gameSummary(GameTypeEnum game, DailyStatSnapshot stat) {
         List<Component> lore = new ArrayList<>();
-        lore.add(line(GuiConfig.text("daily.menus.statistics.participate-in-sessions"), stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics.match-count-suffix"), NamedTextColor.WHITE));
-        lore.add(line(GuiConfig.text("daily.menus.statistics.wins"), stat.wins() + GuiConfig.text("daily.menus.statistics.match-count-suffix"), NamedTextColor.GREEN));
-        lore.add(line(GuiConfig.text("daily.menus.statistics.winning-rate"), winRate(stat), NamedTextColor.YELLOW));
-        if (game == GameTypeEnum.Bingo) {
-            lore.add(Component.empty());
-            lore.add(Component.text(GuiConfig.text("daily.menus.statistics.view-the-cumulative-breakdown-of-bingo-data-below"), NamedTextColor.GRAY));
-        } else {
-            lore.add(Component.empty());
-            lore.add(Component.text(GuiConfig.text("daily.menus.statistics.click-the-map-below-to-view-various-records"), NamedTextColor.GRAY));
-        }
+        lore.add(line(GuiConfig.text("daily.menus.statistics-screen.copy.participate-in-sessions"), stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics-screen.copy.match-count-suffix"), NamedTextColor.WHITE));
+        lore.add(Component.empty());
+        lore.add(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.click-the-map-below-to-view-various-records"), NamedTextColor.GRAY));
         return item(gameMaterial(game), Component.text(game.toString(), gameColor(game))
                 .decorate(TextDecoration.BOLD), lore, stat.gamesPlayed() > 0);
     }
 
-    private ItemStack metricItem(Material material, String title, String value, String description,
-                                 NamedTextColor color, boolean glint) {
-        return item(material, Component.text(title, color).decorate(TextDecoration.BOLD),
-                List.of(Component.text(value, NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
-                        Component.empty(), Component.text(description, NamedTextColor.GRAY)), glint);
-    }
-
+    /** Map item: the viewer's best value of every metric on this one map. */
     private ItemStack mapItem(UUID viewer, GameTypeEnum game, String map) {
         List<Component> lore = new ArrayList<>();
-        boolean recorded = false;
-        for (RecordDefinition definition : RECORDS.getOrDefault(game, List.of())) {
-            long value = daily.statsManager().bestRecord(viewer, game, map, definition.type());
-            if (value >= 0) recorded = true;
-            lore.add(line(definition.label() + "  ", value < 0 ? GuiConfig.text("daily.menus.statistics.no-record-yet") : DailyLeaderboardMenu.formatDuration(value),
-                    value < 0 ? NamedTextColor.DARK_GRAY : definition.color()));
+        boolean recorded = daily.statsManager().mapStat(viewer, game, map).gamesPlayed() > 0;
+        for (DailyMetric metric : DailyMetric.forGame(game)) {
+            double value = daily.statsManager().metricValue(viewer, map, metric);
+            if (!Double.isNaN(value)) recorded = true;
+            lore.add(line(GuiConfig.text(metric.labelKey()) + "  ",
+                    Double.isNaN(value) ? GuiConfig.text("daily.menus.statistics-screen.copy.no-record-yet")
+                            : DailyMetric.format(metric, value),
+                    Double.isNaN(value) ? NamedTextColor.DARK_GRAY : metricColor(metric)));
         }
+        lore.add(line(GuiConfig.text("daily.menus.statistics-screen.copy.participate-in-sessions"),
+                daily.statsManager().mapStat(viewer, game, map).gamesPlayed()
+                        + GuiConfig.text("daily.menus.statistics-screen.copy.match-count-suffix"), NamedTextColor.WHITE));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("daily.menus.statistics.record-independently-by-map"), NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.record-independently-by-map"), NamedTextColor.GRAY));
         return item(gameMaterial(game), Component.text(map, gameColor(game)).decorate(TextDecoration.BOLD), lore, recorded);
     }
 
@@ -302,18 +277,21 @@ final class DailyStatsMenu {
         return GAME_SLOTS_MANY;
     }
 
-    private static List<Integer> createDetailSlots() {
-        List<Integer> slots = new ArrayList<>();
-        for (int slot = 18; slot <= 44; slot++) slots.add(slot);
-        return List.copyOf(slots);
-    }
-
-    private static Map<GameTypeEnum, List<RecordDefinition>> createRecordDefinitions() {
-        Map<GameTypeEnum, List<RecordDefinition>> records = new EnumMap<>(GameTypeEnum.class);
-        records.put(GameTypeEnum.AceRace, List.of(
-                new RecordDefinition(DailyRecordType.ACERACE_FASTEST_LAP, GuiConfig.text("daily.menus.statistics.fastest-lap"), NamedTextColor.AQUA),
-                new RecordDefinition(DailyRecordType.ACERACE_FASTEST_THREE_LAPS, GuiConfig.text("daily.menus.statistics.fastest-three-complete-laps"), NamedTextColor.GOLD)));
-        return Map.copyOf(records);
+    /** Centered grid slots for one page of map cards: rows of seven, the middle row when few. */
+    static List<Integer> mapSlots(int count) {
+        if (count <= 0) return List.of();
+        int rows = Math.min(3, (count + 6) / 7);
+        List<Integer> rowStarts = rows == 1 ? List.of(27) : List.of(18, 27, 36).subList(0, rows);
+        List<Integer> slots = new ArrayList<>(count);
+        int base = count / rows;
+        int extra = count % rows;
+        int row = 0;
+        for (int rowStart : rowStarts) {
+            int rowCount = base + (row++ < extra ? 1 : 0);
+            int first = rowStart + (9 - rowCount) / 2;
+            for (int index = 0; index < rowCount; index++) slots.add(first + index);
+        }
+        return slots;
     }
 
     private static void drawBorder(Inventory inventory) {
@@ -324,44 +302,45 @@ final class DailyStatsMenu {
 
     private static Material gameMaterial(GameTypeEnum game) {
         return game == GameTypeEnum.Bingo ? Material.FILLED_MAP
-                : game == GameTypeEnum.AceRace ? Material.ELYTRA : Material.PAPER;
+                : game == GameTypeEnum.AceRace ? Material.ELYTRA
+                : game == GameTypeEnum.DragonEggCarnival ? Material.DRAGON_EGG : Material.PAPER;
     }
 
     private static NamedTextColor gameColor(GameTypeEnum game) {
         return game == GameTypeEnum.Bingo ? NamedTextColor.LIGHT_PURPLE
-                : game == GameTypeEnum.AceRace ? NamedTextColor.AQUA : NamedTextColor.WHITE;
+                : game == GameTypeEnum.AceRace ? NamedTextColor.AQUA
+                : game == GameTypeEnum.DragonEggCarnival ? NamedTextColor.GOLD : NamedTextColor.WHITE;
+    }
+
+    static NamedTextColor metricColor(DailyMetric metric) {
+        return switch (metric.format()) {
+            case TIME -> NamedTextColor.AQUA;
+            case DAMAGE -> NamedTextColor.RED;
+            case PERCENT -> NamedTextColor.GREEN;
+            case COUNT -> NamedTextColor.GOLD;
+        };
     }
 
     private static Component line(String label, String value, NamedTextColor color) {
         return Component.text(label, NamedTextColor.GRAY).append(Component.text(value, color));
     }
 
-    private static String winRate(DailyStatSnapshot stat) {
-        return stat.gamesPlayed() == 0 ? "0%"
-                : Math.round(stat.wins() * 100D / stat.gamesPlayed()) + "%";
+    private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
+        return ink.ziip.championshipscore.api.gui.GuiMenu.item(material, name, lore, glint);
     }
 
-    private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
-        ItemStack stack = new ItemStack(material);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(name.decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
-            meta.setEnchantmentGlintOverride(glint);
-            stack.setItemMeta(meta);
-        }
-        return stack;
+    /** Renders a fixed footer/control button from gui.yml, keeping the hardcoded item as fallback. */
+    private static ItemStack configured(String key, String state, Map<String, ?> placeholders, ItemStack fallback) {
+        return ConfiguredGui.item(MENU_PATH + ".items." + key, state, placeholders, fallback);
     }
 
     private static void clickSound(Player player, float pitch) {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
-    private record RecordDefinition(DailyRecordType type, String label, NamedTextColor color) {}
-
     static final class StatsHolder implements InventoryHolder {
         private final UUID viewer;
-        private final Map<Integer, GameTypeEnum> gamesBySlot = new java.util.HashMap<>();
+        private final Map<Integer, GameTypeEnum> gamesBySlot = new HashMap<>();
         private Inventory inventory;
 
         private StatsHolder(UUID viewer) {

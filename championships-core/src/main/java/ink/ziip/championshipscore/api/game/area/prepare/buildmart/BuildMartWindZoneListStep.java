@@ -49,7 +49,7 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
         zones.add(zone);
         config.setWindZones(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.the-blower-area-has-been-added-currently") + zones.size() + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.item-count-suffix"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.the-blower-area-has-been-added-currently") + zones.size() + GuiConfig.text("map-editor.copy.colored-item-count-suffix"));
     }
 
     @Override
@@ -74,7 +74,7 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
             Vector max = Vector.getMaximum(zone.pos1(), zone.pos2());
             entries.add(new ListEntry(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.air-outlet") + (i + 1), List.of(
                     GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.area") + format(min) + " → " + format(max),
-                    GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.rising-range-y") + formatY(max.getY() + 1) + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.through-180-suffix"))));
+                    GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.rising-range-y") + formatY(max.getY() + 1) + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.through-200-suffix"))));
         }
         return entries;
     }
@@ -88,7 +88,7 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
         zones.set(index, zone);
         cfg(session.getTarget()).setWindZones(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.updated") + (index + 1) + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.wind-zone-count-suffix"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.updated") + (index + 1) + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.wind-zone-count-suffix"));
     }
 
     @Override
@@ -96,12 +96,12 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
                                int index, int newOrder) {
         List<WindZone> zones = new ArrayList<>(cfg(session.getTarget()).getWindZones());
         if (index < 0 || index >= zones.size() || newOrder < 1 || newOrder > zones.size())
-            return Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.the-serial-number-must-be-between-1-and") + zones.size() + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.range-end-suffix"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.the-serial-number-must-be-between-1-and") + zones.size() + GuiConfig.text("map-editor.copy.range-end-suffix"));
         WindZone moved = zones.remove(index);
         zones.add(newOrder - 1, moved);
         cfg(session.getTarget()).setWindZones(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.the-air-blower-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.item-suffix"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.the-air-blower-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.copy.item-suffix"));
     }
 
     @Override
@@ -111,7 +111,7 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
         zones.remove(index);
         cfg(session.getTarget()).setWindZones(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.deleted") + (index + 1) + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.wind-zone-count-suffix"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.deleted") + (index + 1) + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.wind-zone-count-suffix"));
     }
 
     @Override

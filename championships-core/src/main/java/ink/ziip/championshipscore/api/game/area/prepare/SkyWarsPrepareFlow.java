@@ -35,10 +35,10 @@ public final class SkyWarsPrepareFlow extends SnapshotMapPrepareFlow {
                 Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.stand-at-the-center-of-the-horizontal-border-and-the-shrink-effect-and-click")), Material.COMPASS,
                 t -> cfg(t).getBoundaryCenterPoint() != null, (t, l) -> cfg(t).setBoundaryCenterPoint(l),
                 Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.sky-wars.setup.boundary-center-point-set"))));
-        steps.add(new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.spectator-spawn-point")),
-                Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.stand-in-a-spectator-position-and-click")), Material.ENDER_EYE,
+        steps.add(new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")),
+                Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")), Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.sky-wars.setup.spectator-spawn-point-has-been-set"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set"))));
         steps.add(new ListStep("team_spawn_points", Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.team-spawn-point")),
                 Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.add-spawn-positions-for-each-team-one-by-one")), Material.LIME_WOOL,
                 t -> list(t), (t, values) -> cfg(t).setTeamSpawnPoints(values),

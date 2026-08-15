@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
+import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
@@ -33,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -47,6 +50,7 @@ import java.util.UUID;
  * spectator would yank the player out of play).
  */
 public final class BingoCompassListener extends BaseListener {
+    private static final String MENU_PATH = MenuId.BINGO_TEAMMATE_TELEPORT.path();
 
     /** PDC key on each ender-pearl button; value is the target player's UUID as a string. */
     public static final NamespacedKey TARGET_KEY =
@@ -93,19 +97,21 @@ public final class BingoCompassListener extends BaseListener {
             teammates.add(target);
         }
         if (teammates.isEmpty()) {
-            player.sendMessage(Component.text(GuiConfig.text("games.bingo.compass.there-are-currently-no-online-teammates-to-teleport-to")).color(NamedTextColor.YELLOW));
+            player.sendMessage(Component.text(GuiConfig.text("games.bingo.menus.teammate-teleport.copy.there-are-currently-no-online-teammates-to-teleport-to")).color(NamedTextColor.YELLOW));
             return;
         }
         teammates.sort(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER));
 
         int rows = Math.max(1, Math.min(6, (teammates.size() + 8) / 9));
         CompassHolder holder = new CompassHolder();
-        Inventory inv = Bukkit.createInventory(holder, rows * 9,
-                Component.text(GuiConfig.text("games.bingo.compass.teleport-to-teammates")).decoration(TextDecoration.ITALIC, false));
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, rows * 9,
+                GuiConfig.text("games.bingo.menus.teammate-teleport.copy.teleport-to-teammates"),
+                java.util.stream.IntStream.range(0, rows * 9).boxed().toList());
+        Inventory inv = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.setInventory(inv);
 
-        for (int i = 0; i < teammates.size() && i < rows * 9; i++) {
-            inv.setItem(i, button(teammates.get(i), team));
+        for (int i = 0; i < teammates.size() && i < menu.contentSlots().size(); i++) {
+            inv.setItem(menu.contentSlots().get(i), button(teammates.get(i), team));
         }
         player.openInventory(inv);
     }
@@ -116,14 +122,15 @@ public final class BingoCompassListener extends BaseListener {
         item.editMeta(meta -> {
             meta.displayName(Utils.toComponent(Utils.formatPlayerName(target))
                     .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(GuiConfig.text("games.bingo.compass.click-to-teleport-to-this-teammate")).color(NamedTextColor.GRAY)
+            meta.lore(List.of(Component.text(GuiConfig.text("games.bingo.menus.teammate-teleport.copy.click-to-teleport-to-this-teammate")).color(NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
             if (TARGET_KEY != null) {
                 meta.getPersistentDataContainer().set(TARGET_KEY, PersistentDataType.STRING,
                         target.getUniqueId().toString());
             }
         });
-        return item;
+        return ConfiguredGui.item(MENU_PATH + ".items.teammate", null,
+                Map.of("player", target.getName()), item);
     }
 
     // ── teleport on click ──────────────────────────────────────────────────────────────────────
@@ -145,13 +152,13 @@ public final class BingoCompassListener extends BaseListener {
         }
         Player target = Bukkit.getPlayer(targetId);
         if (target == null || !target.isOnline() || area.notAreaPlayer(target)) {
-            player.sendMessage(Component.text(GuiConfig.text("games.bingo.compass.this-teammate-is-no-longer-reachable")).color(NamedTextColor.YELLOW));
+            player.sendMessage(Component.text(GuiConfig.text("games.bingo.menus.teammate-teleport.copy.this-teammate-is-no-longer-reachable")).color(NamedTextColor.YELLOW));
             player.closeInventory();
             return;
         }
         player.closeInventory();
         player.teleportAsync(target.getLocation());
-        player.sendMessage(Component.text(GuiConfig.text("games.bingo.compass.sent-to"), NamedTextColor.AQUA)
+        player.sendMessage(Component.text(GuiConfig.text("games.bingo.menus.teammate-teleport.copy.sent-to"), NamedTextColor.AQUA)
                 .append(Utils.toComponent(Utils.formatPlayerName(target))));
     }
 

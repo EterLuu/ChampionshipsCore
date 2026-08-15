@@ -99,6 +99,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
     private final Map<ChampionshipTeam, EnumMap<RewardEnchant, Integer>> teamEnchantments = new HashMap<>();
     private final Map<ChampionshipTeam, Set<String>> teamAdvancements = new HashMap<>();
     private final Map<ChampionshipTeam, Double> teamDragonDamage = new HashMap<>();
+    private final Map<UUID, Double> playerDragonDamage = new HashMap<>();
 
     public DragonEggCarnivalArea(ChampionshipsCore plugin, DragonEggCarnivalConfig dragonEggCarnivalConfig,
                                  boolean firstTime, String areaName) {
@@ -135,6 +136,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         teamEnchantments.clear();
         teamAdvancements.clear();
         teamDragonDamage.clear();
+        playerDragonDamage.clear();
         getGameHandler().resetMatchState();
         preloadMap();
     }
@@ -330,6 +332,13 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         Set<String> completed = teamAdvancements.computeIfAbsent(team, ignored -> new LinkedHashSet<>());
         if (!completed.add(advancementKey)) return;
 
+        boolean firstOfAdvancement = teamAdvancements.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals(team))
+                .noneMatch(entry -> entry.getValue().contains(advancementKey));
+        if (firstOfAdvancement && getRunMode() == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY) {
+            plugin.getDailyManager().statsManager().recordDragonFirstAdvancement(this, team, advancementKey);
+        }
+
         updateTeamProgress(team, completed.size());
         sendMessageToAllGamePlayers(MessageConfig.DRAGON_EGG_CARNIVAL_ADVANCEMENT
                 .replace("%team%", team.getColoredName())
@@ -371,6 +380,10 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         double before = teamDragonDamage.getOrDefault(team, 0D);
         double after = before + finalDamage;
         teamDragonDamage.put(team, after);
+        double playerTotal = playerDragonDamage.merge(player.getUniqueId(), finalDamage, Double::sum);
+        if (getRunMode() == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY) {
+            plugin.getDailyManager().statsManager().recordDragonDamage(this, player.getUniqueId(), playerTotal);
+        }
         int crossed = crossedDragonDamageThresholds(before, after, dragonMaxHealth);
         if (crossed <= 0) return;
 

@@ -130,8 +130,7 @@ CREATE TABLE IF NOT EXISTS `daily_player_stats`
     `maxCompletedTasks` BIGINT  NOT NULL DEFAULT 0,
     `updatedAt`     BIGINT       NOT NULL,
 
-    PRIMARY KEY (`uuid`, `game`),
-    INDEX `idx_daily_stats_board` (`game`, `wins`)
+    PRIMARY KEY (`uuid`, `game`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -172,6 +171,29 @@ CREATE TABLE IF NOT EXISTS `daily_player_records`
 
     PRIMARY KEY (`uuid`, `game`, `map`, `mapRevision`, `rulesHash`, `recordType`),
     INDEX `idx_daily_records_board` (`game`, `map`, `recordType`, `durationMs`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `daily_map_player_stats`
+(
+    `uuid`            VARCHAR(36)  NOT NULL,
+    `username`        VARCHAR(16)  NOT NULL,
+    `game`            VARCHAR(64)  NOT NULL,
+    `map`             VARCHAR(128) NOT NULL,
+    `gamesPlayed`     BIGINT       NOT NULL DEFAULT 0,
+    `wins`            BIGINT       NOT NULL DEFAULT 0,
+    `maxTasks`        BIGINT       NOT NULL DEFAULT 0,
+    `maxLines`        BIGINT       NOT NULL DEFAULT 0,
+    `maxFirstTasks`   BIGINT       NOT NULL DEFAULT 0,
+    `maxDragonDamage` DOUBLE       NOT NULL DEFAULT 0,
+    `firstLiberate`   BIGINT       NOT NULL DEFAULT 0,
+    `firstNextGen`    BIGINT       NOT NULL DEFAULT 0,
+    `firstGateway`    BIGINT       NOT NULL DEFAULT 0,
+    `updatedAt`       BIGINT       NOT NULL,
+
+    PRIMARY KEY (`uuid`, `game`, `map`),
+    INDEX `idx_daily_map_stats_board` (`game`, `map`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

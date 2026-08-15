@@ -46,7 +46,10 @@ public final class ConfiguredGui {
         ItemMeta meta = fallback.getItemMeta();
         Component title = meta != null && meta.hasDisplayName() ? meta.displayName() : Component.empty();
         List<Component> lore = meta == null || meta.lore() == null ? List.of() : meta.lore();
-        boolean glint = meta != null && Boolean.TRUE.equals(meta.getEnchantmentGlintOverride());
+        // Paper throws when the component is absent; only read the value after checking
+        // that the fallback meta actually contains an enchantment-glint override.
+        boolean glint = meta != null && meta.hasEnchantmentGlintOverride()
+                && Boolean.TRUE.equals(meta.getEnchantmentGlintOverride());
         GuiConfig.ItemSpec spec = GuiConfig.item(path, state, placeholders,
                 new GuiConfig.ItemSpec(-1, fallback.getType(), title, lore, glint));
         boolean sameType = spec.material() == fallback.getType();

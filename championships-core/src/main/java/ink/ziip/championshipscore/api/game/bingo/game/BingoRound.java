@@ -161,6 +161,28 @@ public final class BingoRound {
         return card.getCompleteCount(BingoTeamAdapter.id(team));
     }
 
+    /** Cells this team claimed before every other team: own completion time strictly earliest. */
+    public int countFirstCompletions(ChampionshipTeam team) {
+        String teamId = BingoTeamAdapter.id(team);
+        List<String> rivals = teams.stream().map(BingoTeamAdapter::id)
+                .filter(id -> !id.equals(teamId)).toList();
+        int first = 0;
+        for (GameTask task : card.getTasks()) {
+            long own = task.completedAt(teamId);
+            if (own < 0L) continue;
+            boolean beaten = false;
+            for (String rival : rivals) {
+                long other = task.completedAt(rival);
+                if (other >= 0L && other <= own) {
+                    beaten = true;
+                    break;
+                }
+            }
+            if (!beaten) first++;
+        }
+        return first;
+    }
+
     /** The playable teams competing this round. */
     public List<ChampionshipTeam> teams() {
         return teams;

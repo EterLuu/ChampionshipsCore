@@ -38,14 +38,14 @@ public final class SnowballShowdownPrepareFlow extends PrepareFlowDefinition {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
-        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.games.snowball-showdown.setup.site-boundaries")), Component.text(GuiConfig.text("map-editor.games.snowball-showdown.setup.use-worldedit-to-select-a-complete-snow-field-area")),
+        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.copy.site-boundaries")), Component.text(GuiConfig.text("map-editor.games.snowball-showdown.setup.use-worldedit-to-select-a-complete-snow-field-area")),
                 Material.BEDROCK, t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.snowball-showdown.setup.site-boundaries-set"))));
-        steps.add(new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.games.snowball-showdown.setup.spectator-spawn-point")), Component.text(GuiConfig.text("map-editor.games.snowball-showdown.setup.stand-in-a-spectator-position-and-click")),
+                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.site-boundaries-set"))));
+        steps.add(new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")), Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")),
                 Material.ENDER_EYE, t -> cfg(t).getSpectatorSpawnPoint() != null,
-                (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.snowball-showdown.setup.spectator-spawn-point-has-been-set"))));
+                (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set"))));
         for (String lane : LANES) {
-            steps.add(new ListStep("player_spawn_" + lane, Component.text(GuiConfig.text("map-editor.games.snowball-showdown.setup.player-spawn-point") + lane),
+            steps.add(new ListStep("player_spawn_" + lane, Component.text(GuiConfig.text("map-editor.copy.player-spawn-point") + lane),
                     Component.text(GuiConfig.text("map-editor.games.snowball-showdown.setup.add-player-spawn-locations-in-this-area-one-by-one")), Material.PLAYER_HEAD,
                     t -> laneValues(t, lane), (t, values) -> section(t).set(lane, values),
                     t -> laneValues(t, lane).isEmpty(),

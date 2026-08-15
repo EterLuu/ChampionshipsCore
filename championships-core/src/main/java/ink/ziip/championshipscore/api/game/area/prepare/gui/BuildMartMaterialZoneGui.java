@@ -7,9 +7,11 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
+import ink.ziip.championshipscore.api.game.buildmart.BuildMartCopperPolicy;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartMaterialIsland;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartMaterialManifest;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartMaterialZone;
+import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -66,7 +68,7 @@ public final class BuildMartMaterialZoneGui {
                             @NotNull PrepareSession session, @NotNull PrepareStep step) {
         Holder holder = new Holder(session, step);
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-area")).decoration(TextDecoration.ITALIC, false));
+                Component.text(GuiConfig.text("map-editor.copy.material-area")).decoration(TextDecoration.ITALIC, false));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -153,7 +155,7 @@ public final class BuildMartMaterialZoneGui {
 
     private static void saveCurrentSelection(Player player, Holder holder, BuildMartConfig config) {
         if (!holder.session.getFlow().isInCorrectWorld(player, holder.session.getTarget())) {
-            player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.please-go-to-the-current-map-world-first") + holder.session.getTarget().worldName()));
+            player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.copy.please-go-to-the-current-map-world-first") + holder.session.getTarget().worldName()));
             return;
         }
         BuildMartMaterialZone pendingSnapshot = null;
@@ -165,12 +167,14 @@ public final class BuildMartMaterialZoneGui {
             Vector[] selection = holder.session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
             BuildMartMaterialZone zone = new BuildMartMaterialZone(UUID.randomUUID(), selection[0], selection[1]);
             if (zone.volume() <= 0 || zone.volume() > MAX_VOLUME) {
-                player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.the-material-area-volume-must-be-between-1-and") + MAX_VOLUME + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.within-blocks")));
+                player.sendMessage(Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.the-material-area-volume-must-be-between-1-and") + MAX_VOLUME + GuiConfig.text("map-editor.copy.within-blocks")));
                 return;
             }
             pendingSnapshot = zone;
             holder.session.getPlugin().getWorldEditManager().saveSelectionAsBlockSchematic(player,
                     config.getMaterialZoneSnapshotFile(zone));
+            WorldEditManager.rewriteSchematicBlockStates(
+                    config.getMaterialZoneSnapshotFile(zone), BuildMartCopperPolicy::withoutWax);
             List<BuildMartMaterialZone> zones = new ArrayList<>(config.getMaterialZones());
             int replacedIndex = sameBoundsIndex(zones, zone);
             BuildMartMaterialZone replaced = replacedIndex < 0 ? null : zones.set(replacedIndex, zone);
@@ -249,17 +253,17 @@ public final class BuildMartMaterialZoneGui {
                 List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.record-a-full-block-snapshot-of-the-selection"), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.automatically-classified-into-the-nearest-material-island-according-to-horizontal-distance"),
                         GuiConfig.text("map-editor.games.build-mart.menus.material-zones.update-the-original-snapshot-when-the-range-is-exactly-the-same-as-the-existing-material-area"), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.synchronously-update-the-read-only-material-list")), NamedTextColor.YELLOW));
         if (holder.page > 0) {
-            inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.previous-page"),
-                    List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.go-to") + holder.page + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.page-suffix")), NamedTextColor.WHITE));
+            inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.copy.previous-page"),
+                    List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.go-to") + holder.page + GuiConfig.text("map-editor.copy.page-suffix")), NamedTextColor.WHITE));
         }
         Vector center = config.getMaterialIslandCenters().get(holder.island);
         inventory.setItem(CLEAR_SLOT, item(holder.island.icon(), holder.island.displayName(),
                 center == null ? List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.the-center-has-not-been-configured-yet")) : List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.center") + compact(center)), NamedTextColor.AQUA));
-        inventory.setItem(PAGE_SLOT, item(Material.PAPER, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.ordinal-prefix") + (holder.page + 1) + " / " + pageCount + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.page-suffix"),
-                List.of(holder.island.displayName(), GuiConfig.text("map-editor.games.build-mart.menus.material-zones.total-prefix") + zones.size() + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-zone-count-suffix")), NamedTextColor.AQUA));
+        inventory.setItem(PAGE_SLOT, item(Material.PAPER, GuiConfig.text("map-editor.copy.ordinal-prefix") + (holder.page + 1) + " / " + pageCount + GuiConfig.text("map-editor.copy.page-suffix"),
+                List.of(holder.island.displayName(), GuiConfig.text("map-editor.copy.total-prefix") + zones.size() + GuiConfig.text("map-editor.copy.material-zone-count-suffix")), NamedTextColor.AQUA));
         if (holder.page + 1 < pageCount) {
-            inventory.setItem(NEXT_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.next-page"),
-                    List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.go-to") + (holder.page + 2) + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.page-suffix")), NamedTextColor.WHITE));
+            inventory.setItem(NEXT_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.copy.next-page"),
+                    List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.go-to") + (holder.page + 2) + GuiConfig.text("map-editor.copy.page-suffix")), NamedTextColor.WHITE));
         }
         inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.return-to-island-list"), List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.view-all-24-material-islands")), NamedTextColor.WHITE));
     }
@@ -287,8 +291,8 @@ public final class BuildMartMaterialZoneGui {
         inventory.setItem(CLEAR_SLOT, item(Material.RED_WOOL, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.clear-all-material-areas"),
                 List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.delete-all-material-areas-on-24-islands")), NamedTextColor.RED));
         inventory.setItem(PAGE_SLOT, item(Material.COMPASS, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-island-count-label"),
-                List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.total-prefix") + config.getMaterialZones().size() + GuiConfig.text("map-editor.games.build-mart.menus.material-zones.material-zone-count-suffix")), NamedTextColor.AQUA));
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.games.build-mart.menus.material-zones.return"), List.of(GuiConfig.text("map-editor.games.build-mart.menus.material-zones.return-to-prepare-inventory")), NamedTextColor.WHITE));
+                List.of(GuiConfig.text("map-editor.copy.total-prefix") + config.getMaterialZones().size() + GuiConfig.text("map-editor.copy.material-zone-count-suffix")), NamedTextColor.AQUA));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, GuiConfig.text("map-editor.copy.return"), List.of(GuiConfig.text("map-editor.copy.return-to-prepare-toolbar")), NamedTextColor.WHITE));
     }
 
     private static @NotNull String islandName(@Nullable BuildMartMaterialIsland island) {

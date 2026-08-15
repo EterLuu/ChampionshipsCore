@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
 /** Repeated Build Mart resource-area editor: each WorldEdit cuboid retains its original block snapshot. */
 public final class BuildMartMaterialZoneStep extends PrepareStep {
     public BuildMartMaterialZoneStep() {
-        super("material_zones", Component.text(GuiConfig.text("map-editor.games.build-mart.steps.material-zones.material-area")),
+        super("material_zones", Component.text(GuiConfig.text("map-editor.copy.material-area")),
                 Component.text(GuiConfig.text("map-editor.games.build-mart.steps.material-zones.save-the-material-area-selection-as-it-is-restored-regularly-during-the-game")), Material.CHEST, StepCaptureType.SELECT);
     }
 
@@ -31,7 +31,7 @@ public final class BuildMartMaterialZoneStep extends PrepareStep {
     public String stateText(PrepareSession session) {
         if (session == null) return null;
         int count = config(session.getTarget()).getMaterialZones().size();
-        return count == 0 ? GuiConfig.text("map-editor.games.build-mart.steps.material-zones.not-set-optional") : GuiConfig.text("map-editor.games.build-mart.steps.material-zones.already-set") + count + GuiConfig.text("map-editor.games.build-mart.steps.material-zones.material-zone-count-suffix");
+        return count == 0 ? GuiConfig.text("map-editor.games.build-mart.steps.material-zones.not-set-optional") : GuiConfig.text("map-editor.games.build-mart.steps.material-zones.already-set") + count + GuiConfig.text("map-editor.copy.material-zone-count-suffix");
     }
 
     @Override

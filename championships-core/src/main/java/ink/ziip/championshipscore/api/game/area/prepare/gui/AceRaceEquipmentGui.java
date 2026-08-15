@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
 import ink.ziip.championshipscore.api.game.acerace.AceRaceEquipment;
@@ -23,6 +25,8 @@ import java.util.function.Consumer;
 
 /** Selects the equipment available from one Ace Race checkpoint to the next. */
 public final class AceRaceEquipmentGui {
+    private static final String MENU_PATH = MenuId.ACE_RACE_EQUIPMENT.path();
+
     private AceRaceEquipmentGui() {
     }
 
@@ -46,12 +50,13 @@ public final class AceRaceEquipmentGui {
                             @NotNull AceRaceEquipment current,
                             @NotNull Consumer<AceRaceEquipment> callback) {
         Holder holder = new Holder(session, callback);
-        holder.inventory = Bukkit.createInventory(holder, 9,
-                Component.text(GuiConfig.text("map-editor.games.ace-race.menus.equipment.select-equipment-for-next-stage")).decoration(TextDecoration.ITALIC, false));
-        holder.inventory.setItem(1, option(Material.BARRIER, AceRaceEquipment.NONE, current));
-        holder.inventory.setItem(3, option(Material.ELYTRA, AceRaceEquipment.ELYTRA, current));
-        holder.inventory.setItem(5, option(Material.TRIDENT, AceRaceEquipment.TRIDENT, current));
-        holder.inventory.setItem(7, option(Material.HEART_OF_THE_SEA, AceRaceEquipment.DOLPHINS_GRACE, current));
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 9,
+                GuiConfig.text(MENU_PATH + ".copy.select-equipment-for-next-stage"), List.of());
+        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
+        holder.inventory.setItem(1, option(Material.BARRIER, AceRaceEquipment.NONE, current, "none"));
+        holder.inventory.setItem(3, option(Material.ELYTRA, AceRaceEquipment.ELYTRA, current, "elytra"));
+        holder.inventory.setItem(5, option(Material.TRIDENT, AceRaceEquipment.TRIDENT, current, "trident"));
+        holder.inventory.setItem(7, option(Material.HEART_OF_THE_SEA, AceRaceEquipment.DOLPHINS_GRACE, current, "dolphins"));
         player.openInventory(holder.inventory);
     }
 
@@ -80,15 +85,16 @@ public final class AceRaceEquipmentGui {
 
     private static @NotNull ItemStack option(@NotNull Material material,
                                              @NotNull AceRaceEquipment equipment,
-                                             @NotNull AceRaceEquipment current) {
-        ItemStack item = new ItemStack(material);
-        item.editMeta(meta -> {
+                                             @NotNull AceRaceEquipment current,
+                                             @NotNull String itemKey) {
+        ItemStack fallback = new ItemStack(material);
+        fallback.editMeta(meta -> {
             meta.displayName(Component.text(equipment.displayName()).color(NamedTextColor.AQUA)
                     .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(equipment == current ? GuiConfig.text("map-editor.games.ace-race.menus.equipment.current-selection") : GuiConfig.text("map-editor.games.ace-race.menus.equipment.click-to-select"))
+            meta.lore(List.of(Component.text(equipment == current ? GuiConfig.text("map-editor.copy.current-selection") : GuiConfig.text("map-editor.copy.click-to-select"))
                     .color(equipment == current ? NamedTextColor.GREEN : NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
         });
-        return item;
+        return ConfiguredGui.item(MENU_PATH + ".items." + itemKey, null, java.util.Map.of(), fallback);
     }
 }

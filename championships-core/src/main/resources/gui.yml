@@ -1,36 +1,67 @@
 dont-edit-this:
-  version: 3
+  version: 10
 common:
-  separator: ' · '
+  separator: ' • '
   versus: '对阵'
+  copy:
+    previous-page: '上一页'
+    next-page: '下一页'
+    close: '关闭'
+    refresh: '刷新'
+    back: '返回'
+    ordinal-prefix: '第'
+    page-suffix: '页'
+    page: '第 %page% / %pages% 页'
+    confirm: '确认'
+    cancel: '取消'
 map-editor:
   games:
     ace-race:
       setup:
-        track-boundary: '赛道边界'
-        use-worldedit-to-select-the-complete-area-of-this-track: '用WorldEdit框选整条赛道'
-        track-boundaries-set: '已设置赛道边界。'
-        spectator-spawn-point: '观众出生点'
-        stand-in-a-spectator-position-and-click: '站到观众出生位置后点击'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
       menus:
         equipment:
-          select-equipment-for-next-stage: '选择下一赛段的装备'
-          current-selection: '当前选择'
-          click-to-select: '点击选择'
+          title: '选择下一赛段的装备'
+          size: 9
+          items:
+            none:     {slot: 1, material: BARRIER}
+            elytra:   {slot: 3, material: ELYTRA}
+            trident:  {slot: 5, material: TRIDENT}
+            dolphins: {slot: 7, material: HEART_OF_THE_SEA}
+          copy:
+            select-equipment-for-next-stage: '选择下一赛段的装备'
         respawn-binding:
-          select-the-progress-line-to-which-the-respawn-point-belongs: '选择重生点对应的进度线'
-          progress-line: '进度线# '
-          after-suffix: '后'
-          current-binding: '当前绑定'
-          after-clicking-to-bind-to-this-progress-line: '点击绑定到这条进度线之后'
-          previous-page: '上一页'
-          ordinal-prefix: '第'
-          page-suffix: '页'
-          back-to-respawn-editor: '返回重生点编辑'
-          after-starting-point-no-progress-line-bound: '起点之后（不绑定进度线）'
-          click-to-select: '点击选择'
-          next-page: '下一页'
+          title: '选择重生点对应的进度线'
+          size: 54
+          layout:
+            content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+          items:
+            previous:
+              slot: 45
+              material: ARROW
+              title: '上一页'
+              lore: ['第 %page% 页']
+            back:
+              slot: 48
+              material: BARRIER
+              title: '返回重生点编辑'
+            start:
+              slot: 49
+              material: COMPASS
+              title: '起点之后（不绑定进度线）'
+              lore: ['点击选择']
+              states:
+                selected: {lore: ['当前绑定']}
+            next:
+              slot: 53
+              material: ARROW
+              title: '下一页'
+              lore: ['第 %page% / %pages% 页']
+          copy:
+            select-the-progress-line-to-which-the-respawn-point-belongs: '选择重生点对应的进度线'
+            current-binding: '当前绑定'
+            after-clicking-to-bind-to-this-progress-line: '点击绑定到这条进度线之后'
+            back-to-respawn-editor: '返回重生点编辑'
+            after-starting-point-no-progress-line-bound: '起点之后（不绑定进度线）'
       steps:
         start-finish-lines:
           starting-line: '起点线'
@@ -58,48 +89,35 @@ map-editor:
           progress-line-selection-hint: '用WorldEdit选取水平直线；不足20格会向两侧延伸，判定范围覆盖线下3格及以上'
           progress-point-fall-height-input-hint: '输入通过此进度点后的坠落重置高度；留空则使用进度线高度'
           enter-drop-height: '输入坠落重置高度'
-          progress-points-added: '已添加进度点# '
-          drop-height: '&#696969•坠落重置高度：'
-          stage-equipment: '&#696969•下一赛段装备：'
-          progress-point: '进度点# '
+          progress-points-added: '已添加进度点 # '
+          drop-height: '&#696969• 坠落重置高度：'
+          stage-equipment: '&#696969• 下一赛段装备：'
+          progress-point: '进度点 # '
           line-selection: '选线：'
           trigger-range-automatically-expands-to-both-sides-if-less-than-20-cells-select-line-y-3-and-above: '判定范围：不足20格会向两侧延伸；覆盖进度线下3格及以上'
           fall-height-label: '坠落重置高度：'
           equipment-for-the-next-stage: '下一赛段装备：'
           please-enter-the-fall-height-after-this-progress-point-leave-blank-to-retain-the-current-value: '输入通过此进度点后的坠落重置高度；留空则保留当前值'
           this-progress-point-no-longer-exists: '该进度点已不存在。'
-          progress-points-updated: '已更新进度点# '
+          progress-points-updated: '已更新进度点 # '
           current-prop-entry-does-not-exist: '当前装备：条目已不存在'
           current-equipment: '当前装备：'
-          progress-point-has-been-reached: '已将进度点# '
+          progress-point-has-been-reached: '已将进度点 # '
           the-equipment-for-the-next-stage-are-changed-to: '之后的赛段装备已改为'
-          the-serial-number-must-be-between-1-and: '序号必须在1到'
-          range-end-suffix: '之间。'
           the-progress-point-has-been-adjusted-to-the: '已将进度点调整为第'
-          item-suffix: '项。'
-          deleted: '已删除第'
           progress-points: '个进度点。'
           please-use-worldedit-to-select-the-horizontal-straight-line-of-the-progress-point-first: '请先用WorldEdit选取进度点水平直线。'
           progress-points-must-be-the-same-height-a-straight-worldedit-line-extending-in-the-x-or-z-direction: '进度点必须是同一高度、沿X或Z方向延伸的WorldEdit直线。'
-          not-set: '未设置'
           add-progress-points: '添加进度点'
           use-worldedit-to-select-the-progress-point-straight-line-and-click: '用WorldEdit选取进度点直线后点击'
         respawn-points:
           racing-spawn-point: '竞速重生点'
           stage-binding-and-save-behavior: '系统会按位置判断所属赛段，也可手动指定；玩家进入3格范围时会保存进度'
-          the-serial-number-must-be-between-1-and: '序号必须在1到'
-          range-end-suffix: '之间。'
-          the-point-has-been-adjusted-to-the: '已将点位调整为第'
-          item-suffix: '项。'
-          deleted: '已删除第'
-          points: '个点位。'
           the-corresponding-progress-line-not-loaded: '所属进度线：未加载'
           the-corresponding-progress-line-after-the-starting-point: '所属进度线：起点后'
           belonging-progress-line: '所属进度线：# '
-          after-suffix: '后'
           this-spawn-point-has-been-bound-to: '已将该重生点绑定到'
           after-starting-point: '起点后'
-          progress-line: '进度线# '
           add-spawn-point: '添加重生点'
           respawn-point-selection-hint: '站在重生位置后点击；赛段默认按坐标判断，可再手动指定'
     dodgebolt:
@@ -111,7 +129,6 @@ map-editor:
         left-team-activity-area: '左队活动区域'
         right-team-archery-area: '右队射箭区域'
         left-team-archery-area: '左队射箭区域'
-        watch-the-spawn-point: '观众出生点'
         right-team-players-spawn-point: '右队选手出生点'
         the-left-team-players-spawn-point: '左队选手出生点'
         right-team-arrow-refresh-point: '右队箭刷新点'
@@ -119,46 +136,21 @@ map-editor:
         the-spectator-spawn-point-must-be-within-the-spectator-activity-area: '观众出生点必须在观赛区内'
         the-spectator-spawn-point-must-be-outside-the-competition-area: '观众出生点不能设在比赛区内'
         use-worldedit-to-select-two-endpoints: '用WorldEdit选定两个端点'
-        already-set: '已设置'
-        after-reaching-the-target-position-click: '站到目标位置后点击'
         add-points-one-by-one: '逐个添加点位'
         at-least: '（至少'
         person-current: '个，当前'
-        item-count-suffix: '个）'
-        not-set: '未设置'
     dragon-egg-carnival:
       setup:
-        site-boundaries: '场地边界'
-        use-worldedit-to-select-the-complete-game-area: '用WorldEdit框选整片比赛区域'
-        site-boundaries-set: '已设置场地边界。'
-        spectator-spawn-point: '观众出生点'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
         the-map-world-must-be-an-end-environment: '地图世界必须是末地环境'
         the-site-boundary-needs-to-cover-the-fixed-dragon-battle-area-x-z-104-104-y-0-128: '场地边界需覆盖固定龙战区域（X/Z -104..104，Y 0..128）'
         the-spawn-point-of-the-spectator-must-be-in-the-current-map-world: '观众出生点必须设在当前地图世界中'
-        after-reaching-the-target-position-click: '站到目标位置后点击'
     hoty-cody-dusky:
       setup:
-        site-boundaries: '场地边界'
-        use-worldedit-to-select-the-complete-game-area: '用WorldEdit框选整片比赛区域'
-        site-boundaries-set: '已设置场地边界。'
-        spectator-spawn-point: '观众出生点'
-        stand-in-a-spectator-position-and-click: '站到观众出生位置后点击'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
-        player-spawn-point: '玩家出生点'
         click-after-standing-at-the-birth-position: '站到出生位置后点击'
-        player-spawn-point-has-been-set: '已设置玩家出生点。'
     parkour-warrior:
       setup:
-        track-boundary: '赛道边界'
         use-worldedit-to-select-the-complete-area-of-the-parkour-track: '用WorldEdit框选整条跑酷赛道'
-        track-boundaries-set: '已设置赛道边界。'
-        spectator-spawn-point: '观众出生点'
-        stand-in-a-spectator-position-and-click: '站到观众出生位置后点击'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
-        player-spawn-point: '玩家出生点'
         after-standing-at-the-starting-point-of-the-track-click: '站到赛道起点后点击'
-        player-spawn-point-has-been-set: '已设置玩家出生点。'
     sky-wars:
       setup:
         map-borders: '地图边界'
@@ -167,57 +159,52 @@ map-editor:
         border-center-point: '边界中心点'
         stand-at-the-center-of-the-horizontal-border-and-the-shrink-effect-and-click: '站到边界收缩的中心位置后点击'
         boundary-center-point-set: '已设置边界中心点。'
-        spectator-spawn-point: '观众出生点'
-        stand-in-a-spectator-position-and-click: '站到观众出生位置后点击'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
         team-spawn-point: '队伍出生点'
         add-spawn-positions-for-each-team-one-by-one: '逐个添加每队的出生位置'
     snowball-showdown:
       setup:
-        site-boundaries: '场地边界'
         use-worldedit-to-select-a-complete-snow-field-area: '用WorldEdit框选整片雪球场地'
-        site-boundaries-set: '已设置场地边界。'
-        spectator-spawn-point: '观众出生点'
-        stand-in-a-spectator-position-and-click: '站到观众出生位置后点击'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
-        player-spawn-point: '玩家出生点'
         add-player-spawn-locations-in-this-area-one-by-one: '逐个添加该区域的玩家出生位置'
     tgttos:
       setup:
-        track-boundary: '赛道边界'
-        use-worldedit-to-select-the-complete-area-of-this-track: '用WorldEdit框选整条赛道'
-        track-boundaries-set: '已设置赛道边界。'
-        spectator-spawn-point: '观众出生点'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
         monster-spawn-point-optional: '怪物生成点（可选）'
         add-monster-spawn-locations-one-by-one-if-left-blank-no-monsters-will-be-spawned-in-this-picture: '逐个添加怪物生成位置；留空则本图不生成怪物'
         chicken-spawning-area: '鸡生成区域'
         use-worldedit-to-select-a-plane-one-block-high-chickens-are-randomly-generated-one-block-above-it: '用WorldEdit选取一格高的平面；鸡随机生成在其上方一格'
         player-spawn-area-and-orientation: '玩家生成区域与朝向'
         player-spawn-area-selection-hint: '看向开局方向后，用WorldEdit选取一格高的平面；所有玩家统一朝向'
-        after-reaching-the-target-position-click: '站到目标位置后点击'
         optional: '可选（'
-        item-count-suffix: '个）'
       menus:
         area-type:
-          select-map-equipment-type: '选择地图装备类型'
-          previous-page: '上一页'
-          return: '返回'
-          next-page: '下一页'
-          current-selection: '当前选择'
-          click-to-select: '点击选择'
+          title: '选择地图装备类型'
+          size: 54
+          layout:
+            content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+          items:
+            previous:
+              slot: 45
+              material: ARROW
+              title: '上一页'
+            back:
+              slot: 49
+              material: BARRIER
+              title: '返回'
+            next:
+              slot: 53
+              material: ARROW
+              title: '下一页'
+          copy:
+            select-map-equipment-type: '选择地图装备类型'
       steps:
         area-type:
-          oak-boat-survival: '生存模式 · 橡木船'
-          diamond-pickaxe-and-team-concrete-survival: '生存模式 · 钻石镐与队伍混凝土'
-          no-items-adventure: '冒险模式 · 无初始物品'
-          indestructible-elytra-adventure: '冒险模式 · 不可损坏的鞘翅'
+          oak-boat-survival: '生存模式 • 橡木船'
+          diamond-pickaxe-and-team-concrete-survival: '生存模式 • 钻石镐与队伍混凝土'
+          no-items-adventure: '冒险模式 • 无初始物品'
+          indestructible-elytra-adventure: '冒险模式 • 不可损坏的鞘翅'
           map-equipment-type: '地图装备类型'
           open-the-menu-and-select-the-starting-mode-and-items: '点击选择开局游戏模式和初始物品'
-          not-set: '未设置'
           map-equipment-type-set: '已设置地图装备类型：&#fff566'
         spawn-area:
-          please-use-worldedit-to-select-two-endpoints-first: '请先用WorldEdit选取两个端点。'
           the-generated-area-must-be-a-worldedit-selection-that-is-exactly-one-block-high: '生成区域必须是恰好一格高的WorldEdit选区。'
           chicken-spawn-area-set: '已设置鸡生成区域；鸡会随机生成在选区上方一格。'
           player-spawn-area-set: '已设置玩家生成区域与统一朝向；玩家会随机生成在选区上方一格。'
@@ -227,10 +214,6 @@ map-editor:
         use-worldedit-to-select-the-entire-venue-and-click-save-as-arena-schem: '用WorldEdit选取整个场地后点击，保存为arena.schem'
         template-arena-boundary-name: '模板场地（0号）完整边界'
         frame-the-complete-hand-preserved-site-0-this-minimum-angle-determines-where-the-copy-will-be-pasted: '框选完整的0号模板场地；选区最小角将作为副本粘贴基准点'
-        general-site-boundary-set: '已设置场地总边界。'
-        spectator-spawn-point: '观众出生点'
-        stand-in-a-spectator-position-and-click: '站到观众出生位置后点击'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
         the-team-s-spawn-point-on-the-right: '右侧队伍出生点'
         stand-at-the-birth-position-of-the-team-on-the-right-and-click: '站到右侧队伍出生位置后点击'
         the-spawn-point-of-the-team-on-the-right-has-been-set: '已设置右侧队伍出生点。'
@@ -252,7 +235,6 @@ map-editor:
       setup:
         set-the-spawn-point-of-spectators: '设置观众出生点'
         after-reaching-the-target-point-click: '站到目标点位后点击'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
     build-mart:
       steps:
         base-template:
@@ -264,11 +246,9 @@ map-editor:
           the-selection-must-be-exactly-7x1x7-floor: '选区必须恰好为7x1x7地板。'
           the-lowest-corner-of-the-floor-has-been-recorded: '已记录地板最低边角。'
         material-zones:
-          material-area: '材料补给区'
           save-the-material-area-selection-as-it-is-restored-regularly-during-the-game: '保存选区内的方块状态，比赛中会定时恢复'
           not-set-optional: '未设置（可选）'
-          already-set: '已设置 · '
-          material-zone-count-suffix: '个材料区'
+          already-set: '已设置 • '
         base-generation:
           generate-team-base: '生成队伍基地'
           team-base-count-input-hint: '输入参赛队伍上限；0号保留为模板，实际基地从1号开始'
@@ -285,48 +265,36 @@ map-editor:
           air-outlet-area: '上升气流区'
           use-worldedit-selection-to-add-multiple-blower-areas-updrafts-will-be-generated-above-each-area: '用WorldEdit添加一个或多个区域；每个区域上方都会产生上升气流'
           please-use-worldedit-to-select-the-blower-area-first: '请先用WorldEdit选取吹风口区域。'
-          the-blower-area-has-been-added-currently: '已添加吹风口区域&#696969•当前&#fff566'
-          item-count-suffix: '&#ededed个'
+          the-blower-area-has-been-added-currently: '已添加吹风口区域 &#696969• 当前&#fff566'
           the-blower-area-list-has-been-cleared: '已清空吹风口区域列表。'
-          air-outlet: '吹风口# '
+          air-outlet: '吹风口 # '
           area: '区域：'
           rising-range-y: '上升范围：Y='
-          through-180-suffix: '至180'
+          through-200-suffix: '至200'
           please-use-worldedit-to-reselect-the-blower-area-first: '请先用WorldEdit重新选取吹风口区域。'
-          updated: '已更新第'
           wind-zone-count-suffix: '个吹风口区域。'
-          the-serial-number-must-be-between-1-and: '序号必须在1到'
-          range-end-suffix: '之间。'
           the-air-blower-has-been-adjusted-to-the: '已将吹风口调整为第'
-          item-suffix: '项。'
-          deleted: '已删除第'
           add-blower-area: '添加吹风口区域'
           use-worldedit-to-select-an-area-and-click: '用WorldEdit选取区域后点击'
       setup:
         resource-hall-boundary: '资源大厅边界'
-        spectator-spawn-point: '观众出生点'
         resource-hall-portal-location: '资源大厅传送门落点'
         resource-hall-arrival-selection-hint: '站到玩家从基地传送后应出现的位置；不要站在传送门方块内'
         the-resource-hall-portal-landing-point-has-been-set: '已设置资源大厅传送门落点。'
         golden-blueprint-display-area-floor: '黄金蓝图展示区地板'
         use-worldedit-to-select-and-click: '用WorldEdit选区后点击'
-        already-set: '已设置'
-        after-reaching-the-target-position-click: '站到目标位置后点击'
-        template-base-label: '模板基地（0号） · '
+        template-base-label: '模板基地（0号） • '
         use-worldedit-to-precisely-select-the-submit-button-square: '用WorldEdit精确选中提交按钮方块'
         team-base-arrival-selection-hint: '站到玩家从资源大厅返回后应出现的位置；不要站在传送门方块内'
       menus:
         material-zones:
-          material-area: '材料补给区'
           unable-to-save-material-area-configuration-please-check-server-logs: '无法保存材料区配置，请查看服务器日志。'
           deleted: '已删除&#fff566'
           ordinal-infix: '&#ededed的第&#fff566'
           deleted-material-zone-count-suffix: '&#ededed个材料区。'
           material-area-list-cleared: '已清空材料区列表。'
-          please-go-to-the-current-map-world-first: '请先前往当前地图世界'
           material-island-centers-incomplete: '部分材料岛尚未设置中心点，无法自动判断选区归属。'
           the-material-area-volume-must-be-between-1-and: '材料区体积必须在1到'
-          within-blocks: '个方块以内。'
           a-snapshot-of-the-saved-material-area-as-it-is: '已保存材料补给区（&#fff566'
           squares-automatically-classified: '&#ededed个方块），自动归入&#fff566'
           and-update-the-read-only-material-manifest-buildmart-material-manifests: '&#ededed，并更新材料清单：&#fff566buildmart/material-manifests/'
@@ -343,15 +311,9 @@ map-editor:
           automatically-classified-into-the-nearest-material-island-according-to-horizontal-distance: '系统会按水平距离归入最近的材料岛'
           update-the-original-snapshot-when-the-range-is-exactly-the-same-as-the-existing-material-area: '范围与已有材料区完全相同时更新原快照'
           synchronously-update-the-read-only-material-list: '同时更新材料清单'
-          previous-page: '上一页'
           go-to: '前往第'
-          page-suffix: '页'
           the-center-has-not-been-configured-yet: '中心尚未配置'
           center: '中心：'
-          ordinal-prefix: '第'
-          total-prefix: '共'
-          material-zone-count-suffix: '个材料区'
-          next-page: '下一页'
           return-to-island-list: '返回岛屿列表'
           view-all-24-material-islands: '查看全部24个材料岛'
           unable-to-automatically-classify-material-areas: '无法自动归类材料区'
@@ -361,8 +323,6 @@ map-editor:
           clear-all-material-areas: '清空全部材料区'
           delete-all-material-areas-on-24-islands: '删除24个材料岛上的全部补给区'
           material-island-count-label: '24个材料岛'
-          return: '返回'
-          return-to-prepare-inventory: '返回地图准备工具栏'
           uncategorized: '未分类'
     parkour-tag:
       steps:
@@ -383,10 +343,6 @@ map-editor:
         template-match-arena-selection-hint: '框选整个0号模板：两条镜像赛道、双方准备区和观赛区'
         template-match-arena-boundary-name: '模板对局（0号）完整边界'
         frame-two-tracks-and-two-team-preparation-areas-other-game-copies-will-be-automatically-translated: '框住两条赛道和双方准备区；其他比赛分区会自动按此模板生成'
-        general-site-boundary-set: '已设置场地总边界。'
-        spectator-spawn-point: '观众出生点'
-        stand-in-a-spectator-position-and-click: '站到观众出生位置后点击'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
         prepare-points-for-team-a-in-position: 'A队预备点'
         stand-at-the-location-where-team-a-gathers-before-the-official-countdown-and-click: '站到A队正式倒计时前集合的位置后点击'
         team-a-s-preparation-point-for-the-match-position-has-been-set: 'A队预备点已设置。'
@@ -423,46 +379,55 @@ map-editor:
         template-track-spawn-point-name: '模板赛道（0号）玩家出生点'
         stand-at-the-spawn-point-of-copy0-player-and-click: '站到0号模板赛道的玩家出生位置后点击'
         the-spawn-point-of-track-0-has-been-set: '已设置0号赛道出生点。'
-        spectator-spawn-point: '观众出生点'
-        stand-in-a-spectator-position-and-click: '站到观众出生位置后点击'
-        spectator-spawn-point-has-been-set: '观众出生点已设置。'
+  copy:
+    after-reaching-the-target-position-click: 站到目标位置后点击
+    after-suffix: 后
+    already-set: 已设置
+    already-set-prefix: 已设置（
+    bind-to-current-world: 绑定当前世界
+    click-to-select: 点击选择
+    colored-item-count-suffix: '&#ededed个'
+    current-selection: 当前选择
+    deleted: 已删除第
+    general-site-boundary-set: 已设置场地总边界。
+    go-to: 前往
+    item-count-suffix: 个）
+    item-suffix: 项。
+    material-area: 材料补给区
+    material-zone-count-suffix: 个材料区
+    next-page: 下一页
+    not-set: 未设置
+    ordinal-prefix: 第
+    page-suffix: 页
+    player-spawn-point: 玩家出生点
+    player-spawn-point-has-been-set: 已设置玩家出生点。
+    please-go-to-the-current-map-world-first: 请先前往当前地图世界
+    please-use-worldedit-to-select-two-endpoints-first: 请先用WorldEdit选取两个端点。
+    points: 个点位。
+    previous-page: 上一页
+    progress-line: '进度线 # '
+    range-end-suffix: 之间。
+    return: 返回
+    return-to-prepare-toolbar: 返回地图准备工具栏
+    site-boundaries: 场地边界
+    site-boundaries-set: 已设置场地边界。
+    spectator-spawn-point: 观众出生点
+    spectator-spawn-point-has-been-set: 观众出生点已设置。
+    stand-in-a-spectator-position-and-click: 站到观众出生位置后点击
+    the-point-has-been-adjusted-to-the: 已将点位调整为第
+    the-serial-number-must-be-between-1-and: 序号必须在1到
+    total-prefix: 共
+    track-boundaries-set: 已设置赛道边界。
+    track-boundary: 赛道边界
+    updated: 已更新第
+    use-worldedit-to-select-the-complete-area-of-this-track: 用WorldEdit框选整条赛道
+    use-worldedit-to-select-the-complete-game-area: 用WorldEdit框选整片比赛区域
+    within-blocks: 个方块以内。
   common:
     area:
       template-arena-label: '0号场地'
-      bind-to-current-world: '绑定当前世界'
     snapshot:
       edit-venue: '编辑场地'
-  toolbar:
-    game: '游戏：'
-    map: '地图：'
-    target-world: '目标世界：'
-    already-in-the-correct-world: '✅ 已在目标世界'
-    please-go-to-this-world: '❌ 请先前往目标世界'
-    progress: '进度：'
-    status-published: '状态：✅ 已发布'
-    status-draft-with-unpublished-changes: '状态：⚠ 草稿（有未发布改动）'
-    all-steps-completed: '全部步骤已完成'
-    to-do: '待办：'
-    map-preparation-mode: '地图准备模式'
-    send-to: '传送至'
-    go-to: '前往'
-    world-go-to: '世界/前往'
-    editing-preparation-steps: '编辑准备步骤'
-    open-multi-line-step-menu: '打开完整步骤列表'
-    number-of-steps: '步骤总数：'
-    exit-map-preparation-mode: '退出地图准备模式'
-    restore-inventory-and-exit: '恢复原物品栏并退出'
-    check-map: '校验地图'
-    list-all-required-steps-that-are-not-completed: '查看尚未完成的必需步骤'
-    map-published: '地图已发布'
-    verify-and-publish: '验证并发布'
-    release-again-to-generate-a-new-revision: '重新发布会创建新的地图版本'
-    after-the-verification-is-passed-the-world-is-solidified-and-the-game-is-allowed-to-start: '检查通过后保存地图，并允许开赛'
-    save-draft: '保存草稿'
-    save-current-block-changes-does-not-require-all-points-to-be-completed: '保存当前方块改动，无需先完成全部点位'
-    the-draft-is-still-unavailable-for-competition-publish-after-completing-the-configuration: '草稿不可开赛，请完成配置后再发布'
-    worldedit-selection-tool: 'WorldEdit选区工具'
-    left-click-to-select-pos1-right-click-to-select-pos2-for-border-template-step: '左键选第一个点，右键选第二个点；用于设置边界和模板'
   session:
     rule-introduction-spawn-point-can-be-covered: '规则介绍专用出生点（可选）'
     rules-spawn-selection-hint: '站到目标位置后点击；不设置则使用观众出生点'
@@ -474,69 +439,48 @@ map-editor:
   steps:
     location:
       add-current-point: '添加当前点位'
-      after-reaching-the-target-position-click: '站到目标位置后点击'
     checkpoints:
       parkour-checkpoint: '跑酷检查点'
       add-a-master-checkpoint-with-the-current-position-and-worldedit-selection-at-least-one-is-required: '站在重生位置并用WorldEdit选取触发范围；至少设置一个检查点'
       please-use-worldedit-to-select-the-checkpoint-to-enter-the-area-first: '请先用WorldEdit选取检查点进入区域。'
-      checkpoint-added-current: '已添加检查点&#696969•当前&#fff566'
-      item-count-suffix: '&#ededed个'
-      checkpoint: '检查点# '
+      checkpoint-added-current: '已添加检查点 &#696969• 当前&#fff566'
+      checkpoint: '检查点 # '
       spawn-point: '出生点：'
       enter-area: '进入区域：'
       please-use-worldedit-to-reselect-the-checkpoint-to-enter-the-area: '请先用WorldEdit重新选取检查点进入区域。'
-      updated: '已更新第'
       checkpoint-spawn-points-and-entry-areas: '个检查点的出生点和进入区域。'
-      the-serial-number-must-be-between-1-and: '序号必须在1到'
-      range-end-suffix: '之间。'
       the-checkpoint-has-been-adjusted-to-the: '已将检查点调整为第'
-      item-suffix: '项。'
-      deleted: '已删除第'
       checkpoint-count-suffix: '个检查点。'
-      not-set: '未设置'
       add-master-checkpoint: '添加主检查点'
       stand-at-the-spawn-point-and-select-the-area-to-enter-and-click: '站在出生点并选取进入区域后点击'
     world-confirmation:
-      bind-to-current-world: '绑定当前世界'
       confirm-the-world: '确认所在世界'
       click-to-bind-or-change-to-the-current-world: '点击将这张地图绑定到你当前所在的世界'
-      go-to: '前往'
       click-this-to-confirm-after-entering-the-world: '世界后点击此项确认'
       the-current-world-is-already-used-by-another-map-or-the-map-is-running-cannot-be-bound: '该世界已被其他地图使用，或相关地图仍在运行，暂时无法绑定。'
       bound-map-world: '已绑定地图世界：&#fff566'
       confirmed-game-world: '已确认游戏世界。'
       please-go-to-the-target-editing-site-through-the-ender-pearl-first: '请先通过末影珍珠前往目标编辑场地。'
     countdown-blocks:
-      random-discrete-type: '随机离散型'
-      open-door-thing: '开门式（东西）'
-      open-door-type-north-and-south: '开门式（南北）'
-      open-door-type-vertical: '开门式（竖直）'
-      disappear-directly: '直接消失'
-      the-countdown-block-for-the-start-of-the-game-disappears-optional: '开赛倒计时方块消失（可选）'
-      set-the-selection-and-how-to-disappear-within-3-seconds-leave-it-blank-to-disable-it: '设置方块选区，以及开赛前最后3秒的消失方式；不设置则关闭此功能'
-      optional: '可选'
-      not-enabled-optional: '未启用（可选）'
-      enabled: '已启用 · '
-      please-go-to-the-current-map-world-first: '请先前往当前地图世界'
-      please-use-worldedit-to-select-two-endpoints-first: '请先用WorldEdit选取两个端点。'
-      the-selection-volume-must-be-between-1-and: '选区体积必须在1到'
-      within-blocks: '个方块以内。'
-      the-start-countdown-box-has-been-set-to-disappear-from-the-selection-area: '已设置开赛倒计时方块消失选区（'
-      blocks: '个方块）。'
-      disappearance-method-set: '已设置消失方式：'
-      closed-start-countdown-box-disappears: '已关闭开赛倒计时方块消失。'
+        random-discrete-type: '随机离散型'
+        open-door-thing: '开门式（东西）'
+        open-door-type-north-and-south: '开门式（南北）'
+        open-door-type-vertical: '开门式（竖直）'
+        disappear-directly: '直接消失'
+        the-countdown-block-for-the-start-of-the-game-disappears-optional: '开赛倒计时方块消失（可选）'
+        set-the-selection-and-how-to-disappear-within-3-seconds-leave-it-blank-to-disable-it: '设置方块选区，以及开赛前最后3秒的消失方式；不设置则关闭此功能'
+        optional: '可选'
+        not-enabled-optional: '未启用（可选）'
+        enabled: '已启用 • '
+        the-selection-volume-must-be-between-1-and: '选区体积必须在1到'
+        the-start-countdown-box-has-been-set-to-disappear-from-the-selection-area: '已设置开赛倒计时方块消失选区（'
+        blocks: '个方块）。'
+        disappearance-method-set: '已设置消失方式：'
+        closed-start-countdown-box-disappears: '已关闭开赛倒计时方块消失。'
     list-editor:
-      points-added-current: '已添加点位&#696969•&#ededed当前&#fff566'
-      item-count-suffix: '&#ededed个'
-      point-list-cleared: '已清空点位列表。'
-      point: '点位'
-      updated: '已更新第'
-      points: '个点位。'
-      the-serial-number-must-be-between-1-and: '序号必须在1到'
-      range-end-suffix: '之间。'
-      the-point-has-been-adjusted-to-the: '已将点位调整为第'
-      item-suffix: '项。'
-      deleted: '已删除第'
+        points-added-current: '已添加点位 &#696969•&#ededed 当前&#fff566'
+        point-list-cleared: '已清空点位列表。'
+        point: '点位'
     schematic:
       failed-to-save-template-please-check-worldedit-selection: '保存模板失败，请检查WorldEdit选区：&#fff566'
       venue-template-saved: '已保存场地模板：&#fff566'
@@ -561,646 +505,1525 @@ map-editor:
       generated: '已生成&#fff566'
       site-please-verify-and-publish-after-completing-the-location: '&#ededed份场地；完成点位后请验证并发布。'
     worldedit-selection:
-      please-use-worldedit-to-select-two-endpoints-first: '请先用WorldEdit选取两个端点。'
   menus:
+    prepare-toolbar:
+      items:
+        status:
+          slot: 0
+          material: PAPER
+          title: '&#ededed&l地图准备模式'
+          lore:
+            - '&#a0a0a0游戏：&#ededed%game% &#696969• 地图：&#55ffff%map%'
+            - '&#a0a0a0目标世界：&#ededed%world%'
+            - '&#55ffff进度：%done%/%total%'
+        teleport:
+          slot: 1
+          material: ENDER_PEARL
+          title: '&#55ffff&l传送至 %destination%'
+          lore:
+            - '&#a0a0a0前往世界：&#ededed%world%'
+        steps:
+          slot: 2
+          material: CHEST
+          title: '&#55ffff&l编辑准备步骤'
+          lore:
+            - '&#a0a0a0打开完整步骤列表'
+            - '&#a0a0a0步骤总数：&#ededed%count%'
+        validate:
+          slot: 3
+          material: SPYGLASS
+          title: '&#fff566&l校验地图'
+          lore:
+            - '&#a0a0a0查看尚未完成的必需步骤'
+        publish:
+          slot: 4
+          states:
+            draft:
+              material: YELLOW_DYE
+              title: '&#ffaa00&l验证并发布'
+              lore:
+                - '&#a0a0a0检查通过后保存地图，并允许开赛'
+            published:
+              material: LIME_DYE
+              title: '&#55ff55&l地图已发布'
+              lore:
+                - '&#a0a0a0重新发布会创建新的地图版本'
+        wand:
+          slot: 5
+          material: WOODEN_AXE
+          title: '&#ffaa00&lWorldEdit选区工具'
+          lore:
+            - '&#a0a0a0左键选第一个点，右键选第二个点'
+            - '&#696969用于设置边界和模板'
+        save-draft:
+          slot: 6
+          material: WRITABLE_BOOK
+          title: '&#ffaa00&l保存草稿'
+          lore:
+            - '&#a0a0a0保存当前方块改动，无需先完成全部点位'
+            - '&#fff566草稿不可开赛，请完成配置后再发布'
+        exit:
+          slot: 8
+          material: BARRIER
+          title: '&#ff5555&l退出地图准备模式'
+          lore:
+            - '&#a0a0a0恢复原物品栏并退出'
+      copy:
+        game: '游戏：'
+        map: '地图：'
+        target-world: '目标世界：'
+        already-in-the-correct-world: '✅ 已在目标世界'
+        please-go-to-this-world: '❌ 请先前往目标世界'
+        progress: '进度：'
+        status-published: '状态：✅ 已发布'
+        status-draft-with-unpublished-changes: '状态：⚠ 草稿（有未发布改动）'
+        all-steps-completed: '全部步骤已完成'
+        to-do: '待办：'
+        map-preparation-mode: '地图准备模式'
+        send-to: '传送至'
+        world-go-to: '世界/前往'
+        editing-preparation-steps: '编辑准备步骤'
+        open-multi-line-step-menu: '打开完整步骤列表'
+        number-of-steps: '步骤总数：'
+        exit-map-preparation-mode: '退出地图准备模式'
+        restore-inventory-and-exit: '恢复原物品栏并退出'
+        check-map: '校验地图'
+        list-all-required-steps-that-are-not-completed: '查看尚未完成的必需步骤'
+        map-published: '地图已发布'
+        verify-and-publish: '验证并发布'
+        release-again-to-generate-a-new-revision: '重新发布会创建新的地图版本'
+        after-the-verification-is-passed-the-world-is-solidified-and-the-game-is-allowed-to-start: '检查通过后保存地图，并允许开赛'
+        save-draft: '保存草稿'
+        save-current-block-changes-does-not-require-all-points-to-be-completed: '保存当前方块改动，无需先完成全部点位'
+        the-draft-is-still-unavailable-for-competition-publish-after-completing-the-configuration: '草稿不可开赛，请完成配置后再发布'
+        worldedit-selection-tool: 'WorldEdit选区工具'
+        left-click-to-select-pos1-right-click-to-select-pos2-for-border-template-step: '左键选第一个点，右键选第二个点；用于设置边界和模板'
     input:
-      enter-venue-name: '输入场地名'
-      enter-the-number-of-copies: '输入份数'
-      please-enter-valid-numbers: '请输入有效数字。'
-      number-of-copies-must-be-at-least-1: '份数必须至少为&#fff5661'
-      please-enter-a-valid-integer: '请输入有效整数。'
-      enter-in-the-rename-field-above-then-click-on-the-result-box-on-the-right-to-confirm: '在上方输入内容，然后点击右侧结果栏确认'
-      venue-name-cannot-be-empty: '场地名不能为空。'
-      venue-name-cannot-exceed-32-characters: '场地名不能超过&#fff56632&#ededed个字符。'
-      venue-name-contains-invalid-characters: '场地名包含无效字符。'
-      venue: '场地&#fff566'
-      already-exists: '&#ededed已存在。'
+      copy:
+        enter-venue-name: '输入场地名'
+        enter-the-number-of-copies: '输入份数'
+        please-enter-valid-numbers: '请输入有效数字。'
+        number-of-copies-must-be-at-least-1: '份数必须至少为&#fff5661'
+        please-enter-a-valid-integer: '请输入有效整数。'
+        enter-in-the-rename-field-above-then-click-on-the-result-box-on-the-right-to-confirm: '在上方输入内容，然后点击右侧结果栏确认'
+        venue-name-cannot-be-empty: '场地名不能为空。'
+        venue-name-cannot-exceed-32-characters: '场地名不能超过&#fff56632&#ededed个字符。'
+        venue-name-contains-invalid-characters: '场地名包含无效字符。'
+        venue: '场地&#fff566'
+        already-exists: '&#ededed已存在。'
     area-list:
-      venue-list: '场地列表'
-      configuration-progress: '配置进度：'
-      published: '✅ 已发布'
-      draft-with-unpublished-changes: '⚠ 草稿（有未发布改动）'
-      left-click-to-enter-editing: '左键：编辑地图'
-      right-click-to-delete-map-configuration-keep-world: '右键：删除地图配置（不会删除世界）'
-      create-new-map: '新建地图'
-      click-and-enter-the-map-name: '点击后输入新地图名称'
-      close: '关闭'
-      click-to-close-menu: '点击关闭'
-      delete-map-confirmation: '请在30秒内再次右键确认；只删除配置，不会删除地图世界'
+      items:
+        new:
+          material: EMERALD
+          title: '新建地图'
+          lore: ['点击后输入新地图名称']
+        close:
+          material: BARRIER
+          title: '关闭'
+          lore: ['点击关闭']
+      copy:
+        venue-list: '场地列表'
+        configuration-progress: '配置进度：'
+        published: '✅ 已发布'
+        draft-with-unpublished-changes: '⚠ 草稿（有未发布改动）'
+        left-click-to-enter-editing: '左键：编辑地图'
+        right-click-to-delete-map-configuration-keep-world: '右键：删除地图配置（不会删除世界）'
+        create-new-map: '新建地图'
+        click-and-enter-the-map-name: '点击后输入新地图名称'
+        close: '关闭'
+        click-to-close-menu: '点击关闭'
+        delete-map-confirmation: '请在30秒内再次右键确认；只删除配置，不会删除地图世界'
     countdown-blocks:
-      the-countdown-block-disappears: '开赛倒计时方块效果'
-      already-set: '已设置（'
-      blocks: '个方块）'
-      not-set-function-turned-off: '未设置（功能关闭）'
-      set-the-current-worldedit-selection: '使用当前WorldEdit选区'
-      click-to-read-the-current-selection: '点击保存当前选区'
-      close-and-clear-selection: '关闭并清除选区'
-      delete-the-saved-block-and-disappear-the-selection: '删除已保存的方块消失选区'
-      return: '返回'
-      return-to-preparation-steps: '返回准备步骤'
-      current-approach: '当前方式'
-      click-to-select: '点击选择'
-      will-be-completed-3-seconds-before-the-countdown-to-the-start-of-the-game: '方块会在开赛前最后3秒内消失'
-      please-set-up-worldedit-selection-first: '请先设置WorldEdit选区'
+      title: '开赛倒计时方块效果'
+      size: 27
+      items:
+        selection:
+          slot: 10
+          material: GOLDEN_AXE
+          title: '使用当前WorldEdit选区'
+          lore: ['%selection%', '点击保存当前选区']
+        clear:
+          slot: 17
+          material: BARRIER
+          title: '关闭并清除选区'
+          lore: ['删除已保存的方块消失选区']
+        back:
+          slot: 22
+          material: ARROW
+          title: '返回'
+          lore: ['返回准备步骤']
+      copy:
+        the-countdown-block-disappears: '开赛倒计时方块效果'
+        blocks: '个方块）'
+        not-set-function-turned-off: '未设置（功能关闭）'
+        set-the-current-worldedit-selection: '使用当前WorldEdit选区'
+        click-to-read-the-current-selection: '点击保存当前选区'
+        close-and-clear-selection: '关闭并清除选区'
+        delete-the-saved-block-and-disappear-the-selection: '删除已保存的方块消失选区'
+        return-to-preparation-steps: '返回准备步骤'
+        current-approach: '当前方式'
+        will-be-completed-3-seconds-before-the-countdown-to-the-start-of-the-game: '方块会在开赛前最后3秒内消失'
+        please-set-up-worldedit-selection-first: '请先设置WorldEdit选区'
     list-editor:
-      point-management: '点位管理：'
-      view-the-set-list: '查看已设置列表'
-      edit-serial-number-item-by-item-actual-information-or-delete: '调整顺序、重新设置位置，或删除条目'
-      current-number-of-points: '当前点位数：'
-      already-set: '已设置'
-      not-set: '未设置'
-      return: '返回'
-      return-to-prepare-inventory: '返回地图准备工具栏'
-      please-go-to-the-current-map-world-first: '请先前往当前地图世界'
-      list-set: '已设置列表：'
-      click-to-edit-this: '点击编辑此项'
-      previous-page: '上一页'
-      ordinal-prefix: '第'
-      page-suffix: '页'
-      return-to-point-management: '返回点位管理'
-      next-page: '下一页'
-      edit-point: '编辑点位# '
-      edit-serial-number: '编辑序号'
-      adjust-the-order-of-this-item-in-the-list: '调整此项在列表中的顺序'
-      edit-own-progress-line: '更改所属进度线'
-      select-which-progress-line-the-respawn-point-is-behind: '选择玩家经过哪条进度线后可在此重生'
-      edit-stage-equipment: '更改赛段装备'
-      do-not-modify-line-selection-and-drop-height: '只更换装备，不改进度线和坠落高度'
-      edit-actual-information: '重新设置位置或范围'
-      use-current-position-current-selection-override: '用当前位置或当前选区重新设置'
-      delete-this-item: '删除此项'
-      only-delete-the-current-item: '只删除当前这一项'
-      return-to-list: '返回列表'
-      enter-new-serial-number: '输入新序号'
+      items:
+        add:
+          slot: 0
+          material: LIME_WOOL
+        view:
+          slot: 1
+          material: BOOK
+          title: '查看已设置列表'
+          lore: ['调整顺序、重新设置位置，或删除条目']
+        info:
+          slot: 4
+          material: PAPER
+        back:
+          slot: 8
+          material: ARROW
+          title: '返回'
+          lore: ['返回地图准备工具栏']
+      copy:
+        point-management: '点位管理：'
+        view-the-set-list: '查看已设置列表'
+        edit-serial-number-item-by-item-actual-information-or-delete: '调整顺序、重新设置位置，或删除条目'
+        current-number-of-points: '当前点位数：'
+        list-set: '已设置列表：'
+        click-to-edit-this: '点击编辑此项'
+        return-to-point-management: '返回点位管理'
+        edit-point: '编辑点位 # '
+        edit-serial-number: '编辑序号'
+        adjust-the-order-of-this-item-in-the-list: '调整此项在列表中的顺序'
+        edit-own-progress-line: '更改所属进度线'
+        select-which-progress-line-the-respawn-point-is-behind: '选择玩家经过哪条进度线后可在此重生'
+        edit-stage-equipment: '更改赛段装备'
+        do-not-modify-line-selection-and-drop-height: '只更换装备，不改进度线和坠落高度'
+        edit-actual-information: '重新设置位置或范围'
+        use-current-position-current-selection-override: '用当前位置或当前选区重新设置'
+        delete-this-item: '删除此项'
+        only-delete-the-current-item: '只删除当前这一项'
+        return-to-list: '返回列表'
+        enter-new-serial-number: '输入新序号'
     step-list:
-      preparatory-steps: '准备步骤'
-      previous-page: '上一页'
-      ordinal-prefix: '第'
-      page-suffix: '页'
-      total-prefix: '共'
-      item-suffix: '项'
-      return-to-hotkey-bar: '返回地图准备工具栏'
-      close-step-menu: '关闭步骤菜单'
-      next-page: '下一页'
-      already-the-last-page: '已是最后一页'
-      no-more-steps: '没有更多步骤'
-      confirmed-world: '已确认所在世界'
-      to-be-confirmed: '待确认'
-      stamped-and-generated: '已批量生成'
-      to-be-stamped: '待生成'
-      already-set: '已设置（'
-      item-count-suffix: '个）'
-      to-be-set: '待设置'
-      set-status: '已设置'
-      click-to-edit: '点击编辑'
+      title: '准备步骤'
+      size: 54
+      layout:
+        content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+      items:
+        previous:
+          slot: 45
+          material: ARROW
+          title: '上一页'
+          lore: ['第 %page% 页']
+          states:
+            disabled: {material: GRAY_STAINED_GLASS_PANE, title: '准备步骤', lore: ['共 %total% 项']}
+        back:
+          slot: 49
+          material: BARRIER
+          title: '返回地图准备工具栏'
+          lore: ['关闭步骤菜单']
+        next:
+          slot: 53
+          material: ARROW
+          title: '下一页'
+          lore: ['第 %page% / %pages% 页']
+          states:
+            disabled: {material: GRAY_STAINED_GLASS_PANE, title: '已是最后一页', lore: ['没有更多步骤']}
+      copy:
+        preparatory-steps: '准备步骤'
+        item-suffix: '项'
+        close-step-menu: '关闭步骤菜单'
+        already-the-last-page: '已是最后一页'
+        no-more-steps: '没有更多步骤'
+        confirmed-world: '已确认所在世界'
+        to-be-confirmed: '待确认'
+        stamped-and-generated: '已批量生成'
+        to-be-stamped: '待生成'
+        to-be-set: '待设置'
+        click-to-edit: '点击编辑'
 spectator:
-  game-menu:
-    choose-a-viewing-venue: '选择观战场地'
-    this-venue-has-ended-or-is-currently-unavailable-for-play: '该场地已结束或当前不可观战'
-    select-specific-sub-venue: '选择比赛分区'
-    please-select-the-specific-sub-venue-you-want-to-visit: '请选择要前往的比赛分区'
-    teleport-to-the-player-s-spawn-point-in-this-subfield: '前往该分区的比赛出生点'
-    return-to-venue-list: '返回场地列表'
-    previous-page: '上一页'
-    refresh: '刷新'
-    ordinal-prefix: '第'
-    page-suffix: '页'
-    arena-section-count-suffix: '个比赛分区'
-    next-page: '下一页'
-    close: '关闭'
-    arena-section-label: '比赛分区'
-    select-a-match-to-create-a-viewing-location: '选择匹配赛建观战位置'
-    match-build: '匹配赛建 · '
-    spectator-position: '个观战位置'
-    locations: '个位置'
-    resource-hall: '资源大厅'
-    public-material-area: '公共材料区'
-    base: '基地'
-    team-building-area: '队伍建筑区'
-    there-are-currently-no-venues-currently-in-progress: '暂无进行中的场地'
-    the-rules-introduction-preparation-phase-will-be-displayed-here-once-it-has-begun: '比赛进入规则介绍或准备阶段后，会显示在这里'
-    quit-watching-the-game: '退出观战'
-    venue-status-automatically-updated-every-second: '列表每秒自动刷新'
-    venues-are-running: '个场地正在运行'
-    ongoing-venue: '进行中场地'
-    not-currently-watching-the-game: '当前未在观战'
-    current: '当前'
-    spectating-hall: '观战大厅'
-    venue: '场地'
-    stage: '阶段'
-    audience: '观众'
-    watching: '正在旁观'
-    this-battle: '本场对战'
-    participating-teams: '参赛队伍'
-    waiting-for-team-data: '等待队伍数据'
-    to-be-determined: '待定'
-  controls:
-    spectator-control: '观战工具'
-    the-display-status-of-players-in-the-field-has-been-switched: '场内玩家的显示状态已切换'
-    exited-from-watching-the-game: '已退出观战'
-    turn-on-spectator-controls: '打开观战工具'
-    night-vision: '夜视'
-    click-to-toggle-night-vision: '点击切换夜视'
-    player-tracking: '玩家追踪'
-    left-click-switch-to-next-player: '左键：切换下一名玩家'
-    right-click-stop-tracking: '右键：停止追踪'
-    go-to-track-player: '前往追踪玩家'
-    click-to-transfer-to-the-current-tracking-target: '点击传送到当前追踪目标'
-    team-position: '队伍位置'
-    click-to-select-team-position: '点击选择队伍位置'
-    show-hide-players: '显示或隐藏玩家'
-    click-to-switch-all-players-in-the-field: '点击显示或隐藏场内全部玩家'
-    quit-watching-the-game: '退出观战'
-    click-to-return-to-the-lobby: '点击退出观战并返回大厅'
-    flight-speed: '飞行速度：'
-    left-click-acceleration: '左键：提高速度'
-    right-click-slow-down: '右键：降低速度'
-    choose-a-viewing-venue: '选择旁观场地'
-    click-to-open-venue-list: '点击打开场地列表'
-    night-vision-is-gone: '夜视已'
-    turn-on: '开启'
-    close: '关闭'
-    player-tracking-stopped: '已停止追踪'
-    there-are-currently-no-trackable-players-in-the-field: '这场比赛中暂无可追踪的玩家'
-    tracking: '正在追踪：'
-    please-use-the-tracking-compass-to-select-a-player-first: '请先用追踪指南针选择玩家'
-    already-visited: '已前往'
-    select-team-position: '选择队伍位置'
-    click-to-send-and-set-as-tracking-target: '点击传送并设为追踪目标'
-    return: '返回'
-    click-to-go-to-the-team-s-spawn-point: '点击前往队伍出生点'
-    night-vision-status-label: '夜视：'
-    player-tracking-status-label: '玩家追踪：'
-    player-teleport: '玩家传送'
-    team-selection: '队伍选择'
-    player-hide-show: '显示或隐藏全部玩家'
-    click-to-switch-all-players: '点击切换全部玩家的可见状态'
-    team-hide-show: '显示或隐藏所选队伍'
-    click-to-switch-the-currently-selected-team: '点击切换所选队伍的可见状态'
-    player-tracking-has-been: '玩家追踪已'
+  menus:
+    venue-selector:
+      title: '&#55ffff&l选择观战场地'
+      size: 54
+      layout:
+        content: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+        border: [0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 47, 51]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: ' '
+          lore: []
+        status:
+          slot: 4
+          material: SPYGLASS
+          title: '&#55ffff&l观战大厅'
+          lore: []
+          states:
+            idle:
+              lore:
+                - '&#a0a0a0进行中场地：&#55ff55%count%'
+                - '&#696969当前未在观战'
+            watching:
+              glint: true
+              lore:
+                - '&#a0a0a0进行中场地：&#55ff55%count%'
+                - '&#a0a0a0当前观战：&#55ffff%game% &#696969• &#ededed%venue%'
+        match:
+          material: ENDER_EYE
+          title: '%game_color%&l%game% &#696969• &#ededed%venue%'
+          lore:
+            - '&#a0a0a0场地：&#ededed%venue%'
+            - '&#a0a0a0阶段：%stage_color%%stage%'
+            - '&#a0a0a0观众：&#55ffff%audience%'
+          states:
+            watching:
+              glint: true
+        empty:
+          slot: 22
+          material: GRAY_DYE
+          title: '&#a0a0a0暂无进行中的场地'
+          lore:
+            - '&#696969比赛进入规则介绍或准备阶段后，会显示在这里'
+        leave:
+          slot: 45
+          material: REDSTONE
+          title: '&#ff5555退出观战'
+          lore:
+            - '&#a0a0a0当前场地：&#ededed%venue%'
+        previous:
+          slot: 48
+          material: ARROW
+          title: '&#ededed上一页'
+          lore: []
+        refresh:
+          slot: 49
+          material: CLOCK
+          title: '&#fff566刷新'
+          lore:
+            - '&#696969场地状态每秒自动更新'
+        page:
+          slot: 50
+          material: PAPER
+          title: '&#55ffff第 %page% / %pages% 页'
+          lore:
+            - '&#a0a0a0正在运行：&#ededed%count% 个场地'
+        next:
+          slot: 52
+          material: ARROW
+          title: '&#ededed下一页'
+          lore: []
+        close:
+          slot: 53
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+      copy:
+        watching: '&#55ff55&l✓ 正在旁观'
+        paired-heading: '&#ffaa00本场对战：'
+        multi-heading: '&#ffaa00参赛队伍：'
+        waiting: '&#696969等待队伍数据'
+        undecided: '待定'
+    sub-arena-selector:
+      title: '&#55ffff&l选择比赛分区'
+      size: 54
+      layout:
+        content: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+        border: [0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 47, 51]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: ' '
+          lore: []
+        summary:
+          slot: 4
+          material: ENDER_EYE
+          title: '%game_color%&l%game% &#696969• &#ededed%venue%'
+          lore:
+            - '&#a0a0a0请选择要前往的比赛分区'
+        destination:
+          material: ENDER_EYE
+          title: '&#ededed&l%name%'
+          lore:
+            - '&#a0a0a0点击前往该分区的比赛出生点'
+        back:
+          slot: 45
+          material: ARROW
+          title: '&#ededed返回场地列表'
+          lore: []
+        previous:
+          slot: 48
+          material: ARROW
+          title: '&#ededed上一页'
+          lore: []
+        refresh:
+          slot: 49
+          material: CLOCK
+          title: '&#fff566刷新'
+          lore: []
+        page:
+          slot: 50
+          material: PAPER
+          title: '&#55ffff第 %page% / %pages% 页'
+          lore:
+            - '&#a0a0a0比赛分区：&#ededed%count% 个'
+        next:
+          slot: 52
+          material: ARROW
+          title: '&#ededed下一页'
+          lore: []
+        close:
+          slot: 53
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+    build-mart-selector:
+      title: '&#ffaa00&l选择匹配赛建观战位置'
+      size: 54
+      layout:
+        content: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+        border: [0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 47, 51]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: ' '
+          lore: []
+        summary:
+          slot: 4
+          material: CRAFTING_TABLE
+          title: '&#ffaa00&l匹配赛建 &#696969• &#ededed%venue%'
+          lore:
+            - '&#a0a0a0观战位置：&#ededed%count% 个'
+        resource-hub:
+          material: CHEST
+          title: '&#ffaa00&l资源大厅'
+          lore:
+            - '&#a0a0a0公共材料区'
+        team-base:
+          material: WHITE_WOOL
+          title: '%team_color%&l%team%&#ededed的基地'
+          lore:
+            - '&#a0a0a0队伍建筑区'
+        back:
+          slot: 45
+          material: ARROW
+          title: '&#ededed返回场地列表'
+          lore: []
+        previous:
+          slot: 48
+          material: ARROW
+          title: '&#ededed上一页'
+          lore: []
+        refresh:
+          slot: 49
+          material: CLOCK
+          title: '&#fff566刷新'
+          lore: []
+        page:
+          slot: 50
+          material: PAPER
+          title: '&#55ffff第 %page% / %pages% 页'
+          lore:
+            - '&#a0a0a0观战位置：&#ededed%count% 个'
+        next:
+          slot: 52
+          material: ARROW
+          title: '&#ededed下一页'
+          lore: []
+        close:
+          slot: 53
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+    visibility:
+      title: '&#55ffff&l玩家显示设置'
+      size: 9
+      layout:
+        content: [2, 4, 6, 8]
+      items:
+        show-all:
+          slot: 2
+          material: LIME_DYE
+          title: '&#55ff55&l显示全部玩家'
+          lore:
+            - '&#a0a0a0清除筛选并显示场内所有玩家'
+        show-player:
+          slot: 4
+          material: PLAYER_HEAD
+          title: '&#ff55ff&l仅显示所选玩家'
+          lore:
+            - '&#a0a0a0选择一名玩家，隐藏其他玩家'
+        show-team:
+          slot: 6
+          material: WHITE_WOOL
+          title: '&#ffaa00&l仅显示所选队伍'
+          lore:
+            - '&#a0a0a0选择一支队伍，隐藏其他玩家'
+        close:
+          slot: 8
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+    player-visibility-selector:
+      title: '&#ff55ff&l选择要显示的玩家'
+      size: 9
+      layout:
+        content: [0, 1, 2, 3, 4, 5, 6, 7]
+      items:
+        player:
+          material: PLAYER_HEAD
+          title: '&#ededed%player%'
+          lore:
+            - '&#a0a0a0点击后仅显示该玩家'
+        close:
+          slot: 8
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+    team-visibility-selector:
+      title: '&#ffaa00&l选择要显示的队伍'
+      size: 9
+      layout:
+        content: [0, 1, 2, 3, 4, 5, 6, 7]
+      items:
+        team:
+          material: WHITE_WOOL
+          title: '%team_color%&l%team%'
+          lore:
+            - '&#a0a0a0点击后仅显示该队伍成员'
+        close:
+          slot: 8
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+    team-position-selector:
+      title: '&#ffaa00&l选择队伍位置'
+      size: 9
+      layout:
+        content: [0, 1, 2, 3, 4, 5, 6, 7]
+      items:
+        team:
+          material: WHITE_WOOL
+          title: '%team_color%%team%'
+          lore:
+            - '&#a0a0a0点击前往队伍位置'
+        close:
+          slot: 8
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+  hotbar:
+    participant-controls:
+      slot: 8
+      material: GLASS
+      title: '&#55ffff&l玩家显示设置'
+      lore:
+        - '&#a0a0a0点击选择要显示的玩家或队伍'
+      glint: true
+    night-vision:
+      slot: 0
+      material: COAL
+      title: '&#55ffff&l夜视'
+      lore:
+        - '&#a0a0a0点击切换夜视'
+      states:
+        enabled: {material: SEA_LANTERN, glint: true}
+        disabled: {material: COAL, glint: false}
+    tracking:
+      slot: 1
+      material: COMPASS
+      title: '&#55ff55&l玩家追踪'
+      lore:
+        - '&#a0a0a0左键：切换下一名玩家'
+        - '&#a0a0a0右键：停止追踪'
+    player-teleport:
+      slot: 2
+      material: ENDER_PEARL
+      title: '&#ff55ff&l前往追踪玩家'
+      lore:
+        - '&#a0a0a0点击传送到当前追踪目标'
+    team-position:
+      slot: 3
+      material: WHITE_WOOL
+      title: '&#ffaa00&l队伍位置'
+      lore:
+        - '&#a0a0a0点击选择队伍位置'
+    player-visibility:
+      slot: 4
+      material: GLASS
+      title: '&#ededed&l玩家显示设置'
+      lore:
+        - '&#a0a0a0点击选择全部、单名玩家或单支队伍'
+    leave:
+      slot: 5
+      material: RED_DYE
+      title: '&#ff5555&l退出观战'
+      lore:
+        - '&#a0a0a0点击退出观战并返回大厅'
+    flight-speed:
+      slot: 7
+      material: FEATHER
+      title: '&#fff566&l飞行速度：%speed%'
+      lore:
+        - '&#55ff55左键：提高速度'
+        - '&#ff5555右键：降低速度'
+    venue-selector:
+      slot: 8
+      material: SPYGLASS
+      title: '&#55ffff&l选择观战场地'
+      lore:
+        - '&#a0a0a0点击打开场地列表'
+      glint: true
+  copy:
+    unavailable: '该场地已结束或当前不可观战。'
+    visibility-all: '已显示场内全部玩家。'
+    visibility-player: '现在仅显示玩家%player%。'
+    visibility-team: '现在仅显示队伍%team%。'
+    left: '已退出观战。'
+    night-vision: '夜视已%state%。'
+    tracking-stopped: '已停止追踪。'
+    no-trackable-players: '这场比赛中暂无可追踪的玩家。'
+    tracking-player: '正在追踪：%player%'
+    select-player-first: '请先用追踪指南针选择玩家。'
+    teleported-to-player: '已前往：%player%'
+    flight-speed: '飞行速度：%speed%'
+    tracking-state: '玩家追踪已%state%。'
+    states:
+      enabled: '开启'
+      disabled: '关闭'
+    arena-section: '比赛分区 %number%'
+    resource-hub: '资源大厅'
+    team-base: '%team%的基地'
 teams:
-  management-menu:
-    team-management: '队伍管理'
-    no-team-yet: '还没有队伍'
-    click-on-the-lower-left-corner-to-create-the-first-team: '点击左下角创建第一支队伍'
-    create-a-team: '创建队伍'
-    enter-internal-name-then-select-team-color: '先输入队伍ID，再选择显示颜色'
-    quick-team-transfer: '快速更换队伍'
-    select-online-players-then-select-target-team: '选择在线玩家，再选择目标队伍'
-    players-who-already-have-a-team-will-ask-for-a-second-confirmation: '移动已入队玩家前需要再次确认'
-    refresh: '刷新'
-    team-count-suffix: '支队伍'
-    previous-page: '上一页'
-    next-page: '下一页'
-    teleport-all-teams-here: '传送全部队伍到这里'
-    only-transfer-online-members: '仅传送在线成员'
-    confirmation-required-after-clicking: '点击后需要确认'
-    the-team-no-longer-exists: '队伍已不存在：&#fff566'
-    member-management: '成员管理'
-    there-are-no-members-in-the-team-yet: '队伍中还没有成员'
-    add-online-players-from-the-lower-left-corner-or-enter-player-name: '从左下角添加在线玩家或输入玩家名'
-    the-queue-is-full: '队伍已满'
-    members: '名成员'
-    remove-members-before-you-can-continue-adding-them: '移除成员后才能继续添加'
-    add-online-player: '添加在线玩家'
-    select-from-players-currently-online-and-not-yet-in-a-queue: '从当前在线且尚未入队的玩家中选择'
-    history-offline-players: '离线玩家'
-    select-from-logged-offline-players-who-have-not-yet-been-queued: '从服务器记录中选择尚未入队的离线玩家'
-    you-can-also-enter-the-player-name-manually-on-the-next-page: '也可在下一页手动输入玩家名'
-    return-to-team-list: '返回队伍列表'
-    page-member-count-suffix: '名成员'
-    teleport-this-team-here: '传送本队到这里'
-    online-members-will-be-transferred: '名在线成员将被传送'
-    delete-team: '删除队伍'
-    permanently-delete-team-and-membership-relationships: '永久删除队伍和成员关系'
-    the-number-of-people-in-the-team-has-reached-the-upper-limit: '队伍人数已达到上限&#fff566'
-    select-new-member: '选择新成员'
-    click-to-join: '点击加入'
-    no-online-players-to-add: '没有可添加的在线玩家'
-    can-be-used-after-returning-enter-player-name: '也可以返回后手动输入玩家名'
-    return-to-member-management: '返回成员管理'
-    optional-players: '名可选玩家'
-    choose-team-color: '选择队伍颜色'
-    internal-color-name: '内部颜色名'
-    display-color: '显示颜色'
-    click-to-create-a-team: '点击创建队伍'
-    has-been: '已被'
-    use: '使用'
-    quickly-adjust-the-team-select-players: '快速换队 · 选择玩家'
-    not-currently-in-a-team: '当前未分队'
-    current-team: '当前队伍'
-    click-to-select-target-team: '点击选择目标队伍'
-    online-players: '名在线玩家'
-    select: '选择'
-    team-possessive-suffix: '的队伍'
-    current-membership-team: '当前所在队伍'
-    click-to-join-directly: '点击直接加入'
-    click-to-confirm-the-team-transfer: '点击后确认更换队伍'
-    no-teams-available-yet: '还没有可选队伍'
-    return-to-online-players: '返回在线玩家'
-    current: '当前'
-    historical-player-currently-offline: '历史玩家 · 当前离线'
-    no-optional-offline-player-history: '没有可选的离线历史玩家'
-    you-can-use-the-lower-left-corner-to-manually-enter-the-player-name: '可以使用左下角手动输入玩家名'
-    manually-enter-player-name: '手动输入玩家名'
-    only-used-if-the-player-cannot-be-found-in-the-history-list: '仅在历史列表中找不到玩家时使用'
-    please-check-the-spelling-carefully: '请仔细核对拼写'
-    offline-players: '名离线玩家'
-    confirm-action: '确认操作'
-    delete-team-confirmation-title: '删除队伍'
-    remove-member: '移除成员'
-    teleport-all-teams: '传送全部队伍'
-    will: '将'
-    adjust-to: '调至'
-    confirm: '确认'
-    cancel: '取消'
-    enter-the-team-s-internal-name: '输入队伍内部名称'
-    enter-the-name-of-the-player-you-want-to-add: '输入要添加的玩家名'
-    enter-in-the-rename-field-above-then-click-on-the-result-box-on-the-right: '在上方重命名栏输入，再点击右侧结果格'
-    you-no-longer-have-permission-to-use-the-team-management-interface: '你已没有使用队伍管理界面的权限。'
-    team-not-found-feedback: '队伍已不存在。'
-    team-name-already-exists: '队伍名称已存在：&#fff566'
-    this-color-has-just-been-taken-by-another-team-please-choose-again: '该颜色刚刚被其他队伍占用，请重新选择。'
-    team-created: '已创建队伍'
-    failed-to-create-team-name-or-color-may-already-be-taken: '创建队伍失败，名称或颜色可能已被占用。'
-    team-deleted: '已删除队伍&#fff566'
-    unable-to-delete-team-team-may-be-in-game: '无法删除队伍；队伍可能正在游戏中。'
-    already-from: '已从&#fff566'
-    remove-player: '&#ededed移除玩家&#fff566'
-    removal-failed-team-or-member-status-may-have-changed: '移除失败；队伍或成员状态可能已经改变。'
-    all-teams-have-been: '已将全部队伍的&#fff566'
-    online-members-teleported-to-current-location: '&#ededed名在线成员传送到当前位置。'
-    team-name-cannot-be-empty: '队伍名称不能为空。'
-    team-names-cannot-exceed-64-characters-and-cannot-contain-control-characters: '队伍名称不能超过64个字符，也不能包含控制字符。'
-    please-enter-a-valid-minecraft-player-name-1-16-letters-numbers-or-underscores: '请输入有效的Minecraft玩家名（1–16位字母、数字或下划线）。'
-    player-has-been: '已将玩家&#fff566'
-    join: '&#ededed加入'
-    add-member-identity-conflict: '添加失败；玩家可能已在队伍中，或存在同名身份冲突。'
-    players-have-been-taken-offline: '已将离线玩家&#fff566'
-    failed-to-add-player-may-have-just-been-split-or-there-is-an-identity-conflict: '添加失败；玩家可能刚刚被分队，或存在身份冲突。'
-    unable-to-read-player-history: '无法读取历史玩家，请稍后重试。'
-    the-target-team-no-longer-exists: '目标队伍已不存在：&#fff566'
-    move-to-team-infix: '&#ededed调至'
-    the-player-is-already-on-the-team: '玩家已经在该队伍中。'
-    the-target-team-is-full: '目标队伍人数已满。'
-    the-player-s-current-team-or-target-team-is-currently-in-the-game-cannot-change-teams: '玩家当前队伍或目标队伍正在游戏中，不能调队。'
-    team-transfer-failed-database-or-player-status-may-have-changed: '调队失败，数据库或玩家身份状态可能已改变。'
-    already: '已将'
-    of: '&#ededed的&#fff566'
-    online: '在线'
-    color: '颜色'
-    internal-id: '内部ID'
-    click-to-manage-members-and-teams: '点击管理成员与队伍'
-    online-status: '●在线'
-    offline: '○离线'
-    click-to-remove-the-team: '点击移出队伍'
-    the-team-and-all-member-relationships-will-be-permanently-deleted: '队伍及全部成员关系会被永久删除'
-    teams-currently-participating-in-the-game-cannot-be-deleted: '正在参加游戏的队伍无法删除'
-    players-will-immediately-lose-their-membership-in-the-team: '玩家将立即失去该队伍身份'
-    all-online-members-of-the-team-will-arrive-at-your-location: '所有队伍的在线成员会到达你的位置'
-    current-venue: '当前所在场地：'
-    admin-location: '管理员位置'
-    old-team-relationships-will-be-replaced-atomically-in-a-database-transaction: '系统会安全替换玩家原有的队伍关系'
-    operations-will-be-refused-while-either-team-is-playing: '相关队伍正在比赛时无法操作'
-    ordinal-prefix: '第'
-    page-suffix: '页'
-    total-prefix: '共'
-    close: '关闭'
-    white: '白色'
-    orange: '橙色'
-    magenta: '品红色'
-    light-blue: '淡蓝色'
-    yellow: '黄色'
-    yellow-green: '黄绿色'
-    pink: '粉红色'
-    gray: '灰色'
-    light-gray: '淡灰色'
-    cyan: '青色'
-    purple: '紫色'
-    blue: '蓝色'
-    brown: '棕色'
-    green: '绿色'
-    red: '红色'
-    black: '黑色'
+  menus:
+    overview:
+      title: '&#ffaa00&l队伍管理'
+      size: 54
+      layout:
+        content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
+        border: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: ' '
+          lore: []
+        team:
+          title: '&#ededed&l%team%'
+          lore:
+            - '&#a0a0a0在线：&#55ff55%online%&#696969 / &#ededed%members%'
+            - ''
+            - '&#fff566点击管理成员与队伍'
+        empty:
+          material: GRAY_DYE
+          title: '&#a0a0a0暂无队伍'
+          lore:
+            - '&#696969点击左下角创建第一支队伍'
+        create:
+          material: EMERALD
+          title: '&#55ff55&l创建队伍'
+          lore:
+            - '&#a0a0a0输入队伍ID，再选择显示颜色'
+        quick-assign:
+          material: PLAYER_HEAD
+          title: '&#55ffff&l快速更换队伍'
+          lore:
+            - '&#a0a0a0选择在线玩家，再选择目标队伍'
+            - '&#696969移动已入队玩家前需要再次确认'
+        previous:
+          material: ARROW
+          title: '&#ededed上一页'
+          lore: []
+        refresh:
+          material: SUNFLOWER
+          title: '&#fff566刷新'
+          lore: []
+        page:
+          material: PAPER
+          title: '&#55ffff第 %page% / %pages% 页'
+          lore:
+            - '&#a0a0a0共 %count% 支队伍'
+        next:
+          material: ARROW
+          title: '&#ededed下一页'
+          lore: []
+        teleport-all:
+          material: ENDER_EYE
+          title: '&#ff55ff传送全部队伍到这里'
+          lore:
+            - '&#a0a0a0仅传送在线成员'
+            - ''
+            - '&#fff566点击后需要确认'
+        close:
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+    members:
+      title: '&#55ffff&l队伍成员管理'
+      size: 54
+      layout:
+        content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
+        border: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: ' '
+          lore: []
+        member:
+          states:
+            online:
+              glint: true
+        empty:
+          material: PLAYER_HEAD
+          title: '&#a0a0a0队伍中还没有成员'
+          lore:
+            - '&#696969从左下角添加在线或历史玩家'
+        add-player:
+          states:
+            available:
+              material: LIME_DYE
+              title: '&#55ff55&l添加在线玩家'
+            full:
+              material: RED_DYE
+              title: '&#ff5555&l队伍人数已满'
+        history:
+          material: BOOK
+          title: '&#55ffff历史离线玩家'
+        previous:
+          material: ARROW
+          title: '&#ededed上一页'
+          lore: []
+        back:
+          material: ARROW
+          title: '&#ededed返回队伍列表'
+          lore: []
+        refresh:
+          material: SUNFLOWER
+          title: '&#fff566刷新'
+          lore: []
+        page:
+          material: PAPER
+          title: '&#55ffff第 %page% / %pages% 页'
+          lore:
+            - '&#a0a0a0共 %count% 名成员'
+        next:
+          material: ARROW
+          title: '&#ededed下一页'
+          lore: []
+        teleport:
+          material: ENDER_PEARL
+          title: '&#ff55ff传送本队到这里'
+          lore:
+            - '&#a0a0a0将传送 %online% 名在线成员'
+        delete:
+          material: TNT
+          title: '&#ff5555删除队伍'
+          lore:
+            - '&#a0a0a0永久删除队伍及成员关系'
+            - ''
+            - '&#fff566点击后需要确认'
+        close:
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+    shared:
+      copy:
+        team-management: '队伍管理'
+        no-team-yet: '还没有队伍'
+        click-on-the-lower-left-corner-to-create-the-first-team: '点击左下角创建第一支队伍'
+        create-a-team: '创建队伍'
+        enter-internal-name-then-select-team-color: '先输入队伍ID，再选择显示颜色'
+        quick-team-transfer: '快速更换队伍'
+        select-online-players-then-select-target-team: '选择在线玩家，再选择目标队伍'
+        players-who-already-have-a-team-will-ask-for-a-second-confirmation: '移动已入队玩家前需要再次确认'
+        refresh: '刷新'
+        team-count-suffix: '支队伍'
+        previous-page: '上一页'
+        next-page: '下一页'
+        teleport-all-teams-here: '传送全部队伍到这里'
+        only-transfer-online-members: '仅传送在线成员'
+        confirmation-required-after-clicking: '点击后需要确认'
+        the-team-no-longer-exists: '队伍已不存在：&#fff566'
+        member-management: '成员管理'
+        there-are-no-members-in-the-team-yet: '队伍中还没有成员'
+        add-online-players-from-the-lower-left-corner-or-enter-player-name: '从左下角添加在线玩家或输入玩家名'
+        the-queue-is-full: '队伍已满'
+        members: '名成员'
+        remove-members-before-you-can-continue-adding-them: '移除成员后才能继续添加'
+        add-online-player: '添加在线玩家'
+        select-from-players-currently-online-and-not-yet-in-a-queue: '从当前在线且尚未入队的玩家中选择'
+        history-offline-players: '离线玩家'
+        select-from-logged-offline-players-who-have-not-yet-been-queued: '从服务器记录中选择尚未入队的离线玩家'
+        you-can-also-enter-the-player-name-manually-on-the-next-page: '也可在下一页手动输入玩家名'
+        return-to-team-list: '返回队伍列表'
+        page-member-count-suffix: '名成员'
+        teleport-this-team-here: '传送本队到这里'
+        online-members-will-be-transferred: '名在线成员将被传送'
+        delete-team: '删除队伍'
+        permanently-delete-team-and-membership-relationships: '永久删除队伍和成员关系'
+        the-number-of-people-in-the-team-has-reached-the-upper-limit: '队伍人数已达到上限&#fff566'
+        select-new-member: '选择新成员'
+        click-to-join: '点击加入'
+        no-online-players-to-add: '没有可添加的在线玩家'
+        can-be-used-after-returning-enter-player-name: '也可以返回后手动输入玩家名'
+        return-to-member-management: '返回成员管理'
+        optional-players: '名可选玩家'
+        choose-team-color: '选择队伍颜色'
+        internal-color-name: '内部颜色名：'
+        display-color: '显示颜色：'
+        click-to-create-a-team: '点击创建队伍'
+        has-been: '已被'
+        use: '使用'
+        quickly-adjust-the-team-select-players: '快速换队 • 选择玩家'
+        not-currently-in-a-team: '当前未分队'
+        current-team: '当前队伍：'
+        click-to-select-target-team: '点击选择目标队伍'
+        online-players: '名在线玩家'
+        select: '选择'
+        team-possessive-suffix: '的队伍'
+        current-membership-team: '当前所在队伍'
+        click-to-join-directly: '点击直接加入'
+        click-to-confirm-the-team-transfer: '点击后确认更换队伍'
+        no-teams-available-yet: '还没有可选队伍'
+        return-to-online-players: '返回在线玩家'
+        current: '当前：'
+        historical-player-currently-offline: '历史玩家 • 当前离线'
+        no-optional-offline-player-history: '没有可选的离线历史玩家'
+        you-can-use-the-lower-left-corner-to-manually-enter-the-player-name: '可以使用左下角手动输入玩家名'
+        manually-enter-player-name: '手动输入玩家名'
+        only-used-if-the-player-cannot-be-found-in-the-history-list: '仅在历史列表中找不到玩家时使用'
+        please-check-the-spelling-carefully: '请仔细核对拼写'
+        offline-players: '名离线玩家'
+        confirm-action: '确认操作'
+        delete-team-confirmation-title: '删除队伍'
+        remove-member: '移除成员'
+        teleport-all-teams: '传送全部队伍'
+        will: '将'
+        adjust-to: '调至'
+        confirm: '确认'
+        cancel: '取消'
+        enter-the-team-s-internal-name: '输入队伍内部名称'
+        enter-the-name-of-the-player-you-want-to-add: '输入要添加的玩家名'
+        enter-in-the-rename-field-above-then-click-on-the-result-box-on-the-right: '在上方重命名栏输入，再点击右侧结果格'
+        you-no-longer-have-permission-to-use-the-team-management-interface: '你已没有使用队伍管理界面的权限。'
+        team-not-found-feedback: '队伍已不存在。'
+        team-name-already-exists: '队伍名称已存在：&#fff566'
+        this-color-has-just-been-taken-by-another-team-please-choose-again: '该颜色刚刚被其他队伍占用，请重新选择。'
+        team-created: '已创建队伍'
+        failed-to-create-team-name-or-color-may-already-be-taken: '创建队伍失败，名称或颜色可能已被占用。'
+        team-deleted: '已删除队伍&#fff566'
+        unable-to-delete-team-team-may-be-in-game: '无法删除队伍；队伍可能正在游戏中。'
+        already-from: '已从&#fff566'
+        remove-player: '&#ededed移除玩家&#fff566'
+        removal-failed-team-or-member-status-may-have-changed: '移除失败；队伍或成员状态可能已经改变。'
+        all-teams-have-been: '已将全部队伍的&#fff566'
+        online-members-teleported-to-current-location: '&#ededed名在线成员传送到当前位置。'
+        team-name-cannot-be-empty: '队伍名称不能为空。'
+        team-names-cannot-exceed-64-characters-and-cannot-contain-control-characters: '队伍名称不能超过64个字符，也不能包含控制字符。'
+        please-enter-a-valid-minecraft-player-name-1-16-letters-numbers-or-underscores: '请输入有效的Minecraft玩家名（1–16位字母、数字或下划线）。'
+        player-has-been: '已将玩家&#fff566'
+        join: '&#ededed加入'
+        add-member-identity-conflict: '添加失败；玩家可能已在队伍中，或存在同名身份冲突。'
+        players-have-been-taken-offline: '已将离线玩家&#fff566'
+        failed-to-add-player-may-have-just-been-split-or-there-is-an-identity-conflict: '添加失败；玩家可能刚刚被分队，或存在身份冲突。'
+        unable-to-read-player-history: '无法读取历史玩家，请稍后重试。'
+        the-target-team-no-longer-exists: '目标队伍已不存在：&#fff566'
+        move-to-team-infix: '&#ededed调至'
+        the-player-is-already-on-the-team: '玩家已经在该队伍中。'
+        the-target-team-is-full: '目标队伍人数已满。'
+        the-player-s-current-team-or-target-team-is-currently-in-the-game-cannot-change-teams: '玩家当前队伍或目标队伍正在游戏中，不能调队。'
+        team-transfer-failed-database-or-player-status-may-have-changed: '调队失败，数据库或玩家身份状态可能已改变。'
+        already: '已将'
+        of: '&#ededed的&#fff566'
+        online: '在线'
+        color: '颜色'
+        internal-id: '内部ID'
+        click-to-manage-members-and-teams: '点击管理成员与队伍'
+        online-status: '● 在线'
+        offline: '○ 离线'
+        click-to-remove-the-team: '点击移出队伍'
+        the-team-and-all-member-relationships-will-be-permanently-deleted: '队伍及全部成员关系会被永久删除'
+        teams-currently-participating-in-the-game-cannot-be-deleted: '正在参加游戏的队伍无法删除'
+        players-will-immediately-lose-their-membership-in-the-team: '玩家将立即失去该队伍身份'
+        all-online-members-of-the-team-will-arrive-at-your-location: '所有队伍的在线成员会到达你的位置'
+        current-venue: '当前所在场地：'
+        admin-location: '管理员位置'
+        old-team-relationships-will-be-replaced-atomically-in-a-database-transaction: '系统会安全替换玩家原有的队伍关系'
+        operations-will-be-refused-while-either-team-is-playing: '相关队伍正在比赛时无法操作'
+        ordinal-prefix: '第'
+        page-suffix: '页'
+        total-prefix: '共'
+        close: '关闭'
+        white: '白色'
+        orange: '橙色'
+        magenta: '品红色'
+        light-blue: '淡蓝色'
+        yellow: '黄色'
+        yellow-green: '黄绿色'
+        pink: '粉红色'
+        gray: '灰色'
+        light-gray: '淡灰色'
+        cyan: '青色'
+        purple: '紫色'
+        blue: '蓝色'
+        brown: '棕色'
+        green: '绿色'
+        red: '红色'
+        black: '黑色'
 daily:
   menus:
-    game-selection:
-      no-open-games-yet: '暂无可玩游戏'
-      please-wait-for-the-administrator-to-open-the-game-game: '管理员开放游戏后会显示在这里'
-      leave-current-game: '退出当前游戏'
-      not-yet-join-the-game: '当前不在游戏或匹配中'
-      the-accompanying-team-will-leave-together: '整个小队将一起退出'
-      if-there-is-no-one-on-the-field-the-game-will-end-directly: '若场内无人，游戏将直接结束'
-      select-the-item-above-to-join-the-match: '点击上方游戏开始匹配'
-      refresh: '刷新'
-      queue-and-countdown-automatically-updated-every-second: '队列与倒计时每秒自动更新'
-      return-to-lobby: '返回大厅'
-      close: '关闭'
-      captain: '队长'
-      number-of-people: '人数'
-      player-count-suffix: '人'
-      peer-members: '小队成员'
-      currently-entering-matches-as-an-individual: '你将以个人身份参加匹配'
-      click-to-open-the-team-function: '点击打开组队功能'
-      any-member-can-change-the-game-for-the-whole-team: '小队成员均可为全队选择游戏'
-      party: '小队'
-      open-games: '个可玩游戏'
-      people-are-waiting: '人正在等候'
-      all-current-games-are-eligible: '所有开放游戏均可匹配'
-      items-are-in-play: '个游戏正在进行'
-      no-need-to-form-a-team-in-advance-automatically-form-a-team-after-matching-is-completed: '无需提前组队，匹配成功后会自动分组'
-      click-on-an-item-to-join-or-change-it-for-the-entire-team: '点击游戏即可加入，或为整个小队更改选择'
-      match-lobby: '匹配大厅'
-      my-record: '我的战绩'
-      number-of-sessions: '场次'
-      victory: '胜场'
-      winning-rate: '胜率'
-      each-game-s-results-are-recorded-independently-points-are-not-inherited: '每局单独记录成绩，不计入锦标赛积分'
-      game-items: '游戏'
-      complete-challenges-with-other-players: '与其他玩家一起完成挑战'
-      game-state: '游戏状态'
-      map-in-progress: '进行中地图'
-      match-count-suffix: '场'
-      instance-capacity: '单场容量'
-      idle-instances: '个空闲场地'
-      all-instances-are-in-use: '所有场地都在使用中'
-      can-be-added-to-the-match: '可加入匹配'
-      waiting-for-idle-instance: '等待空闲场地'
-      the-number-of-people-reaches-the-opening-number: '人即可开赛'
-      about-to-depart: '即将开赛'
-      seconds: '秒'
-      requires-another-player-or-party: '还需要一名玩家或一个小队'
-      preparing-for-countdown: '开赛倒计时'
-      still-need: '还需'
-      fellow-traveler: '名玩家'
-      team-rules: '组队规则'
-      each-team-has-at-most: '每队至多'
-      people-most: '人 · 最多'
-      team-count-suffix: '队'
-      requires-at-least-2-independent-players-or-companion-squads: '至少需要两个独立报名方（玩家或小队）'
-      single-field-capacity: '单场容量'
-      map: '地图'
-      waiting-place: '等待场地'
-      my-results: '我的成绩'
-      win-count-suffix: '胜'
-      win-rate-value: '胜率'
-      already-in-the-waiting-queue: '✓ 正在等待空闲场地'
-      matching-will-be-automatically-resumed-after-the-instance-becomes-idle: '有场地空闲后会自动继续匹配'
-      current-selection: '✓ 当前选择'
-      clicking-again-will-not-join-again: '再次点击不会重复加入'
-      click-to-join-the-match: '点击加入匹配'
-      click-to-join-the-waiting-room: '点击等待空闲场地'
-      the-party-will-be-selected-simultaneously: '整个小队会同步选择'
-      the-countdown-starts-automatically-after-the-instance-becomes-idle: '场地空闲后会自动开始倒计时'
-      current-leader: '当前领跑'
-      i-dont-have-a-win-record-yet: '我还没有胜场记录'
-      my-win-list-ranking: '我的胜场榜名次# '
-      click-to-view-points-wins-and-racing-records: '点击查看胜场与竞速纪录'
-      ranking-list: '排行榜'
-      explore-teamwork: '探索 · 团队协作'
-      complete-shared-bingo-tasks-strive-for-connections-and-full-collection: '合作完成宾果任务，争取连线并集齐整张卡片'
-      racing-independent-track-instance: '竞速 · 独立赛道'
-      controlling-the-elytra-and-trident-challenge-the-fastest-complete-lap: '驾驭鞘翅与三叉戟，挑战最快完整圈'
-      confrontation-original-end-dragon-battle: '对抗 · 原版末影龙战'
-      compete-for-three-end-game-progressions-be-the-first-to-complete-two-of-them: '争夺三项末地进度，率先完成其中两项'
-    leaderboards:
-      honor-roll: '荣誉榜'
-      list-categories: '个榜单分类'
-      records-on-the-list: '条上榜成绩'
-      points-wins-and-racing-records-are-independent-of-each-other: '积分、胜场与竞速纪录彼此独立'
-      timing-records-are-always-differentiated-by-game-map: '计时纪录始终按游戏地图区分'
-      return-to-game-selection: '返回游戏选择'
-      continue-to-add-or-adjust-free-matching: '继续加入或调整自由匹配'
-      previous-page: '上一页'
-      ordinal-prefix: '第'
-      page-suffix: '页'
-      next-page: '下一页'
-      no-list-record-yet: '暂无上榜记录'
-      after-completing-a-corresponding-game-the-record-will-be-displayed-here: '完成对应游戏后，你的纪录会显示在这里'
-      the-ranking-list-only-reads-data-in-this-mode: '这里只统计休闲匹配成绩'
-      return-to-list-category: '返回榜单分类'
-      valid-records: '条有效成绩'
-      my-list-business-card: '我的榜单名片'
-      overall-list: '总榜'
-      not-yet-on-the-list: '尚未上榜'
-      record: '战绩'
-      match-count-suffix: '场 · '
-      win-count-suffix: '胜'
-      winning-rate: '胜率'
-      select-the-category-below-to-view-detailed-rankings: '选择下方分类查看详细名次'
-      first-connection: '首次连线'
-      all-collection: '全收集'
-      fastest-lap: '最快单圈'
-      fastest-three-complete-laps: '最快完整三圈'
-      unlocked-after-completing-bingo-or-ace-race: '完成宾果或王牌竞速后解锁'
-      times-from-different-maps-will-not-be-mixed-in-rankings: '不同地图的时间不会混合排名'
-      my-time-record: '我的计时纪录'
-      top-of-the-list: '榜首'
-      my-ranking-has-not-been-listed-yet: '我的名次尚未上榜'
-      my-ranking: '我的名次# '
-      players-on-the-list: '位玩家上榜'
-      click-to-view-the-complete-list: '点击查看完整榜单'
-      players-have-valid-records: '位玩家留下有效纪录'
-      i-m-not-on-the-list-yet: '我尚未上榜'
-      best-time-to-use: '最佳用时'
-      list-value: '榜单数值'
-      current-top-list: '★当前榜首'
-      podium-record: '◆领奖台纪录'
-      this-is-your-record: '这是你的纪录'
-      overall-record: '综合战绩'
-      accumulate-wins-in-all-mode-events: '累计所有休闲游戏的胜场'
-      bingo: '宾果 · '
-      fastest-time-from-opening-to-first-completion-of-any-connection: '从开场到首次完成任意连线的最快时间'
-      fastest-time-from-opening-to-completing-the-entire-card: '从开场到完成整张卡片的最快时间'
-      ace-racing: '王牌竞速 · '
-      fastest-time-for-a-complete-legal-lap-of-the-map: '该地图完整合法单圈的最快时间'
-      the-fastest-time-to-complete-three-laps-of-the-map: '该地图完整三圈的最快时间'
-      this-mode: '本模式'
-      historical-list: '历史榜单'
-      refresh: '刷新'
-      list-reading-memory-cache-does-not-block-the-game: '排行榜使用缓存数据，不会影响游戏流畅度'
-      close: '关闭'
-    lobby:
-      game-lobby: '游戏大厅'
-      lobby-status: '大厅状态'
-      current-status: '当前状态'
-      current-game: '当前游戏'
-      number-of-people-traveling-together: '小队人数'
-      player-count-suffix: '人'
-      select-a-function-below-to-get-started: '选择下方功能'
-      personal-record: '个人战绩'
-      check-your-games-wins-and-winning-percentage: '查看你的场次、胜场与胜率'
-      and-detailed-records-of-each-game: '以及各游戏的详细记录'
-      click-to-view: '点击查看'
-      enter-matching: '进入匹配'
-      choose-the-game-you-want-to-participate-in: '选择想要参加的游戏'
-      check-the-number-of-people-and-opening-progress-in-real-time: '实时查看人数与开场进度'
-      click-to-enter: '点击进入'
-      team-function: '小队'
-      invite-friends-to-join-the-match: '邀请朋友一起进入匹配'
-      accept-invitations-or-manage-partys: '接受邀请或管理你的小队'
-      click-to-open: '点击打开'
-      spectator-game: '旁观游戏'
-      view-currently-playing-games: '查看当前正在进行的游戏'
-      and-select-live-venues-to-spectate-on: '选择一场正在进行的比赛'
-      close: '关闭'
-    party:
-      team-function: '小队'
-      this-invitation-cannot-be-accepted-at-this-time: '当前无法接受这份邀请。'
-      already-joined-the-party: '已加入小队。'
-      please-click-on-the-online-players-above-to-send-team-invitations: '请点击上方在线玩家发送组队邀请。'
-      the-party-has-been-disbanded: '小队已解散。'
-      you-have-left-the-companion-group: '你已离开小队。'
-      team-cannot-be-modified-at-the-moment: '当前无法修改队伍。'
-      this-player-cannot-be-invited-at-the-moment: '该玩家暂时无法被邀请。'
-      already-sent-to: '已向'
-      send-invitation: '发出邀请。'
-      you-are-invited-to-join-the-party-please-open-the-game-lobby-to-accept-the-invitation: '邀请你加入小队，请打开游戏大厅接受邀请。'
-      there-are-no-other-online-players-yet: '暂无其他在线玩家'
-      online-players-will-display-their-team-status-here: '在线玩家会在这里显示队伍状态'
-      invitation-instructions: '邀请说明'
-      disband-the-team: '解散队伍'
-      leave-the-team: '离开队伍'
-      click-on-the-online-player-above-to-send-a-team-invitation: '点击上方在线玩家发送组队邀请'
-      teams-cannot-be-modified-while-they-are-matching-or-playing-a-game: '队伍正在匹配或进行游戏时不可修改'
-      return-to-lobby: '返回大厅'
-      refresh: '刷新'
-      update-online-player-and-invitation-status: '更新在线玩家与邀请状态'
-      close: '关闭'
-      you-currently-dont-have-a-party: '你目前没有加入小队'
-      click-player-list-to-send-invitation-hint: '点击玩家列表即可发出邀请'
-      captain: '队长'
-      number-of-people: '人数'
-      player-count-suffix: '人'
-      select: '选择'
-      party: '小队'
-      invitation-status: '邀请状态'
-      no-invitations-pending: '暂无待处理邀请'
-      click-player-list-to-invite-action: '点击玩家列表发送邀请'
-      received-a-team-invitation: '收到组队邀请'
-      invite-you-to-join-the-peer-group: '邀请你加入小队'
-      click-to-accept-the-invitation: '点击接受邀请'
-      team-status: '队伍状态'
-      no-team: '无队伍'
-      teamed-up: '已组队'
-      current-status: '当前状态'
-      click-to-send-team-invitation: '点击发送组队邀请'
-      unable-to-send-invitation-at-the-moment: '当前无法发送邀请'
-      only-the-team-leader-can-send-invitations: '只有队长可以发送邀请'
-    statistics:
-      personal-record: '个人战绩'
-      statistics-header-prefix: '个人战绩 · '
-      no-open-games-yet: '暂无开放游戏'
-      completed-records-will-be-retained-forever: '已完成的比赛纪录会一直保留'
-      return-to-lobby: '返回大厅'
-      view-the-leaderboard: '查看排行榜'
-      view-win-and-personal-record-rankings: '查看胜场与个人纪录排名'
-      click-to-open: '点击打开'
-      close: '关闭'
-      victory: '胜场'
-      match-count-suffix: '场'
-      bingo-sessions-won: '赢得的宾果场次'
-      number-of-connections: '连线数'
-      record-count-suffix: '条'
-      cumulative-completed-connections-across-all-bingo-games: '你在所有宾果对局中完成的连线总数'
-      total-tasks-completed: '完成任务总数'
-      item-count-suffix: '个'
-      cumulative-completed-tasks-for-all-bingo-games: '你在所有宾果对局中完成的任务总数'
-      most-completed-in-a-single-game: '单场最多完成'
-      highest-number-of-tasks-completed-in-a-bingo-game: '单场宾果完成任务数的最高纪录'
-      no-subdivision-records-yet: '暂无细分纪录'
-      after-completing-the-corresponding-game-the-map-record-will-be-displayed-here: '完成对应游戏后，地图纪录会显示在这里'
-      return-to-game-category: '返回游戏分类'
-      previous-page: '上一页'
-      refresh: '刷新'
-      update-the-detailed-records-of-the-current-game: '更新当前游戏的详细纪录'
-      all-maps-accumulated: '全部地图累计'
-      bingo-data-accumulated-by-game-not-split-by-map: '宾果成绩合并统计，不按地图分别显示'
-      ordinal-prefix: '第'
-      page-suffix: '页'
-      map: '张地图'
-      next-page: '下一页'
-      complete-session: '完成场次'
-      wins: '获胜场次'
-      overall-winning-rate: '总胜率'
-      sort-by-game-click-on-card-to-see-breakdown: '按游戏分类，点击卡片查看细分'
-      my-overview: '我的总览'
-      wins-label: '胜场'
-      lines-completed-label: '连线数'
-      complete-the-task: '完成任务'
-      most-in-a-single-game: '单场最多'
-      winning-rate: '胜率'
-      click-to-view-cumulative-breakdown-data: '点击查看累计细分数据'
-      maps-to-view-subdivisions: '张地图可查看细分'
-      click-to-view-detailed-results: '点击查看详细战绩'
-      participate-in-sessions: '参与场次'
-      view-the-cumulative-breakdown-of-bingo-data-below: '下方查看宾果累计细分数据'
-      click-the-map-below-to-view-various-records: '下方按地图查看各项纪录'
-      no-record-yet: '暂无纪录'
-      record-independently-by-map: '按地图独立记录'
-      fastest-lap: '最快单圈'
-      fastest-three-complete-laps: '最快完整三圈'
+    lobby-screen:
+      title: '&#00aaaa&l游戏大厅'
+      size: 27
+      layout:
+        content: [11, 13, 15, 17]
+        border: [0, 1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: ' '
+          lore: []
+        status:
+          slot: 4
+          material: NETHER_STAR
+          title: '&#55ff55&l大厅状态'
+          lore:
+            - '&#a0a0a0当前状态：&#ededed%queue%'
+            - '&#a0a0a0当前游戏：&#55ffff%game%'
+            - '&#a0a0a0同行人数：&#ededed%party_size%人'
+            - ''
+            - '&#a0a0a0从下方选择一项功能开始'
+        statistics:
+          slot: 11
+          material: WRITABLE_BOOK
+          title: '&#ff55ff&l个人战绩'
+          lore:
+            - '&#a0a0a0查看游玩场次与各游戏详细数据'
+            - '&#a0a0a0以及每种游戏的个人纪录'
+            - ''
+            - '&#55ff55&l点击查看'
+        matchmaking:
+          slot: 13
+          material: COMPASS
+          title: '&#55ffff&l进入匹配'
+          lore:
+            - '&#a0a0a0选择想参加的游戏'
+            - '&#a0a0a0实时查看人数与开赛进度'
+            - ''
+            - '&#55ff55&l点击进入'
+        party:
+          slot: 15
+          material: PLAYER_HEAD
+          title: '&#ffaa00&l小队功能'
+          lore:
+            - '&#a0a0a0邀请朋友一起参加匹配'
+            - '&#a0a0a0接受邀请或管理小队'
+            - ''
+            - '&#55ff55&l点击打开'
+        spectate:
+          slot: 17
+          material: SPYGLASS
+          title: '&#fff566&l观战比赛'
+          lore:
+            - '&#a0a0a0查看正在进行的游戏'
+            - '&#a0a0a0并选择现场场地观战'
+            - ''
+            - '&#55ff55&l点击打开'
+        close:
+          slot: 22
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+      copy:
+        game-lobby: '游戏大厅'
+        lobby-status: '大厅状态'
+        current-status: '当前状态：'
+        current-game: '当前游戏：'
+        number-of-people-traveling-together: '小队人数：'
+        player-count-suffix: '人'
+        select-a-function-below-to-get-started: '选择下方功能'
+        personal-record: '个人战绩'
+        check-your-game-sessions-and-detailed-records: '查看你的游玩场次与各游戏详细数据'
+        and-detailed-records-of-each-game: '以及各游戏的个人记录'
+        click-to-view: '点击查看'
+        enter-matching: '进入匹配'
+        choose-the-game-you-want-to-participate-in: '选择想要参加的游戏'
+        check-the-number-of-people-and-opening-progress-in-real-time: '实时查看人数与开场进度'
+        click-to-enter: '点击进入'
+        team-function: '小队'
+        invite-friends-to-join-the-match: '邀请朋友一起进入匹配'
+        accept-invitations-or-manage-partys: '接受邀请或管理你的小队'
+        click-to-open: '点击打开'
+        spectator-game: '旁观游戏'
+        view-currently-playing-games: '查看当前正在进行的游戏'
+        and-select-live-venues-to-spectate-on: '选择一场正在进行的比赛'
+        close: '关闭'
+    game-selection-screen:
+      title: '&#55ffff&l选择游戏 &#696969• &#ededed自由游玩'
+      size: 54
+      layout:
+        content: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25]
+        border: [0, 2, 3, 5, 6, 8, 45, 46, 48, 50, 52]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: ' '
+          lore: []
+        party:
+          slot: 1
+          title: '&#55ffff&l小队'
+        overview:
+          slot: 4
+          material: NETHER_STAR
+          title: '&#55ff55&l匹配大厅'
+          lore:
+            - '&#a0a0a0开放游戏：&#ededed%games%'
+            - '&#a0a0a0正在等候：&#fff566%queued%人'
+            - '&#a0a0a0进行中：&#ffaa00%active%'
+            - ''
+            - '&#696969选择下方游戏即可加入匹配'
+        statistics:
+          slot: 7
+          material: WRITABLE_BOOK
+          title: '&#ff55ff&l我的战绩'
+        game:
+          states:
+            selected:
+              glint: true
+        empty:
+          slot: 22
+          material: GRAY_DYE
+          title: '&#a0a0a0暂无开放游戏'
+          lore:
+            - '&#696969管理员开放游戏后会显示在这里'
+        leave:
+          slot: 45
+          states:
+            active:
+              material: REDSTONE_TORCH
+              title: '&#ff5555&l退出当前游戏'
+            inactive:
+              material: GRAY_DYE
+              title: '&#a0a0a0当前未参加游戏'
+        leaderboard:
+          slot: 47
+          material: GOLD_INGOT
+          title: '&#ffaa00&l排行榜'
+        refresh:
+          slot: 49
+          material: CLOCK
+          title: '&#fff566&l刷新'
+          lore:
+            - '&#696969队列和倒计时会自动更新'
+        back:
+          slot: 51
+          material: ARROW
+          title: '&#ededed返回大厅'
+          lore: []
+        close:
+          slot: 53
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+      copy:
+        no-open-games-yet: '暂无可玩游戏'
+        please-wait-for-the-administrator-to-open-the-game-game: '管理员开放游戏后会显示在这里'
+        leave-current-game: '退出当前游戏'
+        not-yet-join-the-game: '当前不在游戏或匹配中'
+        the-accompanying-team-will-leave-together: '整个小队将一起退出'
+        if-there-is-no-one-on-the-field-the-game-will-end-directly: '若场内无人，游戏将直接结束'
+        select-the-item-above-to-join-the-match: '点击上方游戏开始匹配'
+        refresh: '刷新'
+        queue-and-countdown-automatically-updated-every-second: '队列与倒计时每秒自动更新'
+        return-to-lobby: '返回大厅'
+        close: '关闭'
+        captain: '队长：'
+        number-of-people: '人数：'
+        player-count-suffix: '人'
+        peer-members: '小队成员'
+        currently-entering-matches-as-an-individual: '你将以个人身份参加匹配'
+        click-to-open-the-team-function: '点击打开组队功能'
+        any-member-can-change-the-game-for-the-whole-team: '小队成员均可为全队选择游戏'
+        party: '小队'
+        open-games: '个可玩游戏'
+        people-are-waiting: '人正在等候'
+        all-current-games-are-eligible: '所有开放游戏均可匹配'
+        items-are-in-play: '个游戏正在进行'
+        no-need-to-form-a-team-in-advance-automatically-form-a-team-after-matching-is-completed: '无需提前组队，匹配成功后会自动分组'
+        click-on-an-item-to-join-or-change-it-for-the-entire-team: '点击游戏即可加入，或为整个小队更改选择'
+        match-lobby: '匹配大厅'
+        my-record: '我的战绩'
+        number-of-sessions: '场次：'
+        each-game-s-results-are-recorded-independently-points-are-not-inherited: '每局单独记录成绩，不计入锦标赛积分'
+        game-items: '游戏'
+        complete-challenges-with-other-players: '与其他玩家一起完成挑战'
+        game-state: '游戏状态：'
+        map-in-progress: '进行中地图：'
+        match-count-suffix: '场'
+        instance-capacity: '单场容量：'
+        idle-instances: '个空闲场地'
+        all-instances-are-in-use: '所有场地都在使用中'
+        can-be-added-to-the-match: '可加入匹配'
+        waiting-for-idle-instance: '等待空闲场地'
+        the-number-of-people-reaches-the-opening-number: '人即可开赛'
+        about-to-depart: '即将开赛'
+        seconds: '秒'
+        requires-another-player-or-party: '还需要一名玩家或一个小队'
+        preparing-for-countdown: '开赛倒计时'
+        still-need: '还需'
+        fellow-traveler: '名玩家'
+        team-rules: '组队规则'
+        each-team-has-at-most: '每队至多'
+        people-most: '人 • 最多'
+        team-count-suffix: '队'
+        requires-at-least-2-independent-players-or-companion-squads: '至少需要两个独立报名方（玩家或小队）'
+        single-field-capacity: '单场容量：'
+        map: '地图：'
+        waiting-place: '等待场地'
+        my-results: '我的成绩：'
+        already-in-the-waiting-queue: '✓ 正在等待空闲场地'
+        matching-will-be-automatically-resumed-after-the-instance-becomes-idle: '有场地空闲后会自动继续匹配'
+        current-selection: '✓ 当前选择'
+        clicking-again-will-not-join-again: '再次点击不会重复加入'
+        click-to-join-the-match: '点击加入匹配'
+        click-to-join-the-waiting-room: '点击等待空闲场地'
+        the-party-will-be-selected-simultaneously: '整个小队会同步选择'
+        the-countdown-starts-automatically-after-the-instance-becomes-idle: '场地空闲后会自动开始倒计时'
+        click-to-view-game-data-and-time-records: '点击查看各游戏具体数据与计时纪录'
+        ranking-list: '排行榜'
+        explore-teamwork: '探索 • 团队协作'
+        complete-shared-bingo-tasks-strive-for-connections-and-full-collection: '合作完成宾果任务，争取连线并集齐整张卡片'
+        racing-independent-track-instance: '竞速 • 独立赛道'
+        controlling-the-elytra-and-trident-challenge-the-fastest-complete-lap: '驾驭鞘翅与三叉戟，挑战最快完整圈'
+        confrontation-original-end-dragon-battle: '对抗 • 原版末影龙战'
+        compete-for-three-end-game-progressions-be-the-first-to-complete-two-of-them: '争夺三项末地进度，率先完成其中两项'
+    leaderboard-screen:
+      title: "&#ffaa00&l排行榜"
+      size: 54
+      layout:
+        content: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25]
+        border: [0, 2, 3, 5, 6, 8, 45, 46, 47, 51]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: " "
+          lore: []
+        player: {slot: 1, material: PLAYER_HEAD, title: "&#55ffff&l我的榜单名片", lore: []}
+        overview: {slot: 4, material: NETHER_STAR, title: "&#ffaa00&l荣誉榜", lore: []}
+        records: {slot: 7, material: CLOCK, title: "&#ff55ff&l我的计时纪录", lore: []}
+        category: {material: PAPER, title: "%board%", lore: []}
+        row: {material: PLAYER_HEAD, title: "&#a0a0a0第 %rank% 名 &#ededed%player%", lore: []}
+        empty: {slot: 22, material: GRAY_DYE, title: "&#a0a0a0暂无上榜记录", lore: []}
+        back: {slot: 45, material: ARROW, title: "&#ededed返回", lore: []}
+        previous: {slot: 48, material: ARROW, title: "&#ededed上一页", lore: []}
+        refresh: {slot: 49, material: CLOCK, title: "&#fff566刷新", lore: []}
+        page: {slot: 50, material: PAPER, title: "&#55ffff第 %page% / %pages% 页", lore: []}
+        next: {slot: 52, material: ARROW, title: "&#ededed下一页", lore: []}
+        close: {slot: 53, material: BARRIER, title: "&#ff5555关闭", lore: []}
+      copy:
+        honor-roll: '荣誉榜'
+        list-categories: '个榜单分类'
+        records-on-the-list: '条上榜成绩'
+        game-specific-records-are-independent-of-each-other: '各游戏的具体数据与竞速纪录彼此独立'
+        timing-records-are-always-differentiated-by-game-map: '计时纪录始终按游戏地图区分'
+        return-to-game-selection: '返回游戏选择'
+        continue-to-add-or-adjust-free-matching: '继续加入或调整自由匹配'
+        previous-page: '上一页'
+        ordinal-prefix: '第'
+        page-suffix: '页'
+        next-page: '下一页'
+        no-list-record-yet: '暂无上榜记录'
+        after-completing-a-corresponding-game-the-record-will-be-displayed-here: '完成对应游戏后，你的纪录会显示在这里'
+        the-ranking-list-only-reads-data-in-this-mode: '这里只统计休闲匹配成绩'
+        return-to-list-category: '返回榜单分类'
+        valid-records: '条有效成绩'
+        my-list-business-card: '我的榜单名片'
+        overall-list: '总榜'
+        not-yet-on-the-list: '尚未上榜'
+        record: '战绩'
+        select-the-category-below-to-view-detailed-rankings: '选择下方分类查看详细名次'
+        first-connection: '首次连线'
+        all-collection: '全收集'
+        fastest-lap: '最快单圈'
+        fastest-three-complete-laps: '最快完整三圈'
+        unlocked-after-completing-bingo-or-ace-race: '完成宾果或王牌竞速后解锁'
+        times-from-different-maps-will-not-be-mixed-in-rankings: '不同地图的时间不会混合排名'
+        my-time-record: '我的计时纪录'
+        top-of-the-list: '榜首'
+        my-ranking-has-not-been-listed-yet: '我的名次尚未上榜'
+        my-ranking: '我的名次 # '
+        players-on-the-list: '位玩家上榜'
+        click-to-view-the-complete-list: '点击查看完整榜单'
+        players-have-valid-records: '位玩家留下有效纪录'
+        i-m-not-on-the-list-yet: '我尚未上榜'
+        best-time-to-use: '最佳用时'
+        list-value: '榜单数值'
+        current-top-list: '★ 当前榜首'
+        podium-record: '◆ 领奖台纪录'
+        this-is-your-record: '这是你的纪录'
+        bingo: '宾果 • '
+        fastest-time-from-opening-to-first-completion-of-any-connection: '从开场到首次完成任意连线的最快时间'
+        fastest-time-from-opening-to-completing-the-entire-card: '从开场到完成整张卡片的最快时间'
+        ace-racing: '王牌竞速 • '
+        fastest-time-for-a-complete-legal-lap-of-the-map: '该地图完整合法单圈的最快时间'
+        the-fastest-time-to-complete-three-laps-of-the-map: '该地图完整三圈的最快时间'
+        top-three-per-map: '每张地图显示各指标前三名'
+        map: '张地图'
+        maps-top-three-details: '张地图可查看前三榜单'
+        rate-boards-require-min-games: '率类榜单需至少5场才会上榜'
+        this-mode: '本模式'
+        historical-list: '历史榜单'
+        refresh: '刷新'
+        list-reading-memory-cache-does-not-block-the-game: '排行榜使用缓存数据，不会影响游戏流畅度'
+        close: '关闭'
+        menu-title: '&#fff566&l排行榜'
+        board-title: '&#fff566&l%board%'
+    party-screen:
+      title: '&#55ffff&l小队管理'
+      size: 54
+      layout:
+        content: [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+        border: [0, 1, 2, 3, 5, 6, 8, 46, 48, 50, 51, 52]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: ' '
+          lore: []
+        summary:
+          slot: 4
+          title: '&#55ffff&l我的小队'
+          states:
+            party:
+              glint: true
+        invitation:
+          slot: 7
+          states:
+            none:
+              material: PAPER
+              title: '&#a0a0a0暂无待处理邀请'
+            pending:
+              material: WRITABLE_BOOK
+              title: '&#ffaa00&l收到小队邀请'
+              glint: true
+        player:
+          states:
+            available:
+              glint: true
+        empty:
+          slot: 22
+          material: GRAY_DYE
+          title: '&#a0a0a0暂无其他在线玩家'
+          lore:
+            - '&#696969在线玩家与组队状态会显示在这里'
+        action:
+          slot: 45
+          states:
+            invite:
+              material: LIME_DYE
+              title: '&#55ff55&l邀请说明'
+            disband:
+              material: RED_DYE
+              title: '&#ff5555&l解散小队'
+            leave:
+              material: RED_DYE
+              title: '&#ff5555&l离开小队'
+        back:
+          slot: 47
+          material: ARROW
+          title: '&#ededed返回大厅'
+          lore: []
+        refresh:
+          slot: 49
+          material: CLOCK
+          title: '&#fff566&l刷新'
+        close:
+          slot: 53
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+      copy:
+        team-function: '小队'
+        this-invitation-cannot-be-accepted-at-this-time: '当前无法接受这份邀请。'
+        already-joined-the-party: '已加入小队。'
+        please-click-on-the-online-players-above-to-send-team-invitations: '请点击上方在线玩家发送组队邀请。'
+        the-party-has-been-disbanded: '小队已解散。'
+        you-have-left-the-companion-group: '你已离开小队。'
+        team-cannot-be-modified-at-the-moment: '当前无法修改队伍。'
+        this-player-cannot-be-invited-at-the-moment: '该玩家暂时无法被邀请。'
+        already-sent-to: '已向'
+        send-invitation: '发出邀请。'
+        you-are-invited-to-join-the-party-please-open-the-game-lobby-to-accept-the-invitation: '邀请你加入小队，请打开游戏大厅接受邀请。'
+        there-are-no-other-online-players-yet: '暂无其他在线玩家'
+        online-players-will-display-their-team-status-here: '在线玩家会在这里显示队伍状态'
+        invitation-instructions: '邀请说明'
+        disband-the-team: '解散队伍'
+        leave-the-team: '离开队伍'
+        click-on-the-online-player-above-to-send-a-team-invitation: '点击上方在线玩家发送组队邀请'
+        teams-cannot-be-modified-while-they-are-matching-or-playing-a-game: '队伍正在匹配或进行游戏时不可修改'
+        return-to-lobby: '返回大厅'
+        refresh: '刷新'
+        update-online-player-and-invitation-status: '更新在线玩家与邀请状态'
+        close: '关闭'
+        you-currently-dont-have-a-party: '你目前没有加入小队'
+        click-player-list-to-send-invitation-hint: '点击玩家列表即可发出邀请'
+        captain: '队长：'
+        number-of-people: '人数：'
+        player-count-suffix: '人'
+        select: '选择：'
+        party: '小队'
+        invitation-status: '邀请状态'
+        no-invitations-pending: '暂无待处理邀请'
+        click-player-list-to-invite-action: '点击玩家列表发送邀请'
+        received-a-team-invitation: '收到组队邀请'
+        invite-you-to-join-the-peer-group: '邀请你加入小队'
+        click-to-accept-the-invitation: '点击接受邀请'
+        team-status: '队伍状态：'
+        no-team: '无队伍'
+        teamed-up: '已组队'
+        current-status: '当前状态：'
+        click-to-send-team-invitation: '点击发送组队邀请'
+        unable-to-send-invitation-at-the-moment: '当前无法发送邀请'
+        only-the-team-leader-can-send-invitations: '只有队长可以发送邀请'
+    statistics-screen:
+      title: "&#55ffff&l个人战绩"
+      size: 54
+      layout:
+        content: [20, 21, 22, 23, 24, 29, 30, 31, 32, 33]
+        border: [0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 48, 51, 52]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: " "
+          lore: []
+        summary: {slot: 4, material: PLAYER_HEAD, title: "&#55ffff&l我的概览", lore: []}
+        game: {title: "%game%", lore: []}
+        metric: {title: "%title%", lore: []}
+        map: {title: "%map%", lore: []}
+        empty: {slot: 22, material: GRAY_DYE, title: "&#a0a0a0暂无开放游戏", lore: []}
+        back: {slot: 45, material: ARROW, title: "&#ededed返回", lore: []}
+        leaderboard: {slot: 47, material: GOLD_INGOT, title: "&#ffaa00&l查看排行榜", lore: []}
+        previous: {slot: 48, material: ARROW, title: "&#ededed上一页", lore: []}
+        refresh: {slot: 49, material: CLOCK, title: "&#fff566刷新", lore: []}
+        page: {slot: 50, material: PAPER, title: "&#55ffff第 %page% / %pages% 页", lore: []}
+        next: {slot: 52, material: ARROW, title: "&#ededed下一页", lore: []}
+        close: {slot: 53, material: BARRIER, title: "&#ff5555关闭", lore: []}
+      copy:
+        personal-record: '个人战绩'
+        statistics-header-prefix: '个人战绩 • '
+        no-open-games-yet: '暂无开放游戏'
+        completed-records-will-be-retained-forever: '已完成的比赛纪录会一直保留'
+        return-to-lobby: '返回大厅'
+        view-the-leaderboard: '查看排行榜'
+        view-game-data-and-personal-record-rankings: '查看各游戏具体数据与个人纪录排名'
+        click-to-open: '点击打开'
+        close: '关闭'
+        match-count-suffix: '场'
+        number-of-connections: '连线数'
+        record-count-suffix: '条'
+        cumulative-completed-connections-across-all-bingo-games: '你在所有宾果对局中完成的连线总数'
+        total-tasks-completed: '完成任务总数'
+        item-count-suffix: '个'
+        cumulative-completed-tasks-for-all-bingo-games: '你在所有宾果对局中完成的任务总数'
+        most-completed-in-a-single-game: '单场最多完成'
+        highest-number-of-tasks-completed-in-a-bingo-game: '单场宾果完成任务数的最高纪录'
+        no-subdivision-records-yet: '暂无细分纪录'
+        after-completing-the-corresponding-game-the-map-record-will-be-displayed-here: '完成对应游戏后，地图纪录会显示在这里'
+        return-to-game-category: '返回游戏分类'
+        previous-page: '上一页'
+        refresh: '刷新'
+        update-the-detailed-records-of-the-current-game: '更新当前游戏的详细纪录'
+        all-maps-accumulated: '全部地图累计'
+        bingo-data-accumulated-by-game-not-split-by-map: '宾果成绩合并统计，不按地图分别显示'
+        ordinal-prefix: '第'
+        page-suffix: '页'
+        map: '张地图'
+        next-page: '下一页'
+        complete-session: '完成场次'
+        sort-by-game-click-on-card-to-see-breakdown: '按游戏分类，点击卡片查看细分'
+        my-overview: '我的总览'
+        lines-completed-label: '连线数'
+        complete-the-task: '完成任务'
+        most-in-a-single-game: '单场最多'
+        click-to-view-cumulative-breakdown-data: '点击查看累计细分数据'
+        maps-to-view-subdivisions: '张地图可查看细分'
+        click-to-view-detailed-results: '点击查看详细战绩'
+        participate-in-sessions: '参与场次'
+        view-the-cumulative-breakdown-of-bingo-data-below: '下方查看宾果累计细分数据'
+        click-the-map-below-to-view-various-records: '下方按地图查看各项纪录'
+        no-record-yet: '暂无纪录'
+        record-independently-by-map: '按地图独立记录'
+        fastest-lap: '最快单圈'
+        fastest-three-complete-laps: '最快完整三圈'
   hotbar:
     lobby:
-      game-lobby: '游戏大厅'
-      right-click-to-open-lobby-menu: '右键打开大厅菜单'
+      material: COMPASS
+      title: '&#55ffff&l游戏大厅'
+      lore:
+        - '&#a0a0a0右键打开大厅菜单'
+  metrics:
+    bingo-max-tasks: '单场最多完成物品'
+    bingo-max-lines: '单场最多连线'
+    bingo-max-firsts: '单场最多首个完成物品'
+    acerace-fastest-lap: '最快单圈'
+    acerace-fastest-three-laps: '最快完整三圈'
+    dragon-max-damage: '单场对末影龙最多伤害'
+    dragon-first-liberate-rate: '场均首个解放末地率'
+    dragon-first-next-gen-rate: '场均首个下一世代率'
+    dragon-first-gateway-rate: '场均首个远程折跃率'
 games:
   bingo:
-    compass:
-      there-are-currently-no-online-teammates-to-teleport-to: '当前没有可传送的在线队友'
-      teleport-to-teammates: '传送至队友'
-      click-to-teleport-to-this-teammate: '点击传送到此队友'
-      this-teammate-is-no-longer-reachable: '该队友已不可达'
-      sent-to: '已传送到'
+    menus:
+      teammate-teleport:
+        title: '&#55ffff&l传送至队友'
+        size: 54
+        layout:
+          content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53]
+        items:
+          teammate:
+            material: ENDER_PEARL
+            title: '&#ededed&l%player%'
+            lore: ['&#a0a0a0点击传送到这名队友']
+        copy:
+          there-are-currently-no-online-teammates-to-teleport-to: '当前没有可传送的在线队友'
+          teleport-to-teammates: '传送至队友'
+          click-to-teleport-to-this-teammate: '点击传送到此队友'
+          this-teammate-is-no-longer-reachable: '该队友已不可达'
+          sent-to: '已传送到'
+      card:
+        title: '&#ff55ff&l宾果卡片'
+        layout:
+          content: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        items:
+          info:
+            slot: 0
+            material: MAP
+            title: '&#ff55ff&l宾果卡片'
+            lore: ['&#a0a0a0率先完成连线或整张卡片即可获胜']
 voting:
-  menu:
-    tournament-ballot: '锦标赛投票'
-    next-game: ' · 下一场'
-    there-are-currently-no-candidate-games-in-this-round: '本轮暂无候选游戏'
-    waiting-for-venue-release: '等待管理员开放候选游戏'
-    close: '关闭'
-    championship-events: '候选游戏'
-    make-your-selection-after-reviewing-the-game-rules: '查看游戏规则，然后选出下一场比赛'
-    ticket: '票'
-    my-choice: '✓我的选择'
-    click-on-other-items-to-change-your-ticket: '点击其他游戏即可改票'
-    current-leader: '★当前领跑'
-    click-to-vote-for-this-game: '点击投给这个游戏'
-    click-to-vote: '点击投票'
-    countdown-to-voting-deadline: '投票截止倒计时'
-    results-will-be-locked-after-the-countdown-ends: '结果将在倒计时结束后锁定'
-    waiting-for-the-first-ballot: '等待第一张选票'
-    leading-the-way: '领跑'
-    games-tied-for-the-lead: '个游戏并列领先'
-    next-game-it-s-up-to-you: '下一场，由你决定'
-    candidate-games: '个候选游戏'
-    valid-votes: '张有效选票'
-    already-invested: '已投'
-    contestant-voting-progress: '参赛者投票进度'
-    ballot-is-not-filled-in: '选票未填写'
-    select-an-item-from-above: '从上方选择一个游戏'
-    can-be-changed-at-any-time-before-voting-closes: '投票结束前可以随时更改'
-    my-vote: '我的选票'
-    ballot-recorded: '选票已记录'
-    explore-teamwork: '探索 · 团队协作'
-    complete-the-shared-bingo-card-seize-the-grid-and-connect: '合作完成宾果任务，抢占格子并争取连线'
-    chase-4v4: '追逐 · 4v4'
-    chaser-capture-escapers-fight-for-time-to-survive: '追击者抓人，逃脱者尽可能坚持更久'
-    battle-4v4: '战斗 · 4v4'
-    defeat-the-opponent-occupy-the-center-with-your-team-s-wool: '击败对手，并用本队羊毛占领中心区域'
-    survival-individual-competition: '生存 · 个人赛'
-    persevere-until-the-end-on-the-collapsing-platform: '在不断崩落的平台上坚持到最后'
-    knock-back-survival-match: '击退 · 生存赛'
-    use-snowballs-to-knock-your-opponents-out-of-the-shrinking-field: '用雪球将对手击出逐渐缩小的场地'
-    survival-team-battle: '生存 · 团队战'
-    collect-empty-island-resources-fight-in-shrinking-borders: '搜集空岛资源，在收缩边界中交战'
-    racing-complete-the-race-as-a-team: '竞速 · 全队完赛'
-    overcome-obstacles-and-reach-the-finish-line-compete-for-individual-and-team-rankings: '跨越障碍冲向终点，争夺个人和团队名次'
-    parkour-individual-competition: '跑酷 · 个人赛'
-    challenge-branch-tracks-scored-by-difficulty-and-completion: '挑战不同难度的分支赛道，按难度和完成度得分'
-    pass-survival-race: '传递 · 生存赛'
-    pass-the-hot-cod-to-your-opponent-and-hold-on-until-the-end: '把烫手鳕鱼传给对手并坚持到最后'
-    build-teamwork: '建造 · 团队协作'
-    collect-materials-and-divide-the-work-to-restore-as-many-blueprints-as-possible: '采集材料、分工建造，尽可能还原更多蓝图'
-    racing-individual-competition: '竞速 · 个人赛'
-    control-the-elytra-and-trident-to-complete-multiple-laps-of-the-obstacle-course: '驾驭鞘翅与三叉戟完成多圈障碍赛道'
+  menus:
+    ballot:
+      title: '&#ffaa00&l锦标赛投票 &#ededed• 下一场'
+      size: 54
+      layout:
+        content: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22]
+        border: [0, 1, 2, 3, 4, 5, 6, 7, 8, 45, 46, 47, 48, 49, 50, 51, 52, 53]
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: ' '
+          lore: []
+        candidate:
+          title: '&#ededed&l%game%'
+          lore:
+            - '&#696969%category%'
+            - '&#a0a0a0%description%'
+            - ''
+            - '&#ededed%votes%票 &#696969• %percentage%%'
+            - ''
+            - '&#55ff55点击投票'
+          states:
+            selected:
+              title: '&#55ffff&l✓ %game%'
+              glint: true
+              lore:
+                - '&#696969%category%'
+                - '&#a0a0a0%description%'
+                - ''
+                - '&#ededed%votes%票 &#696969• %percentage%%'
+                - ''
+                - '&#55ffff&l✓ 我的选择'
+            leading:
+              title: '&#ffaa00&l★ %game%'
+              lore:
+                - '&#696969%category%'
+                - '&#a0a0a0%description%'
+                - ''
+                - '&#ededed%votes%票 &#696969• %percentage%%'
+                - ''
+                - '&#ffaa00&l★ 当前领跑'
+        empty:
+          slot: 22
+          material: GRAY_DYE
+          title: '&#a0a0a0本轮暂无候选游戏'
+          lore: ['&#696969等待管理员开放候选游戏']
+        time:
+          slot: 1
+          material: CLOCK
+          title: '&#fff566&l%time%'
+          lore: ['&#a0a0a0投票截止倒计时', '&#696969结果将在倒计时结束后锁定']
+        overview:
+          slot: 4
+          material: NETHER_STAR
+          title: '&#ffaa00&l下一场，由你决定'
+          lore: ['&#ededed%candidates%个候选游戏 &#696969• %votes%张有效选票']
+        turnout:
+          slot: 7
+          material: NAME_TAG
+          title: '&#55ffff&l%votes%/%eligible% 已投'
+          lore: ['&#a0a0a0参赛者投票进度：&#ededed%percentage%%']
+        my-ballot:
+          slot: 40
+          material: WRITABLE_BOOK
+          title: '&#55ffff&l我的选票'
+          lore: ['&#55ff55%game%', '&#55ff55选票已记录']
+          states:
+            empty:
+              material: PAPER
+              title: '&#a0a0a0&l选票未填写'
+              lore: ['&#ededed从上方选择一个游戏', '&#696969投票结束前可以随时更改']
+            selected:
+              glint: true
+        close:
+          slot: 49
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+      copy:
+        tournament-ballot: '锦标赛投票'
+        next-game: ' • 下一场'
+        there-are-currently-no-candidate-games-in-this-round: '本轮暂无候选游戏'
+        waiting-for-venue-release: '等待管理员开放候选游戏'
+        close: '关闭'
+        championship-events: '候选游戏'
+        make-your-selection-after-reviewing-the-game-rules: '查看游戏规则，然后选出下一场比赛'
+        ticket: '票'
+        my-choice: '✓ 我的选择'
+        click-on-other-items-to-change-your-ticket: '点击其他游戏即可改票'
+        current-leader: '★ 当前领跑'
+        click-to-vote-for-this-game: '点击投给这个游戏'
+        click-to-vote: '点击投票'
+        countdown-to-voting-deadline: '投票截止倒计时'
+        results-will-be-locked-after-the-countdown-ends: '结果将在倒计时结束后锁定'
+        waiting-for-the-first-ballot: '等待第一张选票'
+        leading-the-way: '领跑：'
+        games-tied-for-the-lead: '个游戏并列领先'
+        next-game-it-s-up-to-you: '下一场，由你决定'
+        candidate-games: '个候选游戏'
+        valid-votes: '张有效选票'
+        already-invested: '已投'
+        contestant-voting-progress: '参赛者投票进度'
+        ballot-is-not-filled-in: '选票未填写'
+        select-an-item-from-above: '从上方选择一个游戏'
+        can-be-changed-at-any-time-before-voting-closes: '投票结束前可以随时更改'
+        my-vote: '我的选票'
+        ballot-recorded: '选票已记录'
+        explore-teamwork: '探索 • 团队协作'
+        complete-the-shared-bingo-card-seize-the-grid-and-connect: '合作完成宾果任务，抢占格子并争取连线'
+        chase-4v4: '追逐 • 4v4'
+        chaser-capture-escapers-fight-for-time-to-survive: '追击者抓人，逃脱者尽可能坚持更久'
+        battle-4v4: '战斗 • 4v4'
+        defeat-the-opponent-occupy-the-center-with-your-team-s-wool: '击败对手，并用本队羊毛占领中心区域'
+        survival-individual-competition: '生存 • 个人赛'
+        persevere-until-the-end-on-the-collapsing-platform: '在不断崩落的平台上坚持到最后'
+        knock-back-survival-match: '击退 • 生存赛'
+        use-snowballs-to-knock-your-opponents-out-of-the-shrinking-field: '用雪球将对手击出逐渐缩小的场地'
+        survival-team-battle: '生存 • 团队战'
+        collect-empty-island-resources-fight-in-shrinking-borders: '搜集空岛资源，在收缩边界中交战'
+        racing-complete-the-race-as-a-team: '竞速 • 全队完赛'
+        overcome-obstacles-and-reach-the-finish-line-compete-for-individual-and-team-rankings: '跨越障碍冲向终点，争夺个人和团队名次'
+        parkour-individual-competition: '跑酷 • 个人赛'
+        challenge-branch-tracks-scored-by-difficulty-and-completion: '挑战不同难度的分支赛道，按难度和完成度得分'
+        pass-survival-race: '传递 • 生存赛'
+        pass-the-hot-cod-to-your-opponent-and-hold-on-until-the-end: '把烫手鳕鱼传给对手并坚持到最后'
+        build-teamwork: '建造 • 团队协作'
+        collect-materials-and-divide-the-work-to-restore-as-many-blueprints-as-possible: '采集材料、分工建造，尽可能还原更多蓝图'
+        racing-individual-competition: '竞速 • 个人赛'
+        control-the-elytra-and-trident-to-complete-multiple-laps-of-the-obstacle-course: '驾驭鞘翅与三叉戟完成多圈障碍赛道'

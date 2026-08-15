@@ -3,7 +3,6 @@ package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
-import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.SelectedBlockStep;
@@ -24,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /** Build Mart flow: a hand-built resource hub plus a replicated, editable base template. */
 public class BuildMartPrepareFlow extends PrepareFlowDefinition {
@@ -60,7 +58,7 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
 
         steps.add(new BuildMartWindZoneListStep());
         steps.add(new BuildMartMaterialZoneStep());
-        steps.add(point("spectator_spawn", GuiConfig.text("map-editor.games.build-mart.setup.spectator-spawn-point"), Material.ENDER_EYE,
+        steps.add(point("spectator_spawn", GuiConfig.text("map-editor.copy.spectator-spawn-point"), Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l)));
         steps.add(new StandAndRunStep("hub_portal", Component.text(GuiConfig.text("map-editor.games.build-mart.setup.resource-hall-portal-location")),
                 Component.text(GuiConfig.text("map-editor.games.build-mart.setup.resource-hall-arrival-selection-hint")), Material.OBSIDIAN,
@@ -81,22 +79,18 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
         return steps;
     }
 
-    @Override public @NotNull CompletableFuture<Boolean> publish(@NotNull PrepareSession session) {
-        return session.getTarget().saveMap(World.Environment.NORMAL);
-    }
-
     private static PrepareStep selection(String key, String name, Material icon,
             java.util.function.Predicate<SetupTarget> predicate,
             java.util.function.BiConsumer<SetupTarget, org.bukkit.util.Vector[]> setter) {
         return new WeSelectionStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.games.build-mart.setup.use-worldedit-to-select-and-click")),
-                icon, predicate, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.setup.already-set") + name + "。"));
+                icon, predicate, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.already-set") + name + "。"));
     }
 
     private static PrepareStep point(String key, String name, Material icon,
             java.util.function.Predicate<SetupTarget> predicate,
             java.util.function.BiConsumer<SetupTarget, Location> setter) {
-        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.games.build-mart.setup.after-reaching-the-target-position-click")),
-                icon, predicate, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.setup.already-set") + name + "。"));
+        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.copy.after-reaching-the-target-position-click")),
+                icon, predicate, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.already-set") + name + "。"));
     }
 
     private static PrepareStep basePoint(String key, boolean selectedBlock) {
@@ -113,7 +107,7 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
         Component description = Component.text(GuiConfig.text("map-editor.games.build-mart.setup.team-base-arrival-selection-hint"));
         return new StandAndRunStep("base_" + key, Component.text(display), description, Material.BRICKS,
                 t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.setup.already-set") + display + "。"));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.already-set") + display + "。"));
     }
 
     private static BuildMartConfig cfg(SetupTarget target) { return (BuildMartConfig) target.config(); }

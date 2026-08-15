@@ -136,7 +136,7 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
                 case "active_game" -> snapshot.activeGame();
                 case "active_map" -> snapshot.activeMap();
                 case "match_id" -> snapshot.matchId();
-                case "games", "wins", "points", "best" -> renderDailyStat(player, key);
+                case "games", "points", "best" -> renderDailyStat(player, key);
                 default -> null;
             };
         } catch (RuntimeException exception) {
@@ -180,7 +180,6 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
         DailyStatSnapshot stat = plugin.getDailyManager().statsManager().stat(player.getUniqueId(), null);
         return switch (key) {
             case "games" -> Long.toString(stat.gamesPlayed());
-            case "wins" -> Long.toString(stat.wins());
             // Retained as zero-only compatibility placeholders. DAILY points are match-local.
             case "points", "best" -> "0";
             default -> MessageConfig.PLACEHOLDER_NONE;
@@ -189,7 +188,7 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
 
     private String safeDailyDefault(String key) {
         return switch (key) {
-            case "party_size", "queue_players", "games", "wins", "points", "best" -> "0";
+            case "party_size", "queue_players", "games", "points", "best" -> "0";
             case "mode" -> MessageConfig.DAILY_MODE_CHAMPIONSHIP;
             default -> MessageConfig.PLACEHOLDER_NONE;
         };

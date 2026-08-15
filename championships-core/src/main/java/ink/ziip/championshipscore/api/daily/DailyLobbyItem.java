@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
 import net.kyori.adventure.text.Component;
@@ -17,22 +18,24 @@ import java.util.List;
 
 /** The only item used to enter the public-play lobby. It is never identified by its display name. */
 final class DailyLobbyItem {
+    private static final String ITEM_PATH = "daily.hotbar.lobby";
     static final NamespacedKey MARKER = NamespacedKey.fromString("championshipscore:daily_lobby_menu");
 
     private DailyLobbyItem() {}
 
     static ItemStack create() {
-        ItemStack item = new ItemStack(Material.COMPASS);
-        ItemMeta meta = item.getItemMeta();
+        // Fallback preserves the click-target marker; gui.yml provides material/title/lore.
+        ItemStack fallback = new ItemStack(Material.COMPASS);
+        ItemMeta meta = fallback.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text(GuiConfig.text("daily.hotbar.lobby.game-lobby"), NamedTextColor.AQUA)
+            meta.displayName(Component.text("游戏大厅", NamedTextColor.AQUA)
                     .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(GuiConfig.text("daily.hotbar.lobby.right-click-to-open-lobby-menu"), NamedTextColor.GRAY)
+            meta.lore(List.of(Component.text("右键打开大厅菜单", NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
             meta.getPersistentDataContainer().set(MARKER, PersistentDataType.BYTE, (byte) 1);
-            item.setItemMeta(meta);
+            fallback.setItemMeta(meta);
         }
-        return item;
+        return ConfiguredGui.item(ITEM_PATH, null, java.util.Map.of(), fallback);
     }
 
     static boolean is(ItemStack item) {

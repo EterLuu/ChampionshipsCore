@@ -28,9 +28,9 @@ public class ConfirmWorldStep extends PrepareStep {
     public ConfirmWorldStep(@NotNull Predicate<Player> inCorrectWorld, @NotNull String worldName,
                             boolean allowRebind) {
         super("confirm_world",
-                Component.text(allowRebind ? GuiConfig.text("map-editor.steps.world-confirmation.bind-to-current-world") : GuiConfig.text("map-editor.steps.world-confirmation.confirm-the-world")),
+                Component.text(allowRebind ? GuiConfig.text("map-editor.copy.bind-to-current-world") : GuiConfig.text("map-editor.steps.world-confirmation.confirm-the-world")),
                 Component.text(allowRebind ? GuiConfig.text("map-editor.steps.world-confirmation.click-to-bind-or-change-to-the-current-world")
-                        : GuiConfig.text("map-editor.steps.world-confirmation.go-to") + worldName + GuiConfig.text("map-editor.steps.world-confirmation.click-this-to-confirm-after-entering-the-world")),
+                        : GuiConfig.text("map-editor.copy.go-to") + worldName + GuiConfig.text("map-editor.steps.world-confirmation.click-this-to-confirm-after-entering-the-world")),
                 Material.COMPASS,
                 StepCaptureType.CONFIRM_WORLD);
         this.inCorrectWorld = inCorrectWorld;

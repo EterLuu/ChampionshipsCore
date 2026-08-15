@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
 import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
@@ -19,9 +21,11 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 
 /** Selects the progress line reached after one Ace Race respawn marker. */
 public final class AceRaceRespawnPointBindingGui {
+    private static final String MENU_PATH = MenuId.ACE_RACE_RESPAWN_BINDING.path();
     private static final int PAGE_SIZE = 45;
     private static final int PREVIOUS_SLOT = 45;
     private static final int BACK_SLOT = 48;
@@ -51,8 +55,9 @@ public final class AceRaceRespawnPointBindingGui {
     public static void open(@NotNull PrepareSessionManager manager, @NotNull Player player,
                             @NotNull PrepareSession session, int respawnIndex) {
         Holder holder = new Holder(session, respawnIndex);
-        holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text(GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.select-the-progress-line-to-which-the-respawn-point-belongs")).decoration(TextDecoration.ITALIC, false));
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54,
+                GuiConfig.text(MENU_PATH + ".copy.select-the-progress-line-to-which-the-respawn-point-belongs"), List.of());
+        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -128,18 +133,23 @@ public final class AceRaceRespawnPointBindingGui {
             }
             boolean selected = progressIndex == current;
             inventory.setItem(slot, item(Material.LIME_STAINED_GLASS_PANE,
-                    GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.progress-line") + (progressIndex + 1) + GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.after-suffix"),
+                    GuiConfig.text("map-editor.copy.progress-line") + (progressIndex + 1) + GuiConfig.text("map-editor.copy.after-suffix"),
                     selected ? NamedTextColor.GREEN : NamedTextColor.AQUA,
-                    selected ? GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.current-binding") : GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.after-clicking-to-bind-to-this-progress-line")));
+                    selected ? GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.copy.current-binding") : GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.copy.after-clicking-to-bind-to-this-progress-line")));
         }
         inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? item(Material.ARROW, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.previous-page"), NamedTextColor.WHITE, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.ordinal-prefix") + holder.page + GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.page-suffix")) : filler());
-        inventory.setItem(BACK_SLOT, item(Material.BARRIER, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.back-to-respawn-editor"), NamedTextColor.RED));
-        inventory.setItem(START_SLOT, item(Material.COMPASS, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.after-starting-point-no-progress-line-bound"), current < 0
-                ? NamedTextColor.GREEN : NamedTextColor.YELLOW, current < 0 ? GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.current-binding") : GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.click-to-select")));
-        inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount
-                ? item(Material.ARROW, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.next-page"), NamedTextColor.WHITE, GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.ordinal-prefix") + (holder.page + 2) + " / " + pageCount + GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.page-suffix"))
+                ? configured("previous", null, Map.of("page", holder.page, "pages", pageCount))
                 : filler());
+        inventory.setItem(BACK_SLOT, configured("back", null, Map.of()));
+        inventory.setItem(START_SLOT, configured("start", current < 0 ? "selected" : null, Map.of()));
+        inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount
+                ? configured("next", null, Map.of("page", holder.page + 2, "pages", pageCount))
+                : filler());
+    }
+
+    private static ItemStack configured(@NotNull String item, String state, @NotNull Map<String, ?> placeholders) {
+        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders,
+                Material.BARRIER, Component.text(item), List.of(), false);
     }
 
     private static int pageCount(int size) {

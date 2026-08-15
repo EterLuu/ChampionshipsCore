@@ -98,15 +98,15 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                 Material.BEDROCK,
                 a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
                 (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.general-site-boundary-set"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.general-site-boundary-set"))));
 
         steps.add(new StandAndRunStep("spectator_spawn",
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.spectator-spawn-point")),
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-in-a-spectator-position-and-click")),
+                Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")),
+                Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")),
                 Material.ENDER_EYE,
                 a -> cfg(a).getSpectatorSpawnPoint() != null,
                 (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.spectator-spawn-point-has-been-set"))));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set"))));
 
         steps.add(new StandAndRunStep("right_spawn",
                 Component.text(GuiConfig.text("map-editor.games.battle-box.setup.the-team-s-spawn-point-on-the-right")),

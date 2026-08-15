@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,9 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class GuiLanguageConfigurationTest {
     private static final Pattern GUI_REFERENCE = Pattern.compile(
             "GuiConfig\\.(?:text|lines|component)\\(\\\"([^\\\"]+)\\\"");
-    private static final Pattern FORBIDDEN_CHINESE_SPACING = Pattern.compile(
-            "(?:[\\p{IsHan}] +(?:%[A-Za-z0-9_.-]+%|\\{\\d+}|[A-Za-z0-9])"
-                    + "|(?:%[A-Za-z0-9_.-]+%|\\{\\d+}|[A-Za-z0-9]) +[\\p{IsHan}])");
+    private static final Pattern UNPADDED_BULLET = Pattern.compile("(?<=\\S)•|•(?=\\S)");
+    private static final Pattern UNPADDED_HASH = Pattern.compile("(?<!：)(?<=\\S)#|#(?=\\S)");
+    private static final Pattern SPACE_AFTER_CHINESE_COLON = Pattern.compile("：[ \\t]");
+    private static final Pattern UNPADDED_BRACKET_SUFFIX = Pattern.compile("](?=\\S)");
 
     @Test
     void everyGuiReferenceResolvesToConfiguredCopy() throws IOException {
@@ -42,9 +42,9 @@ class GuiLanguageConfigurationTest {
     }
 
     @Test
-    void guiKeysUseAnEnglishBusinessHierarchyAndEveryLegacyAliasHasATarget() throws IOException {
+    void guiKeysUseAnEnglishBusinessHierarchy() throws IOException {
         YamlConfiguration gui = YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertEquals(3, gui.getInt("dont-edit-this.version"));
+        assertEquals(10, gui.getInt("dont-edit-this.version"));
 
         List<String> copyKeys = leafKeys(gui).stream()
                 .filter(key -> !key.equals("dont-edit-this.version"))
@@ -65,32 +65,101 @@ class GuiLanguageConfigurationTest {
                 .toList();
         assertTrue(numbered.isEmpty(), "Numbered GUI keys are forbidden: " + numbered);
         assertTrue(copyKeys.stream().anyMatch(key -> key.startsWith("map-editor.games.ace-race.")));
-        assertTrue(copyKeys.stream().anyMatch(key -> key.startsWith("daily.menus.game-selection.")));
-        assertTrue(copyKeys.stream().anyMatch(key -> key.startsWith("spectator.controls.")));
-
-        Properties aliases = new Properties();
-        try (var reader = Files.newBufferedReader(
-                Path.of("src/main/resources/gui-legacy-aliases.properties"))) {
-            aliases.load(reader);
-        }
-        assertTrue(aliases.size() >= (copyKeys.size() - 2) * 2 - 1,
-                "Both version 1 and version 2 GUI keys must migrate to version 3");
-        List<String> missingTargets = aliases.values().stream()
-                .map(String::valueOf)
-                .filter(target -> !gui.isString(target))
-                .toList();
-        assertTrue(missingTargets.isEmpty(), "Legacy GUI aliases without English targets: " + missingTargets);
+        assertTrue(copyKeys.stream().anyMatch(key -> key.startsWith("daily.menus.game-selection-screen.")));
+        assertTrue(copyKeys.stream().anyMatch(key -> key.startsWith("spectator.menus.visibility.")));
     }
 
     @Test
-    void chineseLanguageFilesUseCompactAndConsistentTerminology() {
+    void spectatorMenusExposeCompleteFunctionalButtonDefinitions() {
+        YamlConfiguration gui = YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
+        ConfigurationSection menus = gui.getConfigurationSection("spectator.menus");
+        assertNotNull(menus);
+        assertFalse(menus.isConfigurationSection("controls"), "obsolete spectator controls menu must stay removed");
+        assertTrue(menus.isConfigurationSection("visibility"));
+        assertFalse(gui.contains("spectator.menus.team-position-selector.items.back"));
+        assertFalse(gui.contains("spectator.menus.player-visibility-selector.items.back"));
+        assertTrue(gui.contains("spectator.menus.visibility.items.show-all"));
+        assertTrue(gui.contains("spectator.menus.visibility.items.show-player"));
+        assertTrue(gui.contains("spectator.menus.visibility.items.show-team"));
+        for (String menuName : menus.getKeys(false)) {
+            String menu = "spectator.menus." + menuName;
+            assertTrue(gui.isString(menu + ".title"), menu + " needs a title");
+            int size = gui.getInt(menu + ".size");
+            assertTrue(size >= 9 && size <= 54 && size % 9 == 0, menu + " has invalid size");
+            assertFalse(gui.getIntegerList(menu + ".layout.content").isEmpty(),
+                    menu + " needs explicit content slots");
+            ConfigurationSection items = gui.getConfigurationSection(menu + ".items");
+            assertNotNull(items, menu + " needs items");
+            for (String itemName : items.getKeys(false)) {
+                String item = menu + ".items." + itemName;
+                assertTrue(gui.isString(item + ".material"), item + " needs a material");
+                assertTrue(gui.isString(item + ".title"), item + " needs a title");
+                assertTrue(gui.isList(item + ".lore"), item + " needs lore, even when empty");
+                assertTrue(gui.isInt(item + ".slot") || gui.isList(item + ".slots")
+                                || isDynamicContentItem(itemName) || "border".equals(itemName),
+                        item + " needs a slot or must be a content template");
+            }
+        }
+
+        ConfigurationSection hotbar = gui.getConfigurationSection("spectator.hotbar");
+        assertNotNull(hotbar);
+        for (String itemName : hotbar.getKeys(false)) {
+            String item = "spectator.hotbar." + itemName;
+            assertTrue(gui.isInt(item + ".slot"), item + " needs a slot");
+            assertTrue(gui.isString(item + ".material"), item + " needs a material");
+            assertTrue(gui.isString(item + ".title"), item + " needs a title");
+            assertTrue(gui.isList(item + ".lore"), item + " needs lore, even when empty");
+        }
+
+        assertEquals("&#a0a0a0进行中场地：&#55ff55%count%",
+                gui.getStringList("spectator.menus.venue-selector.items.status.states.idle.lore").getFirst());
+        assertEquals("&#a0a0a0观众：&#55ffff%audience%",
+                gui.getStringList("spectator.menus.venue-selector.items.match.lore").get(2));
+    }
+
+    @Test
+    void primaryPlayerMenusExposeStructuredDefinitions() {
+        YamlConfiguration gui = YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
+        for (String menu : List.of(
+                "daily.menus.lobby-screen",
+                "daily.menus.game-selection-screen",
+                "daily.menus.party-screen",
+                "daily.menus.leaderboard-screen",
+                "daily.menus.statistics-screen",
+                "games.bingo.menus.teammate-teleport",
+                "games.bingo.menus.card",
+                "voting.menus.ballot")) {
+            assertTrue(gui.isString(menu + ".title"), menu + " needs a title");
+            ConfigurationSection items = gui.getConfigurationSection(menu + ".items");
+            assertNotNull(items, menu + " needs functional item definitions");
+            assertFalse(items.getKeys(false).isEmpty(), menu + " needs at least one item");
+        }
+        for (String obsolete : List.of(
+                "daily.menus.lobby", "daily.menus.game-selection", "daily.menus.party",
+                "daily.menus.leaderboards", "daily.menus.statistics", "map-editor.toolbar")) {
+            assertFalse(gui.isConfigurationSection(obsolete), obsolete + " must be represented by a structured menu");
+        }
+    }
+
+    private static boolean isDynamicContentItem(String itemName) {
+        return List.of("match", "destination", "resource-hub", "team-base", "player", "team")
+                .contains(itemName);
+    }
+
+    @Test
+    void languageFilesUseConsistentVisualSeparatorsAndTerminology() {
         for (String resource : List.of("message.yml", "schedule-message.yml", "gui.yml",
                 "bingo/lang/zh_CN.yml", "scoreboards.yml")) {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(Path.of("src/main/resources", resource).toFile());
             assertNotNull(yaml, resource);
             for (String value : strings(yaml)) {
-                String visible = value.replaceAll("&#[0-9A-Fa-f]{6}|&[0-9A-Fa-fK-Ok-oRr]", "");
-                assertFalse(FORBIDDEN_CHINESE_SPACING.matcher(visible).find(), resource + ": " + value);
+                String visible = value.replaceAll("&?#[0-9A-Fa-f]{6}|&[0-9A-Fa-fK-Ok-oRr]", "");
+                assertFalse(visible.contains("·"), resource + ": " + value);
+                assertFalse(UNPADDED_BULLET.matcher(visible).find(), resource + ": " + value);
+                assertFalse(UNPADDED_HASH.matcher(visible).find(), resource + ": " + value);
+                assertFalse(SPACE_AFTER_CHINESE_COLON.matcher(visible).find(), resource + ": " + value);
+                String withoutPlaceholders = visible.replaceAll("%[^%]*%", "");
+                assertFalse(UNPADDED_BRACKET_SUFFIX.matcher(withoutPlaceholders).find(), resource + ": " + value);
                 assertFalse(visible.contains("建材集市"), resource + ": " + value);
                 assertFalse(visible.contains("TNT 雨"), resource + ": " + value);
                 assertFalse(visible.contains("Bingo"), resource + ": " + value);

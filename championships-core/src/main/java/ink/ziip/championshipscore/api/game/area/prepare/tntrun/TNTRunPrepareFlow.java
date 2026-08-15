@@ -28,7 +28,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /** Unified prepare flow for TNT Run's one match with several load-balancing arena copies. */
 public class TNTRunPrepareFlow extends PrepareFlowDefinition {
@@ -92,17 +91,12 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                         Component.text(GuiConfig.text("map-editor.games.tnt-run.setup.stand-at-the-spawn-point-of-copy0-player-and-click")), Material.ELYTRA,
                         t -> cfg(t).getCopySpawn() != null, (t, loc) -> cfg(t).setCopySpawn(loc),
                         Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.tnt-run.setup.the-spawn-point-of-track-0-has-been-set"))),
-                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.games.tnt-run.setup.spectator-spawn-point")),
-                        Component.text(GuiConfig.text("map-editor.games.tnt-run.setup.stand-in-a-spectator-position-and-click")), Material.ENDER_EYE,
+                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")),
+                        Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")), Material.ENDER_EYE,
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, loc) -> cfg(t).setSpectatorSpawnPoint(loc),
-                        Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.tnt-run.setup.spectator-spawn-point-has-been-set")))
+                        Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set")))
         );
-    }
-
-    @Override
-    public @NotNull CompletableFuture<Boolean> publish(@NotNull PrepareSession session) {
-        return session.getTarget().saveMap(World.Environment.NORMAL);
     }
 
     private static TNTRunConfig cfg(SetupTarget target) {

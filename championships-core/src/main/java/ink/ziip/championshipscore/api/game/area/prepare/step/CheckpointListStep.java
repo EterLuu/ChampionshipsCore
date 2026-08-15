@@ -64,7 +64,7 @@ public final class CheckpointListStep extends PrepareStep {
         checkpoint.createSection("sub-checkpoints");
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.checkpoint-added-current") + root.getKeys(false).size() + GuiConfig.text("map-editor.steps.checkpoints.item-count-suffix"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.checkpoint-added-current") + root.getKeys(false).size() + GuiConfig.text("map-editor.copy.colored-item-count-suffix"));
     }
 
     @Override public int listCount(@NotNull PrepareSession session) {
@@ -104,7 +104,7 @@ public final class CheckpointListStep extends PrepareStep {
         checkpoint.set("enter.pos2", selection[1]);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.updated") + (index + 1) + GuiConfig.text("map-editor.steps.checkpoints.checkpoint-spawn-points-and-entry-areas"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.updated") + (index + 1) + GuiConfig.text("map-editor.steps.checkpoints.checkpoint-spawn-points-and-entry-areas"));
     }
 
     @Override
@@ -113,13 +113,13 @@ public final class CheckpointListStep extends PrepareStep {
         ConfigurationSection root = cfg(session.getTarget()).ensureCheckpoints();
         List<String> keys = orderedKeys(root);
         if (index < 0 || index >= keys.size() || newOrder < 1 || newOrder > keys.size())
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.checkpoints.the-serial-number-must-be-between-1-and") + keys.size() + GuiConfig.text("map-editor.steps.checkpoints.range-end-suffix"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.the-serial-number-must-be-between-1-and") + keys.size() + GuiConfig.text("map-editor.copy.range-end-suffix"));
         String moved = keys.remove(index);
         keys.add(newOrder - 1, moved);
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.the-checkpoint-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.steps.checkpoints.item-suffix"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.the-checkpoint-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.copy.item-suffix"));
     }
 
     @Override
@@ -132,7 +132,7 @@ public final class CheckpointListStep extends PrepareStep {
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.checkpoints.deleted") + (index + 1) + GuiConfig.text("map-editor.steps.checkpoints.checkpoint-count-suffix"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.deleted") + (index + 1) + GuiConfig.text("map-editor.steps.checkpoints.checkpoint-count-suffix"));
     }
 
     private static List<String> orderedKeys(ConfigurationSection root) {
@@ -147,11 +147,11 @@ public final class CheckpointListStep extends PrepareStep {
     }
 
     private static String format(Vector vector) {
-        return vector == null ? GuiConfig.text("map-editor.steps.checkpoints.not-set") : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
+        return vector == null ? GuiConfig.text("map-editor.copy.not-set") : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
     }
 
     private static String format(Location location) {
-        return location == null ? GuiConfig.text("map-editor.steps.checkpoints.not-set") : location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ();
+        return location == null ? GuiConfig.text("map-editor.copy.not-set") : location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ();
     }
 
     @Override public @NotNull Component listAddLabel() { return Component.text(GuiConfig.text("map-editor.steps.checkpoints.add-master-checkpoint")); }

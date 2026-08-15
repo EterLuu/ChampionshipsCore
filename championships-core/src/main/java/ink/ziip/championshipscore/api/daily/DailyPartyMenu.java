@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -25,6 +27,7 @@ import java.util.UUID;
 
 /** Party management screen for invitations, membership and party lifecycle. */
 final class DailyPartyMenu {
+    private static final String MENU_PATH = MenuId.DAILY_PARTY.path();
     private static final int SIZE = 54;
     private static final int SUMMARY_SLOT = 4;
     private static final int INVITE_SLOT = 7;
@@ -42,8 +45,10 @@ final class DailyPartyMenu {
 
     void open(Player player) {
         PartyHolder holder = new PartyHolder(player.getUniqueId());
-        holder.inventory = Bukkit.createInventory(holder, SIZE, Component.text(GuiConfig.text("daily.menus.party.team-function"), NamedTextColor.DARK_AQUA)
-                .decorate(TextDecoration.BOLD));
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, SIZE,
+                Component.text(GuiConfig.text("daily.menus.party-screen.copy.team-function"), NamedTextColor.DARK_AQUA)
+                        .decorate(TextDecoration.BOLD), defaultPlayerSlots());
+        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -59,29 +64,29 @@ final class DailyPartyMenu {
             player.closeInventory();
             return;
         }
-        if (slot == CLOSE_SLOT) {
+        if (slot == slot("close", CLOSE_SLOT)) {
             player.closeInventory();
             return;
         }
-        if (slot == BACK_SLOT) {
+        if (slot == slot("back", BACK_SLOT)) {
             daily.openMenu(player);
             clickSound(player, 1F);
             return;
         }
-        if (slot == REFRESH_SLOT) {
+        if (slot == slot("refresh", REFRESH_SLOT)) {
             refresh(holder);
             clickSound(player, 1.1F);
             return;
         }
-        if (slot == INVITE_SLOT) {
+        if (slot == slot("invitation", INVITE_SLOT)) {
             DailyPartyManager.PendingInvite invite = daily.partyManager().pendingInvite(player.getUniqueId());
             if (invite != null) {
                 DailyParty party = daily.partyManager().accept(player.getUniqueId());
                 if (party == null) {
-                    daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party.this-invitation-cannot-be-accepted-at-this-time"));
+                    daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party-screen.copy.this-invitation-cannot-be-accepted-at-this-time"));
                 } else {
                     for (UUID member : party.members()) {
-                        daily.message(member, player.getName() + GuiConfig.text("daily.menus.party.already-joined-the-party"));
+                        daily.message(member, player.getName() + GuiConfig.text("daily.menus.party-screen.copy.already-joined-the-party"));
                     }
                 }
                 refresh(holder);
@@ -89,10 +94,10 @@ final class DailyPartyMenu {
             }
             return;
         }
-        if (slot == ACTION_SLOT) {
+        if (slot == slot("action", ACTION_SLOT)) {
             DailyParty party = daily.partyManager().getParty(player.getUniqueId());
             if (party == null) {
-                daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party.please-click-on-the-online-players-above-to-send-team-invitations"));
+                daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party-screen.copy.please-click-on-the-online-players-above-to-send-team-invitations"));
                 clickSound(player, 1F);
                 return;
             }
@@ -100,8 +105,8 @@ final class DailyPartyMenu {
                     ? daily.partyManager().disband(player.getUniqueId())
                     : daily.partyManager().leave(player.getUniqueId());
             if (success) daily.message(player.getUniqueId(), party != null && party.isLeader(player.getUniqueId())
-                    ? GuiConfig.text("daily.menus.party.the-party-has-been-disbanded") : GuiConfig.text("daily.menus.party.you-have-left-the-companion-group"));
-            else daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party.team-cannot-be-modified-at-the-moment"));
+                    ? GuiConfig.text("daily.menus.party-screen.copy.the-party-has-been-disbanded") : GuiConfig.text("daily.menus.party-screen.copy.you-have-left-the-companion-group"));
+            else daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party-screen.copy.team-cannot-be-modified-at-the-moment"));
             refresh(holder);
             clickSound(player, success ? 1F : 0.8F);
             return;
@@ -109,10 +114,10 @@ final class DailyPartyMenu {
         UUID target = holder.targetsBySlot.get(slot);
         if (target == null) return;
         if (!daily.partyManager().invite(player.getUniqueId(), target)) {
-            daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party.this-player-cannot-be-invited-at-the-moment"));
+            daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party-screen.copy.this-player-cannot-be-invited-at-the-moment"));
         } else {
-            daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party.already-sent-to") + playerName(target) + GuiConfig.text("daily.menus.party.send-invitation"));
-            daily.message(target, player.getName() + GuiConfig.text("daily.menus.party.you-are-invited-to-join-the-party-please-open-the-game-lobby-to-accept-the-invitation"));
+            daily.message(player.getUniqueId(), GuiConfig.text("daily.menus.party-screen.copy.already-sent-to") + playerName(target) + GuiConfig.text("daily.menus.party-screen.copy.send-invitation"));
+            daily.message(target, player.getName() + GuiConfig.text("daily.menus.party-screen.copy.you-are-invited-to-join-the-party-please-open-the-game-lobby-to-accept-the-invitation"));
         }
         refresh(holder);
         clickSound(player, 1.1F);
@@ -122,98 +127,120 @@ final class DailyPartyMenu {
         Inventory inventory = holder.inventory;
         inventory.clear();
         holder.targetsBySlot.clear();
-        ItemStack border = item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of());
-        for (int slot = 0; slot < 9; slot++) inventory.setItem(slot, border);
-        for (int slot = 45; slot < SIZE; slot++) inventory.setItem(slot, border);
+        ItemStack border = configured("border", null, Map.of(),
+                item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of()));
+        for (int slot : GuiConfig.slots(MENU_PATH + ".layout.border",
+                List.of(0, 1, 2, 3, 5, 6, 8, 46, 48, 50, 51, 52)))
+            if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, border);
 
         DailyParty party = daily.partyManager().getParty(holder.viewer);
-        inventory.setItem(SUMMARY_SLOT, summaryItem(holder.viewer, party));
+        inventory.setItem(slot("summary", SUMMARY_SLOT), configured("summary", party == null ? "solo" : "party",
+                Map.of("size", party == null ? 1 : party.size()), summaryItem(holder.viewer, party)));
         DailyPartyManager.PendingInvite pending = daily.partyManager().pendingInvite(holder.viewer);
-        inventory.setItem(INVITE_SLOT, pending == null ? inviteInfoItem(party) : pendingItem(pending));
+        inventory.setItem(slot("invitation", INVITE_SLOT), configured("invitation", pending == null ? "none" : "pending",
+                Map.of("inviter", pending == null ? "" : playerName(pending.leader())),
+                pending == null ? inviteInfoItem(party) : pendingItem(pending)));
 
         boolean canManage = party == null || party.isLeader(holder.viewer);
         List<Player> candidates = new ArrayList<>(Bukkit.getOnlinePlayers().stream()
                 .filter(player -> !player.getUniqueId().equals(holder.viewer))
                 .sorted(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
-                .limit(LAST_PLAYER_SLOT - FIRST_PLAYER_SLOT + 1)
+                .limit(GuiConfig.slots(MENU_PATH + ".layout.content", defaultPlayerSlots()).size())
                 .toList());
-        int slot = FIRST_PLAYER_SLOT;
+        List<Integer> playerSlots = GuiConfig.slots(MENU_PATH + ".layout.content", defaultPlayerSlots());
+        int index = 0;
         for (Player candidate : candidates) {
+            int slot = playerSlots.get(index++);
             UUID candidateId = candidate.getUniqueId();
             DailyParty candidateParty = daily.partyManager().getParty(candidateId);
             String unavailableReason = daily.partyUnavailableReason(candidateId);
-            inventory.setItem(slot, playerItem(candidate, candidateParty, unavailableReason, canManage));
+            inventory.setItem(slot, configured("player", canManage && unavailableReason == null ? "available" : "unavailable",
+                    Map.of("player", candidate.getName()), playerItem(candidate, candidateParty, unavailableReason, canManage)));
             if (canManage && unavailableReason == null) holder.targetsBySlot.put(slot, candidateId);
-            slot++;
         }
-        if (candidates.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text(GuiConfig.text("daily.menus.party.there-are-no-other-online-players-yet"), NamedTextColor.GRAY)
+        if (candidates.isEmpty()) inventory.setItem(slot("empty", 22), configured("empty", null, Map.of(), item(Material.GRAY_DYE,
+                Component.text(GuiConfig.text("daily.menus.party-screen.copy.there-are-no-other-online-players-yet"), NamedTextColor.GRAY)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.party.online-players-will-display-their-team-status-here"), NamedTextColor.DARK_GRAY))));
+                List.of(Component.text(GuiConfig.text("daily.menus.party-screen.copy.online-players-will-display-their-team-status-here"), NamedTextColor.DARK_GRAY)))));
 
-        String action = party == null ? GuiConfig.text("daily.menus.party.invitation-instructions") : party.isLeader(holder.viewer) ? GuiConfig.text("daily.menus.party.disband-the-team") : GuiConfig.text("daily.menus.party.leave-the-team");
-        inventory.setItem(ACTION_SLOT, item(party == null ? Material.LIME_DYE : Material.RED_DYE,
+        String action = party == null ? GuiConfig.text("daily.menus.party-screen.copy.invitation-instructions") : party.isLeader(holder.viewer) ? GuiConfig.text("daily.menus.party-screen.copy.disband-the-team") : GuiConfig.text("daily.menus.party-screen.copy.leave-the-team");
+        inventory.setItem(slot("action", ACTION_SLOT), configured("action", party == null ? "invite" : party.isLeader(holder.viewer) ? "disband" : "leave", Map.of(), item(party == null ? Material.LIME_DYE : Material.RED_DYE,
                 Component.text(action, party == null ? NamedTextColor.GREEN : NamedTextColor.RED)
                         .decorate(TextDecoration.BOLD),
-                List.of(Component.text(party == null ? GuiConfig.text("daily.menus.party.click-on-the-online-player-above-to-send-a-team-invitation") : GuiConfig.text("daily.menus.party.teams-cannot-be-modified-while-they-are-matching-or-playing-a-game"), NamedTextColor.GRAY))));
-        inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("daily.menus.party.return-to-lobby"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of()));
-        inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
-                Component.text(GuiConfig.text("daily.menus.party.refresh"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.party.update-online-player-and-invitation-status"), NamedTextColor.GRAY))));
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER, Component.text(GuiConfig.text("daily.menus.party.close"), NamedTextColor.RED), List.of()));
+                List.of(Component.text(party == null ? GuiConfig.text("daily.menus.party-screen.copy.click-on-the-online-player-above-to-send-a-team-invitation") : GuiConfig.text("daily.menus.party-screen.copy.teams-cannot-be-modified-while-they-are-matching-or-playing-a-game"), NamedTextColor.GRAY)))));
+        inventory.setItem(slot("back", BACK_SLOT), configured("back", null, Map.of(), item(Material.ARROW,
+                Component.text(GuiConfig.text("daily.menus.party-screen.copy.return-to-lobby"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of())));
+        inventory.setItem(slot("refresh", REFRESH_SLOT), configured("refresh", null, Map.of(), item(Material.CLOCK,
+                Component.text(GuiConfig.text("daily.menus.party-screen.copy.refresh"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.text("daily.menus.party-screen.copy.update-online-player-and-invitation-status"), NamedTextColor.GRAY)))));
+        inventory.setItem(slot("close", CLOSE_SLOT), configured("close", null, Map.of(), item(Material.BARRIER,
+                Component.text(GuiConfig.text("daily.menus.party-screen.copy.close"), NamedTextColor.RED), List.of())));
+    }
+
+    private static List<Integer> defaultPlayerSlots() {
+        List<Integer> slots = new ArrayList<>();
+        for (int slot = FIRST_PLAYER_SLOT; slot <= LAST_PLAYER_SLOT; slot++) slots.add(slot);
+        return slots;
+    }
+
+    private static int slot(String item, int fallback) {
+        return ConfiguredGui.slot(MENU_PATH + ".items." + item, fallback);
+    }
+
+    private static ItemStack configured(String item, String state, Map<String, ?> placeholders, ItemStack fallback) {
+        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders, fallback);
     }
 
     private ItemStack summaryItem(UUID viewer, DailyParty party) {
         List<Component> lore = new ArrayList<>();
         if (party == null) {
-            lore.add(Component.text(GuiConfig.text("daily.menus.party.you-currently-dont-have-a-party"), NamedTextColor.GRAY));
+            lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.you-currently-dont-have-a-party"), NamedTextColor.GRAY));
             lore.add(Component.empty());
-            lore.add(Component.text(GuiConfig.text("daily.menus.party.click-player-list-to-send-invitation-hint"), NamedTextColor.GREEN));
+            lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.click-player-list-to-send-invitation-hint"), NamedTextColor.GREEN));
         } else {
-            lore.add(Component.text(GuiConfig.text("daily.menus.party.captain"), NamedTextColor.GRAY).append(Component.text(playerName(party.leader()), NamedTextColor.AQUA)));
-            lore.add(Component.text(GuiConfig.text("daily.menus.party.number-of-people"), NamedTextColor.GRAY).append(Component.text(party.size() + GuiConfig.text("daily.menus.party.player-count-suffix"), NamedTextColor.WHITE)));
-            if (party.selectedGame() != null) lore.add(Component.text(GuiConfig.text("daily.menus.party.select"), NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.captain"), NamedTextColor.GRAY).append(Component.text(playerName(party.leader()), NamedTextColor.AQUA)));
+            lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.number-of-people"), NamedTextColor.GRAY).append(Component.text(party.size() + GuiConfig.text("daily.menus.party-screen.copy.player-count-suffix"), NamedTextColor.WHITE)));
+            if (party.selectedGame() != null) lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.select"), NamedTextColor.GRAY)
                     .append(Component.text(party.selectedGame().toString(), NamedTextColor.YELLOW)));
             lore.add(Component.empty());
             for (UUID member : party.members()) lore.add(Component.text((member.equals(party.leader()) ? "★ " : "• ")
                     + playerName(member), member.equals(viewer) ? NamedTextColor.GREEN : NamedTextColor.WHITE));
         }
-        return playerHead(viewer, Component.text(GuiConfig.text("daily.menus.party.party"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore);
+        return playerHead(viewer, Component.text(GuiConfig.text("daily.menus.party-screen.copy.party"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore);
     }
 
     private ItemStack inviteInfoItem(DailyParty party) {
-        return item(Material.PAPER, Component.text(GuiConfig.text("daily.menus.party.invitation-status"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text(party == null ? GuiConfig.text("daily.menus.party.no-invitations-pending") : GuiConfig.text("daily.menus.party.click-player-list-to-invite-action"), NamedTextColor.GRAY)));
+        return item(Material.PAPER, Component.text(GuiConfig.text("daily.menus.party-screen.copy.invitation-status"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(Component.text(party == null ? GuiConfig.text("daily.menus.party-screen.copy.no-invitations-pending") : GuiConfig.text("daily.menus.party-screen.copy.click-player-list-to-invite-action"), NamedTextColor.GRAY)));
     }
 
     private ItemStack pendingItem(DailyPartyManager.PendingInvite invite) {
-        return item(Material.WRITABLE_BOOK, Component.text(GuiConfig.text("daily.menus.party.received-a-team-invitation"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(playerName(invite.leader()) + GuiConfig.text("daily.menus.party.invite-you-to-join-the-peer-group"), NamedTextColor.WHITE),
-                        Component.empty(), Component.text(GuiConfig.text("daily.menus.party.click-to-accept-the-invitation"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)));
+        return item(Material.WRITABLE_BOOK, Component.text(GuiConfig.text("daily.menus.party-screen.copy.received-a-team-invitation"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(Component.text(playerName(invite.leader()) + GuiConfig.text("daily.menus.party-screen.copy.invite-you-to-join-the-peer-group"), NamedTextColor.WHITE),
+                        Component.empty(), Component.text(GuiConfig.text("daily.menus.party-screen.copy.click-to-accept-the-invitation"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)));
     }
 
     private ItemStack playerItem(Player player, DailyParty party, String unavailableReason, boolean canManage) {
         boolean available = canManage && unavailableReason == null;
         List<Component> lore = new ArrayList<>();
         if (party == null) {
-            lore.add(Component.text(GuiConfig.text("daily.menus.party.team-status"), NamedTextColor.GRAY)
-                    .append(Component.text(GuiConfig.text("daily.menus.party.no-team"), NamedTextColor.GREEN)));
+            lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.team-status"), NamedTextColor.GRAY)
+                    .append(Component.text(GuiConfig.text("daily.menus.party-screen.copy.no-team"), NamedTextColor.GREEN)));
         } else {
-            lore.add(Component.text(GuiConfig.text("daily.menus.party.team-status"), NamedTextColor.GRAY)
-                    .append(Component.text(GuiConfig.text("daily.menus.party.teamed-up"), NamedTextColor.GOLD)));
-            lore.add(Component.text(GuiConfig.text("daily.menus.party.captain"), NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.team-status"), NamedTextColor.GRAY)
+                    .append(Component.text(GuiConfig.text("daily.menus.party-screen.copy.teamed-up"), NamedTextColor.GOLD)));
+            lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.captain"), NamedTextColor.GRAY)
                     .append(Component.text(playerName(party.leader()), NamedTextColor.AQUA)));
-            lore.add(Component.text(GuiConfig.text("daily.menus.party.number-of-people"), NamedTextColor.GRAY)
-                    .append(Component.text(party.size() + GuiConfig.text("daily.menus.party.player-count-suffix"), NamedTextColor.WHITE)));
+            lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.number-of-people"), NamedTextColor.GRAY)
+                    .append(Component.text(party.size() + GuiConfig.text("daily.menus.party-screen.copy.player-count-suffix"), NamedTextColor.WHITE)));
         }
         if (party == null && unavailableReason != null) {
-            lore.add(Component.text(GuiConfig.text("daily.menus.party.current-status"), NamedTextColor.GRAY)
+            lore.add(Component.text(GuiConfig.text("daily.menus.party-screen.copy.current-status"), NamedTextColor.GRAY)
                     .append(Component.text(unavailableReason, NamedTextColor.GOLD)));
         }
         lore.add(Component.empty());
-        lore.add(Component.text(available ? GuiConfig.text("daily.menus.party.click-to-send-team-invitation")
-                        : canManage ? GuiConfig.text("daily.menus.party.unable-to-send-invitation-at-the-moment") : GuiConfig.text("daily.menus.party.only-the-team-leader-can-send-invitations"),
+        lore.add(Component.text(available ? GuiConfig.text("daily.menus.party-screen.copy.click-to-send-team-invitation")
+                        : canManage ? GuiConfig.text("daily.menus.party-screen.copy.unable-to-send-invitation-at-the-moment") : GuiConfig.text("daily.menus.party-screen.copy.only-the-team-leader-can-send-invitations"),
                 available ? NamedTextColor.YELLOW : NamedTextColor.DARK_GRAY));
         return playerHead(player.getUniqueId(), Component.text(player.getName(), NamedTextColor.WHITE)
                         .decorate(TextDecoration.BOLD),
@@ -228,24 +255,11 @@ final class DailyPartyMenu {
     }
 
     private static ItemStack item(Material material, Component name, List<Component> lore) {
-        ItemStack stack = new ItemStack(material);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(name.decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
-            stack.setItemMeta(meta);
-        }
-        return stack;
+        return ink.ziip.championshipscore.api.gui.GuiMenu.item(material, name, lore);
     }
 
     private static ItemStack playerHead(UUID owner, Component name, List<Component> lore) {
-        ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) stack.getItemMeta();
-        meta.setOwningPlayer(Bukkit.getOfflinePlayer(owner));
-        meta.displayName(name.decoration(TextDecoration.ITALIC, false));
-        meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
-        stack.setItemMeta(meta);
-        return stack;
+        return ink.ziip.championshipscore.api.gui.GuiMenu.playerHead(owner, name, lore);
     }
 
     private static void clickSound(Player player, float pitch) {

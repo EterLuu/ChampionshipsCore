@@ -144,6 +144,6 @@ public abstract class PrepareStep {
 
     /** Hint shown below the list editor's add button. */
     public @NotNull Component listAddHint() {
-        return Component.text(GuiConfig.text("map-editor.steps.location.after-reaching-the-target-position-click"));
+        return Component.text(GuiConfig.text("map-editor.copy.after-reaching-the-target-position-click"));
     }
 }

@@ -48,7 +48,7 @@ public final class TGTTOSSpawnAreaStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.games.tgttos.steps.spawn-area.please-use-worldedit-to-select-two-endpoints-first"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.please-use-worldedit-to-select-two-endpoints-first"));
         }
         if (selection[0].getBlockY() != selection[1].getBlockY()) {
             return Utils.formatAdminError(GuiConfig.text("map-editor.games.tgttos.steps.spawn-area.the-generated-area-must-be-a-worldedit-selection-that-is-exactly-one-block-high"));

@@ -81,17 +81,17 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
 
     public String captureSelection(@NotNull PrepareSession session, @NotNull Player player) {
         if (!session.getFlow().isInCorrectWorld(player, session.getTarget()))
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.countdown-blocks.please-go-to-the-current-map-world-first") + session.getTarget().worldName());
+            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.please-go-to-the-current-map-world-first") + session.getTarget().worldName());
         Vector[] selection;
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.countdown-blocks.please-use-worldedit-to-select-two-endpoints-first"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.please-use-worldedit-to-select-two-endpoints-first"));
         }
         long volume = volume(selection[0], selection[1]);
         if (volume <= 0 || volume > CountdownBlockDisappearance.MAX_SELECTION_VOLUME) {
             return Utils.formatAdminError(GuiConfig.text("map-editor.steps.countdown-blocks.the-selection-volume-must-be-between-1-and")
-                    + CountdownBlockDisappearance.MAX_SELECTION_VOLUME + GuiConfig.text("map-editor.steps.countdown-blocks.within-blocks"));
+                    + CountdownBlockDisappearance.MAX_SELECTION_VOLUME + GuiConfig.text("map-editor.copy.within-blocks"));
         }
         session.getTarget().config().setCountdownBlockDisappearanceBounds(selection[0], selection[1]);
         session.markDirty();

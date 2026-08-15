@@ -43,7 +43,7 @@ public abstract class PrepareFlowDefinition {
     public @NotNull List<String> validate(@NotNull PrepareSession session) {
         List<String> errors = new ArrayList<>();
         if (session.getTarget().config().isWorldBindingPending() || !session.isWorldConfirmed())
-            errors.add(GuiConfig.text("map-editor.common.area.bind-to-current-world"));
+            errors.add(GuiConfig.text("map-editor.copy.bind-to-current-world"));
         for (PrepareStep step : session.getSteps()) {
             if (step.captureType() != StepCaptureType.CONFIRM_WORLD && !step.isSet(session))
                 errors.add(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer

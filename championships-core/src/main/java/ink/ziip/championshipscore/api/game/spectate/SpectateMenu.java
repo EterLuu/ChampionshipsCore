@@ -85,10 +85,8 @@ public final class SpectateMenu implements Listener {
 
     public void open(@NotNull Player player) {
         Holder holder = new Holder(player.getUniqueId());
-        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE,
-                Component.text(GuiConfig.text("spectator.game-menu.choose-a-viewing-venue"), NamedTextColor.AQUA)
-                        .decorate(TextDecoration.BOLD)
-                        .decoration(TextDecoration.ITALIC, false));
+        GuiConfig.MenuSpec menu = menu("venue-selector");
+        Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.inventory = inventory;
         refresh(holder);
         player.openInventory(inventory);
@@ -133,33 +131,35 @@ public final class SpectateMenu implements Listener {
         }
 
         int slot = event.getRawSlot();
-        if (slot == CURRENT_SLOT && manager.getSpectatorManager().areaOf(holder.viewer) != null) {
+        String screen = "venue-selector";
+        if (slot == itemSlot(screen, "status", CURRENT_SLOT)
+                && manager.getSpectatorManager().areaOf(holder.viewer) != null) {
             manager.openSpectatorControls(player);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8F, 1.2F);
             return;
         }
-        if (slot == CLOSE_SLOT) {
+        if (slot == itemSlot(screen, "close", CLOSE_SLOT)) {
             player.closeInventory();
             return;
         }
-        if (slot == REFRESH_SLOT) {
+        if (slot == itemSlot(screen, "refresh", REFRESH_SLOT)) {
             refresh(holder);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, 1.1F);
             return;
         }
-        if (slot == PREVIOUS_SLOT && holder.page > 0) {
+        if (slot == itemSlot(screen, "previous", PREVIOUS_SLOT) && holder.page > 0) {
             holder.page--;
             refresh(holder);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, 1F);
             return;
         }
-        if (slot == NEXT_SLOT && holder.page + 1 < holder.pageCount) {
+        if (slot == itemSlot(screen, "next", NEXT_SLOT) && holder.page + 1 < holder.pageCount) {
             holder.page++;
             refresh(holder);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, 1F);
             return;
         }
-        if (slot == LEAVE_SLOT) {
+        if (slot == itemSlot(screen, "leave", LEAVE_SLOT)) {
             if (manager.leaveSpectating(player)) {
                 player.sendMessage(MessageConfig.SPECTATOR_LEAVING_AREA);
                 player.closeInventory();
@@ -184,7 +184,7 @@ public final class SpectateMenu implements Listener {
             return;
         }
         if (!manager.selectSpectatorArea(player, target)) {
-            Utils.sendAdminError(player, GuiConfig.text("spectator.game-menu.this-venue-has-ended-or-is-currently-unavailable-for-play"));
+            Utils.sendAdminError(player, GuiConfig.text("spectator.copy.unavailable"));
             refresh(holder);
             return;
         }
@@ -205,9 +205,8 @@ public final class SpectateMenu implements Listener {
 
     private void openSubArenas(@NotNull Player player, @NotNull BaseGameInstance area) {
         SubArenaHolder holder = new SubArenaHolder(player.getUniqueId(), area);
-        holder.inventory = Bukkit.createInventory(holder, INVENTORY_SIZE,
-                Component.text(GuiConfig.text("spectator.game-menu.select-specific-sub-venue"), NamedTextColor.AQUA)
-                        .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        GuiConfig.MenuSpec menu = menu("sub-arena-selector");
+        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refreshSubArenas(holder);
         player.openInventory(holder.inventory);
     }
@@ -221,25 +220,26 @@ public final class SpectateMenu implements Listener {
             return;
         }
         int slot = event.getRawSlot();
-        if (slot == CLOSE_SLOT) {
+        String screen = "sub-arena-selector";
+        if (slot == itemSlot(screen, "close", CLOSE_SLOT)) {
             player.closeInventory();
             return;
         }
-        if (slot == LEAVE_SLOT) {
+        if (slot == itemSlot(screen, "back", LEAVE_SLOT)) {
             open(player);
             return;
         }
-        if (slot == REFRESH_SLOT) {
+        if (slot == itemSlot(screen, "refresh", REFRESH_SLOT)) {
             refreshSubArenas(holder);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, 1.1F);
             return;
         }
-        if (slot == PREVIOUS_SLOT && holder.page > 0) {
+        if (slot == itemSlot(screen, "previous", PREVIOUS_SLOT) && holder.page > 0) {
             holder.page--;
             refreshSubArenas(holder);
             return;
         }
-        if (slot == NEXT_SLOT && holder.page + 1 < holder.pageCount) {
+        if (slot == itemSlot(screen, "next", NEXT_SLOT) && holder.page + 1 < holder.pageCount) {
             holder.page++;
             refreshSubArenas(holder);
             return;
@@ -248,7 +248,7 @@ public final class SpectateMenu implements Listener {
         SubArenaDestination destination = holder.destinationsBySlot.get(slot);
         if (destination == null || !manager.canManuallySpectate(player)) return;
         if (!manager.selectSpectatorArea(player, holder.area, destination.location())) {
-            Utils.sendAdminError(player, GuiConfig.text("spectator.game-menu.this-venue-has-ended-or-is-currently-unavailable-for-play"));
+            Utils.sendAdminError(player, GuiConfig.text("spectator.copy.unavailable"));
             open(player);
             return;
         }
@@ -263,45 +263,37 @@ public final class SpectateMenu implements Listener {
         Inventory inventory = holder.inventory;
         inventory.clear();
         holder.destinationsBySlot.clear();
-        ItemStack border = item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of(), false);
-        for (int slot = 0; slot < 9; slot++) inventory.setItem(slot, border);
-        for (int slot = 45; slot < INVENTORY_SIZE; slot++) inventory.setItem(slot, border);
+        String screen = "sub-arena-selector";
+        GuiConfig.MenuSpec menu = menu(screen);
+        fillBorder(inventory, screen);
 
         List<SubArenaDestination> destinations = subArenaDestinations(holder.area);
-        holder.pageCount = Math.max(1, (destinations.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        int pageSize = menu.contentSlots().size();
+        holder.pageCount = Math.max(1, (destinations.size() + pageSize - 1) / pageSize);
         holder.page = Math.max(0, Math.min(holder.page, holder.pageCount - 1));
         GameStyle style = GAME_STYLES.getOrDefault(holder.area.getGameTypeEnum(),
                 new GameStyle(Material.ENDER_EYE, NamedTextColor.WHITE));
-        inventory.setItem(CURRENT_SLOT, item(style.material(),
-                Component.text(holder.area.getGameTypeEnum() + GuiConfig.text("common.separator")
-                                + manager.getSpectatorDisplayName(holder.area), style.color())
-                        .decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("spectator.game-menu.please-select-the-specific-sub-venue-you-want-to-visit"), NamedTextColor.GRAY)), false));
+        Map<String, Object> summary = Map.of("game", holder.area.getGameTypeEnum().toString(),
+                "game_color", legacyColor(style.color()), "venue", manager.getSpectatorDisplayName(holder.area));
+        setConfigured(inventory, screen, "summary", summary, null, style.material());
 
-        int from = holder.page * PAGE_SIZE;
-        int to = Math.min(destinations.size(), from + PAGE_SIZE);
+        int from = holder.page * pageSize;
+        int to = Math.min(destinations.size(), from + pageSize);
         for (int index = from; index < to; index++) {
-            int slot = 9 + index - from;
+            int slot = menu.contentSlots().get(index - from);
             SubArenaDestination destination = destinations.get(index);
-            inventory.setItem(slot, item(destination.material(),
-                    Component.text(destination.label(), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
-                    List.of(Component.text(GuiConfig.text("spectator.game-menu.teleport-to-the-player-s-spawn-point-in-this-subfield"), NamedTextColor.GRAY)), false));
+            inventory.setItem(slot, configuredItem(screen, "destination", Map.of("name", destination.label()),
+                    null, destination.material()));
             holder.destinationsBySlot.put(slot, destination);
         }
 
-        inventory.setItem(LEAVE_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("spectator.game-menu.return-to-venue-list"), NamedTextColor.WHITE), List.of(), false));
-        if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("spectator.game-menu.previous-page"), NamedTextColor.WHITE), List.of(), false));
-        inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
-                Component.text(GuiConfig.text("spectator.game-menu.refresh"), NamedTextColor.YELLOW), List.of(), false));
-        inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                Component.text(GuiConfig.text("spectator.game-menu.ordinal-prefix") + (holder.page + 1) + "/" + holder.pageCount + GuiConfig.text("spectator.game-menu.page-suffix"), NamedTextColor.AQUA),
-                List.of(Component.text(destinations.size() + GuiConfig.text("spectator.game-menu.arena-section-count-suffix"), NamedTextColor.GRAY)), false));
-        if (holder.page + 1 < holder.pageCount) inventory.setItem(NEXT_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("spectator.game-menu.next-page"), NamedTextColor.WHITE), List.of(), false));
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER,
-                Component.text(GuiConfig.text("spectator.game-menu.close"), NamedTextColor.RED), List.of(), false));
+        setConfigured(inventory, screen, "back", Map.of(), null, null);
+        if (holder.page > 0) setConfigured(inventory, screen, "previous", Map.of(), null, null);
+        setConfigured(inventory, screen, "refresh", Map.of(), null, null);
+        setConfigured(inventory, screen, "page", Map.of("page", holder.page + 1,
+                "pages", holder.pageCount, "count", destinations.size()), null, null);
+        if (holder.page + 1 < holder.pageCount) setConfigured(inventory, screen, "next", Map.of(), null, null);
+        setConfigured(inventory, screen, "close", Map.of(), null, null);
     }
 
     private static @NotNull List<SubArenaDestination> subArenaDestinations(
@@ -313,7 +305,7 @@ public final class SpectateMenu implements Listener {
             for (int index = 0; index < spawns.size(); index++) {
                 Location location = safeLocation(spawns.get(index));
                 if (location != null) destinations.add(new SubArenaDestination(
-                        GuiConfig.text("spectator.game-menu.arena-section-label") + (index + 1), Material.TNT, location));
+                        GuiConfig.text("spectator.copy.arena-section", Map.of("number", index + 1)), Material.TNT, location));
             }
         } else if (instance instanceof SnowballShowdownTeamArea snowball) {
             ConfigurationSection section = snowball.getGameConfig().getPlayerSpawnPoints();
@@ -342,9 +334,8 @@ public final class SpectateMenu implements Listener {
 
     private void openBuildMart(@NotNull Player player, @NotNull BuildMartArea area) {
         BuildMartHolder holder = new BuildMartHolder(player.getUniqueId(), area);
-        holder.inventory = Bukkit.createInventory(holder, INVENTORY_SIZE,
-                Component.text(GuiConfig.text("spectator.game-menu.select-a-match-to-create-a-viewing-location"), NamedTextColor.GOLD)
-                        .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
+        GuiConfig.MenuSpec menu = menu("build-mart-selector");
+        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refreshBuildMart(holder);
         player.openInventory(holder.inventory);
     }
@@ -358,25 +349,26 @@ public final class SpectateMenu implements Listener {
             return;
         }
         int slot = event.getRawSlot();
-        if (slot == CLOSE_SLOT) {
+        String screen = "build-mart-selector";
+        if (slot == itemSlot(screen, "close", CLOSE_SLOT)) {
             player.closeInventory();
             return;
         }
-        if (slot == LEAVE_SLOT) {
+        if (slot == itemSlot(screen, "back", LEAVE_SLOT)) {
             open(player);
             return;
         }
-        if (slot == REFRESH_SLOT) {
+        if (slot == itemSlot(screen, "refresh", REFRESH_SLOT)) {
             refreshBuildMart(holder);
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, 1.1F);
             return;
         }
-        if (slot == PREVIOUS_SLOT && holder.page > 0) {
+        if (slot == itemSlot(screen, "previous", PREVIOUS_SLOT) && holder.page > 0) {
             holder.page--;
             refreshBuildMart(holder);
             return;
         }
-        if (slot == NEXT_SLOT && holder.page + 1 < holder.pageCount) {
+        if (slot == itemSlot(screen, "next", NEXT_SLOT) && holder.page + 1 < holder.pageCount) {
             holder.page++;
             refreshBuildMart(holder);
             return;
@@ -385,7 +377,7 @@ public final class SpectateMenu implements Listener {
         BuildMartDestination destination = holder.destinationsBySlot.get(slot);
         if (destination == null || !manager.canManuallySpectate(player)) return;
         if (!manager.selectSpectatorArea(player, holder.area, destination.location())) {
-            Utils.sendAdminError(player, GuiConfig.text("spectator.game-menu.this-venue-has-ended-or-is-currently-unavailable-for-play"));
+            Utils.sendAdminError(player, GuiConfig.text("spectator.copy.unavailable"));
             open(player);
             return;
         }
@@ -400,48 +392,41 @@ public final class SpectateMenu implements Listener {
         Inventory inventory = holder.inventory;
         inventory.clear();
         holder.destinationsBySlot.clear();
-
-        ItemStack border = item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of(), false);
-        for (int slot = 0; slot < 9; slot++) inventory.setItem(slot, border);
-        for (int slot = 45; slot < INVENTORY_SIZE; slot++) inventory.setItem(slot, border);
+        String screen = "build-mart-selector";
+        GuiConfig.MenuSpec menu = menu(screen);
+        fillBorder(inventory, screen);
 
         List<BuildMartDestination> destinations = buildMartDestinations(holder.area);
-        holder.pageCount = Math.max(1, (destinations.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        int pageSize = menu.contentSlots().size();
+        holder.pageCount = Math.max(1, (destinations.size() + pageSize - 1) / pageSize);
         holder.page = Math.max(0, Math.min(holder.page, holder.pageCount - 1));
-        inventory.setItem(CURRENT_SLOT, item(Material.CRAFTING_TABLE,
-                Component.text(GuiConfig.text("spectator.game-menu.match-build") + manager.getSpectatorDisplayName(holder.area), NamedTextColor.GOLD)
-                        .decorate(TextDecoration.BOLD),
-                List.of(Component.text(destinations.size() + GuiConfig.text("spectator.game-menu.spectator-position"), NamedTextColor.GRAY)), false));
+        setConfigured(inventory, screen, "summary", Map.of("venue", manager.getSpectatorDisplayName(holder.area),
+                "count", destinations.size()), null, null);
 
-        int from = holder.page * PAGE_SIZE;
-        int to = Math.min(destinations.size(), from + PAGE_SIZE);
+        int from = holder.page * pageSize;
+        int to = Math.min(destinations.size(), from + pageSize);
         for (int index = from; index < to; index++) {
-            int slot = 9 + index - from;
+            int slot = menu.contentSlots().get(index - from);
             BuildMartDestination destination = destinations.get(index);
             inventory.setItem(slot, item(destination.material(), destination.name(), destination.lore(), false));
             holder.destinationsBySlot.put(slot, destination);
         }
 
-        inventory.setItem(LEAVE_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("spectator.game-menu.return-to-venue-list"), NamedTextColor.WHITE), List.of(), false));
-        if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("spectator.game-menu.previous-page"), NamedTextColor.WHITE), List.of(), false));
-        inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
-                Component.text(GuiConfig.text("spectator.game-menu.refresh"), NamedTextColor.YELLOW), List.of(), false));
-        inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                Component.text(GuiConfig.text("spectator.game-menu.ordinal-prefix") + (holder.page + 1) + "/" + holder.pageCount + GuiConfig.text("spectator.game-menu.page-suffix"), NamedTextColor.AQUA),
-                List.of(Component.text(destinations.size() + GuiConfig.text("spectator.game-menu.locations"), NamedTextColor.GRAY)), false));
-        if (holder.page + 1 < holder.pageCount) inventory.setItem(NEXT_SLOT, item(Material.ARROW,
-                Component.text(GuiConfig.text("spectator.game-menu.next-page"), NamedTextColor.WHITE), List.of(), false));
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER,
-                Component.text(GuiConfig.text("spectator.game-menu.close"), NamedTextColor.RED), List.of(), false));
+        setConfigured(inventory, screen, "back", Map.of(), null, null);
+        if (holder.page > 0) setConfigured(inventory, screen, "previous", Map.of(), null, null);
+        setConfigured(inventory, screen, "refresh", Map.of(), null, null);
+        setConfigured(inventory, screen, "page", Map.of("page", holder.page + 1,
+                "pages", holder.pageCount, "count", destinations.size()), null, null);
+        if (holder.page + 1 < holder.pageCount) setConfigured(inventory, screen, "next", Map.of(), null, null);
+        setConfigured(inventory, screen, "close", Map.of(), null, null);
     }
 
     private static List<BuildMartDestination> buildMartDestinations(@NotNull BuildMartArea area) {
         List<BuildMartDestination> destinations = new ArrayList<>();
-        destinations.add(new BuildMartDestination(GuiConfig.text("spectator.game-menu.resource-hall"), Component.text(GuiConfig.text("spectator.game-menu.resource-hall"), NamedTextColor.GOLD)
-                .decorate(TextDecoration.BOLD), Material.CHEST, area.getSpectatorSpawnLocation(),
-                List.of(Component.text(GuiConfig.text("spectator.game-menu.public-material-area"), NamedTextColor.GRAY))));
+        GuiConfig.ItemSpec resource = GuiConfig.item(
+                "spectator.menus.build-mart-selector.items.resource-hub", Map.of());
+        destinations.add(new BuildMartDestination(GuiConfig.text("spectator.copy.resource-hub"), resource.title(),
+                resource.material(), area.getSpectatorSpawnLocation(), resource.lore()));
 
         List<ChampionshipTeam> teams = area.getGameTeams();
         for (int index = 0; index < teams.size(); index++) {
@@ -453,10 +438,11 @@ public final class SpectateMenu implements Listener {
             if (base == null || base.getPortalPoint() == null) continue;
             Material material = Material.getMaterial(team.getColorName().toUpperCase(Locale.ROOT) + "_WOOL");
             if (material == null) material = Material.WHITE_WOOL;
-            destinations.add(new BuildMartDestination(team.getName() + GuiConfig.text("spectator.game-menu.base"),
-                    teamName(team).append(Component.text(GuiConfig.text("spectator.game-menu.base"), NamedTextColor.WHITE))
-                            .decorate(TextDecoration.BOLD), material, base.getPortalPoint(),
-                    List.of(Component.text(GuiConfig.text("spectator.game-menu.team-building-area"), NamedTextColor.GRAY))));
+            Map<String, Object> values = Map.of("team", team.getName(), "team_color", legacyColor(teamColor(team)));
+            GuiConfig.ItemSpec configured = GuiConfig.item(
+                    "spectator.menus.build-mart-selector.items.team-base", values);
+            destinations.add(new BuildMartDestination(GuiConfig.text("spectator.copy.team-base", values),
+                    configured.title(), material, base.getPortalPoint(), configured.lore()));
         }
         return destinations;
     }
@@ -465,112 +451,93 @@ public final class SpectateMenu implements Listener {
         Inventory inventory = holder.inventory;
         inventory.clear();
         holder.instancesBySlot.clear();
-
-        ItemStack border = item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of(), false);
-        for (int slot = 0; slot < 9; slot++) inventory.setItem(slot, border);
-        for (int slot = 45; slot < INVENTORY_SIZE; slot++) inventory.setItem(slot, border);
+        String screen = "venue-selector";
+        GuiConfig.MenuSpec menu = menu(screen);
+        fillBorder(inventory, screen);
 
         Player viewer = Bukkit.getPlayer(holder.viewer);
         List<BaseGameInstance> instances = viewer == null
                 ? List.of()
                 : manager.getSpectatableInstances(viewer);
-        holder.pageCount = Math.max(1, (instances.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        int pageSize = menu.contentSlots().size();
+        holder.pageCount = Math.max(1, (instances.size() + pageSize - 1) / pageSize);
         holder.page = Math.max(0, Math.min(holder.page, holder.pageCount - 1));
 
         BaseGameInstance current = manager.getSpectatorManager().areaOf(holder.viewer);
-        inventory.setItem(CURRENT_SLOT, currentStatusItem(current, instances.size()));
+        inventory.setItem(itemSlot(screen, "status", CURRENT_SLOT), currentStatusItem(current, instances.size()));
 
-        int from = holder.page * PAGE_SIZE;
-        int to = Math.min(instances.size(), from + PAGE_SIZE);
+        int from = holder.page * pageSize;
+        int to = Math.min(instances.size(), from + pageSize);
         for (int index = from; index < to; index++) {
-            int slot = 9 + index - from;
+            int slot = menu.contentSlots().get(index - from);
             BaseGameInstance instance = instances.get(index);
             inventory.setItem(slot, instanceItem(instance, instance == current));
             holder.instancesBySlot.put(slot, instance);
         }
 
         if (instances.isEmpty()) {
-            inventory.setItem(22, item(Material.GRAY_DYE,
-                    Component.text(GuiConfig.text("spectator.game-menu.there-are-currently-no-venues-currently-in-progress"), NamedTextColor.GRAY),
-                    List.of(Component.text(GuiConfig.text("spectator.game-menu.the-rules-introduction-preparation-phase-will-be-displayed-here-once-it-has-begun"), NamedTextColor.DARK_GRAY)), false));
+            setConfigured(inventory, screen, "empty", Map.of(), null, null);
         }
 
         if (current != null) {
-            inventory.setItem(LEAVE_SLOT, item(Material.REDSTONE,
-                    Component.text(GuiConfig.text("spectator.game-menu.quit-watching-the-game"), NamedTextColor.RED),
-                    List.of(Component.text(manager.getSpectatorDisplayName(current), NamedTextColor.GRAY)), false));
+            setConfigured(inventory, screen, "leave",
+                    Map.of("venue", manager.getSpectatorDisplayName(current)), null, null);
         }
         if (holder.page > 0) {
-            inventory.setItem(PREVIOUS_SLOT, item(Material.ARROW,
-                    Component.text(GuiConfig.text("spectator.game-menu.previous-page"), NamedTextColor.WHITE), List.of(), false));
+            setConfigured(inventory, screen, "previous", Map.of(), null, null);
         }
-        inventory.setItem(REFRESH_SLOT, item(Material.CLOCK,
-                Component.text(GuiConfig.text("spectator.game-menu.refresh"), NamedTextColor.YELLOW),
-                List.of(Component.text(GuiConfig.text("spectator.game-menu.venue-status-automatically-updated-every-second"), NamedTextColor.DARK_GRAY)), false));
-        inventory.setItem(PAGE_SLOT, item(Material.PAPER,
-                Component.text(GuiConfig.text("spectator.game-menu.ordinal-prefix") + (holder.page + 1) + "/" + holder.pageCount + GuiConfig.text("spectator.game-menu.page-suffix"), NamedTextColor.AQUA),
-                List.of(Component.text(instances.size() + GuiConfig.text("spectator.game-menu.venues-are-running"), NamedTextColor.GRAY)), false));
+        setConfigured(inventory, screen, "refresh", Map.of(), null, null);
+        setConfigured(inventory, screen, "page", Map.of("page", holder.page + 1,
+                "pages", holder.pageCount, "count", instances.size()), null, null);
         if (holder.page + 1 < holder.pageCount) {
-            inventory.setItem(NEXT_SLOT, item(Material.ARROW,
-                    Component.text(GuiConfig.text("spectator.game-menu.next-page"), NamedTextColor.WHITE), List.of(), false));
+            setConfigured(inventory, screen, "next", Map.of(), null, null);
         }
-        inventory.setItem(CLOSE_SLOT, item(Material.BARRIER,
-                Component.text(GuiConfig.text("spectator.game-menu.close"), NamedTextColor.RED), List.of(), false));
+        setConfigured(inventory, screen, "close", Map.of(), null, null);
     }
 
     private ItemStack currentStatusItem(BaseGameInstance current, int activeCount) {
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(GuiConfig.text("spectator.game-menu.ongoing-venue"), NamedTextColor.GRAY)
-                .append(Component.text(activeCount, NamedTextColor.GREEN)));
-        if (current == null) {
-            lore.add(Component.text(GuiConfig.text("spectator.game-menu.not-currently-watching-the-game"), NamedTextColor.DARK_GRAY));
-        } else {
-            lore.add(Component.text(GuiConfig.text("spectator.game-menu.current"), NamedTextColor.GRAY)
-                    .append(Component.text(current.getGameTypeEnum().toString(), NamedTextColor.AQUA))
-                    .append(Component.text(GuiConfig.text("common.separator") + manager.getSpectatorDisplayName(current), NamedTextColor.WHITE)));
-        }
-        return item(Material.SPYGLASS,
-                Component.text(GuiConfig.text("spectator.game-menu.spectating-hall"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, false);
+        Map<String, Object> values = current == null ? Map.of("count", activeCount)
+                : Map.of("count", activeCount, "game", current.getGameTypeEnum().toString(),
+                        "venue", manager.getSpectatorDisplayName(current));
+        return configuredItem("venue-selector", "status", values,
+                current == null ? "idle" : "watching", null);
     }
 
     private ItemStack instanceItem(@NotNull BaseGameInstance instance, boolean selected) {
         GameStyle style = GAME_STYLES.getOrDefault(instance.getGameTypeEnum(),
                 new GameStyle(Material.ENDER_EYE, NamedTextColor.WHITE));
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(GuiConfig.text("spectator.game-menu.venue"), NamedTextColor.GRAY)
-                .append(Component.text(manager.getSpectatorDisplayName(instance), NamedTextColor.WHITE)));
-        lore.add(Component.text(GuiConfig.text("spectator.game-menu.stage"), NamedTextColor.GRAY)
-                .append(Component.text(instance.getGameStageEnum().toString(), stageColor(instance.getGameStageEnum()))));
-        lore.add(Component.text(GuiConfig.text("spectator.game-menu.audience"), NamedTextColor.GRAY)
-                .append(Component.text(instance.getOnlineSpectators().size(), NamedTextColor.AQUA)));
+        Map<String, Object> values = Map.of("game", instance.getGameTypeEnum().toString(),
+                "game_color", legacyColor(style.color()), "venue", manager.getSpectatorDisplayName(instance),
+                "stage", instance.getGameStageEnum().toString(),
+                "stage_color", legacyColor(stageColor(instance.getGameStageEnum())),
+                "audience", instance.getOnlineSpectators().size());
+        GuiConfig.ItemSpec configured = GuiConfig.item("spectator.menus.venue-selector.items.match",
+                selected ? "watching" : null, values);
+        List<Component> lore = new ArrayList<>(configured.lore());
         lore.add(Component.empty());
         appendTeams(lore, instance);
         if (selected) {
             lore.add(Component.empty());
-            lore.add(Component.text(GuiConfig.text("spectator.game-menu.watching"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+            lore.add(GuiConfig.component("spectator.menus.venue-selector.copy.watching"));
         }
-
-        Component name = Component.text(instance.getGameTypeEnum().toString(), style.color)
-                .append(Component.text(GuiConfig.text("common.separator") + manager.getSpectatorDisplayName(instance), NamedTextColor.WHITE))
-                .decorate(TextDecoration.BOLD);
-        return item(style.material, name, lore, selected);
+        return item(style.material(), configured.title(), lore, configured.glint());
     }
 
     private void appendTeams(@NotNull List<Component> lore, @NotNull BaseGameInstance instance) {
         if (instance instanceof BasePairedGameInstance paired) {
             ChampionshipTeam right = paired.getRightChampionshipTeam();
             ChampionshipTeam left = paired.getLeftChampionshipTeam();
-            lore.add(Component.text(GuiConfig.text("spectator.game-menu.this-battle"), NamedTextColor.GOLD));
+            lore.add(GuiConfig.component("spectator.menus.venue-selector.copy.paired-heading"));
             lore.add(teamName(right)
-                    .append(Component.text(GuiConfig.text("common.versus"), NamedTextColor.DARK_GRAY))
+                    .append(Component.text(" " + GuiConfig.text("common.versus") + " ", NamedTextColor.DARK_GRAY))
                     .append(teamName(left)));
             return;
         }
         if (instance instanceof BaseMultiTeamGameInstance multiTeam) {
             List<ChampionshipTeam> teams = multiTeam.getGameTeams();
-            lore.add(Component.text(GuiConfig.text("spectator.game-menu.participating-teams"), NamedTextColor.GOLD));
+            lore.add(GuiConfig.component("spectator.menus.venue-selector.copy.multi-heading"));
             if (teams.isEmpty()) {
-                lore.add(Component.text(GuiConfig.text("spectator.game-menu.waiting-for-team-data"), NamedTextColor.DARK_GRAY));
+                lore.add(GuiConfig.component("spectator.menus.venue-selector.copy.waiting"));
                 return;
             }
             for (int index = 0; index < teams.size(); index += 2) {
@@ -585,9 +552,13 @@ public final class SpectateMenu implements Listener {
     }
 
     private static Component teamName(ChampionshipTeam team) {
-        if (team == null) return Component.text(GuiConfig.text("spectator.game-menu.to-be-determined"), NamedTextColor.DARK_GRAY);
+        if (team == null) return GuiConfig.component("spectator.menus.venue-selector.copy.undecided");
+        return Component.text(team.getName(), teamColor(team));
+    }
+
+    private static TextColor teamColor(@NotNull ChampionshipTeam team) {
         TextColor color = TextColor.fromHexString(team.getColorCode());
-        return Component.text(team.getName(), color == null ? NamedTextColor.WHITE : color);
+        return color == null ? NamedTextColor.WHITE : color;
     }
 
     private static NamedTextColor stageColor(GameStageEnum stage) {
@@ -600,18 +571,50 @@ public final class SpectateMenu implements Listener {
         };
     }
 
-    private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
-        ItemStack stack = new ItemStack(material);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(name.decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream()
-                    .map(line -> line.decoration(TextDecoration.ITALIC, false))
-                    .toList());
-            meta.setEnchantmentGlintOverride(glint);
-            stack.setItemMeta(meta);
+    private static GuiConfig.MenuSpec menu(String screen) {
+        List<Integer> fallbackSlots = java.util.stream.IntStream.rangeClosed(9, 44).boxed().toList();
+        return GuiConfig.menu("spectator.menus." + screen, INVENTORY_SIZE, screen, fallbackSlots);
+    }
+
+    private static int itemSlot(String screen, String item, int fallback) {
+        int configured = GuiConfig.item("spectator.menus." + screen + ".items." + item, Map.of()).slot();
+        return configured < 0 ? fallback : configured;
+    }
+
+    private static ItemStack configuredItem(String screen, String key, Map<String, ?> placeholders,
+                                            String state, Material materialOverride) {
+        GuiConfig.ItemSpec configured = GuiConfig.item(
+                "spectator.menus." + screen + ".items." + key, state, placeholders);
+        return item(materialOverride == null ? configured.material() : materialOverride,
+                configured.title(), configured.lore(), configured.glint());
+    }
+
+    private static void setConfigured(Inventory inventory, String screen, String key,
+                                      Map<String, ?> placeholders, String state, Material materialOverride) {
+        GuiConfig.ItemSpec configured = GuiConfig.item(
+                "spectator.menus." + screen + ".items." + key, state, placeholders);
+        if (configured.slot() >= 0 && configured.slot() < inventory.getSize()) {
+            inventory.setItem(configured.slot(), item(materialOverride == null ? configured.material() : materialOverride,
+                    configured.title(), configured.lore(), configured.glint()));
         }
-        return stack;
+    }
+
+    private static void fillBorder(Inventory inventory, String screen) {
+        String path = "spectator.menus." + screen + ".items.border";
+        GuiConfig.ItemSpec border = GuiConfig.item(path, Map.of());
+        List<Integer> fallback = List.of(0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 47, 51);
+        for (int slot : GuiConfig.slots("spectator.menus." + screen + ".layout.border", fallback)) {
+            if (slot >= 0 && slot < inventory.getSize())
+                inventory.setItem(slot, item(border.material(), border.title(), border.lore(), border.glint()));
+        }
+    }
+
+    private static String legacyColor(@NotNull TextColor color) {
+        return "&" + color.asHexString();
+    }
+
+    private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
+        return ink.ziip.championshipscore.api.gui.GuiMenu.item(material, name, lore, glint);
     }
 
     private static Map<GameTypeEnum, GameStyle> createGameStyles() {

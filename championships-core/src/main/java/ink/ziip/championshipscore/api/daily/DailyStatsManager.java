@@ -4,6 +4,8 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.daily.dao.DailyStatsDao;
 import ink.ziip.championshipscore.api.daily.dao.DailyStatsDaoImpl;
+import ink.ziip.championshipscore.api.daily.entry.DailyMapStatEntry;
+import ink.ziip.championshipscore.api.daily.entry.DailyMatchAggregateEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyMatchResultEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyStatEntry;
@@ -16,7 +18,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -25,17 +29,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Queue;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.function.ToLongFunction;
 
 /** DAILY result manager. Business state stays here; every database operation is delegated to its DAO. */
 public final class DailyStatsManager extends BaseManager {
     private final DailyStatsDao statsDao = new DailyStatsDaoImpl();
     private final Map<StatKey, DailyStatSnapshot> stats = new ConcurrentHashMap<>();
     private final Map<RecordKey, Long> records = new ConcurrentHashMap<>();
-    /** Latest per-team Bingo progress, copied into the immutable match result at game end. */
-    private final Map<UUID, Map<UUID, BingoProgress>> bingoProgress = new ConcurrentHashMap<>();
+    private final Map<MapStatKey, DailyMapStat> mapStats = new ConcurrentHashMap<>();
+    /** Latest per-team in-match progress, copied into the immutable match result at game end. */
+    private final Map<UUID, Map<UUID, MatchProgress>> matchProgress = new ConcurrentHashMap<>();
     private final Map<UUID, String> names = new ConcurrentHashMap<>();
     private volatile Map<String, List<DailyLeaderboardEntry>> leaderboards = Map.of();
     private final Set<MilestoneKey> emittedMilestones = ConcurrentHashMap.newKeySet();
@@ -59,7 +61,8 @@ public final class DailyStatsManager extends BaseManager {
         active = false;
         stats.clear();
         records.clear();
-        bingoProgress.clear();
+        mapStats.clear();
+        matchProgress.clear();
         names.clear();
         leaderboards = Map.of();
         emittedMilestones.clear();
@@ -86,8 +89,59 @@ public final class DailyStatsManager extends BaseManager {
         return new DailyStatSnapshot(games, wins, lines, completedTasks, maxCompletedTasks);
     }
 
+    /** Per-map aggregate, or the cross-map fold of every map the player touched when map is null. */
+    public @NotNull DailyMapStat mapStat(@NotNull UUID player, @NotNull GameTypeEnum game, @Nullable String map) {
+        if (map != null) return mapStats.getOrDefault(new MapStatKey(player, game, map), DailyMapStat.EMPTY);
+        DailyMapStat total = DailyMapStat.EMPTY;
+        for (Map.Entry<MapStatKey, DailyMapStat> entry : mapStats.entrySet()) {
+            MapStatKey key = entry.getKey();
+            if (key.player().equals(player) && key.game() == game) total = total.merge(entry.getValue());
+        }
+        return total;
+    }
+
     public long bestRecord(UUID player, GameTypeEnum game, String map, DailyRecordType type) {
         return records.getOrDefault(new RecordKey(player, game, map, type), -1L);
+    }
+
+    /** Best time of one record type across every map the player set it on. */
+    public long bestRecordAcrossMaps(UUID player, GameTypeEnum game, DailyRecordType type) {
+        long best = -1L;
+        for (Map.Entry<RecordKey, Long> entry : records.entrySet()) {
+            RecordKey key = entry.getKey();
+            if (!key.player().equals(player) || key.game() != game || key.type() != type) continue;
+            best = best < 0L ? entry.getValue() : Math.min(best, entry.getValue());
+        }
+        return best;
+    }
+
+    /**
+     * One unified metric value for the menus; map null folds every map of that game together
+     * (max for peak metrics, sum-based rates, minimum for times). Returns NaN when absent.
+     */
+    public double metricValue(@NotNull UUID player, @Nullable String map, @NotNull DailyMetric metric) {
+        if (metric.format() == DailyMetric.Format.TIME) {
+            DailyRecordType type = recordType(metric);
+            long value = map != null ? bestRecord(player, metric.game(), map, type)
+                    : bestRecordAcrossMaps(player, metric.game(), type);
+            return value < 0L ? Double.NaN : value;
+        }
+        DailyMapStat stat = mapStat(player, metric.game(), map);
+        return switch (metric) {
+            case BINGO_MAX_TASKS -> stat.maxTasks() > 0 ? stat.maxTasks() : Double.NaN;
+            case BINGO_MAX_LINES -> stat.maxLines() > 0 ? stat.maxLines() : Double.NaN;
+            case BINGO_MAX_FIRSTS -> stat.maxFirstTasks() > 0 ? stat.maxFirstTasks() : Double.NaN;
+            case DRAGON_MAX_DAMAGE -> stat.maxDragonDamage() > 0D ? stat.maxDragonDamage() : Double.NaN;
+            case DRAGON_FIRST_LIBERATE_RATE -> rate(stat.firstLiberate(), stat.trackedGames());
+            case DRAGON_FIRST_NEXT_GEN_RATE -> rate(stat.firstNextGen(), stat.trackedGames());
+            case DRAGON_FIRST_GATEWAY_RATE -> rate(stat.firstGateway(), stat.trackedGames());
+            default -> Double.NaN;
+        };
+    }
+
+    /** Rate in percent over tracked games, or NaN while none of this scope's games were tracked. */
+    private static double rate(long numerator, long trackedGames) {
+        return trackedGames <= 0L ? Double.NaN : 100D * numerator / trackedGames;
     }
 
     public @NotNull List<DailyLeaderboardEntry> leaderboard(@NotNull String boardId) {
@@ -97,6 +151,7 @@ public final class DailyStatsManager extends BaseManager {
     public @NotNull Set<String> recordMaps(@NotNull GameTypeEnum game) {
         Set<String> maps = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         records.keySet().stream().filter(key -> key.game() == game).map(RecordKey::map).forEach(maps::add);
+        mapStats.keySet().stream().filter(key -> key.game() == game).map(MapStatKey::map).forEach(maps::add);
         return Set.copyOf(maps);
     }
 
@@ -117,6 +172,16 @@ public final class DailyStatsManager extends BaseManager {
             }
         }
         moved.forEach((key, value) -> records.merge(key, value, Math::min));
+        Map<MapStatKey, DailyMapStat> movedStats = new HashMap<>();
+        for (Map.Entry<MapStatKey, DailyMapStat> entry : new ArrayList<>(mapStats.entrySet())) {
+            MapStatKey key = entry.getKey();
+            if (key.game() != game || !key.map().equalsIgnoreCase(oldMap)) continue;
+            if (mapStats.remove(key, entry.getValue())) {
+                movedStats.merge(new MapStatKey(key.player(), key.game(), newMap), entry.getValue(),
+                        DailyMapStat::merge);
+            }
+        }
+        movedStats.forEach((key, value) -> mapStats.merge(key, value, DailyMapStat::merge));
         rebuildLeaderboards();
     }
 
@@ -124,25 +189,49 @@ public final class DailyStatsManager extends BaseManager {
         return map.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", "");
     }
 
-    /** Records the latest Bingo progress for every member of a team; both values are monotonic. */
+    /** Records the latest Bingo progress for every member of a team; every value is monotonic. */
     public void recordBingoProgress(@NotNull BaseGameInstance instance, @NotNull ChampionshipTeam team,
-                                    long lineCount, long completedTasks) {
+                                    long lineCount, long completedTasks, long firstTaskCount) {
         DailySession session = plugin.getDailyManager().session(instance);
         if (session == null || session.game() != GameTypeEnum.Bingo
-                || lineCount < 0L || completedTasks < 0L) return;
-        Map<UUID, BingoProgress> progress = bingoProgress.computeIfAbsent(session.matchId(),
-                ignored -> new ConcurrentHashMap<>());
-        BingoProgress current = new BingoProgress(lineCount, completedTasks);
+                || lineCount < 0L || completedTasks < 0L || firstTaskCount < 0L) return;
+        MatchProgress current = new MatchProgress(lineCount, completedTasks, firstTaskCount,
+                0D, false, false, false);
         for (UUID player : team.getMembers()) {
-            progress.merge(player, current, (previous, latest) -> new BingoProgress(
-                    Math.max(previous.lineCount(), latest.lineCount()),
-                    Math.max(previous.completedTasks(), latest.completedTasks())));
+            matchProgress.computeIfAbsent(session.matchId(), ignored -> new ConcurrentHashMap<>())
+                    .merge(player, current, MatchProgress::merge);
+        }
+    }
+
+    /** Accumulates one player's total dragon damage in the running match; the area reports totals. */
+    public void recordDragonDamage(@NotNull BaseGameInstance instance, @NotNull UUID player,
+                                   double totalDamage) {
+        DailySession session = plugin.getDailyManager().session(instance);
+        if (session == null || session.game() != GameTypeEnum.DragonEggCarnival || totalDamage < 0D) return;
+        matchProgress.computeIfAbsent(session.matchId(), ignored -> new ConcurrentHashMap<>())
+                .merge(player, new MatchProgress(0L, 0L, 0L, totalDamage, false, false, false),
+                        MatchProgress::merge);
+    }
+
+    /** Credits every member of the team that first completed one of the three End advancements. */
+    public void recordDragonFirstAdvancement(@NotNull BaseGameInstance instance,
+                                              @NotNull ChampionshipTeam team, @NotNull String advancementKey) {
+        DailySession session = plugin.getDailyManager().session(instance);
+        if (session == null || session.game() != GameTypeEnum.DragonEggCarnival) return;
+        boolean liberate = "end/kill_dragon".equals(advancementKey);
+        boolean nextGen = "end/dragon_egg".equals(advancementKey);
+        boolean gateway = "end/enter_end_gateway".equals(advancementKey);
+        if (!liberate && !nextGen && !gateway) return;
+        MatchProgress current = new MatchProgress(0L, 0L, 0L, 0D, liberate, nextGen, gateway);
+        for (UUID player : team.getMembers()) {
+            matchProgress.computeIfAbsent(session.matchId(), ignored -> new ConcurrentHashMap<>())
+                    .merge(player, current, MatchProgress::merge);
         }
     }
 
     void recordMatch(@NotNull DailySession session, @NotNull Map<UUID, Double> points) {
         if (!recordedMatches.add(session.matchId())) return;
-        Map<UUID, BingoProgress> matchProgress = bingoProgress.remove(session.matchId());
+        Map<UUID, MatchProgress> progress = matchProgress.remove(session.matchId());
         Map<ChampionshipTeam, Double> teamScores = new HashMap<>();
         for (ChampionshipTeam team : session.teams()) {
             double score = team.getMembers().stream().mapToDouble(uuid -> points.getOrDefault(uuid, 0D)).sum();
@@ -151,13 +240,14 @@ public final class DailyStatsManager extends BaseManager {
         double winningScore = teamScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(0D);
         long now = System.currentTimeMillis();
         List<DailyMatchResultEntry> results = new ArrayList<>();
+        List<DailyMapStatEntry> mapStatDeltas = new ArrayList<>();
         for (ChampionshipTeam team : session.teams()) {
             boolean won = teamScores.getOrDefault(team, 0D) == winningScore;
             for (UUID player : team.getMembers()) {
                 double playerPoints = points.getOrDefault(player, 0D);
-                BingoProgress progress = matchProgress == null ? null : matchProgress.get(player);
-                long lineCount = progress == null ? 0L : progress.lineCount();
-                long completedTasks = progress == null ? 0L : progress.completedTasks();
+                MatchProgress match = progress == null ? null : progress.get(player);
+                long lineCount = match == null ? 0L : match.lines();
+                long completedTasks = match == null ? 0L : match.tasks();
                 results.add(new DailyMatchResultEntry(session.matchId(), player, safeName(player),
                         session.game(), session.map(), team.getName(), playerPoints, won,
                         lineCount, completedTasks, now));
@@ -165,10 +255,35 @@ public final class DailyStatsManager extends BaseManager {
                         (ignored, previous) -> (previous == null ? DailyStatSnapshot.EMPTY : previous)
                                 .add(won, lineCount, completedTasks));
                 names.put(player, safeName(player));
+                DailyMapStatEntry delta = mapStatDelta(player, session, won, match);
+                mapStatDeltas.add(delta);
+                mapStats.merge(new MapStatKey(player, session.game(), session.map()),
+                        toMapStat(delta), DailyMapStat::merge);
             }
         }
         rebuildLeaderboards();
         runAsync(() -> statsDao.saveMatch(results));
+        runAsync(() -> statsDao.saveMapStats(mapStatDeltas));
+    }
+
+    private DailyMapStatEntry mapStatDelta(UUID player, DailySession session, boolean won,
+                                           @Nullable MatchProgress match) {
+        return new DailyMapStatEntry(player, safeName(player), session.game(), session.map(),
+                1L, won ? 1L : 0L,
+                match == null ? 0L : match.tasks(),
+                match == null ? 0L : match.lines(),
+                match == null ? 0L : match.firsts(),
+                match == null ? 0D : match.dragonDamage(),
+                match != null && match.firstLiberate() ? 1L : 0L,
+                match != null && match.firstNextGen() ? 1L : 0L,
+                match != null && match.firstGateway() ? 1L : 0L,
+                System.currentTimeMillis());
+    }
+
+    private static DailyMapStat toMapStat(DailyMapStatEntry entry) {
+        return new DailyMapStat(entry.gamesPlayed(), entry.wins(), entry.gamesPlayed(),
+                entry.maxTasks(), entry.maxLines(), entry.maxFirstTasks(), entry.maxDragonDamage(),
+                entry.firstLiberate(), entry.firstNextGen(), entry.firstGateway());
     }
 
     public void recordTeamMilestone(@NotNull BaseGameInstance instance, @NotNull ChampionshipTeam team,
@@ -217,20 +332,56 @@ public final class DailyStatsManager extends BaseManager {
             records.merge(new RecordKey(entry.uuid(), entry.game(), entry.map(), entry.recordType()),
                     entry.durationMs(), Math::min);
         }
+        for (DailyMapStatEntry entry : statsDao.getPlayerMapStats()) {
+            names.put(entry.uuid(), entry.username());
+            mapStats.merge(new MapStatKey(entry.uuid(), entry.game(), entry.map()),
+                    toMapStat(entry), DailyMapStat::merge);
+        }
+        backfillMapStatsFromMatchResults();
         rebuildLeaderboards();
+    }
+
+    /**
+     * Folds the historical {@code daily_match_results} rows into the per-map cache so games
+     * played before the per-map stat table existed still show up as map-level 场次 and Bingo
+     * maxima. Counts take the maximum because both sources cover overlapping match sets;
+     * first-completion and dragon metrics stay table-only ({@code trackedGames} denominator).
+     */
+    private void backfillMapStatsFromMatchResults() {
+        for (DailyMatchAggregateEntry history : statsDao.getMatchResultMapAggregates()) {
+            MapStatKey key = new MapStatKey(history.uuid(), history.game(), history.map());
+            DailyMapStat base = mapStats.getOrDefault(key, DailyMapStat.EMPTY);
+            mapStats.put(key, new DailyMapStat(
+                    Math.max(base.gamesPlayed(), history.gamesPlayed()),
+                    Math.max(base.wins(), history.wins()),
+                    base.trackedGames(),
+                    Math.max(base.maxTasks(), history.maxCompletedTasks()),
+                    Math.max(base.maxLines(), history.maxLines()),
+                    base.maxFirstTasks(), base.maxDragonDamage(),
+                    base.firstLiberate(), base.firstNextGen(), base.firstGateway()));
+        }
     }
 
     private void rebuildLeaderboards() {
         Map<String, List<DailyLeaderboardEntry>> rebuilt = new LinkedHashMap<>();
-        Map<UUID, DailyStatSnapshot> totals = new HashMap<>();
+        // Legacy boards kept for PlaceholderAPI compatibility; the menus use DailyMetric boards now.
+        rebuilt.putAll(legacyBoards());
+        for (DailyMetric metric : DailyMetric.values()) {
+            // Per-map boards.
+            for (String map : mapsWithStats(metric.game())) {
+                rebuilt.put(metric.boardId(map), metricBoard(metric, map));
+            }
+            // Cross-map aggregate board.
+            rebuilt.put(metric.boardId(null), metricBoard(metric, null));
+        }
+        leaderboards = Map.copyOf(rebuilt);
+    }
+
+    private Map<String, List<DailyLeaderboardEntry>> legacyBoards() {
+        Map<String, List<DailyLeaderboardEntry>> rebuilt = new LinkedHashMap<>();
         Map<UUID, DailyStatSnapshot> bingoTotals = new HashMap<>();
         for (Map.Entry<StatKey, DailyStatSnapshot> entry : stats.entrySet()) {
             DailyStatSnapshot value = entry.getValue();
-            totals.compute(entry.getKey().player(), (ignored, prior) -> prior == null ? value
-                    : new DailyStatSnapshot(prior.gamesPlayed() + value.gamesPlayed(),
-                    prior.wins() + value.wins(), prior.lineCount() + value.lineCount(),
-                    prior.completedTasks() + value.completedTasks(),
-                    Math.max(prior.maxCompletedTasks(), value.maxCompletedTasks())));
             if (entry.getKey().game() == GameTypeEnum.Bingo) {
                 bingoTotals.compute(entry.getKey().player(), (ignored, prior) -> prior == null ? value
                         : new DailyStatSnapshot(prior.gamesPlayed() + value.gamesPlayed(),
@@ -239,8 +390,6 @@ public final class DailyStatsManager extends BaseManager {
                         Math.max(prior.maxCompletedTasks(), value.maxCompletedTasks())));
             }
         }
-        rebuilt.put("wins", rankMetric(totals, DailyStatSnapshot::wins));
-        rebuilt.put("bingo_wins", rankMetric(bingoTotals, DailyStatSnapshot::wins));
         rebuilt.put("bingo_lines", rankMetric(bingoTotals, DailyStatSnapshot::lineCount));
         rebuilt.put("bingo_completed_tasks", rankMetric(bingoTotals, DailyStatSnapshot::completedTasks));
         rebuilt.put("bingo_max_completed", rankMetric(bingoTotals, DailyStatSnapshot::maxCompletedTasks));
@@ -251,11 +400,70 @@ public final class DailyStatsManager extends BaseManager {
                 .sorted(Map.Entry.<UUID, Long>comparingByValue().thenComparing(entry -> displayName(entry.getKey())))
                 .limit(100).map(entry -> new DailyLeaderboardEntry(entry.getKey(), displayName(entry.getKey()),
                         entry.getValue(), true)).toList()));
-        leaderboards = Map.copyOf(rebuilt);
+        return rebuilt;
+    }
+
+    private List<DailyLeaderboardEntry> metricBoard(DailyMetric metric, @Nullable String map) {
+        Map<UUID, Double> values = new HashMap<>();
+        if (metric.format() == DailyMetric.Format.TIME) {
+            DailyRecordType type = recordType(metric);
+            for (Map.Entry<RecordKey, Long> entry : records.entrySet()) {
+                RecordKey key = entry.getKey();
+                if (key.game() != metric.game() || key.type() != type) continue;
+                if (map != null && !key.map().equals(map)) continue;
+                values.merge(key.player(), (double) entry.getValue(), Math::min);
+            }
+        } else if (map != null) {
+            for (Map.Entry<MapStatKey, DailyMapStat> entry : mapStats.entrySet()) {
+                MapStatKey key = entry.getKey();
+                if (key.game() != metric.game() || !key.map().equals(map)) continue;
+                if (entry.getValue().trackedGames() < metric.leaderboardMinGames()) continue;
+                double value = metricValue(key.player(), map, metric);
+                if (!Double.isNaN(value)) values.put(key.player(), value);
+            }
+        } else {
+            // Cross-map board: fold every player's maps once instead of once per map row.
+            Set<UUID> players = new java.util.HashSet<>();
+            for (MapStatKey key : mapStats.keySet()) {
+                if (key.game() == metric.game()) players.add(key.player());
+            }
+            for (UUID player : players) {
+                DailyMapStat stat = mapStat(player, metric.game(), null);
+                if (stat.trackedGames() < metric.leaderboardMinGames()) continue;
+                double value = metricValue(player, null, metric);
+                if (!Double.isNaN(value)) values.put(player, value);
+            }
+        }
+        Comparator<Map.Entry<UUID, Double>> ranking = metric.lowerBetter()
+                ? Map.Entry.<UUID, Double>comparingByValue()
+                : Map.Entry.<UUID, Double>comparingByValue().reversed();
+        return values.entrySet().stream()
+                .sorted(ranking.thenComparing(entry -> displayName(entry.getKey())))
+                .limit(100)
+                .map(entry -> new DailyLeaderboardEntry(entry.getKey(), displayName(entry.getKey()),
+                        entry.getValue(), metric.format() == DailyMetric.Format.TIME))
+                .toList();
+    }
+
+    private Set<String> mapsWithStats(GameTypeEnum game) {
+        Set<String> maps = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        if (game == GameTypeEnum.AceRace) {
+            records.keySet().stream().filter(key -> key.game() == game).map(RecordKey::map).forEach(maps::add);
+        }
+        mapStats.keySet().stream().filter(key -> key.game() == game).map(MapStatKey::map).forEach(maps::add);
+        return maps;
+    }
+
+    private static DailyRecordType recordType(DailyMetric metric) {
+        return switch (metric) {
+            case ACERACE_FASTEST_LAP -> DailyRecordType.ACERACE_FASTEST_LAP;
+            case ACERACE_FASTEST_THREE_LAPS -> DailyRecordType.ACERACE_FASTEST_THREE_LAPS;
+            default -> throw new IllegalArgumentException(metric + " is not backed by time records");
+        };
     }
 
     private List<DailyLeaderboardEntry> rankMetric(Map<UUID, DailyStatSnapshot> values,
-                                                   ToLongFunction<DailyStatSnapshot> metric) {
+                                                   java.util.function.ToLongFunction<DailyStatSnapshot> metric) {
         return values.entrySet().stream()
                 .map(entry -> new DailyLeaderboardEntry(entry.getKey(), displayName(entry.getKey()),
                         metric.applyAsLong(entry.getValue()), false))
@@ -314,6 +522,17 @@ public final class DailyStatsManager extends BaseManager {
 
     private record StatKey(UUID player, GameTypeEnum game) {}
     private record RecordKey(UUID player, GameTypeEnum game, String map, DailyRecordType type) {}
+    private record MapStatKey(UUID player, GameTypeEnum game, String map) {}
     private record MilestoneKey(UUID match, int teamId, DailyRecordType type) {}
-    private record BingoProgress(long lineCount, long completedTasks) {}
+
+    /** Monotonic per-player in-match progress; merge keeps the peak counts and ORs first flags. */
+    private record MatchProgress(long lines, long tasks, long firsts, double dragonDamage,
+                                 boolean firstLiberate, boolean firstNextGen, boolean firstGateway) {
+        MatchProgress merge(MatchProgress other) {
+            return new MatchProgress(Math.max(lines, other.lines), Math.max(tasks, other.tasks),
+                    Math.max(firsts, other.firsts), Math.max(dragonDamage, other.dragonDamage),
+                    firstLiberate || other.firstLiberate, firstNextGen || other.firstNextGen,
+                    firstGateway || other.firstGateway);
+        }
+    }
 }

@@ -76,11 +76,11 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         AceRaceConfig config = cfg(session.getTarget());
         int count = config.ensureRespawnPoints().size();
         if (index < 0 || index >= count || newOrder < 1 || newOrder > count)
-            return ink.ziip.championshipscore.util.Utils.formatAdminError(GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.the-serial-number-must-be-between-1-and") + count + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.range-end-suffix"));
+            return ink.ziip.championshipscore.util.Utils.formatAdminError(GuiConfig.text("map-editor.copy.the-serial-number-must-be-between-1-and") + count + GuiConfig.text("map-editor.copy.range-end-suffix"));
         config.moveRespawnPoint(index, newOrder);
         session.markDirty();
         String result = ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.the-point-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.item-suffix"));
+                GuiConfig.text("map-editor.copy.the-point-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.copy.item-suffix"));
         reload(session);
         return result;
     }
@@ -92,7 +92,7 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         config.removeRespawnPoint(index);
         session.markDirty();
         String result = ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.deleted") + (index + 1) + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.points"));
+                GuiConfig.text("map-editor.copy.deleted") + (index + 1) + GuiConfig.text("map-editor.copy.points"));
         reload(session);
         return result;
     }
@@ -101,7 +101,7 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         AceRaceArea area = area(session);
         if (area == null || area.getRespawnPointIndexForConfig(index) < 0) return GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.the-corresponding-progress-line-not-loaded");
         int binding = area.getRespawnPointBinding(index);
-        return binding < 0 ? GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.the-corresponding-progress-line-after-the-starting-point") : GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.belonging-progress-line") + (binding + 1) + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.after-suffix");
+        return binding < 0 ? GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.the-corresponding-progress-line-after-the-starting-point") : GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.belonging-progress-line") + (binding + 1) + GuiConfig.text("map-editor.copy.after-suffix");
     }
 
     public String setBinding(@NotNull PrepareSession session, int index, int binding) {
@@ -109,7 +109,7 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         if (area == null || !area.setRespawnPointBinding(index, binding)) return null;
         session.markDirty();
         return ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.this-spawn-point-has-been-bound-to") + (binding < 0 ? GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.after-starting-point") : GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.progress-line") + (binding + 1) + GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.after-suffix")) + "。");
+                GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.this-spawn-point-has-been-bound-to") + (binding < 0 ? GuiConfig.text("map-editor.games.ace-race.steps.respawn-points.after-starting-point") : GuiConfig.text("map-editor.copy.progress-line") + (binding + 1) + GuiConfig.text("map-editor.copy.after-suffix")) + "。");
     }
 
     public int currentBinding(@NotNull PrepareSession session, int index) {

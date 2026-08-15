@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
@@ -23,6 +25,7 @@ import java.util.List;
 
 /** Paged selector for the TGTTOS map equipment/game-mode profile. */
 public final class TGTTOSAreaTypeGui {
+    private static final String MENU_PATH = MenuId.TGTTOS_AREA_TYPE.path();
     private static final int OPTION_FIRST_SLOT = 0;
     private static final int OPTION_LAST_SLOT = 44;
     private static final int PAGE_SIZE = 45;
@@ -53,8 +56,9 @@ public final class TGTTOSAreaTypeGui {
     public static void open(@NotNull Player player, @NotNull PrepareSession session,
                             @NotNull TGTTOSAreaTypeStep step) {
         Holder holder = new Holder(session, step);
-        holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text(GuiConfig.text("map-editor.games.tgttos.menus.area-type.select-map-equipment-type")).decoration(TextDecoration.ITALIC, false));
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54,
+                GuiConfig.text(MENU_PATH + ".copy.select-map-equipment-type"), List.of());
+        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -109,12 +113,17 @@ public final class TGTTOSAreaTypeGui {
                     : filler());
         }
         inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? menuItem(Material.ARROW, GuiConfig.text("map-editor.games.tgttos.menus.area-type.previous-page"), NamedTextColor.WHITE)
+                ? configured("previous", null)
                 : filler());
-        inventory.setItem(BACK_SLOT, menuItem(Material.BARRIER, GuiConfig.text("map-editor.games.tgttos.menus.area-type.return"), NamedTextColor.RED));
+        inventory.setItem(BACK_SLOT, configured("back", null));
         inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount()
-                ? menuItem(Material.ARROW, GuiConfig.text("map-editor.games.tgttos.menus.area-type.next-page"), NamedTextColor.WHITE)
+                ? configured("next", null)
                 : filler());
+    }
+
+    private static ItemStack configured(@NotNull String item, String state) {
+        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, java.util.Map.of(),
+                Material.BARRIER, Component.text(item), List.of(), false);
     }
 
     private static int pageCount() {
@@ -129,18 +138,10 @@ public final class TGTTOSAreaTypeGui {
                     .decoration(TextDecoration.ITALIC, false));
             meta.lore(List.of(Component.text(option.description()).color(NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false),
-                    Component.text(selected ? GuiConfig.text("map-editor.games.tgttos.menus.area-type.current-selection") : GuiConfig.text("map-editor.games.tgttos.menus.area-type.click-to-select"))
+                    Component.text(selected ? GuiConfig.text("map-editor.copy.current-selection") : GuiConfig.text("map-editor.copy.click-to-select"))
                             .color(selected ? NamedTextColor.GREEN : NamedTextColor.WHITE)
                             .decoration(TextDecoration.ITALIC, false)));
         });
-        return item;
-    }
-
-    private static ItemStack menuItem(@NotNull Material material, @NotNull String name,
-                                      @NotNull NamedTextColor color) {
-        ItemStack item = new ItemStack(material);
-        item.editMeta(meta -> meta.displayName(Component.text(name).color(color)
-                .decoration(TextDecoration.ITALIC, false)));
         return item;
     }
 

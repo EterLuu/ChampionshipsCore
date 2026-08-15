@@ -168,13 +168,13 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         ConfigurationSection root = cfg(session.getTarget()).ensureProgressPoints();
         List<String> keys = orderedKeys(root);
         if (index < 0 || index >= keys.size() || newOrder < 1 || newOrder > keys.size())
-            return Utils.formatAdminError(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.the-serial-number-must-be-between-1-and") + keys.size() + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.range-end-suffix"));
+            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.the-serial-number-must-be-between-1-and") + keys.size() + GuiConfig.text("map-editor.copy.range-end-suffix"));
         String moved = keys.remove(index);
         keys.add(newOrder - 1, moved);
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.the-progress-point-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.item-suffix"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.the-progress-point-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.copy.item-suffix"));
     }
 
     @Override
@@ -187,7 +187,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.deleted") + (index + 1) + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-points"));
+        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.deleted") + (index + 1) + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-points"));
     }
 
     private static Gate captureGate(@NotNull PrepareSession session, @NotNull Player player) {
@@ -238,7 +238,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
     }
 
     private static String format(Vector vector) {
-        return vector == null ? GuiConfig.text("map-editor.games.ace-race.steps.progress-points.not-set") : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
+        return vector == null ? GuiConfig.text("map-editor.copy.not-set") : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
     }
 
     @Override

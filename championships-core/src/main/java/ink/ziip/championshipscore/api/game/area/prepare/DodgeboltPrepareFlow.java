@@ -49,7 +49,7 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
         steps.add(selection("left_shoot", GuiConfig.text("map-editor.games.dodgebolt.setup.left-team-archery-area"), Material.BLUE_CONCRETE,
                 t -> cfg(t).getLeftShootPos1() != null && cfg(t).getLeftShootPos2() != null,
                 (t, v) -> { cfg(t).setLeftShootPos1(v[0]); cfg(t).setLeftShootPos2(v[1]); }));
-        steps.add(location("spectator_spawn", GuiConfig.text("map-editor.games.dodgebolt.setup.watch-the-spawn-point"), Material.ENDER_EYE,
+        steps.add(location("spectator_spawn", GuiConfig.text("map-editor.copy.spectator-spawn-point"), Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null,
                 (t, l) -> cfg(t).setSpectatorSpawnPoint(l)));
         steps.add(list("right_spawns", GuiConfig.text("map-editor.games.dodgebolt.setup.right-team-players-spawn-point"), Material.RED_WOOL,
@@ -83,14 +83,14 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
                                               java.util.function.Predicate<SetupTarget> set,
                                               java.util.function.BiConsumer<SetupTarget, Vector[]> setter) {
         return new WeSelectionStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.games.dodgebolt.setup.use-worldedit-to-select-two-endpoints")),
-                icon, set, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.dodgebolt.setup.already-set") + name + "。"));
+                icon, set, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.already-set") + name + "。"));
     }
 
     private static StandAndRunStep location(String key, String name, Material icon,
                                             java.util.function.Predicate<SetupTarget> set,
                                             java.util.function.BiConsumer<SetupTarget, Location> setter) {
-        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.games.dodgebolt.setup.after-reaching-the-target-position-click")),
-                icon, set, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.dodgebolt.setup.already-set") + name + "。"));
+        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.copy.after-reaching-the-target-position-click")),
+                icon, set, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.already-set") + name + "。"));
     }
 
     private static ListStep list(String key, String name, Material icon,
@@ -105,11 +105,11 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
 
     private static void requireCount(List<String> errors, String name, List<String> values, int minimum) {
         int count = values == null ? 0 : values.size();
-        if (count < minimum) errors.add(name + GuiConfig.text("map-editor.games.dodgebolt.setup.at-least") + minimum + GuiConfig.text("map-editor.games.dodgebolt.setup.person-current") + count + GuiConfig.text("map-editor.games.dodgebolt.setup.item-count-suffix"));
+        if (count < minimum) errors.add(name + GuiConfig.text("map-editor.games.dodgebolt.setup.at-least") + minimum + GuiConfig.text("map-editor.games.dodgebolt.setup.person-current") + count + GuiConfig.text("map-editor.copy.item-count-suffix"));
     }
 
     private static void requirePoint(List<String> errors, String name, String value) {
-        if (!hasPoint(value)) errors.add(name + GuiConfig.text("map-editor.games.dodgebolt.setup.not-set"));
+        if (!hasPoint(value)) errors.add(name + GuiConfig.text("map-editor.copy.not-set"));
     }
 
     private static boolean isInSpectatorArea(DodgeboltConfig config, Location location) {

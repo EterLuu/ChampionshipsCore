@@ -60,7 +60,7 @@ public final class AnvilInputGui {
     }
 
     public static void openName(@NotNull Player player, @NotNull PrepareSessionManager manager, @NotNull GameTypeEnum gameType) {
-        open(player, Mode.NAME, GuiConfig.text("map-editor.menus.input.enter-venue-name"), text -> {
+        open(player, Mode.NAME, GuiConfig.text("map-editor.menus.input.copy.enter-venue-name"), text -> {
             String error = validateName(manager, gameType, text);
             if (error != null) {
                 player.sendMessage(error);
@@ -72,16 +72,16 @@ public final class AnvilInputGui {
     }
 
     public static void openNumber(@NotNull Player player, @NotNull IntConsumer onCount) {
-        open(player, Mode.NUMBER, GuiConfig.text("map-editor.menus.input.enter-the-number-of-copies"), text -> {
+        open(player, Mode.NUMBER, GuiConfig.text("map-editor.menus.input.copy.enter-the-number-of-copies"), text -> {
             int n;
             try {
                 n = Integer.parseInt(text);
             } catch (NumberFormatException e) {
-                Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.input.please-enter-valid-numbers"));
+                Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.input.copy.please-enter-valid-numbers"));
                 return;
             }
             if (n < 1) {
-                Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.input.number-of-copies-must-be-at-least-1"));
+                Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.input.copy.number-of-copies-must-be-at-least-1"));
                 return;
             }
             close(player);
@@ -98,7 +98,7 @@ public final class AnvilInputGui {
                 try {
                     value = Integer.parseInt(text);
                 } catch (NumberFormatException e) {
-                    Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.input.please-enter-a-valid-integer"));
+                    Utils.sendAdminError(player, GuiConfig.text("map-editor.menus.input.copy.please-enter-a-valid-integer"));
                     return;
                 }
             }
@@ -115,7 +115,7 @@ public final class AnvilInputGui {
         holder.inventory = inv;
         OPEN_INPUTS.put(player.getUniqueId(), holder);
         inv.setFirstItem(PrepareKeys.item(Material.PAPER, Component.text(prompt),
-                List.of(Component.text(GuiConfig.text("map-editor.menus.input.enter-in-the-rename-field-above-then-click-on-the-result-box-on-the-right-to-confirm")).color(NamedTextColor.GRAY))));
+                List.of(Component.text(GuiConfig.text("map-editor.menus.input.copy.enter-in-the-rename-field-above-then-click-on-the-result-box-on-the-right-to-confirm")).color(NamedTextColor.GRAY))));
         view.setMaximumRepairCost(0);
         view.setRepairCost(0);
     }
@@ -154,12 +154,12 @@ public final class AnvilInputGui {
     }
 
     private static @Nullable String validateName(@NotNull PrepareSessionManager manager, @NotNull GameTypeEnum gameType, @Nullable String name) {
-        if (name == null || name.isBlank()) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.venue-name-cannot-be-empty"));
+        if (name == null || name.isBlank()) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.copy.venue-name-cannot-be-empty"));
         String trimmed = name.trim();
-        if (trimmed.length() > 32) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.venue-name-cannot-exceed-32-characters"));
-        if (trimmed.matches(".*[\\\\/:*?\"<>|].*")) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.venue-name-contains-invalid-characters"));
+        if (trimmed.length() > 32) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.copy.venue-name-cannot-exceed-32-characters"));
+        if (trimmed.matches(".*[\\\\/:*?\"<>|].*")) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.copy.venue-name-contains-invalid-characters"));
         BaseGameInstanceManager<?> mgr = manager.getPlugin().getGameManager().getAreaManager(gameType);
-        if (mgr != null && mgr.getArea(trimmed) != null) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.venue") + trimmed + GuiConfig.text("map-editor.menus.input.already-exists"));
+        if (mgr != null && mgr.getArea(trimmed) != null) return Utils.formatAdminError(GuiConfig.text("map-editor.menus.input.copy.venue") + trimmed + GuiConfig.text("map-editor.menus.input.copy.already-exists"));
         return null;
     }
 

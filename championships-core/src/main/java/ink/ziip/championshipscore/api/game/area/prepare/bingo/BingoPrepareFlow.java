@@ -60,7 +60,7 @@ public class BingoPrepareFlow extends PrepareFlowDefinition {
                 Material.ENDER_EYE,
                 t -> ((BingoConfig) t.config()).getSpectatorSpawnPoint() != null,
                 (t, loc) -> ((BingoConfig) t.config()).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.bingo.setup.spectator-spawn-point-has-been-set")));
+                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set")));
 
         return List.of(confirm, spectator);
     }

@@ -76,6 +76,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -176,12 +177,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
 
     public void openControls(@NotNull Player player) {
         if (!isSpectatorLike(player.getUniqueId())) return;
-        ControlHolder holder = new ControlHolder(player.getUniqueId(), ControlScreen.MAIN);
-        holder.inventory = Bukkit.createInventory(holder, MAIN_SIZE,
-                Component.text(GuiConfig.text("spectator.controls.spectator-control"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
-                        .decoration(TextDecoration.ITALIC, false));
-        refresh(holder);
-        player.openInventory(holder.inventory);
+        openControlScreen(player, ControlScreen.VISIBILITY);
     }
 
     public void openMainMenu(@NotNull Player player) {
@@ -280,25 +276,23 @@ public final class SpectatorManager extends BaseManager implements Listener {
         int slot = player.getInventory().getHeldItemSlot();
         boolean rightClick = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
         if (!session.external()) {
-            if (slot == 8) Bukkit.getScheduler().runTask(plugin, () -> openControls(player));
+            if (slot == hotbarSlot("participant-controls", 8))
+                Bukkit.getScheduler().runTask(plugin, () -> openControls(player));
             return;
         }
-        switch (slot) {
-            case 0 -> toggleNightVision(player, session);
-            case 1 -> changeTrackingTarget(player, session, rightClick);
-            case 2 -> teleportToTrackingTarget(player, session);
-            case 3 -> openTeamControls(player);
-            case 4 -> {
-                togglePlayers(player, session);
-                feedback(player, GuiConfig.text("spectator.controls.the-display-status-of-players-in-the-field-has-been-switched"), NamedTextColor.WHITE, 1.0F);
-            }
-            case 5 -> {
-                if (gameManager.leaveSpectating(player))
-                    feedback(player, GuiConfig.text("spectator.controls.exited-from-watching-the-game"), NamedTextColor.RED, 0.8F);
-            }
-            case 7 -> adjustFlySpeed(player, rightClick ? -.05F : .05F);
-            case 8 -> Bukkit.getScheduler().runTask(plugin, () -> openMainMenu(player));
-            default -> { }
+        if (slot == hotbarSlot("night-vision", 0)) toggleNightVision(player, session);
+        else if (slot == hotbarSlot("tracking", 1)) changeTrackingTarget(player, session, rightClick);
+        else if (slot == hotbarSlot("player-teleport", 2)) teleportToTrackingTarget(player, session);
+        else if (slot == hotbarSlot("team-position", 3)) openTeamControls(player);
+        else if (slot == hotbarSlot("player-visibility", 4)) {
+            Bukkit.getScheduler().runTask(plugin, () -> openControlScreen(player, ControlScreen.VISIBILITY));
+        } else if (slot == hotbarSlot("leave", 5)) {
+            if (gameManager.leaveSpectating(player))
+                feedback(player, GuiConfig.text("spectator.copy.left"), NamedTextColor.RED, 0.8F);
+        } else if (slot == hotbarSlot("flight-speed", 7)) {
+            adjustFlySpeed(player, rightClick ? -.05F : .05F);
+        } else if (slot == hotbarSlot("venue-selector", 8)) {
+            Bukkit.getScheduler().runTask(plugin, () -> openMainMenu(player));
         }
     }
 
@@ -435,7 +429,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (top.getHolder() instanceof ControlHolder holder) {
             event.setCancelled(true);
             if (holder.viewer.equals(player.getUniqueId()) && event.getClickedInventory() == top)
-                clickControl(player, holder, event.getRawSlot(), event.isRightClick());
+                clickControl(player, holder, event.getRawSlot());
             return;
         }
         if (isSpectatorLike(player.getUniqueId())) {
@@ -500,9 +494,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (session != null && session.external()) {
             applyExternalControlItems(player, session);
         } else {
-            player.getInventory().setItem(8, item(Material.COMPASS,
-                    Component.text(GuiConfig.text("spectator.controls.spectator-control"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                    List.of(Component.text(GuiConfig.text("spectator.controls.turn-on-spectator-controls"), NamedTextColor.GRAY)), true));
+            setHotbarItem(player.getInventory(), "participant-controls", Map.of(), null);
         }
     }
 
@@ -557,33 +549,15 @@ public final class SpectatorManager extends BaseManager implements Listener {
     }
 
     private void applyExternalControlItems(@NotNull Player player, @NotNull SpectatorSession session) {
-        player.getInventory().setItem(0, item(session.nightVision() ? Material.SEA_LANTERN : Material.COAL,
-                Component.text(GuiConfig.text("spectator.controls.night-vision"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-toggle-night-vision"), NamedTextColor.GRAY)), session.nightVision()));
-        player.getInventory().setItem(1, item(Material.COMPASS,
-                Component.text(GuiConfig.text("spectator.controls.player-tracking"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("spectator.controls.left-click-switch-to-next-player"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("spectator.controls.right-click-stop-tracking"), NamedTextColor.GRAY)), session.following()));
-        player.getInventory().setItem(2, item(Material.ENDER_PEARL,
-                Component.text(GuiConfig.text("spectator.controls.go-to-track-player"), NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-transfer-to-the-current-tracking-target"), NamedTextColor.GRAY)), false));
-        player.getInventory().setItem(3, item(Material.WHITE_WOOL,
-                Component.text(GuiConfig.text("spectator.controls.team-position"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-select-team-position"), NamedTextColor.GRAY)), false));
-        player.getInventory().setItem(4, item(Material.GLASS,
-                Component.text(GuiConfig.text("spectator.controls.show-hide-players"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-switch-all-players-in-the-field"), NamedTextColor.GRAY)), false));
-        player.getInventory().setItem(5, item(Material.RED_DYE,
-                Component.text(GuiConfig.text("spectator.controls.quit-watching-the-game"), NamedTextColor.RED).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-return-to-the-lobby"), NamedTextColor.GRAY)), false));
-        player.getInventory().setItem(7, item(Material.FEATHER,
-                Component.text(GuiConfig.text("spectator.controls.flight-speed") + speedText(player), NamedTextColor.YELLOW)
-                        .decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("spectator.controls.left-click-acceleration"), NamedTextColor.GREEN),
-                        Component.text(GuiConfig.text("spectator.controls.right-click-slow-down"), NamedTextColor.RED)), false));
-        player.getInventory().setItem(8, item(Material.SPYGLASS,
-                Component.text(GuiConfig.text("spectator.controls.choose-a-viewing-venue"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("spectator.controls.click-to-open-venue-list"), NamedTextColor.GRAY)), true));
+        setHotbarItem(player.getInventory(), "night-vision", Map.of(),
+                session.nightVision() ? "enabled" : "disabled");
+        setHotbarItem(player.getInventory(), "tracking", Map.of(), null);
+        setHotbarItem(player.getInventory(), "player-teleport", Map.of(), null);
+        setHotbarItem(player.getInventory(), "team-position", Map.of(), null);
+        setHotbarItem(player.getInventory(), "player-visibility", Map.of(), null);
+        setHotbarItem(player.getInventory(), "leave", Map.of(), null);
+        setHotbarItem(player.getInventory(), "flight-speed", Map.of("speed", speedText(player)), null);
+        setHotbarItem(player.getInventory(), "venue-selector", Map.of(), null);
     }
 
     private void toggleNightVision(@NotNull Player player, @NotNull SpectatorSession session) {
@@ -593,7 +567,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
         SpectatorSession updated = session.withNightVision(enabled);
         sessions.put(player.getUniqueId(), updated);
         if (updated.external()) applyExternalControlItems(player, updated);
-        feedback(player, GuiConfig.text("spectator.controls.night-vision-is-gone") + (enabled ? GuiConfig.text("spectator.controls.turn-on") : GuiConfig.text("spectator.controls.close")),
+        feedback(player, GuiConfig.text("spectator.copy.night-vision",
+                        Map.of("state", stateText(enabled))),
                 enabled ? NamedTextColor.GREEN : NamedTextColor.RED, enabled ? 1.2F : 0.8F);
     }
 
@@ -603,12 +578,12 @@ public final class SpectatorManager extends BaseManager implements Listener {
             SpectatorSession updated = session.withTarget(null, false);
             sessions.put(player.getUniqueId(), updated);
             applyExternalControlItems(player, updated);
-            feedback(player, GuiConfig.text("spectator.controls.player-tracking-stopped"), NamedTextColor.RED, 0.8F);
+            feedback(player, GuiConfig.text("spectator.copy.tracking-stopped"), NamedTextColor.RED, 0.8F);
             return;
         }
         List<Player> targets = playersInArea(session.area(), player.getUniqueId());
         if (targets.isEmpty()) {
-            feedback(player, GuiConfig.text("spectator.controls.there-are-currently-no-trackable-players-in-the-field"), NamedTextColor.RED, 0.8F);
+            feedback(player, GuiConfig.text("spectator.copy.no-trackable-players"), NamedTextColor.RED, 0.8F);
             return;
         }
         int current = -1;
@@ -623,24 +598,35 @@ public final class SpectatorManager extends BaseManager implements Listener {
         sessions.put(player.getUniqueId(), updated);
         player.setCompassTarget(target.getLocation());
         applyExternalControlItems(player, updated);
-        feedback(player, GuiConfig.text("spectator.controls.tracking") + target.getName(), NamedTextColor.GREEN, 1.2F);
+        feedback(player, GuiConfig.text("spectator.copy.tracking-player", Map.of("player", target.getName())),
+                NamedTextColor.GREEN, 1.2F);
     }
 
     private void teleportToTrackingTarget(@NotNull Player player, @NotNull SpectatorSession session) {
         Player target = session.target() == null ? null : Bukkit.getPlayer(session.target());
         if (target == null || session.area() == null || !playersInArea(session.area(), player.getUniqueId()).contains(target)) {
-            feedback(player, GuiConfig.text("spectator.controls.please-use-the-tracking-compass-to-select-a-player-first"), NamedTextColor.RED, 0.8F);
+            feedback(player, GuiConfig.text("spectator.copy.select-player-first"), NamedTextColor.RED, 0.8F);
             return;
         }
         player.teleportAsync(target.getLocation());
-        feedback(player, GuiConfig.text("spectator.controls.already-visited") + target.getName(), NamedTextColor.LIGHT_PURPLE, 1.2F);
+        feedback(player, GuiConfig.text("spectator.copy.teleported-to-player", Map.of("player", target.getName())),
+                NamedTextColor.LIGHT_PURPLE, 1.2F);
     }
 
     private void openTeamControls(@NotNull Player player) {
-        ControlHolder holder = new ControlHolder(player.getUniqueId(), ControlScreen.TEAMS);
-        holder.inventory = Bukkit.createInventory(holder, MAIN_SIZE,
-                Component.text(GuiConfig.text("spectator.controls.select-team-position"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD)
-                        .decoration(TextDecoration.ITALIC, false));
+        openControlScreen(player, ControlScreen.TEAM_POSITION);
+    }
+
+    private void openControlScreen(@NotNull Player player, @NotNull ControlScreen screen) {
+        String menuName = switch (screen) {
+            case VISIBILITY -> "visibility";
+            case PLAYER_VISIBILITY -> "player-visibility-selector";
+            case TEAM_VISIBILITY -> "team-visibility-selector";
+            case TEAM_POSITION -> "team-position-selector";
+        };
+        ControlHolder holder = new ControlHolder(player.getUniqueId(), screen);
+        GuiConfig.MenuSpec menu = controlMenu(menuName);
+        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -650,7 +636,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         player.setFlySpeed(speed);
         SpectatorSession session = sessions.get(player.getUniqueId());
         if (session != null && session.external()) applyExternalControlItems(player, session);
-        feedback(player, GuiConfig.text("spectator.controls.flight-speed") + speedText(player), NamedTextColor.YELLOW,
+        feedback(player, GuiConfig.text("spectator.copy.flight-speed", Map.of("speed", speedText(player))), NamedTextColor.YELLOW,
                 delta > 0 ? 1.25F : 0.8F);
     }
 
@@ -680,110 +666,94 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (player == null) return;
         SpectatorSession session = sessions.get(holder.viewer);
         if (session == null) return;
-        if (holder.screen == ControlScreen.PLAYERS) {
+        if (holder.screen == ControlScreen.PLAYER_VISIBILITY) {
+            holder.targets.clear();
+            GuiConfig.MenuSpec menu = controlMenu("player-visibility-selector");
             List<Player> targets = playersInArea(session.area(), holder.viewer);
-            for (int i = 0; i < Math.min(7, targets.size()); i++) {
+            for (int i = 0; i < Math.min(menu.contentSlots().size(), targets.size()); i++) {
                 Player target = targets.get(i);
-                holder.inventory.setItem(i, item(Material.PLAYER_HEAD,
-                        Component.text(target.getName(), NamedTextColor.WHITE),
-                        List.of(Component.text(GuiConfig.text("spectator.controls.click-to-send-and-set-as-tracking-target"), NamedTextColor.GRAY)), false));
-                holder.targets.put(i, target.getUniqueId());
+                int slot = menu.contentSlots().get(i);
+                holder.inventory.setItem(slot, configuredMenuItem("player-visibility-selector", "player",
+                        Map.of("player", target.getName()), null, null));
+                holder.targets.put(slot, target.getUniqueId());
             }
-            holder.inventory.setItem(7, item(Material.ARROW, Component.text(GuiConfig.text("spectator.controls.return"), NamedTextColor.YELLOW), List.of(), false));
-            holder.inventory.setItem(8, item(Material.BARRIER, Component.text(GuiConfig.text("spectator.controls.close"), NamedTextColor.RED), List.of(), false));
+            setMenuItem(holder.inventory, "player-visibility-selector", "close", Map.of(), null);
             return;
         }
-        if (holder.screen == ControlScreen.TEAMS) {
+        if (holder.screen == ControlScreen.TEAM_VISIBILITY || holder.screen == ControlScreen.TEAM_POSITION) {
+            holder.teams.clear();
+            String screen = holder.screen == ControlScreen.TEAM_VISIBILITY
+                    ? "team-visibility-selector" : "team-position-selector";
+            GuiConfig.MenuSpec menu = controlMenu(screen);
             if (session.area() instanceof BaseMultiTeamGameInstance multi) {
                 List<ChampionshipTeam> teams = multi.getGameTeams();
-                for (int i = 0; i < Math.min(7, teams.size()); i++) {
+                for (int i = 0; i < Math.min(menu.contentSlots().size(), teams.size()); i++) {
                     ChampionshipTeam team = teams.get(i);
-                    holder.teams.put(i, team);
-                    holder.inventory.setItem(i, item(Material.WHITE_WOOL,
-                            Component.text(team.getName(), NamedTextColor.WHITE),
-                            List.of(Component.text(GuiConfig.text("spectator.controls.click-to-go-to-the-team-s-spawn-point"), NamedTextColor.GRAY)), false));
+                    int slot = menu.contentSlots().get(i);
+                    holder.teams.put(slot, team);
+                    holder.inventory.setItem(slot, configuredMenuItem(screen, "team",
+                            Map.of("team", team.getName(), "team_color", team.getColorCode()),
+                            null, SpectatorTeamIcon.wool(team.getColorName())));
                 }
             }
-            holder.inventory.setItem(7, item(Material.ARROW, Component.text(GuiConfig.text("spectator.controls.return"), NamedTextColor.YELLOW), List.of(), false));
-            holder.inventory.setItem(8, item(Material.BARRIER, Component.text(GuiConfig.text("spectator.controls.close"), NamedTextColor.RED), List.of(), false));
+            setMenuItem(holder.inventory, screen, "close", Map.of(), null);
             return;
         }
-        holder.inventory.setItem(0, item(session.nightVision() ? Material.SEA_LANTERN : Material.COAL,
-                Component.text(GuiConfig.text("spectator.controls.night-vision-status-label") + (session.nightVision() ? GuiConfig.text("spectator.controls.turn-on") : GuiConfig.text("spectator.controls.close")), NamedTextColor.AQUA), List.of(), session.nightVision()));
-        holder.inventory.setItem(1, item(session.following() ? Material.COMPASS : Material.RECOVERY_COMPASS,
-                Component.text(GuiConfig.text("spectator.controls.player-tracking-status-label") + (session.following() ? GuiConfig.text("spectator.controls.turn-on") : GuiConfig.text("spectator.controls.close")), NamedTextColor.GREEN), List.of(), session.following()));
-        holder.inventory.setItem(2, item(Material.ENDER_PEARL, Component.text(GuiConfig.text("spectator.controls.player-teleport"), NamedTextColor.LIGHT_PURPLE), List.of(), false));
-        holder.inventory.setItem(3, item(Material.WHITE_WOOL, Component.text(GuiConfig.text("spectator.controls.team-selection"), NamedTextColor.GOLD), List.of(), false));
-        holder.inventory.setItem(4, item(Material.GLASS, Component.text(GuiConfig.text("spectator.controls.player-hide-show"), NamedTextColor.WHITE), List.of(Component.text(GuiConfig.text("spectator.controls.click-to-switch-all-players"), NamedTextColor.GRAY)), false));
-        holder.inventory.setItem(5, item(Material.GLASS_PANE, Component.text(GuiConfig.text("spectator.controls.team-hide-show"), NamedTextColor.WHITE), List.of(Component.text(GuiConfig.text("spectator.controls.click-to-switch-the-currently-selected-team"), NamedTextColor.GRAY)), false));
-        holder.inventory.setItem(6, item(Material.FEATHER,
-                Component.text(GuiConfig.text("spectator.controls.flight-speed") + speedText(player), NamedTextColor.YELLOW),
-                List.of(Component.text(GuiConfig.text("spectator.controls.left-click-acceleration"), NamedTextColor.GREEN),
-                        Component.text(GuiConfig.text("spectator.controls.right-click-slow-down"), NamedTextColor.RED)), false));
-        holder.inventory.setItem(7, item(Material.SPYGLASS,
-                Component.text(GuiConfig.text("spectator.controls.choose-a-viewing-venue"), NamedTextColor.AQUA), List.of(), false));
-        holder.inventory.setItem(8, item(Material.BARRIER, Component.text(GuiConfig.text("spectator.controls.close"), NamedTextColor.RED), List.of(), false));
+        setMenuItem(holder.inventory, "visibility", "show-all", Map.of(), null);
+        setMenuItem(holder.inventory, "visibility", "show-player", Map.of(), null);
+        setMenuItem(holder.inventory, "visibility", "show-team", Map.of(), null);
+        setMenuItem(holder.inventory, "visibility", "close", Map.of(), null);
     }
 
-    private void clickControl(@NotNull Player player, @NotNull ControlHolder holder, int slot,
-                              boolean rightClick) {
+    private void clickControl(@NotNull Player player, @NotNull ControlHolder holder, int slot) {
         SpectatorSession session = sessions.get(player.getUniqueId());
         if (session == null) return;
-        if (holder.screen == ControlScreen.PLAYERS) {
-            if (slot == 7) { holder.screen = ControlScreen.MAIN; holder.targets.clear(); refresh(holder); return; }
-            if (slot == 8) { player.closeInventory(); return; }
+        if (holder.screen == ControlScreen.PLAYER_VISIBILITY) {
+            if (slot == menuItemSlot("player-visibility-selector", "close", 8)) {
+                player.closeInventory(); return;
+            }
             UUID targetId = holder.targets.get(slot);
             Player target = targetId == null ? null : Bukkit.getPlayer(targetId);
             if (target != null) {
-                player.teleportAsync(target.getLocation());
                 sessions.put(player.getUniqueId(), session.withTarget(targetId, true));
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, .8F, 1.2F);
+                plugin.getVisibilityManager().showOnlyPlayers(player.getUniqueId(), Set.of(targetId));
+                feedback(player, GuiConfig.text("spectator.copy.visibility-player",
+                        Map.of("player", target.getName())), NamedTextColor.LIGHT_PURPLE, 1.2F);
+                player.closeInventory();
             }
             return;
         }
-        if (holder.screen == ControlScreen.TEAMS) {
-            if (slot == 7) { holder.screen = ControlScreen.MAIN; holder.teams.clear(); refresh(holder); return; }
-            if (slot == 8) { player.closeInventory(); return; }
+        if (holder.screen == ControlScreen.TEAM_VISIBILITY || holder.screen == ControlScreen.TEAM_POSITION) {
+            String screen = holder.screen == ControlScreen.TEAM_VISIBILITY
+                    ? "team-visibility-selector" : "team-position-selector";
+            if (slot == menuItemSlot(screen, "close", 8)) { player.closeInventory(); return; }
             ChampionshipTeam team = holder.teams.get(slot);
-            if (team != null && session.area() instanceof BaseMultiTeamGameInstance multi) {
-                Player target = team.getOnlinePlayers().stream().findFirst().orElse(null);
-                if (target != null) player.teleportAsync(target.getLocation());
+            if (team != null && session.area() instanceof BaseMultiTeamGameInstance) {
                 sessions.put(player.getUniqueId(), session.withTeam(team.getId()));
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, .8F, 1.2F);
+                if (holder.screen == ControlScreen.TEAM_VISIBILITY) {
+                    plugin.getVisibilityManager().showOnlyTeams(player.getUniqueId(), Set.of(team.getId()));
+                    feedback(player, GuiConfig.text("spectator.copy.visibility-team",
+                            Map.of("team", team.getName())), NamedTextColor.GOLD, 1.2F);
+                } else {
+                    Player target = team.getOnlinePlayers().stream().findFirst().orElse(null);
+                    if (target != null) player.teleportAsync(target.getLocation());
+                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, .8F, 1.2F);
+                }
+                player.closeInventory();
             }
             return;
         }
-        switch (slot) {
-            case 0 -> toggleNightVision(player, session);
-            case 1 -> {
-                SpectatorSession updated = session.withFollowing(!session.following());
-                sessions.put(player.getUniqueId(), updated);
-                feedback(player, GuiConfig.text("spectator.controls.player-tracking-has-been") + (updated.following() ? GuiConfig.text("spectator.controls.turn-on") : GuiConfig.text("spectator.controls.close")),
-                        updated.following() ? NamedTextColor.GREEN : NamedTextColor.RED,
-                        updated.following() ? 1.2F : 0.8F);
-            }
-            case 2 -> { holder.screen = ControlScreen.PLAYERS; refresh(holder); return; }
-            case 3 -> { holder.screen = ControlScreen.TEAMS; refresh(holder); return; }
-            case 4 -> togglePlayers(player, session);
-            case 5 -> toggleTeam(player, session);
-            case 6 -> adjustFlySpeed(player, rightClick ? -.05F : .05F);
-            case 7 -> { player.closeInventory(); openMainMenu(player); return; }
-            case 8 -> { player.closeInventory(); return; }
-            default -> { return; }
+        if (slot == menuItemSlot("visibility", "show-all", 2)) {
+            plugin.getVisibilityManager().clearManualOverrides(player.getUniqueId());
+            feedback(player, GuiConfig.text("spectator.copy.visibility-all"), NamedTextColor.GREEN, 1.2F);
+            player.closeInventory();
+        } else if (slot == menuItemSlot("visibility", "show-player", 4)) {
+            openControlScreen(player, ControlScreen.PLAYER_VISIBILITY);
+        } else if (slot == menuItemSlot("visibility", "show-team", 6)) {
+            openControlScreen(player, ControlScreen.TEAM_VISIBILITY);
+        } else if (slot == menuItemSlot("visibility", "close", 8)) {
+            player.closeInventory(); return;
         }
-        refresh(holder);
-    }
-
-    private void togglePlayers(Player viewer, SpectatorSession session) {
-        List<Player> targets = playersInArea(session.area(), viewer.getUniqueId());
-        boolean hide = targets.stream().anyMatch(target -> !plugin.getVisibilityManager().isPlayerHidden(viewer.getUniqueId(), target.getUniqueId()));
-        for (Player target : targets) plugin.getVisibilityManager().setPlayerHidden(viewer.getUniqueId(), target.getUniqueId(), hide);
-    }
-
-    private void toggleTeam(Player viewer, SpectatorSession session) {
-        if (session.selectedTeamId() == null) return;
-        boolean hide = !plugin.getVisibilityManager().isTeamHidden(viewer.getUniqueId(), session.selectedTeamId());
-        plugin.getVisibilityManager().setTeamHidden(viewer.getUniqueId(), session.selectedTeamId(), hide);
     }
 
     private List<Player> playersInArea(BaseGameInstance area, UUID viewerId) {
@@ -797,19 +767,55 @@ public final class SpectatorManager extends BaseManager implements Listener {
                 .sorted(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER)).toList();
     }
 
-    private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
-        ItemStack stack = new ItemStack(material);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(name.decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
-            meta.setEnchantmentGlintOverride(glint);
-            stack.setItemMeta(meta);
-        }
-        return stack;
+    private static GuiConfig.MenuSpec controlMenu(String screen) {
+        return GuiConfig.menu("spectator.menus." + screen, MAIN_SIZE, screen,
+                java.util.stream.IntStream.range(0, MAIN_SIZE).boxed().toList());
     }
 
-    private enum ControlScreen { MAIN, PLAYERS, TEAMS }
+    private static int menuItemSlot(String screen, String key, int fallback) {
+        int slot = GuiConfig.item("spectator.menus." + screen + ".items." + key, Map.of()).slot();
+        return slot < 0 ? fallback : slot;
+    }
+
+    private static int hotbarSlot(String key, int fallback) {
+        int slot = GuiConfig.item("spectator.hotbar." + key, Map.of()).slot();
+        return slot < 0 ? fallback : slot;
+    }
+
+    private static ItemStack configuredMenuItem(String screen, String key, Map<String, ?> placeholders,
+                                                String state, Material materialOverride) {
+        GuiConfig.ItemSpec configured = GuiConfig.item(
+                "spectator.menus." + screen + ".items." + key, state, placeholders);
+        return item(materialOverride == null ? configured.material() : materialOverride,
+                configured.title(), configured.lore(), configured.glint());
+    }
+
+    private static void setMenuItem(Inventory inventory, String screen, String key,
+                                    Map<String, ?> placeholders, String state) {
+        GuiConfig.ItemSpec configured = GuiConfig.item(
+                "spectator.menus." + screen + ".items." + key, state, placeholders);
+        if (configured.slot() >= 0 && configured.slot() < inventory.getSize())
+            inventory.setItem(configured.slot(),
+                    item(configured.material(), configured.title(), configured.lore(), configured.glint()));
+    }
+
+    private static void setHotbarItem(PlayerInventory inventory, String key,
+                                      Map<String, ?> placeholders, String state) {
+        GuiConfig.ItemSpec configured = GuiConfig.item("spectator.hotbar." + key, state, placeholders);
+        if (configured.slot() >= 0 && configured.slot() < 9)
+            inventory.setItem(configured.slot(),
+                    item(configured.material(), configured.title(), configured.lore(), configured.glint()));
+    }
+
+    private static String stateText(boolean enabled) {
+        return GuiConfig.text(enabled ? "spectator.copy.states.enabled" : "spectator.copy.states.disabled");
+    }
+
+    private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
+        return ink.ziip.championshipscore.api.gui.GuiMenu.item(material, name, lore, glint);
+    }
+
+    private enum ControlScreen { VISIBILITY, PLAYER_VISIBILITY, TEAM_VISIBILITY, TEAM_POSITION }
 
     private static final class ControlHolder implements InventoryHolder {
         private final UUID viewer;

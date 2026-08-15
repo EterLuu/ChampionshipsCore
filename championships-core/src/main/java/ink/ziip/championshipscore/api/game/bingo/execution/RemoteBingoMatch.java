@@ -54,6 +54,9 @@ final class RemoteBingoMatch {
     private final List<PendingAward> pendingAwards = new ArrayList<>();
     private final Map<UUID, CompletableFuture<Boolean>> spectatorAddAcks = new ConcurrentHashMap<>();
     private final Map<UUID, CompletableFuture<Boolean>> spectatorRemoveAcks = new ConcurrentHashMap<>();
+    /** Cells already claimed by any team, used to credit "first completion of the cell". */
+    private final Set<Integer> claimedCells = new HashSet<>();
+    private final Map<Integer, Integer> firstCompletionsByTeam = new ConcurrentHashMap<>();
     private final CompletableFuture<Void> terminal = new CompletableFuture<>();
     private boolean normalStopRequested;
     private long lastEventSeq;
@@ -227,6 +230,11 @@ final class RemoteBingoMatch {
         }
         ScoringDecision decision = scoring.apply(MatchMessages.completionObservation(event));
         if (!decision.accepted()) return true;
+        synchronized (this) {
+            if (claimedCells.add(decision.observation().cellIndex())) {
+                firstCompletionsByTeam.merge(decision.observation().teamId(), 1, Integer::sum);
+            }
+        }
         for (PlayerAward award : decision.awards()) {
             instance.applyAward(award.playerId(), award.points());
             pendingAwards.add(new PendingAward(decision.observation().seq(), award));
@@ -240,8 +248,9 @@ final class RemoteBingoMatch {
                 long durationMillis = decision.observation().observedGameTick() * 50L;
                 int completed = scoring.result().completedCells()
                         .getOrDefault(decision.observation().teamId(), 0);
+                int firsts = firstCompletionsByTeam.getOrDefault(decision.observation().teamId(), 0);
                 plugin.getDailyManager().statsManager().recordBingoProgress(
-                        instance, team, decision.completedLines(), completed);
+                        instance, team, decision.completedLines(), completed, firsts);
                 if (decision.completedLines() > 0) {
                     plugin.getDailyManager().statsManager().recordTeamMilestone(instance, team,
                             DailyRecordType.BINGO_FIRST_LINE, durationMillis,
