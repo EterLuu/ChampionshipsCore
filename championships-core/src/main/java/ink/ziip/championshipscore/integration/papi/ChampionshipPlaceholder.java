@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.daily.DailyPlayerSnapshot;
 import ink.ziip.championshipscore.api.daily.DailyStatSnapshot;
 import ink.ziip.championshipscore.api.daily.DailyLeaderboardEntry;
 import ink.ziip.championshipscore.api.daily.DailyLeaderboardMenu;
+import ink.ziip.championshipscore.api.daily.DailyMetric;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.ChampionshipTabText;
@@ -166,14 +167,26 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
             return MessageConfig.PLACEHOLDER_NONE;
         }
         DailyLeaderboardEntry entry = entries.get(rank - 1);
-        String value = entry.duration() ? DailyLeaderboardMenu.formatDuration((long) entry.value())
-                : Long.toString(Math.round(entry.value()));
+        String value = formatBoardValue(board, entry);
         if ("name".equals(field)) return entry.name();
         if ("value".equals(field)) return value;
         String template = entry.duration() ? MessageConfig.DAILY_LEADERBOARD_ROW_TIME
                 : MessageConfig.DAILY_LEADERBOARD_ROW_COUNT;
         return Utils.translateColorCodes(template.replace("%rank%", Integer.toString(rank))
                 .replace("%player%", entry.name()).replace("%value%", value));
+    }
+
+    /** Unified-metric boards format by metric kind (damage/percent/count); legacy boards by duration flag. */
+    private static String formatBoardValue(String board, DailyLeaderboardEntry entry) {
+        String normalized = board.toLowerCase(java.util.Locale.ROOT);
+        for (DailyMetric metric : DailyMetric.values()) {
+            String prefix = metric.name().toLowerCase(java.util.Locale.ROOT) + "_";
+            if (normalized.equals(metric.boardId(null)) || normalized.startsWith(prefix + "map_")) {
+                return DailyMetric.format(metric, entry.value());
+            }
+        }
+        return entry.duration() ? DailyLeaderboardMenu.formatDuration((long) entry.value())
+                : Long.toString(Math.round(entry.value()));
     }
 
     private String renderDailyStat(OfflinePlayer player, String key) {

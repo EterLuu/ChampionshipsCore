@@ -4,12 +4,8 @@ import com.zaxxer.hikari.HikariDataSource;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
-import ink.ziip.championshipscore.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -17,6 +13,14 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Connection pool plus the single entry point for schema provisioning.
+ *
+ * <p><b>数据库结构变更规范：</b>所有 schema 变更必须走
+ * {@link DatabaseMigrationController}：在 {@code MIGRATIONS} 注册表中<b>追加</b>新版本迁移
+ * （只追加，绝不修改或删除已有迁移），并同步更新 {@code database/schema.sql} 保持当前完整结构。
+ * 禁止在本类或任何 DAO 里直接执行 ALTER/CREATE 等结构变更语句——旧库升级只能通过迁移控制器完成。
+ */
 public class DatabaseManager extends BaseManager {
     private static final String DATA_POOL_NAME = "ChampionshipsCoreHikariPool";
     private String driverClass;
@@ -111,137 +115,13 @@ public class DatabaseManager extends BaseManager {
         dataSource.setDataSourceProperties(properties);
 
         try (Connection connection = dataSource.getConnection()) {
-            try (Statement statement = connection.createStatement()) {
-                try (InputStream schema = plugin.getResource("database/schema.sql")) {
-                    if (schema == null) {
-                        throw new IOException("Missing database/schema.sql");
-                    }
-                    for (String rawStatement : new String(schema.readAllBytes(), StandardCharsets.UTF_8).split(";")) {
-                        String executeStatement = rawStatement.trim();
-                        if (!executeStatement.isEmpty()) {
-                            statement.execute(executeStatement);
-                        }
-                    }
-                }
-                ensurePointTransactionSchema(connection);
-                ensureIdentityIndexes(connection);
-                ensureSharedDataIndexes(connection);
-                ensureDailyStatsSchema(connection);
-                ensureRemoteBingoSchema(connection);
-            } catch (SQLException | IOException e) {
-                throw new IllegalStateException("Failed to create database tables.", e);
-            }
+            // Schema upgrades are version-controlled; see DatabaseMigrationController.
+            new DatabaseMigrationController(plugin).migrate(connection);
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to establish a connection to the MySQL database.", e);
+        } catch (IllegalStateException e) {
+            throw e;
         }
-    }
-
-    private void ensurePointTransactionSchema(@NotNull Connection connection) throws SQLException {
-        DatabaseMetaData metadata = connection.getMetaData();
-        boolean hasColumn;
-        try (ResultSet columns = metadata.getColumns(connection.getCatalog(), null,
-                "player_points", "transactionId")) {
-            hasColumn = columns.next();
-        }
-        if (!hasColumn) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("ALTER TABLE `player_points` ADD COLUMN `transactionId` VARCHAR(36) NULL AFTER `id`");
-            }
-        }
-
-        boolean hasUniqueIndex = false;
-        try (ResultSet indexes = metadata.getIndexInfo(connection.getCatalog(), null,
-                "player_points", true, false)) {
-            while (indexes.next()) {
-                if ("uq_player_points_transaction_id".equalsIgnoreCase(indexes.getString("INDEX_NAME"))) {
-                    hasUniqueIndex = true;
-                    break;
-                }
-            }
-        }
-        if (!hasUniqueIndex) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("ALTER TABLE `player_points` ADD UNIQUE INDEX "
-                        + "`uq_player_points_transaction_id` (`transactionId`)");
-            }
-        }
-    }
-
-    private void ensureIdentityIndexes(@NotNull Connection connection) throws SQLException {
-        ensureUniqueIdentityIndex(connection, "players", "uuid", "uq_players_uuid");
-        ensureUniqueIdentityIndex(connection, "players", "username", "uq_players_username");
-        ensureUniqueIdentityIndex(connection, "team_members", "uuid", "uq_team_members_uuid");
-        ensureUniqueIdentityIndex(connection, "team_members", "username", "uq_team_members_username");
-    }
-
-    private void ensureSharedDataIndexes(@NotNull Connection connection) throws SQLException {
-        // These checks make concurrent administration on two Core instances resolve at MariaDB,
-        // rather than creating duplicate logical records before Redis invalidation arrives.
-        ensureUniqueIdentityIndex(connection, "teams", "name", "uq_teams_name");
-        ensureUniqueIdentityIndex(connection, "teams", "colorName", "uq_teams_color_name");
-        ensureUniqueIdentityIndex(connection, "game_status", "game", "uq_game_status_game");
-    }
-
-    private void ensureDailyStatsSchema(@NotNull Connection connection) throws SQLException {
-        // CREATE TABLE IF NOT EXISTS does not update the tables installed by older Core versions.
-        ensureColumn(connection, "daily_player_stats", "lineCount", "BIGINT NOT NULL DEFAULT 0");
-        ensureColumn(connection, "daily_player_stats", "completedTasks", "BIGINT NOT NULL DEFAULT 0");
-        ensureColumn(connection, "daily_player_stats", "maxCompletedTasks", "BIGINT NOT NULL DEFAULT 0");
-        ensureColumn(connection, "daily_match_results", "lineCount", "BIGINT NOT NULL DEFAULT 0");
-        ensureColumn(connection, "daily_match_results", "completedTasks", "BIGINT NOT NULL DEFAULT 0");
-    }
-
-    private void ensureRemoteBingoSchema(@NotNull Connection connection) throws SQLException {
-        // Existing installations predate multi-Core ownership. NULL legacy rows are intentionally
-        // not claimed by an arbitrary instance; new rows always carry the stable Core instance id.
-        ensureColumn(connection, "remote_bingo_matches", "ownerInstance", "VARCHAR(128) NULL");
-    }
-
-    private void ensureColumn(@NotNull Connection connection, @NotNull String table,
-                               @NotNull String column, @NotNull String definition) throws SQLException {
-        try (ResultSet columns = connection.getMetaData().getColumns(connection.getCatalog(), null, table, column)) {
-            if (columns.next()) return;
-        }
-        try (Statement statement = connection.createStatement()) {
-            statement.execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
-        }
-    }
-
-    private void ensureUniqueIdentityIndex(@NotNull Connection connection, @NotNull String table,
-                                           @NotNull String column, @NotNull String indexName) throws SQLException {
-        if (hasIndex(connection, table, indexName)) return;
-
-        int duplicateGroups;
-        String duplicateQuery = "SELECT COUNT(*) FROM (SELECT 1 FROM `" + table + "` GROUP BY `"
-                + column + "` HAVING COUNT(*) > 1) duplicate_values";
-        try (Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(duplicateQuery)) {
-            resultSet.next();
-            duplicateGroups = resultSet.getInt(1);
-        }
-
-        if (duplicateGroups > 0) {
-            plugin.getLogger().warning(Utils.formatModuleLog("Database", "IdentityIndex",
-                    "暂未创建唯一索引=" + indexName + "，表=" + table + " 字段=" + column
-                            + " 存在冲突组数=" + duplicateGroups + "；人工消歧后将在下次启动重试"));
-            return;
-        }
-
-        try (Statement statement = connection.createStatement()) {
-            statement.execute("ALTER TABLE `" + table + "` ADD UNIQUE INDEX `" + indexName
-                    + "` (`" + column + "`)");
-        }
-    }
-
-    private boolean hasIndex(@NotNull Connection connection, @NotNull String table,
-                             @NotNull String indexName) throws SQLException {
-        try (ResultSet indexes = connection.getMetaData().getIndexInfo(connection.getCatalog(), null,
-                table, true, false)) {
-            while (indexes.next()) {
-                if (indexName.equalsIgnoreCase(indexes.getString("INDEX_NAME"))) return true;
-            }
-        }
-        return false;
     }
 
     @NotNull

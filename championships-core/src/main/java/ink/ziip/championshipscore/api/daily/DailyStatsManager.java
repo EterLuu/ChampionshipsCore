@@ -380,8 +380,14 @@ public final class DailyStatsManager extends BaseManager {
     private Map<String, List<DailyLeaderboardEntry>> legacyBoards() {
         Map<String, List<DailyLeaderboardEntry>> rebuilt = new LinkedHashMap<>();
         Map<UUID, DailyStatSnapshot> bingoTotals = new HashMap<>();
+        Map<UUID, DailyStatSnapshot> allGameTotals = new HashMap<>();
         for (Map.Entry<StatKey, DailyStatSnapshot> entry : stats.entrySet()) {
             DailyStatSnapshot value = entry.getValue();
+            allGameTotals.merge(entry.getKey().player(), value,
+                    (prior, next) -> new DailyStatSnapshot(prior.gamesPlayed() + next.gamesPlayed(),
+                            prior.wins() + next.wins(), prior.lineCount() + next.lineCount(),
+                            prior.completedTasks() + next.completedTasks(),
+                            Math.max(prior.maxCompletedTasks(), next.maxCompletedTasks())));
             if (entry.getKey().game() == GameTypeEnum.Bingo) {
                 bingoTotals.compute(entry.getKey().player(), (ignored, prior) -> prior == null ? value
                         : new DailyStatSnapshot(prior.gamesPlayed() + value.gamesPlayed(),
@@ -390,6 +396,9 @@ public final class DailyStatsManager extends BaseManager {
                         Math.max(prior.maxCompletedTasks(), value.maxCompletedTasks())));
             }
         }
+        // Hologram-facing boards: overall win counts across every game and Bingo-only wins.
+        rebuilt.put("wins", rankMetric(allGameTotals, DailyStatSnapshot::wins));
+        rebuilt.put("bingo_wins", rankMetric(bingoTotals, DailyStatSnapshot::wins));
         rebuilt.put("bingo_lines", rankMetric(bingoTotals, DailyStatSnapshot::lineCount));
         rebuilt.put("bingo_completed_tasks", rankMetric(bingoTotals, DailyStatSnapshot::completedTasks));
         rebuilt.put("bingo_max_completed", rankMetric(bingoTotals, DailyStatSnapshot::maxCompletedTasks));
@@ -417,7 +426,7 @@ public final class DailyStatsManager extends BaseManager {
             for (Map.Entry<MapStatKey, DailyMapStat> entry : mapStats.entrySet()) {
                 MapStatKey key = entry.getKey();
                 if (key.game() != metric.game() || !key.map().equals(map)) continue;
-                if (entry.getValue().trackedGames() < metric.leaderboardMinGames()) continue;
+                if ( gateGames(entry.getValue(), metric) < metric.leaderboardMinGames()) continue;
                 double value = metricValue(key.player(), map, metric);
                 if (!Double.isNaN(value)) values.put(key.player(), value);
             }
@@ -429,7 +438,7 @@ public final class DailyStatsManager extends BaseManager {
             }
             for (UUID player : players) {
                 DailyMapStat stat = mapStat(player, metric.game(), null);
-                if (stat.trackedGames() < metric.leaderboardMinGames()) continue;
+                if (gateGames(stat, metric) < metric.leaderboardMinGames()) continue;
                 double value = metricValue(player, null, metric);
                 if (!Double.isNaN(value)) values.put(player, value);
             }
@@ -443,6 +452,14 @@ public final class DailyStatsManager extends BaseManager {
                 .map(entry -> new DailyLeaderboardEntry(entry.getKey(), displayName(entry.getKey()),
                         entry.getValue(), metric.format() == DailyMetric.Format.TIME))
                 .toList();
+    }
+
+    /**
+     * Rate boards gate on tracked games only (their numerators were not recorded before the
+     * per-map table existed); every other metric accepts the backfilled match-result history.
+     */
+    private static long gateGames(DailyMapStat stat, DailyMetric metric) {
+        return metric.isRate() ? stat.trackedGames() : stat.gamesPlayed();
     }
 
     private Set<String> mapsWithStats(GameTypeEnum game) {

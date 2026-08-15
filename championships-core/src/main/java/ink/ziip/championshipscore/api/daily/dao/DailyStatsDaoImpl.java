@@ -21,7 +21,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 
-/** JDBC implementation following the same DAO boundary as player, team and rank persistence. */
+/**
+ * JDBC implementation following the same DAO boundary as player, team and rank persistence.
+ *
+ * <p><b>注意：</b>这里的语句只做数据读写。涉及结构变更（新表 / 新列 / 新索引）时，必须同时在
+ * {@link ink.ziip.championshipscore.database.DatabaseMigrationController} 的 MIGRATIONS 中
+ * 追加新版本迁移，并同步更新 {@code database/schema.sql}，否则已部署的旧库不会升级。
+ */
 public final class DailyStatsDaoImpl implements DailyStatsDao {
     private final ChampionshipsCore plugin = ChampionshipsCore.getInstance();
 

@@ -1,3 +1,15 @@
+-- =====================================================================
+-- 数据库结构变更规范（务必阅读）：
+-- 本文件只服务全新安装（由 DatabaseMigrationController 的 v1 baseline 执行，
+-- 全部语句必须保持 IF NOT EXISTS 幂等）。
+-- 任何结构变更（新表 / 新列 / 新索引 / 修改定义）时，必须：
+--   1. 同步更新本文件，保持"当前完整结构"；且
+--   2. 在 ink.ziip.championshipscore.database.DatabaseMigrationController 的
+--      MIGRATIONS 注册表中【追加】下一个版本号的迁移（只追加，绝不修改或
+--      删除已有迁移）。
+-- 只改本文件不改迁移控制器的话，已部署的旧库不会升级。
+-- =====================================================================
+
 -- Set the storage engine
 SET DEFAULT_STORAGE_ENGINE = InnoDB;
 
