@@ -624,7 +624,7 @@ public class GameManager extends BaseManager {
         activateFinaleAudience(area);
     }
 
-    /** Compatibility API retained for integrations which used the old Dodgebolt-specific name. */
+    /** Compatibility API for integrations using the legacy Dodgebolt-specific name. */
     public synchronized void spectateDodgeboltFinal(@NotNull DodgeboltArea area,
                                                      @NotNull ChampionshipTeam rightTeam,
                                                      @NotNull ChampionshipTeam leftTeam) {
@@ -960,7 +960,6 @@ public class GameManager extends BaseManager {
                 return false;
         }
         participants.addAll(additionalPlayers);
-        // An empty roster used to advance the arena through a convincing but unplayable fake match.
         if (participants.isEmpty()) return false;
         for (UUID uuid : participants)
             if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode)) return false;

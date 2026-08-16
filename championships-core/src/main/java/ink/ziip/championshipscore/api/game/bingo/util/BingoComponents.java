@@ -9,8 +9,8 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Builds client-side translatable {@link Component}s for items, advancements, statistics and entities,
- * so names render in each player's own locale. Ported from BingoReloaded's ComponentUtils, trimmed to
- * the Paper-only key logic the task system needs.
+ * so names render in each player's own locale, using the Paper-only translation keys the task
+ * system needs.
  */
 public final class BingoComponents {
     private BingoComponents() {

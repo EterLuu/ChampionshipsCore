@@ -267,7 +267,7 @@ public class BuildMartHandler extends BaseListener {
     // ── build zone protection + validation ──────────────────────────────────────────────────────
 
     /**
-     * No placement in the hub. Builds are no longer auto-validated on placement; players commit a plot
+     * No placement in the hub. Builds are not auto-validated on placement; players commit a plot
      * explicitly via the physical submit buttons (see {@link BuildMartArea#submitSlot}).
      */
     @EventHandler(ignoreCancelled = true)

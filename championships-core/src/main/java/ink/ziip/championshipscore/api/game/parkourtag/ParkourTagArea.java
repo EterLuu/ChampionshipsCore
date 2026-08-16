@@ -47,7 +47,6 @@ import java.util.logging.Level;
 public class ParkourTagArea extends BasePairedGameInstance {
     @Getter
     private int timer;
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
 
     @Getter
@@ -163,7 +162,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
         cleanDroppedItems();
         match = null;
         windChargeUsedTeams.clear();
-        startGamePreparationTask = null;
         startGameProgressTask = null;
     }
 
@@ -182,16 +180,11 @@ public class ParkourTagArea extends BasePairedGameInstance {
         startGameIntroduction(this::startFormalPreparation);
     }
 
-    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    /** Normal preparation: arena reset + announcement, then immediate cage assignment and countdown. */
     private void startFormalPreparation() {
 
         windChargeUsedTeams.clear();
 
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        if (match != null) {
-            match.getRight().teleportAllPlayers(match.getRightPrepareSpot());
-            match.getLeft().teleportAllPlayers(match.getLeftPrepareSpot());
-        }
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
@@ -199,19 +192,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         announceGamePreparation(MessageConfig.PARKOUR_TAG_START_PREPARATION,
                 MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE, MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
 
-        timer = 20;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            showPreparationCountdown(timer);
-
-            if (timer == 0) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     protected void startGameProgress() {
@@ -327,8 +308,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
@@ -860,12 +839,13 @@ public class ParkourTagArea extends BasePairedGameInstance {
         // Recreate target/viewer entity-id relationships after the reconnecting client has spawned.
         scheduler.runTaskLater(plugin, this::syncAllParkourTagGlows, 2L);
 
-        if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            teleportPlayerToPrepareSpotLocation(player);
+        if (getGameStageEnum() == GameStageEnum.PREPARATION && isIntroductionPhase()) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
             return;
         }
 
-        if (getGameStageEnum() == GameStageEnum.COUNTDOWN && match != null) {
+        if ((getGameStageEnum() == GameStageEnum.COUNTDOWN || getGameStageEnum() == GameStageEnum.PREPARATION)
+                && match != null) {
             if (match.isChaser(player)) {
                 player.teleport(player.getUniqueId().equals(match.getRightAreaChaser())
                         ? match.getRightAreaChaserSpawn() : match.getLeftAreaChaserSpawn());
@@ -913,27 +893,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
             }
         }
         super.clearSpectatorGameMode(player);
-    }
-
-    private void teleportPlayerToPrepareSpotLocation(Player player) {
-        // During the rule-introduction phase everyone roams from the introduction spawn point.
-        if (isIntroductionPhase()) {
-            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
-            return;
-        }
-        ParkourTagMatch match = matchOf(player);
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (match != null && team != null) {
-            Location target = team.equals(match.getRight()) ? match.getRightPrepareSpot()
-                    : team.equals(match.getLeft()) ? match.getLeftPrepareSpot() : null;
-            if (target != null) {
-                player.teleport(target);
-                scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
-                return;
-            }
-        }
-        player.teleport(getSpectatorSpawnLocation());
-        scheduler.runTask(plugin, () -> player.setGameMode(GameMode.SPECTATOR));
     }
 
     @Override

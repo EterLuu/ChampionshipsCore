@@ -64,7 +64,7 @@ public abstract class BaseGameInstance {
     private volatile boolean disposed;
 
     /** Duration (seconds) of the optional rule-introduction phase preceding the normal preparation. */
-    protected static final int INTRODUCTION_DURATION = 45;
+    protected static final int INTRODUCTION_DURATION = 90;
     private static final int INTRODUCTION_TITLE_DURATION_SECONDS = 5;
     private static final int INTRODUCTION_FIRST_RULE_SECOND = 10;
     private static final int INTRODUCTION_DEFAULT_RULE_INTERVAL_SECONDS = 10;
@@ -490,7 +490,7 @@ public abstract class BaseGameInstance {
             return CompletableFuture.completedFuture(false);
         }
         for (Player player : editWorld.getPlayers()) {
-            player.teleport(CCConfig.LOBBY_LOCATION);
+            player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
         }
 
         // Unload world but not remove files
@@ -746,6 +746,14 @@ public abstract class BaseGameInstance {
         return CCConfig.LOBBY_LOCATION;
     }
 
+    /**
+     * Lobby spawn scattered horizontally around the configured centre for one player, shared with the
+     * daily-mode lobby routing via {@link Utils#getScatteredLobbyLocation(Location, Player)}.
+     */
+    private Location getScatteredLobbyLocation(@NotNull Player player) {
+        return Utils.getScatteredLobbyLocation(getLobbyLocation(), player);
+    }
+
     /** True while the visible result phase still owns the participant roster. */
     public boolean isPostGamePending() {
         return postGamePending;
@@ -763,7 +771,7 @@ public abstract class BaseGameInstance {
         player.setFallDistance(0f);
         player.setLevel(0);
         if (teleport && getLobbyLocation() != null && getLobbyLocation().getWorld() != null)
-            player.teleport(getLobbyLocation());
+            player.teleport(getScatteredLobbyLocation(player));
         player.setGameMode(GameMode.ADVENTURE);
     }
 
@@ -888,14 +896,12 @@ public abstract class BaseGameInstance {
                 INTRODUCTION_TITLE_DURATION_SECONDS * 20);
 
         final int sectionCount = rules.size();
-        // The first section is always sent at t=10s. Normal three-section introductions then use
-        // t=10s/20s/30s; unusually long rule sets tighten only the later interval so the first section
-        // never moves earlier than the promised ten-second mark.
+        // The first section is always sent at t=10s; the rest are spread evenly across the remaining
+        // time so the last section lands shortly before the phase ends, whatever the section count.
         final int availableAfterFirst = INTRODUCTION_DURATION - INTRODUCTION_FIRST_RULE_SECOND - 1;
         final int interval = sectionCount <= 1
                 ? INTRODUCTION_DEFAULT_RULE_INTERVAL_SECONDS
-                : Math.max(1, Math.min(INTRODUCTION_DEFAULT_RULE_INTERVAL_SECONDS,
-                availableAfterFirst / (sectionCount - 1)));
+                : Math.max(1, availableAfterFirst / (sectionCount - 1));
         final int[] remain = {INTRODUCTION_DURATION};
 
         introductionTask = scheduler.runTaskTimer(plugin, () -> {
@@ -947,7 +953,9 @@ public abstract class BaseGameInstance {
             player.setFallDistance(0f);
             player.setFireTicks(0);
             Location lobby = getLobbyLocation();
-            if (lobby != null && lobby.getWorld() != null)
+            // A reconnecting participant normally already stands in the lobby where they left it; only
+            // pull them to the lobby spawn when they are somewhere else entirely.
+            if (lobby != null && lobby.getWorld() != null && !player.getWorld().equals(lobby.getWorld()))
                 player.teleport(lobby);
             return true;
         }
@@ -1256,7 +1264,7 @@ public abstract class BaseGameInstance {
         player.setCollidable(false);
     }
 
-    /** Called by the unified spectator manager when an area legacy path requests spectator mode. */
+    /** Spectator-mode entry point invoked by the spectator manager on behalf of area-level requests. */
     public final void applyManagedSpectatorPresentation(@NotNull Player player) {
         applySpectatorGameMode(player);
     }
@@ -1373,7 +1381,7 @@ public abstract class BaseGameInstance {
         if (spectators.contains(uuid)) {
             spectators.remove(player.getUniqueId());
             removePlayerFromBossBars(player);
-            player.teleport(getLobbyLocation());
+            player.teleport(getScatteredLobbyLocation(player));
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
             championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
                 clearSpectatorGameMode(player);

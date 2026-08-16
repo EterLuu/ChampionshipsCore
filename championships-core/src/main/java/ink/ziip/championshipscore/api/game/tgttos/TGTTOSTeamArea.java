@@ -39,7 +39,6 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
     private final Map<ChampionshipTeam, Integer> teamArrivedPlayers = new ConcurrentHashMap<>();
     @Getter
     private int timer;
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     private int arrivedTeamNumbers = 0;
 
@@ -89,7 +88,6 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
             }
         }
 
-        startGamePreparationTask = null;
         startGameProgressTask = null;
     }
 
@@ -102,7 +100,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
         startGameIntroduction(this::startFormalPreparation);
     }
 
-    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    /** Normal preparation: gather at the spectator spawn, runs after the rule-introduction phase. */
     private void startFormalPreparation() {
 
         teleportAllPlayers(getSpectatorSpawnLocation());
@@ -113,19 +111,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
         announceGamePreparation(MessageConfig.TGTTOS_START_PREPARATION,
                 MessageConfig.TGTTOS_START_PREPARATION_TITLE, MessageConfig.TGTTOS_START_PREPARATION_SUBTITLE);
 
-        timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            showPreparationCountdown(timer);
-
-            if (timer == 0) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     protected void startGameProgress() {
@@ -174,9 +160,6 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
     public void endGame() {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
-
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
 
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();

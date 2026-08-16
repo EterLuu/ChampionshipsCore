@@ -47,7 +47,6 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     private final Map<Block, Integer> pendingBlockRemovals = new ConcurrentHashMap<>();
     @Getter
     private int timer;
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     private BukkitTask handlePlayerMoveTask;
     private BukkitTask tntGeneratorTask;
@@ -92,7 +91,6 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         deathPlayer.clear();
         pendingBlockRemovals.clear();
 
-        startGamePreparationTask = null;
         startGameProgressTask = null;
         handlePlayerMoveTask = null;
         tntGeneratorTask = null;
@@ -237,19 +235,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         announceGamePreparation(MessageConfig.TNT_RUN_START_PREPARATION,
                 MessageConfig.TNT_RUN_START_PREPARATION_TITLE, MessageConfig.TNT_RUN_START_PREPARATION_SUBTITLE);
 
-        timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            showPreparationCountdown(timer);
-
-            if (timer == 5) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     public void startGameProgress() {
@@ -484,8 +470,6 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
         if (handlePlayerMoveTask != null)

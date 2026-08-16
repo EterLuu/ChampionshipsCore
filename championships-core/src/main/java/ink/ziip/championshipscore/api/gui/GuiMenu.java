@@ -25,7 +25,7 @@ import java.util.UUID;
  *
  * <p>Concrete menus extend this class (instead of declaring their own {@code implements
  * InventoryHolder} inner holder) and inherit the viewer/pagination state plus the common item,
- * border and slot helpers that were previously duplicated in ~10 menu classes.</p>
+ * border and slot helpers.</p>
  */
 public abstract class GuiMenu implements InventoryHolder {
     protected final UUID viewer;

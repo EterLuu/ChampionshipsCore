@@ -43,7 +43,6 @@ import java.util.logging.Level;
 public class BattleBoxArea extends BasePairedGameInstance {
     @Getter
     private int timer;
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     private BukkitTask woolCheckerTask;
 
@@ -145,7 +144,6 @@ public class BattleBoxArea extends BasePairedGameInstance {
         match = null;
         playerWeaponKit.clear();
 
-        startGamePreparationTask = null;
         startGameProgressTask = null;
         woolCheckerTask = null;
     }
@@ -159,35 +157,20 @@ public class BattleBoxArea extends BasePairedGameInstance {
         startGameIntroduction(this::startFormalPreparation);
     }
 
-    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    /** Normal preparation: arena reset + announcement, then immediate spawn assignment and countdown. */
     private void startFormalPreparation() {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         if (match != null) {
-            match.getRight().teleportAllPlayers(match.getRightPrepareSpot());
-            match.getLeft().teleportAllPlayers(match.getLeftPrepareSpot());
             match.resetCenterWool();
         }
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
         resetPlayerHealthFoodEffectLevelInventory();
 
         announceGamePreparation(MessageConfig.BATTLE_BOX_START_PREPARATION,
                 MessageConfig.BATTLE_BOX_START_PREPARATION_TITLE, MessageConfig.BATTLE_BOX_START_PREPARATION_SUBTITLE);
 
-        timer = 20;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            showPreparationCountdown(timer);
-
-            if (timer == 0) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     protected void startGameProgress() {
@@ -253,8 +236,6 @@ public class BattleBoxArea extends BasePairedGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
         if (woolCheckerTask != null)
@@ -372,12 +353,12 @@ public class BattleBoxArea extends BasePairedGameInstance {
         if (notAreaPlayer(player))
             return;
 
-        if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            teleportPlayerToPrepareSpotLocation(player);
+        if (getGameStageEnum() == GameStageEnum.PREPARATION && isIntroductionPhase()) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
             return;
         }
 
-        if (getGameStageEnum() == GameStageEnum.COUNTDOWN) {
+        if (getGameStageEnum() == GameStageEnum.COUNTDOWN || getGameStageEnum() == GameStageEnum.PREPARATION) {
             BattleBoxMatch match = matchOf(player);
             ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
             if (match != null && team != null) {
@@ -388,27 +369,6 @@ public class BattleBoxArea extends BasePairedGameInstance {
         }
         player.teleport(getSpectatorSpawnLocation());
         player.setGameMode(getGameStageEnum() == GameStageEnum.END ? GameMode.ADVENTURE : GameMode.SPECTATOR);
-    }
-
-    private void teleportPlayerToPrepareSpotLocation(Player player) {
-        // During the rule-introduction phase everyone roams from the introduction spawn point.
-        if (isIntroductionPhase()) {
-            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
-            return;
-        }
-        BattleBoxMatch match = matchOf(player);
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (match != null && team != null) {
-            Location target = team.equals(match.getRight()) ? match.getRightPrepareSpot()
-                    : team.equals(match.getLeft()) ? match.getLeftPrepareSpot() : null;
-            if (target != null) {
-                player.teleport(target);
-                scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
-                return;
-            }
-        }
-        player.teleport(getSpectatorSpawnLocation());
-        scheduler.runTask(plugin, () -> player.setGameMode(GameMode.SPECTATOR));
     }
 
     private void giveItemToAllGamePlayers() {

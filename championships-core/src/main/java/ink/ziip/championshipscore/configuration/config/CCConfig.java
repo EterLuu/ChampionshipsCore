@@ -24,7 +24,7 @@ public class CCConfig extends BaseConfigurationFile {
         return 16;
     }
 
-    /** Moves the formerly Bingo-owned Redis connection into the shared Core infrastructure section. */
+    /** Migrates the Bingo-owned Redis connection into the shared Core infrastructure section. */
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdated) throws IOException {
         migrateLegacyRedisConfiguration(outdated);

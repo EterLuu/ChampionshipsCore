@@ -99,8 +99,8 @@ public final class ArenaPreparer {
      * One tight bounding box per copy: copy {@code i} spans {@code [origin(i), origin(i)+size]}, where
      * {@code size} is the schematic's block dimensions ({@code WorldEditManager#getSchematicDimensions}).
      * Unlike a single enclosing box this excludes the empty gaps between copies, so each sub-arena gets its
-     * own boundary (a player is in-bounds only inside some copy). Replaces the legacy hand-drawn
-     * {@code area-pos}. Empty for {@code count < 1}.
+     * own boundary (a player is in-bounds only inside some copy); boundary checks use these boxes
+     * rather than the configured {@code area-pos}. Empty for {@code count < 1}.
      */
     public static List<BoundingBox> copyBoxes(ArenaGrid grid, int count, Vector size) {
         List<BoundingBox> boxes = new ArrayList<>();

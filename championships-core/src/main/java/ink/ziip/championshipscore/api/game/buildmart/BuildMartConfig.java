@@ -58,10 +58,6 @@ public class BuildMartConfig extends BaseGameConfig {
     @ConfigOption(path = "timer")
     private int timer = 720;
 
-    /** Preparation countdown before the round starts, in seconds. */
-    @ConfigOption(path = "prepare-time")
-    private int prepareTime = 10;
-
     /** Number of playable team bases physically stamped into this map (copies 1..N). */
     @ConfigOption(path = "base-count")
     private int baseCount = 8;
@@ -184,7 +180,7 @@ public class BuildMartConfig extends BaseGameConfig {
         return max.subtract(min).add(new Vector(1, 1, 1));
     }
 
-    /** Legacy whole-map boundary fields; retained for old configurations but no longer used by gameplay. */
+    /** Legacy whole-map boundary fields, parsed for old configurations but unused by gameplay. */
     @ConfigOption(path = "area-pos1", nullable = true)
     private Vector areaPos1;
 

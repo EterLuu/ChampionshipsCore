@@ -203,7 +203,7 @@ public record StatisticHandle(@NotNull Statistic statistic, @Nullable EntityType
             case INTERACT_WITH_LOOM -> Material.LOOM;
             case INTERACT_WITH_STONECUTTER -> Material.STONECUTTER;
             case BELL_RING -> Material.BELL;
-            case RAID_TRIGGER -> Material.OMINOUS_BOTTLE; // raids are now started by drinking an ominous bottle
+            case RAID_TRIGGER -> Material.OMINOUS_BOTTLE; // raids are started by drinking an ominous bottle
             case RAID_WIN -> Material.OMINOUS_BOTTLE;
             case INTERACT_WITH_ANVIL -> Material.ANVIL;
             case INTERACT_WITH_GRINDSTONE -> Material.GRINDSTONE;

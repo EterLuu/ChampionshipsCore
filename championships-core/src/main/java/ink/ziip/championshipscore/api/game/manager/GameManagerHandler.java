@@ -86,7 +86,7 @@ public class GameManagerHandler extends BaseListener {
                 warnLobbyUnavailable();
                 return;
             }
-            player.teleport(CCConfig.LOBBY_LOCATION);
+            player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
             championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
                 player.setGameMode(GameMode.ADVENTURE);
@@ -142,7 +142,7 @@ public class GameManagerHandler extends BaseListener {
         } else if (!world.equals(CCConfig.LOBBY_LOCATION.getWorld())) {
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
             championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.teleport(CCConfig.LOBBY_LOCATION);
+                player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
             });
         }
         // The lobby is always adventure, including reconnects that already spawned in its world.
@@ -168,7 +168,7 @@ public class GameManagerHandler extends BaseListener {
 
         player.setFallDistance(0F);
         player.setVelocity(new org.bukkit.util.Vector());
-        player.teleport(CCConfig.LOBBY_LOCATION);
+        player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
     }
 
     @EventHandler(ignoreCancelled = true)

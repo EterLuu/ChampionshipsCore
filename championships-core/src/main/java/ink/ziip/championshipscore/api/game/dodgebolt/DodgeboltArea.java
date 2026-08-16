@@ -73,8 +73,6 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     private int shrinkWarningSeconds;
     private boolean shrinkWarningVisible;
     private ChampionshipTeam firstRoundArrowTeam;
-    private BukkitTask preparationTask;
-    private BukkitTask restartTask;
     private BukkitTask flightMonitorTask;
     private BukkitTask shrinkTask;
     private BukkitTask championFireworksTask;
@@ -142,28 +140,18 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         champion = null;
         paused = false;
         restoreParticipantCollisions();
-        resetPlayerHealthFoodEffectLevelInventory();
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        teleportTeamsToRoundSpawns();
         announceGamePreparation(MessageConfig.DODGEBOLT_START_PREPARATION,
                 MessageConfig.DODGEBOLT_START_PREPARATION_TITLE,
                 MessageConfig.DODGEBOLT_START_PREPARATION_SUBTITLE);
-
-        final int[] remaining = {10};
-        preparationTask = scheduler.runTaskTimer(plugin, () -> {
-            timer = remaining[0];
-            showPreparationCountdown(timer);
-            if (timer == 0) {
-                cancelTask(preparationTask);
-                preparationTask = null;
-                prepareRound();
-                return;
-            }
-            remaining[0]--;
-        }, 0L, 20L);
+        prepareRound();
     }
 
     private void prepareRound() {
+        prepareRound(5);
+    }
+
+    /** @param countdownSeconds seconds the final countdown runs before the round goes live. */
+    private void prepareRound(int countdownSeconds) {
         cleanupRoundEntities();
         restorePlatform();
         shrinkLevel = 0;
@@ -182,7 +170,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         teleportTeamsToRoundSpawns();
         giveBowsToAlivePlayers();
         updateScoreBar();
-        startFinalCountdown(MessageConfig.DODGEBOLT_GAME_START_SOON_TITLE,
+        startFinalCountdown(countdownSeconds, MessageConfig.DODGEBOLT_GAME_START_SOON_TITLE,
                 MessageConfig.DODGEBOLT_GAME_START_TITLE,
                 MessageConfig.DODGEBOLT_GAME_START_SUBTITLE,
                 this::beginRound);
@@ -380,7 +368,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         paused = false;
         setGameStageEnum(GameStageEnum.STOPPING);
         sendMessageToAllGamePlayers(MessageConfig.DODGEBOLT_ROUND_RESTARTED);
-        scheduler.runTaskLater(plugin, this::prepareRound, 20L);
+        scheduler.runTaskLater(plugin, () -> prepareRound(5), 20L);
         return true;
     }
 
@@ -428,22 +416,14 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             return;
         }
 
+        // The inter-round wait is folded into the final countdown: restart-delay seconds plus
+        // the normal pre-round countdown, all spent frozen on the restored round spawns.
         roundNumber++;
-        final int[] remaining = {Math.max(1, getGameConfig().getRoundRestartDelay())};
-        restartTask = scheduler.runTaskTimer(plugin, () -> {
-            timer = remaining[0];
-            updateGameTimerBossBar(MessageConfig.DODGEBOLT_NEXT_ROUND
-                    .replace("%round%", String.valueOf(roundNumber))
-                    .replace("%time%", String.valueOf(timer)), timer,
-                    Math.max(1, getGameConfig().getRoundRestartDelay()));
-            if (timer == 0) {
-                cancelTask(restartTask);
-                restartTask = null;
-                prepareRound();
-                return;
-            }
-            remaining[0]--;
-        }, 0L, 20L);
+        int countdownSeconds = Math.max(1, getGameConfig().getRoundRestartDelay()) + 5;
+        prepareRound(countdownSeconds);
+        updateGameTimerBossBar(MessageConfig.DODGEBOLT_NEXT_ROUND
+                .replace("%round%", String.valueOf(roundNumber))
+                .replace("%time%", String.valueOf(countdownSeconds)), countdownSeconds, countdownSeconds);
     }
 
     private void finishMatch() {
@@ -854,12 +834,10 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     private void cancelRoundTasks() {
         cancelIntroduction();
         cancelFinalCountdown();
-        cancelTask(preparationTask);
-        cancelTask(restartTask);
         cancelTask(flightMonitorTask);
         cancelShrinkWarning();
         cancelTask(championFireworksTask);
-        preparationTask = restartTask = flightMonitorTask = null;
+        flightMonitorTask = null;
         championFireworksTask = null;
         cleanupRoundEntities();
     }

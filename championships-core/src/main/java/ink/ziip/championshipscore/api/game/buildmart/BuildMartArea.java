@@ -87,7 +87,6 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     /** Parsed base geometry cached by seat, so the move handler doesn't re-derive it per step. */
     private final Map<Integer, BuildMartBase> baseCache = new HashMap<>();
 
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     private BukkitTask materialRefillTask;
     private BukkitTask windVentTask;
@@ -119,7 +118,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         BuildMartBase base = getGameConfig().getBaseTemplate();
         boolean configured = getGameStageEnum() == GameStageEnum.WAITING
                 && teamCount > 0 && teamCount <= getGameConfig().getBaseCount()
-                && getGameConfig().getTimer() > 0 && getGameConfig().getPrepareTime() >= 0
+                && getGameConfig().getTimer() > 0
                 && geometry.getHub() != null
                 && getGameConfig().getHubPortalPoint() != null
                 && geometry.getHub().contains(getGameConfig().getHubPortalPoint().toVector())
@@ -148,7 +147,6 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetArea() {
-        startGamePreparationTask = null;
         startGameProgressTask = null;
         if (materialRefillTask != null) materialRefillTask.cancel();
         materialRefillTask = null;
@@ -215,7 +213,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         startGameIntroduction(this::startFormalPreparation);
     }
 
-    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    /** Normal preparation: seat assignment, runs after the rule-introduction phase. */
     private void startFormalPreparation() {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
 
@@ -229,19 +227,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         announceGamePreparation(MessageConfig.BUILD_MART_START_PREPARATION,
                 MessageConfig.BUILD_MART_START_PREPARATION_TITLE, MessageConfig.BUILD_MART_START_PREPARATION_SUBTITLE);
 
-        timer = getGameConfig().getPrepareTime();
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            showPreparationCountdown(timer);
-
-            if (timer == 0) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     protected void startGameProgress() {
@@ -273,7 +259,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         assignInitialNormalBlueprints();
         rotateGoldenBlueprint(false);
 
-        startFinalCountdown(MessageConfig.BUILD_MART_START_PREPARATION_TITLE,
+        // Ten seconds so every team can look around its base and the reference builds while frozen.
+        startFinalCountdown(10, MessageConfig.BUILD_MART_START_PREPARATION_TITLE,
                 MessageConfig.BUILD_MART_GAME_START_TITLE, MessageConfig.BUILD_MART_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
@@ -906,8 +893,6 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
         if (materialRefillTask != null)

@@ -19,10 +19,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Localised text for the bingo subsystem. Trimmed port of minebingo's MessageService: it keeps the
- * {@code global()} / {@code tr()} / {@code component()} surface the ported task and GUI code calls,
- * but is backed by Bukkit {@link YamlConfiguration} (whose dot-path lookups already resolve nested
- * keys like {@code task.collect}) instead of snakeyaml. Lang files live at
+ * Localised text for the bingo subsystem. Exposes the {@code global()} / {@code tr()} /
+ * {@code component()} surface the task and GUI code calls, backed by Bukkit {@link YamlConfiguration}
+ * (whose dot-path lookups already resolve nested keys like {@code task.collect}). Lang files live at
  * {@code <dataFolder>/bingo/lang/<locale>.yml}, seeded from the bundled jar resources on first run.
  */
 public final class MessageService {

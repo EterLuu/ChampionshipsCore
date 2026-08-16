@@ -83,7 +83,6 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
      * callers are expected to create/load the world through the admin world command first.
      */
     public boolean addArea(String name, String worldName) {
-        // Fixed-world games do not create a world in addArea; retain their established registration path.
         return addArea(name);
     }
 

@@ -7,14 +7,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Adapts CC's dynamic {@link ChampionshipTeam} to the two values the ported bingo mechanics need from
+ * Adapts CC's dynamic {@link ChampionshipTeam} to the two values the bingo mechanics need from
  * a team: a stable string id (used to key per-team completions on a {@code GameTask}) and an Adventure
  * {@link TextColor} (used to tint the card map and chest GUI).
  *
- * <p>minebingo modelled teams as a fixed enum carrying an {@code id()} and {@code textColor()}; CC
- * teams are created at runtime from the database, so these are derived here instead. The id is the
- * team name (CC's {@link ChampionshipTeam} equals/hashCode are keyed on the name, so it is unique and
- * stable); the colour is parsed from the team's raw {@code #RRGGBB} colour value.
+ * <p>CC teams are created at runtime from the database, so both values are derived on the fly.
+ * The id is the team name (CC's {@link ChampionshipTeam} equals/hashCode are keyed on the name, so it
+ * is unique and stable); the colour is parsed from the team's raw {@code #RRGGBB} colour value.
  */
 public final class BingoTeamAdapter {
     private BingoTeamAdapter() {

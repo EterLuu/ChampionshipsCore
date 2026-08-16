@@ -30,10 +30,8 @@ import java.util.function.Predicate;
  * selection. Category-aware means each generated card carries at most one task from any given
  * category, so a small family can't crowd out the rest of the tier.
  *
- * <p>Simplified port: the mode/remix-specific knobs (starter kit, seed tasks, nether fraction,
- * differential cards, difficulty weights) were dropped for CC's single fixed points mode. Difficulty
- * comes straight from each entry's tier; only the static tag layer plus per-round dimension excludes
- * /caps remain.
+ * <p>CC runs a single fixed points mode: difficulty comes straight from each entry's tier, and only
+ * the static tag layer plus per-round dimension excludes/caps apply.
  */
 public final class TaskGenerator {
     public record GeneratorSettings(long seed,

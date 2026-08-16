@@ -537,7 +537,7 @@ public class WorldManager extends BaseManager {
             return false;
 
         for (Player player : new ArrayList<>(world.getPlayers()))
-            player.teleport(CCConfig.LOBBY_LOCATION);
+            player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
         return plugin.getServer().unloadWorld(world, save);
     }
 

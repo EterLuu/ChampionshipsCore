@@ -53,8 +53,8 @@ public abstract class BaseConfigurationFile {
     }
 
     /**
-     * Loads bundled defaults, upgrades the raw on-disk file, and only then binds runtime fields.
-     * Validating before the upgrade made every newly added option look missing on the first boot.
+     * Loads bundled defaults, upgrades the raw on-disk file, and only then binds runtime fields:
+     * validating before the upgrade makes every option the upgrade introduces look missing on first boot.
      */
     public void initializeConfiguration(Path pluginFolder, boolean autoUpgrade) {
         initializeConfigurationChecked(pluginFolder, autoUpgrade);

@@ -37,9 +37,8 @@ import java.util.UUID;
  * {@link BingoCard} via per-team completion state on each {@link GameTask}. Holds points scoring and
  * per-player statistic baselines.
  *
- * <p>Simplified port for CC's single fixed points mode: cells never lock (every team may claim each
- * cell once, independently), so the differential-card, domination-lock, blind and starter-kit machinery
- * from minebingo is gone. Win/timeout resolution is left to the caller (the {@code BingoArea}).
+ * <p>CC runs a single fixed points mode: cells never lock (every team may claim each cell once,
+ * independently). Win/timeout resolution is left to the caller (the {@code BingoArea}).
  */
 public final class BingoRound {
     /** Points mode never locks cells: each team completes a cell once, independently. */

@@ -364,7 +364,7 @@ public final class DailyStatsManager extends BaseManager {
 
     private void rebuildLeaderboards() {
         Map<String, List<DailyLeaderboardEntry>> rebuilt = new LinkedHashMap<>();
-        // Legacy boards kept for PlaceholderAPI compatibility; the menus use DailyMetric boards now.
+        // Legacy boards kept for PlaceholderAPI compatibility; the menus use DailyMetric boards.
         rebuilt.putAll(legacyBoards());
         for (DailyMetric metric : DailyMetric.values()) {
             // Per-map boards.

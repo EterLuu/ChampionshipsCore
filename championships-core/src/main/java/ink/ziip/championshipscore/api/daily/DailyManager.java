@@ -18,6 +18,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.boss.BarColor;
@@ -741,8 +742,11 @@ public final class DailyManager extends BaseManager {
 
     private void prepareWaitingPlayer(Player player) {
         plugin.getGameManager().leaveSpectating(player);
-        if (CCConfig.LOBBY_LOCATION != null && CCConfig.LOBBY_LOCATION.getWorld() != null) {
-            player.teleport(CCConfig.LOBBY_LOCATION);
+        // Returning spectators are already routed back to the lobby by leaveSpectating; players who are
+        // already in the lobby keep their position, so queueing never yanks anyone across the lobby.
+        Location lobby = CCConfig.LOBBY_LOCATION;
+        if (lobby != null && lobby.getWorld() != null && !player.getWorld().equals(lobby.getWorld())) {
+            player.teleport(Utils.getScatteredLobbyLocation(lobby, player));
         }
         player.setGameMode(GameMode.ADVENTURE);
         syncLobbyItem(player);

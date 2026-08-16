@@ -38,7 +38,7 @@ public final class BuildMartMaterialManifest {
     /**
      * Synchronizes the manifest with configured snapshot files. Existing version-2 entries are reused while
      * their snapshot fingerprint and bounds remain unchanged; only new or replaced schematics are read.
-     * Version-1 manifests are rebuilt once so live-world edits captured by the old implementation are discarded.
+     * Version-1 manifests are rebuilt once, discarding live-world edits captured by the version-1 scanner.
      */
     public static boolean write(@NotNull ChampionshipsCore plugin, @NotNull BuildMartConfig config) {
         Map<UUID, ZoneInventory> cached = readCachedInventories(config);

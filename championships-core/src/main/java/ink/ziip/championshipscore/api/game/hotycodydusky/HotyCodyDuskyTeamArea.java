@@ -33,7 +33,6 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
     private final Map<ChampionshipTeam, Integer> teamDeathPlayers = new ConcurrentHashMap<>();
     @Getter
     private int timer;
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     private BukkitTask codySelectionTask;
     @Getter
@@ -60,8 +59,6 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
         if (codySelectionTask != null) {
@@ -127,7 +124,6 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
             codySelectionTask = null;
         }
 
-        startGamePreparationTask = null;
         startGameProgressTask = null;
     }
 
@@ -169,19 +165,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                 MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_TITLE,
                 MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE);
 
-        timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            showPreparationCountdown(timer);
-
-            if (timer == 0) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     protected void startGameProgress() {

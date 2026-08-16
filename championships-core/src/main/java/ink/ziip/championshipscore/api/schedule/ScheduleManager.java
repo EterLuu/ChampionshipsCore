@@ -487,7 +487,7 @@ public class ScheduleManager extends BaseManager {
         });
     }
 
-    /** Compatibility API for integrations; the canonical command is now /cc finale dodgebolt start. */
+    /** Compatibility API for integrations; the canonical entry point is the /cc finale dodgebolt start command. */
     public void requestDodgeboltFinal(String requestedArea, ChampionshipTeam requestedRight,
                                       ChampionshipTeam requestedLeft, CommandSender requester) {
         requestFinale(GameTypeEnum.Dodgebolt, requestedArea,

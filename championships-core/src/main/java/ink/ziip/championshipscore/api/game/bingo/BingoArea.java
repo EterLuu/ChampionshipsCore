@@ -68,7 +68,6 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     private int timer;
     private long roundStartMillis;
 
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
     /** Scheduled re-enable of world PvP after the 3-minute grace; cancelled if the round ends early. */
     private BukkitTask pvpEnableTask;
@@ -110,7 +109,6 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         // unset). The static world is reloaded from the template each round via loadMap, which already
         // wipes any dropped items, so no explicit cleanup is needed here.
         round = null;
-        startGamePreparationTask = null;
         startGameProgressTask = null;
         if (pvpEnableTask != null) {
             pvpEnableTask.cancel();
@@ -130,7 +128,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         startGameIntroduction(this::startFormalPreparation);
     }
 
-    /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
+    /** Normal preparation: gather at the spectator spawn, runs after the rule-introduction phase. */
     private void startFormalPreparation() {
 
         teleportAllPlayers(getSpectatorSpawnLocation());
@@ -141,19 +139,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         announceGamePreparation(MessageConfig.BINGO_START_PREPARATION,
                 MessageConfig.BINGO_START_PREPARATION_TITLE, MessageConfig.BINGO_START_PREPARATION_SUBTITLE);
 
-        timer = getGameConfig().getPrepareTime();
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            showPreparationCountdown(timer);
-
-            if (timer == 0) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     protected void startGameProgress() {
@@ -511,8 +497,6 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
         if (pvpEnableTask != null) {

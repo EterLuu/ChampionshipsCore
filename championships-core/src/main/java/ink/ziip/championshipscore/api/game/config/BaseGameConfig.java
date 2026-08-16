@@ -287,8 +287,8 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) throws IOException {
         // Preserve every user-owned leaf, including game-specific custom sections which are not
-        // represented by @ConfigOption fields (for example Build Mart's base template). The new
-        // bundled template still supplies newly introduced paths, while its version marker wins.
+        // represented by @ConfigOption fields (for example Build Mart's base template). Paths the
+        // file lacks are supplied by the bundled template, whose version marker wins.
         for (String path : yamlConfiguration.getKeys(true)) {
             if ("dont-edit-this.version".equals(path)) continue;
             Object value = yamlConfiguration.get(path);

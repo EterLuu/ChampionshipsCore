@@ -199,7 +199,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
             return;
         }
         // Never expose vanilla SPECTATOR even for the one event tick. The presentation module owns the
-        // replacement Adventure state, so areas can continue to request elimination through the old API.
+        // replacement Adventure state; areas request elimination through the area-level API.
         event.setCancelled(true);
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (player.isOnline() && isSpectatorLike(uuid)) applyPresentation(player);

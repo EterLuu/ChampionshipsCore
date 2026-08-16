@@ -40,7 +40,6 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
     private List<String> teamRank = new ArrayList<>();
     @Getter
     private int timer;
-    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
 
     public SnowballShowdownTeamArea(ChampionshipsCore plugin, SnowballShowdownConfig snowballShowdownConfig) {
@@ -76,7 +75,6 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
         teamRank.clear();
         locationIterators.clear();
 
-        startGamePreparationTask = null;
         startGameProgressTask = null;
 
         World world = getSpectatorSpawnLocation().getWorld();
@@ -146,18 +144,7 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
         announceGamePreparation(MessageConfig.SNOWBALL_START_PREPARATION,
                 MessageConfig.SNOWBALL_START_PREPARATION_TITLE, MessageConfig.SNOWBALL_START_PREPARATION_SUBTITLE);
 
-        timer = 10;
-        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
-            showPreparationCountdown(timer);
-
-            if (timer == 0) {
-                if (startGamePreparationTask != null)
-                    startGamePreparationTask.cancel();
-                startGameProgress();
-                return;
-            }
-            timer--;
-        }, 0, 20L);
+        startGameProgress();
     }
 
     public void startGameProgress() {
@@ -201,8 +188,6 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return;
 
-        if (startGamePreparationTask != null)
-            startGamePreparationTask.cancel();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
