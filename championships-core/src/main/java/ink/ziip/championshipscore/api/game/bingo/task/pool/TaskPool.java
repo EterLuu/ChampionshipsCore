@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
+import ink.ziip.championshipscore.api.game.bingo.task.AllOfTask;
+import ink.ziip.championshipscore.api.game.bingo.task.EventTask;
 import ink.ziip.championshipscore.api.game.bingo.task.ItemTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
@@ -87,6 +89,20 @@ public final class TaskPool {
                              Difficulty difficulty, Dimension dimension, String category) {
             entries.add(new TaskPoolEntry(
                     new OneOfTask(items, display, name, count, dimension), difficulty, category));
+            return this;
+        }
+
+        // ── ALL_OF (collect the complete set) ──
+        public Builder allOf(Set<Material> items, Material display, String label, int count,
+                             Difficulty difficulty, Dimension dimension, String category) {
+            entries.add(new TaskPoolEntry(
+                    new AllOfTask(items, display, label, count, dimension), difficulty, category));
+            return this;
+        }
+
+        // ── EVENT (unified event objective: eat/die/wear/tame/breed/spy/effect/reach/…) ──
+        public Builder event(EventTask task, Difficulty difficulty, String category) {
+            entries.add(new TaskPoolEntry(task, difficulty, category));
             return this;
         }
 

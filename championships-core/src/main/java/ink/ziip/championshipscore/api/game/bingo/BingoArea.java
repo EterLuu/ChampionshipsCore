@@ -160,9 +160,9 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                 ink.ziip.championshipscore.api.game.bingo.card.CardSize.fromWidth(getGameConfig().getCardWidth()),
                 0L,
                 Set.of(TaskData.TaskType.ITEM, TaskData.TaskType.ITEM_SET,
-                        TaskData.TaskType.ADVANCEMENT, TaskData.TaskType.STATISTIC),
+                        TaskData.TaskType.ADVANCEMENT, TaskData.TaskType.STATISTIC, TaskData.TaskType.EVENT),
                 Set.of(),
-                Map.of(),
+                Map.of("kill", 2),
                 gameTeams,
                 getGameConfig().pointsArray(),
                 getGameConfig().getLineBonus(),
@@ -302,6 +302,33 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         for (GameTask done : round.tryCompleteStatistics(player, team, gameTime)) {
             announceCompletion(player, done);
         }
+        for (GameTask done : round.tryCompletePollableEvents(player, team, gameTime)) {
+            announceCompletion(player, done);
+        }
+    }
+
+    /** Routes a discrete EventTask signal through the same authoritative completion path. */
+    public void onEventSignal(Player player, String trigger, String param) {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || round == null || player == null) return;
+        if (notAreaPlayer(player)) return;
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (team == null) return;
+        round.tryCompleteEventSignal(player, team, trigger, param == null ? "" : param, roundSeconds())
+                .ifPresent(task -> announceCompletion(player, task));
+    }
+
+    public void recordEventDistinct(Player player, String bucket, String value) {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || round == null || player == null) return;
+        if (notAreaPlayer(player)) return;
+        round.eventTracker().recordDistinct(player, bucket, value);
+        checkPlayerProgress(player);
+    }
+
+    public void recordEventCount(Player player, String bucket) {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || round == null || player == null) return;
+        if (notAreaPlayer(player)) return;
+        round.eventTracker().increment(player, bucket);
+        checkPlayerProgress(player);
     }
 
     /**
@@ -326,8 +353,12 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         if (notAreaPlayer(player)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team == null) return;
+        round.eventTracker().increment(player, "advancement_count");
         round.tryCompleteAdvancement(player, team, advancement, roundSeconds())
                 .ifPresent(task -> announceCompletion(player, task));
+        for (GameTask done : round.tryCompletePollableEvents(player, team, roundSeconds())) {
+            announceCompletion(player, done);
+        }
     }
 
     /** Credits the completing player with the cell's points, credits any line bonus to every team

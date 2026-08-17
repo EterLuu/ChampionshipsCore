@@ -162,6 +162,14 @@ public final class GameTask {
         // Guard against block-only materials reaching the GUI: ItemStack(Material) throws for non-items.
         if (!material.isItem()) material = Material.PAPER;
         ItemStack stack = new ItemStack(material);
+        // Keep the advancement's own display components when possible - Voluntary Exile's icon is a
+        // white_banner carrying the ominous-banner pattern data, which a bare Material would lose.
+        if (data instanceof AdvancementTask advancement) {
+            ItemStack iconStack = advancement.displayIconStack();
+            if (iconStack != null && iconStack.getType() == material) {
+                stack = iconStack.clone();
+            }
+        }
         boolean lockedByOther = displayInfo.locksTasks() && isCompleted() && own == null;
         boolean active = own == null && !lockedByOther;
         boolean statistic = data.getType() == TaskData.TaskType.STATISTIC;
@@ -183,6 +191,16 @@ public final class GameTask {
             // Effect potions: stamp the base potion type so the chest-GUI item shows the right liquid colour.
             if (data instanceof PotionTask potion && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
                 org.bukkit.potion.PotionType type = potion.potionType();
+                if (type != null) pm.setBasePotionType(type);
+            }
+            // Event subjects shown as potions (die by magic -> splash potion of harming).
+            if (data instanceof EventTask event && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
+                org.bukkit.potion.PotionType type = event.displayPotionType();
+                if (type != null) pm.setBasePotionType(type);
+            }
+            // Advancement icons shown as potions (Local Brewery -> instant-health potion).
+            if (data instanceof AdvancementTask advancement && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
+                org.bukkit.potion.PotionType type = advancement.displayPotionType();
                 if (type != null) pm.setBasePotionType(type);
             }
             stack.setItemMeta(meta);

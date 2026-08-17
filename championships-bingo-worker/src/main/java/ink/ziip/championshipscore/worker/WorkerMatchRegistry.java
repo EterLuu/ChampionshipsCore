@@ -207,6 +207,30 @@ final class WorkerMatchRegistry {
         if (session != null) session.observeAdvancement(player, advancement);
     }
 
+    void observeEventSignal(Player player, String trigger, String param) {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        if (session != null) session.observeEventSignal(player, trigger, param == null ? "" : param);
+    }
+
+    void recordEventDistinct(Player player, String bucket, String value) {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        if (session != null) session.recordEventDistinct(player, bucket, value);
+    }
+
+    void recordEventCount(Player player, String bucket) {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        if (session != null) session.recordEventCount(player, bucket);
+    }
+
     Location respawnLocation(Player player) {
         WorkerMatchSession session;
         synchronized (this) {

@@ -4,8 +4,10 @@ import ink.ziip.championshipscore.api.game.bingo.card.BingoCard;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.game.RoundOutcome;
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
+import ink.ziip.championshipscore.api.game.bingo.task.AllOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.CardDisplayInfo;
 import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
+import ink.ziip.championshipscore.api.game.bingo.task.EventTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticTask;
@@ -30,6 +32,8 @@ import java.util.List;
  * {@link TaskImageAtlas}. Only redraws when the card state changes.
  */
 public final class BingoCardMapRenderer extends MapRenderer {
+    private static final Key OMINOUS_BANNER_ICON_KEY = Key.key("minecraft", "ominous_banner");
+    private static final Key HEALING_POTION_ICON_KEY = Key.key("minecraft", "healing_potion");
     private final BingoCard card;
     private final String teamId;
     private final TextColor teamColor;
@@ -88,18 +92,53 @@ public final class BingoCardMapRenderer extends MapRenderer {
     }
 
     private void drawTask(MapCanvas canvas, GameTask task, int gridX, int gridY) {
-        Key key = task.data.getDisplayMaterial(CardDisplayInfo.DEFAULT).key();
+        Key key;
+        if (task.data instanceof AdvancementTask advancement && advancement.usesOminousBannerIcon()) {
+            key = OMINOUS_BANNER_ICON_KEY;
+        } else if (task.data instanceof AdvancementTask advancement && advancement.usesHealingPotionIcon()) {
+            key = HEALING_POTION_ICON_KEY;
+        } else {
+            key = task.data.getDisplayMaterial(CardDisplayInfo.DEFAULT).key();
+        }
         int x = gridX * 24 + 4;
         int y = gridY * 24 + 4;
 
         boolean isStatistic = task.data instanceof StatisticTask;
+        boolean isEvent = task.data instanceof EventTask;
         if (task.data instanceof StatisticTask statisticTask) {
             Key cellKey = key;
-            if (statisticTask.statistic().hasEntity()) {
+            if (statisticTask.statistic().usesOminousBannerIcon()) {
+                cellKey = OMINOUS_BANNER_ICON_KEY;
+            } else if (statisticTask.statistic().hasEntity()) {
                 cellKey = statisticTask.statistic().entityType().key();
+            } else if (statisticTask.statistic().displayEntity() != null) {
+                cellKey = statisticTask.statistic().displayEntity().key();
             }
-            BufferedImage cell = TaskImageAtlas.statisticCell(cellKey, statisticTask.statistic().statisticType());
-            drawImage(canvas, x, y, cell, null);
+            if (statisticTask.usesAnyTemplate()) {
+                BufferedImage cell = TaskImageAtlas.statisticCell(cellKey, (BufferedImage) null);
+                drawImage(canvas, x, y, cell, null);
+                drawSetBadge(canvas, x, y);
+            } else {
+                BufferedImage cell = TaskImageAtlas.statisticCell(cellKey, statisticTask.statistic().statisticType());
+                drawImage(canvas, x, y, cell, null);
+            }
+        } else if (task.data instanceof EventTask event) {
+            Key eventKey = event.mapIconKey();
+            if (eventKey == null) eventKey = event.entityIconKey();
+            if (eventKey == null) eventKey = key;
+            BufferedImage cell;
+            if (event.usesAnyTemplate()) {
+                cell = TaskImageAtlas.eventCell(eventKey, null);
+                drawImage(canvas, x, y, cell, null);
+                drawSetBadge(canvas, x, y);
+            } else {
+                BufferedImage badge = event.usesGreenCheckBadge() ? TaskImageAtlas.checkBadge() : null;
+                if (badge == null && event.eventBadgeKey() != null) {
+                    badge = TaskImageAtlas.imageFor(event.eventBadgeKey());
+                }
+                cell = TaskImageAtlas.eventCell(eventKey, badge);
+                drawImage(canvas, x, y, cell, null);
+            }
         } else if (task.data instanceof OneOfTask) {
             // one_of: the representative item plus a small top-right "stack" badge marking the cell as
             // "any one of a set" — far clearer than the old four-member quadrant collage.
@@ -108,6 +147,10 @@ public final class BingoCardMapRenderer extends MapRenderer {
                 drawImage(canvas, x + 1, y + 1, image, null);
             }
             drawSetBadge(canvas, x, y);
+        } else if (task.data instanceof AllOfTask) {
+            BufferedImage image = TaskImageAtlas.imageFor(key);
+            if (image != null) drawImage(canvas, x + 1, y + 1, image, null);
+            drawAllBadge(canvas, x, y);
         } else if (task.data instanceof PotionTask potion) {
             // Effect-specific potion: its own per-effect coloured sprite (falls back to the plain
             // potion-material icon if that effect isn't bundled).
@@ -129,7 +172,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
         }
 
         int amount = task.data.getRequiredAmount();
-        if (amount > 1 || isStatistic) drawAmount(canvas, gridX, gridY, amount, isStatistic);
+        if (amount > 1 || isStatistic) drawAmount(canvas, gridX, gridY, amount, isStatistic || isEvent);
 
         drawCompletionBorder(canvas, gridX, gridY, completionColors(task), tierSegments);
     }
@@ -197,6 +240,11 @@ public final class BingoCardMapRenderer extends MapRenderer {
             {0b1001, 0b1101, 0b1011, 0b1001, 0b1001}, // N
             {0b1001, 0b1001, 0b0110, 0b0010, 0b0010}, // Y
     };
+    private static final int[][] ALL_GLYPHS = {
+            {0b0110, 0b1001, 0b1111, 0b1001, 0b1001},
+            {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
+            {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
+    };
 
     /**
      * Stamps a small yellow "ANY" label across the top of a {@code one_of} cell, marking it as "collect
@@ -205,18 +253,26 @@ public final class BingoCardMapRenderer extends MapRenderer {
      * beneath. {@code (x,y)} is the cell's slot origin (top-left of the 24px slot).
      */
     private static void drawSetBadge(MapCanvas canvas, int x, int y) {
+        drawWordBadge(canvas, x, y, ANY_GLYPHS);
+    }
+
+    private static void drawAllBadge(MapCanvas canvas, int x, int y) {
+        drawWordBadge(canvas, x, y, ALL_GLYPHS);
+    }
+
+    private static void drawWordBadge(MapCanvas canvas, int x, int y, int[][] glyphs) {
         byte fg = MapColorMatcher.matchColor(255, 221, 85);  // yellow, matching the task name colour
         byte shadow = MapColorMatcher.matchColor(28, 28, 30);
-        int total = ANY_GLYPHS.length * GLYPH_W + (ANY_GLYPHS.length - 1) * GLYPH_GAP; // 14px
+        int total = glyphs.length * GLYPH_W + (glyphs.length - 1) * GLYPH_GAP;
         int startX = x + (24 - total) / 2; // centred on the slot
         int startY = y + 2;
         // Two passes (all shadow, then all foreground) so adjacent letters' fill never eats a shadow.
         for (int pass = 0; pass < 2; pass++) {
             byte colour = pass == 0 ? shadow : fg;
             int dx = pass == 0 ? 1 : 0, dy = pass == 0 ? 1 : 0;
-            for (int gi = 0; gi < ANY_GLYPHS.length; gi++) {
+            for (int gi = 0; gi < glyphs.length; gi++) {
                 int gx = startX + gi * (GLYPH_W + GLYPH_GAP);
-                int[] glyph = ANY_GLYPHS[gi];
+                int[] glyph = glyphs[gi];
                 for (int row = 0; row < GLYPH_H; row++) {
                     for (int col = 0; col < GLYPH_W; col++) {
                         if ((glyph[row] & (1 << (GLYPH_W - 1 - col))) == 0) continue;

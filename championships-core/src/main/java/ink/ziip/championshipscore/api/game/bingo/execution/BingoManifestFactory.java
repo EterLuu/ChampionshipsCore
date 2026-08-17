@@ -45,8 +45,8 @@ public final class BingoManifestFactory {
         long cardSeed = java.util.concurrent.ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
         BingoRound generated = new BingoRound(CardSize.fromWidth(config.getCardWidth()), cardSeed,
                 Set.of(TaskData.TaskType.ITEM, TaskData.TaskType.ITEM_SET,
-                        TaskData.TaskType.ADVANCEMENT, TaskData.TaskType.STATISTIC),
-                Set.of(), Map.of(), teams, config.pointsArray(), config.getLineBonus(),
+                        TaskData.TaskType.ADVANCEMENT, TaskData.TaskType.STATISTIC, TaskData.TaskType.EVENT),
+                Set.of(), Map.of("kill", 2), teams, config.pointsArray(), config.getLineBonus(),
                 config.getLineBonusMajorCount(), config.getLineBonusMinor());
         List<BingoTaskSpec> tasks = BingoTaskSpecMapper.toSpecs(generated.layout());
         BingoScoringRules scoring = new BingoScoringRules(config.getCardWidth(), config.getPointsPerRank(),

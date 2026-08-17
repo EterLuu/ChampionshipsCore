@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.bingo.task.EventSubject;
+import ink.ziip.championshipscore.api.game.bingo.task.EventTask;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Material;
@@ -108,6 +110,64 @@ public final class TaskPoolSpec {
                             b.oneOf(items, display, e.name(), e.count(), difficulty, e.dimension(), e.category());
                         }
                     }
+                    case ALL_OF -> {
+                        java.util.LinkedHashSet<Material> items = new java.util.LinkedHashSet<>();
+                        for (String m : e.members()) {
+                            try {
+                                Material mat = Material.valueOf(m);
+                                if (mat.isItem()) items.add(mat);
+                            } catch (IllegalArgumentException ignored) {
+                                // skip unknown member, keep the rest of the set usable
+                            }
+                        }
+                        if (items.isEmpty()) {
+                            ChampionshipsCore.getInstance().getLogger().warning(gameLog("all_of 任务没有有效成员，已跳过"));
+                        } else {
+                            Material display = null;
+                            if (e.key() != null && !e.key().isBlank()) {
+                                try {
+                                    Material d = Material.valueOf(e.key());
+                                    // The representative icon may sit outside the member set (e.g. the
+                                    // mushroom family), unlike one_of.
+                                    display = d;
+                                }
+                                catch (IllegalArgumentException ignored) { /* fall back to first member */ }
+                            }
+                            b.allOf(items, display, e.name(), e.count(), difficulty, e.dimension(), e.category());
+                        }
+                    }
+                    case EVENT -> {
+                        // key is "<trigger>:<param>"; members (non-empty only for set-based triggers
+                        // unique_collect/all_collect) carry the glob-expanded family.
+                        String[] parts = e.key().split(":", 2);
+                        String trigger = (parts.length >= 1 ? parts[0] : "").toLowerCase(java.util.Locale.ROOT);
+                        String param = parts.length == 2 ? parts[1] : "";
+                        if (!EventTask.KNOWN_TRIGGERS.contains(trigger)) {
+                            ChampionshipsCore.getInstance().getLogger().warning(gameLog("未知 event 触发器=" + trigger + "，已跳过"));
+                        } else {
+                            java.util.Set<Material> memberSet = new java.util.LinkedHashSet<>();
+                            for (String m : e.members()) {
+                                try {
+                                    Material mat = Material.valueOf(m);
+                                    if (mat.isItem()) memberSet.add(mat);
+                                } catch (IllegalArgumentException ignored) { /* skip unknown member */ }
+                            }
+                            java.util.Set<EventSubject> subjectSet = new java.util.LinkedHashSet<>();
+                            for (String m : e.members()) {
+                                subjectSet.add(switch (trigger) {
+                                    case "visit_biomes" -> EventSubject.biome(m);
+                                    case "kill_family", "kill_unique", "enrage" -> EventSubject.entityType(m);
+                                    default -> EventSubject.material(m);
+                                });
+                            }
+                            Material icon = null;
+                            if (!memberSet.isEmpty()) {
+                                try { icon = Material.valueOf(param); } catch (IllegalArgumentException ignored) { }
+                            }
+                            b.event(new EventTask(trigger, param, e.count(), e.dimension(), memberSet, icon, subjectSet),
+                                    difficulty, e.category());
+                        }
+                    }
                 }
             } catch (IllegalArgumentException ex) {
                 ChampionshipsCore.getInstance().getLogger().warning(gameLog("无效任务=" + e.kind() + "/" + e.key() + "，已跳过"));
@@ -147,6 +207,14 @@ public final class TaskPoolSpec {
             List<String> members = items.stream().map(Material::name).toList();
             entries.add(PoolEntrySpec.oneOf(members, display == null ? null : display.name(),
                     name, count, difficulty, dimension, category));
+            return this;
+        }
+
+        public Collector allOf(java.util.Collection<Material> items, Material display, String label, int count,
+                               Difficulty difficulty, Dimension dimension, String category) {
+            List<String> members = items.stream().map(Material::name).toList();
+            entries.add(PoolEntrySpec.allOf(members, display == null ? null : display.name(),
+                    label, count, difficulty, dimension, category));
             return this;
         }
 

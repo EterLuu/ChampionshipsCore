@@ -143,7 +143,8 @@ final class WorkerMenuService {
             meta.setMaxStackSize(Math.min(required, 99));
         }
         if (meta instanceof PotionMeta potionMeta) {
-            String effect = task.attributes().get("effect");
+            String effect = task.attributes().getOrDefault("display.potion-type",
+                    task.attributes().get("effect"));
             if (effect != null) {
                 try {
                     potionMeta.setBasePotionType(org.bukkit.potion.PotionType.valueOf(effect.toUpperCase(Locale.ROOT)));

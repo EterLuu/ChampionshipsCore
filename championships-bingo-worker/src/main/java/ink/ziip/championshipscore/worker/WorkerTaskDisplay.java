@@ -23,12 +23,13 @@ final class WorkerTaskDisplay {
         Map<String, String> attributes = task.attributes();
         return switch (task.taskType().toLowerCase(Locale.ROOT)) {
             case "item", "potion" -> material(attributes.get("material"), Material.PAPER);
-            case "item_set" -> {
+            case "item_set", "all_of" -> {
                 String[] materials = attributes.getOrDefault("materials", "").split(",");
                 yield material(materials.length == 0 ? null : materials[0], Material.CHEST);
             }
             case "advancement" -> advancementIcon(attributes.get("key"));
             case "statistic" -> statisticIcon(attributes);
+            case "event" -> material(attributes.get("display.material"), Material.PAPER);
             default -> Material.PAPER;
         };
     }
@@ -47,6 +48,10 @@ final class WorkerTaskDisplay {
     }
 
     static Key statisticSubject(BingoTaskSpec task) {
+        Key frozen = key(task.attributes().get("display.icon-key"));
+        if (frozen != null) return frozen;
+        frozen = key(task.attributes().get("display.entity"));
+        if (frozen != null) return frozen;
         EntityType entity = enumValue(EntityType.class, task.attributes().get("entity"));
         if (entity != null) return entity.key();
         Material icon = icon(task);
@@ -55,7 +60,17 @@ final class WorkerTaskDisplay {
 
     static boolean glows(BingoTaskSpec task) {
         return "advancement".equalsIgnoreCase(task.taskType())
-                || "statistic".equalsIgnoreCase(task.taskType());
+                || "statistic".equalsIgnoreCase(task.taskType())
+                || "event".equalsIgnoreCase(task.taskType());
+    }
+
+    static Key key(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Key.key(raw);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     static Material material(String raw, Material fallback) {

@@ -1,18 +1,34 @@
 package ink.ziip.championshipscore.worker;
 
 import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
+import io.papermc.paper.event.entity.EntityCompostItemEvent;
 import io.papermc.paper.event.entity.EntityInsideBlockEvent;
+import io.papermc.paper.event.player.PlayerShieldDisableEvent;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.platform.bukkit.text.ChampionshipTabText;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
+import org.bukkit.block.Block;
+import org.bukkit.block.Campfire;
+import org.bukkit.block.data.Levelled;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.AreaEffectCloud;
+import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Firework;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
@@ -20,10 +36,16 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.EntityMountEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityTameEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
@@ -32,14 +54,20 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerItemBreakEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
@@ -61,12 +89,32 @@ import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
 import org.bukkit.event.world.GenericGameEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.projectiles.ProjectileSource;
+import org.bukkit.potion.PotionType;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 final class WorkerListener implements Listener {
+    private static final Set<Material> SOUPS = Set.of(
+            Material.BEETROOT_SOUP, Material.MUSHROOM_STEW, Material.RABBIT_STEW, Material.SUSPICIOUS_STEW);
+    private static final Set<String> TOOL_MATERIALS = Set.of(
+            "WOODEN", "STONE", "IRON", "GOLDEN", "DIAMOND", "COPPER");
+    private static final Set<String> TOOL_TYPES = Set.of("PICKAXE", "AXE", "SHOVEL", "HOE", "SWORD");
+    private static final Set<Material> MISC_TOOLS = Set.of(
+            Material.FISHING_ROD, Material.FLINT_AND_STEEL, Material.SHEARS, Material.BRUSH,
+            Material.CARROT_ON_A_STICK, Material.WARPED_FUNGUS_ON_A_STICK);
+    private static final Set<String> ARMOR_MATERIALS = Set.of(
+            "LEATHER", "COPPER", "GOLDEN", "CHAINMAIL", "IRON", "DIAMOND");
+    private static final Set<String> ARMOR_TYPES = Set.of("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS");
+
     private final WorkerMatchRegistry registry;
     private final PlatformScheduler scheduler;
+    private UUID lastPumpkinPlacer;
+    private Location lastPumpkinLocation;
+    private long lastPumpkinPlacedAt;
+    private final Map<UUID, Long> recentBrushUses = new ConcurrentHashMap<>();
 
     WorkerListener(Plugin plugin, WorkerMatchRegistry registry) {
         this.registry = registry;
@@ -112,6 +160,12 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
         if (event.getWhoClicked() instanceof Player player) {
+            if (registry.isRunningPlayer(player.getUniqueId()) && event.getRecipe() != null) {
+                Material result = event.getRecipe().getResult().getType();
+                if (result != Material.AIR && result.isItem()) {
+                    registry.recordEventDistinct(player, "craft_unique", result.name());
+                }
+            }
             registry.requestObserve(player);
         }
     }
@@ -127,6 +181,211 @@ final class WorkerListener implements Listener {
     public void onAdvancement(PlayerAdvancementDoneEvent event) {
         if (!registry.isRunningPlayer(event.getPlayer().getUniqueId())) event.message(null);
         registry.observeAdvancement(event.getPlayer(), event.getAdvancement());
+    }
+
+    // ── EventTask signals and tracked counters ──────────────────────────────────────────────────
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventConsume(PlayerItemConsumeEvent event) {
+        Player player = event.getPlayer();
+        if (!registry.isRunningPlayer(player.getUniqueId())) return;
+        ItemStack item = event.getItem();
+        Material type = item.getType();
+        if (type == Material.GOAT_HORN) {
+            registry.observeEventSignal(player, "toot_goat_horn", "");
+        } else if (type == Material.MILK_BUCKET) {
+            if (!player.getActivePotionEffects().isEmpty()) {
+                registry.observeEventSignal(player, "remove_effect_milk", "");
+            }
+        } else if (type == Material.POTION && item.getItemMeta() instanceof PotionMeta meta
+                && meta.getBasePotionType() == PotionType.WATER) {
+            registry.observeEventSignal(player, "drink", "WATER_BOTTLE");
+        } else if (type.isEdible()) {
+            registry.observeEventSignal(player, "eat", type.name());
+            registry.recordEventDistinct(player, "eat_unique", type.name());
+            if (SOUPS.contains(type)) registry.recordEventDistinct(player, "eat_all:SOUPS", type.name());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventItemBreak(PlayerItemBreakEvent event) {
+        Player player = event.getPlayer();
+        if (!registry.isRunningPlayer(player.getUniqueId())) return;
+        Material type = event.getBrokenItem().getType();
+        String kind = isArmor(type) ? "ARMOR" : isTool(type) ? "TOOL" : null;
+        if (kind != null) registry.observeEventSignal(player, "break_item", kind);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEventDeath(org.bukkit.event.entity.PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        if (!registry.isRunningPlayer(player.getUniqueId())) return;
+        String cause = resolveDeathCause(player);
+        if (cause != null) registry.observeEventSignal(player, "die", cause);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventTame(EntityTameEvent event) {
+        if (event.getOwner() instanceof Player player && registry.isRunningPlayer(player.getUniqueId())) {
+            registry.observeEventSignal(player, "tame", event.getEntityType().name());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventLeash(PlayerLeashEntityEvent event) {
+        if (registry.isRunningPlayer(event.getPlayer().getUniqueId())) {
+            registry.observeEventSignal(event.getPlayer(), "leash", event.getEntity().getType().name());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventBreed(EntityBreedEvent event) {
+        if (!(event.getBreeder() instanceof Player player) || !registry.isRunningPlayer(player.getUniqueId())) return;
+        String species = event.getMother().getType().name();
+        registry.observeEventSignal(player, "breed", species);
+        registry.recordEventDistinct(player, "breed_unique", species);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (!registry.isRunningPlayer(player.getUniqueId()) || event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        Block block = event.getClickedBlock();
+        ItemStack item = event.getItem();
+        if (block == null) return;
+        Material type = block.getType();
+        if ((type == Material.SUSPICIOUS_SAND || type == Material.SUSPICIOUS_GRAVEL)
+                && item != null && item.getType() == Material.BRUSH) {
+            recentBrushUses.put(player.getUniqueId(), System.currentTimeMillis());
+        } else if (type == Material.COMPOSTER && isComposterFull(block)) {
+            registry.observeEventSignal(player, "use", "COMPOSTER");
+        } else if ((type == Material.CAMPFIRE || type == Material.SOUL_CAMPFIRE)
+                && item != null && item.getType().isEdible() && campfireHasFreeSlot(block)) {
+            scheduler.runEntityLater(player, () -> checkCampfireFilled(block, player), 1L);
+        } else if (type == Material.CAKE && player.getFoodLevel() < 20) {
+            registry.observeEventSignal(player, "eat", "CAKE");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventCompost(EntityCompostItemEvent event) {
+        if (!(event.getEntity() instanceof Player player) || !registry.isRunningPlayer(player.getUniqueId())) return;
+        Material type = event.getItem().getType();
+        if (type.isEdible()) registry.recordEventDistinct(player, "compost_unique", type.name());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventBlockDrop(BlockDropItemEvent event) {
+        Player player = event.getPlayer();
+        if (!registry.isRunningPlayer(player.getUniqueId())) return;
+        Long brushedAt = recentBrushUses.remove(player.getUniqueId());
+        if (brushedAt == null || System.currentTimeMillis() - brushedAt > 15_000L) return;
+        Material type = event.getBlockState().getType();
+        if (type == Material.SUSPICIOUS_SAND || type == Material.SUSPICIOUS_GRAVEL) {
+            registry.observeEventSignal(player, "use_brush", "");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventInteractEntity(PlayerInteractEntityEvent event) {
+        Player player = event.getPlayer();
+        if (!registry.isRunningPlayer(player.getUniqueId())) return;
+        ItemStack item = player.getInventory().getItem(event.getHand());
+        if (item.getType() == Material.GOLDEN_DANDELION
+                && event.getRightClicked() instanceof Ageable ageable && !ageable.isAdult()) {
+            registry.observeEventSignal(player, "use_golden_dandelion", "");
+            return;
+        }
+        if (item.getType() != Material.NAME_TAG || !item.hasItemMeta()) return;
+        String name = ChatColor.stripColor(item.getItemMeta().getDisplayName());
+        String normalized = name == null ? "" : name.toLowerCase(java.util.Locale.ROOT);
+        EntityType target = event.getRightClicked().getType();
+        if (target == EntityType.SHEEP && normalized.contains("jeb_")) {
+            registry.observeEventSignal(player, "name", "SHEEP_JEB");
+        } else if (target == EntityType.IRON_GOLEM
+                && (normalized.contains("dinnerbone") || normalized.contains("grumm"))) {
+            registry.observeEventSignal(player, "name", "IRON_GOLEM_DINNERBONE");
+        } else if (target == EntityType.GHAST
+                && (normalized.contains("dinnerbone") || normalized.contains("grumm"))) {
+            registry.observeEventSignal(player, "name", "GHAST_DINNERBONE");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventBlockPlace(BlockPlaceEvent event) {
+        Player player = event.getPlayer();
+        if (!registry.isRunningPlayer(player.getUniqueId())) return;
+        Material placed = event.getBlockPlaced().getType();
+        if (placed.name().endsWith("HANGING_SIGN")) {
+            registry.observeEventSignal(player, "place", "HANGING_SIGN");
+        } else if (placed == Material.CARVED_PUMPKIN) {
+            lastPumpkinPlacer = player.getUniqueId();
+            lastPumpkinLocation = event.getBlock().getLocation();
+            lastPumpkinPlacedAt = System.currentTimeMillis();
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventHangingPlace(HangingPlaceEvent event) {
+        Player player = event.getPlayer();
+        if (player != null && registry.isRunningPlayer(player.getUniqueId())
+                && event.getEntity().getType() == EntityType.PAINTING) {
+            registry.observeEventSignal(player, "place", "PAINTING");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventShieldDisable(PlayerShieldDisableEvent event) {
+        if (registry.isRunningPlayer(event.getPlayer().getUniqueId())) {
+            registry.observeEventSignal(event.getPlayer(), "shield_disabled", "");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventProjectileLaunch(ProjectileLaunchEvent event) {
+        if (event.getEntity() instanceof Firework firework && firework.getShooter() instanceof Player player
+                && registry.isRunningPlayer(player.getUniqueId())) {
+            registry.observeEventSignal(player, "shoot_firework_crossbow", "");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventCreatureSpawn(CreatureSpawnEvent event) {
+        if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.BUILD_COPPERGOLEM) return;
+        Player player = recentPumpkinPlacer(event.getLocation());
+        if (player == null) player = nearestRunningPlayer(event.getEntity(), 8);
+        if (player != null) registry.observeEventSignal(player, "construct_copper_golem", "");
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventTarget(EntityTargetLivingEntityEvent event) {
+        if (!(event.getTarget() instanceof Player player) || !registry.isRunningPlayer(player.getUniqueId())) return;
+        EntityType type = event.getEntity().getType();
+        if (type == EntityType.ENDERMAN || type == EntityType.ZOMBIFIED_PIGLIN) {
+            registry.observeEventSignal(player, "enrage", type.name());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEventExplode(EntityExplodeEvent event) {
+        if (!(event.getEntity() instanceof EnderCrystal crystal)) return;
+        Player player = crystalDamager(crystal);
+        if (player == null) player = nearestRunningPlayer(crystal, 16);
+        if (player != null) registry.observeEventSignal(player, "explode_end_crystal", "");
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEventEntityDeath(EntityDeathEvent event) {
+        Player player = event.getEntity().getKiller();
+        if (player == null || !registry.isRunningPlayer(player.getUniqueId())) return;
+        LivingEntity living = event.getEntity();
+        EntityType type = living.getType();
+        if (Tag.ENTITY_TYPES_UNDEAD.isTagged(type)) {
+            registry.recordEventCount(player, "kill_family:UNDEAD");
+        } else if (Tag.ENTITY_TYPES_ARTHROPOD.isTagged(type)) {
+            registry.recordEventCount(player, "kill_family:ARTHROPOD");
+        }
+        if (living instanceof Monster) registry.recordEventDistinct(player, "kill_unique:HOSTILE", type.name());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -418,6 +677,120 @@ final class WorkerListener implements Listener {
         event.getAffectedEntities().removeIf(entity -> entity instanceof Player victim
                 && !victim.getUniqueId().equals(source)
                 && registry.sameTeam(source, victim.getUniqueId()));
+    }
+
+    private Player nearestRunningPlayer(Entity center, double radius) {
+        Player best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (Entity entity : center.getNearbyEntities(radius, radius, radius)) {
+            if (!(entity instanceof Player player) || !registry.isRunningPlayer(player.getUniqueId())) continue;
+            double distance = player.getLocation().distanceSquared(center.getLocation());
+            if (distance < bestDistance) {
+                best = player;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    private Player recentPumpkinPlacer(Location spawnLocation) {
+        if (lastPumpkinPlacer == null || lastPumpkinLocation == null
+                || System.currentTimeMillis() - lastPumpkinPlacedAt > 5_000L
+                || !lastPumpkinLocation.getWorld().equals(spawnLocation.getWorld())
+                || lastPumpkinLocation.distanceSquared(spawnLocation) > 64.0) return null;
+        Player player = Bukkit.getPlayer(lastPumpkinPlacer);
+        return player != null && registry.isRunningPlayer(player.getUniqueId()) ? player : null;
+    }
+
+    private static Player crystalDamager(EnderCrystal crystal) {
+        EntityDamageEvent last = crystal.getLastDamageCause();
+        if (!(last instanceof EntityDamageByEntityEvent damage)) return null;
+        if (damage.getDamager() instanceof Player player) return player;
+        if (damage.getDamager() instanceof Projectile projectile
+                && projectile.getShooter() instanceof Player player) return player;
+        return null;
+    }
+
+    private static boolean isComposterFull(Block block) {
+        return block.getBlockData() instanceof Levelled levelled
+                && levelled.getLevel() >= levelled.getMaximumLevel();
+    }
+
+    private static boolean campfireHasFreeSlot(Block block) {
+        if (!(block.getState() instanceof Campfire campfire)) return false;
+        for (int slot = 0; slot < campfire.getSize(); slot++) {
+            ItemStack item = campfire.getItem(slot);
+            if (item == null || item.getType().isAir()) return true;
+        }
+        return false;
+    }
+
+    private void checkCampfireFilled(Block block, Player player) {
+        if (!registry.isRunningPlayer(player.getUniqueId()) || !(block.getState() instanceof Campfire campfire)) return;
+        for (int slot = 0; slot < campfire.getSize(); slot++) {
+            ItemStack item = campfire.getItem(slot);
+            if (item == null || item.getType().isAir()) return;
+        }
+        registry.observeEventSignal(player, "fill_campfire", "");
+    }
+
+    private static boolean isArmor(Material type) {
+        String[] parts = type.name().split("_", 2);
+        return parts.length == 2 && ARMOR_MATERIALS.contains(parts[0]) && ARMOR_TYPES.contains(parts[1]);
+    }
+
+    private static boolean isTool(Material type) {
+        if (MISC_TOOLS.contains(type)) return true;
+        String[] parts = type.name().split("_", 2);
+        return parts.length == 2 && TOOL_MATERIALS.contains(parts[0]) && TOOL_TYPES.contains(parts[1]);
+    }
+
+    private static String resolveDeathCause(Player player) {
+        EntityDamageEvent last = player.getLastDamageCause();
+        if (last == null) return null;
+        if (last instanceof EntityDamageByEntityEvent damage) {
+            Entity damager = damage.getDamager();
+            switch (damager.getType()) {
+                case IRON_GOLEM: return "IRON_GOLEM";
+                case POLAR_BEAR: return "POLAR_BEAR";
+                case WARDEN: return "WARDEN";
+                case BEE: return "BEE";
+                case FIREWORK_ROCKET: return "FIREWORK";
+                case TNT_MINECART: return "TNT_MINECART";
+                case TRIDENT: return "TRIDENT";
+                case FALLING_BLOCK:
+                    if (damager instanceof FallingBlock falling) {
+                        Material material = falling.getBlockData().getMaterial();
+                        if (material.name().contains("ANVIL")) return "ANVIL";
+                        if (material == Material.POINTED_DRIPSTONE) return "FALLING_STALACTITE";
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        return switch (last.getCause()) {
+            case DROWNING -> "DROWNING";
+            case VOID -> "VOID";
+            case FREEZE -> "FREEZE";
+            case MAGIC -> "MAGIC";
+            case CONTACT -> contactBlockParam(player);
+            default -> null;
+        };
+    }
+
+    private static String contactBlockParam(Player player) {
+        Location location = player.getLocation();
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int dy = 0; dy <= 1; dy++) {
+                    Material material = location.clone().add(dx, dy, dz).getBlock().getType();
+                    if (material == Material.CACTUS) return "CACTUS";
+                    if (material == Material.SWEET_BERRY_BUSH) return "BERRY_BUSH";
+                }
+            }
+        }
+        return null;
     }
 
     private static UUID attackerId(Entity damager) {

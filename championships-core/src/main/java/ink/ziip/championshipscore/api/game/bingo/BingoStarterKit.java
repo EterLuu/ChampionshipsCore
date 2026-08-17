@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
+import ink.ziip.championshipscore.api.game.bingo.task.AllOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.ItemTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.TaskData;
@@ -37,6 +38,11 @@ public final class BingoStarterKit {
         }
         if (task instanceof OneOfTask set) {
             return set.items().stream().anyMatch(material ->
+                    BingoStarterKitService.providedAmount(material) >= set.count());
+        }
+        if (task instanceof AllOfTask set) {
+            // Auto-completable when the kit supplies every member of the complete set.
+            return set.items().stream().allMatch(material ->
                     BingoStarterKitService.providedAmount(material) >= set.count());
         }
         if (task instanceof AdvancementTask advancement && advancement.advancement() != null) {

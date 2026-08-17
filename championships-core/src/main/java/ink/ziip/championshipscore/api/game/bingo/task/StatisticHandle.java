@@ -135,12 +135,46 @@ public record StatisticHandle(@NotNull Statistic statistic, @Nullable EntityType
         return entityType != null;
     }
 
+    /**
+     * The creature ridden for a travel statistic (PIG/HORSE/STRIDER/NAUTILUS/HAPPY_GHAST_ONE_CM), or
+     * {@code null} for every other statistic. The map card uses the entity sprite for these so "ride a
+     * pig 100 blocks" reads as the pig, not as the carrot-on-a-stick used for the chest-GUI icon.
+     */
+    public @Nullable EntityType riddenEntity() {
+        return switch (statistic) {
+            case PIG_ONE_CM -> EntityType.PIG;
+            case HORSE_ONE_CM -> EntityType.HORSE;
+            case STRIDER_ONE_CM -> EntityType.STRIDER;
+            case NAUTILUS_ONE_CM -> EntityType.NAUTILUS;
+            case HAPPY_GHAST_ONE_CM -> EntityType.HAPPY_GHAST;
+            default -> null;
+        };
+    }
+
+    /**
+     * The entity shown as the map subject for this statistic when the GUI icon is a stand-in item:
+     * ridden creatures for travel stats, and the villager for talk/trade-with-villager stats.
+     */
+    public @Nullable EntityType displayEntity() {
+        EntityType ridden = riddenEntity();
+        if (ridden != null) return ridden;
+        return switch (statistic) {
+            case TALKED_TO_VILLAGER, TRADED_WITH_VILLAGER -> EntityType.VILLAGER;
+            default -> null;
+        };
+    }
+
+    /** True for the two raid statistics, whose map subject is the ominous/raid banner sprite. */
+    public boolean usesOminousBannerIcon() {
+        return statistic == Statistic.RAID_TRIGGER || statistic == Statistic.RAID_WIN;
+    }
+
     public @NotNull Material icon() {
         return switch (statistic) {
             case DAMAGE_DEALT -> Material.DIAMOND_SWORD;
-            case DAMAGE_TAKEN -> Material.IRON_CHESTPLATE;
+            case DAMAGE_TAKEN -> Material.LEATHER_CHESTPLATE;
             case DEATHS -> Material.SKELETON_SKULL;
-            case MOB_KILLS -> Material.CREEPER_HEAD;
+            case MOB_KILLS -> Material.IRON_SWORD;
             case PLAYER_KILLS -> Material.PLAYER_HEAD;
             case FISH_CAUGHT -> Material.TROPICAL_FISH;
             case ANIMALS_BRED -> Material.WHEAT;
@@ -150,12 +184,12 @@ public record StatisticHandle(@NotNull Statistic statistic, @Nullable EntityType
             case PLAY_ONE_MINUTE -> Material.CLOCK;
             case TOTAL_WORLD_TIME -> Material.FILLED_MAP;
             case WALK_ONE_CM -> Material.LEATHER_BOOTS;
-            case WALK_ON_WATER_ONE_CM -> Material.ICE;
-            case FALL_ONE_CM -> Material.LAVA_BUCKET;
+            case WALK_ON_WATER_ONE_CM -> Material.WATER_BUCKET;
+            case FALL_ONE_CM -> Material.HAY_BLOCK;
             case SNEAK_TIME -> Material.SCULK_SHRIEKER;
-            case CLIMB_ONE_CM -> Material.EMERALD_ORE;
+            case CLIMB_ONE_CM -> Material.LADDER;
             case FLY_ONE_CM -> Material.COMMAND_BLOCK;
-            case WALK_UNDER_WATER_ONE_CM -> Material.GOLDEN_BOOTS;
+            case WALK_UNDER_WATER_ONE_CM -> Material.SEA_LANTERN;
             case MINECART_ONE_CM -> Material.MINECART;
             case BOAT_ONE_CM -> Material.OAK_BOAT;
             case PIG_ONE_CM -> Material.CARROT_ON_A_STICK;
@@ -193,7 +227,7 @@ public record StatisticHandle(@NotNull Statistic statistic, @Nullable EntityType
             case DAMAGE_BLOCKED_BY_SHIELD -> Material.SHIELD;
             case DAMAGE_ABSORBED -> Material.GOLDEN_APPLE;
             case DAMAGE_RESISTED -> Material.DIAMOND_CHESTPLATE;
-            case CLEAN_SHULKER_BOX -> Material.SHULKER_SHELL;
+            case CLEAN_SHULKER_BOX -> Material.SHULKER_BOX;
             case OPEN_BARREL -> Material.BARREL;
             case INTERACT_WITH_BLAST_FURNACE -> Material.BLAST_FURNACE;
             case INTERACT_WITH_SMOKER -> Material.SMOKER;

@@ -10,7 +10,9 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
+import java.awt.BasicStroke;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -37,6 +39,8 @@ public final class TaskImageAtlas {
     private static final int SLOT_SHADE_DROP = 0xFF846446; // (132,100,70)
     private static final Color STAT_PANEL = new Color(88, 100, 120);
     private static final Color STAT_BORDER = new Color(48, 56, 70);
+    private static final Color EVENT_PANEL = new Color(108, 96, 140);
+    private static final Color EVENT_BORDER = new Color(56, 46, 80);
     private static final int BADGE = 16;
     private static final int BADGE_INSET = FRAME_BORDER;
     private static final int BADGE_X = BADGE_INSET - 2;
@@ -62,6 +66,7 @@ public final class TaskImageAtlas {
     private static BufferedImage advancementFrameTask;
     private static BufferedImage advancementFrameGoal;
     private static BufferedImage advancementFrameChallenge;
+    private static BufferedImage checkBadge;
 
     private TaskImageAtlas() {
     }
@@ -75,6 +80,10 @@ public final class TaskImageAtlas {
                 loadSection(atlas.getAsJsonObject("sprites"), SPRITES);
                 loadSection(atlas.getAsJsonObject("entities"), ENTITIES);
             }
+            for (String name : new String[]{"ominous_banner", "half_hunger", "empty_hunger",
+                    "right_click", "travel_arrow", "half_heart", "half_absorption_heart"}) {
+                loadBakedSprite(name);
+            }
             try (InputStream statAtlasStream = resource(RES + "statistic_atlas.json")) {
                 JsonObject statAtlas = JsonParser.parseReader(
                         new InputStreamReader(statAtlasStream, StandardCharsets.UTF_8)).getAsJsonObject();
@@ -87,6 +96,10 @@ public final class TaskImageAtlas {
                     }
                 }
             }
+            Sprite harmingSplash = POTION_SPRITES.get("splash_potion/harming");
+            if (harmingSplash != null) SPRITES.put("minecraft:harming_splash_potion", harmingSplash);
+            Sprite healingPotion = POTION_SPRITES.get("potion/healing");
+            if (healingPotion != null) SPRITES.put("minecraft:healing_potion", healingPotion);
             try (InputStream potionAtlasStream = resource(RES + "potions_atlas.json")) {
                 if (potionAtlasStream != null) {
                     JsonObject potionAtlas = JsonParser.parseReader(
@@ -99,12 +112,20 @@ public final class TaskImageAtlas {
             advancementFrameTask = read(RES + "advancement_frame_task.png");
             advancementFrameGoal = read(RES + "advancement_frame_goal.png");
             advancementFrameChallenge = read(RES + "advancement_frame_challenge.png");
+            checkBadge = read(RES + "check.png");
+            if (checkBadge == null) checkBadge = createCheckBadge();
             loaded = true;
         } catch (Exception ex) {
             failed = true;
             java.util.logging.Logger.getLogger(TaskImageAtlas.class.getName())
                     .warning("Bingo task atlas failed to load: " + ex.getMessage());
         }
+    }
+
+    private static void loadBakedSprite(String name) throws Exception {
+        BufferedImage image = read(RES + name + ".png");
+        if (image != null) SPRITES.put("minecraft:" + name,
+                new Sprite(image, 0, 0, image.getWidth(), image.getHeight()));
     }
 
     private static void unifySlotShade(BufferedImage img) {
@@ -190,20 +211,11 @@ public final class TaskImageAtlas {
 
     public static BufferedImage statisticCell(@Nullable Key itemKey, Statistic stat) {
         ensureLoaded();
-        BufferedImage tile = new BufferedImage(CELL, CELL, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = tile.createGraphics();
+        return statisticCell(itemKey, statisticBadge(stat));
+    }
 
-        int panel = CELL - 2;
-        g.setColor(STAT_PANEL);
-        g.fillRect(1, 1, panel, panel);
-        g.setColor(STAT_BORDER);
-        g.drawRect(1, 1, panel - 1, panel - 1);
-
-        int inner = CELL - 2 * FRAME_BORDER;
-        g.setClip(FRAME_BORDER, FRAME_BORDER, inner, inner);
-
-        BufferedImage badge = statisticBadge(stat);
-
+    public static BufferedImage statisticCell(@Nullable Key itemKey, @Nullable BufferedImage badge) {
+        ensureLoaded();
         BufferedImage item = null;
         boolean entitySprite = false;
         if (itemKey != null) {
@@ -213,22 +225,35 @@ public final class TaskImageAtlas {
                 item = imageFor(itemKey);
             }
         }
-        if (item != null) {
-            // All sprites are 22x22; draw at the same +1 offset used by normal cells. Nudged top-right
-            // only when a badge shares the cell, otherwise left centred.
-            int nudgeX = (badge != null ? ITEM_NUDGE_X : 0) + (entitySprite ? ENTITY_NUDGE_X : 0);
-            int nudgeY = (badge != null ? ITEM_NUDGE_Y : 0) + (entitySprite ? ENTITY_NUDGE_Y : 0);
-            g.drawImage(item, 1 + nudgeX, 1 + nudgeY, null);
-        }
+        return TaskCellLayout.compose(STAT_PANEL, STAT_BORDER, item, entitySprite, badge);
+    }
 
-        if (badge != null) {
-            // Badges live in 22x22 atlas cells with their 16x16 content centered, so shift 3px up-left
-            // to keep the badge's visual center at the same pixel as the original 16x16 files.
-            g.drawImage(badge, BADGE_X - 3, BADGE_Y - 3, null);
+    public static BufferedImage eventCell(@Nullable Key itemKey, @Nullable BufferedImage badge) {
+        ensureLoaded();
+        BufferedImage item = null;
+        boolean entitySprite = false;
+        if (itemKey != null) {
+            item = entityImageFor(itemKey);
+            entitySprite = item != null;
+            if (item == null) item = imageFor(itemKey);
         }
+        return TaskCellLayout.compose(EVENT_PANEL, EVENT_BORDER, item, entitySprite, badge);
+    }
 
-        g.dispose();
-        return tile;
+    public static @Nullable BufferedImage checkBadge() {
+        ensureLoaded();
+        return checkBadge;
+    }
+
+    private static BufferedImage createCheckBadge() {
+        BufferedImage image = new BufferedImage(22, 22, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics.setColor(new Color(76, 200, 80));
+        graphics.setStroke(new BasicStroke(3.4F, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        graphics.drawPolyline(new int[]{5, 8, 14}, new int[]{11, 14, 7}, 3);
+        graphics.dispose();
+        return image;
     }
 
     private static @Nullable BufferedImage statisticBadge(Statistic stat) {

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -172,11 +173,23 @@ public final class TaskPoolLoader {
                     out.addAll(expandEntry(g.kind(), key, count, difficulty, dimension, null, log, sourceName));
                 }
             }
-            // Standalone one_of sets (no category).
+            // Standalone one_of / all_of sets (no category by default; an explicit category on the
+            // entry is honoured so complete-set tasks can share the unique_collect group).
             for (Map<?, ?> raw : singletons.getMapList("sets")) {
                 Difficulty difficulty = parseDifficulty(raw.get("difficulty"), log, sourceName, "set");
                 Dimension dimension = parseDimension(raw.get("dimension"), log, sourceName, "set");
-                out.addAll(parseOneOf(raw, difficulty, dimension, null, log, sourceName));
+                Object catObj = raw.get("category");
+                String category = catObj == null || String.valueOf(catObj).isBlank()
+                        ? null : String.valueOf(catObj).trim();
+                if (raw.get("all_of") instanceof List<?>) {
+                    out.addAll(parseAllOf(raw, difficulty, dimension, category, log, sourceName));
+                } else {
+                    out.addAll(parseOneOf(raw, difficulty, dimension, category, log, sourceName));
+                }
+            }
+            // Unified event objectives (eat/die/wear/tame/breed/spy/effect/reach/...).
+            for (Map<?, ?> raw : singletons.getMapList("events")) {
+                out.addAll(parseEvents(raw, log, sourceName));
             }
             // Effect-specific potions; effect "*" expands to every brewable effect.
             for (Map<?, ?> raw : singletons.getMapList("potions")) {
@@ -191,6 +204,9 @@ public final class TaskPoolLoader {
                                              String categoryId, Logger log, String sourceName) {
         if (member.get("one_of") instanceof List<?>) {
             return parseOneOf(member, difficulty, dimension, categoryId, log, sourceName);
+        }
+        if (member.get("all_of") instanceof List<?>) {
+            return parseAllOf(member, difficulty, dimension, categoryId, log, sourceName);
         }
         for (SingletonGroup g : SINGLETON_GROUPS) {
             Object v = member.get(g.keyName());
@@ -230,6 +246,90 @@ public final class TaskPoolLoader {
         String icon = member.get("icon") instanceof Object ic ? String.valueOf(ic).trim().toUpperCase(Locale.ROOT) : null;
         return List.of(PoolEntrySpec.oneOf(new ArrayList<>(members), icon, name, count,
                 difficulty, dimension, categoryId));
+    }
+
+    /**
+     * Parse an {@code all_of} entry: a list of item names (globs allowed) collected into a single
+     * "hold the complete set" objective. Optional {@code icon} is the representative item shown on the
+     * card/map (defaults to the first member) and also names the objective id ({@code all:<icon>});
+     * optional {@code label} is the {@code task.family.*} localization token for the title.
+     */
+    private static List<PoolEntrySpec> parseAllOf(Map<?, ?> member, Difficulty difficulty, Dimension dimension,
+                                                  String categoryId, Logger log, String sourceName) {
+        Object raw = member.get("all_of");
+        if (!(raw instanceof List<?> list) || list.isEmpty()) {
+            log.warning(gameLog(sourceName + " all_of 任务缺少成员列表，已跳过"));
+            return List.of();
+        }
+        LinkedHashSet<String> members = new LinkedHashSet<>();
+        for (Object o : list) {
+            if (o == null) continue;
+            String token = String.valueOf(o).trim().toUpperCase(Locale.ROOT);
+            if (token.isEmpty()) continue;
+            if (isGlob(token)) {
+                members.addAll(globKeys(PoolEntrySpec.Kind.ITEM, token));
+            } else {
+                members.add(token);
+            }
+        }
+        if (members.isEmpty()) {
+            log.warning(gameLog(sourceName + " all_of 任务未匹配物品，已跳过"));
+            return List.of();
+        }
+        int count = member.get("count") instanceof Number n ? n.intValue() : 1;
+        String icon = member.get("icon") instanceof Object ic ? String.valueOf(ic).trim().toUpperCase(Locale.ROOT) : null;
+        String label = member.get("label") instanceof Object lb ? String.valueOf(lb) : null;
+        return List.of(PoolEntrySpec.allOf(new ArrayList<>(members), icon, label, count,
+                difficulty, dimension, categoryId));
+    }
+
+    /**
+     * Parse an {@code events} entry: a unified event objective keyed by {@code trigger} + {@code param}.
+     * Set-based triggers ({@code unique_collect}/{@code all_collect}) take a glob or list in {@code param}
+     * and an optional {@code icon}; their key becomes {@code <trigger>:<icon>} so the objective id stays
+     * wildcard-free. Other triggers store {@code <trigger>:<param>} directly.
+     */
+    private static List<PoolEntrySpec> parseEvents(Map<?, ?> raw, Logger log, String sourceName) {
+        Object triggerObj = raw.get("trigger");
+        if (triggerObj == null) {
+            log.warning(gameLog(sourceName + " event 任务缺少 trigger，已跳过"));
+            return List.of();
+        }
+        String trigger = String.valueOf(triggerObj).trim().toLowerCase(Locale.ROOT);
+        int count = raw.get("count") instanceof Number n ? n.intValue() : 1;
+        Difficulty difficulty = parseDifficulty(raw.get("difficulty"), log, sourceName, "event " + trigger);
+        Dimension dimension = raw.containsKey("dimension")
+                ? parseDimension(raw.get("dimension"), log, sourceName, "event " + trigger)
+                : Dimension.OVERWORLD;
+        Object catObj = raw.get("category");
+        String category = catObj == null || String.valueOf(catObj).isBlank() ? null : String.valueOf(catObj).trim();
+
+        Set<String> LIST_PARAM_TRIGGERS = Set.of(
+                "unique_collect", "all_collect", "eat_all", "visit_biomes", "kill_family", "kill_unique");
+        if (LIST_PARAM_TRIGGERS.contains(trigger)) {
+            List<String> members = new ArrayList<>();
+            Object paramObj = raw.get("param");
+            if (paramObj instanceof List<?> list) {
+                for (Object o : list) {
+                    if (o != null) members.add(String.valueOf(o).trim().toUpperCase(Locale.ROOT));
+                }
+            } else if (paramObj != null) {
+                String token = String.valueOf(paramObj).trim().toUpperCase(Locale.ROOT);
+                if (isGlob(token)) members.addAll(globKeys(PoolEntrySpec.Kind.ITEM, token));
+                else members.add(token);
+            }
+            if (members.isEmpty()) {
+                log.warning(gameLog(sourceName + " event=" + trigger + " 未匹配成员，已跳过"));
+                return List.of();
+            }
+            String icon = raw.get("icon") instanceof Object ic
+                    ? String.valueOf(ic).trim().toUpperCase(Locale.ROOT) : members.get(0);
+            return List.of(new PoolEntrySpec(PoolEntrySpec.Kind.EVENT, trigger + ":" + icon,
+                    count, difficulty, dimension, category, members, null));
+        }
+        String param = raw.get("param") == null ? "" : String.valueOf(raw.get("param")).trim();
+        return List.of(new PoolEntrySpec(PoolEntrySpec.Kind.EVENT, trigger + ":" + param,
+                count, difficulty, dimension, category, List.of(), null));
     }
 
     /**
@@ -303,7 +403,7 @@ public final class TaskPoolLoader {
             case MINE -> enumNames(Material.values(), pattern);
             case KILL -> enumNames(EntityType.values(), pattern);
             case STAT -> enumNames(Statistic.values(), pattern);
-            case ADVANCEMENT, ONE_OF, POTION -> List.of();
+            case ADVANCEMENT, ONE_OF, ALL_OF, POTION, EVENT -> List.of();
         };
     }
 

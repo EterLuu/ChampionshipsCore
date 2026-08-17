@@ -34,6 +34,9 @@ class LanguageKeyUsageTest {
             List<String> unused = leafKeys(yaml).stream()
                     .filter(key -> !key.equals("dont-edit-this.version"))
                     .filter(key -> !key.startsWith("task.family."))
+                    // EventTask constructs these keys from YAML trigger/param values at runtime.
+                    .filter(key -> !key.startsWith("task.event."))
+                    .filter(key -> !key.startsWith("task.effect."))
                     .filter(key -> !sources.contains("\"" + key + "\""))
                     .toList();
             assertTrue(unused.isEmpty(), locale + " contains unused keys: " + unused);

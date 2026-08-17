@@ -207,6 +207,18 @@ public final class TaskGenerator {
     private static Set<String> subjectsOf(TaskData task) {
         Set<String> out = new HashSet<>();
         if (task instanceof OneOfTask set) {
+            // A one_of can span any family (woods, stones, colours, …), so dedup only at the item level:
+            // every member is claimed so no individual member (or overlapping set) appears elsewhere on
+            // the card. We deliberately skip colour-family keys here - a whole-family set (e.g. "any
+            // wool") must not ban every same-coloured item from the rest of the card.
+            for (Material material : set.items()) {
+                out.add("item:" + material);
+            }
+            return out;
+        }
+        if (task instanceof AllOfTask set) {
+            // Complete-set tasks need the same item-level exclusivity: an individual furnace can't sit
+            // beside "collect all furnaces" on one card.
             for (Material material : set.items()) {
                 out.add("item:" + material);
             }

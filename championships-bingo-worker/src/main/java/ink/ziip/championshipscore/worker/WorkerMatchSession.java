@@ -592,6 +592,31 @@ final class WorkerMatchSession {
         PlayerSnapshot participant = participants.get(player.getUniqueId());
         if (participant == null || participant.role() != ParticipantRole.PLAYER) return;
         for (int cellIndex : objectives.matchingAdvancement(advancement)) acceptCompletion(participant, cellIndex);
+        objectives.recordCount(player, "advancement_count");
+        observe(player);
+    }
+
+    void observeEventSignal(Player player, String trigger, String param) {
+        if (state() != MatchState.RUNNING) return;
+        PlayerSnapshot participant = participants.get(player.getUniqueId());
+        if (participant == null || participant.role() != ParticipantRole.PLAYER) return;
+        int teamId = participant.teamId();
+        for (int cellIndex : objectives.matchingEventSignal(player, trigger, param,
+                cellIndex -> !completedTeamCells.contains(new TeamCell(teamId, cellIndex)))) {
+            acceptCompletion(participant, cellIndex);
+        }
+    }
+
+    void recordEventDistinct(Player player, String bucket, String value) {
+        if (!isRunningPlayer(player.getUniqueId())) return;
+        objectives.recordDistinct(player, bucket, value);
+        observe(player);
+    }
+
+    void recordEventCount(Player player, String bucket) {
+        if (!isRunningPlayer(player.getUniqueId())) return;
+        objectives.recordCount(player, bucket);
+        observe(player);
     }
 
     private void acceptCompletion(PlayerSnapshot player, int cellIndex) {

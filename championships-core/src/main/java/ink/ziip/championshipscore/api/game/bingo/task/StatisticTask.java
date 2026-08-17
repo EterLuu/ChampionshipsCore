@@ -45,6 +45,17 @@ public record StatisticTask(StatisticHandle statistic, int count, Dimension dime
         };
     }
 
+    /**
+     * True for open-ended untyped statistics rendered with the one_of "ANY" template: subject icon
+     * centred in the stat frame, yellow ANY stamp across the top, no bottom-left action badge.
+     */
+    public boolean usesAnyTemplate() {
+        return switch (statistic.statisticType()) {
+            case MOB_KILLS, DEATHS, ANIMALS_BRED, ITEM_ENCHANTED -> true;
+            default -> false;
+        };
+    }
+
     @Override
     public Component getName() {
         // Special override: FISH_CAUGHT uses a friendlier display name from the lang file.

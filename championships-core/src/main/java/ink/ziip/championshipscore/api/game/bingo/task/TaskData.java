@@ -8,15 +8,16 @@ import java.util.Set;
 
 /**
  * Immutable description of a single bingo objective. Concrete kinds: {@link ItemTask},
- * {@link AdvancementTask}, {@link StatisticTask}, {@link OneOfTask}. Completion state lives on
- * {@link GameTask}, not here.
+ * {@link AdvancementTask}, {@link StatisticTask}, {@link OneOfTask}, {@link PotionTask},
+ * {@link AllOfTask}, {@link EventTask}. Completion state lives on {@link GameTask}, not here.
  */
-public sealed interface TaskData permits ItemTask, AdvancementTask, StatisticTask, OneOfTask, PotionTask {
+public sealed interface TaskData permits ItemTask, AdvancementTask, StatisticTask, OneOfTask, PotionTask, AllOfTask, EventTask {
     enum TaskType {
         ITEM("item"),
         STATISTIC("statistic"),
         ADVANCEMENT("advancement"),
-        ITEM_SET("item_set");
+        ITEM_SET("item_set"),
+        EVENT("event");
 
         public final String id;
 

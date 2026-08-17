@@ -1,0 +1,3 @@
+# Specific-entity kill objectives are capped at two cells per generated card.
+values:
+  - "kill:*"

@@ -22,13 +22,13 @@ import java.util.Set;
 /**
  * Loads the tag layer: one tag per {@code <dataFolder>/bingo/tags/<tag>.yml} file (a {@code values}
  * list of objective-id globs), plus the {@code filters} section of the bingo config (excluded tags and
- * per-tag caps). Installs the result into {@link TagFilters}. A bundled {@code tags/tedious.yml} is
- * written on first run.
+ * per-tag caps). Installs the result into {@link TagFilters}. Bundled tag definitions are written on
+ * first run.
  */
 public final class TagFilterLoader {
     private static final String DIR = "bingo/tags";
     private static final String RESOURCE_DIR = "bingo/tags";
-    private static final String[] BUNDLED = {"tedious"};
+    private static final String[] BUNDLED = {"tedious", "kill"};
 
     private TagFilterLoader() {
     }

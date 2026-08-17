@@ -68,9 +68,28 @@ final class WorkerCardMapRenderer extends MapRenderer {
         if ("statistic".equals(task.taskType())) {
             Key subject = WorkerTaskDisplay.statisticSubject(task);
             Statistic statistic = WorkerTaskDisplay.enumValue(Statistic.class, task.attributes().get("statistic"));
-            BufferedImage cell = statistic == null ? null : TaskImageAtlas.statisticCell(subject, statistic);
+            boolean any = Boolean.parseBoolean(task.attributes().get("display.any-template"));
+            BufferedImage cell = statistic == null ? null : any
+                    ? TaskImageAtlas.statisticCell(subject, (BufferedImage) null)
+                    : TaskImageAtlas.statisticCell(subject, statistic);
             // statisticCell is already the full 24x24 slot, unlike the normal 22x22 sprites.
             if (cell != null) drawImage(canvas, x, y, cell);
+            if (any) drawSetBadge(canvas, x, y);
+        } else if ("event".equals(task.taskType())) {
+            Key subject = WorkerTaskDisplay.key(task.attributes().get("display.icon-key"));
+            if (subject == null) subject = WorkerTaskDisplay.key(task.attributes().get("display.entity"));
+            if (subject == null) subject = WorkerTaskDisplay.icon(task).key();
+            boolean any = Boolean.parseBoolean(task.attributes().get("display.any-template"));
+            BufferedImage badge = null;
+            if (Boolean.parseBoolean(task.attributes().get("display.green-check"))) {
+                badge = TaskImageAtlas.checkBadge();
+            } else {
+                Key badgeKey = WorkerTaskDisplay.key(task.attributes().get("display.badge-key"));
+                if (badgeKey != null) badge = TaskImageAtlas.imageFor(badgeKey);
+            }
+            BufferedImage cell = TaskImageAtlas.eventCell(subject, any ? null : badge);
+            drawImage(canvas, x, y, cell);
+            if (any) drawSetBadge(canvas, x, y);
         } else if ("potion".equals(task.taskType())) {
             Material material = WorkerTaskDisplay.icon(task);
             BufferedImage image = TaskImageAtlas.potionImageFor(potionInfix(material), task.attributes().get("effect"));
@@ -80,6 +99,10 @@ final class WorkerCardMapRenderer extends MapRenderer {
             BufferedImage image = atlas(WorkerTaskDisplay.icon(task));
             if (image != null) drawImage(canvas, x + 1, y + 1, image);
             drawSetBadge(canvas, x, y);
+        } else if ("all_of".equals(task.taskType())) {
+            BufferedImage image = atlas(WorkerTaskDisplay.icon(task));
+            if (image != null) drawImage(canvas, x + 1, y + 1, image);
+            drawAllBadge(canvas, x, y);
         } else {
             Material icon = WorkerTaskDisplay.icon(task);
             if ("advancement".equals(task.taskType())) {
@@ -89,12 +112,14 @@ final class WorkerCardMapRenderer extends MapRenderer {
                     if (frame != null) drawImageClipped(canvas, x - 1, y - 1, frame, x, y, 24, 24);
                 }
             }
-            BufferedImage image = atlas(icon);
+            Key frozenKey = WorkerTaskDisplay.key(task.attributes().get("display.icon-key"));
+            BufferedImage image = frozenKey == null ? atlas(icon) : TaskImageAtlas.imageFor(frozenKey);
             if (image != null) drawImage(canvas, x + 1, y + 1, image);
         }
         int amount = WorkerTaskDisplay.amount(task);
         if (amount > 1 || "statistic".equals(task.taskType())) {
-            drawAmount(canvas, gridX, gridY, amount, "statistic".equals(task.taskType()));
+            drawAmount(canvas, gridX, gridY, amount,
+                    "statistic".equals(task.taskType()) || "event".equals(task.taskType()));
         }
     }
 
@@ -228,20 +253,33 @@ final class WorkerCardMapRenderer extends MapRenderer {
             {0b1001, 0b1101, 0b1011, 0b1001, 0b1001},
             {0b1001, 0b1001, 0b0110, 0b0010, 0b0010},
     };
+    private static final int[][] ALL_GLYPHS = {
+            {0b0110, 0b1001, 0b1111, 0b1001, 0b1001},
+            {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
+            {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
+    };
 
     private static void drawSetBadge(MapCanvas canvas, int x, int y) {
+        drawWordBadge(canvas, x, y, ANY_GLYPHS);
+    }
+
+    private static void drawAllBadge(MapCanvas canvas, int x, int y) {
+        drawWordBadge(canvas, x, y, ALL_GLYPHS);
+    }
+
+    private static void drawWordBadge(MapCanvas canvas, int x, int y, int[][] glyphs) {
         byte foreground = MapColorMatcher.matchColor(255, 221, 85);
         byte shadow = MapColorMatcher.matchColor(28, 28, 30);
-        int total = ANY_GLYPHS.length * GLYPH_W + (ANY_GLYPHS.length - 1) * GLYPH_GAP;
+        int total = glyphs.length * GLYPH_W + (glyphs.length - 1) * GLYPH_GAP;
         int startX = x + (24 - total) / 2;
         int startY = y + 2;
         for (int pass = 0; pass < 2; pass++) {
             byte color = pass == 0 ? shadow : foreground;
             int nudgeX = pass == 0 ? 1 : 0;
             int nudgeY = pass == 0 ? 1 : 0;
-            for (int glyphIndex = 0; glyphIndex < ANY_GLYPHS.length; glyphIndex++) {
+            for (int glyphIndex = 0; glyphIndex < glyphs.length; glyphIndex++) {
                 int glyphX = startX + glyphIndex * (GLYPH_W + GLYPH_GAP);
-                int[] glyph = ANY_GLYPHS[glyphIndex];
+                int[] glyph = glyphs[glyphIndex];
                 for (int row = 0; row < GLYPH_H; row++) {
                     for (int column = 0; column < GLYPH_W; column++) {
                         if ((glyph[row] & (1 << (GLYPH_W - 1 - column))) == 0) continue;

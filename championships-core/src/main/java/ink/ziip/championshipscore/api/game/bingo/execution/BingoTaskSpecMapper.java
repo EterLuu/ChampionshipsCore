@@ -1,8 +1,11 @@
 package ink.ziip.championshipscore.api.game.bingo.execution;
 
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
+import ink.ziip.championshipscore.api.game.bingo.task.AllOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.CardDisplayInfo;
 import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
+import ink.ziip.championshipscore.api.game.bingo.task.EventSubject;
+import ink.ziip.championshipscore.api.game.bingo.task.EventTask;
 import ink.ziip.championshipscore.api.game.bingo.task.ItemTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
@@ -46,12 +49,56 @@ public final class BingoTaskSpecMapper {
             attributes.put("materials", set.items().stream().map(Enum::name).sorted()
                     .collect(Collectors.joining(",")));
             attributes.put("count", Integer.toString(set.count()));
+        } else if (task.data instanceof AllOfTask set) {
+            type = "all_of";
+            attributes.put("materials", set.items().stream().map(Enum::name).sorted()
+                    .collect(Collectors.joining(",")));
+            attributes.put("count", Integer.toString(set.count()));
+        } else if (task.data instanceof EventTask event) {
+            type = "event";
+            attributes.put("trigger", event.trigger());
+            attributes.put("param", event.param());
+            attributes.put("count", Integer.toString(event.count()));
+            attributes.put("dimension", event.dimension().name());
+            if (!event.members().isEmpty()) {
+                attributes.put("members", event.members().stream().map(Enum::name).sorted()
+                        .collect(Collectors.joining(",")));
+            }
+            if (!event.subjects().isEmpty()) {
+                attributes.put("subjects", event.subjects().stream()
+                        .sorted(java.util.Comparator.comparing((EventSubject subject) -> subject.kind().name())
+                                .thenComparing(EventSubject::key))
+                        .map(subject -> subject.kind().name() + "=" + subject.key())
+                        .collect(Collectors.joining(",")));
+            }
+            if (event.entityIconKey() != null) {
+                attributes.put("display.entity", event.entityIconKey().asString());
+            }
+            if (event.mapIconKey() != null) {
+                attributes.put("display.icon-key", event.mapIconKey().asString());
+            }
+            if (event.displayPotionType() != null) {
+                attributes.put("display.potion-type", event.displayPotionType().name());
+            }
+            if (event.eventBadgeKey() != null) {
+                attributes.put("display.badge-key", event.eventBadgeKey().asString());
+            }
+            attributes.put("display.any-template", Boolean.toString(event.usesAnyTemplate()));
+            attributes.put("display.green-check", Boolean.toString(event.usesGreenCheckBadge()));
         } else if (task.data instanceof AdvancementTask advancement) {
             if (advancement.advancement() == null) {
                 throw new IllegalArgumentException("Card contains an unresolved advancement at cell " + cell);
             }
             type = "advancement";
             attributes.put("key", advancement.advancement().key().asString());
+            if (advancement.usesOminousBannerIcon()) {
+                attributes.put("display.icon-key", "minecraft:ominous_banner");
+            } else if (advancement.usesHealingPotionIcon()) {
+                attributes.put("display.icon-key", "minecraft:healing_potion");
+            }
+            if (advancement.displayPotionType() != null) {
+                attributes.put("display.potion-type", advancement.displayPotionType().name());
+            }
         } else if (task.data instanceof StatisticTask statistic) {
             type = "statistic";
             StatisticHandle handle = statistic.statistic();
@@ -61,6 +108,12 @@ public final class BingoTaskSpecMapper {
             int target = StatisticCategories.of(handle.statisticType()) == StatisticCategory.TRAVEL
                     ? Math.multiplyExact(statistic.count(), 1000) : statistic.count();
             attributes.put("target", Integer.toString(target));
+            if (handle.usesOminousBannerIcon()) {
+                attributes.put("display.icon-key", "minecraft:ominous_banner");
+            } else if (handle.displayEntity() != null) {
+                attributes.put("display.entity", handle.displayEntity().key().asString());
+            }
+            attributes.put("display.any-template", Boolean.toString(statistic.usesAnyTemplate()));
         } else {
             throw new IllegalArgumentException("Unsupported Bingo task model " + task.data.getClass().getName());
         }

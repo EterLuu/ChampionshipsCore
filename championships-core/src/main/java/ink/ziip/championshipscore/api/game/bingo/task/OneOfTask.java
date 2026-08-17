@@ -64,8 +64,17 @@ public record OneOfTask(Set<Material> items, Material display, String name, int 
      * representative item's own name. Used to look up a localized "Any &lt;family&gt;" label.
      */
     public String familyToken() {
-        List<String[]> segs = new ArrayList<>(items.size());
-        for (Material m : items) segs.add(segments(m));
+        return familyToken(items);
+    }
+
+    /**
+     * Shared-set version of {@link #familyToken()}: the same lower-case family token computed for an
+     * arbitrary member set, reused by {@link AllOfTask} so "collect all mushrooms" and "any mushroom"
+     * resolve to the same localized family label.
+     */
+    public static String familyToken(Set<Material> materials) {
+        List<String[]> segs = new ArrayList<>(materials.size());
+        for (Material m : materials) segs.add(segments(m));
         int suffix = commonRun(segs, true);
         int prefix = commonRun(segs, false);
         String[] first = segs.get(0);
