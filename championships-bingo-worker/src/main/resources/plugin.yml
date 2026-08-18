@@ -9,5 +9,9 @@ softdepend:
   - PlaceholderAPI
 commands:
   cc:
-    description: Free-play Bingo controls.
-    usage: /cc play leave
+    description: Bingo match controls (free-play leave, admin stop).
+    usage: /cc play leave | /cc game stop --confirm
+permissions:
+  cc.admin:
+    description: Bingo worker administration (stop the live match).
+    default: op

@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.protocol.MatchState;
 import ink.ziip.championshipscore.protocol.transport.DeliveryDisposition;
 import ink.ziip.championshipscore.protocol.transport.InboundDelivery;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Location;
@@ -167,12 +168,42 @@ final class WorkerMatchRegistry {
         synchronized (this) {
             session = active;
         }
-        if (session == null || !session.isPlaying(player.getUniqueId())) {
+        if (session == null || session.state().terminal() || !session.isPlaying(player.getUniqueId())) {
             player.sendMessage(Component.text("[自由游玩] ", NamedTextColor.GREEN)
                     .append(Component.text("你当前没有参与任何游戏。", NamedTextColor.GRAY)));
             return;
         }
+        if (session.eventMode()) {
+            player.sendMessage(Component.text("[赛事] ", NamedTextColor.GOLD)
+                    .append(Component.text("正式赛事进行中，无法主动离开。", NamedTextColor.RED)));
+            return;
+        }
         session.requestVoluntaryLeave(player);
+    }
+
+    /** Snapshot of the live match session, or {@code null} when none was ever prepared. */
+    WorkerMatchSession activeSession() {
+        synchronized (this) {
+            return active;
+        }
+    }
+
+    /** Finishes the live match with a normal settlement, mirroring core's /cc game stop. */
+    void requestAdminStop(CommandSender sender) {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        if (session == null || session.state().terminal()) {
+            sender.sendMessage(Component.text("[Bingo] ", NamedTextColor.AQUA)
+                    .append(Component.text("当前没有可结束的比赛。", NamedTextColor.GRAY)));
+            return;
+        }
+        String reason = "admin-stop:" + sender.getName();
+        plugin.getLogger().info("Admin match stop requested by " + sender.getName() + " (" + reason + ")");
+        session.finish(reason);
+        sender.sendMessage(Component.text("[Bingo] ", NamedTextColor.AQUA)
+                .append(Component.text("已发起结束，正在按当前成绩结算…", NamedTextColor.GRAY)));
     }
 
     private static Set<UUID> parsePlayers(String value) {

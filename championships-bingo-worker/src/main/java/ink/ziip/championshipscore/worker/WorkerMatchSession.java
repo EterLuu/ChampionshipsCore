@@ -152,6 +152,11 @@ final class WorkerMatchSession {
         return lifecycle.state();
     }
 
+    /** True for championship (EVENT) matches, where voluntary mid-match leaving is disabled. */
+    boolean eventMode() {
+        return manifest.runMode() == MatchRunMode.EVENT;
+    }
+
     synchronized boolean owns(UUID playerId) {
         return participants.containsKey(playerId) && !lifecycle.state().terminal();
     }
