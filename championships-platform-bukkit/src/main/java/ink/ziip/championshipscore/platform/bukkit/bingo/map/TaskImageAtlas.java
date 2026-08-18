@@ -10,9 +10,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
-import java.awt.BasicStroke;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,6 +38,7 @@ public final class TaskImageAtlas {
     private static final Color STAT_BORDER = new Color(48, 56, 70);
     private static final Color EVENT_PANEL = new Color(108, 96, 140);
     private static final Color EVENT_BORDER = new Color(56, 46, 80);
+    private static final Key TRAVEL_ARROW_BADGE_KEY = Key.key("minecraft", "travel_arrow");
     private static final int BADGE = 16;
     private static final int BADGE_INSET = FRAME_BORDER;
     private static final int BADGE_X = BADGE_INSET - 2;
@@ -247,12 +245,42 @@ public final class TaskImageAtlas {
 
     private static BufferedImage createCheckBadge() {
         BufferedImage image = new BufferedImage(22, 22, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D graphics = image.createGraphics();
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        graphics.setColor(new Color(76, 200, 80));
-        graphics.setStroke(new BasicStroke(3.4F, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        graphics.drawPolyline(new int[]{5, 8, 14}, new int[]{11, 14, 7}, 3);
-        graphics.dispose();
+        boolean[][] mask = {
+                {false, false, false, false, false, false, false, false, true,  false, false},
+                {false, false, false, false, false, false, false, true,  true,  true,  true },
+                {false, false, true,  false, false, false, true,  true,  true,  true,  true },
+                {true,  true,  true,  true,  false, true,  true,  true,  true,  true,  true },
+                {false, true,  true,  true,  true,  true,  true,  true,  true,  false, false},
+                {false, true,  true,  true,  true,  true,  true,  true,  false, false, false},
+                {false, false, true,  true,  true,  true,  true,  false, false, false, false},
+                {false, false, false, true,  true,  true,  false, false, false, false, false},
+                {false, false, false, true,  true,  true,  false, false, false, false, false}
+        };
+        int originX = 7;
+        int originY = 6;
+        int outline = 0xFF173B25;
+        int shadow = 0xFF2F8F48;
+        int face = 0xFF58D36F;
+
+        for (int y = 0; y < mask.length; y++) {
+            for (int x = 0; x < mask[y].length; x++) {
+                if (!mask[y][x]) continue;
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        image.setRGB(originX + x + dx, originY + y + dy, outline);
+                    }
+                }
+            }
+        }
+        for (int y = 0; y < mask.length; y++) {
+            for (int x = 0; x < mask[y].length; x++) {
+                if (!mask[y][x]) continue;
+                image.setRGB(originX + x, originY + y, shadow);
+                if (y + 1 < mask.length && x + 1 < mask[y].length && mask[y + 1][x + 1]) {
+                    image.setRGB(originX + x, originY + y, face);
+                }
+            }
+        }
         return image;
     }
 
@@ -268,7 +296,28 @@ public final class TaskImageAtlas {
             case ENTITY_KILLED_BY -> "entity_killed_by";
             default -> null;
         };
-        return name == null ? null : statisticBadges.get(name);
+        if (name != null) return statisticBadges.get(name);
+        return switch (stat) {
+            case JUMP,
+                 STRIDER_ONE_CM,
+                 MINECART_ONE_CM,
+                 CLIMB_ONE_CM,
+                 FLY_ONE_CM,
+                 WALK_UNDER_WATER_ONE_CM,
+                 BOAT_ONE_CM,
+                 PIG_ONE_CM,
+                 HORSE_ONE_CM,
+                 CROUCH_ONE_CM,
+                 AVIATE_ONE_CM,
+                 WALK_ONE_CM,
+                 WALK_ON_WATER_ONE_CM,
+                 SWIM_ONE_CM,
+                 FALL_ONE_CM,
+                 SPRINT_ONE_CM,
+                 HAPPY_GHAST_ONE_CM,
+                 NAUTILUS_ONE_CM -> imageFor(TRAVEL_ARROW_BADGE_KEY);
+            default -> null;
+        };
     }
 
     public static @Nullable BufferedImage advancementFrame(@Nullable AdvancementDisplay.Frame type) {

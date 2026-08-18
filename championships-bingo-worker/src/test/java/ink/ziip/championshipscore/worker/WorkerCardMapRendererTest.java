@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
+import net.kyori.adventure.key.Key;
+import org.bukkit.Material;
 import org.bukkit.Statistic;
 import org.bukkit.entity.EntityType;
 import org.bukkit.map.MapCanvas;
@@ -9,9 +11,12 @@ import org.junit.jupiter.api.Test;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorkerCardMapRendererTest {
@@ -41,6 +46,58 @@ class WorkerCardMapRendererTest {
         assertTrue(adjustedMatches > previousMatches + 20,
                 () -> "expected entity sprite at (+8,-1), matches=" + adjustedMatches
                         + "; old (+6,-4) matches=" + previousMatches);
+    }
+
+    @Test
+    void travelStatisticsUseTheSharedArrowBadge() {
+        BufferedImage arrow = TaskImageAtlas.imageFor(Key.key("minecraft", "travel_arrow"));
+        assertNotNull(arrow);
+        BufferedImage cell = TaskImageAtlas.statisticCell(Material.LEATHER_BOOTS.key(), Statistic.WALK_ONE_CM);
+
+        int matches = alignedOpaquePixels(cell, arrow, -4, 5);
+        assertTrue(matches >= 25, () -> "expected travel arrow at (-4,+5), matches=" + matches);
+        assertTrue(opaqueColors(arrow).size() >= 3, "travel arrow should keep outline, face, and shadow tones");
+    }
+
+    @Test
+    void checkBadgeIsCompactMultitonePixelArt() {
+        BufferedImage check = TaskImageAtlas.checkBadge();
+        assertNotNull(check);
+        Set<Integer> colors = new HashSet<>();
+        int minX = check.getWidth();
+        int minY = check.getHeight();
+        int maxX = -1;
+        int maxY = -1;
+        for (int y = 0; y < check.getHeight(); y++) {
+            for (int x = 0; x < check.getWidth(); x++) {
+                int pixel = check.getRGB(x, y);
+                if ((pixel >>> 24) == 0) continue;
+                colors.add(pixel);
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+        }
+
+        assertTrue(colors.size() >= 3, () -> "expected multitone check, colors=" + colors.size());
+        int opaqueWidth = maxX - minX + 1;
+        int opaqueHeight = maxY - minY + 1;
+        assertTrue(opaqueWidth <= 13,
+                () -> "check should leave room for the task subject, width=" + opaqueWidth);
+        assertTrue(opaqueHeight <= 11,
+                () -> "check should remain a compact corner badge, height=" + opaqueHeight);
+    }
+
+    private static Set<Integer> opaqueColors(BufferedImage image) {
+        Set<Integer> colors = new HashSet<>();
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int pixel = image.getRGB(x, y);
+                if ((pixel >>> 24) == 0xFF) colors.add(pixel);
+            }
+        }
+        return colors;
     }
 
     private static int alignedOpaquePixels(BufferedImage cell, BufferedImage sprite, int offsetX, int offsetY) {
