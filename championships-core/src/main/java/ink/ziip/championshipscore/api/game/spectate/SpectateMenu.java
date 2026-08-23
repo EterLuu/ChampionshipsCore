@@ -458,7 +458,7 @@ public final class SpectateMenu implements Listener {
         Player viewer = Bukkit.getPlayer(holder.viewer);
         List<BaseGameInstance> instances = viewer == null
                 ? List.of()
-                : manager.getSpectatableInstances(viewer);
+                : manager.getLiveSpectatableInstances(viewer);
         int pageSize = menu.contentSlots().size();
         holder.pageCount = Math.max(1, (instances.size() + pageSize - 1) / pageSize);
         holder.page = Math.max(0, Math.min(holder.page, holder.pageCount - 1));

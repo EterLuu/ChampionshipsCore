@@ -7,8 +7,15 @@ public record BingoScoringRules(
         List<Integer> claimPoints,
         int lineBonus,
         int lineBonusMajorCount,
-        int lineBonusMinor
+        int lineBonusMinor,
+        BingoVariantRules variant
 ) {
+    public BingoScoringRules(int cardWidth, List<Integer> claimPoints, int lineBonus,
+                             int lineBonusMajorCount, int lineBonusMinor) {
+        this(cardWidth, claimPoints, lineBonus, lineBonusMajorCount, lineBonusMinor,
+                BingoVariantRules.FIXED_POINTS);
+    }
+
     public BingoScoringRules {
         if (cardWidth < 1) throw new IllegalArgumentException("cardWidth must be positive");
         claimPoints = ProtocolSupport.immutableList(claimPoints, "claimPoints");
@@ -19,6 +26,7 @@ public record BingoScoringRules(
         if (lineBonus < 0 || lineBonusMajorCount < 0 || lineBonusMinor < 0) {
             throw new IllegalArgumentException("line bonus values must be non-negative");
         }
+        ProtocolSupport.required(variant, "variant");
     }
 
     public int pointsForClaimRank(int zeroBasedRank) {

@@ -52,4 +52,5 @@ public final class BingoExecutionRouter implements BingoExecutionGateway {
         }
         return gateway;
     }
+
 }

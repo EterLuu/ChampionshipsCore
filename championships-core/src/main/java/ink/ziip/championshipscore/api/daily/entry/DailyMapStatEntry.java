@@ -12,5 +12,6 @@ public record DailyMapStatEntry(@NotNull UUID uuid, @NotNull String username,
                                  long maxTasks, long maxLines, long maxFirstTasks,
                                  double maxDragonDamage,
                                  long firstLiberate, long firstNextGen, long firstGateway,
+                                 long maxStars, long finishes,
                                  long updatedAt) {
 }

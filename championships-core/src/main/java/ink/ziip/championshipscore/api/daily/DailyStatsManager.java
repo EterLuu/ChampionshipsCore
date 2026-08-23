@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.daily.dao.DailyStatsDaoImpl;
 import ink.ziip.championshipscore.api.daily.entry.DailyMapStatEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyMatchAggregateEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyMatchResultEntry;
+import ink.ziip.championshipscore.api.daily.entry.DailyPkwRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyStatEntry;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
@@ -34,7 +35,9 @@ import java.util.Comparator;
 public final class DailyStatsManager extends BaseManager {
     private final DailyStatsDao statsDao = new DailyStatsDaoImpl();
     private final Map<StatKey, DailyStatSnapshot> stats = new ConcurrentHashMap<>();
-    private final Map<RecordKey, Long> records = new ConcurrentHashMap<>();
+    /** Up to three best attempts for each player/game/map/record identity, fastest first. */
+    private final Map<RecordKey, List<DailyRecordEntry>> records = new ConcurrentHashMap<>();
+    private final Map<PkwRecordKey, PkwRecordValue> pkwRecords = new ConcurrentHashMap<>();
     private final Map<MapStatKey, DailyMapStat> mapStats = new ConcurrentHashMap<>();
     /** Latest per-team in-match progress, copied into the immutable match result at game end. */
     private final Map<UUID, Map<UUID, MatchProgress>> matchProgress = new ConcurrentHashMap<>();
@@ -61,6 +64,7 @@ public final class DailyStatsManager extends BaseManager {
         active = false;
         stats.clear();
         records.clear();
+        pkwRecords.clear();
         mapStats.clear();
         matchProgress.clear();
         names.clear();
@@ -101,18 +105,48 @@ public final class DailyStatsManager extends BaseManager {
     }
 
     public long bestRecord(UUID player, GameTypeEnum game, String map, DailyRecordType type) {
-        return records.getOrDefault(new RecordKey(player, game, map, type), -1L);
+        List<Long> values = recordValues(player, game, map, type);
+        return values.isEmpty() ? -1L : values.getFirst();
     }
 
     /** Best time of one record type across every map the player set it on. */
     public long bestRecordAcrossMaps(UUID player, GameTypeEnum game, DailyRecordType type) {
-        long best = -1L;
-        for (Map.Entry<RecordKey, Long> entry : records.entrySet()) {
+        List<Long> values = recordValuesAcrossMaps(player, game, type);
+        return values.isEmpty() ? -1L : values.getFirst();
+    }
+
+    /** The player's top three attempts on one map, in ascending time order. */
+    public @NotNull List<Long> recordValues(UUID player, GameTypeEnum game, String map,
+                                             DailyRecordType type) {
+        return records.getOrDefault(new RecordKey(player, game, map, type), List.of()).stream()
+                .map(DailyRecordEntry::durationMs).toList();
+    }
+
+    /** The player's top three attempts across all maps, in ascending time order. */
+    public @NotNull List<Long> recordValuesAcrossMaps(UUID player, GameTypeEnum game,
+                                                       DailyRecordType type) {
+        List<DailyRecordEntry> values = new ArrayList<>();
+        for (Map.Entry<RecordKey, List<DailyRecordEntry>> entry : records.entrySet()) {
             RecordKey key = entry.getKey();
-            if (!key.player().equals(player) || key.game() != game || key.type() != type) continue;
-            best = best < 0L ? entry.getValue() : Math.min(best, entry.getValue());
+            if (key.player().equals(player) && key.game() == game && key.type() == type) {
+                values.addAll(entry.getValue());
+            }
         }
-        return best;
+        return topRecords(values).stream().map(DailyRecordEntry::durationMs).toList();
+    }
+
+    /** Values shown in the personal-record menus; only repeatable time records have three rows. */
+    public @NotNull List<Double> metricValues(@NotNull UUID player, @Nullable String map,
+                                              @NotNull DailyMetric metric) {
+        if (metric.format() == DailyMetric.Format.TIME) {
+            DailyRecordType type = recordType(metric);
+            List<Long> values = map == null
+                    ? recordValuesAcrossMaps(player, metric.game(), type)
+                    : recordValues(player, metric.game(), map, type);
+            return values.stream().map(Long::doubleValue).toList();
+        }
+        double value = metricValue(player, map, metric);
+        return Double.isNaN(value) ? List.of() : List.of(value);
     }
 
     /**
@@ -120,6 +154,10 @@ public final class DailyStatsManager extends BaseManager {
      * (max for peak metrics, sum-based rates, minimum for times). Returns NaN when absent.
      */
     public double metricValue(@NotNull UUID player, @Nullable String map, @NotNull DailyMetric metric) {
+        if (metric.isComposite()) {
+            PkwRecordValue record = pkwRecord(player, map, metric);
+            return record == null ? Double.NaN : record.primaryValue();
+        }
         if (metric.format() == DailyMetric.Format.TIME) {
             DailyRecordType type = recordType(metric);
             long value = map != null ? bestRecord(player, metric.game(), map, type)
@@ -137,6 +175,41 @@ public final class DailyStatsManager extends BaseManager {
             case DRAGON_FIRST_GATEWAY_RATE -> rate(stat.firstGateway(), stat.trackedGames());
             default -> Double.NaN;
         };
+    }
+
+    public long metricDuration(@NotNull UUID player, @Nullable String map, @NotNull DailyMetric metric) {
+        PkwRecordValue record = pkwRecord(player, map, metric);
+        return record == null ? -1L : record.durationMs();
+    }
+
+    public @NotNull String formatMetricValue(@NotNull UUID player, @Nullable String map,
+                                             @NotNull DailyMetric metric) {
+        double value = metricValue(player, map, metric);
+        return Double.isNaN(value) ? "" : formatMetricValue(player, map, metric, value);
+    }
+
+    public @NotNull String formatMetricValue(@NotNull UUID player, @Nullable String map,
+                                             @NotNull DailyMetric metric, double value) {
+        return DailyMetric.format(metric, value, metricDuration(player, map, metric));
+    }
+
+    /** Formats a leaderboard row, including the duration tied to a composite PKW result. */
+    public @NotNull String formatLeaderboardValue(@NotNull DailyMetric metric,
+                                                  @NotNull DailyLeaderboardEntry entry) {
+        return DailyMetric.format(metric, entry.value(), entry.tieDurationMs());
+    }
+
+    private PkwRecordValue pkwRecord(UUID player, @Nullable String map, DailyMetric metric) {
+        DailyPkwRecordType type = metric == DailyMetric.PKW_STARS_TIME
+                ? DailyPkwRecordType.STARS_TIME : DailyPkwRecordType.POINTS_TIME;
+        PkwRecordValue best = null;
+        for (Map.Entry<PkwRecordKey, PkwRecordValue> entry : pkwRecords.entrySet()) {
+            PkwRecordKey key = entry.getKey();
+            if (!key.player().equals(player) || key.type() != type
+                    || (map != null && !key.map().equals(map))) continue;
+            best = best == null ? entry.getValue() : betterPkwRecord(best, entry.getValue());
+        }
+        return best;
     }
 
     /** Rate in percent over tracked games, or NaN while none of this scope's games were tracked. */
@@ -162,16 +235,32 @@ public final class DailyStatsManager extends BaseManager {
 
     /** Keeps the live record/leaderboard cache aligned with a committed database map rename. */
     public void renameMap(@NotNull GameTypeEnum game, @NotNull String oldMap, @NotNull String newMap) {
-        Map<RecordKey, Long> moved = new HashMap<>();
-        for (Map.Entry<RecordKey, Long> entry : new ArrayList<>(records.entrySet())) {
+        Map<RecordKey, List<DailyRecordEntry>> moved = new HashMap<>();
+        for (Map.Entry<RecordKey, List<DailyRecordEntry>> entry : new ArrayList<>(records.entrySet())) {
             RecordKey key = entry.getKey();
             if (key.game() != game || !key.map().equalsIgnoreCase(oldMap)) continue;
             if (records.remove(key, entry.getValue())) {
-                moved.merge(new RecordKey(key.player(), key.game(), newMap, key.type()),
-                        entry.getValue(), Math::min);
+                List<DailyRecordEntry> renamed = entry.getValue().stream()
+                        .map(record -> new DailyRecordEntry(record.uuid(), record.username(), record.game(), newMap,
+                                record.mapRevision(), record.rulesHash(), record.recordType(), record.durationMs(),
+                                record.matchId(), record.achievedBy(), record.achievedAt(), record.recordRank()))
+                        .toList();
+                moved.merge(new RecordKey(key.player(), key.game(), newMap, key.type()), renamed,
+                        (first, second) -> topRecords(concat(first, second)));
             }
         }
-        moved.forEach((key, value) -> records.merge(key, value, Math::min));
+        moved.forEach((key, value) -> records.merge(key, value,
+                (first, second) -> topRecords(concat(first, second))));
+        Map<PkwRecordKey, PkwRecordValue> movedPkw = new HashMap<>();
+        for (Map.Entry<PkwRecordKey, PkwRecordValue> entry : new ArrayList<>(pkwRecords.entrySet())) {
+            PkwRecordKey key = entry.getKey();
+            if (game != GameTypeEnum.ParkourWarrior || !key.map().equalsIgnoreCase(oldMap)) continue;
+            if (pkwRecords.remove(key, entry.getValue())) {
+                movedPkw.merge(new PkwRecordKey(key.player(), newMap, key.type()), entry.getValue(),
+                        DailyStatsManager::betterPkwRecord);
+            }
+        }
+        movedPkw.forEach((key, value) -> pkwRecords.merge(key, value, DailyStatsManager::betterPkwRecord));
         Map<MapStatKey, DailyMapStat> movedStats = new HashMap<>();
         for (Map.Entry<MapStatKey, DailyMapStat> entry : new ArrayList<>(mapStats.entrySet())) {
             MapStatKey key = entry.getKey();
@@ -196,7 +285,7 @@ public final class DailyStatsManager extends BaseManager {
         if (session == null || session.game() != GameTypeEnum.Bingo
                 || lineCount < 0L || completedTasks < 0L || firstTaskCount < 0L) return;
         MatchProgress current = new MatchProgress(lineCount, completedTasks, firstTaskCount,
-                0D, false, false, false);
+                0D, false, false, false, 0L, false, -1L);
         for (UUID player : team.getMembers()) {
             matchProgress.computeIfAbsent(session.matchId(), ignored -> new ConcurrentHashMap<>())
                     .merge(player, current, MatchProgress::merge);
@@ -209,7 +298,7 @@ public final class DailyStatsManager extends BaseManager {
         DailySession session = plugin.getDailyManager().session(instance);
         if (session == null || session.game() != GameTypeEnum.DragonEggCarnival || totalDamage < 0D) return;
         matchProgress.computeIfAbsent(session.matchId(), ignored -> new ConcurrentHashMap<>())
-                .merge(player, new MatchProgress(0L, 0L, 0L, totalDamage, false, false, false),
+                .merge(player, new MatchProgress(0L, 0L, 0L, totalDamage, false, false, false, 0L, false, -1L),
                         MatchProgress::merge);
     }
 
@@ -222,11 +311,22 @@ public final class DailyStatsManager extends BaseManager {
         boolean nextGen = "end/dragon_egg".equals(advancementKey);
         boolean gateway = "end/enter_end_gateway".equals(advancementKey);
         if (!liberate && !nextGen && !gateway) return;
-        MatchProgress current = new MatchProgress(0L, 0L, 0L, 0D, liberate, nextGen, gateway);
+        MatchProgress current = new MatchProgress(0L, 0L, 0L, 0D, liberate, nextGen, gateway, 0L, false, -1L);
         for (UUID player : team.getMembers()) {
             matchProgress.computeIfAbsent(session.matchId(), ignored -> new ConcurrentHashMap<>())
                     .merge(player, current, MatchProgress::merge);
         }
+    }
+
+    /** Records the latest Parkour Warrior star total for one player; stars keep the in-match peak. */
+    public void recordParkourWarriorProgress(@NotNull BaseGameInstance instance, @NotNull UUID player,
+                                             long stars, boolean finished, long durationMillis) {
+        DailySession session = plugin.getDailyManager().session(instance);
+        if (session == null || session.game() != GameTypeEnum.ParkourWarrior || stars < 0L) return;
+        matchProgress.computeIfAbsent(session.matchId(), ignored -> new ConcurrentHashMap<>())
+                .merge(player, new MatchProgress(0L, 0L, 0L, 0D, false, false, false, stars, finished,
+                                finished ? durationMillis : -1L),
+                        MatchProgress::merge);
     }
 
     void recordMatch(@NotNull DailySession session, @NotNull Map<UUID, Double> points) {
@@ -241,6 +341,7 @@ public final class DailyStatsManager extends BaseManager {
         long now = System.currentTimeMillis();
         List<DailyMatchResultEntry> results = new ArrayList<>();
         List<DailyMapStatEntry> mapStatDeltas = new ArrayList<>();
+        List<DailyPkwRecordEntry> pkwRecordDeltas = new ArrayList<>();
         for (ChampionshipTeam team : session.teams()) {
             boolean won = teamScores.getOrDefault(team, 0D) == winningScore;
             for (UUID player : team.getMembers()) {
@@ -259,11 +360,29 @@ public final class DailyStatsManager extends BaseManager {
                 mapStatDeltas.add(delta);
                 mapStats.merge(new MapStatKey(player, session.game(), session.map()),
                         toMapStat(delta), DailyMapStat::merge);
+                if (session.game() == GameTypeEnum.ParkourWarrior && match != null
+                        && match.finished() && match.finishDurationMs() >= 0L) {
+                    addPkwRecord(pkwRecordDeltas, player, session, DailyPkwRecordType.STARS_TIME,
+                            match.stars(), match.finishDurationMs(), now);
+                    addPkwRecord(pkwRecordDeltas, player, session, DailyPkwRecordType.POINTS_TIME,
+                            playerPoints, match.finishDurationMs(), now);
+                }
             }
         }
         rebuildLeaderboards();
         runAsync(() -> statsDao.saveMatch(results));
         runAsync(() -> statsDao.saveMapStats(mapStatDeltas));
+        runAsync(() -> statsDao.savePkwRecords(pkwRecordDeltas));
+    }
+
+    private void addPkwRecord(List<DailyPkwRecordEntry> deltas, UUID player, DailySession session,
+                              DailyPkwRecordType type, double primaryValue, long durationMs, long now) {
+        DailyPkwRecordEntry entry = new DailyPkwRecordEntry(player, safeName(player), session.map(), type,
+                primaryValue, durationMs, session.matchId(), now);
+        deltas.add(entry);
+        names.put(player, entry.username());
+        pkwRecords.merge(new PkwRecordKey(player, session.map(), type),
+                new PkwRecordValue(primaryValue, durationMs), DailyStatsManager::betterPkwRecord);
     }
 
     private DailyMapStatEntry mapStatDelta(UUID player, DailySession session, boolean won,
@@ -277,13 +396,16 @@ public final class DailyStatsManager extends BaseManager {
                 match != null && match.firstLiberate() ? 1L : 0L,
                 match != null && match.firstNextGen() ? 1L : 0L,
                 match != null && match.firstGateway() ? 1L : 0L,
+                match == null ? 0L : match.stars(),
+                match != null && match.finished() ? 1L : 0L,
                 System.currentTimeMillis());
     }
 
     private static DailyMapStat toMapStat(DailyMapStatEntry entry) {
         return new DailyMapStat(entry.gamesPlayed(), entry.wins(), entry.gamesPlayed(),
                 entry.maxTasks(), entry.maxLines(), entry.maxFirstTasks(), entry.maxDragonDamage(),
-                entry.firstLiberate(), entry.firstNextGen(), entry.firstGateway());
+                entry.firstLiberate(), entry.firstNextGen(), entry.firstGateway(),
+                entry.maxStars(), entry.finishes());
     }
 
     public void recordTeamMilestone(@NotNull BaseGameInstance instance, @NotNull ChampionshipTeam team,
@@ -311,10 +433,10 @@ public final class DailyStatsManager extends BaseManager {
         List<DailyRecordEntry> entries = new ArrayList<>();
         for (UUID player : players) {
             RecordKey key = new RecordKey(player, session.game(), session.map(), type);
-            records.compute(key,
-                    (ignored, previous) -> previous == null ? durationMillis : Math.min(previous, durationMillis));
-            entries.add(new DailyRecordEntry(player, safeName(player), session.game(), session.map(),
-                    revision, rulesHash, type, durationMillis, session.matchId(), achievedBy, now));
+            DailyRecordEntry candidate = new DailyRecordEntry(player, safeName(player), session.game(), session.map(),
+                    revision, rulesHash, type, durationMillis, session.matchId(), achievedBy, now);
+            records.compute(key, (ignored, previous) -> topRecords(concat(previous, List.of(candidate))));
+            entries.add(candidate);
             names.put(player, safeName(player));
         }
         rebuildLeaderboards();
@@ -329,8 +451,14 @@ public final class DailyStatsManager extends BaseManager {
         }
         for (DailyRecordEntry entry : statsDao.getPlayerRecords()) {
             names.put(entry.uuid(), entry.username());
-            records.merge(new RecordKey(entry.uuid(), entry.game(), entry.map(), entry.recordType()),
-                    entry.durationMs(), Math::min);
+            RecordKey key = new RecordKey(entry.uuid(), entry.game(), entry.map(), entry.recordType());
+            records.compute(key, (ignored, previous) -> topRecords(concat(previous, List.of(entry))));
+        }
+        for (DailyPkwRecordEntry entry : statsDao.getPlayerPkwRecords()) {
+            names.put(entry.uuid(), entry.username());
+            pkwRecords.merge(new PkwRecordKey(entry.uuid(), entry.map(), entry.recordType()),
+                    new PkwRecordValue(entry.primaryValue(), entry.durationMs()),
+                    DailyStatsManager::betterPkwRecord);
         }
         for (DailyMapStatEntry entry : statsDao.getPlayerMapStats()) {
             names.put(entry.uuid(), entry.username());
@@ -358,7 +486,8 @@ public final class DailyStatsManager extends BaseManager {
                     Math.max(base.maxTasks(), history.maxCompletedTasks()),
                     Math.max(base.maxLines(), history.maxLines()),
                     base.maxFirstTasks(), base.maxDragonDamage(),
-                    base.firstLiberate(), base.firstNextGen(), base.firstGateway()));
+                    base.firstLiberate(), base.firstNextGen(), base.firstGateway(),
+                    base.maxStars(), base.finishes()));
         }
     }
 
@@ -403,8 +532,10 @@ public final class DailyStatsManager extends BaseManager {
         rebuilt.put("bingo_completed_tasks", rankMetric(bingoTotals, DailyStatSnapshot::completedTasks));
         rebuilt.put("bingo_max_completed", rankMetric(bingoTotals, DailyStatSnapshot::maxCompletedTasks));
         Map<String, Map<UUID, Long>> timed = new HashMap<>();
-        records.forEach((key, value) -> timed.computeIfAbsent(recordBoardId(key), ignored -> new HashMap<>())
-                .merge(key.player(), value, Math::min));
+        records.forEach((key, values) -> {
+            timed.computeIfAbsent(recordBoardId(key), ignored -> new HashMap<>())
+                    .merge(key.player(), values.getFirst().durationMs(), Math::min);
+        });
         timed.forEach((id, values) -> rebuilt.put(id, values.entrySet().stream()
                 .sorted(Map.Entry.<UUID, Long>comparingByValue().thenComparing(entry -> displayName(entry.getKey())))
                 .limit(100).map(entry -> new DailyLeaderboardEntry(entry.getKey(), displayName(entry.getKey()),
@@ -413,14 +544,15 @@ public final class DailyStatsManager extends BaseManager {
     }
 
     private List<DailyLeaderboardEntry> metricBoard(DailyMetric metric, @Nullable String map) {
+        if (metric.isComposite()) return pkwMetricBoard(metric, map);
         Map<UUID, Double> values = new HashMap<>();
         if (metric.format() == DailyMetric.Format.TIME) {
             DailyRecordType type = recordType(metric);
-            for (Map.Entry<RecordKey, Long> entry : records.entrySet()) {
+            for (Map.Entry<RecordKey, List<DailyRecordEntry>> entry : records.entrySet()) {
                 RecordKey key = entry.getKey();
                 if (key.game() != metric.game() || key.type() != type) continue;
                 if (map != null && !key.map().equals(map)) continue;
-                values.merge(key.player(), (double) entry.getValue(), Math::min);
+                values.merge(key.player(), (double) entry.getValue().getFirst().durationMs(), Math::min);
             }
         } else if (map != null) {
             for (Map.Entry<MapStatKey, DailyMapStat> entry : mapStats.entrySet()) {
@@ -454,6 +586,26 @@ public final class DailyStatsManager extends BaseManager {
                 .toList();
     }
 
+    private List<DailyLeaderboardEntry> pkwMetricBoard(DailyMetric metric, @Nullable String map) {
+        DailyPkwRecordType type = metric == DailyMetric.PKW_STARS_TIME
+                ? DailyPkwRecordType.STARS_TIME : DailyPkwRecordType.POINTS_TIME;
+        Map<UUID, PkwRecordValue> values = new HashMap<>();
+        for (Map.Entry<PkwRecordKey, PkwRecordValue> entry : pkwRecords.entrySet()) {
+            PkwRecordKey key = entry.getKey();
+            if (key.type() != type || (map != null && !key.map().equals(map))) continue;
+            values.merge(key.player(), entry.getValue(), DailyStatsManager::betterPkwRecord);
+        }
+        return values.entrySet().stream()
+                .sorted(Comparator.<Map.Entry<UUID, PkwRecordValue>>comparingDouble(entry -> entry.getValue().primaryValue())
+                        .reversed()
+                        .thenComparingLong(entry -> entry.getValue().durationMs())
+                        .thenComparing(entry -> displayName(entry.getKey()), String.CASE_INSENSITIVE_ORDER))
+                .limit(100)
+                .map(entry -> new DailyLeaderboardEntry(entry.getKey(), displayName(entry.getKey()),
+                        entry.getValue().primaryValue(), false, entry.getValue().durationMs()))
+                .toList();
+    }
+
     /**
      * Rate boards gate on tracked games only (their numerators were not recorded before the
      * per-map table existed); every other metric accepts the backfilled match-result history.
@@ -464,8 +616,9 @@ public final class DailyStatsManager extends BaseManager {
 
     private Set<String> mapsWithStats(GameTypeEnum game) {
         Set<String> maps = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        if (game == GameTypeEnum.AceRace) {
+        if (game == GameTypeEnum.AceRace || game == GameTypeEnum.ParkourWarrior) {
             records.keySet().stream().filter(key -> key.game() == game).map(RecordKey::map).forEach(maps::add);
+            pkwRecords.keySet().stream().map(PkwRecordKey::map).forEach(maps::add);
         }
         mapStats.keySet().stream().filter(key -> key.game() == game).map(MapStatKey::map).forEach(maps::add);
         return maps;
@@ -542,14 +695,65 @@ public final class DailyStatsManager extends BaseManager {
     private record MapStatKey(UUID player, GameTypeEnum game, String map) {}
     private record MilestoneKey(UUID match, int teamId, DailyRecordType type) {}
 
+    private record PkwRecordKey(UUID player, String map, DailyPkwRecordType type) {}
+
+    private record PkwRecordValue(double primaryValue, long durationMs) {}
+
+    private static List<DailyRecordEntry> concat(List<DailyRecordEntry> first,
+                                                  List<DailyRecordEntry> second) {
+        List<DailyRecordEntry> combined = new ArrayList<>();
+        if (first != null) combined.addAll(first);
+        if (second != null) combined.addAll(second);
+        return combined;
+    }
+
+    /** Sorts attempts fastest-first, collapses a repeated write of the same match, and keeps three. */
+    static @NotNull List<DailyRecordEntry> topRecords(@NotNull List<DailyRecordEntry> candidates) {
+        Map<UUID, DailyRecordEntry> byMatch = new HashMap<>();
+        for (DailyRecordEntry candidate : candidates) {
+            DailyRecordEntry previous = byMatch.get(candidate.matchId());
+            if (previous == null || compareRecords(candidate, previous) < 0) {
+                byMatch.put(candidate.matchId(), candidate);
+            }
+        }
+        List<DailyRecordEntry> sorted = byMatch.values().stream()
+                .sorted(DailyStatsManager::compareRecords)
+                .limit(3)
+                .toList();
+        List<DailyRecordEntry> ranked = new ArrayList<>(sorted.size());
+        for (int index = 0; index < sorted.size(); index++) ranked.add(sorted.get(index).withRank(index + 1));
+        return List.copyOf(ranked);
+    }
+
+    private static int compareRecords(DailyRecordEntry first, DailyRecordEntry second) {
+        return Comparator.comparingLong(DailyRecordEntry::durationMs)
+                .thenComparingLong(DailyRecordEntry::achievedAt)
+                .thenComparing(entry -> entry.matchId().toString())
+                .compare(first, second);
+    }
+
+    private static PkwRecordValue betterPkwRecord(PkwRecordValue first, PkwRecordValue second) {
+        return isBetterPkwRecord(second.primaryValue(), second.durationMs(),
+                first.primaryValue(), first.durationMs()) ? second : first;
+    }
+
+    static boolean isBetterPkwRecord(double candidatePrimary, long candidateDuration,
+                                     double currentPrimary, long currentDuration) {
+        return candidatePrimary > currentPrimary
+                || (candidatePrimary == currentPrimary && candidateDuration < currentDuration);
+    }
+
     /** Monotonic per-player in-match progress; merge keeps the peak counts and ORs first flags. */
     private record MatchProgress(long lines, long tasks, long firsts, double dragonDamage,
-                                 boolean firstLiberate, boolean firstNextGen, boolean firstGateway) {
+                                 boolean firstLiberate, boolean firstNextGen, boolean firstGateway,
+                                 long stars, boolean finished, long finishDurationMs) {
         MatchProgress merge(MatchProgress other) {
             return new MatchProgress(Math.max(lines, other.lines), Math.max(tasks, other.tasks),
                     Math.max(firsts, other.firsts), Math.max(dragonDamage, other.dragonDamage),
                     firstLiberate || other.firstLiberate, firstNextGen || other.firstNextGen,
-                    firstGateway || other.firstGateway);
+                    firstGateway || other.firstGateway,
+                    Math.max(stars, other.stars), finished || other.finished,
+                    other.finishDurationMs() >= 0L ? other.finishDurationMs() : finishDurationMs);
         }
     }
 }

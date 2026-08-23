@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.parkourwarrior;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
+import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.game.parkourwarrior.CCSelection;
 import ink.ziip.championshipscore.api.object.game.parkourwarrior.PKWCheckPointTypeEnum;
@@ -40,16 +41,28 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     private final Set<UUID> finishedPlayers = new HashSet<>();
     private final List<PKWCheckpoint> checkpoints = new ArrayList<>();
     private final Map<ChampionshipTeam, Double> gamePointsMultiplier = new HashMap<>();
+    private final Map<UUID, Double> playerFinalPointMultiplier = new HashMap<>();
     private final String visibilityOwner = "game:parkour-warrior:" + UUID.randomUUID();
+    private final int copyIndex;
 
     @Getter
     private int timer;
     private BukkitTask startGameProgressTask;
+    private boolean timedOut;
+    /** PROGRESS start of the current run; the zero point for DAILY fastest-finish records. */
+    private long progressStartNanos;
 
     public ParkourWarriorTeamArea(ChampionshipsCore plugin, ParkourWarriorConfig parkourWarriorConfig) {
-        super(plugin, GameTypeEnum.ParkourWarrior, new ParkourWarriorHandler(plugin), parkourWarriorConfig);
+        this(plugin, parkourWarriorConfig, 0, true);
+    }
 
-        getGameConfig().initializeConfiguration(plugin.getFolder());
+    ParkourWarriorTeamArea(ChampionshipsCore plugin, ParkourWarriorConfig parkourWarriorConfig,
+                           int copyIndex, boolean initializeConfig) {
+        super(plugin, GameTypeEnum.ParkourWarrior, new ParkourWarriorHandler(plugin), parkourWarriorConfig);
+        if (initializeConfig)
+            getGameConfig().initializeConfiguration(plugin.getFolder());
+
+        this.copyIndex = copyIndex;
 
         getGameHandler().setParkourWarriorTeamArea(this);
         getGameHandler().register();
@@ -57,6 +70,11 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         loadCheckpoints();
 
         setGameStageEnum(GameStageEnum.WAITING);
+    }
+
+    @Override
+    public int getCopyIndex() {
+        return copyIndex;
     }
 
     @Override
@@ -71,6 +89,10 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         playerLastCheckpoint.clear();
         playerSpawnLocations.clear();
         finishedPlayers.clear();
+        gamePointsMultiplier.clear();
+        playerFinalPointMultiplier.clear();
+        timedOut = false;
+        progressStartNanos = 0L;
 
         setGameStageEnum(GameStageEnum.WAITING);
     }
@@ -130,8 +152,12 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     }
 
     public synchronized void handlePlayerMove(Player player) {
-        Location currentLocation = player.getLocation();
         UUID uuid = player.getUniqueId();
+        // Completion is final for this run. Keep this guard at the score-state boundary as
+        // well as in the listener so a completed player can never advance a branch again.
+        if (finishedPlayers.contains(uuid)) return;
+
+        Location currentLocation = player.getLocation();
         String name = Utils.formatPlayerName(player);
         PKWCheckpoint lastCheckpoint = playerLastCheckpoint.get(uuid);
         int lastSubCheckpoint = playerLastSubCheckpoint.get(uuid);
@@ -209,6 +235,10 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
                     playerLastSubCheckpoint.put(uuid, index);
                     playerLastCheckpoint.put(uuid, checkpoint);
 
+                    if (getRunMode() == GameRunMode.DAILY)
+                        plugin.getDailyManager().statsManager().recordParkourWarriorProgress(
+                                this, uuid, countStars(uuid), false, -1L);
+
                     player.playSound(player, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1);
 
                     ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
@@ -232,12 +262,22 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
                             // End checkpoint logic
                             if (!finishedPlayers.add(uuid)) return;
+                            if (getRunMode() == GameRunMode.DAILY) {
+                                long durationMillis = progressStartNanos > 0L
+                                        ? Math.max(0L, (System.nanoTime() - progressStartNanos) / 1_000_000L) : -1L;
+                                plugin.getDailyManager().statsManager().recordParkourWarriorProgress(
+                                        this, uuid, countStars(uuid), true, durationMillis);
+                            }
                             player.setGameMode(GameMode.SPECTATOR);
                             hideAndShowPlayer(player);
 
-                            if (championshipTeam != null) {
-                                gamePointsMultiplier.put(championshipTeam, gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + checkpoint.getPointMultiplier(getGameConfig()));
-                            }
+                            double finalMultiplier = checkpoint.getPointMultiplier(getGameConfig());
+                            if (getRunMode() == GameRunMode.DAILY)
+                                playerFinalPointMultiplier.put(uuid,
+                                        dailyFinalPointMultiplier(checkpoint.getFinalCheckPointType()));
+                            else if (championshipTeam != null)
+                                gamePointsMultiplier.put(championshipTeam,
+                                        gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + finalMultiplier);
 
                             sendMessageToAllSpectators(MessageConfig.PARKOUR_WARRIOR_END_CHECKPOINT_COMPLETED
                                     .replace("%player%", Utils.formatPlayerName(player)));
@@ -245,6 +285,19 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
                                     .replace("%player%", Utils.formatPlayerName(player)));
 
                             player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
+
+                            // Formal matches retain the complete roster. DAILY runs treat a disconnected
+                            // player as unable to finish, so that UUID must not hold the remaining runners
+                            // in PROGRESS.
+                            boolean allRequiredPlayersFinished = getRunMode() == GameRunMode.DAILY
+                                    ? getGamePlayers().stream().allMatch(participant ->
+                                    finishedPlayers.contains(participant) || Bukkit.getPlayer(participant) == null)
+                                    : finishedPlayers.containsAll(getGamePlayers());
+                            if (getGameStageEnum() == GameStageEnum.PROGRESS
+                                    && !getGamePlayers().isEmpty()
+                                    && allRequiredPlayersFinished) {
+                                endGame();
+                            }
 
                             return;
                         }
@@ -308,8 +361,13 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         return finishedPlayers.contains(uuid);
     }
 
+    static boolean shouldRestoreFinishedPlayerAsSpectator(GameStageEnum stage, boolean finished) {
+        return stage == GameStageEnum.PROGRESS && finished;
+    }
+
     public void backToMainSpawnPoint(Player player) {
         UUID uuid = player.getUniqueId();
+        if (finishedPlayers.contains(uuid)) return;
         PKWCheckpoint pkwCheckpoint = playerLastCheckpoint.get(uuid);
 
         Location location = pkwCheckpoint.getSpawn();
@@ -374,7 +432,10 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
             ChampionshipTeam championshipTeam = ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(uuid);
             if (championshipTeam != null) {
-                double multiplier = gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + 1;
+                double multiplier = getRunMode() == GameRunMode.DAILY
+                        ? playerFinalPointMultiplier.getOrDefault(uuid, 1d)
+                        * dailyCompletionMultiplier(finishedPlayers.contains(uuid), timedOut)
+                        : gamePointsMultiplier.getOrDefault(championshipTeam, 0d) + 1;
 
                 BigDecimal finalPointsBD = BigDecimal.valueOf(finalPoints * multiplier).setScale(2, RoundingMode.HALF_UP);
 
@@ -391,6 +452,41 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         return sum;
     }
 
+    static double dailyFinalPointMultiplier(PKWFinalCheckPointTypeEnum difficulty) {
+        if (difficulty == null) return 1D;
+        return switch (difficulty) {
+            case normal -> 1.5D;
+            case hard -> 2.5D;
+            case none, easy -> 1D;
+        };
+    }
+
+    static double dailyCompletionMultiplier(boolean finished, boolean timedOut) {
+        return timedOut && !finished ? 0.5D : 1D;
+    }
+
+    /** Star total from live checkpoint progress; the same 2/3/4/5-star weights as settlement scoring. */
+    private long countStars(UUID uuid) {
+        Map<PKWCheckpoint, Integer> progress = playerCheckpointProgress.get(uuid);
+        if (progress == null)
+            return 0L;
+        long stars = 0L;
+        for (Map.Entry<PKWCheckpoint, Integer> entry : progress.entrySet()) {
+            if (entry.getKey().getType() == PKWCheckPointTypeEnum.main) {
+                stars += 2L * (entry.getValue() + 1);
+            } else if (entry.getKey().getType() == PKWCheckPointTypeEnum.sub) {
+                int subCheckpointIndex = entry.getValue();
+                if (subCheckpointIndex >= 0)
+                    stars += 3L;
+                if (subCheckpointIndex >= 1)
+                    stars += 4L;
+                if (subCheckpointIndex >= 2)
+                    stars += 5L;
+            }
+        }
+        return stars;
+    }
+
     @Override
     public Location getSpectatorSpawnLocation() {
         return getGameConfig().getSpectatorSpawnPoint();
@@ -400,6 +496,10 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     public void startGamePreparation() {
         setGameStageEnum(GameStageEnum.PREPARATION);
 
+        // Players may enter from map editing/creative mode. Changing to ADVENTURE does not
+        // clear Bukkit's allowFlight flag, so explicitly revoke flight before the run starts.
+        disableFlightForGamePlayers();
+
         // Rule-introduction phase (if configured): gather players at the introduction spawn point and
         // broadcast the rule sections in chat over 45s, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
@@ -408,6 +508,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
     private void startFormalPreparation() {
         finishedPlayers.clear();
+        playerFinalPointMultiplier.clear();
 
         for (UUID uuid : getGamePlayers()) {
             playerLastCheckpoint.put(uuid, null);
@@ -418,6 +519,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
         teleportAllPlayers(getGameConfig().getPlayerSpawnPoint());
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+        disableFlightForGamePlayers();
 
         resetPlayerHealthFoodEffectLevelInventory();
 
@@ -442,6 +544,8 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     }
 
     private void beginGameProgress() {
+        timedOut = false;
+        progressStartNanos = System.nanoTime();
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
             int suddenDeathWarning = timer - getGameConfig().getSuddenDeath();
@@ -460,8 +564,11 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
                     ? MessageConfig.PARKOUR_WARRIOR_SUDDEN_DEATH_COUNT_DOWN
                     : MessageConfig.PARKOUR_WARRIOR_ACTION_BAR_COUNT_DOWN;
             updateGameTimerBossBar(timerTemplate
-                    .replace("%time%", String.valueOf(timer)), timer, getGameConfig().getTimer());
-        }, this::endGame);
+                    .replace("%time%", Utils.formatMinutesSeconds(timer)), timer, getGameConfig().getTimer());
+        }, () -> {
+            timedOut = true;
+            endGame();
+        });
     }
 
     private void giveBootToAllPlayers() {
@@ -495,7 +602,8 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+        // END guard keeps the timer and the all-finished early end from settling twice.
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
         if (startGameProgressTask != null)
@@ -505,7 +613,15 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
         cleanInventoryForAllGamePlayers();
 
-        plugin.getTeamManager().setCollision(true);
+        // Concurrent DAILY copies share the global collision switch; only the last running copy may
+        // restore it, otherwise players of the still-running copy would start pushing each other.
+        boolean anotherCopyRunning = plugin.getGameManager().getParkourWarriorManager()
+                .getRuntimeInstances().stream()
+                .anyMatch(area -> area != this
+                        && area.getGameStageEnum() != GameStageEnum.WAITING
+                        && area.getGameStageEnum() != GameStageEnum.END);
+        if (!anotherCopyRunning)
+            plugin.getTeamManager().setCollision(true);
 
         announceGameEnd(MessageConfig.PARKOUR_WARRIOR_GAME_END_TITLE,
                 MessageConfig.PARKOUR_WARRIOR_GAME_END_SUBTITLE);
@@ -572,7 +688,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         Player player = event.getPlayer();
         if (notAreaPlayer(player)) return;
         GameStageEnum stage = getGameStageEnum();
-        if (stage == GameStageEnum.PROGRESS && finishedPlayers.contains(player.getUniqueId())) {
+        if (shouldRestoreFinishedPlayerAsSpectator(stage, finishedPlayers.contains(player.getUniqueId()))) {
             player.teleport(getSpectatorSpawnLocation());
             player.setGameMode(GameMode.SPECTATOR);
             hideAndShowPlayer(player);
@@ -583,6 +699,8 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
             player.teleport(playerSpawnLocations.getOrDefault(player.getUniqueId(),
                     getGameConfig().getPlayerSpawnPoint()));
             player.setGameMode(GameMode.ADVENTURE);
+            player.setFlying(false);
+            player.setAllowFlight(false);
             ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
             if (team != null) player.getInventory().setBoots(team.getBoots());
             if (stage == GameStageEnum.PROGRESS) hideAndShowPlayer(player);
@@ -590,5 +708,17 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         }
         player.teleport(CCConfig.LOBBY_LOCATION);
         player.setGameMode(GameMode.ADVENTURE);
+        player.setFlying(false);
+        player.setAllowFlight(false);
+    }
+
+    private void disableFlightForGamePlayers() {
+        for (UUID uuid : getGamePlayers()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                player.setFlying(false);
+                player.setAllowFlight(false);
+            }
+        }
     }
 }

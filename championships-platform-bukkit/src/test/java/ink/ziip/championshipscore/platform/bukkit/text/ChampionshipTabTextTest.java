@@ -11,6 +11,10 @@ class ChampionshipTabTextTest {
                 ChampionshipTabText.teamFooter("&#fff566金队", 1234.5D));
         assertEquals("§f当前游戏: §b宾果时速",
                 ChampionshipTabText.currentGameFooter("宾果时速"));
+        assertEquals("§f队伍: §x§5§5§f§f§f§f青队",
+                ChampionshipTabText.dailyTeamFooter("&#55ffff青队"));
+        assertEquals("§8[§x§f§f§f§5§6§6王牌竞速§8]§r ",
+                ChampionshipTabText.gamePrefix("王牌竞速"));
     }
 
     @Test

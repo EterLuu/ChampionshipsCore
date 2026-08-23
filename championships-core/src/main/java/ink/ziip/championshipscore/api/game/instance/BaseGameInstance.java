@@ -828,6 +828,9 @@ public abstract class BaseGameInstance {
         try {
             countdownBlockDisappearance.restore();
             resetGame();
+            // A DAILY session remains reserved through the result phase. Only after the instance has
+            // released its player status and reset can its players receive the lobby entry item again.
+            plugin.getDailyManager().onInstanceReturnedToLobby(this);
         } finally {
             roundTransitionPending = false;
             postGamePending = false;

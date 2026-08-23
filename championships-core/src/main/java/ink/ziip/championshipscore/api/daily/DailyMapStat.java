@@ -11,8 +11,9 @@ import org.jetbrains.annotations.NotNull;
 public record DailyMapStat(long gamesPlayed, long wins, long trackedGames,
                            long maxTasks, long maxLines, long maxFirstTasks,
                            double maxDragonDamage,
-                           long firstLiberate, long firstNextGen, long firstGateway) {
-    public static final DailyMapStat EMPTY = new DailyMapStat(0L, 0L, 0L, 0L, 0L, 0L, 0D, 0L, 0L, 0L);
+                           long firstLiberate, long firstNextGen, long firstGateway,
+                           long maxStars, long finishes) {
+    public static final DailyMapStat EMPTY = new DailyMapStat(0L, 0L, 0L, 0L, 0L, 0L, 0D, 0L, 0L, 0L, 0L, 0L);
 
     /** Peak values keep the maximum, counters accumulate - mirrors the SQL upsert semantics. */
     public DailyMapStat merge(@NotNull DailyMapStat other) {
@@ -22,6 +23,7 @@ public record DailyMapStat(long gamesPlayed, long wins, long trackedGames,
                 Math.max(maxFirstTasks, other.maxFirstTasks),
                 Math.max(maxDragonDamage, other.maxDragonDamage),
                 firstLiberate + other.firstLiberate, firstNextGen + other.firstNextGen,
-                firstGateway + other.firstGateway);
+                firstGateway + other.firstGateway,
+                Math.max(maxStars, other.maxStars), finishes + other.finishes);
     }
 }

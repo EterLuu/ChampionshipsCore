@@ -32,6 +32,13 @@ final class DailyListener extends BaseListener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onMenu(InventoryClickEvent event) {
         Object holder = event.getView().getTopInventory().getHolder();
+        if (holder instanceof DailyBingoVoteController.VoteHolder vote) {
+            event.setCancelled(true);
+            if (event.getWhoClicked() instanceof Player player
+                    && event.getClickedInventory() == event.getView().getTopInventory())
+                daily.bingoVote().click(player, event.getRawSlot(), vote);
+            return;
+        }
         if (holder instanceof DailyLobbyMenu.LobbyHolder lobby) {
             event.setCancelled(true);
             if (event.getWhoClicked() instanceof Player player
@@ -81,6 +88,7 @@ final class DailyListener extends BaseListener {
     public void onMenuDrag(InventoryDragEvent event) {
         Object holder = event.getView().getTopInventory().getHolder();
         if (holder instanceof DailyLobbyMenu.LobbyHolder
+                || holder instanceof DailyBingoVoteController.VoteHolder
                 || holder instanceof DailyGameMenu.MenuHolder
                 || holder instanceof DailyStatsMenu.StatsHolder
                 || holder instanceof DailyStatsMenu.DetailHolder

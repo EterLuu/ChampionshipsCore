@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DailyTeamAllocationTest {
     private static final DailyRules RULES = new DailyRules(2, 16, 4, 4, 5);
+    private static final DailyRules SOLO_RULES = new DailyRules(1, 16, 4, 4, 60);
 
     @Test
     void balancesSmallSoloLobbiesAroundTwoPlayersPerTeam() {
@@ -40,6 +41,19 @@ class DailyTeamAllocationTest {
     void refusesToCreateAWinBearingMatchFromOnlyOneQueueGroup() {
         assertTrue(DailyManager.allocate(List.of(group(Set.of(UUID.randomUUID(), UUID.randomUUID()))), RULES)
                 .isEmpty());
+    }
+
+    @Test
+    void allowsSinglePlayerAllocationWhenRulesPermitSoloMatches() {
+        assertEquals(List.of(1), sizes(DailyManager.allocate(
+                List.of(group(Set.of(UUID.randomUUID()))), SOLO_RULES)));
+    }
+
+    @Test
+    void presentsDailyTeamsByMinecraftColorOnly() {
+        assertEquals("青队", DailyManager.teamNameForColor("CYAN"));
+        assertEquals("淡蓝队", DailyManager.teamNameForColor("LIGHT_BLUE"));
+        assertEquals("蓝队", DailyManager.teamNameForColor("blue"));
     }
 
     private static List<DailyQueue.Group> solos(int count) {

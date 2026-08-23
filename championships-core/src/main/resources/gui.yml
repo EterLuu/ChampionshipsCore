@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 10
+  version: 13
 common:
   separator: ' • '
   versus: '对阵'
@@ -1595,6 +1595,8 @@ daily:
         controlling-the-elytra-and-trident-challenge-the-fastest-complete-lap: '驾驭鞘翅与三叉戟，挑战最快完整圈'
         confrontation-original-end-dragon-battle: '对抗 • 原版末影龙战'
         compete-for-three-end-game-progressions-be-the-first-to-complete-two-of-them: '争夺三项末地进度，率先完成其中两项'
+        parkour-challenge-multi-difficulty-checkpoints: '跑酷 • 多难度检查点'
+        challenge-checkpoints-of-each-difficulty-and-reach-the-finish-first: '挑战各难度检查点收集星星，率先抵达终点'
     leaderboard-screen:
       title: "&#ffaa00&l排行榜"
       size: 54
@@ -1644,6 +1646,9 @@ daily:
         all-collection: '全收集'
         fastest-lap: '最快单圈'
         fastest-three-complete-laps: '最快完整三圈'
+        first-best: '第一'
+        second-best: '第二'
+        third-best: '第三'
         unlocked-after-completing-bingo-or-ace-race: '完成宾果或王牌竞速后解锁'
         times-from-different-maps-will-not-be-mixed-in-rankings: '不同地图的时间不会混合排名'
         my-time-record: '我的计时纪录'
@@ -1852,6 +1857,9 @@ daily:
         record-independently-by-map: '按地图独立记录'
         fastest-lap: '最快单圈'
         fastest-three-complete-laps: '最快完整三圈'
+        first-best: '第一'
+        second-best: '第二'
+        third-best: '第三'
   hotbar:
     lobby:
       material: COMPASS
@@ -1868,6 +1876,8 @@ daily:
     dragon-first-liberate-rate: '场均首个解放末地率'
     dragon-first-next-gen-rate: '场均首个下一世代率'
     dragon-first-gateway-rate: '场均首个远程折跃率'
+    pkw-stars-time: '星数-时间'
+    pkw-points-time: '积分-时间'
 games:
   bingo:
     menus:

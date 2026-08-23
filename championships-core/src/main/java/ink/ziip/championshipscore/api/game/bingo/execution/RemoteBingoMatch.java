@@ -240,15 +240,20 @@ final class RemoteBingoMatch {
             pendingAwards.add(new PendingAward(decision.observation().seq(), award));
         }
         if (instance.getRunMode() == GameRunMode.DAILY) {
-            ChampionshipTeam team = instance.getGameTeams().stream()
-                    .filter(candidate -> candidate.getMembers().equals(
-                            Set.copyOf(manifest.teamsById().get(decision.observation().teamId()).members())))
-                    .findFirst().orElse(null);
-            if (team != null) {
+            List<Integer> progressedTeams = manifest.scoring().variant().remix()
+                    == ink.ziip.championshipscore.protocol.BingoRemix.COOP
+                    ? manifest.teams().stream().map(ink.ziip.championshipscore.protocol.TeamSnapshot::id).toList()
+                    : List.of(decision.observation().teamId());
+            for (int progressedTeamId : progressedTeams) {
+                ChampionshipTeam team = instance.getGameTeams().stream()
+                        .filter(candidate -> candidate.getMembers().equals(
+                                Set.copyOf(manifest.teamsById().get(progressedTeamId).members())))
+                        .findFirst().orElse(null);
+                if (team == null) continue;
                 long durationMillis = decision.observation().observedGameTick() * 50L;
                 int completed = scoring.result().completedCells()
-                        .getOrDefault(decision.observation().teamId(), 0);
-                int firsts = firstCompletionsByTeam.getOrDefault(decision.observation().teamId(), 0);
+                        .getOrDefault(progressedTeamId, 0);
+                int firsts = firstCompletionsByTeam.getOrDefault(progressedTeamId, 0);
                 plugin.getDailyManager().statsManager().recordBingoProgress(
                         instance, team, decision.completedLines(), completed, firsts);
                 if (decision.completedLines() > 0) {

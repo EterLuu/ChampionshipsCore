@@ -33,7 +33,7 @@ public final class GuiConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 11;
+        return 13;
     }
 
     @Override

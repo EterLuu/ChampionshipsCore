@@ -24,6 +24,7 @@ area-pos1:
 area-pos2:
 # Players are randomly placed within a disc of this radius (blocks) around the bingo world spawn at round start.
 scatter-radius: 6
+scatter-jitter: 0
 scatter-max-tries: 32
 # 永久药水效果：开局赋予、整局保持、结束随重置清除。每项 "效果:等级"，等级为游戏内显示等级(1=I,8=VIII)，
 # 可省略(默认 I)。效果名为 vanilla PotionEffectType 键(night_vision, jump_boost, speed, haste, ...)。

@@ -6,7 +6,7 @@
 
 ## 要求与构建
 
-- Java 25 和与项目 API 匹配的 Folia 26.1.2；
+- Java 25 和与项目 API 匹配的 Folia 26.2；
 - 可由 Core 与 Worker 同时访问的 Redis；
 - BungeeCord，或启用了 BungeeCord 兼容 channel 的 Velocity；
 - 与 Worker 使用同一版本/协议的 ChampionshipsCore；

@@ -37,12 +37,21 @@ public final class BingoDailyGameAdapter implements DailyGameAdapter {
 
     @Override
     public @NotNull CompletionStage<StartResult> start(@NotNull List<ChampionshipTeam> teams) {
+        return plugin.getDailyManager().beginBingoVote(teams)
+                .thenCompose(variant -> variant == null
+                        ? CompletableFuture.completedFuture(null)
+                        : start(teams, variant));
+    }
+
+    private @NotNull CompletionStage<StartResult> start(
+            @NotNull List<ChampionshipTeam> teams,
+            @NotNull ink.ziip.championshipscore.protocol.BingoVariantRules variant) {
         List<String> maps = plugin.getGameManager().getBingoManager().getAreaNameList().stream().sorted().toList();
         CompletionStage<StartResult> attempt = CompletableFuture.completedFuture(null);
         for (String map : maps) {
             attempt = attempt.thenCompose(started -> {
                 if (started != null) return CompletableFuture.completedFuture(started);
-                return plugin.getGameManager().joinBingoForTeams(map, false, GameRunMode.DAILY, teams)
+                return plugin.getGameManager().joinBingoForTeams(map, false, GameRunMode.DAILY, teams, variant)
                         .thenApply(accepted -> {
                             if (!accepted) return null;
                             BaseGameInstance instance = teams.getFirst().getMembers().stream().findFirst()

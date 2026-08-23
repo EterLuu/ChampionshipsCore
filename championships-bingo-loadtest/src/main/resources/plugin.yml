@@ -1,7 +1,7 @@
 name: ChampionshipsBingoLoadTest
 version: '${project.version}'
 main: ink.ziip.championshipscore.loadtest.BingoLoadTestPlugin
-api-version: '26.1'
+api-version: '26.2'
 folia-supported: true
 description: One-shot Folia chunk-generation load test for the Bingo worker.
 commands:

@@ -340,6 +340,7 @@ tiers:
     - "event:spy_unique::4"
     - "event:advancement_count::4"
     - "event:break_item:TOOL"
+    - "event:break_item:WOODEN_SWORD"
     - "event:use:COMPOSTER"
     - "event:compost_unique::3"
     - "event:place:PAINTING"
@@ -362,6 +363,34 @@ tiers:
     - "mine:REDSTONE_ORE"
     - "mine:SOUL_SAND"
     # 趣味任务补充
+    # 26.2 sulfur caves: locating the biome is the main requirement.
+    - "CINNABAR"
+    - "SULFUR"
+    - "SULFUR_SPIKE"
+    - "craft:SULFUR_SLAB"
+    - "craft:SULFUR_STAIRS"
+    - "craft:SULFUR_WALL"
+    - "craft:POLISHED_SULFUR"
+    - "craft:POLISHED_SULFUR_SLAB"
+    - "craft:POLISHED_SULFUR_STAIRS"
+    - "craft:POLISHED_SULFUR_WALL"
+    - "craft:SULFUR_BRICKS"
+    - "craft:SULFUR_BRICK_SLAB"
+    - "craft:SULFUR_BRICK_STAIRS"
+    - "craft:SULFUR_BRICK_WALL"
+    - "craft:CHISELED_SULFUR"
+    - "craft:CINNABAR_SLAB"
+    - "craft:CINNABAR_STAIRS"
+    - "craft:CINNABAR_WALL"
+    - "craft:POLISHED_CINNABAR"
+    - "craft:POLISHED_CINNABAR_SLAB"
+    - "craft:POLISHED_CINNABAR_STAIRS"
+    - "craft:POLISHED_CINNABAR_WALL"
+    - "craft:CINNABAR_BRICKS"
+    - "craft:CINNABAR_BRICK_SLAB"
+    - "craft:CINNABAR_BRICK_STAIRS"
+    - "craft:CINNABAR_BRICK_WALL"
+    - "craft:CHISELED_CINNABAR"
     - "stat:PIG_ONE_CM"
     - "stat:FALL_ONE_CM"
     - "stat:WALK_UNDER_WATER_ONE_CM"
@@ -714,6 +743,7 @@ tiers:
     - "event:remove_effect_milk:"
     - "event:unique_collect:WHEAT_SEEDS:4"
     - "event:visit_biomes:NETHER:3"
+    - "event:break_item:WOODEN_PICKAXE"
   ADVANCED:
     - "mine:MOSS_BLOCK"
     # 趣味任务补充
@@ -1053,6 +1083,11 @@ tiers:
     - "mine:PACKED_ICE"
     - "mine:SCULK"
     # 趣味任务补充
+    # 26.2 sulfur cube interactions and a nine-sulfur craft.
+    - "craft:POTENT_SULFUR"
+    - "SULFUR_CUBE_BUCKET"
+    - "kill:SULFUR_CUBE"
+    - "advancement:husbandry/uh_oh"
     - "potion:normal:*"   # 可饮用效果药水：需酿造(下界)
     - "potion:splash:*"   # 喷溅效果药水
     - "stat:WALK_ON_WATER_ONE_CM"
@@ -1228,8 +1263,6 @@ tiers:
     - "SPECTRAL_ARROW"
     - "SPLASH_POTION"
     - "SPONGE"
-    - "SUSPICIOUS_GRAVEL"
-    - "SUSPICIOUS_SAND"
     - "TIDE_ARMOR_TRIM_SMITHING_TEMPLATE"
     - "TIPPED_ARROW"
     - "TNT_MINECART"
@@ -1321,7 +1354,6 @@ tiers:
     - "event:shoot_firework_crossbow:"
     - "event:use_brush:"
     - "event:compost_unique::7"
-    - "set:SUSPICIOUS_SAND"
     - "set:ARCHER_POTTERY_SHERD"
     - "event:wear:GOLDEN"
     - "event:wear:CHAIN"
@@ -1336,6 +1368,7 @@ tiers:
     - "mine:ANCIENT_DEBRIS"
     - "mine:END_STONE"
     # 趣味任务补充
+    - "MUSIC_DISC_BOUNCE"
     - "potion:lingering:*"   # 滞留药水：需末影龙息(末地)
     - "stat:BEACON_INTERACTION"
     - "event:leash_unique::6"

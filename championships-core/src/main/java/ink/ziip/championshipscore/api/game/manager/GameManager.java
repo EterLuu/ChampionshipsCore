@@ -12,6 +12,7 @@ import ink.ziip.championshipscore.api.game.spectate.SpectateMenu;
 import ink.ziip.championshipscore.api.game.spectate.SpectatorManager;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
+import ink.ziip.championshipscore.api.game.bingo.BingoArea;
 import ink.ziip.championshipscore.api.game.bingo.BingoManager;
 import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionRouter;
 import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionMode;
@@ -151,14 +152,22 @@ public class GameManager extends BaseManager {
         areaManagers.put(GameTypeEnum.Dodgebolt, dodgeboltManager);
         areaManagers.put(GameTypeEnum.AceRace, aceRaceManager);
 
-        bingoExecutionRouter = new BingoExecutionRouter(new LocalBingoExecutionGateway(request ->
-                request.teams().isEmpty()
-                        ? joinSingleTeamAreaForAllTeamsLocal(GameTypeEnum.Bingo, request.area(),
-                                request.showIntroduction(), request.runMode())
-                        : joinSingleTeamAreaForTeams(GameTypeEnum.Bingo, request.area(),
-                                request.showIntroduction(), request.runMode(),
-                                request.teams().toArray(ChampionshipTeam[]::new)),
+        bingoExecutionRouter = new BingoExecutionRouter(new LocalBingoExecutionGateway(this::startLocalBingo,
                 ignored -> forceEndLocalAreas(GameTypeEnum.Bingo)));
+    }
+
+    private boolean startLocalBingo(@NotNull BingoStartRequest request) {
+        BingoArea area = bingoManager.getArea(request.area());
+        if (area == null) return false;
+        area.prepareVariantForNextStart(request.variant());
+        boolean started = request.teams().isEmpty()
+                ? joinSingleTeamAreaForAllTeamsLocal(GameTypeEnum.Bingo, request.area(),
+                        request.showIntroduction(), request.runMode())
+                : joinSingleTeamAreaForTeams(GameTypeEnum.Bingo, request.area(),
+                        request.showIntroduction(), request.runMode(),
+                        request.teams().toArray(ChampionshipTeam[]::new));
+        if (!started) area.clearPreparedVariant();
+        return started;
     }
 
     /**
@@ -799,6 +808,14 @@ public class GameManager extends BaseManager {
         return bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode, teams));
     }
 
+    public CompletionStage<Boolean> joinBingoForTeams(@NotNull String area, boolean showIntroduction,
+                                                      @NotNull GameRunMode runMode,
+                                                      @NotNull List<ChampionshipTeam> teams,
+                                                      @NotNull ink.ziip.championshipscore.protocol.BingoVariantRules variant) {
+        if (teams.isEmpty()) return CompletableFuture.completedFuture(false);
+        return bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode, teams, variant));
+    }
+
     /** Async-safe start surface used by schedules and commands; remote mode waits for its manifest row. */
     public CompletionStage<Boolean> joinSingleTeamAreaForAllTeamsAsync(
             @NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
@@ -998,11 +1015,14 @@ public class GameManager extends BaseManager {
             @NotNull GameTypeEnum gameType, @NotNull String mapName) {
         BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
         if (manager == null) return null;
-        BaseGameInstance representative = manager.getArea(mapName);
-        if (!(representative instanceof BaseMultiTeamGameInstance)) return null;
+        // A replicated map has one representative in areas and several runtime copies. Do not
+        // identify copies by BaseGameConfig object identity: a manager reload or a future map
+        // implementation may legitimately give each copy its own config wrapper. The map name is
+        // the stable public identity and is also what all start APIs receive.
+        if (!(manager.getArea(mapName) instanceof BaseMultiTeamGameInstance)) return null;
         return manager.getRuntimeInstances().stream()
                 .filter(instance -> instance instanceof BaseMultiTeamGameInstance)
-                .filter(instance -> instance.getGameConfig() == representative.getGameConfig())
+                .filter(instance -> mapName.equalsIgnoreCase(instance.getGameConfig().getConfigName()))
                 .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
                 .filter(instance -> plugin.getDailyManager() == null
                         || plugin.getDailyManager().session(instance) == null)
@@ -1414,6 +1434,7 @@ public class GameManager extends BaseManager {
                         : canJoinSpectatorArea(viewer, instance))
                 .toList());
         remoteBingoInstances.values().stream()
+                .filter(instance -> isGameEnabled(instance.getGameTypeEnum()))
                 .filter(instance -> viewer == null
                         ? isInstanceActivelyRunning(instance)
                         : canJoinSpectatorArea(viewer, instance))
@@ -1425,6 +1446,17 @@ public class GameManager extends BaseManager {
                 .thenComparingInt(BaseGameInstance::getCopyIndex)
                 .thenComparing(this::stableInstanceKey));
         return List.copyOf(instances);
+    }
+
+    /**
+     * Live instances shown by the player-facing spectator menu. Unlike the general spectator query,
+     * this excludes idle/pre-game map copies and instances that have no participant roster yet.
+     */
+    public @NotNull List<BaseGameInstance> getLiveSpectatableInstances(@Nullable Player viewer) {
+        return getSpectatableInstances(viewer).stream()
+                .filter(this::isInstanceActivelyRunning)
+                .filter(instance -> !instance.getParticipantUniqueIds().isEmpty())
+                .toList();
     }
 
     /** Active copies for one configured map, including Core-side handles for remote Bingo matches. */

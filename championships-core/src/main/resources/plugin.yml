@@ -1,7 +1,7 @@
 name: ChampionshipsCore
 version: '${project.version}'
 main: ink.ziip.championshipscore.ChampionshipsCore
-api-version: '26.1'
+api-version: '26.2'
 authors: [ Eter Lu, LettuceIce ]
 depend:
   - ProtocolLib

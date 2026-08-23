@@ -123,6 +123,9 @@ public class PlayerListener extends BaseListener {
         BaseGameInstance playerArea = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
         boolean daily = plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby();
         if (daily) {
+            if (plugin.getTeamManager().isTransientTeam(team)) {
+                return new PlayerPresentation(team.getColoredName(), team.getColorCode(), playerArea != null);
+            }
             BaseGameInstance shownArea = playerArea;
             if (shownArea == null)
                 shownArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());

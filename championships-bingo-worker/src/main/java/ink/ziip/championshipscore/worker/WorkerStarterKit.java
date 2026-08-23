@@ -12,12 +12,13 @@ final class WorkerStarterKit {
     private WorkerStarterKit() {
     }
 
-    static void give(Player player, TeamSnapshot team, BingoPresentation presentation) {
+    static void give(Player player, TeamSnapshot team, BingoPresentation presentation,
+                     ink.ziip.championshipscore.protocol.BingoRemix remix) {
         BingoStarterKitService.give(player, color(team.colorCode()),
                 WorkerPresentationService.message(presentation, "compass.item_name", "{0}", team.name())
                         .decoration(TextDecoration.ITALIC, false),
                 java.util.List.of(WorkerPresentationService.message(presentation, "compass.item_hint")
-                        .decoration(TextDecoration.ITALIC, false)));
+                        .decoration(TextDecoration.ITALIC, false)), remix);
     }
 
     private static Color color(String hex) {

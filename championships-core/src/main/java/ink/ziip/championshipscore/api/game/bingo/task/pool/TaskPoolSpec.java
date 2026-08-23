@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.bingo.task.pool;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.bingo.task.EventSubject;
 import ink.ziip.championshipscore.api.game.bingo.task.EventTask;
+import ink.ziip.championshipscore.api.game.bingo.util.Materials;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Material;
@@ -44,8 +45,8 @@ public final class TaskPoolSpec {
                 switch (e.kind()) {
                     case ITEM -> {
                         Material m = Material.valueOf(e.key());
-                        if (!m.isItem()) {
-                            ChampionshipsCore.getInstance().getLogger().warning(gameLog("非物品 ITEM=" + e.key() + "，已跳过"));
+                        if (!Materials.isCollectObjective(m)) {
+                            ChampionshipsCore.getInstance().getLogger().warning(gameLog("不可获取的 ITEM=" + e.key() + "，已跳过"));
                         } else {
                             b.item(m, e.count(), difficulty, e.dimension(), e.category());
                         }
@@ -91,7 +92,7 @@ public final class TaskPoolSpec {
                         for (String m : e.members()) {
                             try {
                                 Material mat = Material.valueOf(m);
-                                if (mat.isItem()) items.add(mat);
+                                if (Materials.isCollectObjective(mat)) items.add(mat);
                             } catch (IllegalArgumentException ignored) {
                                 // skip unknown member, keep the rest of the set usable
                             }
@@ -115,7 +116,7 @@ public final class TaskPoolSpec {
                         for (String m : e.members()) {
                             try {
                                 Material mat = Material.valueOf(m);
-                                if (mat.isItem()) items.add(mat);
+                                if (Materials.isCollectObjective(mat)) items.add(mat);
                             } catch (IllegalArgumentException ignored) {
                                 // skip unknown member, keep the rest of the set usable
                             }

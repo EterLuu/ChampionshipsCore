@@ -1,0 +1,9 @@
+name: ChampionshipsAuthBridge
+version: '${project.version}'
+main: ink.ziip.championshipscore.authbridge.ChampionshipsAuthBridgePlugin
+api-version: '26.2'
+authors: [ Eter Lu ]
+description: Synchronizes website approvals and BCrypt hashes with AuthMe.
+depend:
+  - AuthMe
+  - ChampionshipsCore

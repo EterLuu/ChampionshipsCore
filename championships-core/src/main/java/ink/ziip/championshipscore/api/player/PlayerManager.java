@@ -81,6 +81,26 @@ public class PlayerManager extends BaseManager {
         }
     }
 
+    /** Applies an approved name change before the player logs in again. */
+    @NotNull
+    public CompletionStage<PlayerIdentityMigrationResult> migrateApprovedName(@NotNull String oldName,
+                                                                                @NotNull String newName,
+                                                                                @Nullable UUID replacementUuid) {
+        return CompletableFuture.supplyAsync(() -> playerDao.migrateNameChange(oldName, newName, replacementUuid))
+                .thenApply(migration -> {
+                    if (!migration.successful()) return migration;
+                    cacheIdentity(newName, migration.currentUuid(), migration.previousUuids());
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        plugin.getTeamManager().applyIdentityMigration(migration);
+                        if (migration.migratedPointRows() > 0)
+                            plugin.getRankManager().refreshAfterPendingPointWrites();
+                        plugin.getRedisManager().publishDatabaseChange("player-name-changed",
+                                DatabaseSyncDomain.PLAYER, DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
+                    });
+                    return migration;
+                });
+    }
+
     public void setPlayerUUID(@NotNull Player player) {
         cacheIdentity(player.getName(), player.getUniqueId(), java.util.Set.of());
     }

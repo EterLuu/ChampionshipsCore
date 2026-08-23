@@ -38,10 +38,22 @@ public final class TaskGenerator {
                                     Set<TaskData.TaskType> includedTypes,
                                     CardSize size,
                                     Set<String> extraExcludedTags,
-                                    Map<String, Integer> extraTagCaps) {
+                                    Map<String, Integer> extraTagCaps,
+                                    int[] roundDifficultyWeights,
+                                    double netherFraction,
+                                    boolean colorful,
+                                    List<TaskData> seedTasks) {
+        public GeneratorSettings(long seed, Set<TaskData.TaskType> includedTypes, CardSize size,
+                                 Set<String> extraExcludedTags, Map<String, Integer> extraTagCaps) {
+            this(seed, includedTypes, size, extraExcludedTags, extraTagCaps, null, 0D, false, List.of());
+        }
+
         public GeneratorSettings {
             extraExcludedTags = extraExcludedTags == null ? Set.of() : Set.copyOf(extraExcludedTags);
             extraTagCaps = extraTagCaps == null ? Map.of() : Map.copyOf(extraTagCaps);
+            roundDifficultyWeights = roundDifficultyWeights == null ? null : roundDifficultyWeights.clone();
+            seedTasks = seedTasks == null ? List.of() : List.copyOf(seedTasks);
+            netherFraction = Math.clamp(netherFraction, 0D, 1D);
         }
     }
 
@@ -107,7 +119,35 @@ public final class TaskGenerator {
         // Per-card running counts for capped tags, shared across every sampling call.
         Map<String, Integer> tagCounts = new HashMap<>();
 
-        List<TaskData> picked = weightedSample(entries, fullCardSize, rng, usedSubjects, filters, tagCounts);
+        int[] weights = settings.roundDifficultyWeights() == null
+                ? difficultyWeights : settings.roundDifficultyWeights();
+        List<TaskData> picked = new ArrayList<>(fullCardSize);
+        for (TaskData seed : settings.seedTasks()) {
+            if (picked.size() >= fullCardSize || hasCollision(seed, usedSubjects)) continue;
+            addSubjectKeys(seed, usedSubjects);
+            addTagCounts(seed, filters, tagCounts);
+            picked.add(seed);
+        }
+        if (settings.colorful() && picked.size() < fullCardSize) {
+            picked.addAll(pickColorTasks(entries, Math.min(16, fullCardSize - picked.size()), rng,
+                    weights, usedSubjects, filters, tagCounts));
+        }
+        int remaining = fullCardSize - picked.size();
+        if (remaining > 0 && settings.netherFraction() > 0D) {
+            List<TaskPoolEntry> nether = new ArrayList<>();
+            List<TaskPoolEntry> other = new ArrayList<>();
+            for (TaskPoolEntry entry : entries) {
+                if (entry.task().dimension() == ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension.NETHER)
+                    nether.add(entry);
+                else other.add(entry);
+            }
+            int netherCount = Math.min(remaining, (int) Math.round(fullCardSize * settings.netherFraction()));
+            picked.addAll(weightedSample(nether, netherCount, rng, usedSubjects, filters, tagCounts, weights));
+            remaining = fullCardSize - picked.size();
+            picked.addAll(weightedSample(other, remaining, rng, usedSubjects, filters, tagCounts, weights));
+        } else if (remaining > 0) {
+            picked.addAll(weightedSample(entries, remaining, rng, usedSubjects, filters, tagCounts, weights));
+        }
 
         Collections.shuffle(picked, rng);
         return picked.stream().map(t -> new GameTask(maybeCraftify(t, rng))).toList();
@@ -122,7 +162,7 @@ public final class TaskGenerator {
      */
     private static List<TaskData> weightedSample(List<TaskPoolEntry> entries, int count, Random rng,
                                                   Set<String> usedSubjects, TagFilters filters,
-                                                  Map<String, Integer> tagCounts) {
+                                                  Map<String, Integer> tagCounts, int[] weights) {
         Map<String, List<TaskPoolEntry>> categorised = new HashMap<>();
         List<List<TaskPoolEntry>> buckets = new ArrayList<>();
         for (TaskPoolEntry entry : entries) {
@@ -138,7 +178,7 @@ public final class TaskGenerator {
         }
         List<Keyed> keyed = new ArrayList<>(buckets.size());
         for (List<TaskPoolEntry> bucket : buckets) {
-            int w = weightFor(bucket.get(0));
+            int w = weightFor(bucket.get(0), weights);
             if (w <= 0) continue; // tier excluded (e.g. VERY_HARD weight 0) or empty
             // Down-weight broad one_of sets so several don't crowd a single card (see field doc).
             if (bucket.get(0).task() instanceof OneOfTask) {
@@ -162,6 +202,31 @@ public final class TaskGenerator {
             picked.add(DEFAULT_TASK);
         }
         return picked;
+    }
+
+    private static List<TaskData> pickColorTasks(List<TaskPoolEntry> entries, int maxColors, Random rng,
+                                                 int[] weights, Set<String> usedSubjects,
+                                                 TagFilters filters, Map<String, Integer> tagCounts) {
+        Map<String, List<TaskPoolEntry>> byColor = new HashMap<>();
+        for (TaskPoolEntry entry : entries) {
+            String color = colorKey(entry.task());
+            if (color != null) byColor.computeIfAbsent(color, ignored -> new ArrayList<>()).add(entry);
+        }
+        List<String> colors = new ArrayList<>(byColor.keySet());
+        Collections.shuffle(colors, rng);
+        List<TaskData> selected = new ArrayList<>();
+        for (String color : colors) {
+            if (selected.size() >= maxColors) break;
+            List<TaskPoolEntry> candidates = byColor.get(color).stream()
+                    .filter(entry -> weightFor(entry, weights) > 0).toList();
+            if (candidates.isEmpty()) continue;
+            TaskData choice = chooseMember(candidates, usedSubjects, rng, filters, tagCounts);
+            if (choice == null) continue;
+            addSubjectKeys(choice, usedSubjects);
+            addTagCounts(choice, filters, tagCounts);
+            selected.add(choice);
+        }
+        return selected;
     }
 
     private static TaskData chooseMember(List<TaskPoolEntry> bucket, Set<String> usedSubjects, Random rng,
@@ -289,8 +354,7 @@ public final class TaskGenerator {
 
     /** Selection weight for a bucket's representative entry: the configured tier override, else the
      *  tier's built-in weight. A returned 0 excludes the bucket. */
-    private static int weightFor(TaskPoolEntry entry) {
-        int[] dw = difficultyWeights;
+    private static int weightFor(TaskPoolEntry entry, int[] dw) {
         if (dw == null) return entry.difficulty().weight;
         int ord = entry.difficulty().ordinal();
         return ord < dw.length ? dw[ord] : 0;

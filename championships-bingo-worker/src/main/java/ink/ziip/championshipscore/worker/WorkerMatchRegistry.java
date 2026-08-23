@@ -278,6 +278,12 @@ final class WorkerMatchRegistry {
         if (session != null) session.restoreAfterRespawn(player);
     }
 
+    boolean clearsInventoryOnDeath(Player player) {
+        WorkerMatchSession session;
+        synchronized (this) { session = active; }
+        return session != null && session.clearsInventoryOnDeath(player.getUniqueId());
+    }
+
     synchronized boolean isPlaying(UUID playerId) {
         return active != null && active.isPlaying(playerId);
     }

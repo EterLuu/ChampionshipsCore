@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.daily.adapter.AceRaceDailyGameAdapter;
 import ink.ziip.championshipscore.api.daily.adapter.BingoDailyGameAdapter;
 import ink.ziip.championshipscore.api.daily.adapter.DragonEggCarnivalDailyGameAdapter;
+import ink.ziip.championshipscore.api.daily.adapter.ParkourWarriorDailyGameAdapter;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoInstance;
@@ -43,6 +44,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Public-play orchestration. Existing game instances remain the authority for game rules. */
 public final class DailyManager extends BaseManager {
+    /** Disconnect grace period for DAILY participants. */
+    static final long DISCONNECT_GRACE_MILLIS = 60_000L;
     private static final String[] TEAM_COLORS = {
             "RED", "GREEN", "BLUE", "YELLOW", "CYAN", "PURPLE", "ORANGE", "WHITE",
             "LIME", "PINK", "LIGHT_BLUE", "MAGENTA", "GRAY", "BLACK", "BROWN", "LIGHT_GRAY"
@@ -53,7 +56,7 @@ public final class DailyManager extends BaseManager {
     };
     private static final String[] TEAM_NAMES = {
             "红", "绿", "蓝", "黄", "青", "紫", "橙", "白",
-            "深绿", "粉", "深青", "深红", "灰", "黑", "深灰", "浅灰"
+            "黄绿", "粉红", "淡蓝", "品红", "灰", "黑", "棕", "浅灰"
     };
 
     private final Map<GameTypeEnum, DailyGameAdapter> adapters = new EnumMap<>(GameTypeEnum.class);
@@ -61,6 +64,10 @@ public final class DailyManager extends BaseManager {
     private final Map<UUID, GameTypeEnum> queueByPlayer = new ConcurrentHashMap<>();
     private final Map<UUID, DailySession> sessionByPlayer = new ConcurrentHashMap<>();
     private final Map<BaseGameInstance, DailySession> sessionByInstance = new ConcurrentHashMap<>();
+    /** Absolute expiry for a participant who disconnected while their DAILY match stayed active. */
+    private final Map<UUID, Long> disconnectedPlayers = new ConcurrentHashMap<>();
+    /** Starts when every remaining participant in an instance is offline. */
+    private final Map<BaseGameInstance, Long> allPlayersOfflineSince = new ConcurrentHashMap<>();
     private final Map<GameTypeEnum, PendingDailyStart> pendingStarts = new EnumMap<>(GameTypeEnum.class);
     private final Set<BaseGameInstance> settlingInstances = ConcurrentHashMap.newKeySet();
     private final Map<UUID, DailyPlayerSnapshot> snapshots = new ConcurrentHashMap<>();
@@ -74,6 +81,7 @@ public final class DailyManager extends BaseManager {
     private final DailyListener listener;
     private final DailyStatsManager statsManager;
     private final PlayerIsolationService isolationService;
+    private final DailyBingoVoteController bingoVote;
     private volatile ServerMode serverMode = ServerMode.CHAMPIONSHIP;
     private BukkitTask tickTask;
 
@@ -92,6 +100,7 @@ public final class DailyManager extends BaseManager {
         listener = new DailyListener(plugin, this);
         this.statsManager = statsManager;
         isolationService = new PlayerIsolationService(plugin);
+        bingoVote = new DailyBingoVoteController(plugin, this);
     }
 
     @Override
@@ -100,6 +109,7 @@ public final class DailyManager extends BaseManager {
         adapters.put(GameTypeEnum.Bingo, new BingoDailyGameAdapter(plugin));
         adapters.put(GameTypeEnum.AceRace, new AceRaceDailyGameAdapter(plugin));
         adapters.put(GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalDailyGameAdapter(plugin));
+        adapters.put(GameTypeEnum.ParkourWarrior, new ParkourWarriorDailyGameAdapter(plugin));
         for (GameTypeEnum game : enabledGames()) queues.put(game, new DailyQueue(game));
         listener.register();
         tickTask = Bukkit.getScheduler().runTaskTimer(plugin, (Runnable) this::tick, 20L, 20L);
@@ -111,6 +121,7 @@ public final class DailyManager extends BaseManager {
     public void unload() {
         if (tickTask != null) tickTask.cancel();
         tickTask = null;
+        bingoVote.cancel();
         closeOpenMenus();
         listener.unRegister();
         for (DailySession session : Set.copyOf(sessionByInstance.values())) cleanup(session);
@@ -119,6 +130,8 @@ public final class DailyManager extends BaseManager {
         pendingStarts.clear();
         queues.clear();
         queueByPlayer.clear();
+        disconnectedPlayers.clear();
+        allPlayersOfflineSince.clear();
         snapshots.clear();
         partyManager.clear();
         isolationService.clear();
@@ -138,6 +151,11 @@ public final class DailyManager extends BaseManager {
     DailyPartyMenu partyMenu() { return partyMenu; }
     DailyLeaderboardMenu leaderboardMenu() { return leaderboardMenu; }
     public PlayerIsolationService isolation() { return isolationService; }
+    DailyBingoVoteController bingoVote() { return bingoVote; }
+    public @NotNull java.util.concurrent.CompletionStage<ink.ziip.championshipscore.protocol.BingoVariantRules>
+    beginBingoVote(@NotNull List<ChampionshipTeam> teams) {
+        return bingoVote.begin(teams);
+    }
 
     public synchronized void switchMode(@NotNull ServerMode next) {
         if (serverMode == next) return;
@@ -187,6 +205,11 @@ public final class DailyManager extends BaseManager {
     public @Nullable DailyRules rules(GameTypeEnum game) {
         DailyGameAdapter adapter = adapters.get(game);
         return adapter == null || !enabledGames().contains(game) ? null : adapter.rules();
+    }
+
+    /** Ace Race and Parkour Warrior are valid solo DAILY matches. */
+    public static boolean allowsSoloQueue(@NotNull GameTypeEnum game) {
+        return game == GameTypeEnum.AceRace || game == GameTypeEnum.ParkourWarrior;
     }
 
     public void openMenu(@NotNull Player player) {
@@ -372,6 +395,7 @@ public final class DailyManager extends BaseManager {
         plugin.getGameManager().releaseInstancePlayers(session.instance(), leaving);
         for (UUID uuid : leaving) {
             sessionByPlayer.remove(uuid, session);
+            disconnectedPlayers.remove(uuid);
             isolationService.detach(uuid);
             Player online = Bukkit.getPlayer(uuid);
             if (online != null) syncLobbyItem(online);
@@ -379,6 +403,8 @@ public final class DailyManager extends BaseManager {
         broadcast(leaving, replace(MessageConfig.DAILY_PLAY_LEFT,
                 "%players%", Integer.toString(leaving.size())));
         rebuildSnapshots();
+
+        if (!session.isEmpty()) allPlayersOfflineSince.remove(session.instance());
 
         if (session.instance() instanceof RemoteBingoInstance remote) {
             if (notifyRemote) plugin.getRemoteBingoManager().removeDailyPlayers(remote, leaving);
@@ -396,12 +422,13 @@ public final class DailyManager extends BaseManager {
 
     public void handleQuit(UUID player) {
         DailySession session = sessionByPlayer.get(player);
-        if (session != null && session.instance() instanceof RemoteBingoInstance) return;
+        if (session != null) disconnectedPlayers.put(player, System.currentTimeMillis());
         if (partyManager.getParty(player) == null) leaveQueue(player, false);
         Bukkit.getScheduler().runTask(plugin, () -> partyManager.handleOffline(player));
     }
 
     public void handleJoin(UUID player) {
+        disconnectedPlayers.remove(player);
         Bukkit.getScheduler().runTask(plugin, () -> {
             rebuildSnapshots();
             Player online = Bukkit.getPlayer(player);
@@ -458,6 +485,8 @@ public final class DailyManager extends BaseManager {
         else if (game == GameTypeEnum.AceRace) maps.addAll(plugin.getGameManager().getAceRaceManager().getAreaNameList());
         else if (game == GameTypeEnum.DragonEggCarnival)
             maps.addAll(plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList());
+        else if (game == GameTypeEnum.ParkourWarrior)
+            maps.addAll(plugin.getGameManager().getParkourWarriorManager().getAreaNameList());
         maps.addAll(statsManager.recordMaps(game));
         return Set.copyOf(maps);
     }
@@ -532,6 +561,7 @@ public final class DailyManager extends BaseManager {
     private void tick() {
         for (DailyQueue queue : List.copyOf(queues.values())) tick(queue);
         for (BaseGameInstance instance : Set.copyOf(sessionByInstance.keySet())) {
+            processDisconnectedPlayers(instance);
             if (instance.getGameStageEnum() == GameStageEnum.WAITING) {
                 DailySession session = sessionByInstance.get(instance);
                 if (session != null) cleanup(session);
@@ -541,6 +571,74 @@ public final class DailyManager extends BaseManager {
         rebuildSnapshots();
         for (Player player : Bukkit.getOnlinePlayers()) syncLobbyIdentity(player);
         refreshOpenMenus();
+    }
+
+    /** Applies the 60-second reconnect grace period to active DAILY participants. */
+    private void processDisconnectedPlayers(@NotNull BaseGameInstance instance) {
+        DailySession session = sessionByInstance.get(instance);
+        if (session == null || session.isEmpty()
+                || instance.getGameStageEnum() == GameStageEnum.END
+                || instance.getGameStageEnum() == GameStageEnum.WAITING
+                || settlingInstances.contains(instance)) {
+            allPlayersOfflineSince.remove(instance);
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        Set<UUID> players = session.players();
+        Set<UUID> offline = players.stream()
+                .filter(uuid -> {
+                    Player player = Bukkit.getPlayer(uuid);
+                    return player == null || !player.isOnline();
+                })
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (offline.size() == players.size()) {
+            long since = allPlayersOfflineSince.computeIfAbsent(instance, ignored -> now);
+            if (now - since >= DISCONNECT_GRACE_MILLIS) abortAbandonedSession(session);
+            return;
+        }
+        allPlayersOfflineSince.remove(instance);
+
+        Set<UUID> expired = new LinkedHashSet<>();
+        for (UUID uuid : offline) {
+            Long disconnectedAt = disconnectedPlayers.get(uuid);
+            if (disconnectedAt != null && now - disconnectedAt >= DISCONNECT_GRACE_MILLIS)
+                expired.add(uuid);
+        }
+        if (!expired.isEmpty()) detachActivePlayers(session, expired, true);
+    }
+
+    /** Aborts a DAILY instance whose complete roster failed to reconnect in time. */
+    private void abortAbandonedSession(@NotNull DailySession session) {
+        allPlayersOfflineSince.remove(session.instance());
+        if (session.instance() instanceof RemoteBingoInstance remote) {
+            // Publish the worker ABORT command and release Core ownership immediately on failure.
+            plugin.getRemoteBingoManager().abortDailyDisconnected(remote);
+            return;
+        }
+
+        // Do not use the normal leave path here: endGameFinally() alone still permits a game-specific
+        // end handler to publish a result. abortAndReset() suppresses settlement and restores the
+        // instance without awarding DAILY statistics.
+        Set<UUID> leaving = session.players();
+        session.removePlayers(leaving);
+        for (ChampionshipTeam team : session.teams())
+            plugin.getTeamManager().removeTransientMembers(team, leaving);
+        if (session.instance() instanceof BaseMultiTeamGameInstance multiTeam)
+            multiTeam.removeRuntimePlayers(leaving);
+        plugin.getGameManager().releaseInstancePlayers(session.instance(), leaving);
+        for (UUID uuid : leaving) {
+            sessionByPlayer.remove(uuid, session);
+            disconnectedPlayers.remove(uuid);
+            isolationService.detach(uuid);
+        }
+        rebuildSnapshots();
+        session.instance().abortAndReset().whenComplete((ignored, failure) ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    DailySession pending = sessionByInstance.get(session.instance());
+                    if (pending != null) cleanup(pending);
+                }));
     }
 
     private void tick(DailyQueue queue) {
@@ -564,7 +662,8 @@ public final class DailyManager extends BaseManager {
             refreshWaitingBar(queue, rules);
             return;
         }
-        if (rules == null || queue.size() < rules.minPlayers() || queue.groupCount() < 2) {
+        if (rules == null || queue.size() < rules.minPlayers()
+                || (!allowsSoloQueue(queue.game()) && queue.groupCount() < 2)) {
             queue.countdown(-1);
             refreshWaitingBar(queue, rules);
             return;
@@ -588,7 +687,8 @@ public final class DailyManager extends BaseManager {
     private void start(DailyQueue queue, DailyRules rules) {
         List<DailyQueue.Group> selected = queue.take(rules.maxPlayers());
         int playerCount = selected.stream().mapToInt(group -> group.players().size()).sum();
-        if (playerCount < rules.minPlayers() || selected.size() < 2) {
+        if (playerCount < rules.minPlayers()
+                || (!allowsSoloQueue(queue.game()) && selected.size() < 2)) {
             queue.restore(selected, rules);
             return;
         }
@@ -604,9 +704,11 @@ public final class DailyManager extends BaseManager {
         try {
             for (int index = 0; index < allocations.size(); index++) {
                 int color = index % TEAM_COLORS.length;
+                String canonicalName = teamNameForColor(TEAM_COLORS[color]);
+                String configuredName = replace(MessageConfig.DAILY_TEAM_NAME,
+                        "%color%", TEAM_NAMES[color], "%number%", Integer.toString(index + 1));
                 teams.add(plugin.getTeamManager().createTransientTeam("ccd" + token + index,
-                        replace(MessageConfig.DAILY_TEAM_NAME,
-                                "%color%", TEAM_NAMES[color], "%number%", Integer.toString(index + 1)),
+                        configuredName.equals(canonicalName) ? configuredName : canonicalName,
                         TEAM_COLORS[color], TEAM_CODES[color], allocations.get(index)));
             }
         } catch (RuntimeException exception) {
@@ -625,6 +727,17 @@ public final class DailyManager extends BaseManager {
         }
         adapter.start(teams).whenComplete((started, failure) -> Bukkit.getScheduler().runTask(plugin,
                 () -> finishStart(pending, started, failure)));
+    }
+
+    /**
+     * DAILY teams are deliberately identified only by their assigned Minecraft colour. This keeps
+     * public-match presentation separate from a player's persistent championship team.
+     */
+    public static @NotNull String teamNameForColor(@NotNull String colorName) {
+        for (int index = 0; index < TEAM_COLORS.length; index++) {
+            if (TEAM_COLORS[index].equalsIgnoreCase(colorName)) return TEAM_NAMES[index] + "队";
+        }
+        return colorName + "队";
     }
 
     private void finishStart(@NotNull PendingDailyStart pending,
@@ -672,7 +785,8 @@ public final class DailyManager extends BaseManager {
      * remains a hard capacity rather than forcing a small lobby into one team.
      */
     static List<Set<UUID>> allocate(List<DailyQueue.Group> groups, DailyRules rules) {
-        if (groups.size() < 2 || rules.teams() < 2) return List.of();
+        if (groups.isEmpty() || rules.teams() < 1) return List.of();
+        if (groups.size() < 2 && rules.minPlayers() > 1) return List.of();
         int players = groups.stream().mapToInt(group -> group.players().size()).sum();
         int maximumTeams = Math.min(rules.teams(), groups.size());
         int preferredTeams = Math.max(2, (players + 1) / 2);
@@ -709,6 +823,28 @@ public final class DailyManager extends BaseManager {
         if (session == null) return;
         statsManager.recordMatch(session, instance.getPlayerPointsSnapshot());
         settlingInstances.add(instance);
+        scheduleLobbyResync(instance, session);
+    }
+
+    /**
+     * Safety net after the result-display window (~10s). Normally the 1s tick notices the instance
+     * back in WAITING, cleans the session and re-gives the lobby menu; if that window is ever
+     * missed, players would stand in the lobby without their menu until relogging. Each pass just
+     * retries the same idempotent steps, so harmless when the normal path already ran.
+     */
+    private void scheduleLobbyResync(@NotNull BaseGameInstance instance, @NotNull DailySession session) {
+        Set<UUID> players = Set.copyOf(session.players());
+        for (long delayTicks : new long[]{320L, 420L}) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                DailySession pending = sessionByInstance.get(instance);
+                if (pending != null && instance.getGameStageEnum() == GameStageEnum.WAITING)
+                    cleanup(pending);
+                for (UUID uuid : players) {
+                    Player player = Bukkit.getPlayer(uuid);
+                    if (player != null) syncLobbyItem(player);
+                }
+            }, delayTicks);
+        }
     }
 
     /** Releases a DAILY reservation that failed before it could emit the normal end event. */
@@ -721,16 +857,28 @@ public final class DailyManager extends BaseManager {
 
     private void cleanup(DailySession session) {
         Set<UUID> players = session.players();
+        plugin.getLogger().info(Utils.formatModuleLog("Daily", "清理",
+                "game=" + session.game() + " players=" + players.size()));
         isolationService.unregister(session);
         sessionByInstance.remove(session.instance(), session);
         settlingInstances.remove(session.instance());
-        for (UUID uuid : players) sessionByPlayer.remove(uuid, session);
+        allPlayersOfflineSince.remove(session.instance());
+        for (UUID uuid : players) {
+            sessionByPlayer.remove(uuid, session);
+            disconnectedPlayers.remove(uuid);
+        }
         plugin.getTeamManager().removeTransientTeams(session.teams());
         rebuildSnapshots();
         for (UUID uuid : players) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) syncLobbyItem(player);
         }
+    }
+
+    /** Completes DAILY cleanup at the authoritative post-game return point, before the next lobby tick. */
+    public void onInstanceReturnedToLobby(@NotNull BaseGameInstance instance) {
+        DailySession session = sessionByInstance.get(instance);
+        if (session != null) cleanup(session);
     }
 
     private void clearQueues(String reason) {
@@ -793,6 +941,8 @@ public final class DailyManager extends BaseManager {
     private void refreshOpenPartyMenus(Set<UUID> players) {
         refreshOpenMenus();
     }
+
+    void broadcastDaily(Set<UUID> players, String text) { broadcast(players, text); }
 
     private void broadcast(Set<UUID> players, String text) {
         for (UUID uuid : players) {

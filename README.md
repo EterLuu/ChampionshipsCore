@@ -126,7 +126,7 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 ## 运行要求
 
 - Java 25
-- Paper/Spigot 26.1.2 API 对应的服务端
+- Paper/Spigot 26.2 API 对应的服务端
 - MariaDB 或 MySQL
 - ProtocolLib 5.4.0
 - PlaceholderAPI 2.12.2
@@ -145,6 +145,8 @@ mvn clean package
 仓库已使用 Maven Reactor 管理共享协议、纯 Java Bingo 计分引擎、Paper/Folia 平台层、Redis transport、独立 Bingo Worker、一次性压测插件和 `championships-core` 核心插件。根目录执行同一条构建命令会生成历史兼容路径 `target/ChampionshipsCore-1.3-SNAPSHOT.jar`、`championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar` 和 `championships-bingo-loadtest/target/championships-bingo-loadtest-1.3-SNAPSHOT.jar`。
 
 远程 Bingo 可通过 `bingo.execution-mode: REMOTE` 把世界与玩法执行迁移到独立 Folia Worker；`LOCAL` 模式仍保留为单服执行方案。部署前请阅读 [Worker README](championships-bingo-worker/README.md)、[跨服架构与上线流程](docs/bingo-remote-architecture.md) 和 [64 人性能指南](docs/bingo-64-player-performance-report.md)。性能指南中的逻辑玩家压测只覆盖区块与实体负载，不代替真实客户端的端到端验收。压测插件只能临时安装在可丢弃的测试世界，不得留在生产服务器。
+
+Bingo 任务机制与图集当前同步至 [MineBingo](https://gitee.com/chancelethay/minebingo) 提交 `dd84456fdf7784deca11e37618cb5af8708d21e9`（2026-08-19）。模式/难度投票与奇遇仅接入 ChampionshipsCore 的 DAILY 自由游玩，继续使用 CC 原有大厅、Party、匹配和临时队伍；正式赛与管理员手动局仍使用场地原有固定积分规则。
 
 推荐的首次部署顺序：
 

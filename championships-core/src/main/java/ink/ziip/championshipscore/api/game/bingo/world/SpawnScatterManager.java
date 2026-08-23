@@ -19,4 +19,9 @@ public final class SpawnScatterManager {
             World world, List<Player> players, int radius, int maxTries, Runnable onComplete) {
         delegate.performScatterAsync(world, players, radius, maxTries, onComplete);
     }
+
+    public void performScatterAsync(World world, List<Player> players, int radius, int jitter,
+                                    int maxTries, Runnable onComplete) {
+        delegate.performScatterAsync(world, players, radius, jitter, maxTries, onComplete);
+    }
 }

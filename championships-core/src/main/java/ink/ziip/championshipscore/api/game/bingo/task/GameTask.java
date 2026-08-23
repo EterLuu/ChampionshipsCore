@@ -30,6 +30,8 @@ public final class GameTask {
     public TaskData data;
     /** Completion per team id, in completion order. Empty until at least one team finishes the task. */
     private final java.util.LinkedHashMap<String, Completion> completions = new java.util.LinkedHashMap<>();
+    private boolean hidden;
+    private boolean locked;
     public GameTask(@NotNull TaskData data) {
         this.data = data;
     }
@@ -47,11 +49,18 @@ public final class GameTask {
      * @return true if this call newly completed the task for {@code by}'s team.
      */
     public boolean complete(@NotNull Completion by, boolean locked) {
+        if (this.locked) return false;
         if (locked && !completions.isEmpty()) return false;
         if (completions.containsKey(by.teamId())) return false;
         completions.put(by.teamId(), by);
+        hidden = false;
         return true;
     }
+
+    public boolean isHidden() { return hidden; }
+    public void setHidden(boolean hidden) { this.hidden = hidden; }
+    public boolean isLocked() { return locked; }
+    public void setLocked(boolean locked) { this.locked = locked; }
 
     public boolean isCompletedByTeam(@NotNull String teamId) {
         return completions.containsKey(teamId);
@@ -137,11 +146,11 @@ public final class GameTask {
             glow = true;
         } else {
             name = getName(viewerTeamId);
-            material = icon(displayInfo);
+            material = hidden || locked ? Material.BEDROCK : icon(displayInfo);
             for (Component line : data.getItemDescription()) {
                 lore.add(line);
             }
-            glow = data.shouldItemGlow();
+            glow = !hidden && !locked && data.shouldItemGlow();
         }
 
         // When any team has finished this cell, list every completor (in claim order) so viewers can read

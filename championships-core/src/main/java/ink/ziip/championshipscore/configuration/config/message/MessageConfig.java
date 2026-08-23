@@ -21,7 +21,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 32;
+        return 33;
     }
 
     /** Replace every player-facing section so v30's terminology and spacing stay consistent at runtime. */

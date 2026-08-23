@@ -1,7 +1,7 @@
 name: ChampionshipsBingoWorker
 version: '${project.version}'
 main: ink.ziip.championshipscore.worker.BingoWorkerPlugin
-api-version: '26.1'
+api-version: '26.2'
 folia-supported: true
 authors: [ Eter Lu, LettuceIce ]
 description: Dedicated Folia execution worker for ChampionshipsCore Bingo matches.

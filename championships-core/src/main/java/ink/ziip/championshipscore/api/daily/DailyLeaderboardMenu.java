@@ -152,7 +152,11 @@ public final class DailyLeaderboardMenu {
                 ), false));
         inventory.setItem(RECORD_SLOT, personalRecords(holder.viewer, games));
 
-        List<Integer> slots = gameSlots(games.size());
+        // Keep the leaderboard's game cards aligned with the corresponding stats menu.
+        // In particular, the shared layout uses spaced, centered cards instead of treating
+        // an arbitrary center slot as a row start (which could place cards at the row edge or
+        // even spill into the next row when only a few games are enabled).
+        List<Integer> slots = DailyStatsMenu.gameSlots(games.size());
         for (int index = 0; index < games.size() && index < slots.size(); index++) {
             GameTypeEnum game = games.get(index);
             int slot = slots.get(index);
@@ -227,16 +231,23 @@ public final class DailyLeaderboardMenu {
                 ), false);
     }
 
-    /** The viewer's own cross-map best value for every metric of the listed games. */
+    /** The viewer's own cross-map records; timed metrics show the three fastest attempts. */
     private ItemStack personalRecords(UUID viewer, List<GameTypeEnum> games) {
         List<Component> lore = new ArrayList<>();
         for (GameTypeEnum game : games) {
             for (DailyMetric metric : DailyMetric.forGame(game)) {
-                double value = stats.metricValue(viewer, null, metric);
-                lore.add(Component.text(GuiConfig.text(metric.labelKey()), NamedTextColor.GRAY)
-                        .append(Component.text(Double.isNaN(value)
-                                ? GuiConfig.text(MENU_PATH + ".copy.not-yet-on-the-list")
-                                : DailyMetric.format(metric, value), DailyStatsMenu.metricColor(metric))));
+                List<Double> values = stats.metricValues(viewer, null, metric);
+                if (values.isEmpty()) {
+                    lore.add(Component.text(GuiConfig.text(metric.labelKey()), NamedTextColor.GRAY)
+                            .append(Component.text(GuiConfig.text(MENU_PATH + ".copy.not-yet-on-the-list"),
+                                    DailyStatsMenu.metricColor(metric))));
+                    continue;
+                }
+                for (int index = 0; index < values.size(); index++) {
+                    lore.add(Component.text(DailyStatsMenu.metricRecordLabel(metric, index), NamedTextColor.GRAY)
+                            .append(Component.text(stats.formatMetricValue(viewer, null, metric, values.get(index)),
+                                    DailyStatsMenu.metricColor(metric))));
+                }
             }
         }
         if (lore.isEmpty()) lore.add(Component.text(GuiConfig.text(MENU_PATH + ".copy.no-list-record-yet"), NamedTextColor.DARK_GRAY));
@@ -260,7 +271,7 @@ public final class DailyLeaderboardMenu {
             DailyLeaderboardEntry leader = entries.getFirst();
             lore.add(Component.text("  " + GuiConfig.text(MENU_PATH + ".copy.top-of-the-list") + " ", NamedTextColor.DARK_GRAY)
                     .append(Component.text(leader.name(), NamedTextColor.GOLD))
-                    .append(Component.text(GuiConfig.text("common.separator") + DailyMetric.format(metric, leader.value()), NamedTextColor.WHITE)));
+                    .append(Component.text(GuiConfig.text("common.separator") + stats.formatLeaderboardValue(metric, leader), NamedTextColor.WHITE)));
             int position = position(entries, viewer);
             if (position > 0) listed = true;
         }
@@ -288,27 +299,14 @@ public final class DailyLeaderboardMenu {
                 DailyLeaderboardEntry entry = entries.get(index);
                 NamedTextColor rankColor = index == 0 ? NamedTextColor.GOLD
                         : index == 1 ? NamedTextColor.AQUA : NamedTextColor.YELLOW;
-                lore.add(Component.text("  #" + (index + 1) + " ", rankColor)
+                        lore.add(Component.text("  #" + (index + 1) + " ", rankColor)
                         .append(Component.text(entry.name(), NamedTextColor.WHITE))
-                        .append(Component.text(GuiConfig.text("common.separator") + DailyMetric.format(metric, entry.value()), rankColor)));
+                        .append(Component.text(GuiConfig.text("common.separator") + stats.formatLeaderboardValue(metric, entry), rankColor)));
             }
         }
         lore.add(Component.empty());
         lore.add(Component.text(GuiConfig.text(MENU_PATH + ".copy.rate-boards-require-min-games"), NamedTextColor.DARK_GRAY));
         return item(gameMaterial(game), Component.text(map, gameColor(game)).decorate(TextDecoration.BOLD), lore, recorded);
-    }
-
-    private static List<Integer> gameSlots(int count) {
-        if (count <= 3) return centeredRow(22, count);
-        if (count <= 6) return centeredRow(20, count);
-        return centeredRow(18, count);
-    }
-
-    private static List<Integer> centeredRow(int rowStart, int count) {
-        int first = rowStart + (9 - count) / 2;
-        List<Integer> slots = new ArrayList<>(count);
-        for (int index = 0; index < count; index++) slots.add(first + index);
-        return slots;
     }
 
     private static int position(List<DailyLeaderboardEntry> entries, UUID viewer) {

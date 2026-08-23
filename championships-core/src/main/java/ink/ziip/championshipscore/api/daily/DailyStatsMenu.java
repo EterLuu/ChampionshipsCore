@@ -39,7 +39,6 @@ final class DailyStatsMenu {
     private static final List<Integer> GAME_SLOTS_ONE = List.of(22);
     private static final List<Integer> GAME_SLOTS_TWO = List.of(21, 23);
     private static final List<Integer> GAME_SLOTS_THREE = List.of(20, 22, 24);
-    private static final List<Integer> GAME_SLOTS_MANY = List.of(20, 22, 24, 29, 31, 33);
     /** Map cards per detail page: three centered rows of at most seven items. */
     static final int MAP_PAGE_SIZE = 21;
 
@@ -218,18 +217,24 @@ final class DailyStatsMenu {
         return stack;
     }
 
-    /** Game card: this game's best value of every metric across all maps, plus games played. */
+    /** Game card: this game's records across all maps (three rows for timed metrics), plus games played. */
     private ItemStack gameItem(UUID viewer, GameTypeEnum game) {
         DailyStatSnapshot stat = daily.statsManager().stat(viewer, game);
         List<Component> lore = new ArrayList<>();
         boolean recorded = stat.gamesPlayed() > 0;
         for (DailyMetric metric : DailyMetric.forGame(game)) {
-            double value = daily.statsManager().metricValue(viewer, null, metric);
-            if (!Double.isNaN(value)) recorded = true;
-            lore.add(line(GuiConfig.text(metric.labelKey()) + "  ",
-                    Double.isNaN(value) ? GuiConfig.text("daily.menus.statistics-screen.copy.no-record-yet")
-                            : DailyMetric.format(metric, value),
-                    Double.isNaN(value) ? NamedTextColor.DARK_GRAY : metricColor(metric)));
+            List<Double> values = daily.statsManager().metricValues(viewer, null, metric);
+            if (values.isEmpty()) {
+                lore.add(line(GuiConfig.text(metric.labelKey()) + "  ",
+                        GuiConfig.text("daily.menus.statistics-screen.copy.no-record-yet"), NamedTextColor.DARK_GRAY));
+            } else {
+                recorded = true;
+                for (int index = 0; index < values.size(); index++) {
+                    lore.add(line(metricRecordLabel(metric, index) + "  ",
+                            daily.statsManager().formatMetricValue(viewer, null, metric, values.get(index)),
+                            metricColor(metric)));
+                }
+            }
         }
         lore.add(line(GuiConfig.text("daily.menus.statistics-screen.copy.participate-in-sessions"),
                 stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics-screen.copy.match-count-suffix"), NamedTextColor.WHITE));
@@ -250,17 +255,23 @@ final class DailyStatsMenu {
                 .decorate(TextDecoration.BOLD), lore, stat.gamesPlayed() > 0);
     }
 
-    /** Map item: the viewer's best value of every metric on this one map. */
+    /** Map item: the viewer's records on this one map (three rows for timed metrics). */
     private ItemStack mapItem(UUID viewer, GameTypeEnum game, String map) {
         List<Component> lore = new ArrayList<>();
         boolean recorded = daily.statsManager().mapStat(viewer, game, map).gamesPlayed() > 0;
         for (DailyMetric metric : DailyMetric.forGame(game)) {
-            double value = daily.statsManager().metricValue(viewer, map, metric);
-            if (!Double.isNaN(value)) recorded = true;
-            lore.add(line(GuiConfig.text(metric.labelKey()) + "  ",
-                    Double.isNaN(value) ? GuiConfig.text("daily.menus.statistics-screen.copy.no-record-yet")
-                            : DailyMetric.format(metric, value),
-                    Double.isNaN(value) ? NamedTextColor.DARK_GRAY : metricColor(metric)));
+            List<Double> values = daily.statsManager().metricValues(viewer, map, metric);
+            if (values.isEmpty()) {
+                lore.add(line(GuiConfig.text(metric.labelKey()) + "  ",
+                        GuiConfig.text("daily.menus.statistics-screen.copy.no-record-yet"), NamedTextColor.DARK_GRAY));
+            } else {
+                recorded = true;
+                for (int index = 0; index < values.size(); index++) {
+                    lore.add(line(metricRecordLabel(metric, index) + "  ",
+                            daily.statsManager().formatMetricValue(viewer, map, metric, values.get(index)),
+                            metricColor(metric)));
+                }
+            }
         }
         lore.add(line(GuiConfig.text("daily.menus.statistics-screen.copy.participate-in-sessions"),
                 daily.statsManager().mapStat(viewer, game, map).gamesPlayed()
@@ -270,11 +281,28 @@ final class DailyStatsMenu {
         return item(gameMaterial(game), Component.text(map, gameColor(game)).decorate(TextDecoration.BOLD), lore, recorded);
     }
 
-    private static List<Integer> gameSlots(int count) {
+    /** Shared game-card positions used by both the personal stats and total leaderboard menus. */
+    static List<Integer> gameSlots(int count) {
+        if (count <= 0) return List.of();
         if (count <= 1) return GAME_SLOTS_ONE;
         if (count == 2) return GAME_SLOTS_TWO;
         if (count == 3) return GAME_SLOTS_THREE;
-        return GAME_SLOTS_MANY;
+        // Keep cards evenly balanced across two rows once more than three games are shown.
+        // The previous fixed six-slot list put a fourth card alone at the start of the next row.
+        int firstRowCount = (count + 1) / 2;
+        int secondRowCount = count - firstRowCount;
+        List<Integer> slots = new ArrayList<>(count);
+        slots.addAll(centeredSpacedRow(18, firstRowCount));
+        slots.addAll(centeredSpacedRow(27, secondRowCount));
+        return slots;
+    }
+
+    private static List<Integer> centeredSpacedRow(int rowStart, int count) {
+        int center = rowStart + 4;
+        int first = center - (count - 1);
+        List<Integer> slots = new ArrayList<>(count);
+        for (int index = 0; index < count; index++) slots.add(first + index * 2);
+        return slots;
     }
 
     /** Centered grid slots for one page of map cards: rows of seven, the middle row when few. */
@@ -318,7 +346,18 @@ final class DailyStatsMenu {
             case DAMAGE -> NamedTextColor.RED;
             case PERCENT -> NamedTextColor.GREEN;
             case COUNT -> NamedTextColor.GOLD;
+            case COMPOSITE -> NamedTextColor.LIGHT_PURPLE;
         };
+    }
+
+    static String metricRecordLabel(DailyMetric metric, int index) {
+        if (metric.format() != DailyMetric.Format.TIME) return GuiConfig.text(metric.labelKey());
+        String prefix = switch (index) {
+            case 0 -> GuiConfig.text("daily.menus.statistics-screen.copy.first-best");
+            case 1 -> GuiConfig.text("daily.menus.statistics-screen.copy.second-best");
+            default -> GuiConfig.text("daily.menus.statistics-screen.copy.third-best");
+        };
+        return prefix + GuiConfig.text(metric.labelKey());
     }
 
     private static Component line(String label, String value, NamedTextColor color) {

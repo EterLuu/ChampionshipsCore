@@ -38,16 +38,28 @@ public class ParkourWarriorHandler extends BaseListener {
         if (parkourWarriorTeamArea.notAreaPlayer(player)) {
             return;
         }
+        // A completed runner remains in the participant roster until settlement, but is no
+        // longer a runner. In particular, do not let the out-of-bounds recovery below turn
+        // a spectator back into adventure mode.
+        if (parkourWarriorTeamArea.isFinishedPlayer(player.getUniqueId())) {
+            return;
+        }
         if (parkourWarriorTeamArea.isIntroductionPhase()) {
             return;
         }
 
         Location location = player.getLocation();
         if (parkourWarriorTeamArea.notInArea(location)) {
-            if (parkourWarriorTeamArea.getTimer() >= 30 && parkourWarriorTeamArea.getGameStageEnum() == GameStageEnum.PROGRESS)
-                parkourWarriorTeamArea.teleportPlayerToSpawnPoint(player, true);
-            else {
-                player.setGameMode(GameMode.SPECTATOR);
+            GameStageEnum stage = parkourWarriorTeamArea.getGameStageEnum();
+            // An out-of-bounds runner is always restored to the course. Spectator mode is
+            // reserved for players who reach the final checkpoint.
+            if (stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN
+                    || stage == GameStageEnum.PROGRESS) {
+                player.setGameMode(GameMode.ADVENTURE);
+                player.setFlying(false);
+                player.setAllowFlight(false);
+                parkourWarriorTeamArea.teleportPlayerToSpawnPoint(player,
+                        stage == GameStageEnum.PROGRESS);
             }
 
             return;
@@ -82,6 +94,9 @@ public class ParkourWarriorHandler extends BaseListener {
     public void onPlayerInteraction(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         if (parkourWarriorTeamArea.notAreaPlayer(player)) {
+            return;
+        }
+        if (parkourWarriorTeamArea.isFinishedPlayer(player.getUniqueId())) {
             return;
         }
 

@@ -1,6 +1,5 @@
 package ink.ziip.championshipscore.api.game.acerace;
 
-import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import io.papermc.paper.event.entity.EntityAttemptSpinAttackEvent;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
@@ -128,10 +127,5 @@ public class AceRaceHandler extends BaseListener {
             event.setCancelled(true);
             aceRaceArea.handleRiptideStart(player);
         }
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onPlayerJump(PlayerJumpEvent event) {
-        aceRaceArea.suppressLaunchPadJump(event.getPlayer(), event.getFrom());
     }
 }

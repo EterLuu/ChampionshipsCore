@@ -33,32 +33,28 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
         if (params.equals("tab_name_color")) return tabNameColor(offlinePlayer);
         if (params.equals("tab_footer_status")) return tabFooterStatus(offlinePlayer);
         if (params.startsWith("player_team_name_no_color")) {
-            if (isDaily()) return "";
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+            ChampionshipTeam championshipTeam = visibleTeam(offlinePlayer);
             if (championshipTeam == null)
                 return MessageConfig.PLACEHOLDER_SPECTATOR;
 
             return championshipTeam.getName();
         }
         if (params.startsWith("player_team_name")) {
-            if (isDaily()) return "";
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+            ChampionshipTeam championshipTeam = visibleTeam(offlinePlayer);
             if (championshipTeam == null)
                 return MessageConfig.PLACEHOLDER_SPECTATOR;
 
             return championshipTeam.getColoredName();
         }
         if (params.startsWith("player_team_color_code")) {
-            if (isDaily()) return "";
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+            ChampionshipTeam championshipTeam = visibleTeam(offlinePlayer);
             if (championshipTeam == null)
                 return MessageConfig.PLACEHOLDER_NONE;
 
             return championshipTeam.getColorCode();
         }
         if (params.startsWith("player_team_color")) {
-            if (isDaily()) return "";
-            ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(offlinePlayer);
+            ChampionshipTeam championshipTeam = visibleTeam(offlinePlayer);
             if (championshipTeam == null)
                 return MessageConfig.PLACEHOLDER_NONE;
 
@@ -89,7 +85,13 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
     }
 
     private String tabPrefix(OfflinePlayer player) {
+        BaseGameInstance activeGame = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
+        if (activeGame != null) {
+            return ChampionshipTabText.gamePrefix(activeGame.getGameTypeEnum().toString());
+        }
         if (isDaily()) {
+            ChampionshipTeam team = visibleTeam(player);
+            if (team != null) return ChampionshipTabText.bracketedPrefix(team.getColoredName());
             BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
             if (area == null) area = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
             String status = area == null ? "&a大厅" : "&6" + area.getGameTypeEnum();
@@ -102,21 +104,29 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
 
     private String tabNameColor(OfflinePlayer player) {
         BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam team = visibleTeam(player);
         return ChampionshipTabText.playerNameColor(team == null ? null : team.getColorCode(),
                 area != null && team != null);
     }
 
     private String tabFooterStatus(OfflinePlayer player) {
         if (isDaily()) {
+            ChampionshipTeam team = visibleTeam(player);
+            if (team != null) return ChampionshipTabText.dailyTeamFooter(team.getColoredName());
             DailyPlayerSnapshot snapshot = plugin.getDailyManager().snapshot(player.getUniqueId());
             String game = "-".equals(snapshot.activeGame()) ? snapshot.selectedGame() : snapshot.activeGame();
             return ChampionshipTabText.currentGameFooter(game);
         }
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam team = visibleTeam(player);
         String name = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
         return ChampionshipTabText.teamFooter(name,
                 plugin.getRankManager().getPlayerTeamPoints(player.getUniqueId()));
+    }
+
+    /** DAILY must never fall through to the player's persistent championship identity. */
+    private ChampionshipTeam visibleTeam(OfflinePlayer player) {
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        return isDaily() && !plugin.getTeamManager().isTransientTeam(team) ? null : team;
     }
 
     /** DAILY placeholders only read immutable caches; no DB or mutable queue traversal occurs here. */
@@ -177,12 +187,12 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
     }
 
     /** Unified-metric boards format by metric kind (damage/percent/count); legacy boards by duration flag. */
-    private static String formatBoardValue(String board, DailyLeaderboardEntry entry) {
+    private String formatBoardValue(String board, DailyLeaderboardEntry entry) {
         String normalized = board.toLowerCase(java.util.Locale.ROOT);
         for (DailyMetric metric : DailyMetric.values()) {
             String prefix = metric.name().toLowerCase(java.util.Locale.ROOT) + "_";
             if (normalized.equals(metric.boardId(null)) || normalized.startsWith(prefix + "map_")) {
-                return DailyMetric.format(metric, entry.value());
+                return plugin.getDailyManager().statsManager().formatLeaderboardValue(metric, entry);
             }
         }
         return entry.duration() ? DailyLeaderboardMenu.formatDuration((long) entry.value())

@@ -1,5 +1,6 @@
 # ChampionshipsCore — Bingo 全局配置
 # 每个场地的几何/积分参数在 bingo/areas/<场地名>.yml 中单独配置。
+config-version: 2
 
 # 语言文件：bingo/lang/<locale>.yml（首次启动从插件资源生成）。
 locale: "zh_CN"
@@ -20,6 +21,15 @@ filters:
   # 携带任一被排除标签的任务永不出现在卡片上。每个任务自带隐式 dim:<维度> 标签，
   # 因此 dim:the_end 即可排除所有末地任务（默认不含末地）。
   # starter_kit 相关任务（初始装备物品、kit 触发的进度）由代码侧 BingoStarterKit.trivialises() 排除，不再走标签文件。
-  exclude: [ "dim:the_end" ]
+  exclude: [ ]
   # 每张卡片上携带某标签的任务数量上限。
   caps: { }
+
+# 仅用于 CC 的 DAILY 自由游玩；正式赛与管理员手动开局仍使用场地原有固定积分规则。
+daily-vote:
+  seconds-per-phase: 20
+
+# 奇遇（Remix）同样只在 DAILY 开局投票完成后抽取。
+remix:
+  enabled: true
+  chance: 0.05

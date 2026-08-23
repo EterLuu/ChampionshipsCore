@@ -21,9 +21,11 @@ public enum DailyMetric {
     DRAGON_MAX_DAMAGE(GameTypeEnum.DragonEggCarnival, Format.DAMAGE, 1),
     DRAGON_FIRST_LIBERATE_RATE(GameTypeEnum.DragonEggCarnival, Format.PERCENT, 5),
     DRAGON_FIRST_NEXT_GEN_RATE(GameTypeEnum.DragonEggCarnival, Format.PERCENT, 5),
-    DRAGON_FIRST_GATEWAY_RATE(GameTypeEnum.DragonEggCarnival, Format.PERCENT, 5);
+    DRAGON_FIRST_GATEWAY_RATE(GameTypeEnum.DragonEggCarnival, Format.PERCENT, 5),
+    PKW_STARS_TIME(GameTypeEnum.ParkourWarrior, Format.COMPOSITE, 1),
+    PKW_POINTS_TIME(GameTypeEnum.ParkourWarrior, Format.COMPOSITE, 1);
 
-    public enum Format { COUNT, TIME, DAMAGE, PERCENT }
+    public enum Format { COUNT, TIME, DAMAGE, PERCENT, COMPOSITE }
 
     private final GameTypeEnum game;
     private final Format format;
@@ -57,6 +59,10 @@ public enum DailyMetric {
         return format == Format.PERCENT;
     }
 
+    public boolean isComposite() {
+        return format == Format.COMPOSITE;
+    }
+
     /** Label lookup key inside gui.yml. */
     public @NotNull String labelKey() {
         return "daily.metrics." + name().toLowerCase(Locale.ROOT).replace('_', '-');
@@ -80,6 +86,22 @@ public enum DailyMetric {
             case DAMAGE -> String.format(Locale.ROOT, "%.1f", value);
             case PERCENT -> String.format(Locale.ROOT, "%.1f%%", value);
             case COUNT -> Long.toString(Math.round(value));
+            case COMPOSITE -> Long.toString(Math.round(value));
+        };
+    }
+
+    /** Formats a Parkour Warrior result using the primary value and its same-run duration. */
+    public static @NotNull String format(@NotNull DailyMetric metric, double value, long durationMs) {
+        if (!metric.isComposite() || durationMs < 0L) return format(metric, value);
+        long totalSeconds = durationMs / 1_000L;
+        long hours = totalSeconds / 3_600L;
+        long minutes = (totalSeconds % 3_600L) / 60L;
+        long seconds = totalSeconds % 60L;
+        String duration = "%02d:%02d:%02d".formatted(hours, minutes, seconds);
+        return switch (metric) {
+            case PKW_STARS_TIME -> "%d⭐ %s".formatted(Math.round(value), duration);
+            case PKW_POINTS_TIME -> "%d分 %s".formatted(Math.round(value), duration);
+            default -> format(metric, value);
         };
     }
 }

@@ -86,7 +86,43 @@ public final class DatabaseMigrationController {
                             ) ENGINE = InnoDB
                               DEFAULT CHARSET = utf8mb4
                               COLLATE = utf8mb4_unicode_ci
-                            """)));
+                            """)),
+            new DatabaseMigration(8, "daily-parkour-warrior-columns",
+                    connection -> {
+                        ensureColumn(connection, "daily_map_player_stats", "maxStars", "BIGINT NOT NULL DEFAULT 0");
+                        ensureColumn(connection, "daily_map_player_stats", "finishes", "BIGINT NOT NULL DEFAULT 0");
+                    }),
+            new DatabaseMigration(9, "daily-parkour-warrior-composite-records",
+                    connection -> connection.createStatement().execute("""
+                            CREATE TABLE IF NOT EXISTS `daily_pkw_records`
+                            (
+                                `uuid`         VARCHAR(36)  NOT NULL,
+                                `username`     VARCHAR(16)  NOT NULL,
+                                `map`          VARCHAR(128) NOT NULL,
+                                `recordType`   VARCHAR(32)  NOT NULL,
+                                `primaryValue` DOUBLE       NOT NULL,
+                                `durationMs`   BIGINT       NOT NULL,
+                                `matchId`      VARCHAR(36)  NOT NULL,
+                                `achievedAt`   BIGINT       NOT NULL,
+
+                                PRIMARY KEY (`uuid`, `map`, `recordType`),
+                                INDEX `idx_daily_pkw_records_board` (`map`, `recordType`, `primaryValue`, `durationMs`)
+                            ) ENGINE = InnoDB
+                              DEFAULT CHARSET = utf8mb4
+                              COLLATE = utf8mb4_unicode_ci
+                            """)),
+            new DatabaseMigration(10, "daily-remove-legacy-pkw-fastest-finish",
+                    connection -> connection.createStatement().executeUpdate("""
+                            DELETE FROM `daily_player_records`
+                            WHERE `game` = 'ParkourWarrior' AND `recordType` = 'PKW_FASTEST_FINISH'
+                            """)),
+            new DatabaseMigration(11, "daily-record-top-three",
+                    connection -> {
+                        ensureColumn(connection, "daily_player_records", "recordRank",
+                                "TINYINT NOT NULL DEFAULT 1");
+                        ensurePrimaryKeyContains(connection, "daily_player_records", "recordRank",
+                                "`uuid`, `game`, `map`, `mapRevision`, `rulesHash`, `recordType`, `recordRank`");
+                    }));
 
     private final ChampionshipsCore plugin;
 
@@ -203,6 +239,25 @@ public final class DatabaseMigrationController {
             }
         }
         return false;
+    }
+
+    private static void ensurePrimaryKeyContains(@NotNull Connection connection, @NotNull String table,
+                                                 @NotNull String requiredColumn,
+                                                 @NotNull String primaryKeyColumns) throws SQLException {
+        boolean present = false;
+        try (ResultSet keys = connection.getMetaData().getPrimaryKeys(connection.getCatalog(), null, table)) {
+            while (keys.next()) {
+                if (requiredColumn.equalsIgnoreCase(keys.getString("COLUMN_NAME"))) {
+                    present = true;
+                    break;
+                }
+            }
+        }
+        if (present) return;
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("ALTER TABLE `" + table + "` DROP PRIMARY KEY, ADD PRIMARY KEY ("
+                    + primaryKeyColumns + ")");
+        }
     }
 
     /** Introspection hook used by tests and future admin tooling. */

@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.daily.dao;
 import ink.ziip.championshipscore.api.daily.entry.DailyMapStatEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyMatchAggregateEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyMatchResultEntry;
+import ink.ziip.championshipscore.api.daily.entry.DailyPkwRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyStatEntry;
 import org.jetbrains.annotations.NotNull;
@@ -17,6 +18,8 @@ public interface DailyStatsDao {
 
     @NotNull List<DailyMapStatEntry> getPlayerMapStats();
 
+    @NotNull List<DailyPkwRecordEntry> getPlayerPkwRecords();
+
     /** Per-player per-map counts and Bingo maxima folded from every stored match result. */
     @NotNull List<DailyMatchAggregateEntry> getMatchResultMapAggregates();
 
@@ -25,4 +28,6 @@ public interface DailyStatsDao {
     boolean saveRecords(@NotNull List<DailyRecordEntry> records);
 
     boolean saveMapStats(@NotNull List<DailyMapStatEntry> stats);
+
+    boolean savePkwRecords(@NotNull List<DailyPkwRecordEntry> records);
 }

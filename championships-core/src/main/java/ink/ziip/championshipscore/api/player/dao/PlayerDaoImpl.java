@@ -137,6 +137,196 @@ public class PlayerDaoImpl implements PlayerDao {
         }
     }
 
+    @Override
+    @NotNull
+    public PlayerIdentityMigrationResult migrateNameChange(@NotNull String oldName,
+                                                            @NotNull String newName,
+                                                            @Nullable UUID replacementUuid) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                Set<UUID> previousUuids = collectNameChangeUuids(connection, oldName);
+                UUID currentUuid = replacementUuid != null
+                        ? replacementUuid
+                        : previousUuids.stream().findFirst().orElse(null);
+                if (currentUuid == null) {
+                    connection.commit();
+                    return PlayerIdentityMigrationResult.failed(newName, UUID.randomUUID(),
+                            "没有找到旧名称对应的 UUID");
+                }
+                previousUuids.remove(currentUuid);
+
+                Set<Integer> teamIds = collectNameChangeTeamIds(connection, oldName, previousUuids, currentUuid);
+                Set<Integer> conflicts = teamIds.size() > 1 ? new LinkedHashSet<>(teamIds) : Set.of();
+                Integer resolvedTeamId = teamIds.size() == 1 ? teamIds.iterator().next() : null;
+
+                deleteIdentityRows(connection, "players", oldName, previousUuids, currentUuid);
+                try (PreparedStatement insert = connection.prepareStatement("""
+                        INSERT INTO `players` (`uuid`, `username`)
+                        VALUES (?,?)
+                        """)) {
+                    insert.setString(1, currentUuid.toString());
+                    insert.setString(2, newName);
+                    insert.executeUpdate();
+                }
+
+                int migratedPointRows = migrateNameRows(connection, "player_points", oldName, newName,
+                        currentUuid, previousUuids);
+                for (String table : List.of(
+                        "daily_player_stats",
+                        "daily_match_results",
+                        "daily_player_records",
+                        "daily_map_player_stats",
+                        "daily_pkw_records")) {
+                    migrateNameRows(connection, table, oldName, newName, currentUuid, previousUuids);
+                }
+
+                if (conflicts.isEmpty()) {
+                    deleteIdentityRows(connection, "team_members", oldName, previousUuids, currentUuid);
+                    if (resolvedTeamId != null) {
+                        try (PreparedStatement insert = connection.prepareStatement("""
+                                INSERT INTO `team_members` (`uuid`, `username`, `teamId`)
+                                VALUES (?,?,?)
+                                """)) {
+                            insert.setString(1, currentUuid.toString());
+                            insert.setString(2, newName);
+                            insert.setInt(3, resolvedTeamId);
+                            insert.executeUpdate();
+                        }
+                    }
+                }
+
+                connection.commit();
+                return new PlayerIdentityMigrationResult(newName, currentUuid, previousUuids,
+                        resolvedTeamId, conflicts, migratedPointRows,
+                        true, true, null);
+            } catch (SQLException | RuntimeException exception) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    exception.addSuppressed(rollbackFailure);
+                }
+                throw exception;
+            }
+        } catch (SQLException | RuntimeException exception) {
+            logFailure("审批改名迁移", exception);
+            UUID fallback = replacementUuid != null ? replacementUuid : UUID.randomUUID();
+            return PlayerIdentityMigrationResult.failed(newName, fallback,
+                    exception.getClass().getSimpleName() + ": " + exception.getMessage());
+        }
+    }
+
+    private Set<UUID> collectNameChangeUuids(@NotNull Connection connection,
+                                             @NotNull String oldName) throws SQLException {
+        Set<UUID> uuids = new LinkedHashSet<>();
+        for (String table : List.of(
+                "players", "team_members", "player_points",
+                "daily_player_stats", "daily_match_results", "daily_player_records",
+                "daily_map_player_stats", "daily_pkw_records")) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT DISTINCT `uuid` FROM `" + table + "` WHERE LOWER(`username`)=LOWER(?) FOR UPDATE")) {
+                statement.setString(1, oldName);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        try {
+                            uuids.add(UUID.fromString(resultSet.getString(1)));
+                        } catch (IllegalArgumentException ignored) {
+                            // Ignore malformed legacy UUIDs; the name still gets migrated.
+                        }
+                    }
+                }
+            }
+        }
+        return uuids;
+    }
+
+    private Set<Integer> collectNameChangeTeamIds(@NotNull Connection connection,
+                                                   @NotNull String oldName,
+                                                   @NotNull Set<UUID> previousUuids,
+                                                   @NotNull UUID currentUuid) throws SQLException {
+        Set<Integer> teamIds = new LinkedHashSet<>();
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT DISTINCT `teamId` FROM `team_members` WHERE LOWER(`username`)=LOWER(?) FOR UPDATE")) {
+            statement.setString(1, oldName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) teamIds.add(resultSet.getInt(1));
+            }
+        }
+        for (UUID previousUuid : previousUuids) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT DISTINCT `teamId` FROM `team_members` WHERE `uuid`=? FOR UPDATE")) {
+                statement.setString(1, previousUuid.toString());
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) teamIds.add(resultSet.getInt(1));
+                }
+            }
+        }
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT DISTINCT `teamId` FROM `team_members` WHERE `uuid`=? FOR UPDATE")) {
+            statement.setString(1, currentUuid.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) teamIds.add(resultSet.getInt(1));
+            }
+        }
+        return teamIds;
+    }
+
+    private int migrateNameRows(@NotNull Connection connection,
+                                @NotNull String table,
+                                @NotNull String oldName,
+                                @NotNull String newName,
+                                @NotNull UUID currentUuid,
+                                @NotNull Set<UUID> previousUuids) throws SQLException {
+        int changed = 0;
+        try (PreparedStatement statement = connection.prepareStatement(
+                "UPDATE `" + table + "` SET `uuid`=?, `username`=? "
+                        + "WHERE LOWER(`username`)=LOWER(?) AND (`uuid`<>? OR BINARY `username`<>BINARY ?)")) {
+            statement.setString(1, currentUuid.toString());
+            statement.setString(2, newName);
+            statement.setString(3, oldName);
+            statement.setString(4, currentUuid.toString());
+            statement.setString(5, newName);
+            changed += statement.executeUpdate();
+        }
+        for (UUID previousUuid : previousUuids) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE `" + table + "` SET `uuid`=?, `username`=? "
+                            + "WHERE `uuid`=? AND (`uuid`<>? OR BINARY `username`<>BINARY ?)")) {
+                statement.setString(1, currentUuid.toString());
+                statement.setString(2, newName);
+                statement.setString(3, previousUuid.toString());
+                statement.setString(4, currentUuid.toString());
+                statement.setString(5, newName);
+                changed += statement.executeUpdate();
+            }
+        }
+        return changed;
+    }
+
+    private void deleteIdentityRows(@NotNull Connection connection,
+                                    @NotNull String table,
+                                    @NotNull String oldName,
+                                    @NotNull Set<UUID> previousUuids,
+                                    @NotNull UUID currentUuid) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "DELETE FROM `" + table + "` WHERE LOWER(`username`)=LOWER(?)")) {
+            statement.setString(1, oldName);
+            statement.executeUpdate();
+        }
+        for (UUID previousUuid : previousUuids) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "DELETE FROM `" + table + "` WHERE `uuid`=?")) {
+                statement.setString(1, previousUuid.toString());
+                statement.executeUpdate();
+            }
+        }
+        try (PreparedStatement statement = connection.prepareStatement(
+                "DELETE FROM `" + table + "` WHERE `uuid`=?")) {
+            statement.setString(1, currentUuid.toString());
+            statement.executeUpdate();
+        }
+    }
+
     private PlayerIdentityMigrationResult synchronizeIdentity(@NotNull Connection connection,
                                                                @NotNull String name,
                                                                @NotNull UUID currentUuid) throws SQLException {
@@ -201,9 +391,10 @@ public class PlayerDaoImpl implements PlayerDao {
         try (PreparedStatement statement = connection.prepareStatement("""
                 SELECT DISTINCT `uuid`
                 FROM `player_points`
-                WHERE LOWER(`username`)=LOWER(?)
+                WHERE `uuid`=? OR LOWER(`username`)=LOWER(?)
                 """)) {
-            statement.setString(1, name);
+            statement.setString(1, currentUuid.toString());
+            statement.setString(2, name);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     UUID storedUuid = UUID.fromString(resultSet.getString("uuid"));
@@ -248,16 +439,19 @@ public class PlayerDaoImpl implements PlayerDao {
         try (PreparedStatement statement = connection.prepareStatement("""
                 UPDATE `player_points`
                 SET `uuid`=?, `username`=?
-                WHERE LOWER(`username`)=LOWER(?)
+                WHERE (`uuid`=? OR LOWER(`username`)=LOWER(?))
                   AND (`uuid`<>? OR BINARY `username`<>BINARY ?)
                 """)) {
             statement.setString(1, currentUuid.toString());
             statement.setString(2, name);
-            statement.setString(3, name);
-            statement.setString(4, currentUuid.toString());
-            statement.setString(5, name);
+            statement.setString(3, currentUuid.toString());
+            statement.setString(4, name);
+            statement.setString(5, currentUuid.toString());
+            statement.setString(6, name);
             migratedPointRows = statement.executeUpdate();
         }
+
+        migrateDailyUsernames(connection, currentUuid, name);
 
         boolean teamRowsChanged = false;
         if (conflictingTeamIds.isEmpty()) {
@@ -291,6 +485,29 @@ public class PlayerDaoImpl implements PlayerDao {
         boolean changed = playerRowsNeedRewrite || teamRowsChanged || migratedPointRows > 0;
         return new PlayerIdentityMigrationResult(name, currentUuid, previousUuids, resolvedTeamId,
                 conflictingTeamIds, migratedPointRows, changed, true, null);
+    }
+
+    /**
+     * Username is presentation data; UUID is the durable identity. Keep every
+     * historical DAILY row aligned when a player reconnects after an approved
+     * Minecraft name change.
+     */
+    private void migrateDailyUsernames(@NotNull Connection connection,
+                                       @NotNull UUID currentUuid,
+                                       @NotNull String username) throws SQLException {
+        for (String table : List.of(
+                "daily_player_stats",
+                "daily_match_results",
+                "daily_player_records",
+                "daily_map_player_stats",
+                "daily_pkw_records")) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE `" + table + "` SET `username`=? WHERE `uuid`=?")) {
+                statement.setString(1, username);
+                statement.setString(2, currentUuid.toString());
+                statement.executeUpdate();
+            }
+        }
     }
 
     private void logFailure(String operation, Throwable exception) {

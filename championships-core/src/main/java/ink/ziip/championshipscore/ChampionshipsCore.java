@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
+import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
@@ -29,6 +30,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
@@ -36,6 +39,8 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 
 @Getter
@@ -68,12 +73,22 @@ public final class ChampionshipsCore extends JavaPlugin {
     @Getter(AccessLevel.NONE)
     private final Set<BaseManager> startedManagers = Collections.newSetFromMap(new IdentityHashMap<>());
     private long bootstrapGeneration;
+    private boolean bootstrapReady;
+    private final List<PlayerNameChangeEvent> pendingNameChanges = new CopyOnWriteArrayList<>();
 
     @Override
     public void onEnable() {
         long generation = ++bootstrapGeneration;
         instance = this;
         loaded = true;
+        bootstrapReady = false;
+        pendingNameChanges.clear();
+        Bukkit.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onPlayerNameChange(PlayerNameChangeEvent event) {
+                handlePlayerNameChange(event);
+            }
+        }, this);
         logManager = CCLogManager.install(this);
 
         java.util.List<String> missingDependencies = java.util.stream.Stream.of(
@@ -178,6 +193,11 @@ public final class ChampionshipsCore extends JavaPlugin {
                     "服务器处于 offline-mode；必须仅允许可信代理访问后端端口，并由代理或认证层完成可信身份校验"));
         }
 
+        bootstrapReady = true;
+        List<PlayerNameChangeEvent> queuedNameChanges = List.copyOf(pendingNameChanges);
+        pendingNameChanges.clear();
+        queuedNameChanges.forEach(this::handlePlayerNameChange);
+
         String readyMessage = Utils.formatModuleLog("Bootstrap", "启动", "加载完成 | 模式=" + CCConfig.MODE);
         if (logManager != null) logManager.important(readyMessage);
         else getLogger().log(Level.INFO, readyMessage);
@@ -186,6 +206,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     @Override
     public void onDisable() {
         loaded = false;
+        bootstrapReady = false;
+        pendingNameChanges.clear();
         bootstrapGeneration++;
         // Plugin shutdown logic
         unloadManager(sidebarManager);
@@ -218,6 +240,28 @@ public final class ChampionshipsCore extends JavaPlugin {
             logManager.close();
             logManager = null;
         }
+    }
+
+    private void handlePlayerNameChange(PlayerNameChangeEvent event) {
+        if (!bootstrapReady || playerManager == null) {
+            pendingNameChanges.add(event);
+            return;
+        }
+        playerManager.migrateApprovedName(event.getOldName(), event.getNewName(), event.getReplacementUuid())
+                .whenComplete((migration, failure) -> {
+                    if (failure != null) {
+                        event.completion().complete(false);
+                        getLogger().log(Level.WARNING, "Approved player name migration failed: "
+                                + event.getOldName() + " -> " + event.getNewName(), failure);
+                    } else if (!migration.successful()) {
+                        event.completion().complete(false);
+                        getLogger().warning("Approved player name migration failed: "
+                                + event.getOldName() + " -> " + event.getNewName()
+                                + " | " + migration.failureReason());
+                    } else {
+                        event.completion().complete(true);
+                    }
+                });
     }
 
     private void loadManager(@NotNull BaseManager manager) {

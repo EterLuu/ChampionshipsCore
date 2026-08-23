@@ -26,7 +26,7 @@ class DefaultBingoResourcesTest {
         List<Map<?, ?>> categories = yaml.getMapList("categories");
 
         assertEquals(7, sets.stream().filter(entry -> entry.containsKey("all_of")).count());
-        assertEquals(127, events.size());
+        assertEquals(129, events.size());
         assertTrue(sets.stream().anyMatch(entry -> "FURNACE".equals(entry.get("icon"))
                 && entry.containsKey("all_of")));
         assertTrue(events.stream().anyMatch(entry -> "craft_unique".equals(entry.get("trigger"))
@@ -35,6 +35,9 @@ class DefaultBingoResourcesTest {
                 && "UNDEAD".equals(entry.get("param")) && Integer.valueOf(30).equals(entry.get("count"))));
         assertTrue(events.stream().anyMatch(entry -> "visit_biomes".equals(entry.get("trigger"))
                 && "NETHER".equals(entry.get("icon")) && Integer.valueOf(3).equals(entry.get("count"))));
+        assertTrue(events.stream().anyMatch(entry -> "break_item".equals(entry.get("trigger"))
+                && "WOODEN_SWORD".equals(entry.get("param"))));
+        assertTrue(categories.stream().anyMatch(category -> "sulfur_cave_26_2".equals(category.get("id"))));
         assertTrue(categories.stream().anyMatch(category -> category.get("members") instanceof List<?> members
                 && members.stream().anyMatch(member -> member instanceof Map<?, ?> entry
                 && "ANCIENT_DEBRIS".equals(entry.get("block")))));
@@ -52,6 +55,9 @@ class DefaultBingoResourcesTest {
         assertEquals(Difficulty.EASY, tierlist.resolve("mine:STONE").orElseThrow());
         assertEquals(Difficulty.VERY_HARD, tierlist.resolve("mine:ANCIENT_DEBRIS").orElseThrow());
         assertEquals(Difficulty.HARD, tierlist.resolve("event:craft_unique::50").orElseThrow());
+        assertEquals(Difficulty.MEDIUM,
+                tierlist.resolve("event:break_item:WOODEN_PICKAXE").orElseThrow());
+        assertEquals(Difficulty.VERY_HARD, tierlist.resolve("MUSIC_DISC_BOUNCE").orElseThrow());
         assertEquals(Difficulty.VERY_HARD,
                 tierlist.resolve("event:wear_full_enchanted:").orElseThrow());
     }

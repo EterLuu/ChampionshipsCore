@@ -71,6 +71,10 @@ public class BingoConfig extends BaseGameConfig {
     @ConfigOption(path = "scatter-radius")
     private int scatterRadius = 6;
 
+    /** Ring jitter used only by DAILY manifests; local championship Bingo keeps the old disc scatter. */
+    @ConfigOption(path = "scatter-jitter")
+    private int scatterJitter = 0;
+
     /** Max attempts to find a safe scatter spot per player before falling back to the world spawn. */
     @ConfigOption(path = "scatter-max-tries")
     private int scatterMaxTries = 32;

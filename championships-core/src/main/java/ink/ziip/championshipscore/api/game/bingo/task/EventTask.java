@@ -149,6 +149,8 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
     private static final Key RIGHT_CLICK_BADGE = Key.key("minecraft", "right_click");
     /** Bottom-left badge for angering a zombified piglin: the wiki half-heart icon. */
     private static final Key HALF_HEART_BADGE = Key.key("minecraft", "half_heart");
+    /** Bottom-left badge for item-breaking tasks: the vanilla statistics-screen item-broken icon. */
+    private static final Key ITEM_BROKEN_BADGE = Key.key("minecraft", "item_broken");
 
     /**
      * Symbolic badge shown bottom-left on the map cell as the action badge, mirroring the statistic
@@ -164,6 +166,7 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
         if ("hunger_empty".equals(trigger)) return EMPTY_HUNGER_BADGE;
         if ("use".equals(trigger)) return RIGHT_CLICK_BADGE;
         if ("enrage".equals(trigger)) return HALF_HEART_BADGE;
+        if ("break_item".equals(trigger) && !usesAnyTemplate()) return ITEM_BROKEN_BADGE;
         if ("reach".equals(trigger) && ("BEDROCK".equalsIgnoreCase(param)
                 || "NETHER_ROOF".equalsIgnoreCase(param))) {
             return Material.BEDROCK.key();
@@ -218,12 +221,18 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
      * one_of "ANY" card template: a yellow ANY corner stamp, the subject icon centred, and no
      * bottom-left action badge.
      */
+    /** Family params of the open-ended break_item tasks; single-item params use badge cells. */
+    private static final Set<String> BREAK_ANY_PARAMS = Set.of("TOOL", "ARMOR");
+
     private static final Set<String> ANY_TEMPLATE_TRIGGERS = Set.of(
-            "break_item", "effect_at_once", "craft_unique", "eat_unique", "breed_unique",
+            "effect_at_once", "craft_unique", "eat_unique", "breed_unique",
             "leash_unique", "spy_unique", "compost_unique", "kill_family", "kill_unique",
             "visit_biomes", "unique_collect", "stack_of_64", "fill_inventory_unique");
 
     public boolean usesAnyTemplate() {
+        if ("break_item".equals(trigger)) {
+            return BREAK_ANY_PARAMS.contains(param.toUpperCase(Locale.ROOT));
+        }
         return ANY_TEMPLATE_TRIGGERS.contains(trigger);
     }
 
@@ -248,6 +257,8 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
             prefixKey = "task.event.wear_any";
         } else if ("wear_dyed".equals(trigger) && count >= 4) {
             prefixKey = "task.event.wear_dyed_full";
+        } else if ("break_item".equals(trigger) && !usesAnyTemplate()) {
+            prefixKey = "task.event.break_single";
         }
         if (msg.has(prefixKey)) {
             b.append(COUNT_LABEL_TRIGGERS.contains(trigger)
@@ -263,8 +274,12 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
     private @Nullable Component paramComponent(MessageService msg) {
         return switch (trigger) {
             case "wear" -> Component.text(wearLabel(param));
-            case "wear_dyed", "wear_duration", "break_item", "kill_family", "kill_unique",
+            case "wear_dyed", "wear_duration", "kill_family", "kill_unique",
                     "visit_biomes", "eat_all", "name" -> Component.text(specialLabelOr(param));
+            case "break_item" -> {
+                String special = specialLabel(param);
+                yield special != null ? Component.text(special) : materialComponent(param);
+            }
             case "effect" -> Component.text(effectLabel(param));
             case "reach_level" -> Component.text(param);
             case "reach" -> Component.text(reachLabel(param));
@@ -390,7 +405,11 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
                 default -> materialOr(param, Material.SKELETON_SKULL);
             };
             case "tame", "breed", "spy", "leash", "enrage" -> spawnEggOr(param);
-            case "break_item" -> "ARMOR".equalsIgnoreCase(param) ? Material.IRON_CHESTPLATE : Material.STONE_PICKAXE;
+            case "break_item" -> switch (param.toUpperCase(Locale.ROOT)) {
+                case "ARMOR" -> Material.IRON_CHESTPLATE;
+                case "TOOL" -> Material.STONE_PICKAXE;
+                default -> materialOr(param, Material.STONE_PICKAXE);
+            };
             case "place" -> "HANGING_SIGN".equalsIgnoreCase(param)
                     ? Material.OAK_HANGING_SIGN : materialOr(param, Material.PAINTING);
             case "use" -> materialOr(param, Material.COMPOSTER);

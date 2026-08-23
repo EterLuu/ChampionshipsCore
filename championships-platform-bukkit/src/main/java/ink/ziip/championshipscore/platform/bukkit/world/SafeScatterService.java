@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -24,6 +25,8 @@ import java.util.function.Consumer;
  */
 public final class SafeScatterService {
     private static final int MAX_CONCURRENT_SEARCHES = 4;
+    private static final int MIN_RING_RADIUS = 8;
+    private static final double MIN_PLAYER_DISTANCE_SQ = 24 * 24;
     private static final Set<Biome> WATER_BIOMES = Set.of(
             Biome.OCEAN, Biome.DEEP_OCEAN, Biome.WARM_OCEAN, Biome.LUKEWARM_OCEAN,
             Biome.DEEP_LUKEWARM_OCEAN, Biome.COLD_OCEAN, Biome.DEEP_COLD_OCEAN,
@@ -38,15 +41,21 @@ public final class SafeScatterService {
 
     public void performScatterAsync(
             World world, List<Player> players, int radius, int maxTries, Runnable onComplete) {
+        performScatterAsync(world, players, radius, 0, maxTries, onComplete);
+    }
+
+    public void performScatterAsync(
+            World world, List<Player> players, int radius, int jitter, int maxTries, Runnable onComplete) {
         if (world == null || players.isEmpty()) {
             if (onComplete != null) onComplete.run();
             return;
         }
         int discRadius = Math.max(1, radius);
+        int radialJitter = Math.max(0, jitter);
         int tries = Math.max(8, maxTries);
         List<Player> playerSnapshot = List.copyOf(players);
         scheduler.supplyGlobal(() -> world.getSpawnLocation().clone()).thenAccept(spawn ->
-                processPlayersAsync(world, spawn, playerSnapshot.size(), discRadius, tries, locations -> {
+                processPlayersAsync(world, spawn, playerSnapshot.size(), discRadius, radialJitter, tries, locations -> {
                     List<CompletableFuture<Void>> teleports = new ArrayList<>();
                     for (int i = 0; i < playerSnapshot.size(); i++) {
                         Location target = i < locations.size() ? locations.get(i) : spawn;
@@ -60,7 +69,7 @@ public final class SafeScatterService {
     }
 
     private void processPlayersAsync(World world, Location spawn, int playerCount,
-                                     int radius, int tries,
+                                     int radius, int jitter, int tries,
                                      Consumer<List<Location>> onAllDone) {
         if (playerCount == 0) {
             onAllDone.accept(List.of());
@@ -69,28 +78,33 @@ public final class SafeScatterService {
         Location[] locations = new Location[playerCount];
         AtomicInteger nextIndex = new AtomicInteger();
         AtomicInteger remaining = new AtomicInteger(playerCount);
+        List<Location> taken = Collections.synchronizedList(new ArrayList<>());
         int workers = Math.min(MAX_CONCURRENT_SEARCHES, playerCount);
         for (int worker = 0; worker < workers; worker++) {
-            findNextSpotAsync(world, spawn, locations, nextIndex, remaining, radius, tries, onAllDone);
+            findNextSpotAsync(world, spawn, locations, taken, nextIndex, remaining, radius, jitter, tries, onAllDone);
         }
     }
 
     private void findNextSpotAsync(World world, Location spawn, Location[] locations,
+                                   List<Location> taken,
                                    AtomicInteger nextIndex, AtomicInteger remaining,
-                                   int radius, int tries, Consumer<List<Location>> onAllDone) {
+                                   int radius, int jitter, int tries, Consumer<List<Location>> onAllDone) {
         int index = nextIndex.getAndIncrement();
         if (index >= locations.length) return;
-        findSingleSpotAsync(world, spawn, radius, tries, location -> {
+        Consumer<Location> onLocation = location -> {
             locations[index] = location;
             if (remaining.decrementAndGet() == 0) {
                 onAllDone.accept(List.of(locations));
                 return;
             }
-            findNextSpotAsync(world, spawn, locations, nextIndex, remaining, radius, tries, onAllDone);
-        });
+            findNextSpotAsync(world, spawn, locations, taken, nextIndex, remaining, radius, jitter, tries, onAllDone);
+        };
+        if (jitter > 0) findReservedSpotAsync(world, spawn, taken, radius, jitter, tries, onLocation);
+        else findSingleSpotAsync(world, spawn, taken, radius, jitter, tries, onLocation);
     }
 
-    private void findSingleSpotAsync(World world, Location spawn, int radius, int triesLeft,
+    private void findSingleSpotAsync(World world, Location spawn, List<Location> taken,
+                                     int radius, int jitter, int triesLeft,
                                      Consumer<Location> callback) {
         if (triesLeft <= 0) {
             world.getChunkAtAsync(spawn)
@@ -104,7 +118,9 @@ public final class SafeScatterService {
 
         Random random = ThreadLocalRandom.current();
         double angle = random.nextDouble() * Math.PI * 2.0;
-        double distance = radius * Math.sqrt(random.nextDouble());
+        double distance = jitter == 0
+                ? radius * Math.sqrt(random.nextDouble())
+                : Math.max(MIN_RING_RADIUS, radius + random.nextInt(-jitter, jitter + 1));
         int x = spawn.getBlockX() + (int) Math.round(Math.cos(angle) * distance);
         int z = spawn.getBlockZ() + (int) Math.round(Math.sin(angle) * distance);
         Location candidateRegion = new Location(world, x, 0, z);
@@ -115,8 +131,42 @@ public final class SafeScatterService {
                     if (error != null) {
                         callback.accept(spawn.clone().add(0.5, 1.0, 0.5));
                     } else if (candidate != null) callback.accept(candidate);
-                    else findSingleSpotAsync(world, spawn, radius, triesLeft - 1, callback);
+                    else findSingleSpotAsync(world, spawn, taken, radius, jitter, triesLeft - 1, callback);
                 });
+    }
+
+    private void findReservedSpotAsync(World world, Location spawn, List<Location> taken,
+                                       int radius, int jitter, int tries,
+                                       Consumer<Location> callback) {
+        if (tries <= 0) {
+            findSingleSpotAsync(world, spawn, taken, radius, jitter, 0, candidate -> {
+                taken.add(candidate);
+                callback.accept(candidate);
+            });
+            return;
+        }
+        findSingleSpotAsync(world, spawn, taken, radius, jitter, tries, candidate -> {
+            if (reserveLocation(candidate, taken)) callback.accept(candidate);
+            else findReservedSpotAsync(world, spawn, taken, radius, jitter, tries - 1, callback);
+        });
+    }
+
+    private boolean sufficientlySeparated(Location candidate, List<Location> taken) {
+        synchronized (taken) {
+            for (Location used : taken) {
+                if (used != null && used.getWorld() == candidate.getWorld()
+                        && used.distanceSquared(candidate) < MIN_PLAYER_DISTANCE_SQ) return false;
+            }
+            return true;
+        }
+    }
+
+    private boolean reserveLocation(Location candidate, List<Location> taken) {
+        synchronized (taken) {
+            if (!sufficientlySeparated(candidate, taken)) return false;
+            taken.add(candidate);
+            return true;
+        }
     }
 
     private Location toTopSafe(World world, int x, int z) {

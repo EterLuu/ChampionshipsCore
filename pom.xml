@@ -19,6 +19,7 @@
         <module>championships-bingo-worker</module>
         <module>championships-bingo-loadtest</module>
         <module>championships-core</module>
+        <module>championships-auth-bridge</module>
     </modules>
 
     <licenses>
@@ -31,8 +32,8 @@
     <properties>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.version>26.1.2.build.72-stable</paper.version>
-        <spigot.version>26.1.2-R0.1-SNAPSHOT</spigot.version>
+        <paper.version>26.2.build.112-stable</paper.version>
+        <spigot.version>26.2-R0.1-SNAPSHOT</spigot.version>
     </properties>
 
     <build>
@@ -93,6 +94,10 @@
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
+        <repository>
+            <id>codemc</id>
+            <url>https://repo.codemc.io/repository/maven-public/</url>
+        </repository>
     </repositories>
 
     <dependencyManagement>
@@ -139,16 +144,16 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <!-- Paper 26.1.2 mixes Adventure versions; keep the API family aligned. -->
+            <!-- Keep the Adventure API family aligned with Paper 26.2. -->
             <dependency>
                 <groupId>net.kyori</groupId>
                 <artifactId>adventure-api</artifactId>
-                <version>4.26.1</version>
+                <version>5.2.0</version>
             </dependency>
             <dependency>
                 <groupId>net.kyori</groupId>
                 <artifactId>adventure-text-minimessage</artifactId>
-                <version>4.26.1</version>
+                <version>5.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>

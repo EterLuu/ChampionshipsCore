@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 /** Optional Core control plane. LOCAL mode never constructs Redis or proxy resources. */
 public final class RemoteBingoManager extends BaseManager implements BingoExecutionGateway {
@@ -135,7 +136,7 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         try {
             manifest = manifests.create(matchId, epoch, configuredWorkerId, config,
                     request.runMode(), teams(request), spectators,
-                    request.showIntroduction());
+                    request.showIntroduction(), request.variant());
         } catch (RuntimeException failure) {
             plugin.getLogger().log(Level.SEVERE, "Unable to freeze remote Bingo manifest", failure);
             plugin.getGameManager().abortRemoteBingo(instance);
@@ -462,6 +463,16 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                     "Unable to remove DAILY Bingo participants " + players, failure);
             return false;
         });
+    }
+
+    /** Aborts a DAILY match after its complete roster exceeded Core's reconnect grace period. */
+    public void abortDailyDisconnected(@NotNull RemoteBingoInstance instance) {
+        RemoteBingoMatch match = matches.get(instance.matchId());
+        if (match == null || match.state().terminal()) {
+            plugin.getGameManager().abortRemoteBingo(instance);
+            return;
+        }
+        failMatch(match, "daily-all-players-disconnected", null);
     }
 
     @Override

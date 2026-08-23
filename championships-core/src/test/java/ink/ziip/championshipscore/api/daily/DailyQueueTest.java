@@ -53,4 +53,17 @@ class DailyQueueTest {
         assertEquals(2, secondMatch.size());
         assertEquals(0, queue.size());
     }
+
+    @Test
+    void addingPlayerDoesNotResetActiveCountdown() {
+        DailyQueue queue = new DailyQueue(GameTypeEnum.AceRace);
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        assertTrue(queue.add(first, Set.of(first), rules));
+
+        queue.countdown(3);
+        assertTrue(queue.add(second, Set.of(second), rules));
+
+        assertEquals(3, queue.countdown());
+    }
 }

@@ -26,12 +26,19 @@ final class WorkerCardMapRenderer extends MapRenderer {
     private final MatchManifest manifest;
     private final int viewerTeam;
     private final WorkerMatchSession session;
+    private final java.util.UUID viewerPlayer;
     private String lastSignature;
 
     WorkerCardMapRenderer(MatchManifest manifest, int viewerTeam, WorkerMatchSession session) {
+        this(manifest, viewerTeam, null, session);
+    }
+
+    WorkerCardMapRenderer(MatchManifest manifest, int viewerTeam, java.util.UUID viewerPlayer,
+                          WorkerMatchSession session) {
         super(false);
         this.manifest = manifest;
         this.viewerTeam = viewerTeam;
+        this.viewerPlayer = viewerPlayer;
         this.session = session;
     }
 
@@ -39,18 +46,30 @@ final class WorkerCardMapRenderer extends MapRenderer {
     public void render(@NotNull MapView view, @NotNull MapCanvas canvas, @NotNull Player player) {
         Map<Integer, List<Integer>> completions = session.completionSnapshot();
         Integer winner = session.winnerTeamId();
-        String signature = completions + "|winner=" + winner;
+        int[] displayOrder = session.displayOrder(viewerTeam);
+        if (winner != null) displayOrder = null;
+        List<BingoTaskSpec> renderedTasks = viewerPlayer == null
+                ? session.tasksSnapshot() : session.tasksSnapshot(viewerPlayer);
+        String signature = renderedTasks + "|" + completions + "|winner=" + winner
+                + "|hidden=" + session.hiddenSnapshot() + "|locked=" + session.lockedSnapshot()
+                + "|order=" + java.util.Arrays.toString(displayOrder);
         if (signature.equals(lastSignature)) return;
         BufferedImage background = TaskImageAtlas.background();
         if (background != null) drawImage(canvas, 0, 0, background);
 
         int width = manifest.scoring().cardWidth();
         int offset = (5 - width) / 2;
-        for (BingoTaskSpec task : manifest.tasks()) {
-            int gridX = task.cellIndex() % width + offset;
-            int gridY = task.cellIndex() / width + offset;
-            drawTask(canvas, task, gridX, gridY);
-            drawBorders(canvas, gridX, gridY, completions.getOrDefault(task.cellIndex(), List.of()));
+        List<BingoTaskSpec> tasks = renderedTasks;
+        for (int displaySlot = 0; displaySlot < tasks.size(); displaySlot++) {
+            int trueIndex = displayOrder == null ? displaySlot : displayOrder[displaySlot];
+            BingoTaskSpec task = tasks.stream().filter(candidate -> candidate.cellIndex() == trueIndex)
+                    .findFirst().orElseThrow();
+            int gridX = displaySlot % width + offset;
+            int gridY = displaySlot / width + offset;
+            if (session.cellHidden(trueIndex) || session.cellLocked(trueIndex))
+                drawBlocked(canvas, gridX, gridY);
+            else drawTask(canvas, task, gridX, gridY);
+            drawBorders(canvas, gridX, gridY, completions.getOrDefault(trueIndex, List.of()));
         }
         if (winner == null) {
             drawCompletedLines(canvas, completions, width, offset, viewerTeam);
@@ -60,6 +79,11 @@ final class WorkerCardMapRenderer extends MapRenderer {
             drawWinningCellHighlights(canvas, completions, width, offset, winner);
         }
         lastSignature = signature;
+    }
+
+    private void drawBlocked(MapCanvas canvas, int gridX, int gridY) {
+        BufferedImage image = TaskImageAtlas.imageFor(Key.key("minecraft", "bedrock"));
+        if (image != null) drawImage(canvas, gridX * 24 + 5, gridY * 24 + 5, image);
     }
 
     private void drawTask(MapCanvas canvas, BingoTaskSpec task, int gridX, int gridY) {
@@ -85,7 +109,7 @@ final class WorkerCardMapRenderer extends MapRenderer {
                 badge = TaskImageAtlas.checkBadge();
             } else {
                 Key badgeKey = WorkerTaskDisplay.key(task.attributes().get("display.badge-key"));
-                if (badgeKey != null) badge = TaskImageAtlas.imageFor(badgeKey);
+                if (badgeKey != null) badge = TaskImageAtlas.eventBadgeImage(badgeKey);
             }
             BufferedImage cell = TaskImageAtlas.eventCell(subject, any ? null : badge);
             drawImage(canvas, x, y, cell);

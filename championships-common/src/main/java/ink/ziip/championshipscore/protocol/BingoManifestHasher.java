@@ -63,12 +63,19 @@ public final class BingoManifestHasher {
         out.writeInt(scoring.lineBonus());
         out.writeInt(scoring.lineBonusMajorCount());
         out.writeInt(scoring.lineBonusMinor());
+        writeString(out, scoring.variant().mode().name());
+        writeString(out, scoring.variant().difficulty().name());
+        out.writeInt(scoring.variant().winLines());
+        writeString(out, scoring.variant().remix().name());
+        out.writeInt(scoring.variant().genesisItems().size());
+        for (String item : scoring.variant().genesisItems()) writeString(out, item);
     }
 
     private static void writeRuntimeRules(DataOutputStream out, BingoRuntimeRules rules) throws IOException {
         out.writeInt(rules.preparationSeconds());
         out.writeInt(rules.finalCountdownSeconds());
         out.writeInt(rules.scatterRadius());
+        out.writeInt(rules.scatterJitter());
         out.writeInt(rules.scatterMaxTries());
         out.writeInt(rules.pvpGraceSeconds());
         out.writeInt(rules.permanentEffects().size());

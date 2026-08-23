@@ -31,7 +31,6 @@ final class DailyQueue {
         Group group = new Group(groupId, new LinkedHashSet<>(players));
         groups.put(groupId, group);
         for (UUID player : players) groupByPlayer.put(player, groupId);
-        countdown = -1;
         revision++;
         return true;
     }

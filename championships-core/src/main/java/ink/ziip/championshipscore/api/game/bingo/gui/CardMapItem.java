@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.gui;
 
 import ink.ziip.championshipscore.api.game.bingo.card.BingoCard;
+import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -38,6 +39,11 @@ public final class CardMapItem {
      * each call to point at the new card.
      */
     public static ItemStack create(MapView view, World world, BingoCard card, ChampionshipTeam team, int tierSegments) {
+        return create(view, world, card, team, tierSegments, null);
+    }
+
+    public static ItemStack create(MapView view, World world, BingoCard card, ChampionshipTeam team,
+                                   int tierSegments, BingoRound round) {
         view.setWorld(world);
         view.setScale(MapView.Scale.NORMAL);
         view.setTrackingPosition(false);
@@ -45,7 +51,8 @@ public final class CardMapItem {
         for (MapRenderer existing : new java.util.ArrayList<>(view.getRenderers())) {
             view.removeRenderer(existing);
         }
-        view.addRenderer(new BingoCardMapRenderer(card, BingoTeamAdapter.id(team), BingoTeamAdapter.color(team), tierSegments));
+        view.addRenderer(new BingoCardMapRenderer(card, BingoTeamAdapter.id(team),
+                BingoTeamAdapter.color(team), tierSegments, round, team));
 
         var msg = MessageService.global();
         ItemStack item = new ItemStack(Material.FILLED_MAP);

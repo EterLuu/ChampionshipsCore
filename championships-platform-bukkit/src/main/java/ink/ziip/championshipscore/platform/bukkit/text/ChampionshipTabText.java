@@ -12,6 +12,15 @@ public final class ChampionshipTabText {
         return LegacyText.translateColorCodes("&8[" + coloredLabel + "&8]&r ");
     }
 
+    /**
+     * Prefix used for a player who is currently participating in a game.  The game label has its
+     * own colour so it cannot inherit the participant's team colour; the player's name is rendered
+     * separately through {@link #playerNameColor(String, boolean)}.
+     */
+    public static String gamePrefix(String gameName) {
+        return bracketedPrefix(LegacyText.translateColorCodes("&#fff566" + gameName));
+    }
+
     public static String teamFooter(String coloredTeamName, double points) {
         return LegacyText.translateColorCodes("&f队伍: " + coloredTeamName + " &f| 积分: "
                 + LegacyText.formatPoints(points));
@@ -19,6 +28,11 @@ public final class ChampionshipTabText {
 
     public static String currentGameFooter(String gameName) {
         return LegacyText.translateColorCodes("&f当前游戏: &b" + gameName);
+    }
+
+    /** DAILY has no championship points; its TAB footer identifies the temporary colour team only. */
+    public static String dailyTeamFooter(String coloredTeamName) {
+        return LegacyText.translateColorCodes("&f队伍: " + coloredTeamName);
     }
 
     /** Returns explicit white outside a game so scoreboard or parent-component colours cannot leak in. */

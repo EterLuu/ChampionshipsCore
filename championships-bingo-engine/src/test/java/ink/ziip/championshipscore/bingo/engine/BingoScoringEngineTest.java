@@ -1,6 +1,10 @@
 package ink.ziip.championshipscore.bingo.engine;
 
 import ink.ziip.championshipscore.protocol.BingoScoringRules;
+import ink.ziip.championshipscore.protocol.BingoDifficulty;
+import ink.ziip.championshipscore.protocol.BingoMode;
+import ink.ziip.championshipscore.protocol.BingoRemix;
+import ink.ziip.championshipscore.protocol.BingoVariantRules;
 import ink.ziip.championshipscore.protocol.BingoRuntimeRules;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
 import ink.ziip.championshipscore.protocol.BinaryProtocolCodec;
@@ -128,6 +132,35 @@ class BingoScoringEngineTest {
         assertThrows(IllegalArgumentException.class, () -> codec.decodeManifest(new byte[]{1, 2, 3}));
     }
 
+    @Test
+    void dominationLocksAClaimedCellAndSpeedrunEndsOnConfiguredLines() {
+        BingoScoringEngine domination = new BingoScoringEngine(manifest(
+                new BingoVariantRules(BingoMode.DOMINATION, BingoDifficulty.NORMAL, 1, BingoRemix.NONE)));
+        assertTrue(domination.apply(observation(1, 1, RED_ONE, 0, 1)).accepted());
+        assertFalse(domination.apply(observation(2, 2, BLUE_ONE, 0, 2)).accepted());
+
+        BingoScoringEngine speedrun = new BingoScoringEngine(manifest(
+                new BingoVariantRules(BingoMode.SPEEDRUN, BingoDifficulty.NORMAL, 1, BingoRemix.NONE)));
+        speedrun.apply(observation(1, 1, RED_ONE, 0, 1));
+        speedrun.apply(observation(2, 1, RED_ONE, 1, 2));
+        assertTrue(speedrun.hasWon(1));
+        assertEquals(2, speedrun.result().teamScores().get(1));
+    }
+
+    @Test
+    void chainRequiresAdjacencyAndCoopSharesTheWholeCard() {
+        BingoScoringEngine chain = new BingoScoringEngine(manifest(
+                new BingoVariantRules(BingoMode.QUANTITY, BingoDifficulty.NORMAL, 1, BingoRemix.CHAIN)));
+        assertTrue(chain.apply(observation(1, 1, RED_ONE, 0, 1)).accepted());
+        assertFalse(chain.apply(observation(2, 1, RED_ONE, 3, 2)).accepted());
+
+        BingoScoringEngine coop = new BingoScoringEngine(manifest(
+                new BingoVariantRules(BingoMode.POINTS, BingoDifficulty.NORMAL, 1, BingoRemix.COOP)));
+        coop.apply(observation(1, 1, RED_ONE, 0, 1));
+        assertEquals(1, coop.result().completedCells().get(1));
+        assertEquals(1, coop.result().completedCells().get(2));
+    }
+
     private static CompletionObservation observation(
             long seq, int teamId, UUID playerId, int cellIndex, long tick) {
         return new CompletionObservation(MATCH_ID, 1, seq, teamId, playerId, cellIndex, tick);
@@ -160,5 +193,16 @@ class BingoScoringEngineTest {
                         new PlayerSnapshot(RED_TWO, "RedTwo", ParticipantRole.PLAYER, 1),
                         new PlayerSnapshot(BLUE_ONE, "BlueOne", ParticipantRole.PLAYER, 2)
                 ));
+    }
+
+    private static MatchManifest manifest(BingoVariantRules variant) {
+        MatchManifest base = manifest();
+        BingoScoringRules rules = new BingoScoringRules(base.scoring().cardWidth(),
+                base.scoring().claimPoints(), base.scoring().lineBonus(),
+                base.scoring().lineBonusMajorCount(), base.scoring().lineBonusMinor(), variant);
+        return new MatchManifest(base.protocolVersion(), base.matchId(), base.epoch(),
+                base.createdAtEpochMilli(), base.workerId(), MatchRunMode.DAILY,
+                base.durationSeconds(), base.cardSeed(), base.configHash(), rules,
+                base.runtimeRules(), base.tasks(), base.teams(), base.participants());
     }
 }

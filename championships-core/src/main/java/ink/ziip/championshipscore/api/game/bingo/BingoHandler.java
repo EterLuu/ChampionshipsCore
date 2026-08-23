@@ -167,6 +167,7 @@ public class BingoHandler extends BaseListener {
         Material type = event.getBrokenItem().getType();
         String kind = isArmor(type) ? "ARMOR" : isTool(type) ? "TOOL" : null;
         if (kind != null) bingoArea.onEventSignal(event.getPlayer(), "break_item", kind);
+        bingoArea.onEventSignal(event.getPlayer(), "break_item", type.name());
     }
 
     @EventHandler

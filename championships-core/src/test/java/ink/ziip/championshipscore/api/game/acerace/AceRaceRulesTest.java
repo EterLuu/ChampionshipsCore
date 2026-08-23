@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.acerace;
 
+import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Material;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +48,13 @@ class AceRaceRulesTest {
 
     @Test
     void clampsDownwardAimToUsefulMinimum() {
-        assertEquals(0.8D, AceRaceArea.calculateAimedVerticalVelocity(1D, -1D));
+        assertEquals(0.9D, AceRaceArea.calculateAimedVerticalVelocity(1D, -1D));
+    }
+
+    @Test
+    void redPadDownwardAimUsesNinetyPercentMinimum() {
+        assertEquals(0.675D, AceRaceArea.calculateAimedVerticalVelocity(
+                AceRaceArea.launchBaseVerticalVelocity(Material.RED_WOOL), -1D));
     }
 
     @Test
@@ -63,5 +70,12 @@ class AceRaceRulesTest {
     @Test
     void retainsPitchScalingBetweenBounds() {
         assertEquals(1.1D, AceRaceArea.calculateAimedVerticalVelocity(1D, 0.1D));
+    }
+
+    @Test
+    void formatsClocksWithTwoDigitMinutesAndSeconds() {
+        assertEquals("00:00", Utils.formatMinutesSeconds(0));
+        assertEquals("00:07", Utils.formatMinutesSeconds(7));
+        assertEquals("12:23", Utils.formatMinutesSeconds(12 * 60L + 23));
     }
 }

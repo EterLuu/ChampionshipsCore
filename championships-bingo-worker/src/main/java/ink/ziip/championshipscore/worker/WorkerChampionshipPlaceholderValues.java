@@ -21,11 +21,15 @@ final class WorkerChampionshipPlaceholderValues {
                           String params, boolean daily) {
         String none = presentation.messages().getOrDefault("papi.none", "无");
         String spectator = presentation.messages().getOrDefault("papi.spectator", "旁观");
-        String gameName = presentation.messages().getOrDefault("game.name", "宾果时速");
-
         if (params.equals("tab_prefix")) {
-            if (daily) return ChampionshipTabText.bracketedPrefix("&6" + gameName);
-            String name = team == null ? spectator : LegacyText.translateColorCodes(team.colorCode() + team.name());
+            if (player != null && player.role() == ParticipantRole.PLAYER) {
+                return ChampionshipTabText.gamePrefix(
+                        presentation.messages().getOrDefault("game.name", "宾果时速"));
+            }
+            String name = team == null
+                    ? daily && player != null && player.role() == ParticipantRole.SPECTATOR
+                    ? "&6" + presentation.messages().getOrDefault("game.name", "宾果时速") : spectator
+                    : LegacyText.translateColorCodes(team.colorCode() + team.name());
             return ChampionshipTabText.bracketedPrefix(name);
         }
         if (params.equals("tab_name_color")) {
@@ -33,25 +37,24 @@ final class WorkerChampionshipPlaceholderValues {
             return ChampionshipTabText.playerNameColor(team == null ? null : team.colorCode(), activePlayer);
         }
         if (params.equals("tab_footer_status")) {
-            if (daily) return ChampionshipTabText.currentGameFooter(gameName);
+            if (daily && team != null)
+                return ChampionshipTabText.dailyTeamFooter(LegacyText.translateColorCodes(team.colorCode() + team.name()));
+            if (daily)
+                return ChampionshipTabText.currentGameFooter(presentation.messages().getOrDefault("game.name", "宾果时速"));
             String name = team == null ? spectator : LegacyText.translateColorCodes(team.colorCode() + team.name());
             return ChampionshipTabText.teamFooter(name, team == null ? 0D : team.points());
         }
 
         if (params.startsWith("player_team_name_no_color")) {
-            if (daily) return "";
             return team == null ? spectator : team.name();
         }
         if (params.startsWith("player_team_name")) {
-            if (daily) return "";
             return team == null ? spectator : LegacyText.translateColorCodes(team.colorCode() + team.name());
         }
         if (params.startsWith("player_team_color_code")) {
-            if (daily) return "";
             return team == null ? none : team.colorCode();
         }
         if (params.startsWith("player_team_color")) {
-            if (daily) return "";
             return team == null ? none : team.colorName();
         }
         if (params.startsWith("player_points")) {

@@ -249,6 +249,12 @@ public class Utils {
         return LegacyText.formatPoints(points);
     }
 
+    /** Formats a non-negative number of seconds as a two-digit minutes/seconds clock. */
+    public static String formatMinutesSeconds(long totalSeconds) {
+        long seconds = Math.max(0L, totalSeconds);
+        return String.format(Locale.ROOT, "%02d:%02d", seconds / 60L, seconds % 60L);
+    }
+
     public static String getMessage(List<String> messages) {
         StringBuilder stringBuilder = new StringBuilder();
 

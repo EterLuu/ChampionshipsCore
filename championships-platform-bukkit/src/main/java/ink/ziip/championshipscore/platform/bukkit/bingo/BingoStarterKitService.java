@@ -4,6 +4,7 @@ import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import io.papermc.paper.registry.keys.EnchantmentKeys;
 import net.kyori.adventure.text.Component;
+import ink.ziip.championshipscore.protocol.BingoRemix;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Registry;
@@ -35,14 +36,39 @@ public final class BingoStarterKitService {
 
     public static void give(Player player, Color teamColor, Component compassName,
                             List<Component> compassLore) {
+        give(player, teamColor, compassName, compassLore, BingoRemix.NONE);
+    }
+
+    public static void give(Player player, Color teamColor, Component compassName,
+                            List<Component> compassLore, BingoRemix remix) {
         if (player == null) return;
         Color color = teamColor == null ? Color.WHITE : teamColor;
         PlayerInventory inventory = player.getInventory();
-        inventory.setHelmet(protective(leather(Material.LEATHER_HELMET, color)));
-        inventory.setLeggings(protective(leather(Material.LEATHER_LEGGINGS, color)));
-        inventory.setBoots(protectiveBoots(leather(Material.LEATHER_BOOTS, color)));
-        inventory.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
-        for (ItemStack item : KIT_ITEMS) {
+        List<ItemStack> kit = KIT_ITEMS;
+        if (remix == BingoRemix.UPGRADE) {
+            inventory.setHelmet(unbreakable(new ItemStack(Material.NETHERITE_HELMET)));
+            inventory.setLeggings(unbreakable(new ItemStack(Material.NETHERITE_LEGGINGS)));
+            inventory.setBoots(unbreakable(new ItemStack(Material.NETHERITE_BOOTS)));
+            inventory.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
+            kit = List.of(tool(Material.NETHERITE_PICKAXE), tool(Material.NETHERITE_AXE),
+                    tool(Material.NETHERITE_SHOVEL), unbreakable(new ItemStack(Material.NETHERITE_SWORD)),
+                    new ItemStack(Material.FIREWORK_ROCKET, 16), new ItemStack(Material.BREAD, 32));
+        } else if (remix == BingoRemix.SPEEDRUN) {
+            inventory.setHelmet(protective(leather(Material.LEATHER_HELMET, color)));
+            inventory.setLeggings(unbreakable(new ItemStack(Material.GOLDEN_LEGGINGS)));
+            inventory.setBoots(protectiveBoots(leather(Material.LEATHER_BOOTS, color)));
+            inventory.setChestplate(unbreakable(new ItemStack(Material.NETHERITE_CHESTPLATE)));
+            kit = List.of(tool(Material.DIAMOND_PICKAXE), tool(Material.DIAMOND_AXE),
+                    tool(Material.DIAMOND_SHOVEL), unbreakable(new ItemStack(Material.DIAMOND_SWORD)),
+                    new ItemStack(Material.WATER_BUCKET), new ItemStack(Material.FLINT_AND_STEEL),
+                    new ItemStack(Material.OBSIDIAN, 12), new ItemStack(Material.BREAD, 16));
+        } else {
+            inventory.setHelmet(protective(leather(Material.LEATHER_HELMET, color)));
+            inventory.setLeggings(protective(leather(Material.LEATHER_LEGGINGS, color)));
+            inventory.setBoots(protectiveBoots(leather(Material.LEATHER_BOOTS, color)));
+            inventory.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
+        }
+        for (ItemStack item : kit) {
             for (ItemStack overflow : inventory.addItem(item.clone()).values()) {
                 player.getWorld().dropItem(player.getLocation(), overflow);
             }
@@ -55,8 +81,7 @@ public final class BingoStarterKitService {
     public static boolean hasKit(Player player) {
         if (player == null) return false;
         for (ItemStack item : player.getInventory().getContents()) {
-            if (item == null || (item.getType() != Material.STONE_PICKAXE
-                    && item.getType() != Material.STONE_SHOVEL)) continue;
+            if (item == null || !item.getType().name().endsWith("_PICKAXE")) continue;
             ItemMeta meta = item.getItemMeta();
             if (meta != null && meta.isUnbreakable()) return true;
         }

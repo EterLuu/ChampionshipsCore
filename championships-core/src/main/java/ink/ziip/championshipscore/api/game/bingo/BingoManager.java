@@ -53,6 +53,9 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     private final Map<String, BingoConfig> remoteAreaConfigs = new ConcurrentHashMap<>();
     private volatile boolean taskPoolReady;
     private BingoExecutionMode configuredExecutionMode;
+    private volatile int dailyVoteSeconds = 20;
+    private volatile boolean dailyRemixEnabled = true;
+    private volatile double dailyRemixChance = 0.05D;
 
     public BingoManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -66,6 +69,9 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         bingoDir.mkdirs();
         YamlConfiguration config = loadGlobalConfig(bingoDir);
         if (config == null) return;
+        dailyVoteSeconds = Math.max(5, config.getInt("daily-vote.seconds-per-phase", 20));
+        dailyRemixEnabled = config.getBoolean("remix.enabled", true);
+        dailyRemixChance = Math.clamp(config.getDouble("remix.chance", 0.05D), 0D, 1D);
 
         // Localisation must exist before any area renders task names.
         messageService = new MessageService(plugin, config.getString("prefix", ""), config.getString("locale", "zh_CN"));
@@ -168,6 +174,10 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         return taskPoolReady;
     }
 
+    public int dailyVoteSeconds() { return dailyVoteSeconds; }
+    public boolean dailyRemixEnabled() { return dailyRemixEnabled; }
+    public double dailyRemixChance() { return dailyRemixChance; }
+
     public BingoConfig getRemoteConfig(String area) {
         return remoteAreaConfigs.get(area);
     }
@@ -202,12 +212,28 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         try {
             YamlConfiguration config = new YamlConfiguration();
             config.load(configFile);
+            migrateGlobalConfig(config, configFile);
             return config;
         } catch (Exception failure) {
             plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "配置",
                     "无法解析 bingo/config.yml"), failure);
             return null;
         }
+    }
+
+    private void migrateGlobalConfig(YamlConfiguration config, File file) throws java.io.IOException {
+        int version = config.getInt("config-version", 1);
+        if (version >= 2) return;
+        // v1 shipped dim:the_end as an unconditional default. Difficulty voting now owns that rule;
+        // only the untouched legacy singleton is removed, while every custom filter list is preserved.
+        if (config.getStringList("filters.exclude").equals(List.of("dim:the_end")))
+            config.set("filters.exclude", List.of());
+        if (!config.contains("daily-vote.seconds-per-phase"))
+            config.set("daily-vote.seconds-per-phase", 20);
+        if (!config.contains("remix.enabled")) config.set("remix.enabled", true);
+        if (!config.contains("remix.chance")) config.set("remix.chance", 0.05D);
+        config.set("config-version", 2);
+        config.save(file);
     }
 
     /**

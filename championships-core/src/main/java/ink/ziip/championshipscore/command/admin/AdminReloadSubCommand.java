@@ -112,7 +112,7 @@ public class AdminReloadSubCommand extends BaseSubCommand {
             String redisUri, String redisNamespace, String redisGroupPrefix, long redisStreamLength,
             long redisBlockTimeout, long redisReclaimIdle, int redisMaxDeliveries,
             long redisReconciliationSeconds, String bingoExecutionMode, String bingoWorkerId,
-            String bingoProxyChannel, int aceRaceCopies) {
+            String bingoProxyChannel, int aceRaceCopies, int parkourWarriorCopies) {
 
         static RestartSensitiveConfig capture() {
             return new RestartSensitiveConfig(
@@ -135,7 +135,8 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                     ink.ziip.championshipscore.configuration.config.CCConfig.BINGO_EXECUTION_MODE,
                     ink.ziip.championshipscore.configuration.config.CCConfig.BINGO_WORKER_ID,
                     ink.ziip.championshipscore.configuration.config.CCConfig.BINGO_PROXY_CHANNEL,
-                    ink.ziip.championshipscore.configuration.config.CCConfig.DAILY_ACERACE_CONCURRENT_INSTANCES);
+                    ink.ziip.championshipscore.configuration.config.CCConfig.DAILY_ACERACE_CONCURRENT_INSTANCES,
+                    ink.ziip.championshipscore.configuration.config.CCConfig.DAILY_PARKOUR_WARRIOR_CONCURRENT_INSTANCES);
         }
 
         List<String> changedPaths() {
@@ -164,6 +165,8 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                 changed.add("bingo.execution/worker/proxy");
             if (aceRaceCopies != ink.ziip.championshipscore.configuration.config.CCConfig.DAILY_ACERACE_CONCURRENT_INSTANCES)
                 changed.add("daily.AceRace.concurrent-instances");
+            if (parkourWarriorCopies != ink.ziip.championshipscore.configuration.config.CCConfig.DAILY_PARKOUR_WARRIOR_CONCURRENT_INSTANCES)
+                changed.add("daily.ParkourWarrior.concurrent-instances");
 
             return List.copyOf(changed);
         }

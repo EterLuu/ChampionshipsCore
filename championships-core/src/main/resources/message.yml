@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 31
+  version: 33
 no-permission: "&#bababa[&#ff6b26管理&#bababa]&#ededed 权限不足"
 server-full: "服务器已经满人！"
 command:
@@ -221,7 +221,7 @@ acerace:
   game-start-subtitle: "&#fff566&l立即出发"
   game-end-title: "&#fff566&l王牌竞速"
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
-  action-bar-count-down: "&#fff566王牌竞速 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
+  action-bar-count-down: "&#fff566王牌竞速 &#bababa•&#ededed 剩余&#ff6b26%time% &#bababa•&#ededed 本圈&#ff6b26%lap-time%"
   received-elytra: "&#fff566王牌竞速 &#bababa•&#ededed 获得了&#ff6b26鞘翅"
   received-trident: "&#fff566王牌竞速 &#bababa•&#ededed 获得了&#ff6b26激流三叉戟"
   received-dolphins-grace: "&#fff566王牌竞速 &#bababa•&#ededed 获得了&#ff6b26海豚的恩惠"
@@ -355,8 +355,8 @@ parkourwarrior:
   start-preparation-title: "&#fff566&l跑路战士"
   start-preparation-subtitle: "&#ededed确认路线 &#bababa•&#ff6b26 准备挑战"
   game-start-soon-title: "&#fff566&l跑路战士"
-  action-bar-count-down: "&#fff566跑路战士 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
-  sudden-death-count-down: "&#fff566跑路战士 &#bababa•&#ff6b26 突然死亡 &#bababa•&#ededed %time%秒"
+  action-bar-count-down: "&#fff566跑路战士 &#bababa•&#ededed 剩余&#ff6b26%time%"
+  sudden-death-count-down: "&#fff566跑路战士 &#bababa•&#ff6b26 突然死亡 &#bababa•&#ededed %time%"
   sudden-death-start-count-down: "&#fff566跑路战士 &#bababa•&#ededed 突然死亡将在&#ff6b26%time%秒&#ededed后开始"
   game-start-title: "&#ff6b26&l跑路战士"
   game-start-subtitle: "&#fff566&l开始挑战"

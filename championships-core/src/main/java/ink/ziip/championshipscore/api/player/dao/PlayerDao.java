@@ -24,4 +24,9 @@ public interface PlayerDao {
     /** Reconciles every same-name persistent identity with the UUID received during login. */
     @NotNull
     PlayerIdentityMigrationResult synchronizeIdentity(@NotNull String name, @NotNull UUID currentUuid);
+
+    /** Migrates an approved name change before the player logs in again. */
+    @NotNull
+    PlayerIdentityMigrationResult migrateNameChange(@NotNull String oldName, @NotNull String newName,
+                                                    @Nullable UUID replacementUuid);
 }

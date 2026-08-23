@@ -180,9 +180,10 @@ CREATE TABLE IF NOT EXISTS `daily_player_records`
     `matchId`       VARCHAR(36)  NOT NULL,
     `achievedBy`    VARCHAR(36)  NULL,
     `achievedAt`    BIGINT       NOT NULL,
+    `recordRank`    TINYINT      NOT NULL DEFAULT 1,
 
-    PRIMARY KEY (`uuid`, `game`, `map`, `mapRevision`, `rulesHash`, `recordType`),
-    INDEX `idx_daily_records_board` (`game`, `map`, `recordType`, `durationMs`)
+    PRIMARY KEY (`uuid`, `game`, `map`, `mapRevision`, `rulesHash`, `recordType`, `recordRank`),
+    INDEX `idx_daily_records_board` (`game`, `map`, `recordType`, `durationMs`, `recordRank`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -202,10 +203,29 @@ CREATE TABLE IF NOT EXISTS `daily_map_player_stats`
     `firstLiberate`   BIGINT       NOT NULL DEFAULT 0,
     `firstNextGen`    BIGINT       NOT NULL DEFAULT 0,
     `firstGateway`    BIGINT       NOT NULL DEFAULT 0,
+    `maxStars`        BIGINT       NOT NULL DEFAULT 0,
+    `finishes`        BIGINT       NOT NULL DEFAULT 0,
     `updatedAt`       BIGINT       NOT NULL,
 
     PRIMARY KEY (`uuid`, `game`, `map`),
     INDEX `idx_daily_map_stats_board` (`game`, `map`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `daily_pkw_records`
+(
+    `uuid`         VARCHAR(36)  NOT NULL,
+    `username`     VARCHAR(16)  NOT NULL,
+    `map`          VARCHAR(128) NOT NULL,
+    `recordType`   VARCHAR(32)  NOT NULL,
+    `primaryValue` DOUBLE       NOT NULL,
+    `durationMs`   BIGINT       NOT NULL,
+    `matchId`      VARCHAR(36)  NOT NULL,
+    `achievedAt`   BIGINT       NOT NULL,
+
+    PRIMARY KEY (`uuid`, `map`, `recordType`),
+    INDEX `idx_daily_pkw_records_board` (`map`, `recordType`, `primaryValue`, `durationMs`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

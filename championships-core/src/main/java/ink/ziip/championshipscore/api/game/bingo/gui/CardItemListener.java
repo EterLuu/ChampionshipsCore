@@ -15,16 +15,28 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 /** Right-clicking a card map opens the read-only detail chest GUI for the holder's team card. */
 public final class CardItemListener extends BaseListener {
+    private static final long CONSUME_TO_CARD_OPEN_COOLDOWN_MILLIS = 1000L;
+    private final Map<UUID, Long> lastConsumedAt = new ConcurrentHashMap<>();
 
     public CardItemListener(ChampionshipsCore plugin) {
         super(plugin);
+    }
+
+    @EventHandler
+    public void onConsume(PlayerItemConsumeEvent event) {
+        lastConsumedAt.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
     }
 
     /** The bingo round the player is participating in or externally spectating, or null. */
@@ -53,6 +65,12 @@ public final class CardItemListener extends BaseListener {
                 && isOffhandWeapon(event.getPlayer().getInventory().getItemInOffHand().getType())) return;
 
         Player player = event.getPlayer();
+        Long lastConsumed = lastConsumedAt.get(player.getUniqueId());
+        if (lastConsumed != null
+                && System.currentTimeMillis() - lastConsumed < CONSUME_TO_CARD_OPEN_COOLDOWN_MILLIS) {
+            event.setCancelled(true);
+            return;
+        }
         BingoArea bingoArea = bingoAreaOf(player);
         if (bingoArea == null) return;
         BingoRound round = bingoArea.getRound();
@@ -65,7 +83,7 @@ public final class CardItemListener extends BaseListener {
                 .findFirst().orElse(null);
         if (team == null) return;
         var msg = MessageService.global();
-        round.cardFor(team).ifPresent(card ->
+        round.cardForPlayer(player.getUniqueId(), team).ifPresent(card ->
                 CardView.open(player, card, round.displayInfo(),
                         msg.component("card.map_name", team.getName()), BingoTeamAdapter.id(team)));
     }

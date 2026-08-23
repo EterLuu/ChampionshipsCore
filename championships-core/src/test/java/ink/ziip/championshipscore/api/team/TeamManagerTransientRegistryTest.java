@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,12 +16,14 @@ class TeamManagerTransientRegistryTest {
     void keepsDifferentRuntimeTeamsThatReuseTheSameDisplayName() {
         ChampionshipTeam first = team(UUID.fromString("00000000-0000-0000-0000-000000000001"));
         ChampionshipTeam second = team(UUID.fromString("00000000-0000-0000-0000-000000000002"));
-        assertEquals(first, second, "the domain object intentionally compares teams by display name");
+        assertFalse(first.equals(second));
 
         Set<ChampionshipTeam> registry = TeamManager.newTransientTeamRegistry();
         assertTrue(registry.add(first));
         assertTrue(registry.add(second));
         assertEquals(2, registry.size());
+        assertEquals(System.identityHashCode(first), first.hashCode());
+        assertEquals(System.identityHashCode(second), second.hashCode());
     }
 
     @Test

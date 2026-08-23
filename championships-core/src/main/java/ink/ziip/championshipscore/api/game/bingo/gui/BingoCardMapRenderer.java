@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.bingo.gui;
 import ink.ziip.championshipscore.api.game.bingo.card.BingoCard;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.game.RoundOutcome;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
 import ink.ziip.championshipscore.api.game.bingo.task.AllOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.CardDisplayInfo;
@@ -41,23 +42,30 @@ public final class BingoCardMapRenderer extends MapRenderer {
     private final int tierSegments;
     /** Set when the round ends so this renderer paints the win-state overlay. Null while running. */
     private final @Nullable BingoRound round;
+    private final @Nullable ChampionshipTeam viewerTeam;
     private String lastState;
 
     public BingoCardMapRenderer(BingoCard card, String teamId, TextColor teamColor) {
-        this(card, teamId, teamColor, 0, null);
+        this(card, teamId, teamColor, 0, null, null);
     }
 
     public BingoCardMapRenderer(BingoCard card, String teamId, TextColor teamColor, int tierSegments) {
-        this(card, teamId, teamColor, tierSegments, null);
+        this(card, teamId, teamColor, tierSegments, null, null);
     }
 
     public BingoCardMapRenderer(BingoCard card, String teamId, TextColor teamColor, int tierSegments, @Nullable BingoRound round) {
+        this(card, teamId, teamColor, tierSegments, round, null);
+    }
+
+    public BingoCardMapRenderer(BingoCard card, String teamId, TextColor teamColor, int tierSegments,
+                                @Nullable BingoRound round, @Nullable ChampionshipTeam viewerTeam) {
         super(false);
         this.card = card;
         this.teamId = teamId;
         this.teamColor = teamColor;
         this.tierSegments = Math.clamp(tierSegments, 0, 4);
         this.round = round;
+        this.viewerTeam = viewerTeam;
     }
 
     @Override
@@ -71,9 +79,12 @@ public final class BingoCardMapRenderer extends MapRenderer {
         int n = card.size.size;
         int offset = (5 - n) / 2; // centre smaller cards on the 5x5 map layout
         var tasks = card.getTasks();
+        int[] displayOrder = round == null || viewerTeam == null ? null : round.parallaxDisplayOrder(viewerTeam);
         for (int y = 0; y < n; y++) {
             for (int x = 0; x < n; x++) {
-                drawTask(canvas, tasks.get(y * n + x), x + offset, y + offset);
+                int displaySlot = y * n + x;
+                int trueIndex = displayOrder == null ? displaySlot : displayOrder[displaySlot];
+                drawTask(canvas, tasks.get(trueIndex), x + offset, y + offset);
             }
         }
 
@@ -92,6 +103,11 @@ public final class BingoCardMapRenderer extends MapRenderer {
     }
 
     private void drawTask(MapCanvas canvas, GameTask task, int gridX, int gridY) {
+        if ((task.isHidden() && !task.isCompleted()) || task.isLocked()) {
+            BufferedImage hidden = TaskImageAtlas.imageFor(Key.key("minecraft", "bedrock"));
+            if (hidden != null) drawImage(canvas, gridX * 24 + 5, gridY * 24 + 5, hidden, null);
+            return;
+        }
         Key key;
         if (task.data instanceof AdvancementTask advancement && advancement.usesOminousBannerIcon()) {
             key = OMINOUS_BANNER_ICON_KEY;
@@ -134,7 +150,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
             } else {
                 BufferedImage badge = event.usesGreenCheckBadge() ? TaskImageAtlas.checkBadge() : null;
                 if (badge == null && event.eventBadgeKey() != null) {
-                    badge = TaskImageAtlas.imageFor(event.eventBadgeKey());
+                    badge = TaskImageAtlas.eventBadgeImage(event.eventBadgeKey());
                 }
                 cell = TaskImageAtlas.eventCell(eventKey, badge);
                 drawImage(canvas, x, y, cell, null);
@@ -419,9 +435,14 @@ public final class BingoCardMapRenderer extends MapRenderer {
     private String stateSignature() {
         StringBuilder sb = new StringBuilder(card.getTasks().size() * 2 + 16);
         for (GameTask task : card.getTasks()) {
+            sb.append(task.data.toString()).append(task.isHidden() ? 'h' : '-').append(task.isLocked() ? 'l' : '-');
             sb.append(task.isCompletedByTeam(teamId) ? 'x' : '.');
             int n = task.allCompletions().size();
             sb.append((char) ('0' + Math.min(n, 9)));
+        }
+        if (round != null && viewerTeam != null) {
+            int[] order = round.parallaxDisplayOrder(viewerTeam);
+            if (order != null) sb.append('|').append(java.util.Arrays.toString(order));
         }
         RoundOutcome o = round != null ? round.outcome() : null;
         if (o != null) {

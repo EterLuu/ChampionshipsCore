@@ -12,9 +12,13 @@ public final class MapRecordRenameMigration {
     private MapRecordRenameMigration() {
     }
 
-    public record Counts(int playerPoints, int dailyResults, int dailyRecords) {
+    public record Counts(int playerPoints, int dailyResults, int dailyRecords, int dailyPkwRecords) {
+        public Counts(int playerPoints, int dailyResults, int dailyRecords) {
+            this(playerPoints, dailyResults, dailyRecords, 0);
+        }
+
         public int total() {
-            return playerPoints + dailyResults + dailyRecords;
+            return playerPoints + dailyResults + dailyRecords + dailyPkwRecords;
         }
     }
 
@@ -34,9 +38,9 @@ public final class MapRecordRenameMigration {
         try (PreparedStatement merge = connection.prepareStatement("""
                 INSERT INTO `daily_player_records`
                 (`uuid`,`username`,`game`,`map`,`mapRevision`,`rulesHash`,`recordType`,`durationMs`,
-                 `matchId`,`achievedBy`,`achievedAt`)
+                 `matchId`,`achievedBy`,`achievedAt`,`recordRank`)
                 SELECT `uuid`,`username`,`game`,?,`mapRevision`,`rulesHash`,`recordType`,`durationMs`,
-                       `matchId`,`achievedBy`,`achievedAt`
+                       `matchId`,`achievedBy`,`achievedAt`,`recordRank`
                 FROM `daily_player_records` WHERE `game`=? AND `map`=?
                 ON DUPLICATE KEY UPDATE
                   `username`=IF(VALUES(`durationMs`)<`durationMs`,VALUES(`username`),`username`),
@@ -53,7 +57,38 @@ public final class MapRecordRenameMigration {
         int records = update(connection,
                 "DELETE FROM `daily_player_records` WHERE `game`=? AND `map`=?",
                 game.name(), oldRegistration);
-        return new Counts(points, results, records);
+        int pkwRecords = 0;
+        if (game == GameTypeEnum.ParkourWarrior) {
+            try (PreparedStatement mergePkw = connection.prepareStatement("""
+                    INSERT INTO `daily_pkw_records`
+                    (`uuid`,`username`,`map`,`recordType`,`primaryValue`,`durationMs`,`matchId`,`achievedAt`)
+                    SELECT `uuid`,`username`,?,`recordType`,`primaryValue`,`durationMs`,`matchId`,`achievedAt`
+                    FROM `daily_pkw_records` WHERE `map`=?
+                    ON DUPLICATE KEY UPDATE
+                      `username`=IF(VALUES(`primaryValue`)>`primaryValue`
+                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
+                          VALUES(`username`),`username`),
+                      `matchId`=IF(VALUES(`primaryValue`)>`primaryValue`
+                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
+                          VALUES(`matchId`),`matchId`),
+                      `achievedAt`=IF(VALUES(`primaryValue`)>`primaryValue`
+                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
+                          VALUES(`achievedAt`),`achievedAt`)
+                      ,`durationMs`=IF(VALUES(`primaryValue`)>`primaryValue`
+                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
+                          VALUES(`durationMs`),`durationMs`)
+                      ,`primaryValue`=IF(VALUES(`primaryValue`)>`primaryValue`
+                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
+                          VALUES(`primaryValue`),`primaryValue`)
+                    """)) {
+                mergePkw.setString(1, newRegistration);
+                mergePkw.setString(2, oldRegistration);
+                mergePkw.executeUpdate();
+            }
+            pkwRecords = update(connection,
+                    "DELETE FROM `daily_pkw_records` WHERE `map`=?", oldRegistration);
+        }
+        return new Counts(points, results, records, pkwRecords);
     }
 
     private static int update(Connection connection, String sql, String... values) throws SQLException {

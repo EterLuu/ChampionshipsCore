@@ -214,12 +214,14 @@ final class WorkerListener implements Listener {
         Material type = event.getBrokenItem().getType();
         String kind = isArmor(type) ? "ARMOR" : isTool(type) ? "TOOL" : null;
         if (kind != null) registry.observeEventSignal(player, "break_item", kind);
+        registry.observeEventSignal(player, "break_item", type.name());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEventDeath(org.bukkit.event.entity.PlayerDeathEvent event) {
         Player player = event.getEntity();
         if (!registry.isRunningPlayer(player.getUniqueId())) return;
+        if (registry.clearsInventoryOnDeath(player)) event.getDrops().clear();
         String cause = resolveDeathCause(player);
         if (cause != null) registry.observeEventSignal(player, "die", cause);
     }

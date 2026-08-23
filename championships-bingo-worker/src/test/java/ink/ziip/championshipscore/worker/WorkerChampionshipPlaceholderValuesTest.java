@@ -52,19 +52,35 @@ class WorkerChampionshipPlaceholderValuesTest {
     }
 
     @Test
-    void dailyHidesFormalTeamPresentation() {
-        assertEquals("", WorkerChampionshipPlaceholderValues.resolve(
+    void activePlayerUsesGamePrefixAndKeepsTeamColourForName() {
+        assertEquals("§8[§x§f§f§f§5§6§6宾果时速§8]§r ", resolve("tab_prefix"));
+        assertEquals("§x§f§f§f§5§6§6", resolve("tab_name_color"));
+    }
+
+    @Test
+    void dailyShowsItsTemporaryColorTeamWithoutChampionshipPoints() {
+        assertEquals("§x§f§f§f§5§6§6金队", WorkerChampionshipPlaceholderValues.resolve(
                 PLAYER, TEAM, PRESENTATION, "player_team_name", true));
-        assertEquals("", WorkerChampionshipPlaceholderValues.resolve(
+        assertEquals("YELLOW", WorkerChampionshipPlaceholderValues.resolve(
                 PLAYER, TEAM, PRESENTATION, "player_team_color", true));
         assertEquals("0", WorkerChampionshipPlaceholderValues.resolve(
                 PLAYER, TEAM, PRESENTATION, "player_team_points", true));
-        assertEquals("§8[§6宾果时速§8]§r ", WorkerChampionshipPlaceholderValues.resolve(
+        assertEquals("§8[§x§f§f§f§5§6§6宾果时速§8]§r ", WorkerChampionshipPlaceholderValues.resolve(
                 PLAYER, TEAM, PRESENTATION, "tab_prefix", true));
-        assertEquals("§f当前游戏: §b宾果时速", WorkerChampionshipPlaceholderValues.resolve(
+        assertEquals("§f队伍: §x§f§f§f§5§6§6金队", WorkerChampionshipPlaceholderValues.resolve(
                 PLAYER, TEAM, PRESENTATION, "tab_footer_status", true));
         assertEquals("§x§f§f§f§5§6§6", WorkerChampionshipPlaceholderValues.resolve(
                 PLAYER, TEAM, PRESENTATION, "tab_name_color", true));
+    }
+
+    @Test
+    void dailySpectatorUsesTheSameGameIdentityAsCore() {
+        PlayerSnapshot spectator = new PlayerSnapshot(PLAYER_ID, "Viewer",
+                ParticipantRole.SPECTATOR, null, false, 0D);
+        assertEquals("§8[§6宾果时速§8]§r ", WorkerChampionshipPlaceholderValues.resolve(
+                spectator, null, PRESENTATION, "tab_prefix", true));
+        assertEquals("§f当前游戏: §b宾果时速", WorkerChampionshipPlaceholderValues.resolve(
+                spectator, null, PRESENTATION, "tab_footer_status", true));
     }
 
     private static String resolve(String params) {

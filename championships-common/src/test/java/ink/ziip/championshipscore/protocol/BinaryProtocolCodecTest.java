@@ -16,7 +16,7 @@ class BinaryProtocolCodecTest {
     void manifestRoundTripPreservesPresentationAndOptionalArrival() {
         UUID playerId = UUID.fromString("00000000-0000-0000-0000-000000000001");
         List<String> mutableSection = new ArrayList<>(List.of("&#ff6b26第一段", "&f第二行"));
-        BingoRuntimeRules runtimeRules = new BingoRuntimeRules(5, 3, 128, 32, 180,
+        BingoRuntimeRules runtimeRules = new BingoRuntimeRules(5, 3, 128, 17, 32, 180,
                 List.of("night_vision:0"), true, 45, List.of(mutableSection),
                 BingoIntroductionMode.SPECTATOR,
                 new BingoLocationSnapshot(BingoDimension.OVERWORLD, 1.5, 80, -3.5, 90, 12),
@@ -24,7 +24,9 @@ class BinaryProtocolCodecTest {
                 new BingoPresentation(Map.of("bingo.timer", "&#fff566剩余 %time%s")));
         List<BingoTaskSpec> tasks = List.of(new BingoTaskSpec(0, "minecraft:stone", "item",
                 Map.of("material", "minecraft:stone", "amount", "1")));
-        BingoScoringRules scoring = new BingoScoringRules(1, List.of(40, 30), 50, 3, 10);
+        BingoScoringRules scoring = new BingoScoringRules(1, List.of(40, 30), 50, 3, 10,
+                new BingoVariantRules(BingoMode.SPEEDRUN, BingoDifficulty.HARD, 3,
+                        BingoRemix.GENESIS, List.of("DIAMOND", "BLAZE_ROD")));
         String configHash = BingoManifestHasher.hash(900, 42L, scoring, runtimeRules, tasks);
         MatchManifest manifest = new MatchManifest(ProtocolVersion.CURRENT,
                 UUID.fromString("10000000-0000-0000-0000-000000000001"), 3, 1_800_000_000_000L,
@@ -46,9 +48,11 @@ class BinaryProtocolCodecTest {
         assertEquals(BingoDimension.OVERWORLD,
                 decoded.runtimeRules().introductionSpawn().dimension());
         assertEquals(3, decoded.runtimeRules().finalCountdownSeconds());
+        assertEquals(17, decoded.runtimeRules().scatterJitter());
         assertFalse(decoded.participants().getFirst().requiredAtStart());
         assertEquals(1234.5D, decoded.teams().getFirst().points());
         assertEquals(321.5D, decoded.participants().getFirst().points());
+        assertEquals(List.of("DIAMOND", "BLAZE_ROD"), decoded.scoring().variant().genesisItems());
         assertEquals(decoded.configHash(), BingoManifestHasher.hash(decoded));
         assertThrows(UnsupportedOperationException.class,
                 () -> decoded.runtimeRules().introductionRules().getFirst().add("不可修改"));

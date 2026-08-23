@@ -44,7 +44,7 @@ class GuiLanguageConfigurationTest {
     @Test
     void guiKeysUseAnEnglishBusinessHierarchy() throws IOException {
         YamlConfiguration gui = YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertEquals(10, gui.getInt("dont-edit-this.version"));
+        assertEquals(13, gui.getInt("dont-edit-this.version"));
 
         List<String> copyKeys = leafKeys(gui).stream()
                 .filter(key -> !key.equals("dont-edit-this.version"))

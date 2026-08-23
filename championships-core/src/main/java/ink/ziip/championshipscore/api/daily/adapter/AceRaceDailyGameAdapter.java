@@ -49,9 +49,12 @@ public final class AceRaceDailyGameAdapter implements DailyGameAdapter {
     }
 
     private @NotNull List<AceRaceArea> candidates() {
-        return plugin.getGameManager().getAceRaceManager().getRuntimeInstances().stream()
+        return plugin.getGameManager().getAceRaceManager().getAreaNameList().stream()
+                .flatMap(map -> plugin.getGameManager().getAceRaceManager().getMapInstances(map).stream())
                 .filter(area -> area.getGameStageEnum() == GameStageEnum.WAITING)
                 .filter(area -> plugin.getDailyManager().session(area) == null)
+                .filter(area -> plugin.getPrepareSessionManager().canStart(GameTypeEnum.AceRace,
+                        area.getGameConfig().getConfigName()))
                 .sorted(Comparator.comparing((AceRaceArea area) -> area.getGameConfig().getConfigName(),
                                 String.CASE_INSENSITIVE_ORDER)
                         .thenComparingInt(AceRaceArea::getCopyIndex))

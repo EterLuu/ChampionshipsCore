@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.execution;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.daily.DailyManager;
 import ink.ziip.championshipscore.api.game.bingo.BingoConfig;
 import ink.ziip.championshipscore.api.game.bingo.card.CardSize;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
@@ -18,6 +19,9 @@ import ink.ziip.championshipscore.protocol.BingoManifestHasher;
 import ink.ziip.championshipscore.protocol.BingoDimension;
 import ink.ziip.championshipscore.protocol.BingoIntroductionMode;
 import ink.ziip.championshipscore.protocol.BingoLocationSnapshot;
+import ink.ziip.championshipscore.protocol.BingoMode;
+import ink.ziip.championshipscore.protocol.BingoRemix;
+import ink.ziip.championshipscore.protocol.BingoVariantRules;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.MatchRunMode;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
@@ -41,22 +45,41 @@ public final class BingoManifestFactory {
 
     public MatchManifest create(UUID matchId, long epoch, String workerId, BingoConfig config,
                                 GameRunMode runMode, List<ChampionshipTeam> teams,
-                                Set<UUID> spectators, boolean showIntroduction) {
+                                Set<UUID> spectators, boolean showIntroduction,
+                                BingoVariantRules variant) {
         long cardSeed = java.util.concurrent.ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
-        BingoRound generated = new BingoRound(CardSize.fromWidth(config.getCardWidth()), cardSeed,
-                Set.of(TaskData.TaskType.ITEM, TaskData.TaskType.ITEM_SET,
-                        TaskData.TaskType.ADVANCEMENT, TaskData.TaskType.STATISTIC, TaskData.TaskType.EVENT),
-                Set.of(), Map.of("kill", 2), teams, config.pointsArray(), config.getLineBonus(),
-                config.getLineBonusMajorCount(), config.getLineBonusMinor());
+        if (runMode != GameRunMode.DAILY) variant = BingoVariantRules.FIXED_POINTS;
+        CardSize cardSize = variant.remix() == BingoRemix.SPEEDRUN ? CardSize.X3
+                : variant.remix() == BingoRemix.SCALE
+                ? (java.util.concurrent.ThreadLocalRandom.current().nextBoolean() ? CardSize.X3 : CardSize.X4)
+                : CardSize.fromWidth(config.getCardWidth());
+        Set<TaskData.TaskType> types = Set.of(TaskData.TaskType.ITEM, TaskData.TaskType.ITEM_SET,
+                TaskData.TaskType.ADVANCEMENT, TaskData.TaskType.STATISTIC, TaskData.TaskType.EVENT);
+        if (variant.remix() == BingoRemix.FEAST) {
+            types = java.util.concurrent.ThreadLocalRandom.current().nextBoolean()
+                    ? Set.of(TaskData.TaskType.ADVANCEMENT)
+                    : Set.of(TaskData.TaskType.STATISTIC, TaskData.TaskType.EVENT);
+        }
+        Set<String> excludes = new java.util.HashSet<>();
+        Map<String, Integer> caps = new java.util.HashMap<>(Map.of("kill", 2));
+        if (variant.difficulty().maxEndTasks() == 0) excludes.add("dim:the_end");
+        else if (variant.difficulty().maxEndTasks() > 0)
+            caps.put("dim:the_end", variant.difficulty().maxEndTasks());
+        if (variant.remix() == BingoRemix.UPGRADE) excludes.add("dim:the_end");
+        BingoRound generated = new BingoRound(cardSize, cardSeed, types, excludes, caps, teams,
+                config.pointsArray(), config.getLineBonus(), config.getLineBonusMajorCount(),
+                config.getLineBonusMinor(), variant);
         List<BingoTaskSpec> tasks = BingoTaskSpecMapper.toSpecs(generated.layout());
-        BingoScoringRules scoring = new BingoScoringRules(config.getCardWidth(), config.getPointsPerRank(),
-                config.getLineBonus(), config.getLineBonusMajorCount(), config.getLineBonusMinor());
+        BingoScoringRules scoring = new BingoScoringRules(cardSize.size, config.getPointsPerRank(),
+                config.getLineBonus(), config.getLineBonusMajorCount(), config.getLineBonusMinor(), variant);
         org.bukkit.Location spectatorSpawn = config.getSpectatorSpawnPoint();
         org.bukkit.Location introductionSpawn = config.getIntroductionSpawnPoint() != null
                 ? config.getIntroductionSpawnPoint() : spectatorSpawn;
+        boolean daily = runMode == GameRunMode.DAILY;
         BingoRuntimeRules runtimeRules = new BingoRuntimeRules(config.getPrepareTime(), 5,
-                config.getScatterRadius(), config.getScatterMaxTries(), 180,
-                config.getPermanentEffects(), showIntroduction, 45,
+                daily ? 180 : config.getScatterRadius(), daily ? 32 : 0,
+                daily ? 40 : config.getScatterMaxTries(), 180,
+                daily ? List.of() : config.getPermanentEffects(), showIntroduction, 45,
                 config.getRules() == null ? List.of() : config.getRules(),
                 config.getIntroductionGameMode() == org.bukkit.GameMode.SPECTATOR
                         ? BingoIntroductionMode.SPECTATOR : BingoIntroductionMode.ADVENTURE,
@@ -71,7 +94,9 @@ public final class BingoManifestFactory {
             int protocolTeamId = team.getId() < 0 ? teamIndex : team.getId();
             List<UUID> members = team.getMembers().stream().sorted().toList();
             double teamPoints = runMode == GameRunMode.EVENT ? plugin.getRankManager().getTeamPoints(team) : 0D;
-            teamSnapshots.add(new TeamSnapshot(protocolTeamId, team.getName(), team.getColorName(),
+            String displayName = runMode == GameRunMode.DAILY
+                    ? DailyManager.teamNameForColor(team.getColorName()) : team.getName();
+            teamSnapshots.add(new TeamSnapshot(protocolTeamId, displayName, team.getColorName(),
                     team.getColorCode(), members, teamPoints));
             for (UUID member : members) {
                 String username = plugin.getPlayerManager().getPlayerName(member);
@@ -91,7 +116,9 @@ public final class BingoManifestFactory {
                     ParticipantRole.SPECTATOR, null, false, playerPoints));
         });
 
-        String configHash = BingoManifestHasher.hash(config.getTimer(), cardSeed, scoring, runtimeRules, tasks);
+        int duration = runMode == GameRunMode.DAILY
+                ? variant.durationSeconds(config.getTimer()) : config.getTimer();
+        String configHash = BingoManifestHasher.hash(duration, cardSeed, scoring, runtimeRules, tasks);
 
         return new MatchManifest(ProtocolVersion.CURRENT, matchId, epoch, System.currentTimeMillis(), workerId,
                 switch (runMode) {
@@ -99,7 +126,7 @@ public final class BingoManifestFactory {
                     case DAILY -> MatchRunMode.DAILY;
                     case GAME -> MatchRunMode.GAME;
                 },
-                config.getTimer(), cardSeed, configHash, scoring, runtimeRules, tasks,
+                duration, cardSeed, configHash, scoring, runtimeRules, tasks,
                 teamSnapshots, participants);
     }
 

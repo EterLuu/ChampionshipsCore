@@ -265,14 +265,16 @@ public final class DailyGameMenu {
         lore.add(Component.text(queued + "/" + rules.minPlayers() + GuiConfig.text("daily.menus.game-selection-screen.copy.the-number-of-people-reaches-the-opening-number"), NamedTextColor.WHITE));
         lore.add(countdown >= 0
                 ? Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.about-to-depart"), NamedTextColor.GRAY).append(Component.text(countdown + GuiConfig.text("daily.menus.game-selection-screen.copy.seconds"), NamedTextColor.GOLD))
-                : queued > 0 && queuedGroups < 2
+                : queued > 0 && queuedGroups < 2 && !DailyManager.allowsSoloQueue(game)
                 ? Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.requires-another-player-or-party"), NamedTextColor.YELLOW)
                 : needed == 0 ? Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.preparing-for-countdown"), NamedTextColor.GREEN)
                 : Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.still-need") + needed + GuiConfig.text("daily.menus.game-selection-screen.copy.fellow-traveler"), NamedTextColor.YELLOW));
         lore.add(Component.empty());
         lore.add(Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.team-rules"), NamedTextColor.GOLD));
         lore.add(Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.each-team-has-at-most") + rules.teamSize() + GuiConfig.text("daily.menus.game-selection-screen.copy.people-most") + rules.teams() + GuiConfig.text("daily.menus.game-selection-screen.copy.team-count-suffix"), NamedTextColor.WHITE));
-        lore.add(Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.requires-at-least-2-independent-players-or-companion-squads"), NamedTextColor.GRAY));
+        if (!DailyManager.allowsSoloQueue(game)) {
+            lore.add(Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.requires-at-least-2-independent-players-or-companion-squads"), NamedTextColor.GRAY));
+        }
         lore.add(Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.single-field-capacity") + rules.minPlayers() + "–" + rules.maxPlayers() + GuiConfig.text("daily.menus.game-selection-screen.copy.player-count-suffix"), NamedTextColor.GRAY));
         lore.add(Component.text(GuiConfig.text("daily.menus.game-selection-screen.copy.map"), NamedTextColor.GRAY)
                 .append(Component.text(maps.isEmpty() ? GuiConfig.text("daily.menus.game-selection-screen.copy.waiting-place") : String.join("、", maps),
@@ -314,7 +316,9 @@ public final class DailyGameMenu {
                 : game == GameTypeEnum.AceRace
                 ? plugin.getGameManager().getAceRaceManager().getAreaNameList()
                 : game == GameTypeEnum.DragonEggCarnival
-                ? plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList() : List.of();
+                ? plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList()
+                : game == GameTypeEnum.ParkourWarrior
+                ? plugin.getGameManager().getParkourWarriorManager().getAreaNameList() : List.of();
         return maps.stream().sorted(String.CASE_INSENSITIVE_ORDER).limit(3).toList();
     }
 
@@ -355,6 +359,8 @@ public final class DailyGameMenu {
                 GuiConfig.text("daily.menus.game-selection-screen.copy.racing-independent-track-instance"), GuiConfig.text("daily.menus.game-selection-screen.copy.controlling-the-elytra-and-trident-challenge-the-fastest-complete-lap")));
         styles.put(GameTypeEnum.DragonEggCarnival, new GameStyle(Material.DRAGON_EGG, NamedTextColor.LIGHT_PURPLE,
                 GuiConfig.text("daily.menus.game-selection-screen.copy.confrontation-original-end-dragon-battle"), GuiConfig.text("daily.menus.game-selection-screen.copy.compete-for-three-end-game-progressions-be-the-first-to-complete-two-of-them")));
+        styles.put(GameTypeEnum.ParkourWarrior, new GameStyle(Material.LEATHER_BOOTS, NamedTextColor.GREEN,
+                GuiConfig.text("daily.menus.game-selection-screen.copy.parkour-challenge-multi-difficulty-checkpoints"), GuiConfig.text("daily.menus.game-selection-screen.copy.challenge-checkpoints-of-each-difficulty-and-reach-the-finish-first")));
         return Map.copyOf(styles);
     }
 

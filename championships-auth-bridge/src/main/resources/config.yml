@@ -1,0 +1,12 @@
+api:
+  base-url: http://127.0.0.1:3000
+  key-id: cc-core
+  hmac-secret: change-me
+  allow-insecure-private-http: false
+  poll-seconds: 10
+  connect-timeout-seconds: 5
+  request-timeout-seconds: 10
+access:
+  fail-closed-before-first-sync: true
+  not-whitelisted-message: "你尚未通过服务器白名单审批。"
+  banned-message: "你已被服务器封禁。"

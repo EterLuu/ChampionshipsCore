@@ -399,7 +399,9 @@ public final class TaskPoolLoader {
     private static List<String> globKeys(PoolEntrySpec.Kind kind, String glob) {
         Pattern pattern = globPattern(glob);
         return switch (kind) {
-            case ITEM, CRAFT -> enumNames(Material.values(), pattern, Material::isItem);
+            case ITEM -> enumNames(Material.values(), pattern,
+                    ink.ziip.championshipscore.api.game.bingo.util.Materials::isCollectObjective);
+            case CRAFT -> enumNames(Material.values(), pattern, Material::isItem);
             case MINE -> enumNames(Material.values(), pattern);
             case KILL -> enumNames(EntityType.values(), pattern);
             case STAT -> enumNames(Statistic.values(), pattern);

@@ -35,6 +35,13 @@ final class WorkerMenuService {
 
     static void openCard(Player player, MatchManifest manifest,
                          Set<Integer> completedByViewer, Map<Integer, List<Integer>> completions) {
+        openCard(player, manifest, manifest.tasks(), completedByViewer, completions,
+                Set.of(), Set.of(), null);
+    }
+
+    static void openCard(Player player, MatchManifest manifest, List<BingoTaskSpec> tasks,
+                         Set<Integer> completedByViewer, Map<Integer, List<Integer>> completions,
+                         Set<Integer> hidden, Set<Integer> locked, int[] displayOrder) {
         int width = manifest.scoring().cardWidth();
         int rows = Math.clamp(width, 3, 6);
         CardHolder holder = new CardHolder();
@@ -52,14 +59,24 @@ final class WorkerMenuService {
         });
         inventory.setItem(0, info);
         int left = (9 - width) / 2;
-        for (BingoTaskSpec task : manifest.tasks()) {
-            int row = task.cellIndex() / width;
-            int column = task.cellIndex() % width;
+        for (int displaySlot = 0; displaySlot < tasks.size(); displaySlot++) {
+            int trueIndex = displayOrder == null ? displaySlot : displayOrder[displaySlot];
+            BingoTaskSpec task = tasks.stream().filter(candidate -> candidate.cellIndex() == trueIndex)
+                    .findFirst().orElseThrow();
+            int row = displaySlot / width;
+            int column = displaySlot % width;
             if (row >= rows) continue;
-            inventory.setItem(row * 9 + left + column,
-                    taskItem(task, manifest, completedByViewer, completions));
+            inventory.setItem(row * 9 + left + column, hidden.contains(trueIndex) || locked.contains(trueIndex)
+                    ? blockedItem() : taskItem(task, manifest, completedByViewer, completions));
         }
         player.openInventory(inventory);
+    }
+
+    private static ItemStack blockedItem() {
+        ItemStack item = new ItemStack(Material.BEDROCK);
+        item.editMeta(meta -> meta.displayName(Component.text("?", NamedTextColor.DARK_GRAY)
+                .decoration(TextDecoration.ITALIC, false)));
+        return item;
     }
 
     static void openTeammates(Player player, MatchManifest manifest, TeamSnapshot team,

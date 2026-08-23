@@ -279,11 +279,18 @@ public class ChampionshipTeam {
             return true;
         if (!(o instanceof ChampionshipTeam))
             return false;
-        return this.name.equals(((ChampionshipTeam) o).name);
+        ChampionshipTeam other = (ChampionshipTeam) o;
+        // DAILY creates one transient team per match and intentionally reuses the visible colour
+        // names (红队/绿队/...). Those runtime teams must not collide in GameManager's ownership
+        // maps merely because they render with the same name. Persisted/formal teams retain the
+        // historical name-based identity semantics.
+        if (this.id < 0 || other.id < 0)
+            return false;
+        return this.name.equals(other.name);
     }
 
     @Override
     public int hashCode() {
-        return name.hashCode();
+        return id < 0 ? System.identityHashCode(this) : name.hashCode();
     }
 }

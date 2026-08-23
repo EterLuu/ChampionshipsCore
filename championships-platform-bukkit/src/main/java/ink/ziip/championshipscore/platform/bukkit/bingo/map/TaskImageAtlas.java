@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.papermc.paper.advancement.AdvancementDisplay;
 import net.kyori.adventure.key.Key;
+import org.bukkit.Material;
 import org.bukkit.Statistic;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +39,6 @@ public final class TaskImageAtlas {
     private static final Color STAT_BORDER = new Color(48, 56, 70);
     private static final Color EVENT_PANEL = new Color(108, 96, 140);
     private static final Color EVENT_BORDER = new Color(56, 46, 80);
-    private static final Key TRAVEL_ARROW_BADGE_KEY = Key.key("minecraft", "travel_arrow");
     private static final int BADGE = 16;
     private static final int BADGE_INSET = FRAME_BORDER;
     private static final int BADGE_X = BADGE_INSET - 2;
@@ -51,16 +51,15 @@ public final class TaskImageAtlas {
 
     private static volatile boolean loaded;
     private static boolean failed;
-    private static final Map<String, Sprite> SPRITES = new HashMap<>();
+    /** Statistic and event badges from the merged stat_event atlas. */
+    private static final Map<String, Sprite> STAT_EVENT_SPRITES = new HashMap<>();
+    private static final Map<String, Sprite> ITEMS = new HashMap<>();
     private static final Map<String, Sprite> ENTITIES = new HashMap<>();
-    /** Statistic corner-badge sprites from the dedicated atlas. */
-    private static final Map<String, Sprite> STATISTIC_SPRITES = new HashMap<>();
     /** Per-effect potion sprites, keyed {@code <form-infix>/<effect>} e.g. {@code splash_potion/strength}. */
     private static final Map<String, Sprite> POTION_SPRITES = new HashMap<>();
     private static final Map<String, BufferedImage> CACHE = new ConcurrentHashMap<>();
 
     private static BufferedImage background;
-    private static final Map<String, BufferedImage> statisticBadges = new HashMap<>();
     private static BufferedImage advancementFrameTask;
     private static BufferedImage advancementFrameGoal;
     private static BufferedImage advancementFrameChallenge;
@@ -75,29 +74,14 @@ public final class TaskImageAtlas {
             try (InputStream atlasStream = resource(RES + "item_atlas.json")) {
                 JsonObject atlas = JsonParser.parseReader(
                         new InputStreamReader(atlasStream, StandardCharsets.UTF_8)).getAsJsonObject();
-                loadSection(atlas.getAsJsonObject("sprites"), SPRITES);
+                loadSection(atlas.getAsJsonObject("items"), ITEMS);
                 loadSection(atlas.getAsJsonObject("entities"), ENTITIES);
             }
-            for (String name : new String[]{"ominous_banner", "half_hunger", "empty_hunger",
-                    "right_click", "travel_arrow", "half_heart", "half_absorption_heart"}) {
-                loadBakedSprite(name);
-            }
-            try (InputStream statAtlasStream = resource(RES + "statistic_atlas.json")) {
+            try (InputStream statAtlasStream = resource(RES + "stat_event_atlas.json")) {
                 JsonObject statAtlas = JsonParser.parseReader(
                         new InputStreamReader(statAtlasStream, StandardCharsets.UTF_8)).getAsJsonObject();
-                loadSection(statAtlas.getAsJsonObject("badges"), STATISTIC_SPRITES);
-                for (String name : new String[]{"block_mined", "item_broken", "item_crafted", "item_used",
-                        "item_picked_up", "item_dropped", "kill_entity", "entity_killed_by"}) {
-                    Sprite s = STATISTIC_SPRITES.get(name);
-                    if (s != null) {
-                        statisticBadges.put(name, s.sheet.getSubimage(s.x, s.y, s.w, s.h));
-                    }
-                }
+                loadSection(statAtlas.getAsJsonObject("badges"), STAT_EVENT_SPRITES);
             }
-            Sprite harmingSplash = POTION_SPRITES.get("splash_potion/harming");
-            if (harmingSplash != null) SPRITES.put("minecraft:harming_splash_potion", harmingSplash);
-            Sprite healingPotion = POTION_SPRITES.get("potion/healing");
-            if (healingPotion != null) SPRITES.put("minecraft:healing_potion", healingPotion);
             try (InputStream potionAtlasStream = resource(RES + "potions_atlas.json")) {
                 if (potionAtlasStream != null) {
                     JsonObject potionAtlas = JsonParser.parseReader(
@@ -105,12 +89,18 @@ public final class TaskImageAtlas {
                     loadSection(potionAtlas.getAsJsonObject("potions"), POTION_SPRITES);
                 }
             }
+            Sprite harmingSplash = POTION_SPRITES.get("splash_potion/harming");
+            if (harmingSplash != null) ITEMS.put("minecraft:harming_splash_potion", harmingSplash);
+            Sprite healingPotion = POTION_SPRITES.get("potion/healing");
+            if (healingPotion != null) ITEMS.put("minecraft:healing_potion", healingPotion);
             background = read(RES + "card_background.png");
             if (background != null) unifySlotShade(background);
             advancementFrameTask = read(RES + "advancement_frame_task.png");
             advancementFrameGoal = read(RES + "advancement_frame_goal.png");
             advancementFrameChallenge = read(RES + "advancement_frame_challenge.png");
-            checkBadge = read(RES + "check.png");
+            Sprite checkSprite = STAT_EVENT_SPRITES.get("check");
+            checkBadge = checkSprite == null ? null
+                    : checkSprite.sheet.getSubimage(checkSprite.x, checkSprite.y, checkSprite.w, checkSprite.h);
             if (checkBadge == null) checkBadge = createCheckBadge();
             loaded = true;
         } catch (Exception ex) {
@@ -118,12 +108,6 @@ public final class TaskImageAtlas {
             java.util.logging.Logger.getLogger(TaskImageAtlas.class.getName())
                     .warning("Bingo task atlas failed to load: " + ex.getMessage());
         }
-    }
-
-    private static void loadBakedSprite(String name) throws Exception {
-        BufferedImage image = read(RES + name + ".png");
-        if (image != null) SPRITES.put("minecraft:" + name,
-                new Sprite(image, 0, 0, image.getWidth(), image.getHeight()));
     }
 
     private static void unifySlotShade(BufferedImage img) {
@@ -176,9 +160,26 @@ public final class TaskImageAtlas {
     public static @Nullable BufferedImage imageFor(Key key) {
         ensureLoaded();
         String k = key.asString();
-        Sprite s = SPRITES.get(k);
+        Sprite s = ITEMS.get(k);
         if (s == null) return null;
         return CACHE.computeIfAbsent(k, kk -> s.sheet.getSubimage(s.x, s.y, s.w, s.h));
+    }
+
+    private static @Nullable BufferedImage badgeImageFor(String name) {
+        ensureLoaded();
+        Sprite s = STAT_EVENT_SPRITES.get(name);
+        if (s == null) return null;
+        return CACHE.computeIfAbsent("b:" + name,
+                kk -> s.sheet.getSubimage(s.x, s.y, s.w, s.h));
+    }
+
+    /** Resolves merged event badges first, then ordinary material sprites. */
+    public static @Nullable BufferedImage eventBadgeImage(Key key) {
+        if ("minecraft".equals(key.namespace())) {
+            BufferedImage badge = badgeImageFor(key.value());
+            if (badge != null) return badge;
+        }
+        return imageFor(key);
     }
 
     /**
@@ -198,8 +199,11 @@ public final class TaskImageAtlas {
         ensureLoaded();
         String k = key.asString();
         Sprite s = ENTITIES.get(k);
+        if (s == null) s = ITEMS.get(k + "_spawn_egg");
         if (s == null) return null;
-        return CACHE.computeIfAbsent("e:" + k, kk -> s.sheet.getSubimage(s.x, s.y, s.w, s.h));
+        Sprite resolved = s;
+        return CACHE.computeIfAbsent("e:" + k,
+                kk -> resolved.sheet.getSubimage(resolved.x, resolved.y, resolved.w, resolved.h));
     }
 
     public static @Nullable BufferedImage background() {
@@ -285,18 +289,14 @@ public final class TaskImageAtlas {
     }
 
     private static @Nullable BufferedImage statisticBadge(Statistic stat) {
+        if (stat == Statistic.USE_ITEM) return badgeImageFor("right_click");
         String name = switch (stat) {
-            case MINE_BLOCK -> "block_mined";
             case BREAK_ITEM -> "item_broken";
             case CRAFT_ITEM -> "item_crafted";
-            case USE_ITEM -> "item_used";
-            case PICKUP -> "item_picked_up";
-            case DROP -> "item_dropped";
             case KILL_ENTITY -> "kill_entity";
-            case ENTITY_KILLED_BY -> "entity_killed_by";
             default -> null;
         };
-        if (name != null) return statisticBadges.get(name);
+        if (name != null) return badgeImageFor(name);
         return switch (stat) {
             case JUMP,
                  STRIDER_ONE_CM,
@@ -315,7 +315,52 @@ public final class TaskImageAtlas {
                  FALL_ONE_CM,
                  SPRINT_ONE_CM,
                  HAPPY_GHAST_ONE_CM,
-                 NAUTILUS_ONE_CM -> imageFor(TRAVEL_ARROW_BADGE_KEY);
+                 NAUTILUS_ONE_CM -> badgeImageFor("travel_arrow");
+            case TALKED_TO_VILLAGER,
+                 CAKE_SLICES_EATEN,
+                 CAULDRON_FILLED,
+                 BREWINGSTAND_INTERACTION,
+                 BEACON_INTERACTION,
+                 NOTEBLOCK_PLAYED,
+                 CAULDRON_USED,
+                 NOTEBLOCK_TUNED,
+                 FLOWER_POTTED,
+                 RECORD_PLAYED,
+                 FURNACE_INTERACTION,
+                 CRAFTING_TABLE_INTERACTION,
+                 SLEEP_IN_BED,
+                 INTERACT_WITH_BLAST_FURNACE,
+                 INTERACT_WITH_SMOKER,
+                 INTERACT_WITH_LECTERN,
+                 INTERACT_WITH_CAMPFIRE,
+                 INTERACT_WITH_CARTOGRAPHY_TABLE,
+                 INTERACT_WITH_LOOM,
+                 INTERACT_WITH_STONECUTTER,
+                 BELL_RING,
+                 INTERACT_WITH_ANVIL,
+                 INTERACT_WITH_GRINDSTONE,
+                 INTERACT_WITH_SMITHING_TABLE,
+                 OPEN_BARREL,
+                 CHEST_OPENED,
+                 ENDERCHEST_OPENED,
+                 SHULKER_BOX_OPENED,
+                 TRAPPED_CHEST_TRIGGERED,
+                 HOPPER_INSPECTED,
+                 DROPPER_INSPECTED,
+                 DISPENSER_INSPECTED -> badgeImageFor("right_click");
+            case TRADED_WITH_VILLAGER -> imageFor(Material.EMERALD.key());
+            case TARGET_HIT -> imageFor(Material.BOW.key());
+            case FISH_CAUGHT -> imageFor(Material.FISHING_ROD.key());
+            case ARMOR_CLEANED, BANNER_CLEANED, CLEAN_SHULKER_BOX -> imageFor(Material.CAULDRON.key());
+            case RAID_TRIGGER -> imageFor(Material.OMINOUS_BOTTLE.key());
+            case RAID_WIN -> checkBadge();
+            case DAMAGE_DEALT,
+                 DAMAGE_TAKEN,
+                 DAMAGE_DEALT_RESISTED,
+                 DAMAGE_RESISTED,
+                 DAMAGE_BLOCKED_BY_SHIELD -> badgeImageFor("half_heart");
+            case DAMAGE_ABSORBED,
+                 DAMAGE_DEALT_ABSORBED -> badgeImageFor("half_absorption_heart");
             default -> null;
         };
     }

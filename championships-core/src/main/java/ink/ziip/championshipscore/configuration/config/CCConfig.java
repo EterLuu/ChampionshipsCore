@@ -21,7 +21,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 16;
+        return 17;
     }
 
     /** Migrates the Bingo-owned Redis connection into the shared Core infrastructure section. */
@@ -107,6 +107,24 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "daily.games.DragonEggCarnival.countdown-seconds")
     public static int DAILY_DRAGON_EGG_CARNIVAL_COUNTDOWN_SECONDS;
+
+    @ConfigOption(path = "daily.games.ParkourWarrior.min-players")
+    public static int DAILY_PARKOUR_WARRIOR_MIN_PLAYERS;
+
+    @ConfigOption(path = "daily.games.ParkourWarrior.max-players")
+    public static int DAILY_PARKOUR_WARRIOR_MAX_PLAYERS;
+
+    @ConfigOption(path = "daily.games.ParkourWarrior.team-size")
+    public static int DAILY_PARKOUR_WARRIOR_TEAM_SIZE;
+
+    @ConfigOption(path = "daily.games.ParkourWarrior.teams")
+    public static int DAILY_PARKOUR_WARRIOR_TEAMS;
+
+    @ConfigOption(path = "daily.games.ParkourWarrior.countdown-seconds")
+    public static int DAILY_PARKOUR_WARRIOR_COUNTDOWN_SECONDS;
+
+    @ConfigOption(path = "daily.games.ParkourWarrior.concurrent-instances")
+    public static int DAILY_PARKOUR_WARRIOR_CONCURRENT_INSTANCES;
 
     // Players
     @ConfigOption(path = "max-players")

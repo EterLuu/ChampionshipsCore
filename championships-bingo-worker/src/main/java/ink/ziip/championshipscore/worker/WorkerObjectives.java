@@ -38,13 +38,17 @@ final class WorkerObjectives {
             "name", "toot_goat_horn", "remove_effect_milk", "shield_disabled",
             "shoot_firework_crossbow", "use_brush", "use_golden_dandelion", "fill_campfire",
             "construct_copper_golem", "enrage", "explode_end_crystal");
-    private final List<Objective> objectives;
-    private final List<Objective> pollingObjectives;
-    private final Map<String, List<Integer>> advancementCells;
+    private volatile List<Objective> objectives;
+    private volatile List<Objective> pollingObjectives;
+    private volatile Map<String, List<Integer>> advancementCells;
     private final Map<UUID, Map<Integer, Integer>> statisticBaselines = new ConcurrentHashMap<>();
     private final EventProgress eventProgress = new EventProgress();
 
     WorkerObjectives(List<BingoTaskSpec> specs) {
+        replace(specs);
+    }
+
+    synchronized void replace(List<BingoTaskSpec> specs) {
         List<Objective> parsed = new ArrayList<>(specs.size());
         for (BingoTaskSpec spec : specs) parsed.add(parse(spec));
         this.objectives = List.copyOf(parsed);
@@ -61,6 +65,7 @@ final class WorkerObjectives {
         }
         cellsByAdvancement.replaceAll((ignored, cells) -> List.copyOf(cells));
         this.advancementCells = Map.copyOf(cellsByAdvancement);
+        statisticBaselines.clear();
     }
 
     void captureBaselines(Player player) {
@@ -98,6 +103,10 @@ final class WorkerObjectives {
 
     List<Integer> matchingAdvancement(Advancement advancement) {
         return advancementCells.getOrDefault(advancement.key().asString(), List.of());
+    }
+
+    List<Integer> matchingAdvancement(Advancement advancement, IntPredicate eligibleCell) {
+        return matchingAdvancement(advancement).stream().filter(eligibleCell::test).toList();
     }
 
     List<Integer> matchingEventSignal(Player player, String trigger, String param, IntPredicate eligibleCell) {

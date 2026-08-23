@@ -20,6 +20,9 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Display;
@@ -64,10 +67,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final int ENVIRONMENTAL_EFFECT_DURATION_TICKS = 40;
     private static final int BASE_SPEED_AMPLIFIER = 0;
     private static final int YELLOW_SPEED_AMPLIFIER = 2;
-    private static final int RED_SPEED_AMPLIFIER = 7;
+    private static final int RED_SPEED_AMPLIFIER = 8;
     private static final int DEPTH_STRIDER_LEVEL = 3;
     private static final int DOLPHINS_GRACE_DEPTH_STRIDER_LEVEL = 1;
-    private static final double MIN_LAUNCH_VERTICAL_MULTIPLIER = 0.8D;
+    private static final double MIN_LAUNCH_VERTICAL_MULTIPLIER = 0.9D;
     private static final double MAX_LAUNCH_VERTICAL_MULTIPLIER = 1.2D;
     private static final double RIPTIDE_EXTRA_MULTIPLIER = 0.01D;
     private static final int SPEED_STATION_RADIUS = 2;
@@ -82,6 +85,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final long RACER_VISIBILITY_UPDATE_TICKS = 1L;
     private static final long MAP_EDIT_PREVIEW_UPDATE_TICKS = 10L;
     private static final String COLLISION_TEAM_PREFIX = "cc_ar_";
+    private static final String TIMER_BOSS_BAR_PREFIX = "acerace-game-timer:";
 
     @Getter
     private final List<AceRaceProgressPoint> progressPoints = new ArrayList<>();
@@ -98,6 +102,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private final Map<UUID, Integer> nextProgressPoint = new HashMap<>();
     private final Map<UUID, Integer> completedLaps = new HashMap<>();
     private final Map<UUID, Long> lapStartedNanos = new HashMap<>();
+    /** Completed lap durations in milliseconds, retained for the entire match for the sidebar. */
+    private final Map<UUID, List<Long>> lapDurationsMillis = new HashMap<>();
     private final Map<UUID, Long> raceStartedNanos = new HashMap<>();
     private final Map<UUID, Location> latestRespawnLocations = new HashMap<>();
     private final Map<UUID, Set<Integer>> capturedRespawnPoints = new HashMap<>();
@@ -538,6 +544,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         nextProgressPoint.clear();
         completedLaps.clear();
         lapStartedNanos.clear();
+        lapDurationsMillis.clear();
         raceStartedNanos.clear();
         latestRespawnLocations.clear();
         capturedRespawnPoints.clear();
@@ -578,6 +585,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             nextProgressPoint.put(uuid, 0);
             completedLaps.put(uuid, 0);
             lapStartedNanos.remove(uuid);
+            lapDurationsMillis.put(uuid, new ArrayList<>());
             raceStartedNanos.remove(uuid);
             latestRespawnLocations.put(uuid, start.clone());
             capturedRespawnPoints.put(uuid, new HashSet<>());
@@ -595,12 +603,62 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) handleEnvironmentalEffects(player);
         }
+        // The preparation countdown owns the shared timer bar. Ace Race needs a personal lap
+        // stopwatch in the same bar, so replace it with one bar per viewer before the live timer starts.
+        clearGameTimerBossBar();
         progressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             refreshEnvironmentalEffects();
             timer = seconds;
-            updateGameTimerBossBar(MessageConfig.ACE_RACE_ACTION_BAR_COUNT_DOWN
-                    .replace("%time%", String.valueOf(seconds)), seconds, getGameConfig().getTimer());
+            updateAceRaceTimerBossBars(seconds);
         }, this::endGame);
+    }
+
+    /** Updates a countdown + personal current-lap stopwatch for every online instance viewer. */
+    private void updateAceRaceTimerBossBars(int remainingSeconds) {
+        Set<UUID> viewerIds = new HashSet<>(getParticipantUniqueIds());
+        viewerIds.addAll(getSpectatorUniqueIds());
+        for (String key : new ArrayList<>(bossBars.keySet())) {
+            if (!key.startsWith(TIMER_BOSS_BAR_PREFIX)) continue;
+            String uuidText = key.substring(TIMER_BOSS_BAR_PREFIX.length());
+            try {
+                if (!viewerIds.contains(UUID.fromString(uuidText))) removeBossBar(key);
+            } catch (IllegalArgumentException ignored) {
+                removeBossBar(key);
+            }
+        }
+
+        double progress = getGameConfig().getTimer() <= 0 ? 0D
+                : remainingSeconds / (double) getGameConfig().getTimer();
+        long now = System.nanoTime();
+        for (UUID uuid : viewerIds) {
+            String key = TIMER_BOSS_BAR_PREFIX + uuid;
+            BossBar bossBar = bossBars.computeIfAbsent(key, ignored ->
+                    Bukkit.createBossBar("", BarColor.YELLOW, BarStyle.SOLID));
+            bossBar.setTitle(Utils.translateColorCodes(MessageConfig.ACE_RACE_ACTION_BAR_COUNT_DOWN
+                    .replace("%time%", Utils.formatMinutesSeconds(remainingSeconds))
+                    .replace("%lap-time%", Utils.formatMinutesSeconds(currentLapElapsedSeconds(uuid, now)))
+                    .replace("%lap%", String.valueOf(currentLapNumber(uuid)))));
+            bossBar.setProgress(Math.max(0D, Math.min(1D, progress)));
+
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                if (!bossBar.getPlayers().contains(player)) bossBar.addPlayer(player);
+            } else {
+                for (Player current : new ArrayList<>(bossBar.getPlayers())) bossBar.removePlayer(current);
+            }
+        }
+    }
+
+    private int currentLapNumber(@NotNull UUID uuid) {
+        return Math.min(getGameConfig().getLaps(), completedLaps.getOrDefault(uuid, 0) + 1);
+    }
+
+    private long currentLapElapsedSeconds(@NotNull UUID uuid, long nowNanos) {
+        List<Long> completed = lapDurationsMillis.get(uuid);
+        if (finishedPlayers.contains(uuid) && completed != null && !completed.isEmpty())
+            return completed.getLast() / 1_000L;
+        Long started = lapStartedNanos.get(uuid);
+        return started == null ? 0L : Math.max(0L, (nowNanos - started) / 1_000_000_000L);
     }
 
     public void handlePlayerMove(@NotNull PlayerMoveEvent event) {
@@ -702,11 +760,17 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         int lap = completedLaps.getOrDefault(player.getUniqueId(), 0) + 1;
         completedLaps.put(player.getUniqueId(), lap);
         long completedAt = System.nanoTime();
-        Long lapStarted = lapStartedNanos.put(uuid, completedAt);
-        if (lapStarted != null && getRunMode() == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY) {
+        // The next lap starts only when the racer crosses the start line again. Do not carry the
+        // just-completed timestamp through the reset, otherwise time spent turning around at the line
+        // would be incorrectly added to the next lap.
+        Long lapStarted = lapStartedNanos.remove(uuid);
+        if (lapStarted != null) {
             long durationMillis = Math.max(0L, (completedAt - lapStarted) / 1_000_000L);
-            plugin.getDailyManager().statsManager().recordPlayerTime(
-                    this, uuid, DailyRecordType.ACERACE_FASTEST_LAP, durationMillis);
+            lapDurationsMillis.computeIfAbsent(uuid, ignored -> new ArrayList<>()).add(durationMillis);
+            if (getRunMode() == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY) {
+                plugin.getDailyManager().statsManager().recordPlayerTime(
+                        this, uuid, DailyRecordType.ACERACE_FASTEST_LAP, durationMillis);
+            }
         }
         Long raceStarted = raceStartedNanos.get(uuid);
         if (lap == 3 && getGameConfig().getLaps() == 3 && raceStarted != null
@@ -717,6 +781,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         }
         if (lap < getGameConfig().getLaps()) {
             resetLapProgress(player, current);
+            updateAceRaceTimerBossBars(timer);
             String message = MessageConfig.ACE_RACE_LAP_COMPLETED
                     .replace("%player%", Utils.formatPlayerName(player))
                     .replace("%lap%", String.valueOf(lap))
@@ -831,23 +896,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         Block twoBlocksBelow = playerBlock.getRelative(0, -2, 0);
         if (twoBlocksBelow.getType() == Material.YELLOW_GLAZED_TERRACOTTA) return twoBlocksBelow;
         return null;
-    }
-
-    public void suppressLaunchPadJump(@NotNull Player player, @NotNull Location jumpOrigin) {
-        Block launchPad = jumpOrigin.getBlock().getRelative(0, -1, 0);
-        if (getGameStageEnum() != GameStageEnum.PROGRESS || notAreaPlayer(player)
-                || finishedPlayers.contains(player.getUniqueId())
-                || !isLaunchPad(launchPad.getType())) return;
-
-        // Cancelling PlayerJumpEvent makes Paper move the player back to the jump origin. Around a
-        // delayed pad launch that correction looks like the pad has pulled the player backwards.
-        // Remove only vanilla's upward jump motion; the scheduled pad task will replace the whole
-        // velocity with its fixed launch vector, so ordinary jump momentum still cannot stack.
-        Vector velocity = player.getVelocity();
-        if (velocity.getY() > 0D) {
-            velocity.setY(0D);
-            player.setVelocity(velocity);
-        }
     }
 
     private void refreshEnvironmentalEffects() {
@@ -977,6 +1025,21 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         return removed;
     }
 
+    /** Removes race-issued elytras that a player may have moved out of the chestplate slot. */
+    private static void removeAllElytrasOutsideChestplate(@NotNull PlayerInventory inventory) {
+        ItemStack[] storage = inventory.getStorageContents();
+        for (int slot = 0; slot < storage.length; slot++) {
+            ItemStack item = storage[slot];
+            if (item != null && item.getType() == Material.ELYTRA) {
+                inventory.setItem(slot, null);
+            }
+        }
+        ItemStack offHand = inventory.getItemInOffHand();
+        if (offHand.getType() == Material.ELYTRA) {
+            inventory.setItemInOffHand(null);
+        }
+    }
+
     private static @NotNull ItemStack createRiptideTrident() {
         ItemStack trident = new ItemStack(Material.TRIDENT);
         trident.addEnchantment(Enchants.get(EnchantmentKeys.RIPTIDE), 1);
@@ -1010,6 +1073,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         PlayerInventory inventory = player.getInventory();
         setDepthStriderLevel(inventory, equipment == AceRaceEquipment.DOLPHINS_GRACE
                 ? DOLPHINS_GRACE_DEPTH_STRIDER_LEVEL : DEPTH_STRIDER_LEVEL);
+        // Elytra can be manually unequipped into storage/off-hand. Clear those copies whenever
+        // the stage changes so an old elytra cannot be carried into a different equipment stage.
+        removeAllElytrasOutsideChestplate(inventory);
         ItemStack chestplate = inventory.getChestplate();
         if (equipment != AceRaceEquipment.ELYTRA
                 && chestplate != null && chestplate.getType() == Material.ELYTRA) {
@@ -1178,7 +1244,13 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         applyProgressPointEquipment(player, AceRaceEquipment.NONE);
         restoreRacerVisibility(player);
         player.setGameMode(GameMode.SPECTATOR);
-        if (allParticipantsFinished(gamePlayers, finishedPlayers)) endGame();
+        // Formal matches retain the complete roster. DAILY runs treat a disconnected racer as unable
+        // to finish, so that UUID must not keep the remaining racers in PROGRESS.
+        Collection<UUID> requiredParticipants = getRunMode()
+                == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY
+                ? gamePlayers.stream().filter(participantId -> Bukkit.getPlayer(participantId) != null).toList()
+                : gamePlayers;
+        if (allParticipantsFinished(requiredParticipants, finishedPlayers)) endGame();
     }
 
     /** Uses roster membership rather than equal list sizes so duplicate or already-removed entries cannot delay the end. */
@@ -1239,6 +1311,25 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (!gamePlayers.contains(uuid)) return 0;
         if (finishedPlayers.contains(uuid)) return getGameConfig().getLaps();
         return Math.min(getGameConfig().getLaps(), completedLaps.getOrDefault(uuid, 0) + 1);
+    }
+
+    /** Returns a completed lap duration in the same mm:ss format used by the live clocks. */
+    public @NotNull String getLapDurationDisplay(@NotNull UUID uuid, int lap) {
+        if (lap < 1) return MessageConfig.PLACEHOLDER_NONE;
+        List<Long> durations = lapDurationsMillis.get(uuid);
+        if (durations == null || lap > durations.size()) return MessageConfig.PLACEHOLDER_NONE;
+        return Utils.formatMinutesSeconds(durations.get(lap - 1) / 1_000L);
+    }
+
+    /** Returns the three fixed sidebar slots, preserving a dash until each lap is completed. */
+    public @NotNull String getLapDurationsDisplay(@NotNull UUID uuid) {
+        List<Long> durations = lapDurationsMillis.get(uuid);
+        List<String> slots = new ArrayList<>(3);
+        for (int index = 0; index < 3; index++) {
+            slots.add(durations != null && index < durations.size()
+                    ? Utils.formatMinutesSeconds(durations.get(index) / 1_000L) : "-");
+        }
+        return String.join(" / ", slots);
     }
 
     public int getReachedProgressPoint(@NotNull UUID uuid) {

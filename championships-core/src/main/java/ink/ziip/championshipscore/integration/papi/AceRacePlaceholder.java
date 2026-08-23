@@ -36,6 +36,26 @@ public class AceRacePlaceholder extends BaseGamePlaceholder<AceRaceArea> {
                     : area.getPlayerPositionDisplay(offlinePlayer.getUniqueId())
                     + "/" + area.getGamePlayers().size();
         }
+        if (params.startsWith("player_lap_times_")) {
+            AceRaceArea area = resolvePlayerArea(params, "player_lap_times_", offlinePlayer);
+            return area == null ? MessageConfig.PLACEHOLDER_NONE
+                    : area.getLapDurationsDisplay(offlinePlayer.getUniqueId());
+        }
+        if (params.startsWith("player_lap_time_")) {
+            String remainder = params.substring("player_lap_time_".length());
+            int separator = remainder.indexOf('_');
+            if (separator <= 0) return MessageConfig.PLACEHOLDER_NONE;
+            int lap;
+            try {
+                lap = Integer.parseInt(remainder.substring(0, separator));
+            } catch (NumberFormatException ignored) {
+                return MessageConfig.PLACEHOLDER_NONE;
+            }
+            String prefix = "player_lap_time_" + lap + "_";
+            AceRaceArea area = resolvePlayerArea(params, prefix, offlinePlayer);
+            return area == null ? MessageConfig.PLACEHOLDER_NONE
+                    : area.getLapDurationDisplay(offlinePlayer.getUniqueId(), lap);
+        }
         if (params.startsWith("player_lap_")) {
             AceRaceArea area = resolvePlayerArea(params, "player_lap_", offlinePlayer);
             return area == null ? MessageConfig.PLACEHOLDER_NONE

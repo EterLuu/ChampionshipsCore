@@ -50,7 +50,7 @@ class WorkerCardMapRendererTest {
 
     @Test
     void travelStatisticsUseTheSharedArrowBadge() {
-        BufferedImage arrow = TaskImageAtlas.imageFor(Key.key("minecraft", "travel_arrow"));
+        BufferedImage arrow = TaskImageAtlas.eventBadgeImage(Key.key("minecraft", "travel_arrow"));
         assertNotNull(arrow);
         BufferedImage cell = TaskImageAtlas.statisticCell(Material.LEATHER_BOOTS.key(), Statistic.WALK_ONE_CM);
 

@@ -790,6 +790,42 @@ categories:
       - { material: DRIPSTONE_BLOCK }
       - { material: POINTED_DRIPSTONE }
       - { stat: CAULDRON_FILLED }
+  # 26.2 Tiny Takeover: sulfur caves, sulfur cubes and their exclusive loot.
+  - id: sulfur_cave_26_2
+    dimension: overworld
+    members:
+      - { material: SULFUR }
+      - { material: SULFUR_SPIKE }
+      - { item: SULFUR_SLAB }
+      - { item: SULFUR_STAIRS }
+      - { item: SULFUR_WALL }
+      - { item: POLISHED_SULFUR }
+      - { item: POLISHED_SULFUR_SLAB }
+      - { item: POLISHED_SULFUR_STAIRS }
+      - { item: POLISHED_SULFUR_WALL }
+      - { item: SULFUR_BRICKS }
+      - { item: SULFUR_BRICK_SLAB }
+      - { item: SULFUR_BRICK_STAIRS }
+      - { item: SULFUR_BRICK_WALL }
+      - { item: CHISELED_SULFUR }
+      - { material: CINNABAR }
+      - { item: CINNABAR_SLAB }
+      - { item: CINNABAR_STAIRS }
+      - { item: CINNABAR_WALL }
+      - { item: POLISHED_CINNABAR }
+      - { item: POLISHED_CINNABAR_SLAB }
+      - { item: POLISHED_CINNABAR_STAIRS }
+      - { item: POLISHED_CINNABAR_WALL }
+      - { item: CINNABAR_BRICKS }
+      - { item: CINNABAR_BRICK_SLAB }
+      - { item: CINNABAR_BRICK_STAIRS }
+      - { item: CINNABAR_BRICK_WALL }
+      - { item: CHISELED_CINNABAR }
+      - { item: POTENT_SULFUR }
+      - { material: SULFUR_CUBE_BUCKET }
+      - { material: MUSIC_DISC_BOUNCE }
+      - { entity: SULFUR_CUBE, count: 3 }
+      - { path: husbandry/uh_oh }
   - id: flower_biome
     dimension: overworld
     members:
@@ -1581,8 +1617,6 @@ singletons:
     - { one_of: ["*_ARMOR_TRIM_SMITHING_TEMPLATE"], icon: SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE }
     # 任意陶片 -- 拿到任意一种陶片即完成（与 archaeology_loot 各具体陶片任务并存，靠 item 主体去重）。
     - { one_of: ["*_POTTERY_SHERD"], icon: ARCHER_POTTERY_SHERD }
-    # 任意可疑方块 -- 拿到可疑的沙子或沙砾即完成（需要精准采集）。
-    - { one_of: [SUSPICIOUS_SAND, SUSPICIOUS_GRAVEL], icon: SUSPICIOUS_SAND }
     # all_of 收集全套。与 unique_collect 共用分类，每卡最多出 1 个收集类任务。
     # label 对应 lang 的 task.family.*，用于标题“集齐全套：<家族名>”。
     - { all_of: [FURNACE, BLAST_FURNACE, SMOKER], icon: FURNACE, label: furnace, category: unique_collect }
@@ -1737,9 +1771,11 @@ singletons:
     - { trigger: advancement_count, count: 4, category: advancement_count }
     - { trigger: advancement_count, count: 8, category: advancement_count }
     - { trigger: advancement_count, count: 12, category: advancement_count }
-    # 破坏任意工具/护甲（PlayerItemBreakEvent）。
+    # 破坏任意工具/护甲（PlayerItemBreakEvent）+ 弄坏一件具体物品。
     - { trigger: break_item, param: TOOL, category: break_item }
     - { trigger: break_item, param: ARMOR, category: break_item }
+    - { trigger: break_item, param: WOODEN_SWORD, category: break_item }
+    - { trigger: break_item, param: WOODEN_PICKAXE, category: break_item }
     # 拴绳（PlayerLeashEntityEvent）：拴铁傀儡 + 拴 N 种不同生物。
     - { trigger: leash, param: IRON_GOLEM, category: leash }
     - { trigger: leash_unique, count: 4, category: leash }

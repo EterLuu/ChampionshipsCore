@@ -1,0 +1,22 @@
+{
+  "badges": {
+    "file": "stat_event.png",
+    "rows": 2,
+    "texture_size": [
+      22,
+      22
+    ],
+    "names": [
+      "item_crafted",
+      "kill_entity",
+      "item_broken",
+      "check",
+      "travel_arrow",
+      "half_heart",
+      "half_absorption_heart",
+      "half_hunger",
+      "empty_hunger",
+      "right_click"
+    ]
+  }
+}

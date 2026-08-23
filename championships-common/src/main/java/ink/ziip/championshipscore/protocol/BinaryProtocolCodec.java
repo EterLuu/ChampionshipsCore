@@ -162,6 +162,12 @@ public final class BinaryProtocolCodec {
         out.writeInt(scoring.lineBonus());
         out.writeInt(scoring.lineBonusMajorCount());
         out.writeInt(scoring.lineBonusMinor());
+        writeString(out, scoring.variant().mode().name());
+        writeString(out, scoring.variant().difficulty().name());
+        out.writeInt(scoring.variant().winLines());
+        writeString(out, scoring.variant().remix().name());
+        out.writeInt(scoring.variant().genesisItems().size());
+        for (String item : scoring.variant().genesisItems()) writeString(out, item);
     }
 
     private static BingoScoringRules readScoring(DataInputStream in) throws IOException {
@@ -170,13 +176,25 @@ public final class BinaryProtocolCodec {
         for (int remaining = readSize(in, "claimPoints"); remaining > 0; remaining--) {
             points.add(in.readInt());
         }
-        return new BingoScoringRules(width, points, in.readInt(), in.readInt(), in.readInt());
+        int lineBonus = in.readInt();
+        int majorLines = in.readInt();
+        int minorBonus = in.readInt();
+        BingoMode mode = readEnum(in, BingoMode.class);
+        BingoDifficulty difficulty = readEnum(in, BingoDifficulty.class);
+        int winLines = in.readInt();
+        BingoRemix remix = readEnum(in, BingoRemix.class);
+        List<String> genesisItems = new ArrayList<>();
+        for (int remaining = readSize(in, "genesisItems"); remaining > 0; remaining--)
+            genesisItems.add(readString(in));
+        BingoVariantRules variant = new BingoVariantRules(mode, difficulty, winLines, remix, genesisItems);
+        return new BingoScoringRules(width, points, lineBonus, majorLines, minorBonus, variant);
     }
 
     private static void writeRuntimeRules(DataOutputStream out, BingoRuntimeRules rules) throws IOException {
         out.writeInt(rules.preparationSeconds());
         out.writeInt(rules.finalCountdownSeconds());
         out.writeInt(rules.scatterRadius());
+        out.writeInt(rules.scatterJitter());
         out.writeInt(rules.scatterMaxTries());
         out.writeInt(rules.pvpGraceSeconds());
         out.writeInt(rules.permanentEffects().size());
@@ -198,6 +216,7 @@ public final class BinaryProtocolCodec {
         int preparationSeconds = in.readInt();
         int finalCountdownSeconds = in.readInt();
         int scatterRadius = in.readInt();
+        int scatterJitter = in.readInt();
         int scatterMaxTries = in.readInt();
         int pvpGrace = in.readInt();
         List<String> effects = new ArrayList<>();
@@ -217,7 +236,7 @@ public final class BinaryProtocolCodec {
         BingoIntroductionMode introductionMode = readEnum(in, BingoIntroductionMode.class);
         BingoLocationSnapshot introductionSpawn = readLocation(in);
         BingoLocationSnapshot spectatorSpawn = readLocation(in);
-        return new BingoRuntimeRules(preparationSeconds, finalCountdownSeconds, scatterRadius,
+        return new BingoRuntimeRules(preparationSeconds, finalCountdownSeconds, scatterRadius, scatterJitter,
                 scatterMaxTries, pvpGrace, effects, showIntroduction, introductionSeconds, rules,
                 introductionMode, introductionSpawn, spectatorSpawn,
                 new BingoPresentation(readAttributes(in)));

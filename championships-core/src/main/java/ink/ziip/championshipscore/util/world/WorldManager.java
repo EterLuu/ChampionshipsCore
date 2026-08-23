@@ -53,6 +53,9 @@ public class WorldManager extends BaseManager {
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS").withZone(ZoneId.systemDefault());
 
     private final Set<String> preparedWorlds = new HashSet<>();
+    /** Names of worlds loaded through {@link #loadWorld}; feeding {@link ArenaWorldListener}. */
+    private final Set<String> arenaWorlds = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final ArenaWorldListener arenaListener;
     private final String repairSession = REPAIR_SESSION_FORMAT.format(Instant.now())
             + "-" + UUID.randomUUID().toString().substring(0, 8);
     private boolean featureSeedReferenceLoaded;
@@ -60,6 +63,7 @@ public class WorldManager extends BaseManager {
 
     public WorldManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
+        this.arenaListener = new ArenaWorldListener(championshipsCore, this);
     }
 
     @Override
@@ -86,10 +90,13 @@ public class WorldManager extends BaseManager {
                 "世界=" + lobby.getName() + " 类型=服务端管理 naturalMonsters=" + lobby.getAllowMonsters()
                         + " naturalAnimals=" + lobby.getAllowAnimals()
                         + " spawnMobs=" + lobby.getGameRuleValue(GameRules.SPAWN_MOBS)));
+
+        arenaListener.register();
     }
 
     @Override
     public void unload() {
+        arenaListener.unRegister();
         // The main lobby is server-owned and must stay loaded.
     }
 
@@ -105,7 +112,7 @@ public class WorldManager extends BaseManager {
     }
 
     /**
-     * Resolves the on-disk folder for {@code worldName} under the MC 26.1 dimensions layout, working
+     * Resolves the on-disk folder for {@code worldName} under the MC 26.1+ dimensions layout, working
      * even when that world is not loaded. Folder names are lower-cased with spaces replaced by
      * underscores, matching how the server names dimension folders.
      */
@@ -158,6 +165,7 @@ public class WorldManager extends BaseManager {
                 "小游戏世界=" + worldName + " 生成器=虚空 naturalMonsters=" + world.getAllowMonsters()
                         + " naturalAnimals=" + world.getAllowAnimals()
                         + " spawnMobs=" + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
+        arenaWorlds.add(worldName);
         return true;
     }
 
@@ -255,7 +263,7 @@ public class WorldManager extends BaseManager {
     }
 
     /**
-     * Returns worlds known either to Bukkit or to the MC 26.1 custom-dimension directory. Built-in
+     * Returns worlds known either to Bukkit or to the MC 26.1+ custom-dimension directory. Built-in
      * dimension folders belong to the server's main level and are not separate Bukkit worlds.
      */
     public List<String> getStoredWorldNames() {
@@ -538,7 +546,15 @@ public class WorldManager extends BaseManager {
 
         for (Player player : new ArrayList<>(world.getPlayers()))
             player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
-        return plugin.getServer().unloadWorld(world, save);
+        boolean unloaded = plugin.getServer().unloadWorld(world, save);
+        if (unloaded)
+            arenaWorlds.remove(worldName);
+        return unloaded;
+    }
+
+    /** True for worlds loaded through {@link #loadWorld} with the arena profile (void, no natural spawns). */
+    public boolean isArenaWorld(World world) {
+        return world != null && arenaWorlds.contains(world.getName());
     }
 
     public boolean deleteWorldFiles(File path) {

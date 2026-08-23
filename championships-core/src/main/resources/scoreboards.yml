@@ -264,6 +264,7 @@ boards:
         - '&f当前名次：#ff6e26%acerace_player_position_[areaName]%'
         - '&f当前圈数：#ff6e26%acerace_player_lap_[areaName]%'
         - '&f本圈检查点：#ff6e26%acerace_player_checkpoint_[areaName]%'
+        - '#ff6e26%acerace_player_lap_times_[areaName]%'
         - '&f已完赛玩家：#ff6e26%acerace_area_finished_players_[areaName]%'
         - ''
         - '{style.footer}'

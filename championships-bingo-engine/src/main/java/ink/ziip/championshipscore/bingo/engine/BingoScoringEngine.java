@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.bingo.engine;
 
 import ink.ziip.championshipscore.protocol.BingoScoringRules;
+import ink.ziip.championshipscore.protocol.BingoMode;
+import ink.ziip.championshipscore.protocol.BingoRemix;
 import ink.ziip.championshipscore.protocol.CompletionObservation;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
@@ -101,23 +103,52 @@ public final class BingoScoringEngine {
         }
 
         Set<Integer> claims = taskClaims.get(observation.cellIndex());
+        if (rules.variant().mode().locksCells() && !claims.isEmpty()) {
+            return rejected(observation, "cell-locked-by-other-team");
+        }
+        if (rules.variant().remix() == ink.ziip.championshipscore.protocol.BingoRemix.CHAIN
+                && !completed.isEmpty() && !adjacentToCompleted(completed, observation.cellIndex())) {
+            return rejected(observation, "chain-cell-not-reachable");
+        }
         int claimRank = claims.size();
         claims.add(team.id());
         completed.set(observation.cellIndex());
+        if (rules.variant().remix() == BingoRemix.COOP) {
+            claims.addAll(teams.keySet());
+            for (Map.Entry<Integer, BitSet> entry : completedByTeam.entrySet()) {
+                entry.getValue().set(observation.cellIndex());
+                teamScores.put(entry.getKey(), entry.getValue().cardinality());
+                lastCompletionTicks.put(entry.getKey(), observation.observedGameTick());
+            }
+        }
 
-        int cellPoints = rules.pointsForClaimRank(claimRank);
+        boolean pointsMode = rules.variant().mode().usesPoints()
+                && rules.variant().remix() != BingoRemix.COOP;
+        // Non-points modes still emit one bookkeeping point per completed cell so Core's existing
+        // DAILY result pipeline can rank transient teams without a second scoring transport.
+        int cellPoints = pointsMode ? rules.pointsForClaimRank(claimRank) : 1;
         int completedLines = countCompletedLines(completed);
         int previousLines = awardedLines.get(team.id());
         int linePoints = 0;
-        for (int lineIndex = previousLines; lineIndex < completedLines; lineIndex++) {
-            linePoints += lineIndex < rules.lineBonusMajorCount()
-                    ? rules.lineBonus() : rules.lineBonusMinor();
+        if (pointsMode) {
+            for (int lineIndex = previousLines; lineIndex < completedLines; lineIndex++) {
+                linePoints += lineIndex < rules.lineBonusMajorCount()
+                        ? rules.lineBonus() : rules.lineBonusMinor();
+            }
         }
         awardedLines.put(team.id(), completedLines);
 
         List<PlayerAward> awards = new ArrayList<>();
         if (cellPoints > 0) {
-            awards.add(new PlayerAward(observation.playerId(), cellPoints, "cell:" + observation.cellIndex()));
+            if (rules.variant().remix() == BingoRemix.COOP) {
+                for (TeamSnapshot collaborator : teams.values()) {
+                    if (!collaborator.members().isEmpty()) awards.add(new PlayerAward(
+                            collaborator.members().getFirst(), 1, "coop-cell:" + observation.cellIndex()));
+                }
+            } else {
+                awards.add(new PlayerAward(observation.playerId(), cellPoints,
+                        "cell:" + observation.cellIndex()));
+            }
         }
         if (linePoints > 0) {
             for (UUID member : team.members()) {
@@ -126,10 +157,35 @@ public final class BingoScoringEngine {
         }
 
         int teamDelta = cellPoints + linePoints * Math.max(1, team.members().size());
-        int teamScore = teamScores.merge(team.id(), teamDelta, Integer::sum);
+        int teamScore;
+        if (pointsMode) teamScore = teamScores.merge(team.id(), teamDelta, Integer::sum);
+        else {
+            teamScore = completed.cardinality();
+            teamScores.put(team.id(), teamScore);
+        }
         lastCompletionTicks.put(team.id(), observation.observedGameTick());
         return new ScoringDecision(observation, true, "", claimRank, cellPoints, linePoints,
                 completedLines, teamScore, awards);
+    }
+
+    private boolean adjacentToCompleted(BitSet completed, int cellIndex) {
+        int width = rules.cardWidth();
+        int x = cellIndex % width;
+        int y = cellIndex / width;
+        return (x > 0 && completed.get(cellIndex - 1))
+                || (x + 1 < width && completed.get(cellIndex + 1))
+                || (y > 0 && completed.get(cellIndex - width))
+                || (y + 1 < width && completed.get(cellIndex + width));
+    }
+
+    public synchronized boolean hasWon(int teamId) {
+        BitSet completed = completedByTeam.get(teamId);
+        if (completed == null) return false;
+        if (rules.variant().remix() == BingoRemix.COOP)
+            return completed.cardinality() == manifest.tasks().size();
+        BingoMode mode = rules.variant().mode();
+        if (mode.linesWin()) return countCompletedLines(completed) >= rules.variant().winLines();
+        return mode.fullCardWins() && completed.cardinality() == manifest.tasks().size();
     }
 
     private ScoringDecision rejected(CompletionObservation observation, String reason) {
