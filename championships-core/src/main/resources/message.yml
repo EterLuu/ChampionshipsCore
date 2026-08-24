@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 33
+  version: 34
 no-permission: "&#bababa[&#ff6b26管理&#bababa]&#ededed 权限不足"
 server-full: "服务器已经满人！"
 command:
@@ -62,7 +62,14 @@ reason:
   team-does-not-exist: "队伍不存在"
   team-already-exist: "队伍已经存在"
   member-does-not-exist: "成员不存在"
-  member-already-exist: "成员已存在/队伍满人"
+  member-already-exist: "玩家已在队伍中"
+  invalid-player-name: "玩家名必须为3–16位字母、数字或下划线"
+  team-full: "队伍人数已满"
+  operation-in-progress: "队伍资料正在更新，请稍后重试"
+  player-not-registered: "该玩家未注册或尚未通过准入"
+  profile-service-unavailable: "暂时无法查询玩家身份，请稍后重试"
+  identity-conflict: "玩家身份记录存在冲突，请联系管理员检查"
+  database-error: "无法保存队伍资料，请稍后重试"
 area-status:
   waiting: "等待中"
   loading: "加载中"

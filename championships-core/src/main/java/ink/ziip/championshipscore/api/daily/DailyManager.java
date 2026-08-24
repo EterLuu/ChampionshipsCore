@@ -157,6 +157,10 @@ public final class DailyManager extends BaseManager {
         return bingoVote.begin(teams);
     }
 
+    boolean reopenBingoVote(@NotNull Player player) {
+        return bingoVote.reopen(player);
+    }
+
     public synchronized void switchMode(@NotNull ServerMode next) {
         if (serverMode == next) return;
         serverMode = next;
@@ -422,7 +426,8 @@ public final class DailyManager extends BaseManager {
 
     public void handleQuit(UUID player) {
         DailySession session = sessionByPlayer.get(player);
-        if (session != null) disconnectedPlayers.put(player, System.currentTimeMillis());
+        if (session != null && !(session.instance() instanceof RemoteBingoInstance))
+            disconnectedPlayers.put(player, System.currentTimeMillis());
         if (partyManager.getParty(player) == null) leaveQueue(player, false);
         Bukkit.getScheduler().runTask(plugin, () -> partyManager.handleOffline(player));
     }
@@ -584,6 +589,11 @@ public final class DailyManager extends BaseManager {
             return;
         }
 
+        if (instance instanceof RemoteBingoInstance remote) {
+            processRemoteDisconnectedPlayers(remote, session);
+            return;
+        }
+
         long now = System.currentTimeMillis();
         Set<UUID> players = session.players();
         Set<UUID> offline = players.stream()
@@ -607,6 +617,19 @@ public final class DailyManager extends BaseManager {
                 expired.add(uuid);
         }
         if (!expired.isEmpty()) detachActivePlayers(session, expired, true);
+    }
+
+    /** Uses the worker heartbeat for remote Bingo; Core never hosts these players locally. */
+    private void processRemoteDisconnectedPlayers(@NotNull RemoteBingoInstance instance,
+                                                  @NotNull DailySession session) {
+        if (!plugin.getRemoteBingoManager().allRemoteParticipantsOffline(instance)) {
+            allPlayersOfflineSince.remove(instance);
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long since = allPlayersOfflineSince.computeIfAbsent(instance, ignored -> now);
+        if (now - since >= DISCONNECT_GRACE_MILLIS) abortAbandonedSession(session);
     }
 
     /** Aborts a DAILY instance whose complete roster failed to reconnect in time. */

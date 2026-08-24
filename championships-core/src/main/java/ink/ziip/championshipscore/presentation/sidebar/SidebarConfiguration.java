@@ -65,7 +65,7 @@ public final class SidebarConfiguration {
                 "&#4287f5等候人数: &#ff6e26{daily.queue-players}",
                 "&#4287f5启程倒计时: &#ff6e26{daily.countdown}",
                 "",
-                "&aHAMMER &f& &cRIA &f& &#ae70ffINF &f& &#036eb7&lHS"));
+                "&aHAMMER&f x &cRIA&f x &#ae70ffINF&f x &#036eb7&lHS"));
         Template mapStatus = template(yaml, "boards.map-status", styles, true);
         Template mapEdit = template(yaml, "boards.map-edit", styles, true);
 

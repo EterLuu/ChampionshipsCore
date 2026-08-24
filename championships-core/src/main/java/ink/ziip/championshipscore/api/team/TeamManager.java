@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.team;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
+import ink.ziip.championshipscore.api.player.identity.PlayerUuidLookupException;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
@@ -27,6 +28,18 @@ import java.util.logging.Level;
 
 public class TeamManager extends BaseManager {
     public enum TeamDeletionResult { DELETED, NOT_FOUND, ACTIVE, FAILED }
+    public enum MemberAddResult {
+        ADDED,
+        INVALID_PLAYER_NAME,
+        TEAM_NOT_FOUND,
+        TEAM_FULL,
+        OPERATION_IN_PROGRESS,
+        PLAYER_NOT_FOUND,
+        PROFILE_SERVICE_UNAVAILABLE,
+        IDENTITY_CONFLICT,
+        ALREADY_MEMBER,
+        DATABASE_ERROR
+    }
     private static final String DAILY_LOBBY_TEAM_ID = "ccd_lobby";
     private static final String NO_SCOREBOARD_TEAM = "\u0000";
     private final ConcurrentHashMap<String, ChampionshipTeam> cachedTeams = new ConcurrentHashMap<>();
@@ -565,7 +578,7 @@ public class TeamManager extends BaseManager {
 
             ChampionshipTeam resolvedTeam = getTeamById(migration.resolvedTeamId());
             if (resolvedTeam == null) {
-                plugin.getLogger().warning(Utils.formatModuleLog("Team", "UUIDMigration",
+                plugin.getLogger().warning(Utils.formatModuleLog("Team", "IdentitySync",
                         "玩家=" + migration.username() + " 已迁移至队伍ID=" + migration.resolvedTeamId()
                                 + "，但当前缓存中不存在该队伍"));
                 return;
@@ -589,51 +602,86 @@ public class TeamManager extends BaseManager {
         return null;
     }
 
-    public CompletionStage<Boolean> addTeamMember(@NotNull String username, @NotNull String teamName) {
-        if (!username.matches("[A-Za-z0-9_]{1,16}")) return CompletableFuture.completedFuture(false);
+    public CompletionStage<MemberAddResult> addTeamMember(@NotNull String username, @NotNull String teamName) {
+        if (!username.matches("[A-Za-z0-9_]{3,16}"))
+            return CompletableFuture.completedFuture(MemberAddResult.INVALID_PLAYER_NAME);
         ChampionshipTeam targetTeam = getTeam(teamName);
         String normalizedName = username.toLowerCase(Locale.ROOT);
-        if (targetTeam == null || targetTeam.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS
-                || !reserveMemberMutation(normalizedName, Set.of(targetTeam.getId()))) {
-            return CompletableFuture.completedFuture(false);
-        }
+        if (targetTeam == null) return CompletableFuture.completedFuture(MemberAddResult.TEAM_NOT_FOUND);
+        if (targetTeam.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS)
+            return CompletableFuture.completedFuture(MemberAddResult.TEAM_FULL);
+        if (!reserveMemberMutation(normalizedName, Set.of(targetTeam.getId())))
+            return CompletableFuture.completedFuture(MemberAddResult.OPERATION_IN_PROGRESS);
 
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        CompletableFuture<MemberAddResult> result = new CompletableFuture<>();
         plugin.getPlayerManager().resolvePlayerUUID(username).whenComplete((uuid, identityFailure) ->
                 scheduler.runTask(plugin, () -> {
-                    if (identityFailure != null || uuid == null || getTeam(targetTeam.getName()) != targetTeam
-                            || getFormalTeamByPlayer(uuid) != null
-                            || targetTeam.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
-                        finishMemberMutation(normalizedName, Set.of(targetTeam.getId()), result, false);
+                    if (identityFailure != null || uuid == null) {
+                        finishMemberMutation(normalizedName, Set.of(targetTeam.getId()), result,
+                                memberAddFailure(identityFailure));
+                        return;
+                    }
+                    if (getTeam(targetTeam.getName()) != targetTeam) {
+                        finishMemberMutation(normalizedName, Set.of(targetTeam.getId()), result,
+                                MemberAddResult.TEAM_NOT_FOUND);
+                        return;
+                    }
+                    if (getFormalTeamByPlayer(uuid) != null) {
+                        finishMemberMutation(normalizedName, Set.of(targetTeam.getId()), result,
+                                MemberAddResult.ALREADY_MEMBER);
+                        return;
+                    }
+                    if (targetTeam.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
+                        finishMemberMutation(normalizedName, Set.of(targetTeam.getId()), result,
+                                MemberAddResult.TEAM_FULL);
                         return;
                     }
                     scheduler.runTaskAsynchronously(plugin, () -> {
-                        boolean inserted = false;
+                        MemberAddResult persisted = MemberAddResult.DATABASE_ERROR;
                         try {
                             Set<TeamMemberEntry> sameNameMembers = teamDaoImpl.getTeamMembers(username);
-                            inserted = sameNameMembers != null && sameNameMembers.isEmpty()
-                                    && teamDaoImpl.addTeamMember(targetTeam.getId(), uuid, username);
+                            if (sameNameMembers == null) {
+                                persisted = MemberAddResult.DATABASE_ERROR;
+                            } else if (!sameNameMembers.isEmpty()) {
+                                persisted = MemberAddResult.ALREADY_MEMBER;
+                            } else if (teamDaoImpl.addTeamMember(targetTeam.getId(), uuid, username)) {
+                                persisted = MemberAddResult.ADDED;
+                            }
                         } catch (RuntimeException failure) {
                             plugin.getLogger().log(Level.SEVERE, "Unable to add team member " + username, failure);
                         }
-                        boolean persisted = inserted;
+                        MemberAddResult finalResult = persisted;
                         scheduler.runTask(plugin, () -> {
-                            if (persisted) {
+                            if (finalResult == MemberAddResult.ADDED) {
                                 targetTeam.getTeam().addEntry(username);
                                 targetTeam.addMember(uuid, username);
                                 reconcileMemberAfterTeamChange(uuid);
                                 publishTeamChange("team-member-added");
                             }
-                            finishMemberMutation(normalizedName, Set.of(targetTeam.getId()), result, persisted);
+                            finishMemberMutation(normalizedName, Set.of(targetTeam.getId()), result, finalResult);
                         });
                     });
                 }));
         return result;
     }
 
-    public CompletionStage<Boolean> addTeamMember(@NotNull String username,
-                                                   @NotNull ChampionshipTeam championshipTeam) {
+    public CompletionStage<MemberAddResult> addTeamMember(@NotNull String username,
+                                                           @NotNull ChampionshipTeam championshipTeam) {
         return addTeamMember(username, championshipTeam.getName());
+    }
+
+    private static MemberAddResult memberAddFailure(@Nullable Throwable failure) {
+        Throwable cause = failure;
+        while (cause != null && !(cause instanceof PlayerUuidLookupException) && cause.getCause() != cause)
+            cause = cause.getCause();
+        if (!(cause instanceof PlayerUuidLookupException lookupFailure))
+            return MemberAddResult.PROFILE_SERVICE_UNAVAILABLE;
+        return switch (lookupFailure.reason()) {
+            case INVALID_USERNAME -> MemberAddResult.INVALID_PLAYER_NAME;
+            case PLAYER_NOT_FOUND -> MemberAddResult.PLAYER_NOT_FOUND;
+            case SERVICE_UNAVAILABLE, INVALID_RESPONSE, CONFIGURATION -> MemberAddResult.PROFILE_SERVICE_UNAVAILABLE;
+            case IDENTITY_CONFLICT -> MemberAddResult.IDENTITY_CONFLICT;
+        };
     }
 
     public CompletionStage<MemberMoveResult> moveTeamMember(@NotNull UUID uuid, @NotNull String username,
@@ -743,10 +791,10 @@ public class TeamManager extends BaseManager {
         }
     }
 
-    private void finishMemberMutation(String normalizedName, Set<Integer> teamIds,
-                                      CompletableFuture<Boolean> result, boolean successful) {
+    private <T> void finishMemberMutation(String normalizedName, Set<Integer> teamIds,
+                                          CompletableFuture<T> result, T value) {
         releaseMemberMutation(normalizedName, teamIds);
-        result.complete(successful);
+        result.complete(value);
     }
 
     private void reconcileMemberAfterTeamChange(UUID uuid) {

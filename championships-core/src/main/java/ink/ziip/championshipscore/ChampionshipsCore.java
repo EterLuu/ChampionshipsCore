@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
+import ink.ziip.championshipscore.api.player.event.PlayerIdentityMigrationEvent;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
@@ -87,6 +88,11 @@ public final class ChampionshipsCore extends JavaPlugin {
             @EventHandler
             public void onPlayerNameChange(PlayerNameChangeEvent event) {
                 handlePlayerNameChange(event);
+            }
+
+            @EventHandler
+            public void onPlayerIdentityMigration(PlayerIdentityMigrationEvent event) {
+                handlePlayerIdentityMigration(event);
             }
         }, this);
         logManager = CCLogManager.install(this);
@@ -197,7 +203,6 @@ public final class ChampionshipsCore extends JavaPlugin {
         List<PlayerNameChangeEvent> queuedNameChanges = List.copyOf(pendingNameChanges);
         pendingNameChanges.clear();
         queuedNameChanges.forEach(this::handlePlayerNameChange);
-
         String readyMessage = Utils.formatModuleLog("Bootstrap", "启动", "加载完成 | 模式=" + CCConfig.MODE);
         if (logManager != null) logManager.important(readyMessage);
         else getLogger().log(Level.INFO, readyMessage);
@@ -262,6 +267,18 @@ public final class ChampionshipsCore extends JavaPlugin {
                         event.completion().complete(true);
                     }
                 });
+    }
+
+    private void handlePlayerIdentityMigration(PlayerIdentityMigrationEvent event) {
+        if (!bootstrapReady || playerManager == null) {
+            event.completion().completeExceptionally(
+                    new IllegalStateException("ChampionshipsCore is not ready for identity maintenance"));
+            return;
+        }
+        playerManager.migrateIdentities(event.getPlayers()).whenComplete((changed, failure) -> {
+            if (failure != null) event.completion().completeExceptionally(failure);
+            else event.completion().complete(changed);
+        });
     }
 
     private void loadManager(@NotNull BaseManager manager) {

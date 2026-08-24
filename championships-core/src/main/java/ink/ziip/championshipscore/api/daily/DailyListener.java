@@ -13,6 +13,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -49,8 +50,14 @@ final class DailyListener extends BaseListener {
         if (holder instanceof DailyGameMenu.MenuHolder match) {
             event.setCancelled(true);
             if (event.getWhoClicked() instanceof Player player
-                    && event.getClickedInventory() == event.getView().getTopInventory())
+                    && event.getClickedInventory() == event.getView().getTopInventory()) {
+                if (event.isRightClick()
+                        && daily.matchMenu().isBingoSlot(match, event.getRawSlot())
+                        && daily.reopenBingoVote(player)) {
+                    return;
+                }
                 daily.matchMenu().click(player, event.getRawSlot(), match);
+            }
             return;
         }
         if (holder instanceof DailyStatsMenu.StatsHolder stats) {

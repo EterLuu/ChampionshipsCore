@@ -131,7 +131,7 @@ public final class GameTask {
                     .decoration(TextDecoration.ITALIC, false).build());
             lore.add(msg.component("card.completed_at", formatTime(own.completedAt())));
             glow = true;
-        } else if (displayInfo.locksTasks() && isCompleted()) {
+        } else if (viewerTeamId != null && displayInfo.locksTasks() && isCompleted()) {
             // In domination mode (locksTasks), a cell completed by another team is locked to them.
             name = getName(viewerTeamId);
             material = Material.BARRIER;
@@ -146,11 +146,11 @@ public final class GameTask {
             glow = true;
         } else {
             name = getName(viewerTeamId);
-            material = hidden || locked ? Material.BEDROCK : icon(displayInfo);
+            material = !isCompleted() && (hidden || locked) ? Material.BEDROCK : icon(displayInfo);
             for (Component line : data.getItemDescription()) {
                 lore.add(line);
             }
-            glow = !hidden && !locked && data.shouldItemGlow();
+            glow = !isCompleted() && !hidden && !locked && data.shouldItemGlow();
         }
 
         // When any team has finished this cell, list every completor (in claim order) so viewers can read
@@ -179,7 +179,7 @@ public final class GameTask {
                 stack = iconStack.clone();
             }
         }
-        boolean lockedByOther = displayInfo.locksTasks() && isCompleted() && own == null;
+        boolean lockedByOther = viewerTeamId != null && displayInfo.locksTasks() && isCompleted() && own == null;
         boolean active = own == null && !lockedByOther;
         boolean statistic = data.getType() == TaskData.TaskType.STATISTIC;
         int required = Math.max(1, data.getRequiredAmount());

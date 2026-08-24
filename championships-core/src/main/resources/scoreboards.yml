@@ -11,7 +11,7 @@ settings:
 style:
   title: '#3fb2ba[#31e061S#dbffe5³#e42d3eCC#bababa夏季联合锦标赛#3fb2ba]'
   separator: '#4f4f4f&m+-------------------+'
-  footer: '&aHAMMER&f& x &cRIA&f x &#ae70ffINF&f x &#036eb7&lHS'
+  footer: '&aHAMMER&f x &cRIA&f x &#ae70ffINF&f x &#036eb7&lHS'
 
 boards:
   lobby:

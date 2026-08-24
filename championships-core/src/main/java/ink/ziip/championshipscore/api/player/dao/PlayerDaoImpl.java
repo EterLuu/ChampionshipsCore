@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.player.dao;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
+import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
 import ink.ziip.championshipscore.util.Utils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -13,27 +14,18 @@ import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.logging.Level;
 
 public class PlayerDaoImpl implements PlayerDao {
+    private static final List<String> UUID_TABLES = List.of(
+            "players", "team_members", "player_points", "daily_player_stats",
+            "daily_match_results", "daily_player_records", "daily_map_player_stats",
+            "daily_pkw_records");
+
     private final ChampionshipsCore plugin = ChampionshipsCore.getInstance();
-
-    @Override
-    public void addPlayer(@NotNull String name, @NotNull UUID uuid) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
-            try (PreparedStatement statement = connection.prepareStatement("""
-                    INSERT INTO `players` (`uuid`, `username`)
-                    VALUES (?,?);
-                    """)) {
-                statement.setString(1, uuid.toString());
-                statement.setString(2, name);
-
-                statement.executeUpdate();
-            }
-        } catch (SQLException exception) {
-            logFailure("新增玩家", exception);
-        }
-    }
 
     @Override
     @Nullable
@@ -214,6 +206,149 @@ public class PlayerDaoImpl implements PlayerDao {
             return PlayerIdentityMigrationResult.failed(newName, fallback,
                     exception.getClass().getSimpleName() + ": " + exception.getMessage());
         }
+    }
+
+    @Override
+    public int migrateIdentities(@NotNull List<PlayerUuidMigration> players) {
+        validateIdentityMigrations(players);
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                Map<PlayerUuidMigration, UUID> temporaryUuids = new LinkedHashMap<>();
+                for (PlayerUuidMigration player : players) {
+                    assertNoMigrationCollisions(connection, player);
+                    temporaryUuids.put(player, UUID.randomUUID());
+                }
+
+                int changed = 0;
+                // Moving every source to a temporary UUID first also makes a rare
+                // cross-player UUID overlap safe and keeps the whole switch atomic.
+                for (Map.Entry<PlayerUuidMigration, UUID> entry : temporaryUuids.entrySet()) {
+                    changed += updateIdentityRows(connection, entry.getKey().fromUuid(),
+                            entry.getValue(), entry.getKey().username());
+                }
+                for (Map.Entry<PlayerUuidMigration, UUID> entry : temporaryUuids.entrySet()) {
+                    changed += updateIdentityRows(connection, entry.getValue(),
+                            entry.getKey().toUuid(), entry.getKey().username());
+                    changed += normalizeIdentityRows(connection, entry.getKey());
+                }
+
+                connection.commit();
+                return changed;
+            } catch (SQLException | RuntimeException failure) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+                throw failure;
+            }
+        } catch (SQLException | RuntimeException failure) {
+            logFailure("批量迁移玩家身份", failure);
+            throw new IllegalStateException("Core player identity migration failed", failure);
+        }
+    }
+
+    private static void validateIdentityMigrations(List<PlayerUuidMigration> players) {
+        Set<UUID> sources = new HashSet<>();
+        Set<UUID> targets = new HashSet<>();
+        Set<String> names = new HashSet<>();
+        for (PlayerUuidMigration player : players) {
+            if (player == null || !player.username().matches("[A-Za-z0-9_]{3,16}")) {
+                throw new IllegalArgumentException("Invalid Minecraft username in identity migration");
+            }
+            if (player.fromUuid().equals(player.toUuid())) {
+                throw new IllegalArgumentException("Identity migration source and target are equal for " + player.username());
+            }
+            if (!sources.add(player.fromUuid()) || !targets.add(player.toUuid())
+                    || !names.add(player.username().toLowerCase(java.util.Locale.ROOT))) {
+                throw new IllegalArgumentException("Identity migration contains duplicate players or UUIDs");
+            }
+        }
+    }
+
+    private static void assertNoMigrationCollisions(Connection connection,
+                                                    PlayerUuidMigration player) throws SQLException {
+        // Master rows cannot be merged without guessing which account/team owns the data.
+        for (String table : List.of("players", "team_members")) {
+            if (hasRows(connection, table, player.fromUuid()) && hasRows(connection, table, player.toUuid())) {
+                throw new IllegalStateException("Player identity conflict in " + table + " for " + player.username());
+            }
+        }
+        assertNoCompositeCollision(connection, "daily_player_stats", player, "s.`game`=t.`game`");
+        assertNoCompositeCollision(connection, "daily_match_results", player, "s.`matchId`=t.`matchId`");
+        assertNoCompositeCollision(connection, "daily_player_records", player,
+                "s.`game`=t.`game` AND s.`map`=t.`map` AND s.`mapRevision`=t.`mapRevision` "
+                        + "AND s.`rulesHash`=t.`rulesHash` AND s.`recordType`=t.`recordType` AND s.`recordRank`=t.`recordRank`");
+        assertNoCompositeCollision(connection, "daily_map_player_stats", player,
+                "s.`game`=t.`game` AND s.`map`=t.`map`");
+        assertNoCompositeCollision(connection, "daily_pkw_records", player,
+                "s.`map`=t.`map` AND s.`recordType`=t.`recordType`");
+    }
+
+    private static boolean hasRows(Connection connection, String table, UUID uuid) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT 1 FROM `" + table + "` WHERE `uuid`=? LIMIT 1 FOR UPDATE")) {
+            statement.setString(1, uuid.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
+    }
+
+    private static void assertNoCompositeCollision(Connection connection, String table,
+                                                   PlayerUuidMigration player,
+                                                   String matchingKey) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT 1 FROM `" + table + "` s JOIN `" + table + "` t ON " + matchingKey
+                        + " WHERE s.`uuid`=? AND t.`uuid`=? LIMIT 1 FOR UPDATE")) {
+            statement.setString(1, player.fromUuid().toString());
+            statement.setString(2, player.toUuid().toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    throw new IllegalStateException("Player history conflict in " + table
+                            + " for " + player.username());
+                }
+            }
+        }
+    }
+
+    private static int updateIdentityRows(Connection connection, UUID fromUuid,
+                                          UUID toUuid, String username) throws SQLException {
+        int changed = 0;
+        for (String table : UUID_TABLES) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE `" + table + "` SET `uuid`=?, `username`=? WHERE `uuid`=?")) {
+                statement.setString(1, toUuid.toString());
+                statement.setString(2, username);
+                statement.setString(3, fromUuid.toString());
+                changed += statement.executeUpdate();
+            }
+        }
+        return changed;
+    }
+
+    private static int normalizeIdentityRows(Connection connection,
+                                             PlayerUuidMigration player) throws SQLException {
+        int changed = 0;
+        for (String table : UUID_TABLES) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE `" + table + "` SET `username`=? WHERE `uuid`=? AND BINARY `username`<>BINARY ?")) {
+                statement.setString(1, player.username());
+                statement.setString(2, player.toUuid().toString());
+                statement.setString(3, player.username());
+                changed += statement.executeUpdate();
+            }
+        }
+        if (!hasRows(connection, "players", player.toUuid())) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO `players` (`uuid`, `username`) VALUES (?,?)")) {
+                statement.setString(1, player.toUuid().toString());
+                statement.setString(2, player.username());
+                changed += statement.executeUpdate();
+            }
+        }
+        return changed;
     }
 
     private Set<UUID> collectNameChangeUuids(@NotNull Connection connection,

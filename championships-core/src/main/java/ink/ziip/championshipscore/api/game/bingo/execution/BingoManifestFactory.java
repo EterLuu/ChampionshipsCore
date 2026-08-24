@@ -169,13 +169,13 @@ public final class BingoManifestFactory {
         messages.put("sidebar.status.progress", MessageConfig.AREA_STATUS_PROGRESS);
         messages.put("sidebar.status.stopping", MessageConfig.AREA_STATUS_STOPPING);
         messages.put("sidebar.status.end", MessageConfig.AREA_STATUS_END);
-        for (String key : List.of("card.title", "card.win_hint", "card.map_name", "card.map_hint",
+        for (String key : List.of("card.title", "card.win_hint", "card.map_name", "card.spectator_map_name", "card.map_hint",
                 "card.completed_by", "card.completed_at", "card.occupied_by", "compass.item_name",
                 "compass.item_hint", "compass.menu_title", "compass.teammate_hint",
                 "compass.no_teammates", "compass.target_offline", "compass.teleport_success",
-                "spectator.tracking.name", "spectator.tracking.next", "spectator.tracking.stop",
-                "spectator.tracking.stopped-feedback", "spectator.tracking.unavailable-feedback",
-                "spectator.tracking.active-feedback", "spectator.speed.name", "spectator.speed.faster",
+                "spectator.teleport.name", "spectator.teleport.hint", "spectator.teleport.menu_title",
+                "spectator.teleport.player", "spectator.teleport.team", "spectator.teleport.click",
+                "spectator.teleport.none", "spectator.speed.name", "spectator.speed.faster",
                 "spectator.speed.slower", "spectator.speed.feedback",
                 "board.title", "board.separator", "board.current_game", "board.remaining_time",
                 "board.status_waiting", "board.status_preparing", "board.status_finished",

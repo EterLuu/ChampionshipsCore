@@ -186,7 +186,9 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put("game.run-mode", instance.getRunMode().name());
         values.put("game.instance", Integer.toString(instance.getCopyIndex() + 1));
         values.put("viewer.role", spectator ? "旁观" : "参赛");
-        ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
+        // A spectator may still have a persistent team assignment from the lobby or a previous
+        // round.  Treat the view as neutral so the sidebar does not highlight that stale team.
+        ChampionshipTeam viewerTeam = spectator ? null : plugin.getTeamManager().getTeamByPlayer(player);
         values.put("viewer.team", viewerTeam == null ? "&7旁观者" : viewerTeam.getColoredName());
         if (instance instanceof BattleBoxArea area) {
             BattleBoxMatch match = area.currentMatch();
@@ -199,7 +201,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         List<String> lines = new ArrayList<>();
         for (String raw : template.lines()) {
             if ("{ranking}".equals(raw) && instance instanceof BingoArea bingo) {
-                lines.addAll(renderLocalBingoRanking(player, bingo, game));
+                lines.addAll(renderLocalBingoRanking(bingo, game, viewerTeam));
                 continue;
             }
             if ("{ranking}".equals(raw) && instance instanceof SnowballShowdownTeamArea snowball) {
@@ -222,12 +224,12 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put("match.left", left == null ? "&7待定" : left.getColoredName());
     }
 
-    private List<String> renderLocalBingoRanking(Player player, BingoArea bingo,
-                                                 SidebarConfiguration.GameTemplate template) {
+    private List<String> renderLocalBingoRanking(BingoArea bingo,
+                                                 SidebarConfiguration.GameTemplate template,
+                                                 ChampionshipTeam viewerTeam) {
         BingoRound round = bingo.getRound();
         if (round == null) return List.of("&7暂无排行");
         List<ChampionshipTeam> ranked = round.rankedTeams();
-        ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
         List<ChampionshipTeam> selected = selectRankingRows(ranked, viewerTeam);
         List<String> result = new ArrayList<>();
         for (ChampionshipTeam team : selected) {

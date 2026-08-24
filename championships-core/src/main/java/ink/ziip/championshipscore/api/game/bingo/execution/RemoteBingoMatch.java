@@ -61,6 +61,8 @@ final class RemoteBingoMatch {
     private boolean normalStopRequested;
     private long lastEventSeq;
     private long lastActivityMillis = System.currentTimeMillis();
+    /** Latest worker heartbeat online count; -1 means no valid heartbeat has arrived yet. */
+    private int remoteOnlineParticipantCount = -1;
 
     RemoteBingoMatch(ChampionshipsCore plugin, MatchManifest manifest, RemoteBingoInstance instance,
                      MatchCommandPublisher commands, PlayerRoutingGateway router, String workerServer) {
@@ -116,7 +118,7 @@ final class RemoteBingoMatch {
             case FINISHED -> finish(event);
             case PREPARE_FAILED, FAILED, ABORTED -> completed(this::abort);
             case PLAYER_LEFT -> onPlayerLeft(event);
-            case HEARTBEAT -> CompletableFuture.completedFuture(true);
+            case HEARTBEAT -> completed(() -> applyHeartbeat(event));
         };
         return result.thenApply(success -> {
             if (success) {
@@ -413,6 +415,22 @@ final class RemoteBingoMatch {
     synchronized boolean heartbeatExpired(long nowMillis, long timeoutMillis) {
         return (lifecycle.state() == MatchState.COUNTDOWN || lifecycle.state() == MatchState.RUNNING)
                 && nowMillis - lastActivityMillis > timeoutMillis;
+    }
+
+    synchronized boolean allRemoteParticipantsOffline() {
+        return remoteOnlineParticipantCount == 0;
+    }
+
+    private synchronized boolean applyHeartbeat(MatchEvent event) {
+        String online = event.attributes().get("online");
+        if (online == null) return true;
+        try {
+            int count = Integer.parseInt(online);
+            if (count >= 0) remoteOnlineParticipantCount = count;
+        } catch (NumberFormatException ignored) {
+            // Keep accepting the heartbeat for liveness even if an older worker omits a valid count.
+        }
+        return true;
     }
 
     private static CompletionStage<Boolean> completed(java.util.function.BooleanSupplier action) {

@@ -101,10 +101,10 @@ final class WorkerMatchSession {
     private final Set<UUID> preparedPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<UUID> bulkScatterPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<TeamCell> completedTeamCells = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, UUID> spectatorTargets = new ConcurrentHashMap<>();
     private final Map<Integer, List<Integer>> completionTeamsByCell = new HashMap<>();
     private final Map<Integer, MapView> cardViews = new HashMap<>();
     private final Map<UUID, MapView> playerCardViews = new HashMap<>();
+    private MapView spectatorCardView;
     private final Set<Integer> hiddenCells = ConcurrentHashMap.newKeySet();
     private final Set<Integer> lockedCells = ConcurrentHashMap.newKeySet();
     private final Map<Integer, int[]> parallaxOrders = new HashMap<>();
@@ -125,6 +125,7 @@ final class WorkerMatchSession {
     private final AtomicBoolean sidebarRefreshPending = new AtomicBoolean();
     private static final float MIN_SPECTATOR_SPEED = 0.05F;
     private static final float MAX_SPECTATOR_SPEED = 1.0F;
+    private static final int SPECTATOR_CARD_TEAM = Integer.MIN_VALUE;
 
     WorkerMatchSession(Plugin plugin, WorkerConfig config, MatchManifest manifest,
                        DurableEventOutbox events, WorkerReturnRouter returnRouter,
@@ -217,6 +218,11 @@ final class WorkerMatchSession {
         PlayerSnapshot player = participants.get(playerId);
         return player != null && player.role() == ParticipantRole.PLAYER
                 && Integer.valueOf(teamId).equals(player.teamId());
+    }
+
+    synchronized boolean canPickupSpectatorCard(UUID playerId) {
+        PlayerSnapshot player = participants.get(playerId);
+        return player != null && player.role() == ParticipantRole.SPECTATOR;
     }
 
     synchronized boolean canUseBingoUi(UUID playerId) {
@@ -367,6 +373,9 @@ final class WorkerMatchSession {
         synchronized (this) {
             arrived.add(snapshot.uuid());
         }
+        // A late spectator or reconnect gets a new Player entity. Reconcile both directions after
+        // admission so active players cannot briefly see the spectator's body.
+        scheduler.runGlobal(this::reconcileVisibility);
         emit(MatchEventType.PLAYER_ARRIVED, Map.of(
                 "playerId", snapshot.uuid().toString(), "role", snapshot.role().name()))
                 .whenComplete((ignored, publishError) -> {
@@ -546,12 +555,10 @@ final class WorkerMatchSession {
     /** Re-issues the read-only card set after reconnects or inventory reconciliation by another plugin. */
     private void syncSpectators() {
         if (state().terminal()) return;
+        reconcileVisibility();
         forEachOnlineParticipant((player, snapshot) -> {
             if (snapshot.role() == ParticipantRole.SPECTATOR) {
                 applySpectatorState(player);
-                Player target = Bukkit.getPlayer(spectatorTargets.get(player.getUniqueId()));
-                if (target != null && target.getWorld().equals(player.getWorld()))
-                    player.setCompassTarget(target.getLocation());
             }
         });
     }
@@ -937,6 +944,7 @@ final class WorkerMatchSession {
     void playerLeft(Player player) {
         if (!owns(player.getUniqueId())) return;
         sidebar.hide(player);
+        scheduler.runGlobal(this::reconcileVisibility);
         emit(MatchEventType.PLAYER_LEFT, Map.of("playerId", player.getUniqueId().toString()));
     }
 
@@ -959,6 +967,7 @@ final class WorkerMatchSession {
                 bulkScatterPlayers.remove(playerId);
             }
         }
+        playerIds.forEach(this::releaseVisibilityForTarget);
         for (UUID playerId : playerIds) {
             Player player = plugin.getServer().getPlayer(playerId);
             if (player == null) continue;
@@ -977,6 +986,7 @@ final class WorkerMatchSession {
             current = lifecycle.state();
         }
         if (!empty) {
+            reconcileVisibility();
             updateSidebar();
             return CompletableFuture.completedFuture(true);
         }
@@ -995,6 +1005,8 @@ final class WorkerMatchSession {
             participants.put(playerId, new PlayerSnapshot(playerId, username,
                     ParticipantRole.SPECTATOR, null, false, points));
         }
+        updateSidebar();
+        reconcileVisibility();
         return emit(MatchEventType.SPECTATOR_ADDED, Map.of("playerId", playerId.toString()))
                 .thenApply(ignored -> true);
     }
@@ -1006,22 +1018,32 @@ final class WorkerMatchSession {
         synchronized (this) {
             snapshot = participants.get(player.getUniqueId());
             if (snapshot == null || lifecycle.state().terminal()) return;
+            boolean aggregate = snapshot.role() == ParticipantRole.SPECTATOR
+                    && Integer.valueOf(SPECTATOR_CARD_TEAM).equals(selectedTeamId);
             int viewedTeam = snapshot.role() == ParticipantRole.PLAYER
                     ? snapshot.teamId() : selectedTeamId == null ? firstTeamId() : selectedTeamId;
-            if (!teams.containsKey(viewedTeam)) return;
-            if (viewedTeam >= 0) {
+            if (!aggregate && !teams.containsKey(viewedTeam)) return;
+            if (!aggregate && viewedTeam >= 0) {
                 for (TeamCell completed : completedTeamCells) {
                     if (completed.teamId() == viewedTeam) own.add(completed.cellIndex());
                 }
             }
             completionTeamsByCell.forEach((cell, teams) -> all.put(cell, List.copyOf(teams)));
         }
+        boolean aggregate = snapshot.role() == ParticipantRole.SPECTATOR
+                && Integer.valueOf(SPECTATOR_CARD_TEAM).equals(selectedTeamId);
         int viewedTeam = snapshot.role() == ParticipantRole.PLAYER
                 ? snapshot.teamId() : selectedTeamId == null ? firstTeamId() : selectedTeamId;
-        List<BingoTaskSpec> viewedTasks = snapshot.role() == ParticipantRole.PLAYER
+        List<BingoTaskSpec> viewedTasks = snapshot.role() == ParticipantRole.PLAYER || !aggregate
                 ? tasksSnapshot(snapshot.uuid()) : tasksSnapshot();
         WorkerMenuService.openCard(player, manifest, viewedTasks, Set.copyOf(own), Map.copyOf(all),
-                hiddenSnapshot(), lockedSnapshot(), displayOrder(viewedTeam));
+                hiddenSnapshot(), lockedSnapshot(), aggregate ? null : displayOrder(viewedTeam), aggregate);
+    }
+
+    boolean isSpectatorCard(ItemStack item) {
+        if (item == null || item.getType() != Material.FILLED_MAP || item.getItemMeta() == null) return false;
+        String value = item.getItemMeta().getPersistentDataContainer().get(cardKey, PersistentDataType.STRING);
+        return (manifest.matchId() + ":spectator").equals(value);
     }
 
     Integer boundCardTeam(ItemStack item) {
@@ -1031,6 +1053,7 @@ final class WorkerMatchSession {
         if (value == null) return null;
         String prefix = manifest.matchId() + ":";
         if (!value.startsWith(prefix)) return null;
+        if (value.equals(prefix + "spectator")) return SPECTATOR_CARD_TEAM;
         try {
             int teamId = Integer.parseInt(value.substring(prefix.length()));
             return teams.containsKey(teamId) ? teamId : null;
@@ -1047,6 +1070,22 @@ final class WorkerMatchSession {
         }
         TeamSnapshot team = teams.get(snapshot.teamId());
         if (team != null) WorkerMenuService.openTeammates(player, manifest, team, manifest.participants());
+    }
+
+    void openSpectatorTargets(Player player) {
+        PlayerSnapshot snapshot = participants.get(player.getUniqueId());
+        if (snapshot == null || snapshot.role() != ParticipantRole.SPECTATOR || lifecycle.state().terminal()) return;
+        WorkerMenuService.openSpectatorTargets(player, manifest, manifest.participants());
+    }
+
+    void teleportToSpectatorTarget(Player player, UUID targetId) {
+        PlayerSnapshot source = participants.get(player.getUniqueId());
+        if (source == null || source.role() != ParticipantRole.SPECTATOR || lifecycle.state().terminal()) return;
+        PlayerSnapshot snapshot = participants.get(targetId);
+        if (snapshot == null || snapshot.role() != ParticipantRole.PLAYER) return;
+        Player target = Bukkit.getPlayer(targetId);
+        if (target == null || !target.isOnline()) return;
+        scheduler.runEntity(player, () -> player.teleportAsync(target.getLocation()));
     }
 
     void teleportToTeammate(Player player, UUID targetId) {
@@ -1099,6 +1138,12 @@ final class WorkerMatchSession {
             view.addRenderer(new WorkerCardMapRenderer(manifest, team.id(), this));
             cardViews.put(team.id(), view);
         }
+        spectatorCardView = Bukkit.createMap(world);
+        spectatorCardView.setScale(MapView.Scale.NORMAL);
+        spectatorCardView.setTrackingPosition(false);
+        spectatorCardView.setUnlimitedTracking(false);
+        for (MapRenderer renderer : new ArrayList<>(spectatorCardView.getRenderers())) spectatorCardView.removeRenderer(renderer);
+        spectatorCardView.addRenderer(new WorkerCardMapRenderer(manifest, this));
         if (!differentialTasks.isEmpty()) {
             for (PlayerSnapshot participant : manifest.participants()) {
                 if (participant.role() != ParticipantRole.PLAYER) continue;
@@ -1126,7 +1171,8 @@ final class WorkerMatchSession {
         if (card == null) return;
         ItemStack offhand = player.getInventory().getItemInOffHand();
         if (offhand == null || offhand.getType().isAir()) player.getInventory().setItemInOffHand(card);
-        else player.getInventory().addItem(card);
+        else if (!player.getInventory().addItem(card).isEmpty())
+            player.getWorld().dropItemNaturally(player.getLocation(), card);
     }
 
     private ItemStack cardItem(int teamId) {
@@ -1151,19 +1197,26 @@ final class WorkerMatchSession {
         return card;
     }
 
+    private ItemStack spectatorCardItem() {
+        if (spectatorCardView == null) return null;
+        ItemStack card = new ItemStack(Material.FILLED_MAP);
+        card.editMeta(MapMeta.class, meta -> {
+            meta.setMapView(spectatorCardView);
+            meta.displayName(message("card.spectator_map_name")
+                    .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
+            meta.lore(List.of(message("card.map_hint")
+                    .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)));
+            meta.getPersistentDataContainer().set(cardKey, PersistentDataType.STRING,
+                    manifest.matchId() + ":spectator");
+        });
+        return card;
+    }
+
     private void ensureSpectatorCards(Player player) {
         removeBoundCards(player);
-        boolean offhand = true;
-        for (TeamSnapshot team : manifest.teams()) {
-            ItemStack card = cardItem(team.id());
-            if (card == null) continue;
-            if (offhand) {
-                player.getInventory().setItemInOffHand(card);
-                offhand = false;
-            } else {
-                player.getInventory().addItem(card);
-            }
-        }
+        ItemStack card = spectatorCardItem();
+        if (card != null && !player.getInventory().addItem(card).isEmpty())
+            player.getWorld().dropItemNaturally(player.getLocation(), card);
         player.updateInventory();
     }
 
@@ -1260,6 +1313,13 @@ final class WorkerMatchSession {
     }
 
     private void applySpectatorState(Player player) {
+        PlayerSnapshot snapshot = participants.get(player.getUniqueId());
+        if (snapshot != null) {
+            // Spectators may be admitted after the regular arrival pass. Always create and render
+            // their private sidebar here, even when the periodic match refresh has not run yet.
+            sidebar.show(player);
+            refreshSidebar(player, snapshot);
+        }
         BingoSpectatorService.apply(player);
         applySpectatorControls(player);
         if (roundPrepared) ensureSpectatorCards(player);
@@ -1273,38 +1333,8 @@ final class WorkerMatchSession {
         String action = meta.getPersistentDataContainer().get(
                 spectatorControlKey, PersistentDataType.STRING);
         if (action == null) return false;
-        if (action.equals("tracking")) {
-            if (rightClick) {
-                spectatorTargets.remove(player.getUniqueId());
-                spectatorFeedback(player, message("spectator.tracking.stopped-feedback"),
-                        NamedTextColor.RED, 0.8F);
-            } else {
-                List<Player> targets = participants.values().stream()
-                        .filter(candidate -> candidate.role() == ParticipantRole.PLAYER)
-                        .map(candidate -> Bukkit.getPlayer(candidate.uuid()))
-                        .filter(java.util.Objects::nonNull)
-                        .sorted(java.util.Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
-                        .toList();
-                if (targets.isEmpty()) {
-                    spectatorFeedback(player, message("spectator.tracking.unavailable-feedback"),
-                            NamedTextColor.RED, 0.8F);
-                } else {
-                    UUID current = spectatorTargets.get(player.getUniqueId());
-                    int currentIndex = -1;
-                    for (int index = 0; index < targets.size(); index++) {
-                        if (targets.get(index).getUniqueId().equals(current)) {
-                            currentIndex = index;
-                            break;
-                        }
-                    }
-                    Player target = targets.get((currentIndex + 1) % targets.size());
-                    spectatorTargets.put(player.getUniqueId(), target.getUniqueId());
-                    player.setCompassTarget(target.getLocation());
-                    spectatorFeedback(player, message("spectator.tracking.active-feedback",
-                            "%player%", target.getName()), NamedTextColor.GREEN, 1.2F);
-                }
-            }
-            applySpectatorControls(player);
+        if (action.equals("teleport")) {
+            if (rightClick) openSpectatorTargets(player);
             return true;
         }
         if (action.equals("speed")) {
@@ -1321,11 +1351,13 @@ final class WorkerMatchSession {
     }
 
     private void applySpectatorControls(Player player) {
-        player.getInventory().setItem(1, spectatorControl(Material.COMPASS, "tracking",
-                message("spectator.tracking.name").color(NamedTextColor.GREEN)
+        // Slot 1 is reserved for the Bingo card. Keep all spectator controls elsewhere.
+        player.getInventory().setItem(0, spectatorControl(Material.COMPASS, "teleport",
+                message("spectator.teleport.name").color(NamedTextColor.GREEN)
                         .decorate(TextDecoration.BOLD),
-                List.of(message("spectator.tracking.next").color(NamedTextColor.GRAY),
-                        message("spectator.tracking.stop").color(NamedTextColor.GRAY))));
+                List.of(message("spectator.teleport.hint").color(NamedTextColor.GRAY))));
+        player.getInventory().setItem(2, null);
+        player.getInventory().setItem(3, null);
         player.getInventory().setItem(7, spectatorControl(Material.FEATHER, "speed",
                 message("spectator.speed.name", "%speed%", spectatorSpeed(player))
                         .color(NamedTextColor.YELLOW)
@@ -1381,8 +1413,9 @@ final class WorkerMatchSession {
             }
             participants.remove(playerId);
             arrived.remove(playerId);
-            spectatorTargets.remove(playerId);
         }
+        releaseVisibilityForTarget(playerId);
+        updateSidebar();
         Player player = plugin.getServer().getPlayer(playerId);
         if (player != null) {
             scheduler.runEntity(player, () -> {
@@ -1402,6 +1435,7 @@ final class WorkerMatchSession {
         synchronized (this) {
             lifecycle.transitionTo(MatchState.ABORTED);
         }
+        clearVisibility();
         worlds.freeze();
         CompletionStage<MatchEvent> published = emit(MatchEventType.PREPARE_FAILED, Map.of("reason", reason));
         worldReset.run();
@@ -1426,6 +1460,7 @@ final class WorkerMatchSession {
     }
 
     private void routeEveryoneBack() {
+        clearVisibility();
         List<PlayerSnapshot> routingParticipants;
         synchronized (this) {
             routingParticipants = List.copyOf(participants.values());
@@ -1456,6 +1491,61 @@ final class WorkerMatchSession {
         spectatorSyncTask = null;
         remixTask = null;
         hideTimerBossBar();
+    }
+
+    /**
+     * Mirrors Core's visibility contract on the worker connection. Participants see one another,
+     * active participants do not see spectators, and spectators see every participant.
+     *
+     * <p>Folia requires the viewer's entity scheduler for these packet-backed operations, so the
+     * global match coordinator only resolves the roster and schedules the actual calls.</p>
+     */
+    private void reconcileVisibility() {
+        if (state().terminal()) return;
+        List<Map.Entry<Player, PlayerSnapshot>> online = new ArrayList<>();
+        for (PlayerSnapshot snapshot : participants.values()) {
+            Player player = plugin.getServer().getPlayer(snapshot.uuid());
+            if (player != null && player.isOnline()) online.add(Map.entry(player, snapshot));
+        }
+        for (Map.Entry<Player, PlayerSnapshot> viewerEntry : online) {
+            Player viewer = viewerEntry.getKey();
+            boolean viewerIsSpectator = viewerEntry.getValue().role() == ParticipantRole.SPECTATOR;
+            for (Map.Entry<Player, PlayerSnapshot> targetEntry : online) {
+                Player target = targetEntry.getKey();
+                if (viewer.equals(target)) continue;
+                boolean targetIsSpectator = targetEntry.getValue().role() == ParticipantRole.SPECTATOR;
+                boolean visible = viewerIsSpectator || !targetIsSpectator;
+                scheduler.runEntity(viewer, () -> {
+                    if (visible) viewer.showEntity(plugin, target);
+                    else viewer.hideEntity(plugin, target);
+                });
+            }
+        }
+    }
+
+    /** Releases a removed participant's target from every remaining viewer before routing it away. */
+    private void releaseVisibilityForTarget(UUID targetId) {
+        Player target = plugin.getServer().getPlayer(targetId);
+        if (target == null) return;
+        for (UUID viewerId : participants.keySet()) {
+            if (viewerId.equals(targetId)) continue;
+            Player viewer = plugin.getServer().getPlayer(viewerId);
+            if (viewer != null) scheduler.runEntity(viewer, () -> viewer.showEntity(plugin, target));
+        }
+    }
+
+    /** Removes this match's hides before players are handed back to Core. */
+    private void clearVisibility() {
+        List<Player> online = new ArrayList<>();
+        for (PlayerSnapshot snapshot : participants.values()) {
+            Player player = plugin.getServer().getPlayer(snapshot.uuid());
+            if (player != null && player.isOnline()) online.add(player);
+        }
+        for (Player viewer : online) {
+            for (Player target : online) {
+                if (!viewer.equals(target)) scheduler.runEntity(viewer, () -> viewer.showEntity(plugin, target));
+            }
+        }
     }
 
     private void updateRunningTimer() {

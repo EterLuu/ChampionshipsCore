@@ -354,6 +354,8 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         match.abortLocally();
         if (failure != null) plugin.getLogger().log(Level.SEVERE,
                 "Remote Bingo failed match=" + match.manifest().matchId() + " reason=" + reason, failure);
+        else plugin.getLogger().warning(
+                "Remote Bingo aborted match=" + match.manifest().matchId() + " reason=" + reason);
         if (transport != null) transport.publishCommand(match.abortCommand(reason));
         plugin.getGameManager().abortRemoteBingo(match.instance());
         updateStateAsync(match.manifest().matchId(), match.manifest().epoch(), MatchState.ABORTED)
@@ -463,6 +465,12 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                     "Unable to remove DAILY Bingo participants " + players, failure);
             return false;
         });
+    }
+
+    /** Returns true only after the worker has reported a heartbeat with no online participants. */
+    public boolean allRemoteParticipantsOffline(@NotNull RemoteBingoInstance instance) {
+        RemoteBingoMatch match = matches.get(instance.matchId());
+        return match != null && match.allRemoteParticipantsOffline();
     }
 
     /** Aborts a DAILY match after its complete roster exceeded Core's reconnect grace period. */

@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Generic long-lived Redis Stream publisher; application protocols own their field schema. */
@@ -53,7 +54,6 @@ public final class RedisStreamPublisher implements AutoCloseable {
     @Override
     public void close() {
         if (!closed.compareAndSet(false, true)) return;
-        connection.close();
-        client.shutdown();
+        client.shutdown(Duration.ofMillis(100), Duration.ofSeconds(5));
     }
 }

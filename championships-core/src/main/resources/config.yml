@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 17
+  version: 19
 mode: "CHAMPIONSHIP"
 # DAILY opens the self-service game menu and queues. It does not disable /cc event or /cc game start.
 daily:
@@ -39,6 +39,14 @@ daily:
       concurrent-instances: 2
 max-players: 100
 whitelist: [ ]
+# The UUID rule used by this server before website identities are applied.
+# OFFLINE uses the offline-player rule; ONLINE queries the server's online profile service.
+# The website's "server original / website unified" switch is configured separately in cc-web.
+identity:
+  mode: "OFFLINE"
+  profile-api-base-url: "https://api.mojang.com"
+  connect-timeout-seconds: 5
+  request-timeout-seconds: 10
 weighted-score: false
 strict-spectator-rule: false
 # 启用的游戏列表：只有列出的游戏会加载场地世界、可被指令操作并出现在 tab 补全中。

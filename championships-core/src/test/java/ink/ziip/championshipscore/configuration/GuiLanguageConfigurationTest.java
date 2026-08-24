@@ -44,7 +44,7 @@ class GuiLanguageConfigurationTest {
     @Test
     void guiKeysUseAnEnglishBusinessHierarchy() throws IOException {
         YamlConfiguration gui = YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertEquals(13, gui.getInt("dont-edit-this.version"));
+        assertEquals(15, gui.getInt("dont-edit-this.version"));
 
         List<String> copyKeys = leafKeys(gui).stream()
                 .filter(key -> !key.equals("dont-edit-this.version"))
@@ -76,8 +76,12 @@ class GuiLanguageConfigurationTest {
         assertNotNull(menus);
         assertFalse(menus.isConfigurationSection("controls"), "obsolete spectator controls menu must stay removed");
         assertTrue(menus.isConfigurationSection("visibility"));
-        assertFalse(gui.contains("spectator.menus.team-position-selector.items.back"));
+        assertTrue(menus.isConfigurationSection("player-teleport-selector"));
+        assertFalse(menus.isConfigurationSection("team-position-selector"));
         assertFalse(gui.contains("spectator.menus.player-visibility-selector.items.back"));
+        assertFalse(gui.contains("spectator.hotbar.tracking"));
+        assertFalse(gui.contains("spectator.hotbar.team-position"));
+        assertEquals("COMPASS", gui.getString("spectator.hotbar.player-teleport.material"));
         assertTrue(gui.contains("spectator.menus.visibility.items.show-all"));
         assertTrue(gui.contains("spectator.menus.visibility.items.show-player"));
         assertTrue(gui.contains("spectator.menus.visibility.items.show-team"));

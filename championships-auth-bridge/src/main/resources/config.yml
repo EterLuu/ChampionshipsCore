@@ -10,3 +10,6 @@ access:
   fail-closed-before-first-sync: true
   not-whitelisted-message: "你尚未通过服务器白名单审批。"
   banned-message: "你已被服务器封禁。"
+  maintenance-message: "服务器正在维护账号资料，请稍后重新连接。"
+  unavailable-message: "账号服务暂时不可用，请稍后重新连接。"
+  uuid-mismatch-message: "当前玩家身份与网站记录不一致，请退出游戏后重新进入；仍有问题请联系管理员。"

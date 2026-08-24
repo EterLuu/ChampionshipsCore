@@ -4,6 +4,7 @@ card:
   title: "&6&l宾果卡"
   win_hint: "&7连成一行、一列或一条对角线即可获胜"
   map_name: "{0}&f宾果卡"
+  spectator_map_name: "&7&l旁观者&f宾果总览卡"
   map_hint: "&7右键查看任务详情"
   completed_by: "&7完成者："
   completed_at: "&7完成时间：&f{0}"
@@ -17,13 +18,14 @@ compass:
   target_offline: "&c该队友已下线。"
   teleport_success: "&a已传送到&f{0}&a。"
 spectator:
-  tracking:
-    name: "玩家追踪"
-    next: "左键：切换玩家"
-    stop: "右键：停止追踪"
-    stopped-feedback: "已停止追踪"
-    unavailable-feedback: "当前没有可追踪的玩家"
-    active-feedback: "正在追踪：%player%"
+  teleport:
+    name: "选择玩家"
+    hint: "右键选择一名在线玩家"
+    menu_title: "&8选择玩家"
+    player: "&7玩家"
+    team: "&7队伍：{0}"
+    click: "&e点击传送"
+    none: "&c当前没有可传送的在线玩家。"
   speed:
     name: "飞行速度：%speed%"
     faster: "左键：提高速度"
@@ -244,6 +246,7 @@ mode:
 
 vote:
   started: "&d模式投票开始！请在 {0} 秒内为本局游戏模式投票。"
+  bossbar: "&d宾果投票 &7• 剩余 &e{0} &7秒"
   result: "&6本局模式：&f{0}"
   result_random: "&6随机模式抽中：&f{0}"
   menu_title: "选择游戏模式"
@@ -253,9 +256,7 @@ vote:
   menu_locked: "&c🔒 需要 ≥4 支队伍才可选"
 
 difficulty_vote:
-  started: "&b难度投票开始！请在 {0} 秒内为本局选择卡片难度。"
   result: "&6本局卡片难度：&f{0}"
-  menu_title: "选择卡片难度"
   menu_count: "&7当前票数：&e{0}"
   menu_hint: "&e点击选择"
   menu_picked: "&a✔ 你的选择"
@@ -294,9 +295,7 @@ card_difficulty:
       - "&c⚠ 死亡将清空背包（物品不掉落）"
 
 lines_vote:
-  started: "&b速通模式！请在 {0} 秒内投票决定完成几条线算胜利。"
   result: "&6本局胜利条件：&f{0} 条线"
-  menu_title: "完成几条线算胜利？"
   menu_option: "&b{0} 条线获胜"
   menu_desc: "&7完成 {0} 条宾果线即可赢得本局"
   menu_count: "&7当前票数：&e{0}"

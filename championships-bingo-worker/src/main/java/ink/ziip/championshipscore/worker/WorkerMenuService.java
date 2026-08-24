@@ -36,12 +36,13 @@ final class WorkerMenuService {
     static void openCard(Player player, MatchManifest manifest,
                          Set<Integer> completedByViewer, Map<Integer, List<Integer>> completions) {
         openCard(player, manifest, manifest.tasks(), completedByViewer, completions,
-                Set.of(), Set.of(), null);
+                Set.of(), Set.of(), null, false);
     }
 
     static void openCard(Player player, MatchManifest manifest, List<BingoTaskSpec> tasks,
                          Set<Integer> completedByViewer, Map<Integer, List<Integer>> completions,
-                         Set<Integer> hidden, Set<Integer> locked, int[] displayOrder) {
+                         Set<Integer> hidden, Set<Integer> locked, int[] displayOrder,
+                         boolean neutralView) {
         int width = manifest.scoring().cardWidth();
         int rows = Math.clamp(width, 3, 6);
         CardHolder holder = new CardHolder();
@@ -66,7 +67,9 @@ final class WorkerMenuService {
             int row = displaySlot / width;
             int column = displaySlot % width;
             if (row >= rows) continue;
-            inventory.setItem(row * 9 + left + column, hidden.contains(trueIndex) || locked.contains(trueIndex)
+            boolean blocked = (hidden.contains(trueIndex) || locked.contains(trueIndex))
+                    && (!neutralView || completions.getOrDefault(trueIndex, List.of()).isEmpty());
+            inventory.setItem(row * 9 + left + column, blocked
                     ? blockedItem() : taskItem(task, manifest, completedByViewer, completions));
         }
         player.openInventory(inventory);
@@ -118,12 +121,59 @@ final class WorkerMenuService {
         player.openInventory(inventory);
     }
 
+    static void openSpectatorTargets(Player player, MatchManifest manifest,
+                                     List<PlayerSnapshot> participants) {
+        var presentation = manifest.runtimeRules().presentation();
+        List<PlayerSnapshot> targets = participants.stream()
+                .filter(candidate -> candidate.role() == ink.ziip.championshipscore.protocol.ParticipantRole.PLAYER)
+                .filter(candidate -> {
+                    Player online = Bukkit.getPlayer(candidate.uuid());
+                    return online != null && online.isOnline();
+                })
+                .sorted(java.util.Comparator.comparing(PlayerSnapshot::username, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+        if (targets.isEmpty()) {
+            player.sendMessage(WorkerPresentationService.message(presentation, "spectator.teleport.none"));
+            return;
+        }
+        int rows = Math.max(1, Math.min(6, (targets.size() + 8) / 9));
+        TargetHolder holder = new TargetHolder();
+        Inventory inventory = Bukkit.createInventory(holder, rows * 9,
+                WorkerPresentationService.message(presentation, "spectator.teleport.menu_title")
+                        .decoration(TextDecoration.ITALIC, false));
+        holder.inventory = inventory;
+        for (int slot = 0; slot < targets.size() && slot < inventory.getSize(); slot++) {
+            PlayerSnapshot target = targets.get(slot);
+            ItemStack item = new ItemStack(Material.ENDER_PEARL);
+            item.editMeta(meta -> {
+                TeamSnapshot team = manifest.teamsById().get(target.teamId());
+                meta.displayName(Component.text(target.username(), teamColor(team))
+                        .decoration(TextDecoration.ITALIC, false));
+                Component teamLabel = team == null
+                        ? WorkerPresentationService.message(presentation, "spectator.teleport.player")
+                        : WorkerPresentationService.message(presentation, "spectator.teleport.team", "{0}", team.name());
+                meta.lore(List.of(teamLabel.decoration(TextDecoration.ITALIC, false),
+                        WorkerPresentationService.message(presentation, "spectator.teleport.click")
+                                .decoration(TextDecoration.ITALIC, false)));
+            });
+            inventory.setItem(slot, item);
+            holder.targets.put(slot, target.uuid());
+        }
+        player.openInventory(inventory);
+    }
+
     static boolean isReadOnly(Inventory inventory) {
-        return inventory.getHolder(false) instanceof CardHolder || inventory.getHolder(false) instanceof TeamHolder;
+        return inventory.getHolder(false) instanceof CardHolder || inventory.getHolder(false) instanceof TeamHolder
+                || inventory.getHolder(false) instanceof TargetHolder;
     }
 
     static UUID teammateTarget(Inventory inventory, int rawSlot) {
         if (!(inventory.getHolder(false) instanceof TeamHolder holder)) return null;
+        return holder.targets.get(rawSlot);
+    }
+
+    static UUID spectatorTarget(Inventory inventory, int rawSlot) {
+        if (!(inventory.getHolder(false) instanceof TargetHolder holder)) return null;
         return holder.targets.get(rawSlot);
     }
 
@@ -262,6 +312,16 @@ final class WorkerMenuService {
     }
 
     private static final class TeamHolder implements InventoryHolder {
+        private final Map<Integer, UUID> targets = new HashMap<>();
+        private Inventory inventory;
+
+        @Override
+        public Inventory getInventory() {
+            return inventory;
+        }
+    }
+
+    private static final class TargetHolder implements InventoryHolder {
         private final Map<Integer, UUID> targets = new HashMap<>();
         private Inventory inventory;
 

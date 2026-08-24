@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
@@ -60,7 +61,32 @@ import java.util.UUID;
 
 /** A lap race with ordered progress gates and course-bound proximity respawn points. */
 public class AceRaceArea extends BaseMultiTeamGameInstance {
-    private static final long LAUNCH_PAD_DELAY_TICKS = 2L;
+    private static final long LAUNCH_PAD_DELAY_TICKS = 0L;
+    /**
+     * Vanilla multiplies a player's horizontal motion by {@code slipperiness * 0.91} at the end of a tick
+     * spent on the ground and by {@code 0.91} while airborne, and it picks the branch from the ground state
+     * the tick <em>started</em> with. A pad impulse is only a velocity packet, so a racer who leaves the wool
+     * before the packet lands keeps 0.91 instead of 0.546 and flies about 1.667x as far. These constants model
+     * the intended grounded curve so the server can measure and undo that difference.
+     */
+    private static final double LAUNCH_PAD_SLIPPERINESS = 0.6D;
+    private static final double AIR_DRAG = 0.91D;
+    private static final double LAUNCH_GROUND_DRAG = LAUNCH_PAD_SLIPPERINESS * AIR_DRAG;
+    /** Highest per-tick airborne gain a sprinting racer can legitimately add while holding forward. */
+    private static final double SPRINT_AIR_ACCELERATION = 0.026D;
+    private static final int LAUNCH_ENFORCEMENT_TICKS = 20;
+    private static final int LAUNCH_DEBT_REPAY_TICKS = 6;
+    /**
+     * Share of the pad impulse a single tick of travel must show before the flight budget starts. Keep it
+     * clear of the fastest legitimate ground speed, which the red station's Speed IX pushes well above a
+     * normal sprint, yet far below the impulse's own first tick.
+     */
+    private static final double LAUNCH_DETECTION_FRACTION = 0.5D;
+    /** How long to wait for the impulse to show up in the racer's movement before dropping the budget. */
+    private static final int LAUNCH_IMPULSE_WAIT_TICKS = 40;
+    private static final int LAUNCH_ENFORCEMENT_EXPIRED = Integer.MAX_VALUE;
+    /** Absorbs movement-packet jitter so an honest flight never trips the correction. */
+    private static final double LAUNCH_DISTANCE_TOLERANCE = 0.5D;
     private static final int JUMP_BOOST_DURATION_TICKS = 14;
     private static final int SPEED_BOOST_DURATION_TICKS = 80;
     private static final int RED_SPEED_DURATION_TICKS = 6;
@@ -83,6 +109,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final double RESPAWN_GATE_BIND_DISTANCE_SQUARED = 6D * 6D;
     private static final double RESPAWN_ROUTE_CORRIDOR_MARGIN = 28D;
     private static final long RACER_VISIBILITY_UPDATE_TICKS = 1L;
+    private static final long LAUNCH_ENFORCEMENT_UPDATE_TICKS = 1L;
     private static final long MAP_EDIT_PREVIEW_UPDATE_TICKS = 10L;
     private static final String COLLISION_TEAM_PREFIX = "cc_ar_";
     private static final String TIMER_BOSS_BAR_PREFIX = "acerace-game-timer:";
@@ -113,6 +140,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private final Set<UUID> startLineArmed = new HashSet<>();
     private final Map<UUID, TrackFeatureContact> featureContacts = new HashMap<>();
     private final Map<UUID, BukkitTask> pendingLaunchPadTasks = new HashMap<>();
+    private final Map<UUID, LaunchEnforcement> enforcedLaunches = new HashMap<>();
     private final Set<RacerPair> visibleRacerPairs = new HashSet<>();
     private final String visibilityOwner = "game:acerace:" + UUID.randomUUID();
     private final Set<RacerView> riptideHiddenViews = new HashSet<>();
@@ -124,6 +152,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private int timer;
     private BukkitTask progressTask;
     private BukkitTask racerVisibilityTask;
+    private BukkitTask launchEnforcementTask;
     private BukkitTask racerVisibilityUnlockTask;
     private BukkitTask mapEditPreviewTask;
     private UUID mapEditPreviewViewer;
@@ -540,6 +569,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         stopRacerVisibilityUpdates();
         restoreAllRacerVisibility();
         cancelAllPendingLaunchPads();
+        stopLaunchEnforcement();
         finishedPlayers.clear();
         nextProgressPoint.clear();
         completedLaps.clear();
@@ -598,6 +628,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private void beginGameProgress() {
         scheduleRacerVisibilityUnlock();
+        startLaunchEnforcement();
         giveTeamArmor();
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
@@ -797,6 +828,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void resetLapProgress(@NotNull Player player, @NotNull Location movementBaseline) {
         UUID uuid = player.getUniqueId();
         nextProgressPoint.put(uuid, 0);
+        cancelPendingLaunchPad(uuid);
         player.removePotionEffect(PotionEffectType.SPEED);
         handleEnvironmentalEffects(player);
         activeFallHeights.put(uuid, getGameConfig().getStartFallY());
@@ -1178,6 +1210,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         player.setVelocity(new Vector(direction.getX() * horizontalVelocity, aimedVerticalVelocity,
                 direction.getZ() * horizontalVelocity));
         player.setFallDistance(0F);
+        // The client, not the server, decides which drag branch this impulse lands in, so hold the flight
+        // to the grounded curve for the next few ticks instead of trusting the packet to be applied fairly.
+        enforcedLaunches.put(player.getUniqueId(),
+                new LaunchEnforcement(horizontalVelocity, player.getLocation().clone()));
         player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 0.8F, pitch);
         Utils.sendActionBar(player, MessageConfig.ACE_RACE_LAUNCH_PAD);
     }
@@ -1188,11 +1224,157 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 Math.min(verticalVelocity * MAX_LAUNCH_VERTICAL_MULTIPLIER, aimedVelocity));
     }
 
+    /**
+     * Horizontal speed the intended flight carries during the given tick, where tick zero is the launch
+     * itself. The launch tick still travels the raw impulse and only afterwards pays the pad's grounded
+     * drag; every later tick pays air drag and may add the sprint air acceleration a racer can reach by
+     * holding forward, which keeps this an upper bound on honest movement rather than an exact replay.
+     */
+    static double launchEnvelopeSpeed(double horizontalVelocity, int ticksSinceLaunch) {
+        double speed = horizontalVelocity;
+        for (int tick = 1; tick <= ticksSinceLaunch; tick++) {
+            speed = speed * (tick == 1 ? LAUNCH_GROUND_DRAG : AIR_DRAG) + SPRINT_AIR_ACCELERATION;
+        }
+        return speed;
+    }
+
+    /** Total horizontal distance the intended flight covers through the given tick, inclusive. */
+    static double launchEnvelopeDistance(double horizontalVelocity, int ticksSinceLaunch) {
+        double speed = horizontalVelocity;
+        double distance = speed;
+        for (int tick = 1; tick <= ticksSinceLaunch; tick++) {
+            speed = speed * (tick == 1 ? LAUNCH_GROUND_DRAG : AIR_DRAG) + SPRINT_AIR_ACCELERATION;
+            distance += speed;
+        }
+        return distance;
+    }
+
+    /**
+     * Target speed for a racer already ahead of the envelope. The excess distance is repaid over the next
+     * few ticks rather than merely capped, so the head start won during the round trip before the first
+     * correction packet lands is given back instead of kept.
+     */
+    static double enforcedLaunchSpeed(double envelopeSpeed, double debt) {
+        if (debt <= 0D) return envelopeSpeed;
+        return Math.max(0D, envelopeSpeed - debt / LAUNCH_DEBT_REPAY_TICKS);
+    }
+
+    private void startLaunchEnforcement() {
+        stopLaunchEnforcement();
+        launchEnforcementTask = scheduler.runTaskTimer(plugin, this::enforceLaunchTrajectories,
+                LAUNCH_ENFORCEMENT_UPDATE_TICKS, LAUNCH_ENFORCEMENT_UPDATE_TICKS);
+    }
+
+    private void stopLaunchEnforcement() {
+        if (launchEnforcementTask != null) launchEnforcementTask.cancel();
+        launchEnforcementTask = null;
+        enforcedLaunches.clear();
+    }
+
+    /**
+     * Compares the distance each launched racer actually covered against the intended flight and slows the
+     * ones running ahead of it. Honest flights stay under the envelope and are never touched, so no extra
+     * velocity packet reaches them.
+     */
+    private void enforceLaunchTrajectories() {
+        if (enforcedLaunches.isEmpty()) return;
+        if (getGameStageEnum() != GameStageEnum.PROGRESS) {
+            enforcedLaunches.clear();
+            return;
+        }
+        Iterator<Map.Entry<UUID, LaunchEnforcement>> entries = enforcedLaunches.entrySet().iterator();
+        while (entries.hasNext()) {
+            Map.Entry<UUID, LaunchEnforcement> entry = entries.next();
+            Player player = Bukkit.getPlayer(entry.getKey());
+            LaunchEnforcement launch = entry.getValue();
+            // Riptide and elytra are sanctioned ways to outrun the pad's own curve; never fight them.
+            if (player == null || !player.isOnline() || finishedPlayers.contains(entry.getKey())
+                    || isManagedSpectator(player) || player.isRiptiding() || player.isGliding()) {
+                entries.remove();
+                continue;
+            }
+            if (launch.advance(player) >= LAUNCH_ENFORCEMENT_TICKS) entries.remove();
+        }
+    }
+
+    /** Per-launch flight budget: measured horizontal travel checked against the intended grounded curve. */
+    private static final class LaunchEnforcement {
+        private final double horizontalVelocity;
+        private Location lastSample;
+        private double travelled;
+        private int ticksSinceLaunch;
+        private int ticksWaitingForImpulse;
+        private boolean impulseObserved;
+
+        private LaunchEnforcement(double horizontalVelocity, @NotNull Location launchLocation) {
+            this.horizontalVelocity = horizontalVelocity;
+            this.lastSample = launchLocation;
+        }
+
+        /**
+         * Samples one tick of travel, corrects an over-budget racer, and reports how far through the
+         * enforcement window this launch is. {@link AceRaceArea#LAUNCH_ENFORCEMENT_EXPIRED} ends it.
+         */
+        private int advance(@NotNull Player player) {
+            Location current = player.getLocation();
+            double stepX = 0D;
+            double stepZ = 0D;
+            if (current.getWorld() == lastSample.getWorld()) {
+                stepX = current.getX() - lastSample.getX();
+                stepZ = current.getZ() - lastSample.getZ();
+            }
+            lastSample = current;
+            double step = Math.sqrt(stepX * stepX + stepZ * stepZ);
+
+            // The impulse only takes effect once the packet reaches the client, so anchor the budget to the
+            // tick the racer visibly accelerates rather than to the tick the server sent it. Counting from
+            // the send would let a high-ping racer bank a large distance credit during the round trip and
+            // then spend it on the very head start this is meant to remove.
+            if (!impulseObserved) {
+                if (step < horizontalVelocity * LAUNCH_DETECTION_FRACTION) {
+                    return ++ticksWaitingForImpulse >= LAUNCH_IMPULSE_WAIT_TICKS ? LAUNCH_ENFORCEMENT_EXPIRED : 0;
+                }
+                impulseObserved = true;
+                travelled = step;
+                return 0;
+            }
+
+            travelled += step;
+            ticksSinceLaunch++;
+            double debt = travelled - launchEnvelopeDistance(horizontalVelocity, ticksSinceLaunch)
+                    - LAUNCH_DISTANCE_TOLERANCE;
+            if (debt > 0D) {
+                double target = enforcedLaunchSpeed(
+                        launchEnvelopeSpeed(horizontalVelocity, ticksSinceLaunch), debt);
+                applyHorizontalSpeed(player, stepX, stepZ, step, target);
+            }
+            return ticksSinceLaunch;
+        }
+
+        /**
+         * Rescales horizontal motion to {@code target}, keeping the racer's own heading and vertical
+         * motion. Both are taken from the measured step because a player entity's server-side delta
+         * movement is not a faithful record of client-driven motion.
+         */
+        private void applyHorizontalSpeed(@NotNull Player player, double stepX, double stepZ,
+                                          double step, double target) {
+            if (step <= target || step < 0.0001D) return;
+            double scale = target / step;
+            player.setVelocity(new Vector(stepX * scale, player.getVelocity().getY(), stepZ * scale));
+        }
+    }
+
     private void scheduleLaunchPlayer(@NotNull Player player, double horizontalVelocity,
                                       double verticalVelocity, float pitch,
                                       long delayTicks) {
         UUID uuid = player.getUniqueId();
         cancelPendingLaunchPad(uuid);
+        // Any wait before the impulse is a predictable window in which a racer can leave the wool and have
+        // the packet land on the airborne drag branch, so fire within the contact tick when possible.
+        if (delayTicks <= 0L) {
+            launchPlayer(player, horizontalVelocity, verticalVelocity, pitch);
+            return;
+        }
         BukkitTask task = scheduler.runTaskLater(plugin, () -> {
             pendingLaunchPadTasks.remove(uuid);
             if (getGameStageEnum() != GameStageEnum.PROGRESS || finishedPlayers.contains(uuid)
@@ -1205,11 +1387,13 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void cancelPendingLaunchPad(@NotNull UUID uuid) {
         BukkitTask task = pendingLaunchPadTasks.remove(uuid);
         if (task != null) task.cancel();
+        enforcedLaunches.remove(uuid);
     }
 
     private void cancelAllPendingLaunchPads() {
         for (BukkitTask task : pendingLaunchPadTasks.values()) task.cancel();
         pendingLaunchPadTasks.clear();
+        enforcedLaunches.clear();
     }
 
     private record TrackFeatureContact(@NotNull UUID worldId, @NotNull Material material, int x, int y, int z) {
@@ -1346,6 +1530,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END) return;
         if (progressTask != null) progressTask.cancel();
         cancelAllPendingLaunchPads();
+        stopLaunchEnforcement();
         stopRacerVisibilityUpdates();
         restoreAllRacerVisibility();
         cleanInventoryForAllGamePlayers();
@@ -1591,6 +1776,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     /** Removes real racer entities from a riptiding player's client before client-side spin contact can occur. */
     public void handleRiptideStart(@NotNull Player player) {
         if (getGameStageEnum() != GameStageEnum.PROGRESS || notAreaPlayer(player)) return;
+        // A riptide is a sanctioned way to exceed the pad's own flight curve.
+        enforcedLaunches.remove(player.getUniqueId());
         riptideViewerGraceTicks.put(player.getUniqueId(), 3);
         for (UUID uuid : gamePlayers) {
             if (uuid.equals(player.getUniqueId()) || finishedPlayers.contains(uuid)) continue;

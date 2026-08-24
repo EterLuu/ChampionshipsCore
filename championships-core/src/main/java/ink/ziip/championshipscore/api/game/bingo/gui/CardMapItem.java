@@ -22,6 +22,8 @@ import org.bukkit.persistence.PersistentDataType;
 public final class CardMapItem {
     /** PDC key marking a card map; value is the team id. */
     public static final NamespacedKey CARD_KEY = NamespacedKey.fromString("championshipscore:bingo_card");
+    /** Marker stored in the one aggregate card held by spectators. */
+    public static final String SPECTATOR_CARD_ID = "__spectator__";
 
     private CardMapItem() {
     }
@@ -62,6 +64,32 @@ public final class CardMapItem {
             meta.lore(java.util.List.of(msg.component("card.map_hint")));
             if (CARD_KEY != null) {
                 meta.getPersistentDataContainer().set(CARD_KEY, PersistentDataType.STRING, BingoTeamAdapter.id(team));
+            }
+        });
+        return item;
+    }
+
+    /** Builds the single aggregate card used by spectators, without a team perspective. */
+    public static ItemStack createSpectator(MapView view, World world, BingoCard card,
+                                            int tierSegments, BingoRound round) {
+        view.setWorld(world);
+        view.setScale(MapView.Scale.NORMAL);
+        view.setTrackingPosition(false);
+        view.setUnlimitedTracking(false);
+        for (MapRenderer existing : new java.util.ArrayList<>(view.getRenderers())) {
+            view.removeRenderer(existing);
+        }
+        view.addRenderer(new BingoCardMapRenderer(card, null, null, tierSegments, round, null));
+
+        var msg = MessageService.global();
+        ItemStack item = new ItemStack(Material.FILLED_MAP);
+        item.editMeta(MapMeta.class, meta -> {
+            meta.setMapView(view);
+            meta.displayName(msg.component("card.spectator_map_name"));
+            meta.lore(java.util.List.of(msg.component("card.map_hint")));
+            if (CARD_KEY != null) {
+                meta.getPersistentDataContainer().set(CARD_KEY, PersistentDataType.STRING,
+                        SPECTATOR_CARD_ID);
             }
         });
         return item;

@@ -24,7 +24,7 @@ import java.util.Map;
 /** Live map-card renderer backed only by the frozen wire task model and worker replay state. */
 final class WorkerCardMapRenderer extends MapRenderer {
     private final MatchManifest manifest;
-    private final int viewerTeam;
+    private final Integer viewerTeam;
     private final WorkerMatchSession session;
     private final java.util.UUID viewerPlayer;
     private String lastSignature;
@@ -33,7 +33,11 @@ final class WorkerCardMapRenderer extends MapRenderer {
         this(manifest, viewerTeam, null, session);
     }
 
-    WorkerCardMapRenderer(MatchManifest manifest, int viewerTeam, java.util.UUID viewerPlayer,
+    WorkerCardMapRenderer(MatchManifest manifest, WorkerMatchSession session) {
+        this(manifest, null, null, session);
+    }
+
+    WorkerCardMapRenderer(MatchManifest manifest, Integer viewerTeam, java.util.UUID viewerPlayer,
                           WorkerMatchSession session) {
         super(false);
         this.manifest = manifest;
@@ -46,7 +50,7 @@ final class WorkerCardMapRenderer extends MapRenderer {
     public void render(@NotNull MapView view, @NotNull MapCanvas canvas, @NotNull Player player) {
         Map<Integer, List<Integer>> completions = session.completionSnapshot();
         Integer winner = session.winnerTeamId();
-        int[] displayOrder = session.displayOrder(viewerTeam);
+        int[] displayOrder = viewerTeam == null ? null : session.displayOrder(viewerTeam);
         if (winner != null) displayOrder = null;
         List<BingoTaskSpec> renderedTasks = viewerPlayer == null
                 ? session.tasksSnapshot() : session.tasksSnapshot(viewerPlayer);
@@ -66,13 +70,14 @@ final class WorkerCardMapRenderer extends MapRenderer {
                     .findFirst().orElseThrow();
             int gridX = displaySlot % width + offset;
             int gridY = displaySlot / width + offset;
-            if (session.cellHidden(trueIndex) || session.cellLocked(trueIndex))
+            boolean completed = !completions.getOrDefault(trueIndex, List.of()).isEmpty();
+            if (!completed && (session.cellHidden(trueIndex) || session.cellLocked(trueIndex)))
                 drawBlocked(canvas, gridX, gridY);
             else drawTask(canvas, task, gridX, gridY);
             drawBorders(canvas, gridX, gridY, completions.getOrDefault(trueIndex, List.of()));
         }
         if (winner == null) {
-            drawCompletedLines(canvas, completions, width, offset, viewerTeam);
+            if (viewerTeam != null) drawCompletedLines(canvas, completions, width, offset, viewerTeam);
         } else {
             // Local Bingo ends in TOP_SCORE mode: the final overlay highlights every cell completed
             // by the winner rather than pretending that one of their completed lines decided it.

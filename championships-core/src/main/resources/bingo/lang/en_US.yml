@@ -4,6 +4,7 @@ card:
   title: "&6&lBingo Card"
   win_hint: "&7Complete a full row, column, or diagonal to win"
   map_name: "{0} &fBingo Card"
+  spectator_map_name: "&7&lSpectator &fBingo Overview"
   map_hint: "&7Right-click to view task details"
   completed_by: "&7Completed by: "
   completed_at: "&7Completed at: &f{0}"
@@ -17,13 +18,14 @@ compass:
   target_offline: "&cThat teammate has gone offline."
   teleport_success: "&aTeleported to &f{0}&a."
 spectator:
-  tracking:
-    name: "Player Tracking"
-    next: "Left-click: switch player"
-    stop: "Right-click: stop tracking"
-    stopped-feedback: "Tracking stopped"
-    unavailable-feedback: "No players are available to track"
-    active-feedback: "Tracking: %player%"
+  teleport:
+    name: "Choose Player"
+    hint: "Right-click to choose an online player"
+    menu_title: "&8Choose Player"
+    player: "&7Player"
+    team: "&7Team: {0}"
+    click: "&eClick to teleport"
+    none: "&cNo online players are available to teleport to."
   speed:
     name: "Flight Speed: %speed%"
     faster: "Left-click: increase speed"
@@ -244,6 +246,7 @@ mode:
 
 vote:
   started: "&dMode vote started! Choose this round's mode within {0} seconds."
+  bossbar: "&dBingo vote &7• {0}s remaining"
   result: "&6This round's mode: &f{0}"
   result_random: "&6Random mode rolled: &f{0}"
   menu_title: "Choose a game mode"
@@ -253,9 +256,7 @@ vote:
   menu_locked: "&c🔒 Needs ≥4 teams to unlock"
 
 difficulty_vote:
-  started: "&bDifficulty vote started! Choose this round's card difficulty within {0} seconds."
   result: "&6This round's card difficulty: &f{0}"
-  menu_title: "Choose card difficulty"
   menu_count: "&7Votes: &e{0}"
   menu_hint: "&eClick to choose"
   menu_picked: "&a✔ Your pick"
@@ -294,9 +295,7 @@ card_difficulty:
       - "&c⚠ Death clears your inventory (items don't drop)"
 
 lines_vote:
-  started: "&bSpeedrun! Vote how many lines win the round within {0} seconds."
   result: "&6This round wins at: &f{0} lines"
-  menu_title: "How many lines to win?"
   menu_option: "&b{0} lines to win"
   menu_desc: "&7Complete {0} bingo line(s) to win the round"
   menu_count: "&7Votes: &e{0}"

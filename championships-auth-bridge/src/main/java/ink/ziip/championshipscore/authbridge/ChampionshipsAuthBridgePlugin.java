@@ -37,7 +37,11 @@ public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
             state,
             getConfig().getBoolean("access.fail-closed-before-first-sync", true),
             getConfig().getString("access.not-whitelisted-message", "你尚未通过服务器白名单审批。"),
-            getConfig().getString("access.banned-message", "你已被服务器封禁。")
+            getConfig().getString("access.banned-message", "你已被服务器封禁。"),
+            getConfig().getString("access.maintenance-message",
+                    getConfig().getString("access.uuid-maintenance-message", "服务器正在维护账号资料，请稍后重新连接。")),
+            getConfig().getString("access.unavailable-message", "账号服务暂时不可用，请稍后重新连接。"),
+            getConfig().getString("access.uuid-mismatch-message", "玩家身份校验失败，请确认通过指定代理连接。")
         ), this);
         long period = Math.max(5L, getConfig().getLong("api.poll-seconds", 10)) * 20L;
         getServer().getScheduler().runTaskTimerAsynchronously(this, synchronizer, 1L, period);

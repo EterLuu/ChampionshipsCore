@@ -743,8 +743,8 @@ public final class TeamManagementMenu implements Listener {
             return;
         }
 
-        if (!text.matches("[A-Za-z0-9_]{1,16}")) {
-            Utils.sendAdminError(player, GuiConfig.text("teams.menus.shared.copy.please-enter-a-valid-minecraft-player-name-1-16-letters-numbers-or-underscores"));
+        if (!text.matches("[A-Za-z0-9_]{3,16}")) {
+            Utils.sendAdminError(player, GuiConfig.text("teams.menus.shared.copy.please-enter-a-valid-minecraft-player-name"));
             return;
         }
         String teamName = input.teamName;
@@ -768,13 +768,14 @@ public final class TeamManagementMenu implements Listener {
         if (team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
             Utils.sendAdminError(admin, GuiConfig.text("teams.menus.shared.copy.the-number-of-people-in-the-team-has-reached-the-upper-limit") + CCConfig.TEAM_MAX_MEMBERS);
         } else {
-            plugin.getTeamManager().addTeamMember(memberName, team).thenAccept(added -> {
+            plugin.getTeamManager().addTeamMember(memberName, team).thenAccept(result -> {
                 if (!admin.isOnline()) return;
+                boolean added = result == TeamManager.MemberAddResult.ADDED;
                 if (added) {
                     Utils.sendAdminSuccess(admin, GuiConfig.text("teams.menus.shared.copy.player-has-been") + memberName + GuiConfig.text("teams.menus.shared.copy.join") + team.getColorCode() + team.getName());
                     success(admin);
                 } else {
-                    Utils.sendAdminError(admin, GuiConfig.text("teams.menus.shared.copy.add-member-identity-conflict"));
+                    Utils.sendAdminError(admin, memberAddFailureText(result));
                 }
                 if (keepSelectorOpen && team.getMembers().size() < CCConfig.TEAM_MAX_MEMBERS)
                     openAddPlayer(admin, teamName, added ? selectorPage : 0);
@@ -797,8 +798,9 @@ public final class TeamManagementMenu implements Listener {
             Utils.sendAdminError(admin, GuiConfig.text("teams.menus.shared.copy.the-number-of-people-in-the-team-has-reached-the-upper-limit") + CCConfig.TEAM_MAX_MEMBERS);
             openTeam(admin, teamName, 0);
         } else {
-            plugin.getTeamManager().addTeamMember(memberName, team).thenAccept(added -> {
+            plugin.getTeamManager().addTeamMember(memberName, team).thenAccept(result -> {
                 if (!admin.isOnline()) return;
+                boolean added = result == TeamManager.MemberAddResult.ADDED;
                 if (added) {
                     Utils.sendAdminSuccess(admin, GuiConfig.text("teams.menus.shared.copy.players-have-been-taken-offline") + memberName + GuiConfig.text("teams.menus.shared.copy.join")
                             + team.getColorCode() + team.getName());
@@ -806,11 +808,25 @@ public final class TeamManagementMenu implements Listener {
                     if (team.getMembers().size() < CCConfig.TEAM_MAX_MEMBERS) openKnownPlayers(admin, teamName, selectorPage);
                     else openTeam(admin, teamName, 0);
                 } else {
-                    Utils.sendAdminError(admin, GuiConfig.text("teams.menus.shared.copy.failed-to-add-player-may-have-just-been-split-or-there-is-an-identity-conflict"));
+                    Utils.sendAdminError(admin, memberAddFailureText(result));
                     openKnownPlayers(admin, teamName, selectorPage);
                 }
             });
         }
+    }
+
+    private static String memberAddFailureText(@NotNull TeamManager.MemberAddResult result) {
+        return switch (result) {
+            case INVALID_PLAYER_NAME -> GuiConfig.text("teams.menus.shared.copy.add-member-invalid-player-name");
+            case TEAM_NOT_FOUND -> GuiConfig.text("teams.menus.shared.copy.add-member-team-not-found");
+            case TEAM_FULL -> GuiConfig.text("teams.menus.shared.copy.add-member-team-full");
+            case OPERATION_IN_PROGRESS -> GuiConfig.text("teams.menus.shared.copy.add-member-operation-in-progress");
+            case PLAYER_NOT_FOUND -> GuiConfig.text("teams.menus.shared.copy.add-member-player-not-registered");
+            case PROFILE_SERVICE_UNAVAILABLE -> GuiConfig.text("teams.menus.shared.copy.add-member-profile-service-unavailable");
+            case IDENTITY_CONFLICT, ALREADY_MEMBER -> GuiConfig.text("teams.menus.shared.copy.add-member-identity-conflict");
+            case DATABASE_ERROR -> GuiConfig.text("teams.menus.shared.copy.add-member-database-error");
+            case ADDED -> "";
+        };
     }
 
     private void moveMember(@NotNull Player admin, @NotNull UUID uuid, @NotNull String memberName,

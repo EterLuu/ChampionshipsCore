@@ -36,8 +36,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
     private static final Key OMINOUS_BANNER_ICON_KEY = Key.key("minecraft", "ominous_banner");
     private static final Key HEALING_POTION_ICON_KEY = Key.key("minecraft", "healing_potion");
     private final BingoCard card;
-    private final String teamId;
-    private final TextColor teamColor;
+    private final @Nullable String teamId;
+    private final @Nullable TextColor teamColor;
     /** Fixed number of border segments (0 = dynamic, one per completing team; 2 or 4 = points-mode tiers). */
     private final int tierSegments;
     /** Set when the round ends so this renderer paints the win-state overlay. Null while running. */
@@ -92,7 +92,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
         if (outcome != null && outcome.winnerId() != null) {
             // Post-game: paint the winner's lines/highlights on every card (losers see how the winner won).
             drawWinOverlay(canvas, outcome, offset, n);
-        } else {
+        } else if (teamId != null && teamColor != null) {
             // Live: scribble a stroke through each line this team has already completed, so line
             // progress shows on the card during the round - not only on the post-game win overlay.
             byte palette = MapColorMatcher.matchColor(teamColor.red(), teamColor.green(), teamColor.blue());
@@ -103,7 +103,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
     }
 
     private void drawTask(MapCanvas canvas, GameTask task, int gridX, int gridY) {
-        if ((task.isHidden() && !task.isCompleted()) || task.isLocked()) {
+        if ((task.isHidden() && !task.isCompleted()) || (task.isLocked() && !task.isCompleted())) {
             BufferedImage hidden = TaskImageAtlas.imageFor(Key.key("minecraft", "bedrock"));
             if (hidden != null) drawImage(canvas, gridX * 24 + 5, gridY * 24 + 5, hidden, null);
             return;
@@ -339,7 +339,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
         // "you lost; here's how" read.
         String winnerId = outcome.winnerId();
 
-        TextColor color = outcome.winnerColor() != null ? outcome.winnerColor() : teamColor;
+        TextColor color = outcome.winnerColor() != null ? outcome.winnerColor()
+                : teamColor != null ? teamColor : net.kyori.adventure.text.format.NamedTextColor.WHITE;
         byte palette = MapColorMatcher.matchColor(color.red(), color.green(), color.blue());
 
         switch (outcome.type()) {
@@ -436,7 +437,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
         StringBuilder sb = new StringBuilder(card.getTasks().size() * 2 + 16);
         for (GameTask task : card.getTasks()) {
             sb.append(task.data.toString()).append(task.isHidden() ? 'h' : '-').append(task.isLocked() ? 'l' : '-');
-            sb.append(task.isCompletedByTeam(teamId) ? 'x' : '.');
+            sb.append(teamId != null && task.isCompletedByTeam(teamId) ? 'x' : '.');
             int n = task.allCompletions().size();
             sb.append((char) ('0' + Math.min(n, 9)));
         }

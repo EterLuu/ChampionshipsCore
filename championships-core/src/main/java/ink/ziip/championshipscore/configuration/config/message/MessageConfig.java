@@ -21,7 +21,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 33;
+        return 34;
     }
 
     /** Replace every player-facing section so v30's terminology and spacing stay consistent at runtime. */
@@ -140,6 +140,27 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "reason.member-already-exist")
     public static String REASON_MEMBER_ALREADY_EXIST;
+
+    @ConfigOption(path = "reason.invalid-player-name")
+    public static String REASON_INVALID_PLAYER_NAME;
+
+    @ConfigOption(path = "reason.team-full")
+    public static String REASON_TEAM_FULL;
+
+    @ConfigOption(path = "reason.operation-in-progress")
+    public static String REASON_OPERATION_IN_PROGRESS;
+
+    @ConfigOption(path = "reason.player-not-registered")
+    public static String REASON_PLAYER_NOT_REGISTERED;
+
+    @ConfigOption(path = "reason.profile-service-unavailable")
+    public static String REASON_PROFILE_SERVICE_UNAVAILABLE;
+
+    @ConfigOption(path = "reason.identity-conflict")
+    public static String REASON_IDENTITY_CONFLICT;
+
+    @ConfigOption(path = "reason.database-error")
+    public static String REASON_DATABASE_ERROR;
 
     // Area status
     @ConfigOption(path = "area-status.waiting")

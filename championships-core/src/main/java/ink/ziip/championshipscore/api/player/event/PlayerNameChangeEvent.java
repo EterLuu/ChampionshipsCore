@@ -10,8 +10,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Emitted by the authentication bridge after an approved Minecraft name change.
- * In offline mode the bridge supplies the deterministic replacement UUID; in
- * online mode the UUID is left null because it is learned from the next login.
+ * The bridge supplies the currently effective UUID that authlib also forwards at login.
  */
 public final class PlayerNameChangeEvent extends Event {
     private static final HandlerList HANDLERS = new HandlerList();

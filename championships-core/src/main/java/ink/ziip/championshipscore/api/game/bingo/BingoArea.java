@@ -85,6 +85,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     /** One recycled MapView per team, reused every round so the server's map-id counter stays bounded. */
     private final Map<ChampionshipTeam, MapView> teamMapViews = new HashMap<>();
     private final Map<UUID, MapView> playerMapViews = new HashMap<>();
+    private MapView spectatorMapView;
 
     /**
      * Last recorded position of each participant who disconnected mid-round, so a reconnect restores
@@ -224,6 +225,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             round.cardFor(team).ifPresent(card ->
                     round.setMapItem(team, CardMapItem.create(view, world, card, team, 0, round)));
         }
+        spectatorMapView = spectatorMapView == null ? Bukkit.createMap(world) : spectatorMapView;
         for (Player spectator : getOnlineSpectators()) {
             applySpectatorGameMode(spectator);
         }
@@ -547,26 +549,20 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         }
     }
 
-    /**
-     * Ensures a participant is holding their team's card map: a no-op if one is already present,
-     * otherwise a fresh copy is placed in the off-hand (empty at round start — the kit never fills it),
-     * falling back to any free slot, and dropped at their feet only when the inventory is full.
-     */
+    /** Ensures the participant's card remains available without disturbing the starter kit. */
     public void ensureCardFor(Player player) {
         if (player == null || round == null || player.isDead()) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team == null) return;
-        Inventory inv = player.getInventory();
-        for (ItemStack item : inv.getContents()) {
-            if (CardMapItem.isCard(item)) return;
-        }
         round.mapItem(player.getUniqueId(), team).ifPresent(map -> {
-            ItemStack card = map.clone();
-            if (isEmpty(player.getInventory().getItemInOffHand())) {
-                player.getInventory().setItemInOffHand(card);
-            } else if (!inv.addItem(card).isEmpty()) {
-                player.getWorld().dropItem(player.getLocation(), card);
+            org.bukkit.inventory.PlayerInventory inventory = player.getInventory();
+            for (ItemStack item : inventory.getContents()) {
+                if (CardMapItem.isCard(item)) return;
             }
+            ItemStack card = map.clone();
+            if (isEmpty(inventory.getItemInOffHand())) inventory.setItemInOffHand(card);
+            else if (!inventory.addItem(card).isEmpty())
+                player.getWorld().dropItemNaturally(player.getLocation(), card);
         });
     }
 
@@ -602,7 +598,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         return world != null ? world.getSpawnLocation() : CCConfig.LOBBY_LOCATION;
     }
 
-    /** Bingo spectators need normal item rendering so they can hold and inspect every team's live card. */
+    /** Bingo spectators use normal item rendering so they can inspect every live team card. */
     @Override
     protected void applySpectatorGameMode(@NotNull Player player) {
         BingoSpectatorService.apply(player);
@@ -619,18 +615,12 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         removeSpectatorCards(player);
         if (round == null) return;
 
-        var inventory = player.getInventory();
-        boolean offHandAvailable = isEmpty(inventory.getItemInOffHand());
-        for (ChampionshipTeam team : round.teams()) {
-            ItemStack card = round.mapItem(team).map(ItemStack::clone).orElse(null);
-            if (card == null) continue;
-            if (offHandAvailable) {
-                inventory.setItemInOffHand(card);
-                offHandAvailable = false;
-            } else {
-                inventory.addItem(card);
-            }
-        }
+        if (spectatorMapView == null || round.teams().isEmpty()) return;
+        World world = spectatorMapView.getWorld();
+        ItemStack card = CardMapItem.createSpectator(spectatorMapView, world,
+                round.cardFor(round.teams().getFirst()).orElse(round.card()), 0, round);
+        if (!player.getInventory().addItem(card).isEmpty())
+            player.getWorld().dropItemNaturally(player.getLocation(), card);
         player.updateInventory();
     }
 

@@ -15,6 +15,7 @@ import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -119,7 +120,8 @@ public final class RedisMatchTransport implements MatchCommandPublisher, MatchEv
     @Override
     public void close() {
         if (!closed.compareAndSet(false, true)) return;
-        connection.close();
-        client.shutdown();
+        // Let Lettuce drain callbacks before tearing down its Netty/classloader resources. Immediate
+        // shutdown can race AsyncCommand completion and surface as "zip file closed" during reload.
+        client.shutdown(Duration.ofMillis(100), Duration.ofSeconds(5));
     }
 }

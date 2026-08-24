@@ -65,8 +65,11 @@ public class PlayerListener extends BaseListener {
         });
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent event) {
+        // AuthBridge runs at LOWEST. Never create or migrate Core records for a
+        // player that access control has already rejected.
+        if (event.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
         PlayerIdentityMigrationResult migration = plugin.getPlayerManager()
                 .prepareIdentity(event.getName(), event.getUniqueId());
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getUniqueId());

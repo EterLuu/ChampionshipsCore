@@ -625,6 +625,12 @@ final class WorkerListener implements Listener {
         if (target != null) {
             player.closeInventory();
             registry.teleportToTeammate(player, target);
+            return;
+        }
+        UUID spectatorTarget = WorkerMenuService.spectatorTarget(event.getView().getTopInventory(), event.getRawSlot());
+        if (spectatorTarget != null) {
+            player.closeInventory();
+            registry.teleportToSpectatorTarget(player, spectatorTarget);
         }
     }
 
@@ -646,10 +652,14 @@ final class WorkerListener implements Listener {
     public void onBoundCardPickup(EntityPickupItemEvent event) {
         Integer teamId = registry.boundCardTeam(event.getItem().getItemStack());
         if (teamId == null) return;
-        if (!(event.getEntity() instanceof Player player)
-                || !registry.canPickupCard(player.getUniqueId(), teamId)) {
+        if (!(event.getEntity() instanceof Player player)) {
             event.setCancelled(true);
+            return;
         }
+        boolean allowed = teamId == Integer.MIN_VALUE
+                ? registry.canPickupSpectatorCard(player.getUniqueId())
+                : registry.canPickupCard(player.getUniqueId(), teamId);
+        if (!allowed) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

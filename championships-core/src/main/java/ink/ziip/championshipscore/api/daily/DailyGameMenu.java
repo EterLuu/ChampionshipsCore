@@ -111,6 +111,10 @@ public final class DailyGameMenu {
         if (game != null && daily.selectGame(player, game)) clickSound(player, 1.2F);
     }
 
+    boolean isBingoSlot(@NotNull MenuHolder holder, int slot) {
+        return holder.gamesBySlot.get(slot) == GameTypeEnum.Bingo;
+    }
+
     private void refresh(@NotNull MenuHolder holder) {
         Inventory inventory = holder.inventory;
         inventory.clear();

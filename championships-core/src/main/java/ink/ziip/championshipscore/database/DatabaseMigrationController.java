@@ -122,7 +122,33 @@ public final class DatabaseMigrationController {
                                 "TINYINT NOT NULL DEFAULT 1");
                         ensurePrimaryKeyContains(connection, "daily_player_records", "recordRank",
                                 "`uuid`, `game`, `map`, `mapRevision`, `rulesHash`, `recordType`, `recordRank`");
-                    }));
+                    }),
+            new DatabaseMigration(12, "minecraft-identity-mode",
+                    connection -> {
+                        try (Statement statement = connection.createStatement()) {
+                            statement.execute("""
+                                    CREATE TABLE IF NOT EXISTS `cc_identity_settings`
+                                    (
+                                        `id`        TINYINT     NOT NULL,
+                                        `mode`      VARCHAR(32) NOT NULL DEFAULT 'SERVER_UUID',
+                                        `updatedAt` BIGINT      NOT NULL,
+
+                                        PRIMARY KEY (`id`),
+                                        CONSTRAINT `chk_cc_identity_settings_singleton` CHECK (`id` = 1),
+                                        CONSTRAINT `chk_cc_identity_settings_mode`
+                                            CHECK (`mode` IN ('SERVER_UUID', 'CUSTOM_UUID'))
+                                    ) ENGINE = InnoDB
+                                      DEFAULT CHARSET = utf8mb4
+                                      COLLATE = utf8mb4_unicode_ci
+                                    """);
+                            statement.executeUpdate("""
+                                    INSERT IGNORE INTO `cc_identity_settings` (`id`, `mode`, `updatedAt`)
+                                    VALUES (1, 'SERVER_UUID', 0)
+                                    """);
+                        }
+                    }),
+            new DatabaseMigration(13, "remove-obsolete-identity-mode",
+                    connection -> connection.createStatement().execute("DROP TABLE IF EXISTS `cc_identity_settings`")));
 
     private final ChampionshipsCore plugin;
 

@@ -16,6 +16,7 @@ import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * At-least-once Redis Streams consumer. Deliveries are processed serially per consumer so match
@@ -46,6 +48,7 @@ public final class RedisMatchConsumer implements AutoCloseable {
     private final Consumer<String> consumer;
     private final AtomicBoolean started = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicInteger consecutiveFailures = new AtomicInteger();
     private volatile String nextClaimId = "0-0";
 
     public RedisMatchConsumer(RedisTransportConfig transportConfig, RedisConsumerConfig consumerConfig,
@@ -69,12 +72,11 @@ public final class RedisMatchConsumer implements AutoCloseable {
     public CompletionStage<Void> start() {
         if (closed.get()) return CompletableFuture.failedFuture(new IllegalStateException("Consumer is closed"));
         if (!started.compareAndSet(false, true)) return CompletableFuture.completedFuture(null);
-        XGroupCreateArgs args = new XGroupCreateArgs().mkstream(true);
         CompletableFuture<Void> ready = new CompletableFuture<>();
-        control.xgroupCreate(XReadArgs.StreamOffset.from(stream, "0-0"), consumerConfig.group(), args)
+        ensureGroup()
                 .whenComplete((ignored, error) -> {
                     Throwable cause = unwrap(error);
-                    if (cause != null && !isBusyGroup(cause)) {
+                    if (cause != null) {
                         started.set(false);
                         ready.completeExceptionally(cause);
                         return;
@@ -95,10 +97,10 @@ public final class RedisMatchConsumer implements AutoCloseable {
         control.xautoclaim(stream, args).whenComplete((claimed, error) -> {
             if (!running()) return;
             if (error != null) {
-                report(error);
-                readNew();
+                recover(error, this::readNew);
                 return;
             }
+            resetFailures();
             nextClaimId = claimed.getId();
             processSerially(claimed.getMessages()).whenComplete((ignored, processingError) -> {
                 if (processingError != null) report(processingError);
@@ -114,10 +116,10 @@ public final class RedisMatchConsumer implements AutoCloseable {
                 .whenComplete((messages, error) -> {
                     if (!running()) return;
                     if (error != null) {
-                        report(error);
-                        reclaimThenRead();
+                        recover(error, this::reclaimThenRead);
                         return;
                     }
+                    resetFailures();
                     processSerially(messages).whenComplete((ignored, processingError) -> {
                         if (processingError != null) report(processingError);
                         reclaimThenRead();
@@ -177,7 +179,14 @@ public final class RedisMatchConsumer implements AutoCloseable {
     }
 
     private CompletionStage<Void> acknowledge(StreamMessage<String, String> message) {
-        return control.xack(stream, consumerConfig.group(), message.getId()).thenApply(ignored -> null);
+        return control.xack(stream, consumerConfig.group(), message.getId())
+                .handle((ignored, error) -> {
+                    Throwable cause = unwrap(error);
+                    if (cause == null) return CompletableFuture.<Void>completedFuture(null);
+                    if (isNoGroup(cause)) return ensureGroup();
+                    return CompletableFuture.<Void>failedFuture(cause);
+                })
+                .thenCompose(stage -> stage);
     }
 
     private CompletionStage<Void> deadLetter(StreamMessage<String, String> message, String reason) {
@@ -198,6 +207,48 @@ public final class RedisMatchConsumer implements AutoCloseable {
         return started.get() && !closed.get();
     }
 
+    private CompletionStage<Void> ensureGroup() {
+        return control.xgroupCreate(XReadArgs.StreamOffset.from(stream, "0-0"), consumerConfig.group(),
+                        new XGroupCreateArgs().mkstream(true))
+                .handle((ignored, error) -> {
+                    Throwable cause = unwrap(error);
+                    if (cause != null && !isBusyGroup(cause)) throw new CompletionException(cause);
+                    return null;
+                });
+    }
+
+    private void recover(Throwable error, Runnable retry) {
+        Throwable cause = unwrap(error);
+        if (isNoGroup(cause)) {
+            ensureGroup().whenComplete((ignored, recreationError) -> {
+                if (recreationError != null) {
+                    report(recreationError);
+                    retryLater(retry);
+                } else {
+                    resetFailures();
+                    retry.run();
+                }
+            });
+            return;
+        }
+        report(cause);
+        retryLater(retry);
+    }
+
+    private void retryLater(Runnable retry) {
+        if (!running()) return;
+        int failures = Math.min(consecutiveFailures.getAndIncrement(), 6);
+        long delayMillis = Math.min(5_000L, 100L << failures);
+        CompletableFuture.delayedExecutor(delayMillis, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .execute(() -> {
+                    if (running()) retry.run();
+                });
+    }
+
+    private void resetFailures() {
+        consecutiveFailures.set(0);
+    }
+
     private void report(Throwable error) {
         Throwable cause = unwrap(error);
         if (cause != null && running()) errorHandler.accept(cause);
@@ -213,6 +264,11 @@ public final class RedisMatchConsumer implements AutoCloseable {
     private static boolean isBusyGroup(Throwable error) {
         return error instanceof RedisCommandExecutionException
                 && error.getMessage() != null && error.getMessage().contains("BUSYGROUP");
+    }
+
+    private static boolean isNoGroup(Throwable error) {
+        return error instanceof RedisCommandExecutionException
+                && error.getMessage() != null && error.getMessage().contains("NOGROUP");
     }
 
     private static String concise(Throwable error) {
@@ -236,8 +292,6 @@ public final class RedisMatchConsumer implements AutoCloseable {
     public void close() {
         if (!closed.compareAndSet(false, true)) return;
         started.set(false);
-        readConnection.close();
-        controlConnection.close();
-        client.shutdown();
+        client.shutdown(Duration.ofMillis(100), Duration.ofSeconds(5));
     }
 }

@@ -275,7 +275,7 @@ light_gray cyan purple blue brown green red black
 /cc team member add red_rabbits Alex
 ```
 
-每名玩家只能属于一支队伍，人数不能超过 `team.max-members`。添加成员时会使用该玩家的离线 UUID，因此应保证服务端正版/离线模式在整个赛事周期内保持一致。
+每名玩家只能属于一支队伍，人数不能超过 `team.max-members`。`identity.mode` 只描述服务器原有身份来源：离线服务器按照 Minecraft 的 `OfflinePlayer:<玩家名>` 规则计算 UUID；正版服务器调用 `identity.profile-api-base-url` 的标准 `/users/profiles/minecraft/<玩家名>` 接口。网站当前使用“服务器原有身份”还是“网站统一身份”由 cc-web 独立管理，插件不会自行改写 authlib 转发的登录档案。档案接口返回 204/404 时会明确提示玩家未注册，服务异常、响应格式错误与本地身份冲突也会分别反馈，且不会静默回退为离线 UUID。
 
 ### 查询、传送和删除
 

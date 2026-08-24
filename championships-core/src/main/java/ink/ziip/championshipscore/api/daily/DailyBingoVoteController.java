@@ -19,6 +19,9 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -50,9 +53,14 @@ final class DailyBingoVoteController {
             "mode.quantity.name", "mode.quantity.lore", "mode.points.name", "mode.points.lore",
             "mode.random.name", "mode.random.lore", "card_difficulty.easy.name", "card_difficulty.easy.lore",
             "card_difficulty.lite.name", "card_difficulty.lite.lore", "card_difficulty.normal.name",
-            "card_difficulty.normal.lore", "card_difficulty.hard.name", "card_difficulty.hard.lore",
-            "card_difficulty.extreme.name", "card_difficulty.extreme.lore");
-    enum Phase { MODE, DIFFICULTY, LINES, GENESIS }
+	            "card_difficulty.normal.lore", "card_difficulty.hard.name", "card_difficulty.hard.lore",
+	            "card_difficulty.extreme.name", "card_difficulty.extreme.lore");
+	    // Worker sources use these shared Bingo locale keys, but the Core resource contract test scans Core sources only.
+	    private static final List<String> WORKER_SPECTATOR_LANGUAGE_KEYS = List.of(
+	            "spectator.teleport.name", "spectator.teleport.hint", "spectator.teleport.menu_title",
+	            "spectator.teleport.player", "spectator.teleport.team", "spectator.teleport.click",
+	            "spectator.teleport.none");
+	    enum Phase { ALL, GENESIS }
     private enum ModeChoice { DOMINATION, SPEEDRUN, QUANTITY, POINTS, RANDOM }
 
     record VoteHolder(UUID voter, Phase phase) implements InventoryHolder {
@@ -71,6 +79,7 @@ final class DailyBingoVoteController {
     private List<ChampionshipTeam> teams = List.of();
     private Phase phase;
     private BukkitTask timer;
+    private BossBar bossBar;
     private int secondsLeft;
     private BingoMode selectedMode;
     private BingoDifficulty selectedDifficulty;
@@ -87,7 +96,7 @@ final class DailyBingoVoteController {
         teams = List.copyOf(matchTeams);
         teams.forEach(team -> voters.addAll(team.getMembers()));
         result = new CompletableFuture<>();
-        beginPhase(Phase.MODE);
+        beginPhase(Phase.ALL);
         return result;
     }
 
@@ -105,9 +114,11 @@ final class DailyBingoVoteController {
             return;
         }
         switch (phase) {
-            case MODE -> castMode(player, rawSlot);
-            case DIFFICULTY -> castDifficulty(player, rawSlot);
-            case LINES -> castLines(player, rawSlot);
+            case ALL -> {
+                if (rawSlot >= 11 && rawSlot <= 15) castMode(player, rawSlot);
+                else if (rawSlot >= 19 && rawSlot <= 23) castDifficulty(player, rawSlot - 8);
+                else if (rawSlot >= 28 && rawSlot <= 32) castLines(player, rawSlot - 17);
+            }
             case GENESIS -> castGenesis(player, rawSlot);
         }
     }
@@ -166,17 +177,11 @@ final class DailyBingoVoteController {
                 : plugin.getGameManager().getBingoManager().dailyVoteSeconds();
         MessageService messages = MessageService.global();
         int phaseSeconds = secondsLeft;
-        broadcast(messages == null ? switch (next) {
-            case MODE -> "&d模式投票开始！请选择本局宾果模式。";
-            case DIFFICULTY -> "&b难度投票开始！请选择本局卡片难度。";
-            case LINES -> "&b速通模式：请选择完成几条线获胜。";
-            case GENESIS -> "&d创世奇遇：每位玩家选择一个物品加入本局卡片。";
-        } : switch (next) {
-            case MODE -> messages.tr("vote.started", phaseSeconds);
-            case DIFFICULTY -> messages.tr("difficulty_vote.started", phaseSeconds);
-            case LINES -> messages.tr("lines_vote.started", phaseSeconds);
-            case GENESIS -> messages.tr("genesis.started", phaseSeconds);
-        });
+        broadcast(messages == null ? (next == Phase.GENESIS
+                ? "&d创世奇遇：每位玩家选择一个物品加入本局卡片。"
+                : "&d宾果投票开始！请选择模式、难度和胜利线数。")
+                : messages.tr(next == Phase.GENESIS ? "genesis.started" : "vote.started", phaseSeconds));
+        updateBossBar();
         for (UUID voter : voters) {
             Player player = Bukkit.getPlayer(voter);
             if (player != null) open(player);
@@ -192,6 +197,7 @@ final class DailyBingoVoteController {
                     return;
                 }
                 secondsLeft--;
+                updateBossBar();
                 if (secondsLeft <= 0) finishPhase();
                 else if (secondsLeft <= 5 || secondsLeft == 10)
                     broadcast("&7投票剩余 &e" + secondsLeft + " &7秒");
@@ -203,7 +209,7 @@ final class DailyBingoVoteController {
         if (timer != null) timer.cancel();
         timer = null;
         switch (phase) {
-            case MODE -> {
+            case ALL -> {
                 List<ModeChoice> choices = new ArrayList<>(List.of(ModeChoice.values()));
                 if (teams.size() < 4) choices.remove(ModeChoice.POINTS);
                 ModeChoice winner = winner(choices, modeVotes);
@@ -216,25 +222,20 @@ final class DailyBingoVoteController {
                 broadcast(messages == null ? "&6本局模式：&f" + modeName(selectedMode)
                         : messages.tr(winner == ModeChoice.RANDOM ? "vote.result_random" : "vote.result",
                         messages.tr("mode." + selectedMode.name().toLowerCase() + ".name")));
-                beginPhase(Phase.DIFFICULTY);
-            }
-            case DIFFICULTY -> {
-                List<BingoDifficulty> choices = new ArrayList<>(List.of(BingoDifficulty.values()));
+                List<BingoDifficulty> difficultyChoices = new ArrayList<>(List.of(BingoDifficulty.values()));
                 if (teams.stream().anyMatch(team -> team.getMembers().size() <= 1))
-                    choices.remove(BingoDifficulty.EXTREME);
-                selectedDifficulty = winner(choices, difficultyVotes);
-                MessageService messages = MessageService.global();
-                broadcast(messages == null ? "&6本局难度：&f" + difficultyName(selectedDifficulty)
-                        : messages.tr("difficulty_vote.result", messages.tr(
+                    difficultyChoices.remove(BingoDifficulty.EXTREME);
+                selectedDifficulty = winner(difficultyChoices, difficultyVotes);
+                MessageService difficultyMessages = MessageService.global();
+                broadcast(difficultyMessages == null ? "&6本局难度：&f" + difficultyName(selectedDifficulty)
+                        : difficultyMessages.tr("difficulty_vote.result", difficultyMessages.tr(
                         "card_difficulty." + selectedDifficulty.name().toLowerCase() + ".name")));
-                if (selectedMode == BingoMode.SPEEDRUN) beginPhase(Phase.LINES);
-                else complete(1);
-            }
-            case LINES -> {
-                int lines = winner(List.of(1, 2, 3, 4, 5), lineVotes);
-                MessageService messages = MessageService.global();
-                broadcast(messages == null ? "&6本局胜利条件：&f" + lines + " 条线"
-                        : messages.tr("lines_vote.result", lines));
+                int lines = selectedMode == BingoMode.SPEEDRUN
+                        ? winner(List.of(1, 2, 3, 4, 5), lineVotes) : 1;
+                MessageService lineMessages = MessageService.global();
+                if (selectedMode == BingoMode.SPEEDRUN)
+                    broadcast(lineMessages == null ? "&6本局胜利条件：&f" + lines + " 条线"
+                            : lineMessages.tr("lines_vote.result", lines));
                 complete(lines);
             }
             case GENESIS -> finishGenesis();
@@ -318,49 +319,51 @@ final class DailyBingoVoteController {
     private void open(Player player) {
         VoteHolder holder = new VoteHolder(player.getUniqueId(), phase);
         MessageService messages = MessageService.global();
-        String title = messages == null ? switch (phase) {
-            case MODE -> "宾果模式投票";
-            case DIFFICULTY -> "宾果难度投票";
-            case LINES -> "宾果胜利线数投票";
-            case GENESIS -> "创世物品选择";
-        } : messages.tr(switch (phase) {
-            case MODE -> "vote.menu_title";
-            case DIFFICULTY -> "difficulty_vote.menu_title";
-            case LINES -> "lines_vote.menu_title";
-            case GENESIS -> "genesis.menu_title";
-        });
-        Inventory inventory = Bukkit.createInventory(holder, 27, LEGACY.deserialize(title));
+        String title = messages == null ? (phase == Phase.GENESIS ? "创世物品选择" : "宾果玩法投票")
+                : messages.tr(phase == Phase.GENESIS ? "genesis.menu_title" : "vote.menu_title");
+        Inventory inventory = Bukkit.createInventory(holder, phase == Phase.GENESIS ? 27 : 54,
+                LEGACY.deserialize(title));
         ItemStack border = item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of(), NamedTextColor.GRAY, false);
         for (int slot = 0; slot < inventory.getSize(); slot++) inventory.setItem(slot, border);
         switch (phase) {
-            case MODE -> renderModes(inventory, player.getUniqueId());
-            case DIFFICULTY -> renderDifficulties(inventory, player.getUniqueId());
-            case LINES -> renderLines(inventory, player.getUniqueId());
+            case ALL -> {
+                renderModesAt(inventory, player.getUniqueId(), 11);
+                renderDifficultiesAt(inventory, player.getUniqueId(), 19);
+                renderLinesAt(inventory, player.getUniqueId(), 28);
+            }
             case GENESIS -> renderGenesis(inventory, player.getUniqueId());
         }
         player.openInventory(inventory);
     }
 
     private void renderModes(Inventory inventory, UUID viewer) {
-        put(inventory, 11, ModeChoice.DOMINATION, Material.GRASS_BLOCK, "mode.domination", viewer, modeVotes,
+        renderModesAt(inventory, viewer, 11);
+    }
+
+    private void renderModesAt(Inventory inventory, UUID viewer, int start) {
+        put(inventory, start, ModeChoice.DOMINATION, Material.GRASS_BLOCK, "mode.domination", viewer, modeVotes,
                 false);
-        put(inventory, 12, ModeChoice.SPEEDRUN, Material.FEATHER, "mode.speedrun", viewer, modeVotes,
+        put(inventory, start + 1, ModeChoice.SPEEDRUN, Material.FEATHER, "mode.speedrun", viewer, modeVotes,
                 false);
-        put(inventory, 13, ModeChoice.QUANTITY, Material.GOLD_INGOT, "mode.quantity", viewer, modeVotes,
+        put(inventory, start + 2, ModeChoice.QUANTITY, Material.GOLD_INGOT, "mode.quantity", viewer, modeVotes,
                 false);
-        put(inventory, 14, ModeChoice.POINTS, Material.SUNFLOWER, "mode.points", viewer, modeVotes,
+        put(inventory, start + 3, ModeChoice.POINTS, Material.SUNFLOWER, "mode.points", viewer, modeVotes,
                 teams.size() < 4);
-        put(inventory, 15, ModeChoice.RANDOM, Material.NETHER_STAR, "mode.random", viewer, modeVotes,
+        put(inventory, start + 4, ModeChoice.RANDOM, Material.NETHER_STAR, "mode.random", viewer, modeVotes,
                 false);
     }
 
     private void renderDifficulties(Inventory inventory, UUID viewer) {
+        renderDifficultiesAt(inventory, viewer, 11);
+    }
+
+    private void renderDifficultiesAt(Inventory inventory, UUID viewer, int start) {
         boolean lockExtreme = teams.stream().anyMatch(team -> team.getMembers().size() <= 1);
         Material[] icons = {Material.GRASS_BLOCK, Material.OAK_LOG, Material.IRON_INGOT,
                 Material.DIAMOND, Material.NETHERITE_INGOT};
         int index = 0;
         for (BingoDifficulty difficulty : BingoDifficulty.values()) {
-            put(inventory, 11 + index, difficulty, icons[index], "card_difficulty." + difficulty.name().toLowerCase(), viewer,
+            put(inventory, start + index, difficulty, icons[index], "card_difficulty." + difficulty.name().toLowerCase(), viewer,
                     difficultyVotes,
                     difficulty == BingoDifficulty.EXTREME && lockExtreme);
             index++;
@@ -368,6 +371,10 @@ final class DailyBingoVoteController {
     }
 
     private void renderLines(Inventory inventory, UUID viewer) {
+        renderLinesAt(inventory, viewer, 10);
+    }
+
+    private void renderLinesAt(Inventory inventory, UUID viewer, int start) {
         MessageService messages = MessageService.global();
         for (int lines = 1; lines <= 5; lines++) {
             int line = lines;
@@ -393,7 +400,7 @@ final class DailyBingoVoteController {
                 stack.setItemMeta(meta);
             }
             stack.setAmount(Math.max(1, count));
-            inventory.setItem(10 + line, stack);
+            inventory.setItem(start + line - 1, stack);
         }
     }
 
@@ -490,6 +497,33 @@ final class DailyBingoVoteController {
         selectedDifficulty = null;
         selectedWinLines = 1;
         result = null;
+        if (bossBar != null) {
+            bossBar.removeAll();
+            bossBar = null;
+        }
+    }
+
+    synchronized boolean reopen(Player player) {
+        if (result == null || result.isDone() || phase == null || !voters.contains(player.getUniqueId())) return false;
+        open(player);
+        return true;
+    }
+
+    private void updateBossBar() {
+        if (result == null || result.isDone() || phase == null) return;
+        MessageService messages = MessageService.global();
+        String title = messages == null
+                ? "宾果投票 · 剩余 " + secondsLeft + " 秒"
+                : messages.tr("vote.bossbar", secondsLeft);
+        String legacyTitle = LEGACY.serialize(LEGACY.deserialize(title));
+        if (bossBar == null) bossBar = Bukkit.createBossBar(legacyTitle, BarColor.PURPLE, BarStyle.SOLID);
+        else bossBar.setTitle(legacyTitle);
+        bossBar.setProgress(Math.max(0.0, Math.min(1.0,
+                secondsLeft / (double) Math.max(1, plugin.getGameManager().getBingoManager().dailyVoteSeconds()))));
+        for (UUID voter : voters) {
+            Player player = Bukkit.getPlayer(voter);
+            if (player != null && !bossBar.getPlayers().contains(player)) bossBar.addPlayer(player);
+        }
     }
 
     private static String modeName(BingoMode mode) { return switch (mode) {

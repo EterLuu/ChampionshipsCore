@@ -97,7 +97,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
     private final Map<UUID, SpectatorSession> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, InventorySnapshot> snapshots = new ConcurrentHashMap<>();
     private final Map<UUID, ItemStack> participantControlItems = new ConcurrentHashMap<>();
-    private BukkitTask trackingTask;
+    private BukkitTask presentationTask;
 
     public SpectatorManager(@NotNull ChampionshipsCore plugin, @NotNull GameManager gameManager) {
         super(plugin);
@@ -106,15 +106,15 @@ public final class SpectatorManager extends BaseManager implements Listener {
 
     @Override
     public void load() {
-        if (trackingTask != null) return;
+        if (presentationTask != null) return;
         Bukkit.getPluginManager().registerEvents(this, plugin);
-        trackingTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updateTracking, 10L, 10L);
+        presentationTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updatePresentation, 10L, 10L);
     }
 
     @Override
     public void unload() {
-        if (trackingTask != null) trackingTask.cancel();
-        trackingTask = null;
+        if (presentationTask != null) presentationTask.cancel();
+        presentationTask = null;
         for (Player player : Bukkit.getOnlinePlayers()) {
             SpectatorSession session = sessions.get(player.getUniqueId());
             if (session != null) clearPresentation(player, session.external());
@@ -276,14 +276,17 @@ public final class SpectatorManager extends BaseManager implements Listener {
         int slot = player.getInventory().getHeldItemSlot();
         boolean rightClick = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
         if (!session.external()) {
-            if (slot == hotbarSlot("participant-controls", 8))
-                Bukkit.getScheduler().runTask(plugin, () -> openControls(player));
+            if (slot == hotbarSlot("participant-controls", 8)) {
+                Bukkit.getScheduler().runTask(plugin, () -> openControlScreen(player,
+                        rightClick ? ControlScreen.PLAYER_TELEPORT : ControlScreen.VISIBILITY));
+            }
             return;
         }
         if (slot == hotbarSlot("night-vision", 0)) toggleNightVision(player, session);
-        else if (slot == hotbarSlot("tracking", 1)) changeTrackingTarget(player, session, rightClick);
-        else if (slot == hotbarSlot("player-teleport", 2)) teleportToTrackingTarget(player, session);
-        else if (slot == hotbarSlot("team-position", 3)) openTeamControls(player);
+        else if (slot == hotbarSlot("player-teleport", 1)) {
+            if (rightClick) Bukkit.getScheduler().runTask(plugin,
+                    () -> openControlScreen(player, ControlScreen.PLAYER_TELEPORT));
+        }
         else if (slot == hotbarSlot("player-visibility", 4)) {
             Bukkit.getScheduler().runTask(plugin, () -> openControlScreen(player, ControlScreen.VISIBILITY));
         } else if (slot == hotbarSlot("leave", 5)) {
@@ -521,15 +524,11 @@ public final class SpectatorManager extends BaseManager implements Listener {
         player.setFireTicks(0);
     }
 
-    private void updateTracking() {
+    private void updatePresentation() {
         for (SpectatorSession session : sessions.values()) {
             Player viewer = Bukkit.getPlayer(session.uuid());
-            if (viewer == null) continue;
+            if (viewer == null || !viewer.isOnline()) continue;
             enforcePassiveState(viewer, session);
-            if (!session.following() || session.target() == null) continue;
-            Player target = Bukkit.getPlayer(session.target());
-            if (target != null && viewer.getWorld().equals(target.getWorld()))
-                viewer.setCompassTarget(target.getLocation());
         }
     }
 
@@ -551,9 +550,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
     private void applyExternalControlItems(@NotNull Player player, @NotNull SpectatorSession session) {
         setHotbarItem(player.getInventory(), "night-vision", Map.of(),
                 session.nightVision() ? "enabled" : "disabled");
-        setHotbarItem(player.getInventory(), "tracking", Map.of(), null);
         setHotbarItem(player.getInventory(), "player-teleport", Map.of(), null);
-        setHotbarItem(player.getInventory(), "team-position", Map.of(), null);
         setHotbarItem(player.getInventory(), "player-visibility", Map.of(), null);
         setHotbarItem(player.getInventory(), "leave", Map.of(), null);
         setHotbarItem(player.getInventory(), "flight-speed", Map.of("speed", speedText(player)), null);
@@ -572,57 +569,12 @@ public final class SpectatorManager extends BaseManager implements Listener {
                 enabled ? NamedTextColor.GREEN : NamedTextColor.RED, enabled ? 1.2F : 0.8F);
     }
 
-    private void changeTrackingTarget(@NotNull Player player, @NotNull SpectatorSession session,
-                                      boolean stop) {
-        if (stop) {
-            SpectatorSession updated = session.withTarget(null, false);
-            sessions.put(player.getUniqueId(), updated);
-            applyExternalControlItems(player, updated);
-            feedback(player, GuiConfig.text("spectator.copy.tracking-stopped"), NamedTextColor.RED, 0.8F);
-            return;
-        }
-        List<Player> targets = playersInArea(session.area(), player.getUniqueId());
-        if (targets.isEmpty()) {
-            feedback(player, GuiConfig.text("spectator.copy.no-trackable-players"), NamedTextColor.RED, 0.8F);
-            return;
-        }
-        int current = -1;
-        for (int index = 0; index < targets.size(); index++) {
-            if (targets.get(index).getUniqueId().equals(session.target())) {
-                current = index;
-                break;
-            }
-        }
-        Player target = targets.get((current + 1) % targets.size());
-        SpectatorSession updated = session.withTarget(target.getUniqueId(), true);
-        sessions.put(player.getUniqueId(), updated);
-        player.setCompassTarget(target.getLocation());
-        applyExternalControlItems(player, updated);
-        feedback(player, GuiConfig.text("spectator.copy.tracking-player", Map.of("player", target.getName())),
-                NamedTextColor.GREEN, 1.2F);
-    }
-
-    private void teleportToTrackingTarget(@NotNull Player player, @NotNull SpectatorSession session) {
-        Player target = session.target() == null ? null : Bukkit.getPlayer(session.target());
-        if (target == null || session.area() == null || !playersInArea(session.area(), player.getUniqueId()).contains(target)) {
-            feedback(player, GuiConfig.text("spectator.copy.select-player-first"), NamedTextColor.RED, 0.8F);
-            return;
-        }
-        player.teleportAsync(target.getLocation());
-        feedback(player, GuiConfig.text("spectator.copy.teleported-to-player", Map.of("player", target.getName())),
-                NamedTextColor.LIGHT_PURPLE, 1.2F);
-    }
-
-    private void openTeamControls(@NotNull Player player) {
-        openControlScreen(player, ControlScreen.TEAM_POSITION);
-    }
-
     private void openControlScreen(@NotNull Player player, @NotNull ControlScreen screen) {
         String menuName = switch (screen) {
             case VISIBILITY -> "visibility";
+            case PLAYER_TELEPORT -> "player-teleport-selector";
             case PLAYER_VISIBILITY -> "player-visibility-selector";
             case TEAM_VISIBILITY -> "team-visibility-selector";
-            case TEAM_POSITION -> "team-position-selector";
         };
         ControlHolder holder = new ControlHolder(player.getUniqueId(), screen);
         GuiConfig.MenuSpec menu = controlMenu(menuName);
@@ -666,24 +618,36 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (player == null) return;
         SpectatorSession session = sessions.get(holder.viewer);
         if (session == null) return;
-        if (holder.screen == ControlScreen.PLAYER_VISIBILITY) {
+        if (holder.screen == ControlScreen.PLAYER_TELEPORT || holder.screen == ControlScreen.PLAYER_VISIBILITY) {
             holder.targets.clear();
-            GuiConfig.MenuSpec menu = controlMenu("player-visibility-selector");
+            String screen = holder.screen == ControlScreen.PLAYER_TELEPORT
+                    ? "player-teleport-selector" : "player-visibility-selector";
+            GuiConfig.MenuSpec menu = controlMenu(screen);
             List<Player> targets = playersInArea(session.area(), holder.viewer);
-            for (int i = 0; i < Math.min(menu.contentSlots().size(), targets.size()); i++) {
+            int pageSize = menu.contentSlots().size();
+            int pageCount = Math.max(1, (targets.size() + pageSize - 1) / pageSize);
+            holder.page = Math.min(holder.page, pageCount - 1);
+            int from = holder.page * pageSize;
+            int to = Math.min(from + pageSize, targets.size());
+            for (int i = from; i < to; i++) {
                 Player target = targets.get(i);
-                int slot = menu.contentSlots().get(i);
-                holder.inventory.setItem(slot, configuredMenuItem("player-visibility-selector", "player",
+                int slot = menu.contentSlots().get(i - from);
+                holder.inventory.setItem(slot, configuredMenuItem(screen, "player",
                         Map.of("player", target.getName()), null, null));
                 holder.targets.put(slot, target.getUniqueId());
             }
-            setMenuItem(holder.inventory, "player-visibility-selector", "close", Map.of(), null);
+            setMenuItem(holder.inventory, screen, "close", Map.of(), null);
+            if (holder.screen == ControlScreen.PLAYER_TELEPORT) {
+                if (holder.page > 0) setMenuItem(holder.inventory, screen, "previous", Map.of(), null);
+                setMenuItem(holder.inventory, screen, "page",
+                        Map.of("page", holder.page + 1, "pages", pageCount), null);
+                if (holder.page + 1 < pageCount) setMenuItem(holder.inventory, screen, "next", Map.of(), null);
+            }
             return;
         }
-        if (holder.screen == ControlScreen.TEAM_VISIBILITY || holder.screen == ControlScreen.TEAM_POSITION) {
+        if (holder.screen == ControlScreen.TEAM_VISIBILITY) {
             holder.teams.clear();
-            String screen = holder.screen == ControlScreen.TEAM_VISIBILITY
-                    ? "team-visibility-selector" : "team-position-selector";
+            String screen = "team-visibility-selector";
             GuiConfig.MenuSpec menu = controlMenu(screen);
             if (session.area() instanceof BaseMultiTeamGameInstance multi) {
                 List<ChampionshipTeam> teams = multi.getGameTeams();
@@ -708,37 +672,49 @@ public final class SpectatorManager extends BaseManager implements Listener {
     private void clickControl(@NotNull Player player, @NotNull ControlHolder holder, int slot) {
         SpectatorSession session = sessions.get(player.getUniqueId());
         if (session == null) return;
-        if (holder.screen == ControlScreen.PLAYER_VISIBILITY) {
-            if (slot == menuItemSlot("player-visibility-selector", "close", 8)) {
+        if (holder.screen == ControlScreen.PLAYER_TELEPORT || holder.screen == ControlScreen.PLAYER_VISIBILITY) {
+            String screen = holder.screen == ControlScreen.PLAYER_TELEPORT
+                    ? "player-teleport-selector" : "player-visibility-selector";
+            if (slot == menuItemSlot(screen, "close", 8)) {
                 player.closeInventory(); return;
+            }
+            if (holder.screen == ControlScreen.PLAYER_TELEPORT) {
+                if (slot == menuItemSlot(screen, "previous", 45) && holder.page > 0) {
+                    holder.page--;
+                    refresh(holder);
+                    return;
+                }
+                if (slot == menuItemSlot(screen, "next", 53)) {
+                    holder.page++;
+                    refresh(holder);
+                    return;
+                }
             }
             UUID targetId = holder.targets.get(slot);
             Player target = targetId == null ? null : Bukkit.getPlayer(targetId);
-            if (target != null) {
-                sessions.put(player.getUniqueId(), session.withTarget(targetId, true));
+            if (target != null && playersInArea(session.area(), player.getUniqueId()).stream()
+                    .anyMatch(candidate -> candidate.getUniqueId().equals(targetId))) {
+                if (holder.screen == ControlScreen.PLAYER_TELEPORT) {
+                    player.teleportAsync(target.getLocation());
+                    feedback(player, GuiConfig.text("spectator.copy.teleported-to-player",
+                            Map.of("player", target.getName())), NamedTextColor.LIGHT_PURPLE, 1.2F);
+                } else {
                 plugin.getVisibilityManager().showOnlyPlayers(player.getUniqueId(), Set.of(targetId));
                 feedback(player, GuiConfig.text("spectator.copy.visibility-player",
                         Map.of("player", target.getName())), NamedTextColor.LIGHT_PURPLE, 1.2F);
+                }
                 player.closeInventory();
             }
             return;
         }
-        if (holder.screen == ControlScreen.TEAM_VISIBILITY || holder.screen == ControlScreen.TEAM_POSITION) {
-            String screen = holder.screen == ControlScreen.TEAM_VISIBILITY
-                    ? "team-visibility-selector" : "team-position-selector";
+        if (holder.screen == ControlScreen.TEAM_VISIBILITY) {
+            String screen = "team-visibility-selector";
             if (slot == menuItemSlot(screen, "close", 8)) { player.closeInventory(); return; }
             ChampionshipTeam team = holder.teams.get(slot);
             if (team != null && session.area() instanceof BaseMultiTeamGameInstance) {
-                sessions.put(player.getUniqueId(), session.withTeam(team.getId()));
-                if (holder.screen == ControlScreen.TEAM_VISIBILITY) {
-                    plugin.getVisibilityManager().showOnlyTeams(player.getUniqueId(), Set.of(team.getId()));
-                    feedback(player, GuiConfig.text("spectator.copy.visibility-team",
-                            Map.of("team", team.getName())), NamedTextColor.GOLD, 1.2F);
-                } else {
-                    Player target = team.getOnlinePlayers().stream().findFirst().orElse(null);
-                    if (target != null) player.teleportAsync(target.getLocation());
-                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, .8F, 1.2F);
-                }
+                plugin.getVisibilityManager().showOnlyTeams(player.getUniqueId(), Set.of(team.getId()));
+                feedback(player, GuiConfig.text("spectator.copy.visibility-team",
+                        Map.of("team", team.getName())), NamedTextColor.GOLD, 1.2F);
                 player.closeInventory();
             }
             return;
@@ -758,12 +734,11 @@ public final class SpectatorManager extends BaseManager implements Listener {
 
     private List<Player> playersInArea(BaseGameInstance area, UUID viewerId) {
         if (area == null) return List.of();
-        List<Player> players = new ArrayList<>();
-        players.addAll(area.getOnlineSpectators());
-        if (area instanceof BaseMultiTeamGameInstance multi) {
-            for (ChampionshipTeam team : multi.getGameTeams()) players.addAll(team.getOnlinePlayers());
-        }
-        return players.stream().filter(player -> !player.getUniqueId().equals(viewerId)).distinct()
+        return Bukkit.getOnlinePlayers().stream()
+                .filter(player -> !player.getUniqueId().equals(viewerId))
+                .filter(player -> gameManager.getBasePlayerArea(player.getUniqueId()) == area)
+                .filter(player -> !isSpectatorLike(player.getUniqueId()))
+                .<Player>map(player -> player)
                 .sorted(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER)).toList();
     }
 
@@ -815,11 +790,12 @@ public final class SpectatorManager extends BaseManager implements Listener {
         return ink.ziip.championshipscore.api.gui.GuiMenu.item(material, name, lore, glint);
     }
 
-    private enum ControlScreen { VISIBILITY, PLAYER_VISIBILITY, TEAM_VISIBILITY, TEAM_POSITION }
+    private enum ControlScreen { VISIBILITY, PLAYER_TELEPORT, PLAYER_VISIBILITY, TEAM_VISIBILITY }
 
     private static final class ControlHolder implements InventoryHolder {
         private final UUID viewer;
         private ControlScreen screen;
+        private int page;
         private final Map<Integer, UUID> targets = new HashMap<>();
         private final Map<Integer, ChampionshipTeam> teams = new HashMap<>();
         private Inventory inventory;
@@ -828,17 +804,13 @@ public final class SpectatorManager extends BaseManager implements Listener {
         @Override public @NotNull Inventory getInventory() { return inventory; }
     }
 
-    private record SpectatorSession(UUID uuid, BaseGameInstance area, boolean external, boolean nightVision,
-                                    boolean following, UUID target, Integer selectedTeamId) {
+    private record SpectatorSession(UUID uuid, BaseGameInstance area, boolean external, boolean nightVision) {
         private SpectatorSession(UUID uuid, BaseGameInstance area, boolean external) {
-            this(uuid, area, external, true, false, null, null);
+            this(uuid, area, external, true);
         }
-        private SpectatorSession withExternal(boolean value) { return new SpectatorSession(uuid, area, value, nightVision, following, target, selectedTeamId); }
-        private SpectatorSession withArea(BaseGameInstance value) { return new SpectatorSession(uuid, value, external, nightVision, following, target, selectedTeamId); }
-        private SpectatorSession withNightVision(boolean value) { return new SpectatorSession(uuid, area, external, value, following, target, selectedTeamId); }
-        private SpectatorSession withFollowing(boolean value) { return new SpectatorSession(uuid, area, external, nightVision, value, target, selectedTeamId); }
-        private SpectatorSession withTarget(UUID value, boolean follow) { return new SpectatorSession(uuid, area, external, nightVision, follow, value, selectedTeamId); }
-        private SpectatorSession withTeam(Integer value) { return new SpectatorSession(uuid, area, external, nightVision, following, target, value); }
+        private SpectatorSession withExternal(boolean value) { return new SpectatorSession(uuid, area, value, nightVision); }
+        private SpectatorSession withArea(BaseGameInstance value) { return new SpectatorSession(uuid, value, external, nightVision); }
+        private SpectatorSession withNightVision(boolean value) { return new SpectatorSession(uuid, area, external, value); }
     }
 
     private record InventorySnapshot(ItemStack[] contents, ItemStack[] armor, ItemStack[] extra,

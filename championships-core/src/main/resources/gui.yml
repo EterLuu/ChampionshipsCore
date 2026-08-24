@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 13
+  version: 15
 common:
   separator: ' • '
   versus: '对阵'
@@ -979,6 +979,37 @@ spectator:
           material: BARRIER
           title: '&#ff5555关闭'
           lore: []
+    player-teleport-selector:
+      title: '&#55ff55&l选择要前往的玩家'
+      size: 54
+      layout:
+        content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+      items:
+        player:
+          material: PLAYER_HEAD
+          title: '&#ededed%player%'
+          lore:
+            - '&#a0a0a0点击前往该玩家的位置'
+        previous:
+          slot: 45
+          material: ARROW
+          title: '&#ededed上一页'
+          lore: []
+        close:
+          slot: 48
+          material: BARRIER
+          title: '&#ff5555关闭'
+          lore: []
+        page:
+          slot: 49
+          material: PAPER
+          title: '&#55ffff第 %page% / %pages% 页'
+          lore: []
+        next:
+          slot: 53
+          material: ARROW
+          title: '&#ededed下一页'
+          lore: []
     team-visibility-selector:
       title: '&#ffaa00&l选择要显示的队伍'
       size: 9
@@ -995,29 +1026,14 @@ spectator:
           material: BARRIER
           title: '&#ff5555关闭'
           lore: []
-    team-position-selector:
-      title: '&#ffaa00&l选择队伍位置'
-      size: 9
-      layout:
-        content: [0, 1, 2, 3, 4, 5, 6, 7]
-      items:
-        team:
-          material: WHITE_WOOL
-          title: '%team_color%%team%'
-          lore:
-            - '&#a0a0a0点击前往队伍位置'
-        close:
-          slot: 8
-          material: BARRIER
-          title: '&#ff5555关闭'
-          lore: []
   hotbar:
     participant-controls:
       slot: 8
-      material: GLASS
-      title: '&#55ffff&l玩家显示设置'
+      material: COMPASS
+      title: '&#55ff55&l选择玩家'
       lore:
-        - '&#a0a0a0点击选择要显示的玩家或队伍'
+        - '&#a0a0a0右键：选择一名玩家并前往'
+        - '&#a0a0a0左键：玩家显示设置'
       glint: true
     night-vision:
       slot: 0
@@ -1028,25 +1044,12 @@ spectator:
       states:
         enabled: {material: SEA_LANTERN, glint: true}
         disabled: {material: COAL, glint: false}
-    tracking:
+    player-teleport:
       slot: 1
       material: COMPASS
-      title: '&#55ff55&l玩家追踪'
+      title: '&#55ff55&l选择玩家'
       lore:
-        - '&#a0a0a0左键：切换下一名玩家'
-        - '&#a0a0a0右键：停止追踪'
-    player-teleport:
-      slot: 2
-      material: ENDER_PEARL
-      title: '&#ff55ff&l前往追踪玩家'
-      lore:
-        - '&#a0a0a0点击传送到当前追踪目标'
-    team-position:
-      slot: 3
-      material: WHITE_WOOL
-      title: '&#ffaa00&l队伍位置'
-      lore:
-        - '&#a0a0a0点击选择队伍位置'
+        - '&#a0a0a0右键选择一名参赛玩家并前往'
     player-visibility:
       slot: 4
       material: GLASS
@@ -1080,13 +1083,8 @@ spectator:
     visibility-team: '现在仅显示队伍%team%。'
     left: '已退出观战。'
     night-vision: '夜视已%state%。'
-    tracking-stopped: '已停止追踪。'
-    no-trackable-players: '这场比赛中暂无可追踪的玩家。'
-    tracking-player: '正在追踪：%player%'
-    select-player-first: '请先用追踪指南针选择玩家。'
     teleported-to-player: '已前往：%player%'
     flight-speed: '飞行速度：%speed%'
-    tracking-state: '玩家追踪已%state%。'
     states:
       enabled: '开启'
       disabled: '关闭'
@@ -1318,10 +1316,17 @@ teams:
         online-members-teleported-to-current-location: '&#ededed名在线成员传送到当前位置。'
         team-name-cannot-be-empty: '队伍名称不能为空。'
         team-names-cannot-exceed-64-characters-and-cannot-contain-control-characters: '队伍名称不能超过64个字符，也不能包含控制字符。'
-        please-enter-a-valid-minecraft-player-name-1-16-letters-numbers-or-underscores: '请输入有效的Minecraft玩家名（1–16位字母、数字或下划线）。'
+        please-enter-a-valid-minecraft-player-name: '请输入有效的Minecraft玩家名（3–16位字母、数字或下划线）。'
         player-has-been: '已将玩家&#fff566'
         join: '&#ededed加入'
         add-member-identity-conflict: '添加失败；玩家可能已在队伍中，或存在同名身份冲突。'
+        add-member-invalid-player-name: '玩家名必须为3–16位字母、数字或下划线。'
+        add-member-team-not-found: '添加失败；队伍已不存在。'
+        add-member-team-full: '添加失败；队伍人数已满。'
+        add-member-operation-in-progress: '队伍资料正在更新，请稍后重试。'
+        add-member-player-not-registered: '找不到该玩家；请确认玩家已在网站注册并通过准入。'
+        add-member-profile-service-unavailable: '暂时无法查询玩家身份，请稍后重试。'
+        add-member-database-error: '无法保存队伍资料，请稍后重试。'
         players-have-been-taken-offline: '已将离线玩家&#fff566'
         failed-to-add-player-may-have-just-been-split-or-there-is-an-identity-conflict: '添加失败；玩家可能刚刚被分队，或存在身份冲突。'
         unable-to-read-player-history: '无法读取历史玩家，请稍后重试。'

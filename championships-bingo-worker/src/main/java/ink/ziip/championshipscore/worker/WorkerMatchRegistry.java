@@ -312,6 +312,10 @@ final class WorkerMatchRegistry {
         return active != null && active.canPickupCard(playerId, teamId);
     }
 
+    synchronized boolean canPickupSpectatorCard(UUID playerId) {
+        return active != null && active.canPickupSpectatorCard(playerId);
+    }
+
     synchronized boolean canUseBingoUi(UUID playerId) {
         return active != null && active.canUseBingoUi(playerId);
     }
@@ -354,6 +358,18 @@ final class WorkerMatchRegistry {
             session = active;
         }
         if (session != null) session.openTeammates(player);
+    }
+
+    void openSpectatorTargets(Player player) {
+        WorkerMatchSession session;
+        synchronized (this) { session = active; }
+        if (session != null) session.openSpectatorTargets(player);
+    }
+
+    void teleportToSpectatorTarget(Player player, UUID targetId) {
+        WorkerMatchSession session;
+        synchronized (this) { session = active; }
+        if (session != null) session.teleportToSpectatorTarget(player, targetId);
     }
 
     void teleportToTeammate(Player player, UUID targetId) {

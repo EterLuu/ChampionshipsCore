@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorkerWorldLifecycleContractTest {
@@ -36,6 +37,16 @@ class WorkerWorldLifecycleContractTest {
         assertTrue(controller.contains("GameRules.MOB_DROPS, running"));
         assertTrue(controller.contains("GameRules.ENTITY_DROPS, running"));
         assertTrue(controller.contains("GameRules.BLOCK_DROPS, running"));
+    }
+
+    @Test
+    void spectatorCompassOpensThePlayerMenuWithoutTrackingState() throws IOException {
+        String session = source("WorkerMatchSession.java");
+
+        assertTrue(session.contains("spectatorControl(Material.COMPASS, \"teleport\""));
+        assertTrue(session.contains("if (rightClick) openSpectatorTargets(player);"));
+        assertFalse(session.contains("spectatorTargets"));
+        assertFalse(session.contains("openSpectatorTeams"));
     }
 
     private static String source(String name) throws IOException {

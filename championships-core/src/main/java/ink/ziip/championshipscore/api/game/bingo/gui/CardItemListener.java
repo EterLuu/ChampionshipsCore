@@ -78,11 +78,18 @@ public final class CardItemListener extends BaseListener {
 
         event.setCancelled(true);
 
+        var msg = MessageService.global();
+        if (CardMapItem.SPECTATOR_CARD_ID.equals(teamId)) {
+            if (!bingoArea.isManagedSpectator(player) || round.teams().isEmpty()) return;
+            round.cardFor(round.teams().getFirst()).ifPresent(card ->
+                    CardView.open(player, card, round.displayInfo(),
+                            msg.component("card.spectator_map_name"), null));
+            return;
+        }
         ChampionshipTeam team = round.teams().stream()
                 .filter(candidate -> teamId.equals(BingoTeamAdapter.id(candidate)))
                 .findFirst().orElse(null);
         if (team == null) return;
-        var msg = MessageService.global();
         round.cardForPlayer(player.getUniqueId(), team).ifPresent(card ->
                 CardView.open(player, card, round.displayInfo(),
                         msg.component("card.map_name", team.getName()), BingoTeamAdapter.id(team)));
@@ -115,6 +122,13 @@ public final class CardItemListener extends BaseListener {
         ItemMeta meta = stack.getItemMeta();
         String teamId = meta == null ? null
                 : meta.getPersistentDataContainer().get(CardMapItem.CARD_KEY, PersistentDataType.STRING);
+        if (CardMapItem.SPECTATOR_CARD_ID.equals(teamId)) {
+            BingoArea bingoArea = bingoAreaOf((Player) event.getEntity());
+            if (bingoArea == null || !bingoArea.isManagedSpectator((Player) event.getEntity())) {
+                event.setCancelled(true);
+            }
+            return;
+        }
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (teamId == null || team == null || !teamId.equals(BingoTeamAdapter.id(team))) {
             event.setCancelled(true);

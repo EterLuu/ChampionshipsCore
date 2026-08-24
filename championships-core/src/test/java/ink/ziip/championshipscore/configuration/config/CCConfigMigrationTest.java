@@ -9,6 +9,46 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CCConfigMigrationTest {
     @Test
+    void replacesLegacyUuidModesWithOfflineOrOnlineProfileLookup() throws Exception {
+        YamlConfiguration offline = new YamlConfiguration();
+        offline.loadFromString("""
+                identity:
+                  server-uuid-source: OFFLINE
+                  server-profile-api-base-url: https://api.mojang.com
+                  custom-profile-api-base-url: https://unused.example.test/api/yggdrasil
+                """);
+        CCConfig.migrateIdentityConfiguration(offline);
+        assertEquals("OFFLINE", offline.getString("identity.mode"));
+        assertEquals("https://api.mojang.com", offline.getString("identity.profile-api-base-url"));
+        assertFalse(offline.contains("identity.server-uuid-source"));
+        assertFalse(offline.contains("identity.custom-profile-api-base-url"));
+
+        YamlConfiguration online = new YamlConfiguration();
+        online.loadFromString("""
+                identity:
+                  server-uuid-source: PROFILE_API
+                  server-profile-api-base-url: https://auth.example.test/api/yggdrasil
+                """);
+        CCConfig.migrateIdentityConfiguration(online);
+        assertEquals("ONLINE", online.getString("identity.mode"));
+        assertEquals("https://auth.example.test/api/yggdrasil",
+                online.getString("identity.profile-api-base-url"));
+
+        YamlConfiguration custom = new YamlConfiguration();
+        custom.loadFromString("""
+                identity:
+                  mode: CUSTOM_UUID
+                  server-uuid-source: OFFLINE
+                  server-profile-api-base-url: https://api.mojang.com
+                  custom-profile-api-base-url: https://web.example.test/api/yggdrasil
+                """);
+        CCConfig.migrateIdentityConfiguration(custom);
+        assertEquals("OFFLINE", custom.getString("identity.mode"));
+        assertEquals("https://api.mojang.com",
+                custom.getString("identity.profile-api-base-url"));
+    }
+
+    @Test
     void firstUpgradeMovesRemoteBingoRedisBeforeRuntimeBinding() throws Exception {
         YamlConfiguration old = new YamlConfiguration();
         old.loadFromString("""

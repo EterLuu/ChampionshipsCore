@@ -21,14 +21,31 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 17;
+        return 19;
     }
 
     /** Migrates the Bingo-owned Redis connection into the shared Core infrastructure section. */
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdated) throws IOException {
         migrateLegacyRedisConfiguration(outdated);
+        migrateIdentityConfiguration(outdated);
         super.loadFromOutdatedConfiguration(outdated);
+    }
+
+    static void migrateIdentityConfiguration(@NotNull YamlConfiguration outdated) {
+        String legacyMode = outdated.getString("identity.mode", "");
+        String legacySource = outdated.getString("identity.server-uuid-source", "OFFLINE");
+        if (legacyMode.isBlank() || "SERVER_UUID".equalsIgnoreCase(legacyMode)
+                || "CUSTOM_UUID".equalsIgnoreCase(legacyMode))
+            outdated.set("identity.mode", "PROFILE_API".equalsIgnoreCase(legacySource) ? "ONLINE" : "OFFLINE");
+        if (!outdated.contains("identity.profile-api-base-url")) {
+            String legacyBaseUrl = outdated.getString(
+                    "identity.server-profile-api-base-url", "https://api.mojang.com");
+            outdated.set("identity.profile-api-base-url", legacyBaseUrl);
+        }
+        outdated.set("identity.server-uuid-source", null);
+        outdated.set("identity.server-profile-api-base-url", null);
+        outdated.set("identity.custom-profile-api-base-url", null);
     }
 
     static void migrateLegacyRedisConfiguration(@NotNull YamlConfiguration outdated) {
@@ -132,6 +149,20 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "whitelist")
     public static List<String> WHITELIST;
+
+    // Offline servers derive OfflinePlayer UUIDs; online/authlib deployments query their
+    // authoritative Mojang-compatible name-profile API.
+    @ConfigOption(path = "identity.mode")
+    public static String IDENTITY_MODE;
+
+    @ConfigOption(path = "identity.profile-api-base-url")
+    public static String IDENTITY_PROFILE_API_BASE_URL;
+
+    @ConfigOption(path = "identity.connect-timeout-seconds")
+    public static long IDENTITY_CONNECT_TIMEOUT_SECONDS;
+
+    @ConfigOption(path = "identity.request-timeout-seconds")
+    public static long IDENTITY_REQUEST_TIMEOUT_SECONDS;
 
     // Score
     @ConfigOption(path = "weighted-score")

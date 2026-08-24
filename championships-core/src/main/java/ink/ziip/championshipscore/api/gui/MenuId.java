@@ -15,9 +15,9 @@ public enum MenuId {
     SPECTATOR_SUB_ARENA_SELECTOR("spectator.menus.sub-arena-selector"),
     SPECTATOR_BUILD_MART_SELECTOR("spectator.menus.build-mart-selector"),
     SPECTATOR_VISIBILITY("spectator.menus.visibility"),
+    SPECTATOR_PLAYER_TELEPORT("spectator.menus.player-teleport-selector"),
     SPECTATOR_PLAYER_VISIBILITY("spectator.menus.player-visibility-selector"),
     SPECTATOR_TEAM_VISIBILITY("spectator.menus.team-visibility-selector"),
-    SPECTATOR_TEAM_POSITION("spectator.menus.team-position-selector"),
 
     // Team management
     TEAMS_OVERVIEW("teams.menus.overview"),
