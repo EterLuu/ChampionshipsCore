@@ -61,7 +61,7 @@ import java.util.UUID;
 
 /** A lap race with ordered progress gates and course-bound proximity respawn points. */
 public class AceRaceArea extends BaseMultiTeamGameInstance {
-    private static final long LAUNCH_PAD_DELAY_TICKS = 0L;
+    private static final long LAUNCH_PAD_DELAY_TICKS = 1L;
     /**
      * Vanilla multiplies a player's horizontal motion by {@code slipperiness * 0.91} at the end of a tick
      * spent on the ground and by {@code 0.91} while airborne, and it picks the branch from the ground state
@@ -72,6 +72,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final double LAUNCH_PAD_SLIPPERINESS = 0.6D;
     private static final double AIR_DRAG = 0.91D;
     private static final double LAUNCH_GROUND_DRAG = LAUNCH_PAD_SLIPPERINESS * AIR_DRAG;
+    /** A standing player has no upward motion; reject a jump that is already being processed at fire time. */
+    private static final double LAUNCH_READY_MAX_VERTICAL_VELOCITY = 0.05D;
     /** Highest per-tick airborne gain a sprinting racer can legitimately add while holding forward. */
     private static final double SPRINT_AIR_ACCELERATION = 0.026D;
     private static final int LAUNCH_ENFORCEMENT_TICKS = 20;
@@ -93,7 +95,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final int ENVIRONMENTAL_EFFECT_DURATION_TICKS = 40;
     private static final int BASE_SPEED_AMPLIFIER = 0;
     private static final int YELLOW_SPEED_AMPLIFIER = 2;
-    private static final int RED_SPEED_AMPLIFIER = 8;
+    /** Potion amplifier 9 is Speed X (the Bukkit amplifier is one below the displayed level). */
+    private static final int RED_SPEED_AMPLIFIER = 9;
     private static final int DEPTH_STRIDER_LEVEL = 3;
     private static final int DOLPHINS_GRACE_DEPTH_STRIDER_LEVEL = 1;
     private static final double MIN_LAUNCH_VERTICAL_MULTIPLIER = 0.9D;
@@ -715,6 +718,15 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         handleStartAndFinishLines(player, previous, current);
     }
 
+    /** A normal jump during the arm window wins over the delayed pad impulse; it is never cancelled itself. */
+    public void handlePlayerJump(@NotNull Player player) {
+        UUID uuid = player.getUniqueId();
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || finishedPlayers.contains(uuid)
+                || !pendingLaunchPadTasks.containsKey(uuid)) return;
+        cancelPendingLaunchTask(uuid);
+        featureContacts.remove(uuid);
+    }
+
     private void handleProgressPoint(@NotNull Player player, @NotNull Location previous,
                                      @NotNull Location current) {
         int expected = nextProgressPoint.getOrDefault(player.getUniqueId(), 0);
@@ -861,14 +873,17 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     private void handleTrackBlockFeature(@NotNull Player player) {
+        UUID uuid = player.getUniqueId();
         Block block = findTrackFeatureBlock(player.getLocation());
         if (block == null) {
-            featureContacts.remove(player.getUniqueId());
+            featureContacts.remove(uuid);
+            cancelPendingLaunchTask(uuid);
             return;
         }
         Material material = block.getType();
         TrackFeatureContact featureContact = TrackFeatureContact.from(block);
         if (featureContact.equals(featureContacts.put(player.getUniqueId(), featureContact))) return;
+        if (!isLaunchPad(material)) cancelPendingLaunchTask(uuid);
 
         switch (material) {
             case YELLOW_GLAZED_TERRACOTTA -> {
@@ -883,10 +898,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 player.playSound(player.getLocation(), Sound.BLOCK_SLIME_BLOCK_FALL, 0.8F, 1.2F);
                 Utils.sendActionBar(player, MessageConfig.ACE_RACE_JUMP_PAD);
             }
-            case RED_WOOL -> scheduleLaunchPlayer(player, launchHorizontalVelocity(material),
+            case RED_WOOL -> scheduleLaunchPlayer(player, material, launchHorizontalVelocity(material),
                     launchBaseVerticalVelocity(material), 1.1F,
                     LAUNCH_PAD_DELAY_TICKS);
-            case ORANGE_WOOL -> scheduleLaunchPlayer(player, launchHorizontalVelocity(material),
+            case ORANGE_WOOL -> scheduleLaunchPlayer(player, material, launchHorizontalVelocity(material),
                     launchBaseVerticalVelocity(material), 1.35F,
                     LAUNCH_PAD_DELAY_TICKS);
             default -> {
@@ -930,6 +945,19 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         return null;
     }
 
+    /** A delayed pad impulse is only safe while the player is still grounded on a solid block. */
+    private static boolean isSupported(@NotNull Player player) {
+        if (!player.isOnGround()) return false;
+        Block feet = player.getLocation().getBlock();
+        return feet.getType().isSolid() || feet.getRelative(0, -1, 0).getType().isSolid();
+    }
+
+    static boolean delayedLaunchCanFire(boolean progress, boolean finished, boolean online,
+                                        boolean supported, boolean onPad, double verticalVelocity) {
+        return progress && !finished && online && supported && onPad
+                && verticalVelocity <= LAUNCH_READY_MAX_VERTICAL_VELOCITY;
+    }
+
     private void refreshEnvironmentalEffects() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
@@ -957,8 +985,12 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private void handleRedSpeedStation(@NotNull Player player, @NotNull Location previous,
                                        @NotNull Location current) {
-        int radius = player.isInWater() ? WATER_SPEED_STATION_RADIUS : SPEED_STATION_RADIUS;
-        double radiusSquared = player.isInWater()
+        // The first movement packet after a pad launch can arrive while the client is still transitioning
+        // into the pool, before Player#isInWater() reflects the new feet block. Include both endpoints so
+        // the wider water-ring radius is used on that transition tick as well.
+        boolean inWater = player.isInWater() || isWaterAt(previous) || isWaterAt(current);
+        int radius = inWater ? WATER_SPEED_STATION_RADIUS : SPEED_STATION_RADIUS;
+        double radiusSquared = inWater
                 ? WATER_SPEED_STATION_RADIUS_SQUARED : SPEED_STATION_RADIUS_SQUARED;
         boolean currentlyNear = isNearStation(current, Material.RED_GLAZED_TERRACOTTA,
                 radius, radiusSquared);
@@ -971,7 +1003,18 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                     RED_SPEED_DURATION_TICKS, RED_SPEED_AMPLIFIER, true, false, false));
             player.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE,
                     RED_SPEED_DURATION_TICKS, 0, true, false, false));
+            // Red terracotta is an intentional speed source. Do not let the launch-flight budget
+            // immediately rescale away the first accelerated movement after a pad sends the racer here.
+            enforcedLaunches.remove(player.getUniqueId());
         }
+    }
+
+    private static boolean isWaterAt(@NotNull Location location) {
+        World world = location.getWorld();
+        if (world == null) return false;
+        Block block = location.getBlock();
+        return block.getType() == Material.WATER
+                || block.getRelative(0, -1, 0).getType() == Material.WATER;
     }
 
     private void applyBaseSpeed(@NotNull Player player, boolean replaceCurrent) {
@@ -1339,6 +1382,13 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 return 0;
             }
 
+            // This budget describes a flight and stops the moment one ends. On the ground a racer may
+            // legitimately hold jump and bunny hop, and each hop adds the vanilla 0.2 sprint impulse, far
+            // more than the air control the flight curve allows. Policing that would cancel the landing
+            // jump instead of the exploit. Arming already proved the racer is in flight, since it takes a
+            // single tick of travel worth half the impulse, so the first footing found ends the budget.
+            if (AceRaceArea.isSupported(player)) return LAUNCH_ENFORCEMENT_EXPIRED;
+
             travelled += step;
             ticksSinceLaunch++;
             double debt = travelled - launchEnvelopeDistance(horizontalVelocity, ticksSinceLaunch)
@@ -1353,40 +1403,64 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
         /**
          * Rescales horizontal motion to {@code target}, keeping the racer's own heading and vertical
-         * motion. Both are taken from the measured step because a player entity's server-side delta
-         * movement is not a faithful record of client-driven motion.
+         * motion. The horizontal direction comes from the measured step because a player entity's
+         * server-side delta movement is not a faithful record of client-driven motion. The vertical
+         * component must remain the server's velocity: a position delta is a displacement, not a velocity,
+         * and feeding it back here lets an airborne jump input re-inject upward motion every correction tick.
          */
         private void applyHorizontalSpeed(@NotNull Player player, double stepX, double stepZ,
                                           double step, double target) {
             if (step <= target || step < 0.0001D) return;
-            double scale = target / step;
-            player.setVelocity(new Vector(stepX * scale, player.getVelocity().getY(), stepZ * scale));
+            player.setVelocity(rescaleHorizontalVelocity(player.getVelocity(), stepX, stepZ, step, target));
         }
     }
 
-    private void scheduleLaunchPlayer(@NotNull Player player, double horizontalVelocity,
+    static @NotNull Vector rescaleHorizontalVelocity(@NotNull Vector currentVelocity, double stepX,
+                                                     double stepZ, double step, double target) {
+        if (step <= target || step < 0.0001D) return currentVelocity;
+        double scale = target / step;
+        return new Vector(stepX * scale, currentVelocity.getY(), stepZ * scale);
+    }
+
+    private void scheduleLaunchPlayer(@NotNull Player player, @NotNull Material padMaterial,
+                                      double horizontalVelocity,
                                       double verticalVelocity, float pitch,
                                       long delayTicks) {
         UUID uuid = player.getUniqueId();
-        cancelPendingLaunchPad(uuid);
-        // Any wait before the impulse is a predictable window in which a racer can leave the wool and have
-        // the packet land on the airborne drag branch, so fire within the contact tick when possible.
+        // A new pad contact may occur while the previous launch is still airborne. Cancel only the
+        // un-fired arm; the old trajectory budget must survive until this launch actually replaces it.
+        cancelPendingLaunchTask(uuid);
+        // The delay preserves the pad's original feel. The callback below is deliberately gated by the
+        // same-pad + grounded check so leaving the wool can only cancel the launch, never arm it in mid-air.
         if (delayTicks <= 0L) {
             launchPlayer(player, horizontalVelocity, verticalVelocity, pitch);
             return;
         }
         BukkitTask task = scheduler.runTaskLater(plugin, () -> {
             pendingLaunchPadTasks.remove(uuid);
-            if (getGameStageEnum() != GameStageEnum.PROGRESS || finishedPlayers.contains(uuid)
-                    || !player.isOnline()) return;
+            boolean progress = getGameStageEnum() == GameStageEnum.PROGRESS;
+            boolean finished = finishedPlayers.contains(uuid);
+            boolean online = player.isOnline();
+            Block pad = findTrackFeatureBlock(player.getLocation());
+            boolean onPad = pad != null && pad.getType() == padMaterial;
+            if (!delayedLaunchCanFire(progress, finished, online, isSupported(player), onPad,
+                    player.getVelocity().getY())) {
+                // Do not leave the contact armed: landing back on the same wool must be a fresh contact.
+                featureContacts.remove(uuid);
+                return;
+            }
             launchPlayer(player, horizontalVelocity, verticalVelocity, pitch);
         }, delayTicks);
         pendingLaunchPadTasks.put(uuid, task);
     }
 
-    private void cancelPendingLaunchPad(@NotNull UUID uuid) {
+    private void cancelPendingLaunchTask(@NotNull UUID uuid) {
         BukkitTask task = pendingLaunchPadTasks.remove(uuid);
         if (task != null) task.cancel();
+    }
+
+    private void cancelPendingLaunchPad(@NotNull UUID uuid) {
+        cancelPendingLaunchTask(uuid);
         enforcedLaunches.remove(uuid);
     }
 

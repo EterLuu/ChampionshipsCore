@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.acerace;
 
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Material;
+import org.bukkit.util.Vector;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -190,5 +191,41 @@ class AceRaceRulesTest {
     @Test
     void repaymentNeverDrivesTheRacerBackwards() {
         assertEquals(0D, AceRaceArea.enforcedLaunchSpeed(0.4D, 100D));
+    }
+
+    @Test
+    void bunnyHoppingAfterLandingWouldBreachTheFlightBudget() {
+        double horizontal = AceRaceArea.launchHorizontalVelocity(Material.RED_WOOL);
+        int landing = 10;
+        // Worst case for an honest racer: they land exactly on the budget line and then hold jump. A sprint
+        // jump re-impulses 0.2 forward per hop, enough to hold the landing speed rather than decay with the
+        // flight curve, and the budget is breached well past its jitter tolerance within ten ticks. The
+        // enforcement window therefore has to end when the flight does, or it cancels the landing jump.
+        double held = AceRaceArea.launchEnvelopeSpeed(horizontal, landing);
+        double travelled = AceRaceArea.launchEnvelopeDistance(horizontal, landing);
+        for (int tick = landing + 1; tick <= 20; tick++) travelled += held;
+        assertTrue(travelled - AceRaceArea.launchEnvelopeDistance(horizontal, 20) > 0.5D,
+                "holding jump on landing clears the budget, so the budget must not outlive the flight");
+    }
+
+    @Test
+    void horizontalCorrectionKeepsServerVerticalVelocity() {
+        Vector corrected = AceRaceArea.rescaleHorizontalVelocity(
+                new Vector(1.4D, 0.37D, 0D), 2D, 0D, 2D, 1D);
+
+        assertEquals(1D, corrected.getX(), 1e-9D);
+        assertEquals(0.37D, corrected.getY(), 1e-9D,
+                "a movement displacement must never be reused as the vertical velocity");
+        assertEquals(0D, corrected.getZ(), 1e-9D);
+    }
+
+    @Test
+    void delayedLaunchRequiresAValidGroundedPadContact() {
+        assertTrue(AceRaceArea.delayedLaunchCanFire(true, false, true, true, true, 0D));
+        assertFalse(AceRaceArea.delayedLaunchCanFire(true, false, true, true, true, 0.051D));
+        assertFalse(AceRaceArea.delayedLaunchCanFire(true, false, true, false, true, 0D));
+        assertFalse(AceRaceArea.delayedLaunchCanFire(true, false, true, true, false, 0D));
+        assertFalse(AceRaceArea.delayedLaunchCanFire(false, false, true, true, true, 0D));
+        assertFalse(AceRaceArea.delayedLaunchCanFire(true, true, true, true, true, 0D));
     }
 }

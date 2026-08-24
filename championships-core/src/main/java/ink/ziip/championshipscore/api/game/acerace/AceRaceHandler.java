@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.acerace;
 
+import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import io.papermc.paper.event.entity.EntityAttemptSpinAttackEvent;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
@@ -49,6 +50,11 @@ public class AceRaceHandler extends BaseListener {
         if (aceRaceArea.getGameStageEnum() == GameStageEnum.PREPARATION && aceRaceArea.notInArea(player.getLocation())) {
             player.teleport(aceRaceArea.getPreparationTeleportLocation(aceRaceArea.getGameConfig().getStartSpawnPoint()));
         }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onPlayerJump(PlayerJumpEvent event) {
+        aceRaceArea.handlePlayerJump(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

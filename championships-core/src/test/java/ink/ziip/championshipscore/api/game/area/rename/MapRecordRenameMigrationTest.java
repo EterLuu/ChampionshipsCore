@@ -29,6 +29,8 @@ class MapRecordRenameMigrationTest {
         assertEquals(List.of("clouds", "AceRace", "王牌竞速"), calls.get(0).parameters());
         assertEquals(List.of("clouds", "AceRace", "acerace"), calls.get(1).parameters());
         assertTrue(calls.get(2).sql().contains("ON DUPLICATE KEY UPDATE"));
+        assertTrue(calls.get(2).sql().contains("FROM `daily_player_records` AS source"));
+        assertTrue(calls.get(2).sql().contains("`daily_player_records`.`durationMs`"));
         assertEquals(List.of("clouds", "AceRace", "acerace"), calls.get(2).parameters());
         assertEquals(List.of("AceRace", "acerace"), calls.get(3).parameters());
     }

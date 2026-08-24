@@ -39,15 +39,20 @@ public final class MapRecordRenameMigration {
                 INSERT INTO `daily_player_records`
                 (`uuid`,`username`,`game`,`map`,`mapRevision`,`rulesHash`,`recordType`,`durationMs`,
                  `matchId`,`achievedBy`,`achievedAt`,`recordRank`)
-                SELECT `uuid`,`username`,`game`,?,`mapRevision`,`rulesHash`,`recordType`,`durationMs`,
-                       `matchId`,`achievedBy`,`achievedAt`,`recordRank`
-                FROM `daily_player_records` WHERE `game`=? AND `map`=?
+                SELECT source.`uuid`,source.`username`,source.`game`,?,source.`mapRevision`,source.`rulesHash`,
+                       source.`recordType`,source.`durationMs`,source.`matchId`,source.`achievedBy`,
+                       source.`achievedAt`,source.`recordRank`
+                FROM `daily_player_records` AS source WHERE source.`game`=? AND source.`map`=?
                 ON DUPLICATE KEY UPDATE
-                  `username`=IF(VALUES(`durationMs`)<`durationMs`,VALUES(`username`),`username`),
-                  `matchId`=IF(VALUES(`durationMs`)<`durationMs`,VALUES(`matchId`),`matchId`),
-                  `achievedBy`=IF(VALUES(`durationMs`)<`durationMs`,VALUES(`achievedBy`),`achievedBy`),
-                  `achievedAt`=IF(VALUES(`durationMs`)<`durationMs`,VALUES(`achievedAt`),`achievedAt`),
-                  `durationMs`=LEAST(`durationMs`,VALUES(`durationMs`))
+                  `username`=IF(VALUES(`durationMs`) < `daily_player_records`.`durationMs`,
+                      VALUES(`username`),`daily_player_records`.`username`),
+                  `matchId`=IF(VALUES(`durationMs`) < `daily_player_records`.`durationMs`,
+                      VALUES(`matchId`),`daily_player_records`.`matchId`),
+                  `achievedBy`=IF(VALUES(`durationMs`) < `daily_player_records`.`durationMs`,
+                      VALUES(`achievedBy`),`daily_player_records`.`achievedBy`),
+                  `achievedAt`=IF(VALUES(`durationMs`) < `daily_player_records`.`durationMs`,
+                      VALUES(`achievedAt`),`daily_player_records`.`achievedAt`),
+                  `durationMs`=LEAST(`daily_player_records`.`durationMs`,VALUES(`durationMs`))
                 """)) {
             merge.setString(1, newRegistration);
             merge.setString(2, game.name());
@@ -62,24 +67,30 @@ public final class MapRecordRenameMigration {
             try (PreparedStatement mergePkw = connection.prepareStatement("""
                     INSERT INTO `daily_pkw_records`
                     (`uuid`,`username`,`map`,`recordType`,`primaryValue`,`durationMs`,`matchId`,`achievedAt`)
-                    SELECT `uuid`,`username`,?,`recordType`,`primaryValue`,`durationMs`,`matchId`,`achievedAt`
-                    FROM `daily_pkw_records` WHERE `map`=?
+                    SELECT source.`uuid`,source.`username`,?,source.`recordType`,source.`primaryValue`,
+                           source.`durationMs`,source.`matchId`,source.`achievedAt`
+                    FROM `daily_pkw_records` AS source WHERE source.`map`=?
                     ON DUPLICATE KEY UPDATE
-                      `username`=IF(VALUES(`primaryValue`)>`primaryValue`
-                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
-                          VALUES(`username`),`username`),
-                      `matchId`=IF(VALUES(`primaryValue`)>`primaryValue`
-                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
-                          VALUES(`matchId`),`matchId`),
-                      `achievedAt`=IF(VALUES(`primaryValue`)>`primaryValue`
-                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
-                          VALUES(`achievedAt`),`achievedAt`)
-                      ,`durationMs`=IF(VALUES(`primaryValue`)>`primaryValue`
-                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
-                          VALUES(`durationMs`),`durationMs`)
-                      ,`primaryValue`=IF(VALUES(`primaryValue`)>`primaryValue`
-                          OR (VALUES(`primaryValue`)=`primaryValue` AND VALUES(`durationMs`)<`durationMs`),
-                          VALUES(`primaryValue`),`primaryValue`)
+                      `username`=IF(VALUES(`primaryValue`) > `daily_pkw_records`.`primaryValue`
+                          OR (VALUES(`primaryValue`) = `daily_pkw_records`.`primaryValue`
+                              AND VALUES(`durationMs`) < `daily_pkw_records`.`durationMs`),
+                          VALUES(`username`),`daily_pkw_records`.`username`),
+                      `matchId`=IF(VALUES(`primaryValue`) > `daily_pkw_records`.`primaryValue`
+                          OR (VALUES(`primaryValue`) = `daily_pkw_records`.`primaryValue`
+                              AND VALUES(`durationMs`) < `daily_pkw_records`.`durationMs`),
+                          VALUES(`matchId`),`daily_pkw_records`.`matchId`),
+                      `achievedAt`=IF(VALUES(`primaryValue`) > `daily_pkw_records`.`primaryValue`
+                          OR (VALUES(`primaryValue`) = `daily_pkw_records`.`primaryValue`
+                              AND VALUES(`durationMs`) < `daily_pkw_records`.`durationMs`),
+                          VALUES(`achievedAt`),`daily_pkw_records`.`achievedAt`),
+                      `durationMs`=IF(VALUES(`primaryValue`) > `daily_pkw_records`.`primaryValue`
+                          OR (VALUES(`primaryValue`) = `daily_pkw_records`.`primaryValue`
+                              AND VALUES(`durationMs`) < `daily_pkw_records`.`durationMs`),
+                          VALUES(`durationMs`),`daily_pkw_records`.`durationMs`),
+                      `primaryValue`=IF(VALUES(`primaryValue`) > `daily_pkw_records`.`primaryValue`
+                          OR (VALUES(`primaryValue`) = `daily_pkw_records`.`primaryValue`
+                              AND VALUES(`durationMs`) < `daily_pkw_records`.`durationMs`),
+                          VALUES(`primaryValue`),`daily_pkw_records`.`primaryValue`)
                     """)) {
                 mergePkw.setString(1, newRegistration);
                 mergePkw.setString(2, oldRegistration);
