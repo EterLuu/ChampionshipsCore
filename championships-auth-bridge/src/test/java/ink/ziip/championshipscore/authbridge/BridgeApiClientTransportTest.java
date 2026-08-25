@@ -63,6 +63,33 @@ class BridgeApiClientTransportTest {
         }
     }
 
+    @Test
+    void requestsSignedBindingSnapshot() throws Exception {
+        AtomicReference<String> capturedSignature = new AtomicReference<>();
+        AtomicReference<String> capturedTimestamp = new AtomicReference<>();
+        AtomicReference<String> capturedRequestId = new AtomicReference<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/internal/bridge/snapshot", exchange -> {
+            capturedSignature.set(exchange.getRequestHeaders().getFirst("X-CC-Signature"));
+            capturedTimestamp.set(exchange.getRequestHeaders().getFirst("X-CC-Timestamp"));
+            capturedRequestId.set(exchange.getRequestHeaders().getFirst("X-CC-Request-Id"));
+            byte[] body = "{\"identityMode\":\"SERVER_UUID\",\"players\":[]}".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        server.start();
+        try {
+            BridgeApiClient client = client("http://127.0.0.1:" + server.getAddress().getPort(), false);
+
+            assertEquals("SERVER_UUID", client.snapshot().identityMode());
+            assertEquals(signature("GET", "/api/internal/bridge/snapshot", capturedTimestamp.get(),
+                    capturedRequestId.get(), ""), capturedSignature.get());
+        } finally {
+            server.stop(0);
+        }
+    }
+
     private static BridgeApiClient client(String url, boolean allowInsecurePrivateHttp) {
         return new BridgeApiClient(url, "cc-core", SECRET, allowInsecurePrivateHttp, TIMEOUT, TIMEOUT);
     }

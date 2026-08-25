@@ -8,8 +8,9 @@ api:
   request-timeout-seconds: 10
 access:
   fail-closed-before-first-sync: true
-  not-whitelisted-message: "你尚未通过服务器白名单审批。"
-  banned-message: "你已被服务器封禁。"
-  maintenance-message: "服务器正在维护账号资料，请稍后重新连接。"
-  unavailable-message: "账号服务暂时不可用，请稍后重新连接。"
-  uuid-mismatch-message: "当前玩家身份与网站记录不一致，请退出游戏后重新进入；仍有问题请联系管理员。"
+  maintenance-message: "&#ff6b26服务器正在维护账号资料，&#ededed请稍后重新连接。"
+  unavailable-message: "&#ff6b26账号服务暂时不可用，&#ededed请稍后重新连接。"
+  uuid-mismatch-message: "&#ff6b26当前玩家身份与网站记录不一致，&#ededed请退出游戏后重新进入；仍有问题请联系管理员。"
+messages:
+  username-updated: "&#ff6b26你的 Minecraft 玩家名已修改，&#ededed请使用新名称重新登录。"
+  access-revoked: "&#ff6b26你的服务器访问资格已被撤销。"

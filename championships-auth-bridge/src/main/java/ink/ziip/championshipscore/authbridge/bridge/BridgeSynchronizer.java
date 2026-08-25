@@ -4,11 +4,14 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
 import ink.ziip.championshipscore.api.player.event.PlayerIdentityMigrationEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
+import ink.ziip.championshipscore.authbridge.BridgeText;
 import ink.ziip.championshipscore.authbridge.authme.AuthMeHashStore;
 import ink.ziip.championshipscore.authbridge.model.BridgeChange;
 import ink.ziip.championshipscore.authbridge.model.BridgeChangeBatch;
 import ink.ziip.championshipscore.authbridge.model.BridgeControlJob;
 import ink.ziip.championshipscore.authbridge.model.BridgeControlPlayer;
+import ink.ziip.championshipscore.authbridge.model.BridgeSnapshot;
+import ink.ziip.championshipscore.authbridge.model.BridgeSnapshotPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
@@ -33,22 +36,28 @@ public final class BridgeSynchronizer implements Runnable {
     private final BridgeApiClient client;
     private final AuthMeHashStore authMe;
     private final LocalAccessState state;
+    private final String usernameUpdatedMessage;
+    private final String accessRevokedMessage;
     private final AtomicBoolean running = new AtomicBoolean();
     private int consecutiveFailures;
     private long lastUnavailableLogAt;
 
     public BridgeSynchronizer(Plugin plugin, BridgeApiClient client, AuthMeHashStore authMe,
-                              LocalAccessState state) {
+                              LocalAccessState state, String usernameUpdatedMessage,
+                              String accessRevokedMessage) {
         this.plugin = plugin;
         this.client = client;
         this.authMe = authMe;
         this.state = state;
+        this.usernameUpdatedMessage = usernameUpdatedMessage;
+        this.accessRevokedMessage = accessRevokedMessage;
     }
 
     @Override
     public void run() {
         if (!running.compareAndSet(false, true)) return;
         try {
+            applyBindingSnapshotIfNeeded();
             retryPendingAcknowledgement();
             retryPendingControlCompletion();
             if (!processControlJob()) return;
@@ -71,6 +80,30 @@ public final class BridgeSynchronizer implements Runnable {
         } finally {
             running.set(false);
         }
+    }
+
+    /**
+     * Imports accounts that were bound before the bridge began emitting
+     * PROVISION events. This is intentionally one-shot and is persisted only
+     * after every account has been applied successfully.
+     */
+    private void applyBindingSnapshotIfNeeded() throws Exception {
+        if (state.bindingSnapshotApplied()) return;
+        BridgeSnapshot snapshot = client.snapshot();
+        if (snapshot == null || snapshot.players() == null) {
+            throw new IllegalStateException("Bridge snapshot is incomplete");
+        }
+        for (BridgeSnapshotPlayer player : snapshot.players()) {
+            String username = requireUsername(player.username());
+            String accountId = requireAccountId(player.accountId());
+            UUID uuid = parseUuid(player.minecraftUuid(), "minecraftUuid");
+            authMe.provision(username, requirePasswordHash(player.passwordHash()), uuid);
+            state.recordIdentity(username, accountId, uuid.toString());
+            state.setAuthVersion(username, player.version());
+        }
+        state.markBindingSnapshotApplied();
+        plugin.getLogger().info("Imported " + snapshot.players().size()
+                + " bound account(s) into AuthMe from the bridge snapshot.");
     }
 
     private void logFailure(Exception failure) {
@@ -135,7 +168,7 @@ public final class BridgeSynchronizer implements Runnable {
         switch (operation) {
             case "PROVISION" -> {
                 applyPasswordIfCurrent(change, requireUuid(uuid));
-                state.whitelist(username, accountId, uuid.toString());
+                state.recordIdentity(username, accountId, uuid.toString());
             }
             case "PASSWORD_UPDATED" -> applyPasswordIfCurrent(change, requireUuid(uuid));
             case "USERNAME_UPDATED" -> {
@@ -143,19 +176,17 @@ public final class BridgeSynchronizer implements Runnable {
                 authMe.rename(oldUsername, username, requireUuid(uuid));
                 state.rename(oldUsername, username, accountId, uuid.toString());
                 notifyCoreNameChange(oldUsername, username, uuid);
-                kick(oldUsername, "你的 Minecraft 玩家名已修改，请使用新名称重新登录。");
+                kick(oldUsername, usernameUpdatedMessage);
             }
-            case "WHITELISTED" -> state.whitelist(username, accountId, uuid.toString());
+            case "WHITELISTED" -> state.recordIdentity(username, accountId, uuid.toString());
             case "REVOKED" -> {
                 state.revoke(username);
                 authMe.remove(username);
-                kick(username, "你的服务器准入资格已被撤销。");
+                kick(username, accessRevokedMessage);
             }
-            case "BANNED" -> {
-                state.ban(username, change.reason(), change.expiresAt());
-                kick(username, change.reason());
+            // Bungee performs ban admission and disconnects existing sessions.
+            case "BANNED", "UNBANNED" -> {
             }
-            case "UNBANNED" -> state.unban(username);
             default -> throw new IllegalArgumentException("Unknown bridge operation: " + operation);
         }
         return requiresUuid && "SERVER_UUID".equals(change.identityMode())
@@ -258,7 +289,7 @@ public final class BridgeSynchronizer implements Runnable {
         int coreChanged = notifyCoreIdentityMigration(coreMigrations);
         AuthMeHashStore.ReconcileResult authMeResult = authMe.migrateUuids(authMeMigrations);
         try {
-            state.migrateWhitelistUuids(uuidsByAccount);
+            state.migrateIdentityUuids(uuidsByAccount);
         } catch (java.io.IOException failure) {
             throw new IllegalStateException("Unable to save migrated access state", failure);
         }
@@ -304,8 +335,8 @@ public final class BridgeSynchronizer implements Runnable {
         Bukkit.getScheduler().runTask(plugin, () -> {
             var player = Bukkit.getPlayerExact(username);
             if (player != null) {
-                player.kick(net.kyori.adventure.text.Component.text(
-                        reason == null || reason.isBlank() ? "访问已被撤销" : reason));
+                player.kick(BridgeText.component(reason == null || reason.isBlank()
+                        ? accessRevokedMessage : reason));
             }
         });
     }

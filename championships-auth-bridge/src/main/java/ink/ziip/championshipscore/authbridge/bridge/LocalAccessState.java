@@ -4,8 +4,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.format.DateTimeParseException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,11 +14,11 @@ import java.util.LinkedHashMap;
 
 public final class LocalAccessState {
     private final File file;
-    private final Map<String, Identity> whitelist = new ConcurrentHashMap<>();
-    private final Map<String, Ban> bans = new ConcurrentHashMap<>();
+    private final Map<String, Identity> identities = new ConcurrentHashMap<>();
     private final Map<String, Integer> authVersions = new ConcurrentHashMap<>();
     private volatile String cursor = "0";
     private volatile boolean synchronizedOnce;
+    private volatile boolean bindingSnapshotApplied;
     private volatile String maintenanceJobId;
     private volatile String pendingAckCursor;
     private volatile List<ServerUuidReport> pendingAckServerUuids = List.of();
@@ -31,12 +29,8 @@ public final class LocalAccessState {
         load();
     }
 
-    public boolean isWhitelisted(String username) {
-        return whitelist.containsKey(normalize(username));
-    }
-
     public UUID expectedUuid(String username) {
-        Identity identity = whitelist.get(normalize(username));
+        Identity identity = identities.get(normalize(username));
         if (identity == null || identity.minecraftUuid() == null || identity.minecraftUuid().isBlank()) return null;
         try {
             return UUID.fromString(identity.minecraftUuid());
@@ -45,47 +39,28 @@ public final class LocalAccessState {
         }
     }
 
-    public Ban activeBan(String username) {
-        Ban ban = bans.get(normalize(username));
-        if (ban != null && ban.expiresAt() != null && !ban.expiresAt().isAfter(Instant.now())) {
-            bans.remove(normalize(username));
-            return null;
-        }
-        return ban;
+    public void recordIdentity(String username, String accountId, String minecraftUuid) {
+        identities.put(normalize(username), new Identity(accountId, minecraftUuid));
     }
 
-    public void whitelist(String username, String accountId, String minecraftUuid) {
-        whitelist.put(normalize(username), new Identity(accountId, minecraftUuid));
-    }
-
-    /** Legacy/test convenience where the account id is also the effective game UUID. */
-    public void whitelist(String username, String accountId) {
-        whitelist(username, accountId, accountId);
+    /** Test convenience where the account id is also the effective game UUID. */
+    public void recordIdentity(String username, String accountId) {
+        recordIdentity(username, accountId, accountId);
     }
 
     public void revoke(String username) {
-        whitelist.remove(normalize(username));
+        identities.remove(normalize(username));
     }
 
     public void rename(String oldUsername, String newUsername, String accountId, String minecraftUuid) {
         String oldKey = normalize(oldUsername);
         String newKey = normalize(newUsername);
-        Identity existing = whitelist.remove(oldKey);
-        if (existing != null) whitelist.put(newKey, new Identity(
+        Identity existing = identities.remove(oldKey);
+        if (existing != null) identities.put(newKey, new Identity(
                 accountId == null || accountId.isBlank() ? existing.accountId() : accountId,
                 minecraftUuid == null || minecraftUuid.isBlank() ? existing.minecraftUuid() : minecraftUuid));
-        Ban ban = bans.remove(oldKey);
-        if (ban != null) bans.put(newKey, ban);
         Integer version = authVersions.remove(oldKey);
         if (version != null) authVersions.merge(newKey, version, Math::max);
-    }
-
-    public void ban(String username, String reason, String expiresAt) {
-        bans.put(normalize(username), new Ban(reason == null ? "" : reason, parseInstant(expiresAt)));
-    }
-
-    public void unban(String username) {
-        bans.remove(normalize(username));
     }
 
     public int authVersion(String username) {
@@ -102,6 +77,15 @@ public final class LocalAccessState {
 
     public boolean synchronizedOnce() {
         return synchronizedOnce;
+    }
+
+    public boolean bindingSnapshotApplied() {
+        return bindingSnapshotApplied;
+    }
+
+    public synchronized void markBindingSnapshotApplied() throws IOException {
+        bindingSnapshotApplied = true;
+        save();
     }
 
     public boolean maintenanceInProgress() {
@@ -164,8 +148,8 @@ public final class LocalAccessState {
         save();
     }
 
-    public synchronized void migrateWhitelistUuids(Map<String, String> uuidsByAccountId) throws IOException {
-        whitelist.replaceAll((name, identity) -> {
+    public synchronized void migrateIdentityUuids(Map<String, String> uuidsByAccountId) throws IOException {
+        identities.replaceAll((name, identity) -> {
             String uuid = uuidsByAccountId.get(identity.accountId());
             return uuid == null ? identity : new Identity(identity.accountId(), uuid);
         });
@@ -176,17 +160,19 @@ public final class LocalAccessState {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
         cursor = yaml.getString("cursor", "0");
         synchronizedOnce = yaml.getBoolean("synchronized-once", false);
+        bindingSnapshotApplied = yaml.getBoolean("binding-snapshot-applied", false);
         maintenanceJobId = yaml.getString("maintenance-job-id", yaml.getString("migration-job-id"));
         pendingAckCursor = yaml.getString("pending-ack.cursor");
-        var whitelistSection = yaml.getConfigurationSection("whitelist");
-        if (whitelistSection != null) for (String key : whitelistSection.getKeys(false)) {
-            var identitySection = whitelistSection.getConfigurationSection(key);
+        var identitySectionRoot = yaml.getConfigurationSection("identities");
+        if (identitySectionRoot == null) identitySectionRoot = yaml.getConfigurationSection("whitelist");
+        if (identitySectionRoot != null) for (String key : identitySectionRoot.getKeys(false)) {
+            var identitySection = identitySectionRoot.getConfigurationSection(key);
             if (identitySection == null) {
-                String legacy = whitelistSection.getString(key, "");
-                whitelist.put(key, new Identity(legacy, legacy));
+                String legacy = identitySectionRoot.getString(key, "");
+                identities.put(key, new Identity(legacy, legacy));
             } else {
                 String accountId = identitySection.getString("account-id", "");
-                whitelist.put(key, new Identity(accountId,
+                identities.put(key, new Identity(accountId,
                         identitySection.getString("minecraft-uuid", accountId)));
             }
         }
@@ -198,8 +184,6 @@ public final class LocalAccessState {
             if (section != null) for (String key : section.getKeys(false)) result.put(key, section.get(key));
             pendingControlCompletion = new ControlCompletion(pendingControlId, Map.copyOf(result));
         }
-        var banSection = yaml.getConfigurationSection("bans");
-        if (banSection != null) for (String key : banSection.getKeys(false)) bans.put(key, new Ban(banSection.getString(key + ".reason", ""), parseInstant(banSection.getString(key + ".expires-at"))));
         var versionSection = yaml.getConfigurationSection("auth-versions");
         if (versionSection != null) for (String key : versionSection.getKeys(false)) authVersions.put(key, versionSection.getInt(key));
     }
@@ -208,6 +192,7 @@ public final class LocalAccessState {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("cursor", cursor);
         yaml.set("synchronized-once", synchronizedOnce);
+        yaml.set("binding-snapshot-applied", bindingSnapshotApplied);
         yaml.set("maintenance-job-id", maintenanceJobId);
         yaml.set("pending-ack.cursor", pendingAckCursor);
         yaml.set("pending-ack.server-uuids", pendingAckServerUuids.stream()
@@ -217,13 +202,9 @@ public final class LocalAccessState {
                 pendingControlCompletion == null ? null : pendingControlCompletion.jobId());
         yaml.set("pending-control-completion.result",
                 pendingControlCompletion == null ? null : pendingControlCompletion.result());
-        whitelist.forEach((name, identity) -> {
-            yaml.set("whitelist." + name + ".account-id", identity.accountId());
-            yaml.set("whitelist." + name + ".minecraft-uuid", identity.minecraftUuid());
-        });
-        bans.forEach((name, ban) -> {
-            yaml.set("bans." + name + ".reason", ban.reason());
-            yaml.set("bans." + name + ".expires-at", ban.expiresAt() == null ? null : ban.expiresAt().toString());
+        identities.forEach((name, identity) -> {
+            yaml.set("identities." + name + ".account-id", identity.accountId());
+            yaml.set("identities." + name + ".minecraft-uuid", identity.minecraftUuid());
         });
         authVersions.forEach((name, version) -> yaml.set("auth-versions." + name, version));
         yaml.save(file);
@@ -231,15 +212,6 @@ public final class LocalAccessState {
 
     private static String normalize(String username) {
         return username.toLowerCase(Locale.ROOT);
-    }
-
-    private static Instant parseInstant(String value) {
-        if (value == null || value.isBlank()) return null;
-        try {
-            return Instant.parse(value);
-        } catch (DateTimeParseException ignored) {
-            return null;
-        }
     }
 
     private static List<ServerUuidReport> readServerUuidReports(List<Map<?, ?>> raw) {
@@ -252,9 +224,6 @@ public final class LocalAccessState {
             }
         }
         return List.copyOf(reports);
-    }
-
-    public record Ban(String reason, Instant expiresAt) {
     }
 
     public record Identity(String accountId, String minecraftUuid) {

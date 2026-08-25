@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ink.ziip.championshipscore.authbridge.model.BridgeChangeBatch;
 import ink.ziip.championshipscore.authbridge.model.BridgeControlJobEnvelope;
+import ink.ziip.championshipscore.authbridge.model.BridgeSnapshot;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -63,6 +64,27 @@ public final class BridgeApiClient {
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccess(response.statusCode())) throw new IllegalStateException("Bridge API returned HTTP " + response.statusCode());
         return mapper.readValue(response.body(), BridgeChangeBatch.class);
+    }
+
+    public BridgeSnapshot snapshot() throws Exception {
+        String path = "/api/internal/bridge/snapshot";
+        String timestamp = Long.toString(System.currentTimeMillis());
+        String requestId = UUID.randomUUID().toString();
+        HttpRequest request = HttpRequest.newBuilder(baseUri.resolve(path))
+                .timeout(requestTimeout)
+                .header("Accept", "application/json")
+                .header("X-CC-Key-Id", keyId)
+                .header("X-CC-Timestamp", timestamp)
+                .header("X-CC-Request-Id", requestId)
+                .header("X-CC-Signature", sign("GET", path, timestamp, requestId, ""))
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (!isSuccess(response.statusCode())) {
+            throw new IllegalStateException("Bridge snapshot API returned HTTP " + response.statusCode());
+        }
+        return mapper.readValue(response.body(), BridgeSnapshot.class);
     }
 
     public void acknowledge(String cursor) throws Exception {

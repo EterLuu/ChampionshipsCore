@@ -12,8 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AccessListenerTest {
-    private static final String NOT_WHITELISTED = "not whitelisted";
-    private static final String BANNED = "banned";
     private static final String MAINTENANCE = "maintenance";
     private static final String UNAVAILABLE = "unavailable";
     private static final String UUID_MISMATCH = "uuid mismatch";
@@ -23,33 +21,19 @@ class AccessListenerTest {
     Path tempDirectory;
 
     @Test
-    void rejectsNonWhitelistedPlayerDuringPreLoginAfterSynchronization() throws Exception {
+    void allowsBoundStatusIndependentPlayerAfterSynchronization() throws Exception {
         LocalAccessState state = synchronizedState();
         AccessListener listener = listener(state, true);
 
         AccessListener.AccessDecision decision = listener.accessDecision("PendingPlayer");
 
-        assertEquals(AccessListener.AccessResult.NOT_WHITELISTED, decision.result());
-        assertEquals(NOT_WHITELISTED, decision.message());
+        assertEquals(AccessListener.AccessResult.ALLOWED, decision.result());
     }
 
     @Test
-    void rejectsBannedPlayerDuringPreLoginBeforeWhitelistCheck() throws Exception {
+    void allowsKnownIdentityDuringPreLogin() throws Exception {
         LocalAccessState state = synchronizedState();
-        state.whitelist("BannedPlayer", PLAYER_UUID);
-        state.ban("BannedPlayer", "testing reason", null);
-        AccessListener listener = listener(state, true);
-
-        AccessListener.AccessDecision decision = listener.accessDecision("BannedPlayer");
-
-        assertEquals(AccessListener.AccessResult.BANNED, decision.result());
-        assertEquals(BANNED + "\ntesting reason", decision.message());
-    }
-
-    @Test
-    void allowsWhitelistedPlayerDuringPreLogin() throws Exception {
-        LocalAccessState state = synchronizedState();
-        state.whitelist("ApprovedPlayer", PLAYER_UUID);
+        state.recordIdentity("ApprovedPlayer", PLAYER_UUID);
 
         AccessListener.AccessDecision decision = listener(state, true).accessDecision("approvedplayer");
 
@@ -76,32 +60,9 @@ class AccessListenerTest {
     }
 
     @Test
-    void banStillAppliesBeforeFirstSynchronizationInFailOpenMode() {
-        LocalAccessState state = new LocalAccessState(tempDirectory.resolve("banned-open.yml").toFile());
-        state.ban("BlockedPlayer", "bridge reason", null);
-        AccessListener listener = listener(state, false);
-
-        AccessListener.AccessDecision decision = listener.accessDecision("BlockedPlayer");
-
-        assertEquals(AccessListener.AccessResult.BANNED, decision.result());
-        assertEquals(BANNED + "\nbridge reason", decision.message());
-    }
-
-    @Test
-    void expiredBanFallsBackToWhitelistDecision() throws Exception {
-        LocalAccessState state = synchronizedState();
-        state.ban("FormerlyBlocked", "expired", "2000-01-01T00:00:00Z");
-        state.whitelist("FormerlyBlocked", PLAYER_UUID);
-
-        AccessListener.AccessDecision decision = listener(state, true).accessDecision("FormerlyBlocked");
-
-        assertEquals(AccessListener.AccessResult.ALLOWED, decision.result());
-    }
-
-    @Test
     void rejectsEveryoneWhileMaintenanceIsActive() throws Exception {
         LocalAccessState state = synchronizedState();
-        state.whitelist("ApprovedPlayer", PLAYER_UUID);
+        state.recordIdentity("ApprovedPlayer", PLAYER_UUID);
         state.beginMaintenance("13aa576f-fcb9-445c-9886-f830059d810c");
 
         AccessListener.AccessDecision decision = listener(state, true).accessDecision("ApprovedPlayer");
@@ -114,7 +75,7 @@ class AccessListenerTest {
     void persistsExpectedUuidAndMaintenanceAcrossRestart() throws Exception {
         Path statePath = tempDirectory.resolve("identity-state.yml");
         LocalAccessState state = new LocalAccessState(statePath.toFile());
-        state.whitelist("ApprovedPlayer", PLAYER_UUID);
+        state.recordIdentity("ApprovedPlayer", PLAYER_UUID);
         state.beginMaintenance("13aa576f-fcb9-445c-9886-f830059d810c");
 
         LocalAccessState restored = new LocalAccessState(statePath.toFile());
@@ -128,7 +89,7 @@ class AccessListenerTest {
         Path statePath = tempDirectory.resolve("effective-uuid-state.yml");
         LocalAccessState state = new LocalAccessState(statePath.toFile());
         String websiteAccountId = "11111111-1111-4111-8111-111111111111";
-        state.whitelist("ApprovedPlayer", websiteAccountId, PLAYER_UUID);
+        state.recordIdentity("ApprovedPlayer", websiteAccountId, PLAYER_UUID);
         state.advance("1");
 
         LocalAccessState restored = new LocalAccessState(statePath.toFile());
@@ -142,7 +103,7 @@ class AccessListenerTest {
     @Test
     void rejectsUuidThatDoesNotMatchAuthlibIdentity() throws Exception {
         LocalAccessState state = synchronizedState();
-        state.whitelist("ApprovedPlayer", PLAYER_UUID);
+        state.recordIdentity("ApprovedPlayer", PLAYER_UUID);
 
         AccessListener.AccessDecision decision = listener(state, true).accessDecision(
                 "ApprovedPlayer", UUID.fromString("11111111-1111-4111-8111-111111111111"));
@@ -171,6 +132,6 @@ class AccessListenerTest {
     }
 
     private static AccessListener listener(LocalAccessState state, boolean failClosed) {
-        return new AccessListener(state, failClosed, NOT_WHITELISTED, BANNED, MAINTENANCE, UNAVAILABLE, UUID_MISMATCH);
+        return new AccessListener(state, failClosed, MAINTENANCE, UNAVAILABLE, UUID_MISMATCH);
     }
 }

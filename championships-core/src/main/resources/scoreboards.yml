@@ -176,7 +176,7 @@ boards:
       ranking-line: '{rank.team-color}{rank.position}. {rank.team} &f{rank.score}'
       own-ranking-line: '{rank.team-color}&l▶ {rank.position}. {rank.team} &f&l{rank.score}'
       lines:
-        - '#ff0808当前游戏：#ff7373雪球乱斗'
+        - '#ff0808当前游戏：#ff7373雪球大战'
         - '#dfff2b轮次：#f6ffa8%schedule_round_snowball%/3'
         - '#1da4ad场地状态：#f6ffa8{game.status}'
         - '&f个人击杀：#ff6e26%snowball_player_individual_kills_[areaName]%'

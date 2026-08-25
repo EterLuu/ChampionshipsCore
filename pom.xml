@@ -20,6 +20,7 @@
         <module>championships-bingo-loadtest</module>
         <module>championships-core</module>
         <module>championships-auth-bridge</module>
+        <module>championships-auth-proxy</module>
     </modules>
 
     <licenses>
@@ -34,6 +35,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <paper.version>26.2.build.112-stable</paper.version>
         <spigot.version>26.2-R0.1-SNAPSHOT</spigot.version>
+        <bungeecord.version>26.1-R0.1-SNAPSHOT</bungeecord.version>
     </properties>
 
     <build>
@@ -136,6 +138,11 @@
                 <groupId>org.spigotmc</groupId>
                 <artifactId>spigot-api</artifactId>
                 <version>${spigot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.md-5</groupId>
+                <artifactId>bungeecord-api</artifactId>
+                <version>${bungeecord.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.intellectualsites.bom</groupId>

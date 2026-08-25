@@ -32,16 +32,17 @@ public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
             Duration.ofSeconds(getConfig().getLong("api.connect-timeout-seconds", 5)),
             Duration.ofSeconds(getConfig().getLong("api.request-timeout-seconds", 10))
         );
-        var synchronizer = new BridgeSynchronizer(this, client, new AuthMeHashStore(), state);
+        var synchronizer = new BridgeSynchronizer(this, client, new AuthMeHashStore(), state,
+                getConfig().getString("messages.username-updated",
+                        "&#ff6b26你的 Minecraft 玩家名已修改，&#ededed请使用新名称重新登录。"),
+                getConfig().getString("messages.access-revoked", "&#ff6b26你的服务器访问资格已被撤销。"));
         getServer().getPluginManager().registerEvents(new AccessListener(
             state,
             getConfig().getBoolean("access.fail-closed-before-first-sync", true),
-            getConfig().getString("access.not-whitelisted-message", "你尚未通过服务器白名单审批。"),
-            getConfig().getString("access.banned-message", "你已被服务器封禁。"),
             getConfig().getString("access.maintenance-message",
-                    getConfig().getString("access.uuid-maintenance-message", "服务器正在维护账号资料，请稍后重新连接。")),
-            getConfig().getString("access.unavailable-message", "账号服务暂时不可用，请稍后重新连接。"),
-            getConfig().getString("access.uuid-mismatch-message", "玩家身份校验失败，请确认通过指定代理连接。")
+                    getConfig().getString("access.uuid-maintenance-message", "&#ff6b26服务器正在维护账号资料，&#ededed请稍后重新连接。")),
+            getConfig().getString("access.unavailable-message", "&#ff6b26账号服务暂时不可用，&#ededed请稍后重新连接。"),
+            getConfig().getString("access.uuid-mismatch-message", "&#ff6b26玩家身份校验失败，&#ededed请确认通过指定代理连接。")
         ), this);
         long period = Math.max(5L, getConfig().getLong("api.poll-seconds", 10)) * 20L;
         getServer().getScheduler().runTaskTimerAsynchronously(this, synchronizer, 1L, period);
