@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.schedule.bingo;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.BaseSingleGameSchedule;
+import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 
 public class BingoScheduleManager extends BaseSingleGameSchedule {
     public BingoScheduleManager(ChampionshipsCore championshipsCore, BingoScheduleHandler handler) {
@@ -12,12 +13,12 @@ public class BingoScheduleManager extends BaseSingleGameSchedule {
 
     @Override
     public String getArea() {
-        return "bingo";
+        return FormalEventMapResolver.map(plugin, gameTypeEnum, subRound);
     }
 
     @Override
     public int getTotalRounds() {
-        return 1;
+        return FormalEventMapResolver.maps(plugin, gameTypeEnum).size();
     }
 
 }

@@ -2,13 +2,18 @@ package ink.ziip.championshipscore.configuration.config;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.player.identity.PlayerUuidSource;
+import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.List;
 
 @Getter
@@ -22,7 +27,27 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 20;
+        return 21;
+    }
+
+    private static final Map<GameTypeEnum, List<String>> DEFAULT_FORMAL_EVENT_MAPS;
+
+    static {
+        EnumMap<GameTypeEnum, List<String>> defaults = new EnumMap<>(GameTypeEnum.class);
+        defaults.put(GameTypeEnum.Bingo, List.of("bingo"));
+        defaults.put(GameTypeEnum.ParkourTag, List.of("towny"));
+        defaults.put(GameTypeEnum.BattleBox, List.of());
+        defaults.put(GameTypeEnum.TNTRun, List.of("astra"));
+        defaults.put(GameTypeEnum.SnowballShowdown, List.of("area1"));
+        defaults.put(GameTypeEnum.SkyWars, List.of("area2"));
+        defaults.put(GameTypeEnum.TGTTOS, List.of("cod", "industry", "badlands", "tsf1", "cliff", "boat"));
+        defaults.put(GameTypeEnum.DragonEggCarnival, List.of("area1"));
+        defaults.put(GameTypeEnum.ParkourWarrior, List.of("TRI"));
+        defaults.put(GameTypeEnum.HotyCodyDusky, List.of());
+        defaults.put(GameTypeEnum.BuildMart, List.of("area"));
+        defaults.put(GameTypeEnum.Dodgebolt, List.of("dodgebolt"));
+        defaults.put(GameTypeEnum.AceRace, List.of("clouds2"));
+        DEFAULT_FORMAL_EVENT_MAPS = Collections.unmodifiableMap(defaults);
     }
 
     /** Migrates the Bingo-owned Redis connection into the shared Core infrastructure section. */
@@ -31,6 +56,44 @@ public class CCConfig extends BaseConfigurationFile {
         migrateLegacyRedisConfiguration(outdated);
         migrateIdentityConfiguration(outdated);
         super.loadFromOutdatedConfiguration(outdated);
+        copyFormalEventMaps(outdated);
+    }
+
+    private void copyFormalEventMaps(@NotNull YamlConfiguration outdated) throws IOException {
+        if (copyFormalEventMaps(configuration, outdated)) configuration.save(configurationPath.toFile());
+    }
+
+    /** Retains administrator-selected formal-event maps while adding newly bundled defaults. */
+    static boolean copyFormalEventMaps(@NotNull YamlConfiguration target,
+                                       @NotNull YamlConfiguration source) {
+        ConfigurationSection section = source.getConfigurationSection("formal-events");
+        if (section == null) return false;
+
+        boolean changed = false;
+        for (Map.Entry<String, Object> entry : section.getValues(true).entrySet()) {
+            if (entry.getValue() instanceof ConfigurationSection) continue;
+            target.set("formal-events." + entry.getKey(), entry.getValue());
+            changed = true;
+        }
+        return changed;
+    }
+
+    /** Returns the configured registration names used by the formal event schedulers. */
+    public @NotNull List<String> formalEventMaps(@NotNull GameTypeEnum game) {
+        String path = "formal-events." + game.name() + ".maps";
+        if (configuration != null && configuration.contains(path)) {
+            return configuration.getStringList(path).stream()
+                    .map(String::trim)
+                    .filter(name -> !name.isEmpty())
+                    .toList();
+        }
+        return DEFAULT_FORMAL_EVENT_MAPS.getOrDefault(game, List.of());
+    }
+
+    /** Returns one configured formal-event map using a one-based round number. */
+    public String formalEventMap(@NotNull GameTypeEnum game, int round) {
+        List<String> maps = formalEventMaps(game);
+        return round < 1 || round > maps.size() ? null : maps.get(round - 1);
     }
 
     static void migrateIdentityConfiguration(@NotNull YamlConfiguration outdated) {

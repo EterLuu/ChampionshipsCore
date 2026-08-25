@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
+import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Sound;
@@ -18,7 +19,6 @@ import java.util.*;
 
 public class ParkourTagScheduleManager extends BaseManager {
     private static final int ROUND_TRANSITION_SECONDS = 10;
-    private static final String EVENT_MAP = "towny";
     private final BukkitScheduler scheduler;
     private final ParkourTagScheduleHandler handler;
     private final List<Set<TwoVTwoVector>> rounds = new ArrayList<>();
@@ -96,10 +96,11 @@ public class ParkourTagScheduleManager extends BaseManager {
         }
 
         if (!cycleGeneratePairs()) return;
-        scheduledMapName = EVENT_MAP;
-        if (plugin.getGameManager().getParkourTagManager().getArea(EVENT_MAP) == null) {
+        scheduledMapName = FormalEventMapResolver.map(plugin, GameTypeEnum.ParkourTag, 1);
+        if (scheduledMapName == null
+                || plugin.getGameManager().getParkourTagManager().getArea(scheduledMapName) == null) {
             plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.ParkourTag, "-", "调度", "启动",
-                    "无法开始：缺少 event 地图 " + EVENT_MAP));
+                    "无法开始：缺少 formal-events 地图 " + scheduledMapName));
             return;
         }
         int requiredInstances = rounds.getFirst().size();

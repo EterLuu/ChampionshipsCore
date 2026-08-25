@@ -537,7 +537,8 @@ public final class DailyManager extends BaseManager {
         }
     }
 
-    private void refreshOpenMenus() {
+    /** Re-renders active DAILY inventories after a map identity or leaderboard change. */
+    public void refreshOpenMenus() {
         lobbyMenu.refreshOpenMenus();
         matchMenu.refreshOpenMenus();
         statsMenu.refreshOpenMenus();

@@ -46,7 +46,9 @@ public final class MapRenameService {
 
         BaseGameConfig config = manager.getMapConfig(oldName);
         String oldDisplayName = config.getAreaName();
-        String worldName = config.getConfiguredWorld();
+        String oldAssetName = game == GameTypeEnum.BuildMart ? oldDisplayName : oldName;
+        String oldWorldName = config.getConfiguredWorld();
+        BuildMartWorldRename.Plan buildMartWorldPlan = null;
         Path oldPath = plugin.getFolder().resolve(config.getFileName());
         Path newPath = oldPath.resolveSibling(newName + ".yml");
         if (Files.exists(newPath)) {
@@ -54,6 +56,16 @@ public final class MapRenameService {
             Utils.sendAdminError(sender, "目标配置文件 &#fff566" + newPath.getFileName() + " &#ededed已存在");
             return;
         }
+        try {
+            MapAssetRename.validate(plugin.getFolder(), game, oldName, oldAssetName, newName);
+            if (game == GameTypeEnum.BuildMart)
+                buildMartWorldPlan = BuildMartWorldRename.validate(plugin, manager, oldName, newName, oldWorldName);
+        } catch (IllegalStateException exception) {
+            renameRunning.set(false);
+            Utils.sendAdminError(sender, exception.getMessage());
+            return;
+        }
+        String newWorldName = buildMartWorldPlan == null ? oldWorldName : buildMartWorldPlan.newWorldName();
         if (!manager.detachAreaForRename(oldName)) {
             renameRunning.set(false);
             Utils.sendAdminError(sender, "场地卸载失败；配置和数据库均未修改");
@@ -62,7 +74,8 @@ public final class MapRenameService {
 
         Utils.sendAdminInfo(sender, "已卸载场地 &#fff566" + oldName + "&#ededed，正在等待持久化队列并迁移记录……");
         RenameContext context = new RenameContext(sender, game, manager, oldName, newName,
-                oldDisplayName, worldName, oldPath, newPath);
+                oldDisplayName, oldAssetName, oldWorldName, newWorldName,
+                buildMartWorldPlan != null && buildMartWorldPlan.movesWorld(), oldPath, newPath);
         plugin.getDailyStatsManager().runAfterPendingWrites(() ->
                 plugin.getRankManager().runAfterPendingPointWrites(() -> execute(context)));
     }
@@ -79,6 +92,8 @@ public final class MapRenameService {
         if (manager.getAreaNameList().stream().anyMatch(name -> name.equalsIgnoreCase(newName)))
             return "目标场地 &#fff566" + newName + " &#ededed已存在";
         if (plugin.getPrepareSessionManager().hasActiveSessions()) return "仍有地图 prepare 会话进行中，不能改名";
+        if (plugin.getScheduleManager().isFormalEventRunning(game))
+            return "该游戏的正式赛程正在运行，不能改名";
         if (!plugin.getGameManager().getSpectatableMapInstances(game, oldName).isEmpty()
                 || !manager.canRenameArea(oldName)) return "场地正在运行，不能改名";
         return null;
@@ -86,6 +101,10 @@ public final class MapRenameService {
 
     private void execute(RenameContext context) {
         MapConfigFileRename.State fileState = null;
+        MapAssetRename.State assetState = null;
+        FormalEventMapRename.State formalEventState = null;
+        BuildMartWorldRename.State worldState = null;
+        boolean managedWorldRenamed = false;
         boolean pendingRenamed = false;
         Connection connection = null;
         try {
@@ -99,9 +118,25 @@ public final class MapRenameService {
                 throw new IllegalStateException("无法同步待提交积分记录");
             }
             pendingRenamed = true;
-            fileState = MapConfigFileRename.rename(context.oldPath(), context.newPath(), context.newName());
+            if (context.movesDedicatedBuildMartWorld()) {
+                worldState = onMain(() -> BuildMartWorldRename.rename(plugin,
+                        context.oldWorldName(), context.newWorldName()));
+                onMain(() -> {
+                    context.manager().renameManagedWorld(context.oldWorldName(), context.newWorldName());
+                    return true;
+                });
+                managedWorldRenamed = true;
+            }
+            assetState = MapAssetRename.rename(plugin.getFolder(), context.game(),
+                    context.oldName(), context.oldAssetName(), context.newName(),
+                    context.oldWorldName(), context.newWorldName());
+            fileState = MapConfigFileRename.rename(context.oldPath(), context.newPath(), context.newName(),
+                    context.oldWorldName(), context.newWorldName());
+            formalEventState = onMain(() -> FormalEventMapRename.rename(
+                    plugin.getConfigurationManager().getCCConfig(), context.game(),
+                    context.oldName(), context.newName()));
             boolean loaded = onMain(() -> context.manager().loadAreaAfterRename(
-                    context.newName(), context.worldName()));
+                    context.newName(), context.newWorldName()));
             if (!loaded) throw new IllegalStateException("新名称场地加载失败");
             connection.commit();
             plugin.getDailyStatsManager().renameMap(context.game(), context.oldName(), context.newName());
@@ -118,7 +153,8 @@ public final class MapRenameService {
                     plugin.getLogger().log(Level.SEVERE, "地图改名数据库回滚失败", rollbackException);
                 }
             }
-            rollbackRuntime(context, fileState, pendingRenamed);
+            rollbackRuntime(context, fileState, assetState, formalEventState, worldState,
+                    managedWorldRenamed, pendingRenamed);
             plugin.getLogger().log(Level.SEVERE, "地图改名失败，已执行回滚："
                     + context.oldName() + " -> " + context.newName(), exception);
             finish(context.sender(), false, "地图改名失败，原场地已尝试恢复；请检查控制台");
@@ -134,6 +170,9 @@ public final class MapRenameService {
     }
 
     private void rollbackRuntime(RenameContext context, MapConfigFileRename.State fileState,
+                                 MapAssetRename.State assetState,
+                                 FormalEventMapRename.State formalEventState,
+                                 BuildMartWorldRename.State worldState, boolean managedWorldRenamed,
                                  boolean pendingRenamed) {
         try {
             onMain(() -> {
@@ -141,14 +180,51 @@ public final class MapRenameService {
                     context.manager().forceDetachAreaAfterFailedRename(context.newName());
                 return true;
             });
+        } catch (Exception rollbackException) {
+            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时卸载新场地失败", rollbackException);
+        }
+        try {
             if (fileState != null) MapConfigFileRename.rollback(fileState);
+        } catch (Exception rollbackException) {
+            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复配置文件", rollbackException);
+        }
+        try {
+            if (assetState != null) MapAssetRename.rollback(assetState);
+        } catch (Exception rollbackException) {
+            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复地图资产", rollbackException);
+        }
+        try {
+            if (formalEventState != null) onMain(() -> {
+                FormalEventMapRename.rollback(plugin.getConfigurationManager().getCCConfig(), formalEventState);
+                return true;
+            });
+        } catch (Exception rollbackException) {
+            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复正式赛程地图配置", rollbackException);
+        }
+        try {
+            if (managedWorldRenamed) onMain(() -> {
+                context.manager().renameManagedWorld(context.newWorldName(), context.oldWorldName());
+                return true;
+            });
+            if (worldState != null) onMain(() -> {
+                BuildMartWorldRename.rollback(plugin, worldState);
+                return true;
+            });
+        } catch (Exception rollbackException) {
+            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复 Build Mart 世界", rollbackException);
+        }
+        try {
             if (pendingRenamed && !plugin.getRankManager().renamePendingAreaRecords(
                     context.game(), context.newName(), context.oldDisplayName())) {
                 plugin.getLogger().severe("地图改名回滚时无法恢复待提交积分记录");
             }
-            onMain(() -> context.manager().loadAreaAfterRename(context.oldName(), context.worldName()));
+        } catch (RuntimeException rollbackException) {
+            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复待提交积分记录", rollbackException);
+        }
+        try {
+            onMain(() -> context.manager().loadAreaAfterRename(context.oldName(), context.oldWorldName()));
         } catch (Exception rollbackException) {
-            plugin.getLogger().log(Level.SEVERE, "地图改名运行时/文件回滚失败", rollbackException);
+            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法重新加载原场地", rollbackException);
         }
     }
 
@@ -168,8 +244,11 @@ public final class MapRenameService {
     private void finish(CommandSender sender, boolean success, String message) {
         Runnable completion = () -> {
             renameRunning.set(false);
-            if (success) Utils.sendAdminSuccess(sender, message);
-            else Utils.sendAdminError(sender, message);
+            if (success) {
+                plugin.getDailyManager().refreshOpenMenus();
+                plugin.getPrepareSessionManager().closeAreaListMenus();
+                Utils.sendAdminSuccess(sender, message);
+            } else Utils.sendAdminError(sender, message);
         };
         if (Bukkit.isPrimaryThread()) completion.run();
         else Bukkit.getScheduler().runTask(plugin, completion);
@@ -178,6 +257,8 @@ public final class MapRenameService {
     private record RenameContext(CommandSender sender, GameTypeEnum game,
                                  BaseGameInstanceManager<?> manager,
                                  String oldName, String newName, String oldDisplayName,
-                                 String worldName, Path oldPath, Path newPath) {
+                                 String oldAssetName, String oldWorldName, String newWorldName,
+                                 boolean movesDedicatedBuildMartWorld,
+                                 Path oldPath, Path newPath) {
     }
 }

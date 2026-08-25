@@ -172,9 +172,11 @@ public class ScheduleManager extends BaseManager {
             stopFormalEvent(gameTypeEnum);
             return EventAction.STOPPED;
         }
-        if (gameTypeEnum == GameTypeEnum.Bingo
-                && !plugin.getGameManager().canStartBingo("bingo", true, GameRunMode.EVENT)) {
-            return EventAction.UNAVAILABLE;
+        if (gameTypeEnum == GameTypeEnum.Bingo) {
+            String bingoMap = FormalEventMapResolver.map(plugin, GameTypeEnum.Bingo, 1);
+            if (bingoMap == null || !plugin.getGameManager().canStartBingo(bingoMap, true, GameRunMode.EVENT)) {
+                return EventAction.UNAVAILABLE;
+            }
         }
         switch (gameTypeEnum) {
             case SnowballShowdown -> snowballScheduleManager.startGame();
@@ -455,8 +457,9 @@ public class ScheduleManager extends BaseManager {
                 pendingFinaleRequest = null;
             }
 
+            String configuredArea = FormalEventMapResolver.map(plugin, gameType, 1);
             String area = requestedArea == null || requestedArea.isBlank()
-                    ? definition.defaultArea() : requestedArea;
+                    ? (configuredArea == null ? definition.defaultArea() : configuredArea) : requestedArea;
             BaseGameInstance instance = finaleArea(gameType, area);
             if (instance == null || !plugin.getPrepareSessionManager().canStart(gameType, area)) {
                 Utils.sendAdminError(requester, gameType + " 地图不存在或尚未发布：&#fff566" + area);

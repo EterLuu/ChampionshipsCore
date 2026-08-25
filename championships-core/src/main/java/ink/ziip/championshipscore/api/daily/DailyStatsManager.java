@@ -225,6 +225,9 @@ public final class DailyStatsManager extends BaseManager {
         Set<String> maps = new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         records.keySet().stream().filter(key -> key.game() == game).map(RecordKey::map).forEach(maps::add);
         mapStats.keySet().stream().filter(key -> key.game() == game).map(MapStatKey::map).forEach(maps::add);
+        if (game == GameTypeEnum.ParkourWarrior) {
+            pkwRecords.keySet().stream().map(PkwRecordKey::map).forEach(maps::add);
+        }
         return Set.copyOf(maps);
     }
 

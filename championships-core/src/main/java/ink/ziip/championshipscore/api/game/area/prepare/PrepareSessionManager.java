@@ -118,6 +118,14 @@ public class PrepareSessionManager extends BaseManager {
         AreaListGui.open(this, player, gameType);
     }
 
+    /** Old list holders retain map names; close them after an administrative map rename. */
+    public void closeAreaListMenus() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Object holder = player.getOpenInventory().getTopInventory().getHolder();
+            if (holder instanceof AreaListGui.Holder) player.closeInventory();
+        }
+    }
+
     /** Creates only an unbound draft definition; world selection is an explicit, editable prepare step. */
     public void createAndEnter(@NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String name) {
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);

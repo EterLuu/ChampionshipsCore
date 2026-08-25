@@ -85,4 +85,28 @@ class CCConfigMigrationTest {
         assertEquals(30L, old.getLong("redis.reconciliation-seconds"));
         assertFalse(old.contains("bingo.redis"));
     }
+
+    @Test
+    void preservesCustomFormalEventMapSelectionsDuringUpgrade() throws Exception {
+        YamlConfiguration bundled = new YamlConfiguration();
+        bundled.loadFromString("""
+                formal-events:
+                  TGTTOS:
+                    maps: [cod, industry]
+                  ParkourWarrior:
+                    maps: [TRI]
+                """);
+        YamlConfiguration existing = new YamlConfiguration();
+        existing.loadFromString("""
+                formal-events:
+                  TGTTOS:
+                    maps: [custom-one, custom-two]
+                """);
+
+        assertTrue(CCConfig.copyFormalEventMaps(bundled, existing));
+        assertEquals(java.util.List.of("custom-one", "custom-two"),
+                bundled.getStringList("formal-events.TGTTOS.maps"));
+        assertEquals(java.util.List.of("TRI"),
+                bundled.getStringList("formal-events.ParkourWarrior.maps"));
+    }
 }

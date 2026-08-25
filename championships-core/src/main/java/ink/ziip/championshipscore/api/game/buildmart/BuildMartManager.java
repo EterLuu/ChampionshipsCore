@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Owns the Build Mart maps. Per-map configs live in {@code plugin/buildmart/areas/*.yml}; shared
@@ -30,12 +29,17 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
         super(championshipsCore);
     }
 
+    /** Default world name for a Build Mart map that owns its physical world. */
+    public static String worldNameFor(String mapName) {
+        return "buildmart_" + mapName;
+    }
+
     @Override
     public void load() {
         File buildMartDir = new File(plugin.getDataFolder(), "buildmart");
         buildMartDir.mkdirs();
 
-        // Defer the area scan to the first tick so the static world and any shared data are ready.
+        // Defer the area scan to the first tick so all referenced worlds and shared data are ready.
         plugin.getServer().getScheduler().runTask(plugin, task -> {
             try {
                 BuildMartCopperAssetMigrator.Result migrated = BuildMartCopperAssetMigrator.migrate(buildMartDir);
@@ -64,17 +68,18 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
                     String name = file.substring(0, file.length() - 4);
                     File configFile = new File(areasFolder, file);
                     YamlConfiguration raw = YamlConfiguration.loadConfiguration(configFile);
-                    String worldName = raw.getString("world-name", "buildmart");
-                    if (raw.contains("world-name") && (worldName == null || worldName.isBlank())) {
+                    String worldName = raw.getString("world-name", "");
+                    if (worldName == null || worldName.isBlank()) {
                         BuildMartConfig config = new BuildMartConfig(plugin, name);
                         config.initializeConfiguration(plugin.getFolder());
+                        config.bindConfiguredWorld("");
+                        config.saveOptions();
                         BuildMartMaterialManifest.write(plugin, config);
                         BuildMartArea area = new BuildMartArea(plugin, config);
                         areas.put(name, area);
                         area.initializeForSetup();
                         continue;
                     }
-                    if (worldName == null || worldName.isBlank()) worldName = "buildmart";
                     if (loadedWorlds.add(worldName) && !loadArenaWorld(worldName)) {
                         loadedWorlds.remove(worldName);
                         continue;
@@ -156,10 +161,11 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
     }
 
     @Override
-    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+    public synchronized boolean loadAreaAfterRename(String name, String worldName) {
         if (areas.containsKey(name)) return false;
         BuildMartConfig config = new BuildMartConfig(plugin, name);
         config.initializeConfiguration(plugin.getFolder());
+        if (!worldName.equals(config.getConfiguredWorld())) return false;
         BuildMartArea area = new BuildMartArea(plugin, config);
         areas.put(name, area);
         area.initializeForSetup();

@@ -12,13 +12,18 @@ public final class MapRecordRenameMigration {
     private MapRecordRenameMigration() {
     }
 
-    public record Counts(int playerPoints, int dailyResults, int dailyRecords, int dailyPkwRecords) {
+    public record Counts(int playerPoints, int dailyResults, int dailyRecords,
+                         int dailyMapStats, int dailyPkwRecords) {
+        public Counts(int playerPoints, int dailyResults, int dailyRecords, int dailyPkwRecords) {
+            this(playerPoints, dailyResults, dailyRecords, 0, dailyPkwRecords);
+        }
+
         public Counts(int playerPoints, int dailyResults, int dailyRecords) {
-            this(playerPoints, dailyResults, dailyRecords, 0);
+            this(playerPoints, dailyResults, dailyRecords, 0, 0);
         }
 
         public int total() {
-            return playerPoints + dailyResults + dailyRecords + dailyPkwRecords;
+            return playerPoints + dailyResults + dailyRecords + dailyMapStats + dailyPkwRecords;
         }
     }
 
@@ -62,6 +67,40 @@ public final class MapRecordRenameMigration {
         int records = update(connection,
                 "DELETE FROM `daily_player_records` WHERE `game`=? AND `map`=?",
                 game.name(), oldRegistration);
+        try (PreparedStatement mergeStats = connection.prepareStatement("""
+                INSERT INTO `daily_map_player_stats`
+                (`uuid`,`username`,`game`,`map`,`gamesPlayed`,`wins`,`maxTasks`,`maxLines`,
+                 `maxFirstTasks`,`maxDragonDamage`,`firstLiberate`,`firstNextGen`,`firstGateway`,
+                 `maxStars`,`finishes`,`updatedAt`)
+                SELECT source.`uuid`,source.`username`,source.`game`,?,source.`gamesPlayed`,source.`wins`,
+                       source.`maxTasks`,source.`maxLines`,source.`maxFirstTasks`,source.`maxDragonDamage`,
+                       source.`firstLiberate`,source.`firstNextGen`,source.`firstGateway`,source.`maxStars`,
+                       source.`finishes`,source.`updatedAt`
+                FROM `daily_map_player_stats` AS source WHERE source.`game`=? AND source.`map`=?
+                ON DUPLICATE KEY UPDATE
+                  `username`=IF(VALUES(`updatedAt`) >= `daily_map_player_stats`.`updatedAt`,
+                      VALUES(`username`),`daily_map_player_stats`.`username`),
+                  `gamesPlayed`=`daily_map_player_stats`.`gamesPlayed`+VALUES(`gamesPlayed`),
+                  `wins`=`daily_map_player_stats`.`wins`+VALUES(`wins`),
+                  `maxTasks`=GREATEST(`daily_map_player_stats`.`maxTasks`,VALUES(`maxTasks`)),
+                  `maxLines`=GREATEST(`daily_map_player_stats`.`maxLines`,VALUES(`maxLines`)),
+                  `maxFirstTasks`=GREATEST(`daily_map_player_stats`.`maxFirstTasks`,VALUES(`maxFirstTasks`)),
+                  `maxDragonDamage`=GREATEST(`daily_map_player_stats`.`maxDragonDamage`,VALUES(`maxDragonDamage`)),
+                  `firstLiberate`=`daily_map_player_stats`.`firstLiberate`+VALUES(`firstLiberate`),
+                  `firstNextGen`=`daily_map_player_stats`.`firstNextGen`+VALUES(`firstNextGen`),
+                  `firstGateway`=`daily_map_player_stats`.`firstGateway`+VALUES(`firstGateway`),
+                  `maxStars`=GREATEST(`daily_map_player_stats`.`maxStars`,VALUES(`maxStars`)),
+                  `finishes`=`daily_map_player_stats`.`finishes`+VALUES(`finishes`),
+                  `updatedAt`=GREATEST(`daily_map_player_stats`.`updatedAt`,VALUES(`updatedAt`))
+                """)) {
+            mergeStats.setString(1, newRegistration);
+            mergeStats.setString(2, game.name());
+            mergeStats.setString(3, oldRegistration);
+            mergeStats.executeUpdate();
+        }
+        int mapStats = update(connection,
+                "DELETE FROM `daily_map_player_stats` WHERE `game`=? AND `map`=?",
+                game.name(), oldRegistration);
         int pkwRecords = 0;
         if (game == GameTypeEnum.ParkourWarrior) {
             try (PreparedStatement mergePkw = connection.prepareStatement("""
@@ -99,7 +138,7 @@ public final class MapRecordRenameMigration {
             pkwRecords = update(connection,
                     "DELETE FROM `daily_pkw_records` WHERE `map`=?", oldRegistration);
         }
-        return new Counts(points, results, records, pkwRecords);
+        return new Counts(points, results, records, mapStats, pkwRecords);
     }
 
     private static int update(Connection connection, String sql, String... values) throws SQLException {

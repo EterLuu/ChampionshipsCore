@@ -34,4 +34,28 @@ class MapConfigFileRenameTest {
         assertFalse(Files.exists(newPath));
         assertEquals(original, Files.readString(oldPath));
     }
+
+    @Test
+    void rewritesBuildMartWorldReferencesAndCanRestoreOriginalBytes() throws Exception {
+        Path oldPath = directory.resolve("area.yml");
+        Path newPath = directory.resolve("skyline.yml");
+        String original = "name: area\nworld-name: buildmart_area\nportal: buildmart_area:10:64:10:0:0\n"
+                + "serialized:\n  world: buildmart_area\n  world_key: minecraft:buildmart_area\n";
+        Files.writeString(oldPath, original);
+
+        MapConfigFileRename.State state = MapConfigFileRename.rename(oldPath, newPath, "skyline",
+                "buildmart_area", "buildmart_skyline");
+
+        YamlConfiguration renamed = YamlConfiguration.loadConfiguration(newPath.toFile());
+        assertEquals("skyline", renamed.getString("name"));
+        assertEquals("buildmart_skyline", renamed.getString("world-name"));
+        assertEquals("buildmart_skyline:10:64:10:0:0", renamed.getString("portal"));
+        assertEquals("buildmart_skyline", renamed.getString("serialized.world"));
+        assertEquals("minecraft:buildmart_skyline", renamed.getString("serialized.world_key"));
+
+        MapConfigFileRename.rollback(state);
+
+        assertEquals(original, Files.readString(oldPath));
+        assertFalse(Files.exists(newPath));
+    }
 }

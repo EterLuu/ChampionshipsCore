@@ -1,6 +1,35 @@
 dont-edit-this:
-  version: 20
+  version: 21
 mode: "CHAMPIONSHIP"
+# Registration names used by formal event schedules. These are map identities, not physical world names.
+# Keep this section synchronized through /cc map rename; do not add map IDs in ScheduleManager code.
+formal-events:
+  Bingo:
+    maps: [bingo]
+  ParkourTag:
+    maps: [towny]
+  BattleBox:
+    maps: []
+  TNTRun:
+    maps: [astra]
+  SnowballShowdown:
+    maps: [area1]
+  SkyWars:
+    maps: [area2]
+  TGTTOS:
+    maps: [cod, industry, badlands, tsf1, cliff, boat]
+  DragonEggCarnival:
+    maps: [area1]
+  ParkourWarrior:
+    maps: [TRI]
+  HotyCodyDusky:
+    maps: []
+  BuildMart:
+    maps: [area]
+  Dodgebolt:
+    maps: [dodgebolt]
+  AceRace:
+    maps: [clouds2]
 # DAILY opens the self-service game menu and queues. It does not disable /cc event or /cc game start.
 daily:
   enabled-games:

@@ -83,6 +83,14 @@ public abstract class BaseConfigurationFile {
         return configuration == null ? null : configuration.saveToString();
     }
 
+    /** Persists the current parsed document, including custom sections not backed by fields. */
+    public void saveRuntimeConfiguration() throws IOException {
+        if (configuration == null || configurationPath == null) {
+            throw new IOException("Configuration is not initialized: " + getFileName());
+        }
+        configuration.save(configurationPath.toFile());
+    }
+
     /** Restores both the parsed document and any static/custom runtime fields backed by it. */
     public void restoreRuntimeConfiguration(String snapshot) {
         if (snapshot == null) return;

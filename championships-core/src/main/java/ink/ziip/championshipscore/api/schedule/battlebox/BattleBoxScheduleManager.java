@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -96,8 +97,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         }
 
         if (!cycleGeneratePairs()) return;
-        scheduledMapName = plugin.getGameManager().getBattleBoxManager().getAreaNameList()
-                .stream().sorted().findFirst().orElse(null);
+        scheduledMapName = FormalEventMapResolver.map(plugin, GameTypeEnum.BattleBox, 1);
         if (scheduledMapName == null) {
             plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BattleBox, "-", "调度", "启动",
                     "无法开始：未配置地图"));

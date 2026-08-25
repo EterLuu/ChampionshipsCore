@@ -28,9 +28,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Per-map Build Mart configuration inside a persistent shared physical world. Geometry is split between
- * the hand-built central resource market and a single base template. Copy 0 is reserved for that template;
- * the playable team bases begin at copy 1 and runtime reset restores only this map's configured regions.
+ * Per-map Build Mart configuration. Maps may share a physical world; geometry is split between the hand-built
+ * central resource market and a single base template. Copy 0 is reserved for that template; the playable team
+ * bases begin at copy 1 and runtime reset restores only this map's configured regions.
  */
 @Getter
 @Setter

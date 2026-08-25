@@ -12,6 +12,7 @@ import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SharedWorldManagerContractTest {
@@ -23,6 +24,7 @@ class SharedWorldManagerContractTest {
         assertTrue(new ParkourTagManager(null).supportsSharedMapWorlds());
         assertTrue(new TNTRunManager(null).supportsSharedMapWorlds());
         assertTrue(new BuildMartManager(null).supportsSharedMapWorlds());
+        assertEquals("buildmart_area", BuildMartManager.worldNameFor("area"));
     }
 
     @Test

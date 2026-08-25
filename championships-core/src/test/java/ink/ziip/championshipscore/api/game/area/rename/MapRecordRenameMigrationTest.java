@@ -33,6 +33,11 @@ class MapRecordRenameMigrationTest {
         assertTrue(calls.get(2).sql().contains("`daily_player_records`.`durationMs`"));
         assertEquals(List.of("clouds", "AceRace", "acerace"), calls.get(2).parameters());
         assertEquals(List.of("AceRace", "acerace"), calls.get(3).parameters());
+        assertTrue(calls.get(4).sql().contains("INSERT INTO `daily_map_player_stats`"));
+        assertTrue(calls.get(4).sql().contains("`gamesPlayed`=`daily_map_player_stats`.`gamesPlayed`+VALUES(`gamesPlayed`)"));
+        assertEquals(List.of("clouds", "AceRace", "acerace"), calls.get(4).parameters());
+        assertEquals(List.of("AceRace", "acerace"), calls.get(5).parameters());
+        assertEquals(3, counts.dailyMapStats());
     }
 
     private static Connection connection(List<SqlCall> calls) {

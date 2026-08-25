@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.schedule.parkourwarrior;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.BaseSingleGameSchedule;
+import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 
 public class ParkourWarriorScheduleManager extends BaseSingleGameSchedule {
 
@@ -13,12 +14,12 @@ public class ParkourWarriorScheduleManager extends BaseSingleGameSchedule {
 
     @Override
     public String getArea() {
-        return "area1";
+        return FormalEventMapResolver.map(plugin, gameTypeEnum, subRound);
     }
 
     @Override
     public int getTotalRounds() {
-        return 1;
+        return FormalEventMapResolver.maps(plugin, gameTypeEnum).size();
     }
 
 }
