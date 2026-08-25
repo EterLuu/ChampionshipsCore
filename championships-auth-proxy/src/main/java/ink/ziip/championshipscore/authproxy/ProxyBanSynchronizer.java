@@ -1,5 +1,9 @@
 package ink.ziip.championshipscore.authproxy;
 
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
+import java.net.http.HttpTimeoutException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,6 +18,8 @@ final class ProxyBanSynchronizer implements Runnable {
     private final BiConsumer<String, String> kickBannedPlayer;
     private final Logger logger;
     private final AtomicBoolean running = new AtomicBoolean();
+    private int consecutiveFailures;
+    private long lastUnavailableLogAt;
 
     ProxyBanSynchronizer(ProxyIdentityClient client, ProxyBanState state,
                          BiConsumer<String, String> kickBannedPlayer, Logger logger) {
@@ -29,11 +35,38 @@ final class ProxyBanSynchronizer implements Runnable {
         try {
             if (!state.initialized()) bootstrap();
             else applyChanges();
+            consecutiveFailures = 0;
         } catch (Exception exception) {
-            logger.log(Level.WARNING, "Could not synchronize proxy ban state", exception);
+            logFailure(exception);
         } finally {
             running.set(false);
         }
+    }
+
+    private void logFailure(Exception failure) {
+        consecutiveFailures++;
+        if (!isWebUnavailable(failure)) {
+            logger.log(Level.WARNING, "Could not synchronize proxy ban state", failure);
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (consecutiveFailures == 1 || now - lastUnavailableLogAt >= 60_000L) {
+            lastUnavailableLogAt = now;
+            logger.warning("Auth proxy web service unavailable; retrying (attempt "
+                    + consecutiveFailures + ")");
+        }
+    }
+
+    private static boolean isWebUnavailable(Throwable failure) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current instanceof ConnectException || current instanceof HttpTimeoutException
+                    || current instanceof UnknownHostException || current instanceof IOException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private void bootstrap() throws Exception {

@@ -10,8 +10,15 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProxyBanSynchronizerTest {
     private static final String SECRET = "0123456789abcdef0123456789abcdef";
@@ -48,8 +55,53 @@ class ProxyBanSynchronizerTest {
         }
     }
 
+    @Test
+    void rateLimitsTransientWebFailureLogsWithoutAnExceptionStackTrace() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.start();
+        int port = server.getAddress().getPort();
+        server.stop(0);
+
+        Logger logger = Logger.getLogger("proxy-test-" + System.nanoTime());
+        logger.setUseParentHandlers(false);
+        List<LogRecord> records = new ArrayList<>();
+        Handler handler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                records.add(record);
+            }
+
+            @Override
+            public void flush() { }
+
+            @Override
+            public void close() { }
+        };
+        logger.addHandler(handler);
+        try {
+            ProxyBanState state = new ProxyBanState(tempDirectory.resolve("unavailable.properties").toFile());
+            ProxyBanSynchronizer synchronizer = new ProxyBanSynchronizer(
+                    client("http://127.0.0.1:" + port), state, (username, reason) -> { }, logger);
+
+            synchronizer.run();
+            synchronizer.run();
+
+            assertEquals(1, records.size());
+            assertEquals(Level.WARNING, records.get(0).getLevel());
+            assertTrue(records.get(0).getMessage().contains("attempt 1"));
+            assertFalse(records.get(0).getMessage().contains("Could not synchronize"));
+            assertNull(records.get(0).getThrown());
+        } finally {
+            logger.removeHandler(handler);
+        }
+    }
+
     private static ProxyIdentityClient client(HttpServer server) {
-        return new ProxyIdentityClient("http://127.0.0.1:" + server.getAddress().getPort(), "cc-core", SECRET,
+        return client("http://127.0.0.1:" + server.getAddress().getPort());
+    }
+
+    private static ProxyIdentityClient client(String baseUrl) {
+        return new ProxyIdentityClient(baseUrl, "cc-core", SECRET,
                 false, Duration.ofSeconds(1), Duration.ofSeconds(1));
     }
 
