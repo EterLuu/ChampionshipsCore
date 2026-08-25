@@ -73,7 +73,7 @@ class BridgeApiClientTransportTest {
             capturedSignature.set(exchange.getRequestHeaders().getFirst("X-CC-Signature"));
             capturedTimestamp.set(exchange.getRequestHeaders().getFirst("X-CC-Timestamp"));
             capturedRequestId.set(exchange.getRequestHeaders().getFirst("X-CC-Request-Id"));
-            byte[] body = "{\"identityMode\":\"SERVER_UUID\",\"players\":[]}".getBytes(StandardCharsets.UTF_8);
+            byte[] body = "{\"players\":[]}".getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(200, body.length);
             exchange.getResponseBody().write(body);
             exchange.close();
@@ -82,7 +82,7 @@ class BridgeApiClientTransportTest {
         try {
             BridgeApiClient client = client("http://127.0.0.1:" + server.getAddress().getPort(), false);
 
-            assertEquals("SERVER_UUID", client.snapshot().identityMode());
+            assertEquals(0, client.snapshot().players().size());
             assertEquals(signature("GET", "/api/internal/bridge/snapshot", capturedTimestamp.get(),
                     capturedRequestId.get(), ""), capturedSignature.get());
         } finally {

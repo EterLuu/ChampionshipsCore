@@ -25,7 +25,7 @@ public abstract class BaseConfigurationManager extends BaseManager {
 
     @Override
     public void load() {
-        reload();
+        if (!reload()) throw new IllegalStateException("Configuration initialization failed");
     }
 
     @Override

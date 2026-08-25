@@ -8,8 +8,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
 public final class LocalAccessState {
@@ -21,7 +19,6 @@ public final class LocalAccessState {
     private volatile boolean bindingSnapshotApplied;
     private volatile String maintenanceJobId;
     private volatile String pendingAckCursor;
-    private volatile List<ServerUuidReport> pendingAckServerUuids = List.of();
     private volatile ControlCompletion pendingControlCompletion;
 
     public LocalAccessState(File file) {
@@ -109,25 +106,19 @@ public final class LocalAccessState {
 
     public synchronized PendingAcknowledgement pendingAcknowledgement() {
         if (pendingAckCursor == null || pendingAckCursor.isBlank()) return null;
-        return new PendingAcknowledgement(pendingAckCursor, pendingAckServerUuids);
-    }
-
-    public synchronized void advance(String cursor, List<ServerUuidReport> serverUuids) throws IOException {
-        this.cursor = cursor;
-        this.synchronizedOnce = true;
-        this.pendingAckCursor = cursor;
-        this.pendingAckServerUuids = List.copyOf(serverUuids);
-        save();
+        return new PendingAcknowledgement(pendingAckCursor);
     }
 
     public synchronized void advance(String cursor) throws IOException {
-        advance(cursor, List.of());
+        this.cursor = cursor;
+        this.synchronizedOnce = true;
+        this.pendingAckCursor = cursor;
+        save();
     }
 
     public synchronized void confirmAcknowledged(String cursor) throws IOException {
         if (pendingAckCursor == null || !pendingAckCursor.equals(cursor)) return;
         pendingAckCursor = null;
-        pendingAckServerUuids = List.of();
         save();
     }
 
@@ -176,7 +167,6 @@ public final class LocalAccessState {
                         identitySection.getString("minecraft-uuid", accountId)));
             }
         }
-        pendingAckServerUuids = readServerUuidReports(yaml.getMapList("pending-ack.server-uuids"));
         String pendingControlId = yaml.getString("pending-control-completion.job-id");
         if (pendingControlId != null && !pendingControlId.isBlank()) {
             Map<String, Object> result = new LinkedHashMap<>();
@@ -195,9 +185,6 @@ public final class LocalAccessState {
         yaml.set("binding-snapshot-applied", bindingSnapshotApplied);
         yaml.set("maintenance-job-id", maintenanceJobId);
         yaml.set("pending-ack.cursor", pendingAckCursor);
-        yaml.set("pending-ack.server-uuids", pendingAckServerUuids.stream()
-                .map(report -> Map.of("account-id", report.accountId(), "server-uuid", report.serverUuid()))
-                .toList());
         yaml.set("pending-control-completion.job-id",
                 pendingControlCompletion == null ? null : pendingControlCompletion.jobId());
         yaml.set("pending-control-completion.result",
@@ -214,25 +201,10 @@ public final class LocalAccessState {
         return username.toLowerCase(Locale.ROOT);
     }
 
-    private static List<ServerUuidReport> readServerUuidReports(List<Map<?, ?>> raw) {
-        List<ServerUuidReport> reports = new ArrayList<>();
-        for (Map<?, ?> entry : raw) {
-            Object accountId = entry.get("account-id");
-            Object serverUuid = entry.get("server-uuid");
-            if (accountId != null && serverUuid != null) {
-                reports.add(new ServerUuidReport(accountId.toString(), serverUuid.toString()));
-            }
-        }
-        return List.copyOf(reports);
-    }
-
     public record Identity(String accountId, String minecraftUuid) {
     }
 
-    public record ServerUuidReport(String accountId, String serverUuid) {
-    }
-
-    public record PendingAcknowledgement(String cursor, List<ServerUuidReport> serverUuids) {
+    public record PendingAcknowledgement(String cursor) {
     }
 
     public record ControlCompletion(String jobId, Map<String, Object> result) {

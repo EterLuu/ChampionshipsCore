@@ -41,6 +41,7 @@ public class PlayerManager extends BaseManager {
         super(championshipsCore);
         playerDao = new PlayerDaoImpl();
         uuidSource = PlayerUuidSource.parse(CCConfig.IDENTITY_MODE);
+        uuidSource.validateConfiguration(CCConfig.IDENTITY_PROFILE_API_BASE_URL);
         profileUuidResolver = new ProfileUuidResolver(
                 Duration.ofSeconds(Math.max(1L, CCConfig.IDENTITY_CONNECT_TIMEOUT_SECONDS)),
                 Duration.ofSeconds(Math.max(1L, CCConfig.IDENTITY_REQUEST_TIMEOUT_SECONDS)));
@@ -137,6 +138,13 @@ public class PlayerManager extends BaseManager {
 
     @NotNull
     public PlayerIdentityMigrationResult prepareIdentity(@NotNull String username, @NotNull UUID currentUuid) {
+        PlayerIdentityMigrationResult modeFailure = validateOnlineUuid(username, currentUuid);
+        if (modeFailure != null) {
+            pendingIdentityMigrations.put(currentUuid, modeFailure);
+            plugin.getLogger().severe(Utils.formatModuleLog("Player", "IdentitySync",
+                    "玩家=" + username + " 当前UUID=" + currentUuid + " 模式校验失败=" + modeFailure.failureReason()));
+            return modeFailure;
+        }
         String normalizedName = normalizeName(username);
         PlayerIdentityMigrationResult result;
         Object identityLock = identityLocks.computeIfAbsent(normalizedName, ignored -> new Object());
@@ -171,13 +179,18 @@ public class PlayerManager extends BaseManager {
         Player online = Bukkit.getOnlinePlayers().stream()
                 .filter(player -> player.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
         if (online != null) {
+            PlayerIdentityMigrationResult modeFailure = validateOnlineUuid(online.getName(), online.getUniqueId());
+            if (modeFailure != null) {
+                return CompletableFuture.failedFuture(new PlayerUuidLookupException(
+                        PlayerUuidLookupException.Reason.IDENTITY_CONFLICT, modeFailure.failureReason()));
+            }
             cacheIdentity(online.getName(), online.getUniqueId(), java.util.Set.of());
             return CompletableFuture.completedFuture(online.getUniqueId());
         }
         CompletableFuture<UUID> resolved = new CompletableFuture<>();
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                UUID uuid = resolveNativeUuid(name);
+                UUID uuid = resolveConfiguredUuid(name);
                 PlayerIdentityMigrationResult migration = playerDao.synchronizeIdentity(name, uuid);
                 if (!migration.successful() || migration.hasTeamConflict()) {
                     throw new PlayerUuidLookupException(PlayerUuidLookupException.Reason.IDENTITY_CONFLICT,
@@ -198,16 +211,29 @@ public class PlayerManager extends BaseManager {
         return resolved;
     }
 
-    /** Resolves the UUID that this server would natively assign, without changing stored data. */
-    public UUID resolveNativeUuid(@NotNull String name) throws PlayerUuidLookupException {
+    /**
+     * Resolves an offline player's UUID from the configured source without changing stored data.
+     * This is never used for an online player: its UUID always comes from the proxy/Bukkit login profile.
+     */
+    public UUID resolveConfiguredUuid(@NotNull String name) throws PlayerUuidLookupException {
         if (!name.matches("[A-Za-z0-9_]{3,16}")) {
             throw new PlayerUuidLookupException(PlayerUuidLookupException.Reason.INVALID_USERNAME,
                     "Invalid Minecraft username: " + name);
         }
-        if (uuidSource == PlayerUuidSource.ONLINE) {
+        if (uuidSource == PlayerUuidSource.PROFILE_UUID) {
             return profileUuidResolver.resolve(CCConfig.IDENTITY_PROFILE_API_BASE_URL, name);
         }
         return Utils.getPlayerUUID(name);
+    }
+
+    /** Returns a failed migration when an injected UUID contradicts OFFLINE mode. */
+    private @Nullable PlayerIdentityMigrationResult validateOnlineUuid(@NotNull String username,
+                                                                        @NotNull UUID currentUuid) {
+        if (uuidSource != PlayerUuidSource.OFFLINE) return null;
+        UUID expected = Utils.getPlayerUUID(username);
+        if (expected.equals(currentUuid)) return null;
+        return PlayerIdentityMigrationResult.failed(username, currentUuid,
+                "identity.mode=OFFLINE requires UUID " + expected + " but login supplied " + currentUuid);
     }
 
     public String getPlayerName(@NotNull UUID uuid) {

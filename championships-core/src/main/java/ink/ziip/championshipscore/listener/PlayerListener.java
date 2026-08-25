@@ -72,6 +72,12 @@ public class PlayerListener extends BaseListener {
         if (event.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) return;
         PlayerIdentityMigrationResult migration = plugin.getPlayerManager()
                 .prepareIdentity(event.getName(), event.getUniqueId());
+        if (!migration.successful()) {
+            event.kickMessage(LegacyComponentSerializer.legacySection()
+                    .deserialize(Utils.translateColorCodes("&c无法验证玩家身份，请确认服务器 UUID 模式与登录代理配置一致。")));
+            event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
+            return;
+        }
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(event.getUniqueId());
         String name = event.getName();
         boolean hasResolvedTeam = migration.successful() && !migration.hasTeamConflict()

@@ -51,6 +51,20 @@ public final class AuthMeHashStore {
         if (!success) throw new IllegalStateException("AuthMe rejected account update for " + username);
     }
 
+    /** Updates only the password of an existing AuthMe row; identity is untouched. */
+    public void updatePassword(String username, String passwordHash) {
+        validate(username, passwordHash);
+        String normalized = username.toLowerCase(Locale.ROOT);
+        if (!dataSource.isAuthAvailable(normalized)) {
+            throw new IllegalStateException("AuthMe account is missing for " + username);
+        }
+        requireAuth(normalized);
+        if (!dataSource.updatePassword(normalized, new HashedPassword(passwordHash))) {
+            throw new IllegalStateException("AuthMe rejected password update for " + username);
+        }
+        dataSource.invalidateCache(normalized);
+    }
+
     public void remove(String username) {
         String normalized = username.toLowerCase(Locale.ROOT);
         if (dataSource.isAuthAvailable(normalized) && !dataSource.removeAuth(normalized)) {

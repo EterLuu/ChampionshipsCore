@@ -88,17 +88,9 @@ public final class BridgeApiClient {
     }
 
     public void acknowledge(String cursor) throws Exception {
-        acknowledge(cursor, java.util.List.of());
-    }
-
-    public void acknowledge(String cursor, java.util.List<LocalAccessState.ServerUuidReport> serverUuids) throws Exception {
         String path = "/api/internal/bridge/ack";
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("through", cursor);
-        if (!serverUuids.isEmpty()) {
-            payload.put("serverUuids", serverUuids.stream().map(report -> Map.of(
-                    "accountId", report.accountId(), "serverUuid", report.serverUuid())).toList());
-        }
         String body = mapper.writeValueAsString(payload);
         String timestamp = Long.toString(System.currentTimeMillis());
         String requestId = UUID.randomUUID().toString();

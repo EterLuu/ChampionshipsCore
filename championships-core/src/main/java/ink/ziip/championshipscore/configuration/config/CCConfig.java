@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.configuration.config;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.player.identity.PlayerUuidSource;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -21,7 +22,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 19;
+        return 20;
     }
 
     /** Migrates the Bingo-owned Redis connection into the shared Core infrastructure section. */
@@ -36,8 +37,12 @@ public class CCConfig extends BaseConfigurationFile {
         String legacyMode = outdated.getString("identity.mode", "");
         String legacySource = outdated.getString("identity.server-uuid-source", "OFFLINE");
         if (legacyMode.isBlank() || "SERVER_UUID".equalsIgnoreCase(legacyMode)
-                || "CUSTOM_UUID".equalsIgnoreCase(legacyMode))
-            outdated.set("identity.mode", "PROFILE_API".equalsIgnoreCase(legacySource) ? "ONLINE" : "OFFLINE");
+                || "CUSTOM_UUID".equalsIgnoreCase(legacyMode)) {
+            outdated.set("identity.mode", "PROFILE_API".equalsIgnoreCase(legacySource)
+                    ? "PROFILE_UUID" : "OFFLINE");
+        } else if ("ONLINE".equalsIgnoreCase(legacyMode) || "PROFILE_API".equalsIgnoreCase(legacyMode)) {
+            outdated.set("identity.mode", "PROFILE_UUID");
+        }
         if (!outdated.contains("identity.profile-api-base-url")) {
             String legacyBaseUrl = outdated.getString(
                     "identity.server-profile-api-base-url", "https://api.mojang.com");
@@ -63,6 +68,12 @@ public class CCConfig extends BaseConfigurationFile {
             outdated.set("redis.reconciliation-seconds", 30);
         }
         outdated.set("bingo.redis", null);
+    }
+
+    @Override
+    protected void loadCustomFileOptions() {
+        PlayerUuidSource source = PlayerUuidSource.parse(IDENTITY_MODE);
+        source.validateConfiguration(IDENTITY_PROFILE_API_BASE_URL);
     }
 
     // Games
@@ -150,8 +161,8 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "whitelist")
     public static List<String> WHITELIST;
 
-    // Offline servers derive OfflinePlayer UUIDs; online/authlib deployments query their
-    // authoritative Mojang-compatible name-profile API.
+    // OFFLINE derives OfflinePlayer UUIDs. PROFILE_UUID queries the authoritative
+    // Mojang-compatible name-profile API which must return the UUID forwarded by the proxy at login.
     @ConfigOption(path = "identity.mode")
     public static String IDENTITY_MODE;
 

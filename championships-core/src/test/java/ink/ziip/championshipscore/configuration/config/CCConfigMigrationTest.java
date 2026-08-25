@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CCConfigMigrationTest {
     @Test
-    void replacesLegacyUuidModesWithOfflineOrOnlineProfileLookup() throws Exception {
+    void replacesLegacyUuidModesWithOfflineOrProfileUuidLookup() throws Exception {
         YamlConfiguration offline = new YamlConfiguration();
         offline.loadFromString("""
                 identity:
@@ -30,7 +30,7 @@ class CCConfigMigrationTest {
                   server-profile-api-base-url: https://auth.example.test/api/yggdrasil
                 """);
         CCConfig.migrateIdentityConfiguration(online);
-        assertEquals("ONLINE", online.getString("identity.mode"));
+        assertEquals("PROFILE_UUID", online.getString("identity.mode"));
         assertEquals("https://auth.example.test/api/yggdrasil",
                 online.getString("identity.profile-api-base-url"));
 
@@ -46,6 +46,15 @@ class CCConfigMigrationTest {
         assertEquals("OFFLINE", custom.getString("identity.mode"));
         assertEquals("https://api.mojang.com",
                 custom.getString("identity.profile-api-base-url"));
+
+        YamlConfiguration oldOnline = new YamlConfiguration();
+        oldOnline.loadFromString("""
+                identity:
+                  mode: ONLINE
+                  profile-api-base-url: https://profiles.example.test
+                """);
+        CCConfig.migrateIdentityConfiguration(oldOnline);
+        assertEquals("PROFILE_UUID", oldOnline.getString("identity.mode"));
     }
 
     @Test

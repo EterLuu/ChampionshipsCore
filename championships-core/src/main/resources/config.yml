@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 19
+  version: 20
 mode: "CHAMPIONSHIP"
 # DAILY opens the self-service game menu and queues. It does not disable /cc event or /cc game start.
 daily:
@@ -39,9 +39,10 @@ daily:
       concurrent-instances: 2
 max-players: 100
 whitelist: [ ]
-# The UUID rule used by this server before website identities are applied.
-# OFFLINE uses the offline-player rule; ONLINE queries the server's online profile service.
-# The website's "server original / website unified" switch is configured separately in cc-web.
+# Only used when Core must resolve an offline player's name (for example, adding a team member).
+# OFFLINE derives OfflinePlayer:<name> locally. PROFILE_UUID queries the configured standard
+# /users/profiles/minecraft/<name> API and must return the UUID forwarded by the proxy at login.
+# Core never replaces an online player's proxy/Bukkit UUID with either rule.
 identity:
   mode: "OFFLINE"
   profile-api-base-url: "https://api.mojang.com"

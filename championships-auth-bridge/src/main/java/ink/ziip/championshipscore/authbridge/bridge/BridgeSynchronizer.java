@@ -1,6 +1,5 @@
 package ink.ziip.championshipscore.authbridge.bridge;
 
-import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
 import ink.ziip.championshipscore.api.player.event.PlayerIdentityMigrationEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
@@ -36,6 +35,7 @@ public final class BridgeSynchronizer implements Runnable {
     private final BridgeApiClient client;
     private final AuthMeHashStore authMe;
     private final LocalAccessState state;
+    private final BridgeUuidResolver uuidResolver;
     private final String usernameUpdatedMessage;
     private final String accessRevokedMessage;
     private final AtomicBoolean running = new AtomicBoolean();
@@ -45,10 +45,18 @@ public final class BridgeSynchronizer implements Runnable {
     public BridgeSynchronizer(Plugin plugin, BridgeApiClient client, AuthMeHashStore authMe,
                               LocalAccessState state, String usernameUpdatedMessage,
                               String accessRevokedMessage) {
+        this(plugin, client, authMe, state, usernameUpdatedMessage, accessRevokedMessage,
+                new BridgeUuidResolver(java.time.Duration.ofSeconds(5), java.time.Duration.ofSeconds(10)));
+    }
+
+    BridgeSynchronizer(Plugin plugin, BridgeApiClient client, AuthMeHashStore authMe,
+                       LocalAccessState state, String usernameUpdatedMessage,
+                       String accessRevokedMessage, BridgeUuidResolver uuidResolver) {
         this.plugin = plugin;
         this.client = client;
         this.authMe = authMe;
         this.state = state;
+        this.uuidResolver = uuidResolver;
         this.usernameUpdatedMessage = usernameUpdatedMessage;
         this.accessRevokedMessage = accessRevokedMessage;
     }
@@ -64,15 +72,12 @@ public final class BridgeSynchronizer implements Runnable {
 
             BridgeChangeBatch batch = client.changesAfter(state.cursor());
             validateBatch(batch);
-            Map<String, LocalAccessState.ServerUuidReport> reports = new LinkedHashMap<>();
             for (BridgeChange change : batch.changes()) {
                 if (change == null) throw new IllegalStateException("Bridge API response contains a null change");
-                LocalAccessState.ServerUuidReport report = apply(change);
-                if (report != null) reports.put(report.accountId(), report);
+                apply(change);
             }
-            List<LocalAccessState.ServerUuidReport> reportList = List.copyOf(reports.values());
-            state.advance(batch.nextCursor(), reportList);
-            client.acknowledge(batch.nextCursor(), reportList);
+            state.advance(batch.nextCursor());
+            client.acknowledge(batch.nextCursor());
             state.confirmAcknowledged(batch.nextCursor());
             consecutiveFailures = 0;
         } catch (Exception exception) {
@@ -96,7 +101,7 @@ public final class BridgeSynchronizer implements Runnable {
         for (BridgeSnapshotPlayer player : snapshot.players()) {
             String username = requireUsername(player.username());
             String accountId = requireAccountId(player.accountId());
-            UUID uuid = parseUuid(player.minecraftUuid(), "minecraftUuid");
+            UUID uuid = resolveUuid(username, player.uuidSource(), player.minecraftUuid());
             authMe.provision(username, requirePasswordHash(player.passwordHash()), uuid);
             state.recordIdentity(username, accountId, uuid.toString());
             state.setAuthVersion(username, player.version());
@@ -135,7 +140,7 @@ public final class BridgeSynchronizer implements Runnable {
     private void retryPendingAcknowledgement() throws Exception {
         LocalAccessState.PendingAcknowledgement pending = state.pendingAcknowledgement();
         if (pending == null) return;
-        client.acknowledge(pending.cursor(), pending.serverUuids());
+        client.acknowledge(pending.cursor());
         state.confirmAcknowledged(pending.cursor());
     }
 
@@ -154,23 +159,22 @@ public final class BridgeSynchronizer implements Runnable {
         }
     }
 
-    private LocalAccessState.ServerUuidReport apply(BridgeChange change) {
+    private void apply(BridgeChange change) {
         String username = requireUsername(change.authmeUsername());
         String accountId = requireAccountId(change.accountId());
         String operation = change.operation();
         if (operation == null || operation.isBlank()) {
             throw new IllegalArgumentException("Bridge change is missing operation (id=" + change.id() + ")");
         }
-        boolean requiresUuid = Set.of("PROVISION", "PASSWORD_UPDATED", "USERNAME_UPDATED", "WHITELISTED")
+        boolean requiresUuid = Set.of("PROVISION", "USERNAME_UPDATED", "WHITELISTED")
                 .contains(operation);
-        UUID uuid = requiresUuid
-                ? resolveEffectiveUuid(change.identityMode(), username, accountId, change.minecraftUuid()) : null;
+        UUID uuid = requiresUuid ? resolveUuid(username, change.uuidSource(), change.minecraftUuid()) : null;
         switch (operation) {
             case "PROVISION" -> {
                 applyPasswordIfCurrent(change, requireUuid(uuid));
                 state.recordIdentity(username, accountId, uuid.toString());
             }
-            case "PASSWORD_UPDATED" -> applyPasswordIfCurrent(change, requireUuid(uuid));
+            case "PASSWORD_UPDATED" -> applyPasswordIfCurrent(change);
             case "USERNAME_UPDATED" -> {
                 String oldUsername = requireUsername(change.oldAuthmeUsername());
                 authMe.rename(oldUsername, username, requireUuid(uuid));
@@ -189,29 +193,22 @@ public final class BridgeSynchronizer implements Runnable {
             }
             default -> throw new IllegalArgumentException("Unknown bridge operation: " + operation);
         }
-        return requiresUuid && "SERVER_UUID".equals(change.identityMode())
-                ? new LocalAccessState.ServerUuidReport(accountId, uuid.toString()) : null;
     }
 
-    private UUID resolveEffectiveUuid(String mode, String username, String accountId, String suppliedUuid) {
-        if ("SERVER_UUID".equals(mode)) {
-            try {
-                return ChampionshipsCore.getInstance().getPlayerManager().resolveNativeUuid(username);
-            } catch (Exception failure) {
-                throw new IllegalStateException("Unable to resolve server identity for " + username, failure);
-            }
-        }
-        UUID uuid = parseUuid(suppliedUuid == null || suppliedUuid.isBlank() ? accountId : suppliedUuid,
-                "minecraftUuid");
-        if ("CUSTOM_UUID".equals(mode) && !uuid.equals(parseUuid(accountId, "accountId"))) {
-            throw new IllegalStateException("Website identity does not match account identity for " + username);
-        }
-        return uuid;
+    /** cc-web chooses the source; Bridge only executes that explicit source. */
+    private UUID resolveUuid(String username, String source, String suppliedUuid) {
+        return uuidResolver.resolve(username, source, suppliedUuid);
     }
 
     private void applyPasswordIfCurrent(BridgeChange change, UUID uuid) {
         if (change.version() < state.authVersion(change.authmeUsername())) return;
         authMe.provision(change.authmeUsername(), change.passwordHash(), uuid);
+        state.setAuthVersion(change.authmeUsername(), change.version());
+    }
+
+    private void applyPasswordIfCurrent(BridgeChange change) {
+        if (change.version() < state.authVersion(change.authmeUsername())) return;
+        authMe.updatePassword(change.authmeUsername(), change.passwordHash());
         state.setAuthVersion(change.authmeUsername(), change.version());
     }
 
@@ -256,31 +253,18 @@ public final class BridgeSynchronizer implements Runnable {
     }
 
     private Map<String, Object> migrateIdentities(BridgeControlJob job) {
-        if (!("SERVER_UUID".equals(job.fromMode()) || "CUSTOM_UUID".equals(job.fromMode()))
-                || !("SERVER_UUID".equals(job.toMode()) || "CUSTOM_UUID".equals(job.toMode()))
-                || job.fromMode().equals(job.toMode())) {
-            throw new IllegalArgumentException("Identity migration modes are invalid");
-        }
-
         List<PlayerUuidMigration> coreMigrations = new ArrayList<>();
         List<AuthMeHashStore.UuidMigration> authMeMigrations = new ArrayList<>();
         Map<String, String> uuidsByAccount = new LinkedHashMap<>();
-        List<Map<String, String>> serverUuidReports = new ArrayList<>();
+        Set<String> accountIds = new LinkedHashSet<>();
+        Set<UUID> targetUuids = new LinkedHashSet<>();
         for (BridgeControlPlayer player : requirePlayers(job)) {
             String username = requireUsername(player.username());
             String accountId = requireAccountId(player.accountId());
+            if (!accountIds.add(accountId)) throw new IllegalArgumentException("Duplicate accountId in identity migration");
             UUID fromUuid = parseUuid(player.fromUuid(), "fromUuid");
-            UUID toUuid;
-            if ("SERVER_UUID".equals(job.toMode())) {
-                try {
-                    toUuid = ChampionshipsCore.getInstance().getPlayerManager().resolveNativeUuid(username);
-                } catch (Exception failure) {
-                    throw new IllegalStateException("Unable to resolve server identity for " + username, failure);
-                }
-                serverUuidReports.add(Map.of("accountId", accountId, "serverUuid", toUuid.toString()));
-            } else {
-                toUuid = parseUuid(accountId, "accountId");
-            }
+            UUID toUuid = parseUuid(player.toUuid(), "toUuid");
+            if (!targetUuids.add(toUuid)) throw new IllegalArgumentException("Duplicate toUuid in identity migration");
             coreMigrations.add(new PlayerUuidMigration(username, fromUuid, toUuid));
             authMeMigrations.add(new AuthMeHashStore.UuidMigration(username, fromUuid, toUuid));
             uuidsByAccount.put(accountId, toUuid.toString());
@@ -299,7 +283,6 @@ public final class BridgeSynchronizer implements Runnable {
         result.put("coreChanged", coreChanged);
         result.put("authMeChanged", authMeResult.changed());
         result.put("authMeMissing", authMeResult.missing());
-        if (!serverUuidReports.isEmpty()) result.put("serverUuids", serverUuidReports);
         return result;
     }
 
@@ -307,15 +290,14 @@ public final class BridgeSynchronizer implements Runnable {
         List<AuthMeHashStore.ProvisionAccount> accounts = requirePlayers(job).stream()
                 .map(player -> new AuthMeHashStore.ProvisionAccount(
                         requireUsername(player.username()), requirePasswordHash(player.passwordHash()),
-                        resolveControlPlayerUuid(job, player)))
+                        resolveControlPlayerUuid(player)))
                 .toList();
         AuthMeHashStore.ReconcileResult imported = authMe.importMissing(accounts);
         return Map.of("examined", imported.examined(), "imported", imported.changed());
     }
 
-    private UUID resolveControlPlayerUuid(BridgeControlJob job, BridgeControlPlayer player) {
-        return resolveEffectiveUuid(job.identityMode(), requireUsername(player.username()),
-                requireAccountId(player.accountId()), player.minecraftUuid());
+    private UUID resolveControlPlayerUuid(BridgeControlPlayer player) {
+        return resolveUuid(requireUsername(player.username()), player.uuidSource(), player.minecraftUuid());
     }
 
     private Map<String, Object> removeUnknown(BridgeControlJob job) {
@@ -373,8 +355,8 @@ public final class BridgeSynchronizer implements Runnable {
 
     private static UUID parseUuid(String value, String field) {
         try {
-            return UUID.fromString(value);
-        } catch (NullPointerException | IllegalArgumentException exception) {
+            return BridgeUuidResolver.parseUuid(value, field);
+        } catch (RuntimeException exception) {
             throw new IllegalArgumentException("Invalid " + field, exception);
         }
     }

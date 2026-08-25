@@ -115,7 +115,7 @@ mvn clean package
 
 仓库使用 Maven Reactor 管理共享协议、纯 Java Bingo 计分引擎、Paper/Folia 平台层、Redis transport、独立 Bingo Worker、压测插件、Core 插件及可选认证组件。根目录构建后，Core 制品位于 `target/ChampionshipsCore-1.3-SNAPSHOT.jar`，Bingo Worker 制品位于 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar`。
 
-`championships-auth-bridge` 是可选的 Paper 侧组件，用于将网站绑定资料同步到 AuthMe；`championships-auth-proxy` 是可选的 BungeeCord 侧组件，用于在代理登录阶段执行网站账户准入、封禁检查和统一 UUID 注入。两者均不替代 ChampionshipsCore 的赛事、队伍或积分功能。未部署这些组件时，Core 使用服务端已提供的玩家档案与 UUID。
+`championships-auth-bridge` 是可选的 Paper 侧组件，用于将网站绑定资料同步到 AuthMe 并核对登录 UUID；`championships-auth-proxy` 是可选的 BungeeCord 侧组件，用于在代理登录阶段执行网站账户准入、封禁检查和有效 UUID 注入。两者均不替代 ChampionshipsCore 的赛事、队伍或积分功能。UUID 的跨组件边界见 [player-uuid-contract.md](docs/player-uuid-contract.md)。
 
 远程 Bingo 可通过 `bingo.execution-mode: REMOTE` 把世界与玩法执行迁移到独立 Folia Worker；`LOCAL` 模式仍保留为单服执行方案。部署前请阅读 [Worker README](championships-bingo-worker/README.md)、[跨服架构与上线流程](docs/bingo-remote-architecture.md) 和 [64 人性能指南](docs/bingo-64-player-performance-report.md)。性能指南中的逻辑玩家压测只覆盖区块与实体负载，不代替真实客户端的端到端验收。压测插件只能临时安装在可丢弃的测试世界，不得留在生产服务器。
 
@@ -248,7 +248,7 @@ light_gray cyan purple blue brown green red black
 /cc team member add red_rabbits Alex
 ```
 
-每名玩家只能属于一支队伍，人数不能超过 `team.max-members`。`identity.mode` 只描述服务器原有身份来源：离线服务器按照 Minecraft 的 `OfflinePlayer:<玩家名>` 规则计算 UUID；正版服务器调用 `identity.profile-api-base-url` 的标准 `/users/profiles/minecraft/<玩家名>` 接口。网站当前使用“服务器原有身份”还是“网站统一身份”由 cc-web 独立管理，插件不会自行改写 authlib 转发的登录档案。档案接口返回 204/404 时会明确提示玩家未注册，服务异常、响应格式错误与本地身份冲突也会分别反馈，且不会静默回退为离线 UUID。
+每名玩家只能属于一支队伍，人数不能超过 `team.max-members`。`identity.mode` 只在管理员按名称处理离线玩家时生效：`OFFLINE` 按 Minecraft 的 `OfflinePlayer:<玩家名>` 规则计算 UUID；`PROFILE_UUID` 调用 `identity.profile-api-base-url` 的标准 `/users/profiles/minecraft/<玩家名>` 接口。`PROFILE_UUID` 的返回值必须与代理登录时转发的 UUID 相同。在线玩家始终使用 Bukkit/代理提供的 UUID；档案接口返回 204/404、服务异常、响应格式错误与本地身份冲突都会明确失败，绝不静默回退为离线 UUID。完整边界见 [player-uuid-contract.md](docs/player-uuid-contract.md)。
 
 ### 查询、传送和删除
 

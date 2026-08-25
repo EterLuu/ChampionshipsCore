@@ -36,15 +36,10 @@ public final class ProfileUuidResolver {
         }
         final URI base;
         try {
-            if (baseUrl == null || baseUrl.isBlank()) throw new IllegalArgumentException("blank URL");
-            base = URI.create(baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl);
+            base = validatedBaseUri(baseUrl);
         } catch (RuntimeException exception) {
             throw new PlayerUuidLookupException(PlayerUuidLookupException.Reason.CONFIGURATION,
                     "Invalid profile API base URL", exception);
-        }
-        if (!"http".equalsIgnoreCase(base.getScheme()) && !"https".equalsIgnoreCase(base.getScheme())) {
-            throw new PlayerUuidLookupException(PlayerUuidLookupException.Reason.CONFIGURATION,
-                    "Profile API URL must use HTTP or HTTPS");
         }
         HttpRequest request = HttpRequest.newBuilder(
                         URI.create(base + "/users/profiles/minecraft/" + username))
@@ -116,5 +111,29 @@ public final class ProfileUuidResolver {
         if (!compact.matches("[0-9a-fA-F]{32}")) throw new IllegalArgumentException("Invalid profile UUID");
         return UUID.fromString(compact.substring(0, 8) + "-" + compact.substring(8, 12) + "-"
                 + compact.substring(12, 16) + "-" + compact.substring(16, 20) + "-" + compact.substring(20));
+    }
+
+    /**
+     * A PROFILE_UUID endpoint must be a plain HTTP(S) Yggdrasil/Mojang-compatible base URL.
+     * Queries and fragments are rejected because Core appends the standard name-profile path.
+     */
+    static void validateBaseUrl(String baseUrl) {
+        validatedBaseUri(baseUrl);
+    }
+
+    private static @NotNull URI validatedBaseUri(String baseUrl) {
+        if (baseUrl == null || baseUrl.isBlank()) throw new IllegalArgumentException("Profile API URL is blank");
+        String normalized = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        URI base = URI.create(normalized);
+        if (!"http".equalsIgnoreCase(base.getScheme()) && !"https".equalsIgnoreCase(base.getScheme())) {
+            throw new IllegalArgumentException("Profile API URL must use HTTP or HTTPS");
+        }
+        if (base.getHost() == null || base.getHost().isBlank()) {
+            throw new IllegalArgumentException("Profile API URL must include a host");
+        }
+        if (base.getRawQuery() != null || base.getRawFragment() != null) {
+            throw new IllegalArgumentException("Profile API URL must not include a query or fragment");
+        }
+        return base;
     }
 }

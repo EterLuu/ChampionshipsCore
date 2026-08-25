@@ -7,9 +7,8 @@ public record BridgeChange(
     int version,
     String authmeUsername,
     String oldAuthmeUsername,
-    String identityMode,
+    String uuidSource,
     String minecraftUuid,
-    String oldMinecraftUuid,
     String passwordHash,
     String reason,
     String expiresAt
