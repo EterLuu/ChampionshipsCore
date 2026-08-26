@@ -16,6 +16,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -86,8 +89,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
                     event.getConnection().setUniqueId(UUID.fromString(profile.uuid));
                 }
                 case "UNBOUND" -> reject(event, notBoundMessage);
-                case "BANNED" -> reject(event, profile.reason == null || profile.reason.isBlank()
-                        ? bannedMessage : bannedMessage + "\n" + profile.reason);
+                case "BANNED" -> reject(event, bannedMessage(profile.reason, profile.expiresAt));
                 case "REVOKED" -> reject(event, revokedMessage);
                 default -> {
                     getLogger().warning("Unexpected login profile status for " + event.getConnection().getName() + ": " + profile.status);
@@ -120,12 +122,35 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
         event.setCancelled(true);
     }
 
-    private void disconnectBannedPlayer(String username, String reason) {
-        String message = reason == null || reason.isBlank() ? bannedMessage : bannedMessage + "\n" + reason;
+    private void disconnectBannedPlayer(String username, String reason, String expiresAt) {
+        String message = bannedMessage(reason, expiresAt);
         for (ProxiedPlayer player : getProxy().getPlayers()) {
             if (player.isConnected() && player.getName().equalsIgnoreCase(username)) {
                 player.disconnect(TextComponent.fromLegacyText(ProxyText.format(message)));
             }
+        }
+    }
+
+    private String bannedMessage(String reason, String expiresAt) {
+        return applyPlaceholders(bannedMessage, "reason", reason == null || reason.isBlank() ? "违反服务器规则" : reason,
+                "expires", formatExpiry(expiresAt));
+    }
+
+    private static String applyPlaceholders(String template, String firstKey, String firstValue,
+                                            String secondKey, String secondValue) {
+        return (template == null ? "" : template)
+                .replace("%" + firstKey + "%", firstValue == null ? "" : firstValue)
+                .replace("%" + secondKey + "%", secondValue == null ? "" : secondValue);
+    }
+
+    private static String formatExpiry(String value) {
+        if (value == null || value.isBlank()) return "请查看账号页面";
+        try {
+            return DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm")
+                    .withZone(ZoneId.systemDefault())
+                    .format(Instant.parse(value));
+        } catch (Exception ignored) {
+            return "请查看账号页面";
         }
     }
 }

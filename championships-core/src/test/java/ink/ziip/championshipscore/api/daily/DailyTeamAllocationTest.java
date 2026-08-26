@@ -17,8 +17,8 @@ class DailyTeamAllocationTest {
     private static final DailyRules SOLO_RULES = new DailyRules(1, 16, 4, 4, 60);
 
     @Test
-    void balancesSmallSoloLobbiesAroundTwoPlayersPerTeam() {
-        assertEquals(List.of(1, 2), sizes(DailyManager.allocate(solos(3), RULES)));
+    void doesNotCreateAnUnbalancedTwoVersusOneSoloMatch() {
+        assertEquals(List.of(1, 1, 1), sizes(DailyManager.allocate(solos(3), RULES)));
         assertEquals(List.of(2, 2), sizes(DailyManager.allocate(solos(4), RULES)));
         assertEquals(List.of(2, 2, 2), sizes(DailyManager.allocate(solos(6), RULES)));
     }
@@ -35,6 +35,20 @@ class DailyTeamAllocationTest {
         List<Set<UUID>> teams = DailyManager.allocate(groups, RULES);
         assertEquals(List.of(1, 2, 2), sizes(teams));
         assertTrue(teams.stream().anyMatch(team -> team.containsAll(party)));
+    }
+
+    @Test
+    void choosesBalancedTeamsWhenPartiesMakeThePreferredCountUneven() {
+        List<DailyQueue.Group> groups = new ArrayList<>();
+        groups.add(group(sizedPlayers(3)));
+        groups.add(group(sizedPlayers(3)));
+
+        List<Set<UUID>> teams = DailyManager.allocate(groups, RULES);
+        assertEquals(List.of(3, 3), sizes(teams));
+        assertTrue(teams.stream().anyMatch(team -> team.size() == 3
+                && groups.get(0).players().stream().allMatch(team::contains)));
+        assertTrue(teams.stream().anyMatch(team -> team.size() == 3
+                && groups.get(1).players().stream().allMatch(team::contains)));
     }
 
     @Test
@@ -64,6 +78,12 @@ class DailyTeamAllocationTest {
 
     private static DailyQueue.Group group(Set<UUID> players) {
         return new DailyQueue.Group(UUID.randomUUID(), new LinkedHashSet<>(players));
+    }
+
+    private static Set<UUID> sizedPlayers(int count) {
+        Set<UUID> players = new LinkedHashSet<>();
+        for (int index = 0; index < count; index++) players.add(UUID.randomUUID());
+        return players;
     }
 
     private static List<Integer> sizes(List<Set<UUID>> teams) {

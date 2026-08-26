@@ -98,6 +98,8 @@ final class WorkerMatchSession {
     private final Map<UUID, PlayerSnapshot> participants = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<Integer, TeamSnapshot> teams;
     private final Set<UUID> arrived = new HashSet<>();
+    /** Last live position for a participant who disconnected during the match. */
+    private final Map<UUID, Location> lastQuitLocations = new HashMap<>();
     private final Set<UUID> preparedPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<UUID> bulkScatterPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<TeamCell> completedTeamCells = ConcurrentHashMap.newKeySet();
@@ -308,7 +310,13 @@ final class WorkerMatchSession {
                     && lifecycle.state() != MatchState.RUNNING) {
                 return CompletableFuture.completedFuture(false);
             }
-            returning = arrived.contains(player.getUniqueId());
+            // Every required player has already arrived before COUNTDOWN/RUNNING. Treat a player
+            // reconnecting after the round was prepared as a return even if the async arrival
+            // acknowledgement raced the disconnect; otherwise they would be prepared and scattered
+            // like a new participant, which resets their live position and objective baseline.
+            returning = arrived.contains(player.getUniqueId())
+                    || lastQuitLocations.containsKey(player.getUniqueId())
+                    || (roundPrepared && snapshot.role() == ParticipantRole.PLAYER);
             currentState = lifecycle.state();
             if (returning) {
                 scheduler.runEntity(player, () -> restoreParticipantState(player, snapshot));
@@ -658,6 +666,12 @@ final class WorkerMatchSession {
         observe(player);
     }
 
+    void recordBoatMovement(Player player, double centimeters) {
+        if (!isRunningPlayer(player.getUniqueId())) return;
+        objectivesFor(player.getUniqueId()).recordBoatMovement(player, centimeters);
+        observe(player);
+    }
+
     private void acceptCompletion(PlayerSnapshot player, int cellIndex) {
         CompletionObservation observation;
         ScoringDecision decision;
@@ -942,10 +956,22 @@ final class WorkerMatchSession {
     }
 
     void playerLeft(Player player) {
-        if (!owns(player.getUniqueId())) return;
+        UUID playerId = player.getUniqueId();
+        if (!owns(playerId)) return;
+        Location quitLocation = player.getLocation().clone();
+        String quitWorldName = player.getWorld() == null ? null : player.getWorld().getName();
+        synchronized (this) {
+            MatchState current = lifecycle.state();
+            if ((current == MatchState.COUNTDOWN || current == MatchState.RUNNING)
+                    && isBingoWorldName(quitWorldName)) {
+                // Proxy reconnects may load the player's data from another backend. Keep an
+                // authoritative worker-side position so returning to this match never scatters them.
+                lastQuitLocations.put(playerId, quitLocation);
+            }
+        }
         sidebar.hide(player);
         scheduler.runGlobal(this::reconcileVisibility);
-        emit(MatchEventType.PLAYER_LEFT, Map.of("playerId", player.getUniqueId().toString()));
+        emit(MatchEventType.PLAYER_LEFT, Map.of("playerId", playerId.toString()));
     }
 
     void requestVoluntaryLeave(Player player) {
@@ -963,6 +989,7 @@ final class WorkerMatchSession {
                 if (participant == null || participant.role() != ParticipantRole.PLAYER) continue;
                 participants.remove(playerId);
                 arrived.remove(playerId);
+                lastQuitLocations.remove(playerId);
                 preparedPlayers.remove(playerId);
                 bulkScatterPlayers.remove(playerId);
             }
@@ -1232,34 +1259,66 @@ final class WorkerMatchSession {
     }
 
     private void restoreParticipantState(Player player, PlayerSnapshot snapshot) {
+        Location lastQuitLocation;
+        synchronized (this) {
+            lastQuitLocation = lastQuitLocations.remove(snapshot.uuid());
+        }
         sidebar.show(player);
         refreshSidebar(player, snapshot);
         if (timerBossBar != null) player.showBossBar(timerBossBar);
         if (introductionActive) {
             if (snapshot.role() == ParticipantRole.SPECTATOR) applySpectatorState(player);
             else applyIntroductionMode(player);
+            restoreQuitLocation(player, lastQuitLocation);
             return;
         }
         if (snapshot.role() == ParticipantRole.SPECTATOR) {
             applySpectatorState(player);
+            restoreQuitLocation(player, lastQuitLocation);
             return;
         }
         if (!roundPrepared) {
             applyWaitingParticipantMode(player, false);
+            restoreQuitLocation(player, lastQuitLocation);
             return;
         }
         if (preparedPlayers.contains(snapshot.uuid())) {
             prepareParticipantForRound(player, snapshot, true);
+            restoreQuitLocation(player, lastQuitLocation);
+            return;
+        }
+        if (lastQuitLocation != null) {
+            // A disconnect proves this is an existing participant even if the initial preparation
+            // task had not yet marked the UUID. Reissue only the missing presentation and statistic
+            // baselines; never revoke advancements, clear inventory, or scatter them again.
+            prepareParticipantForRound(player, snapshot, true);
+            objectivesFor(snapshot.uuid()).captureBaselines(player);
+            preparedPlayers.add(snapshot.uuid());
+            restoreQuitLocation(player, lastQuitLocation);
             return;
         }
         prepareParticipantForRound(player, snapshot, false);
-        if (bulkScatterPlayers.contains(snapshot.uuid())) return;
+        if (bulkScatterPlayers.contains(snapshot.uuid())) {
+            restoreQuitLocation(player, lastQuitLocation);
+            return;
+        }
         World world = plugin.getServer().getWorld(config.overworld());
         if (world != null) {
             scatter.performScatterAsync(world, List.of(player), manifest.runtimeRules().scatterRadius(),
                     manifest.runtimeRules().scatterJitter(),
                     manifest.runtimeRules().scatterMaxTries(), null);
         }
+        restoreQuitLocation(player, lastQuitLocation);
+    }
+
+    private void restoreQuitLocation(Player player, Location location) {
+        if (location == null || location.getWorld() == null) return;
+        player.teleportAsync(location);
+    }
+
+    private boolean isBingoWorldName(String name) {
+        if (name == null) return false;
+        return name.equals(config.overworld()) || name.equals(config.nether()) || name.equals(config.end());
     }
 
     private void prepareParticipantForRound(Player player, PlayerSnapshot snapshot, boolean preserveInventory) {
@@ -1278,7 +1337,7 @@ final class WorkerMatchSession {
         resetVitals(player);
         if (!BingoStarterKitService.hasKit(player)) {
             WorkerStarterKit.give(player, team, manifest.runtimeRules().presentation(),
-                    manifest.scoring().variant().remix());
+                    manifest.scoring().variant().remix(), manifest.runMode() == MatchRunMode.DAILY);
         }
         ensureCard(player, team.id());
         BingoPermanentEffectService.ensure(player, permanentEffects);
@@ -1413,6 +1472,7 @@ final class WorkerMatchSession {
             }
             participants.remove(playerId);
             arrived.remove(playerId);
+            lastQuitLocations.remove(playerId);
         }
         releaseVisibilityForTarget(playerId);
         updateSidebar();

@@ -49,6 +49,19 @@ class WorkerWorldLifecycleContractTest {
         assertFalse(session.contains("openSpectatorTeams"));
     }
 
+    @Test
+    void reconnectRestoresTheLiveParticipantInsteadOfScatteringAgain() throws IOException {
+        String session = source("WorkerMatchSession.java");
+
+        assertTrue(session.contains("Location quitLocation = player.getLocation().clone()"));
+        assertTrue(session.contains("lastQuitLocations.put(playerId, quitLocation)"));
+        assertTrue(session.contains("lastQuitLocations.containsKey(player.getUniqueId())"));
+        assertTrue(session.contains("(roundPrepared && snapshot.role() == ParticipantRole.PLAYER)"));
+        assertTrue(session.contains("restoreQuitLocation(player, lastQuitLocation)"));
+        assertTrue(session.contains("player.teleportAsync(location)"));
+        assertTrue(session.contains("lastQuitLocations.remove(playerId)"));
+    }
+
     private static String source(String name) throws IOException {
         return Files.readString(Path.of("src/main/java/ink/ziip/championshipscore/worker", name));
     }

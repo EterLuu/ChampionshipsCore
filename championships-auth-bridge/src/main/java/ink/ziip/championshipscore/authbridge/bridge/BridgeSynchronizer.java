@@ -180,7 +180,7 @@ public final class BridgeSynchronizer implements Runnable {
                 authMe.rename(oldUsername, username, requireUuid(uuid));
                 state.rename(oldUsername, username, accountId, uuid.toString());
                 notifyCoreNameChange(oldUsername, username, uuid);
-                kick(oldUsername, usernameUpdatedMessage);
+                kick(oldUsername, replacePlaceholders(usernameUpdatedMessage, oldUsername, username));
             }
             case "WHITELISTED" -> state.recordIdentity(username, accountId, uuid.toString());
             case "REVOKED" -> {
@@ -321,6 +321,12 @@ public final class BridgeSynchronizer implements Runnable {
                         ? accessRevokedMessage : reason));
             }
         });
+    }
+
+    private static String replacePlaceholders(String template, String oldUsername, String newUsername) {
+        return (template == null ? "" : template)
+                .replace("%old%", oldUsername == null ? "" : oldUsername)
+                .replace("%new%", newUsername == null ? "" : newUsername);
     }
 
     private void notifyCoreNameChange(String oldUsername, String newUsername, UUID replacementUuid) {

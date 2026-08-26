@@ -186,7 +186,6 @@ categories:
       - { stat: WALK_ONE_CM, count: 32 }
       - { stat: SPRINT_ONE_CM, count: 32 }
       - { stat: SWIM_ONE_CM, count: 16 }
-      - { stat: BOAT_ONE_CM, count: 20 }
       - { stat: JUMP, count: 32 }
       - { stat: SLEEP_IN_BED }
       - { path: adventure/sleep_in_bed }

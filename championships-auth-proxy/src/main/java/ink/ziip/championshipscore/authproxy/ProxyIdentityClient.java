@@ -108,6 +108,7 @@ final class ProxyIdentityClient {
         public String status;
         public String uuid;
         public String reason;
+        public String expiresAt;
     }
 
     static final class ProxyBanSnapshot {

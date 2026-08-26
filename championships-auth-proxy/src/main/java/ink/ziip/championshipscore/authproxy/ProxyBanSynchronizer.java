@@ -7,22 +7,26 @@ import java.net.http.HttpTimeoutException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /** Keeps Bungee responsible for disconnecting already connected banned players. */
 final class ProxyBanSynchronizer implements Runnable {
+    @FunctionalInterface
+    interface BanKick {
+        void kick(String username, String reason, String expiresAt);
+    }
+
     private final ProxyIdentityClient client;
     private final ProxyBanState state;
-    private final BiConsumer<String, String> kickBannedPlayer;
+    private final BanKick kickBannedPlayer;
     private final Logger logger;
     private final AtomicBoolean running = new AtomicBoolean();
     private int consecutiveFailures;
     private long lastUnavailableLogAt;
 
     ProxyBanSynchronizer(ProxyIdentityClient client, ProxyBanState state,
-                         BiConsumer<String, String> kickBannedPlayer, Logger logger) {
+                         BanKick kickBannedPlayer, Logger logger) {
         this.client = client;
         this.state = state;
         this.kickBannedPlayer = kickBannedPlayer;
@@ -74,7 +78,7 @@ final class ProxyBanSynchronizer implements Runnable {
         if (snapshot == null || snapshot.bans == null) throw new IllegalStateException("Bridge proxy ban snapshot is incomplete");
         for (ProxyIdentityClient.ProxyBan ban : snapshot.bans) {
             if (ban == null || !isActive(ban.expiresAt)) continue;
-            kick(requireUsername(ban.username), ban.reason);
+            kick(requireUsername(ban.username), ban.reason, ban.expiresAt);
         }
         state.advance(requireCursor(snapshot.nextCursor));
     }
@@ -85,14 +89,14 @@ final class ProxyBanSynchronizer implements Runnable {
         for (ProxyIdentityClient.ProxyChange change : batch.changes) {
             if (change != null && "BANNED".equals(change.operation) && isActive(change.expiresAt)
                     && isMinecraftUsername(change.authmeUsername)) {
-                kick(change.authmeUsername, change.reason);
+                kick(change.authmeUsername, change.reason, change.expiresAt);
             }
         }
         state.advance(requireCursor(batch.nextCursor));
     }
 
-    private void kick(String username, String reason) {
-        kickBannedPlayer.accept(username, reason == null ? "" : reason);
+    private void kick(String username, String reason, String expiresAt) {
+        kickBannedPlayer.kick(username, reason == null ? "" : reason, expiresAt);
     }
 
     private static boolean isActive(String expiresAt) {

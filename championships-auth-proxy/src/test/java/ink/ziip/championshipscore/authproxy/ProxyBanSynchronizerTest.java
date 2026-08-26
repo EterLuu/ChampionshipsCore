@@ -40,15 +40,15 @@ class ProxyBanSynchronizerTest {
             List<String> kicked = new ArrayList<>();
             ProxyBanState state = new ProxyBanState(tempDirectory.resolve("ban-state.properties").toFile());
             ProxyBanSynchronizer synchronizer = new ProxyBanSynchronizer(
-                    client(server), state, (username, reason) -> kicked.add(username + ":" + reason),
+                    client(server), state, (username, reason, expiresAt) -> kicked.add(username + ":" + reason + ":" + expiresAt),
                     java.util.logging.Logger.getLogger("test"));
 
             synchronizer.run();
-            assertEquals(List.of("ActivePlayer:snapshot"), kicked);
+            assertEquals(List.of("ActivePlayer:snapshot:null"), kicked);
             assertEquals("9", state.cursor());
 
             synchronizer.run();
-            assertEquals(List.of("ActivePlayer:snapshot", "NewPlayer:event"), kicked);
+            assertEquals(List.of("ActivePlayer:snapshot:null", "NewPlayer:event:null"), kicked);
             assertEquals("11", state.cursor());
         } finally {
             server.stop(0);
@@ -81,7 +81,7 @@ class ProxyBanSynchronizerTest {
         try {
             ProxyBanState state = new ProxyBanState(tempDirectory.resolve("unavailable.properties").toFile());
             ProxyBanSynchronizer synchronizer = new ProxyBanSynchronizer(
-                    client("http://127.0.0.1:" + port), state, (username, reason) -> { }, logger);
+                    client("http://127.0.0.1:" + port), state, (username, reason, expiresAt) -> { }, logger);
 
             synchronizer.run();
             synchronizer.run();

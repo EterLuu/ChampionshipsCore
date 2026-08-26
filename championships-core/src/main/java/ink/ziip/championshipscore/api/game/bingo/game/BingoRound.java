@@ -85,6 +85,9 @@ public final class BingoRound {
     /** statistic baselines: player -> (statistic -> value at the moment tracking began). */
     private final Map<UUID, Map<StatisticHandle, Integer>> statBaselines = new HashMap<>();
 
+    /** Explicit boat travel measured from VehicleMoveEvent, used when the vanilla statistic is stale. */
+    private final Map<UUID, Double> boatTravelCentimeters = new HashMap<>();
+
     /** Per-round state for cumulative/distinct EventTask objectives. */
     private final EventProgressTracker eventTracker = new EventProgressTracker();
 
@@ -365,6 +368,12 @@ public final class BingoRound {
 
     public EventProgressTracker eventTracker() {
         return eventTracker;
+    }
+
+    /** Records boat movement for a participant in centimetres. */
+    public void recordBoatMovement(Player player, double centimeters) {
+        if (player == null || !Double.isFinite(centimeters) || centimeters <= 0.0D) return;
+        boatTravelCentimeters.merge(player.getUniqueId(), centimeters, Double::sum);
     }
 
     /** True once every cell on the board has been claimed by at least one team. */
@@ -672,7 +681,7 @@ public final class BingoRound {
             if (!canAttempt(team, index, task) || task.taskType() != TaskData.TaskType.STATISTIC) continue;
             StatisticTask data = (StatisticTask) task.data;
             StatisticHandle h = data.statistic();
-            int delta = readStatistic(player, h) - baseline(player.getUniqueId(), h);
+            int delta = statisticDelta(player, h);
             int target = statisticTarget(data);
             if (delta >= target && completeTask(task, index, player, team, gameTime)) {
                 awardPoints(team, cardOf(team).getTasks().get(index));
@@ -680,6 +689,14 @@ public final class BingoRound {
             }
         }
         return completed;
+    }
+
+    private int statisticDelta(Player player, StatisticHandle handle) {
+        int vanillaDelta = readStatistic(player, handle) - baseline(player.getUniqueId(), handle);
+        if (handle.statisticType() != org.bukkit.Statistic.BOAT_ONE_CM) return vanillaDelta;
+        double tracked = boatTravelCentimeters.getOrDefault(player.getUniqueId(), 0.0D);
+        int trackedDelta = tracked >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) Math.floor(tracked);
+        return Math.max(vanillaDelta, trackedDelta);
     }
 
     /** Checks every state/tracked EventTask for the player's team. */
@@ -964,7 +981,7 @@ public final class BingoRound {
     private static int distinctMembersHeld(Player player, Set<Material> members) {
         if (members == null || members.isEmpty()) return 0;
         Set<Material> distinct = new java.util.HashSet<>();
-        for (ItemStack item : player.getInventory().getStorageContents()) {
+        for (ItemStack item : player.getInventory().getContents()) {
             if (item != null && members.contains(item.getType())) distinct.add(item.getType());
         }
         return distinct.size();

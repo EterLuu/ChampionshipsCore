@@ -1,6 +1,6 @@
 # ChampionshipsCore — Bingo 全局配置
 # 每个场地的几何/积分参数在 bingo/areas/<场地名>.yml 中单独配置。
-config-version: 2
+config-version: 3
 
 # 语言文件：bingo/lang/<locale>.yml（首次启动从插件资源生成）。
 locale: "zh_CN"
@@ -27,7 +27,8 @@ filters:
 
 # 仅用于 CC 的 DAILY 自由游玩；正式赛与管理员手动开局仍使用场地原有固定积分规则。
 daily-vote:
-  seconds-per-phase: 20
+  # All pages share this single countdown.
+  seconds: 20
 
 # 奇遇（Remix）同样只在 DAILY 开局投票完成后抽取。
 remix:

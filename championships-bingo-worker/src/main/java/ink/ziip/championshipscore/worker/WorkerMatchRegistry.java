@@ -262,6 +262,14 @@ final class WorkerMatchRegistry {
         if (session != null) session.recordEventCount(player, bucket);
     }
 
+    void recordBoatMovement(Player player, double centimeters) {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        if (session != null) session.recordBoatMovement(player, centimeters);
+    }
+
     Location respawnLocation(Player player) {
         WorkerMatchSession session;
         synchronized (this) {

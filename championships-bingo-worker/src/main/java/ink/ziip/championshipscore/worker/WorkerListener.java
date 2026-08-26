@@ -19,6 +19,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Campfire;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.AreaEffectCloud;
@@ -86,6 +87,7 @@ import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.raid.RaidTriggerEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
+import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.event.world.GenericGameEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.projectiles.ProjectileSource;
@@ -496,6 +498,21 @@ final class WorkerListener implements Listener {
     public void onProtectedVehicleCollision(VehicleEntityCollisionEvent event) {
         if (event.getEntity() instanceof Player player
                 && registry.isProtectedParticipant(player.getUniqueId())) event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBoatMove(VehicleMoveEvent event) {
+        if (!(event.getVehicle() instanceof Boat boat)) return;
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (from == null || to == null || from.getWorld() == null || to.getWorld() == null
+                || from.getWorld() != to.getWorld()) return;
+        double distance = Math.hypot(to.getX() - from.getX(), to.getZ() - from.getZ());
+        if (!Double.isFinite(distance) || distance <= 0.0D) return;
+        double centimeters = distance * 100.0D;
+        for (org.bukkit.entity.Entity passenger : boat.getPassengers()) {
+            if (passenger instanceof Player player) registry.recordBoatMovement(player, centimeters);
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

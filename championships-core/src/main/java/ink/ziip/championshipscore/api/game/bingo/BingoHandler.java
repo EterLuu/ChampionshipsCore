@@ -19,6 +19,7 @@ import org.bukkit.block.Campfire;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.AreaEffectCloud;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -58,6 +59,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemBreakEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
@@ -343,6 +345,23 @@ public class BingoHandler extends BaseListener {
         if (!running()) return;
         if (event.getWhoClicked() instanceof Player player && !bingoArea.notAreaPlayer(player)) {
             scheduleProgressCheck(player);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBoatMove(VehicleMoveEvent event) {
+        if (!running() || !(event.getVehicle() instanceof Boat boat)) return;
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (from == null || to == null || from.getWorld() == null || to.getWorld() == null
+                || from.getWorld() != to.getWorld()) return;
+        double distance = Math.hypot(to.getX() - from.getX(), to.getZ() - from.getZ());
+        if (!Double.isFinite(distance) || distance <= 0.0D) return;
+        double centimeters = distance * 100.0D;
+        for (Entity passenger : boat.getPassengers()) {
+            if (passenger instanceof Player player && !bingoArea.notAreaPlayer(player)) {
+                bingoArea.recordBoatMovement(player, centimeters);
+            }
         }
     }
 

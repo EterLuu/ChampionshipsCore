@@ -56,6 +56,31 @@ class WorkerObjectivesTest {
         assertEquals(java.util.List.of(6), objectives.matching(player, cell -> true));
     }
 
+    @Test
+    void uniqueCollectScansAllConfiguredWorkBlocks() {
+        WorkerObjectives objectives = new WorkerObjectives(java.util.List.of(
+                new BingoTaskSpec(7, "work-blocks", "event", Map.of(
+                        "trigger", "unique_collect",
+                        "members", "CRAFTING_TABLE,FURNACE,BLAST_FURNACE,SMOKER,STONECUTTER,LOOM,CARTOGRAPHY_TABLE",
+                        "count", "7"))));
+        assertEquals(java.util.List.of(7), objectives.matching(playerWithInventory(
+                stack(Material.CRAFTING_TABLE, 1), stack(Material.FURNACE, 1),
+                stack(Material.BLAST_FURNACE, 1), stack(Material.SMOKER, 1),
+                stack(Material.STONECUTTER, 1), stack(Material.LOOM, 1),
+                stack(Material.CARTOGRAPHY_TABLE, 1)), cell -> true));
+    }
+
+    @Test
+    void boatMovementCompletesWhenVanillaStatisticDoesNotAdvance() {
+        WorkerObjectives objectives = new WorkerObjectives(java.util.List.of(
+                new BingoTaskSpec(8, "boat", "statistic",
+                        Map.of("statistic", "BOAT_ONE_CM", "target", "2000"))));
+        Player player = playerWithStatistic(0);
+        objectives.captureBaselines(player);
+        objectives.recordBoatMovement(player, 2000.0D);
+        assertEquals(java.util.List.of(8), objectives.matching(player, cell -> true));
+    }
+
     private static Player playerWithStatistic(int value) {
         UUID playerId = UUID.randomUUID();
         return proxy(Player.class, (method, args) -> switch (method.getName()) {

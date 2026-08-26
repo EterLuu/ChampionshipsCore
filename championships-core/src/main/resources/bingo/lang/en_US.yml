@@ -245,8 +245,15 @@ mode:
       - "&7at random for this round."
 
 vote:
-  started: "&dMode vote started! Choose this round's mode within {0} seconds."
+  started: "&dBingo vote started! Choose the mode, difficulty, and winning lines within {0} seconds."
   bossbar: "&dBingo vote &7• {0}s remaining"
+  previous: "Previous page"
+  next: "Next page"
+  close: "Close"
+  free_navigation: "You can freely revisit previous pages"
+  page_mode: "Page 1 / 3 • Mode"
+  page_difficulty: "Page 2 / 3 • Difficulty"
+  page_lines: "Page 3 / 3 • Winning lines"
   result: "&6This round's mode: &f{0}"
   result_random: "&6Random mode rolled: &f{0}"
   menu_title: "Choose a game mode"

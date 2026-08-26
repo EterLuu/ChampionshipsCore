@@ -69,7 +69,7 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         bingoDir.mkdirs();
         YamlConfiguration config = loadGlobalConfig(bingoDir);
         if (config == null) return;
-        dailyVoteSeconds = Math.max(5, config.getInt("daily-vote.seconds-per-phase", 20));
+        dailyVoteSeconds = Math.max(5, config.getInt("daily-vote.seconds", 20));
         dailyRemixEnabled = config.getBoolean("remix.enabled", true);
         dailyRemixChance = Math.clamp(config.getDouble("remix.chance", 0.05D), 0D, 1D);
 
@@ -223,16 +223,19 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
 
     private void migrateGlobalConfig(YamlConfiguration config, File file) throws java.io.IOException {
         int version = config.getInt("config-version", 1);
-        if (version >= 2) return;
-        // v1 shipped dim:the_end as an unconditional default. Difficulty voting now owns that rule;
-        // only the untouched legacy singleton is removed, while every custom filter list is preserved.
-        if (config.getStringList("filters.exclude").equals(List.of("dim:the_end")))
-            config.set("filters.exclude", List.of());
-        if (!config.contains("daily-vote.seconds-per-phase"))
-            config.set("daily-vote.seconds-per-phase", 20);
-        if (!config.contains("remix.enabled")) config.set("remix.enabled", true);
-        if (!config.contains("remix.chance")) config.set("remix.chance", 0.05D);
-        config.set("config-version", 2);
+        if (version >= 3) return;
+        if (version < 2) {
+            // v1 shipped dim:the_end as an unconditional default. Difficulty voting now owns that rule;
+            // only the untouched legacy singleton is removed, while every custom filter list is preserved.
+            if (config.getStringList("filters.exclude").equals(List.of("dim:the_end")))
+                config.set("filters.exclude", List.of());
+            if (!config.contains("remix.enabled")) config.set("remix.enabled", true);
+            if (!config.contains("remix.chance")) config.set("remix.chance", 0.05D);
+        }
+        // The paginated DAILY ballot is one vote with multiple views, rather than three timed phases.
+        // Do not carry the old per-phase value forward: the whole ballot defaults to 20 seconds.
+        if (!config.contains("daily-vote.seconds")) config.set("daily-vote.seconds", 20);
+        config.set("config-version", 3);
         config.save(file);
     }
 

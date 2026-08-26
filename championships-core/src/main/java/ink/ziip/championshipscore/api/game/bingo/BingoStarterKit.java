@@ -25,11 +25,16 @@ public final class BingoStarterKit {
 
     public static void give(Player player, ChampionshipTeam team,
                             ink.ziip.championshipscore.protocol.BingoRemix remix) {
+        give(player, team, remix, false);
+    }
+
+    public static void give(Player player, ChampionshipTeam team,
+                            ink.ziip.championshipscore.protocol.BingoRemix remix, boolean daily) {
         if (player != null && team != null) {
             MessageService messages = MessageService.global();
             BingoStarterKitService.give(player, Utils.hex2rgb(team.getColorCode()),
                     messages.component("compass.item_name", team.getName()),
-                    List.of(messages.component("compass.item_hint")), remix);
+                    List.of(messages.component("compass.item_hint")), remix, daily);
         }
     }
 

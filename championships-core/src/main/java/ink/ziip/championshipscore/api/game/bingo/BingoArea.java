@@ -249,7 +249,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             if (team == null) continue;
             // Hand out the starter kit after the inventory clear but before the card, so the card lands
             // in a free slot rather than being blocked by kit items.
-            BingoStarterKit.give(player, team, activeVariant.remix());
+            BingoStarterKit.give(player, team, activeVariant.remix(), dailyRun);
             round.prepareParticipant(player, team);
             if (round.isDifferential()) {
                 MapView view = playerMapViews.computeIfAbsent(player.getUniqueId(), ignored -> Bukkit.createMap(world));
@@ -422,6 +422,13 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() != GameStageEnum.PROGRESS || round == null || player == null) return;
         if (notAreaPlayer(player)) return;
         round.eventTracker().recordDistinct(player, bucket, value);
+        checkPlayerProgress(player);
+    }
+
+    public void recordBoatMovement(Player player, double centimeters) {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || round == null || player == null) return;
+        if (notAreaPlayer(player)) return;
+        round.recordBoatMovement(player, centimeters);
         checkPlayerProgress(player);
     }
 
@@ -822,7 +829,8 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team == null) return;
         if (!BingoStarterKit.hasKit(player)) {
-            BingoStarterKit.give(player, team, activeVariant.remix());
+            boolean dailyRun = getRunMode() == ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY;
+            BingoStarterKit.give(player, team, activeVariant.remix(), dailyRun);
         }
         ensureCardFor(player);
         // Death clears potion effects in vanilla; restore the permanent ones on respawn.

@@ -42,6 +42,7 @@ final class WorkerObjectives {
     private volatile List<Objective> pollingObjectives;
     private volatile Map<String, List<Integer>> advancementCells;
     private final Map<UUID, Map<Integer, Integer>> statisticBaselines = new ConcurrentHashMap<>();
+    private final Map<UUID, Double> boatTravelCentimeters = new ConcurrentHashMap<>();
     private final EventProgress eventProgress = new EventProgress();
 
     WorkerObjectives(List<BingoTaskSpec> specs) {
@@ -66,6 +67,7 @@ final class WorkerObjectives {
         cellsByAdvancement.replaceAll((ignored, cells) -> List.copyOf(cells));
         this.advancementCells = Map.copyOf(cellsByAdvancement);
         statisticBaselines.clear();
+        boatTravelCentimeters.clear();
     }
 
     void captureBaselines(Player player) {
@@ -94,7 +96,16 @@ final class WorkerObjectives {
         List<Integer> matches = new ArrayList<>();
         for (Objective objective : pollingObjectives) {
             if (!eligibleCell.test(objective.cellIndex())) continue;
-            if (objective.matches(player, baselines.getOrDefault(objective.cellIndex(), 0))) {
+            int baseline = baselines.getOrDefault(objective.cellIndex(), 0);
+            boolean matched = objective.matches(player, baseline);
+            if (objective instanceof StatisticObjective statistic
+                    && statistic.statistic() == Statistic.BOAT_ONE_CM) {
+                int vanillaDelta = statistic.read(player) - baseline;
+                double tracked = boatTravelCentimeters.getOrDefault(player.getUniqueId(), 0.0D);
+                int trackedDelta = tracked >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) Math.floor(tracked);
+                matched = Math.max(vanillaDelta, trackedDelta) >= statistic.target();
+            }
+            if (matched) {
                 matches.add(objective.cellIndex());
             }
         }
@@ -127,6 +138,11 @@ final class WorkerObjectives {
 
     void recordCount(Player player, String bucket) {
         eventProgress.increment(player.getUniqueId(), bucket);
+    }
+
+    void recordBoatMovement(Player player, double centimeters) {
+        if (player == null || !Double.isFinite(centimeters) || centimeters <= 0.0D) return;
+        boatTravelCentimeters.merge(player.getUniqueId(), centimeters, Double::sum);
     }
 
     private Objective parse(BingoTaskSpec spec) {
@@ -503,7 +519,7 @@ final class WorkerObjectives {
 
     private static int distinctMembersHeld(Player player, Set<Material> members) {
         Set<Material> distinct = EnumSet.noneOf(Material.class);
-        for (ItemStack item : player.getInventory().getStorageContents()) {
+        for (ItemStack item : player.getInventory().getContents()) {
             if (item != null && members.contains(item.getType())) distinct.add(item.getType());
         }
         return distinct.size();

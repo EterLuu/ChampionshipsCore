@@ -34,7 +34,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -805,8 +807,14 @@ public final class DailyManager extends BaseManager {
     }
 
     /**
-     * Keeps queue groups indivisible and targets roughly two players per team. The configured team size
-     * remains a hard capacity rather than forcing a small lobby into one team.
+     * Allocates indivisible queue groups into the most balanced set of teams that fits the rules.
+     *
+     * <p>The old implementation selected a preferred team count first and then used a first-fit
+     * placement. That made three solo players become a two-versus-one match even when three teams were
+     * available, and could also strand a large party with a needlessly uneven set of opponents. We now
+     * evaluate every feasible team count and choose the allocation with the smallest population spread;
+     * a team count near two players per team only breaks ties. This keeps parties together while making
+     * balance the primary invariant.</p>
      */
     static List<Set<UUID>> allocate(List<DailyQueue.Group> groups, DailyRules rules) {
         if (groups.isEmpty() || rules.teams() < 1) return List.of();
@@ -814,30 +822,82 @@ public final class DailyManager extends BaseManager {
         int players = groups.stream().mapToInt(group -> group.players().size()).sum();
         int maximumTeams = Math.min(rules.teams(), groups.size());
         int preferredTeams = Math.max(2, (players + 1) / 2);
-        int initialTeams = Math.min(maximumTeams, preferredTeams);
+        preferredTeams = Math.min(maximumTeams, preferredTeams);
 
         List<DailyQueue.Group> ordered = new ArrayList<>(groups);
         Collections.shuffle(ordered);
         ordered.sort(Comparator.comparingInt((DailyQueue.Group group) -> group.players().size()).reversed());
-        for (int teamCount = initialTeams; teamCount <= maximumTeams; teamCount++) {
+
+        List<Set<UUID>> best = List.of();
+        int bestSpread = Integer.MAX_VALUE;
+        int bestDistance = Integer.MAX_VALUE;
+        int bestTeamCount = Integer.MAX_VALUE;
+        int minimumTeams = groups.size() < 2 ? 1 : 2;
+        for (int teamCount = minimumTeams; teamCount <= maximumTeams; teamCount++) {
             List<Set<UUID>> allocations = allocate(ordered, rules.teamSize(), teamCount);
-            if (!allocations.isEmpty()) return allocations;
+            if (allocations.isEmpty()) continue;
+            int spread = populationSpread(allocations);
+            int distance = Math.abs(teamCount - preferredTeams);
+            if (spread < bestSpread
+                    || (spread == bestSpread && distance < bestDistance)
+                    || (spread == bestSpread && distance == bestDistance && teamCount < bestTeamCount)) {
+                best = allocations;
+                bestSpread = spread;
+                bestDistance = distance;
+                bestTeamCount = teamCount;
+            }
         }
-        return List.of();
+        return best;
     }
 
+    /** Finds all distinct team-size states for one team count, retaining one assignment per state. */
     private static List<Set<UUID>> allocate(List<DailyQueue.Group> ordered, int teamSize, int teamCount) {
-        List<Set<UUID>> allocations = new ArrayList<>();
-        for (int i = 0; i < teamCount; i++) allocations.add(new LinkedHashSet<>());
+        List<LinkedHashSet<UUID>> empty = new ArrayList<>();
+        for (int i = 0; i < teamCount; i++) empty.add(new LinkedHashSet<>());
+
+        Map<List<Integer>, List<LinkedHashSet<UUID>>> states = new LinkedHashMap<>();
+        states.put(zeroSizes(teamCount), empty);
         for (DailyQueue.Group group : ordered) {
-            Set<UUID> target = allocations.stream()
-                    .filter(team -> team.size() + group.players().size() <= teamSize)
-                    .min(Comparator.comparingInt(Set::size)).orElse(null);
-            if (target == null) return List.of();
-            target.addAll(group.players());
+            Map<List<Integer>, List<LinkedHashSet<UUID>>> next = new HashMap<>();
+            for (Map.Entry<List<Integer>, List<LinkedHashSet<UUID>>> state : states.entrySet()) {
+                List<Integer> sizes = state.getKey();
+                for (int targetIndex = 0; targetIndex < teamCount; targetIndex++) {
+                    // Teams with equal sizes are interchangeable; trying one avoids duplicate states.
+                    if (targetIndex > 0 && sizes.get(targetIndex).equals(sizes.get(targetIndex - 1))) continue;
+                    if (sizes.get(targetIndex) + group.players().size() > teamSize) continue;
+
+                    List<LinkedHashSet<UUID>> candidate = copyTeams(state.getValue());
+                    candidate.get(targetIndex).addAll(group.players());
+                    candidate.sort(Comparator.comparingInt(Set::size));
+                    List<Integer> candidateSizes = candidate.stream().map(Set::size).toList();
+                    next.putIfAbsent(candidateSizes, candidate);
+                }
+            }
+            if (next.isEmpty()) return List.of();
+            states = next;
         }
-        if (allocations.stream().anyMatch(Set::isEmpty)) return List.of();
-        return allocations;
+
+        return states.values().stream()
+                .filter(teams -> teams.stream().noneMatch(Set::isEmpty))
+                .min(Comparator.comparingInt(DailyManager::populationSpread))
+                .map(teams -> teams.stream().map(LinkedHashSet::new).map(team -> (Set<UUID>) team).toList())
+                .orElse(List.of());
+    }
+
+    private static List<Integer> zeroSizes(int count) {
+        return java.util.stream.IntStream.range(0, count).mapToObj(ignored -> 0).toList();
+    }
+
+    private static List<LinkedHashSet<UUID>> copyTeams(List<LinkedHashSet<UUID>> source) {
+        List<LinkedHashSet<UUID>> copy = new ArrayList<>(source.size());
+        for (LinkedHashSet<UUID> team : source) copy.add(new LinkedHashSet<>(team));
+        return copy;
+    }
+
+    private static int populationSpread(List<? extends Set<UUID>> allocations) {
+        int smallest = allocations.stream().mapToInt(Set::size).min().orElse(0);
+        int largest = allocations.stream().mapToInt(Set::size).max().orElse(0);
+        return largest - smallest;
     }
 
     /** Receives the normal game end event; formal/GAME instances are ignored. */

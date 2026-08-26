@@ -36,11 +36,16 @@ public final class BingoStarterKitService {
 
     public static void give(Player player, Color teamColor, Component compassName,
                             List<Component> compassLore) {
-        give(player, teamColor, compassName, compassLore, BingoRemix.NONE);
+        give(player, teamColor, compassName, compassLore, BingoRemix.NONE, false);
     }
 
     public static void give(Player player, Color teamColor, Component compassName,
                             List<Component> compassLore, BingoRemix remix) {
+        give(player, teamColor, compassName, compassLore, remix, false);
+    }
+
+    public static void give(Player player, Color teamColor, Component compassName,
+                            List<Component> compassLore, BingoRemix remix, boolean daily) {
         if (player == null) return;
         Color color = teamColor == null ? Color.WHITE : teamColor;
         PlayerInventory inventory = player.getInventory();
@@ -50,16 +55,16 @@ public final class BingoStarterKitService {
             inventory.setLeggings(unbreakable(new ItemStack(Material.NETHERITE_LEGGINGS)));
             inventory.setBoots(unbreakable(new ItemStack(Material.NETHERITE_BOOTS)));
             inventory.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
-            kit = List.of(tool(Material.NETHERITE_PICKAXE), tool(Material.NETHERITE_AXE),
-                    tool(Material.NETHERITE_SHOVEL), unbreakable(new ItemStack(Material.NETHERITE_SWORD)),
+            kit = List.of(tool(Material.NETHERITE_PICKAXE, daily), tool(Material.NETHERITE_AXE, daily),
+                    tool(Material.NETHERITE_SHOVEL, daily), unbreakable(new ItemStack(Material.NETHERITE_SWORD)),
                     new ItemStack(Material.FIREWORK_ROCKET, 16), new ItemStack(Material.BREAD, 32));
         } else if (remix == BingoRemix.SPEEDRUN) {
             inventory.setHelmet(protective(leather(Material.LEATHER_HELMET, color)));
             inventory.setLeggings(unbreakable(new ItemStack(Material.GOLDEN_LEGGINGS)));
             inventory.setBoots(protectiveBoots(leather(Material.LEATHER_BOOTS, color)));
             inventory.setChestplate(unbreakable(new ItemStack(Material.NETHERITE_CHESTPLATE)));
-            kit = List.of(tool(Material.DIAMOND_PICKAXE), tool(Material.DIAMOND_AXE),
-                    tool(Material.DIAMOND_SHOVEL), unbreakable(new ItemStack(Material.DIAMOND_SWORD)),
+            kit = List.of(tool(Material.DIAMOND_PICKAXE, daily), tool(Material.DIAMOND_AXE, daily),
+                    tool(Material.DIAMOND_SHOVEL, daily), unbreakable(new ItemStack(Material.DIAMOND_SWORD)),
                     new ItemStack(Material.WATER_BUCKET), new ItemStack(Material.FLINT_AND_STEEL),
                     new ItemStack(Material.OBSIDIAN, 12), new ItemStack(Material.BREAD, 16));
         } else {
@@ -67,6 +72,10 @@ public final class BingoStarterKitService {
             inventory.setLeggings(protective(leather(Material.LEATHER_LEGGINGS, color)));
             inventory.setBoots(protectiveBoots(leather(Material.LEATHER_BOOTS, color)));
             inventory.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
+            if (daily) {
+                kit = List.of(tool(Material.STONE_PICKAXE, true), tool(Material.STONE_AXE, true),
+                        tool(Material.STONE_SHOVEL, true), ironSword(), new ItemStack(Material.BREAD, 32));
+            }
         }
         for (ItemStack item : kit) {
             for (ItemStack overflow : inventory.addItem(item.clone()).values()) {
@@ -137,11 +146,18 @@ public final class BingoStarterKitService {
     }
 
     private static ItemStack tool(Material material) {
+        return tool(material, false);
+    }
+
+    private static ItemStack tool(Material material, boolean daily) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setUnbreakable(true);
             meta.addEnchant(ENCHANTMENTS.getOrThrow(EnchantmentKeys.EFFICIENCY), 3, true);
+            if (daily && material.name().endsWith("_AXE")) {
+                meta.addEnchant(ENCHANTMENTS.getOrThrow(EnchantmentKeys.SILK_TOUCH), 1, true);
+            }
             item.setItemMeta(meta);
         }
         return item;
