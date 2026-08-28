@@ -75,7 +75,9 @@ final class ProxyBanSynchronizer implements Runnable {
 
     private void bootstrap() throws Exception {
         ProxyIdentityClient.ProxyBanSnapshot snapshot = client.banSnapshot();
-        if (snapshot == null || snapshot.bans == null) throw new IllegalStateException("Bridge proxy ban snapshot is incomplete");
+        if (snapshot == null || snapshot.maintenance == null || snapshot.bans == null) {
+            throw new IllegalStateException("Bridge proxy ban snapshot is incomplete");
+        }
         for (ProxyIdentityClient.ProxyBan ban : snapshot.bans) {
             if (ban == null || !isActive(ban.expiresAt)) continue;
             kick(requireUsername(ban.username), ban.reason, ban.expiresAt);
@@ -85,7 +87,9 @@ final class ProxyBanSynchronizer implements Runnable {
 
     private void applyChanges() throws Exception {
         ProxyIdentityClient.ProxyChangeBatch batch = client.changesAfter(state.cursor());
-        if (batch == null || batch.changes == null) throw new IllegalStateException("Bridge change batch is incomplete");
+        if (batch == null || batch.maintenance == null || batch.changes == null) {
+            throw new IllegalStateException("Bridge proxy change batch is incomplete");
+        }
         for (ProxyIdentityClient.ProxyChange change : batch.changes) {
             if (change != null && "BANNED".equals(change.operation) && isActive(change.expiresAt)
                     && isMinecraftUsername(change.authmeUsername)) {

@@ -25,6 +25,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -72,6 +74,26 @@ public final class DailyStatsManager extends BaseManager {
         emittedMilestones.clear();
         recordedMatches.clear();
         databaseTasks.clear();
+    }
+
+    /** Atomically replaces the database-backed DAILY cache after an administrative player-data cleanup. */
+    public CompletionStage<Void> reloadFromDatabase() {
+        CompletableFuture<Void> completion = new CompletableFuture<>();
+        if (!active || !plugin.isEnabled()) {
+            completion.completeExceptionally(new IllegalStateException("DAILY statistics manager is not active"));
+            return completion;
+        }
+        databaseTasks.add(() -> {
+            try {
+                clearDatabaseCaches();
+                loadCaches();
+                completion.complete(null);
+            } catch (Exception exception) {
+                completion.completeExceptionally(exception);
+            }
+        });
+        drainDatabaseTasks();
+        return completion;
     }
 
     public DailyStatSnapshot stat(UUID player, @Nullable GameTypeEnum game) {
@@ -444,6 +466,18 @@ public final class DailyStatsManager extends BaseManager {
         }
         rebuildLeaderboards();
         runAsync(() -> statsDao.saveRecords(entries));
+    }
+
+    private void clearDatabaseCaches() {
+        stats.clear();
+        records.clear();
+        pkwRecords.clear();
+        mapStats.clear();
+        matchProgress.clear();
+        names.clear();
+        leaderboards = Map.of();
+        emittedMilestones.clear();
+        recordedMatches.clear();
     }
 
     private void loadCaches() {

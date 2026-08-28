@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.player.dao.PlayerDao;
 import ink.ziip.championshipscore.api.player.dao.PlayerDaoImpl;
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
+import ink.ziip.championshipscore.api.player.entry.PlayerUnknownRemovalResult;
 import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
 import ink.ziip.championshipscore.api.player.identity.PlayerUuidLookupException;
 import ink.ziip.championshipscore.api.player.identity.PlayerUuidSource;
@@ -21,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Locale;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -133,6 +135,33 @@ public class PlayerManager extends BaseManager {
                         });
                         return completed;
                     });
+                });
+    }
+
+    /** Removes every durable Core identity outside the allowlist, then reconciles database-backed caches. */
+    public CompletionStage<PlayerUnknownRemovalResult> removeUnknown(@NotNull Set<UUID> allowedUuids) {
+        return CompletableFuture.supplyAsync(() -> playerDao.removeUnknown(allowedUuids))
+                .thenCompose(result -> {
+                    invalidateDatabaseIdentityCache();
+                    CompletableFuture<Void> teams = plugin.getTeamManager()
+                            .refreshFormalTeamsFromDatabase().toCompletableFuture();
+                    CompletableFuture<Void> daily = plugin.getDailyStatsManager()
+                            .reloadFromDatabase().toCompletableFuture();
+                    return CompletableFuture.allOf(teams, daily).thenApply(ignored -> result);
+                })
+                .thenCompose(result -> {
+                    CompletableFuture<PlayerUnknownRemovalResult> completed = new CompletableFuture<>();
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        try {
+                            plugin.getRankManager().refreshAfterPendingPointWrites();
+                            plugin.getRedisManager().publishDatabaseChange("player-unknown-removed",
+                                    DatabaseSyncDomain.PLAYER, DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
+                            completed.complete(result);
+                        } catch (RuntimeException failure) {
+                            completed.completeExceptionally(failure);
+                        }
+                    });
+                    return completed;
                 });
     }
 

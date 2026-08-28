@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
 import java.util.LinkedHashMap;
@@ -47,6 +48,18 @@ public final class LocalAccessState {
 
     public void revoke(String username) {
         identities.remove(normalize(username));
+    }
+
+    /** Reconciles local access metadata after an authoritative allowlist cleanup. */
+    public synchronized void retainIdentities(Set<String> usernames) throws IOException {
+        Set<String> normalized = new java.util.HashSet<>();
+        for (String username : usernames) {
+            if (username == null) throw new IllegalArgumentException("Allowed username is required");
+            normalized.add(normalize(username));
+        }
+        identities.keySet().retainAll(normalized);
+        authVersions.keySet().retainAll(normalized);
+        save();
     }
 
     public void rename(String oldUsername, String newUsername, String accountId, String minecraftUuid) {

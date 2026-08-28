@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.player.dao;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
+import ink.ziip.championshipscore.api.player.entry.PlayerUnknownRemovalResult;
 import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
 import ink.ziip.championshipscore.util.Utils;
 import org.jetbrains.annotations.NotNull;
@@ -102,6 +103,79 @@ public class PlayerDaoImpl implements PlayerDao {
         } catch (SQLException | IllegalArgumentException exception) {
             logFailure("查询玩家列表", exception);
             return List.of();
+        }
+    }
+
+    @Override
+    @NotNull
+    public PlayerUnknownRemovalResult removeUnknown(@NotNull Set<UUID> allowedUuids) {
+        if (allowedUuids == null) {
+            throw new IllegalArgumentException("Core unknown removal requires a non-null allowed UUID set");
+        }
+        for (UUID allowedUuid : allowedUuids) {
+            if (allowedUuid == null) {
+                throw new IllegalArgumentException("Core unknown removal requires a non-null allowed UUID set");
+            }
+        }
+        Set<UUID> allowed = Set.copyOf(allowedUuids);
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                Set<UUID> examinedUuids = new LinkedHashSet<>();
+                Set<UUID> unknownUuids = new LinkedHashSet<>();
+                for (String table : UUID_TABLES) collectUuids(connection, table, allowed, examinedUuids, unknownUuids);
+
+                Map<String, Integer> removedRowsByTable = new LinkedHashMap<>();
+                for (String table : UUID_TABLES) {
+                    int removedRows = 0;
+                    for (UUID uuid : unknownUuids) {
+                        try (PreparedStatement statement = connection.prepareStatement(
+                                "DELETE FROM `" + table + "` WHERE `uuid`=?")) {
+                            statement.setString(1, uuid.toString());
+                            removedRows += statement.executeUpdate();
+                        }
+                    }
+                    removedRowsByTable.put(table, removedRows);
+                }
+
+                connection.commit();
+                return new PlayerUnknownRemovalResult(examinedUuids.size(), unknownUuids, removedRowsByTable);
+            } catch (SQLException | RuntimeException failure) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+                throw failure;
+            } finally {
+                try {
+                    connection.setAutoCommit(previousAutoCommit);
+                } catch (SQLException ignored) {
+                }
+            }
+        } catch (SQLException | RuntimeException failure) {
+            logFailure("清理未获准玩家数据", failure);
+            throw new IllegalStateException("Core unknown player removal failed", failure);
+        }
+    }
+
+    private static void collectUuids(@NotNull Connection connection, @NotNull String table,
+                                     @NotNull Set<UUID> allowedUuids, @NotNull Set<UUID> examinedUuids,
+                                     @NotNull Set<UUID> unknownUuids) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT DISTINCT `uuid` FROM `" + table + "` ORDER BY `uuid` FOR UPDATE");
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                UUID uuid;
+                try {
+                    uuid = UUID.fromString(resultSet.getString(1));
+                } catch (IllegalArgumentException exception) {
+                    throw new IllegalStateException("Core table " + table + " contains an invalid player UUID", exception);
+                }
+                if (!examinedUuids.add(uuid)) continue;
+                if (!allowedUuids.contains(uuid)) unknownUuids.add(uuid);
+            }
         }
     }
 

@@ -2,11 +2,13 @@ package ink.ziip.championshipscore.api.player.dao;
 
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
+import ink.ziip.championshipscore.api.player.entry.PlayerUnknownRemovalResult;
 import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public interface PlayerDao {
@@ -32,4 +34,8 @@ public interface PlayerDao {
     /** Atomically rewrites every Core table that stores a player UUID. */
     int migrateIdentities(@NotNull List<PlayerUuidMigration> players);
 
+
+    /** Atomically removes every Core UUID outside the authoritative allowlist. */
+    @NotNull
+    PlayerUnknownRemovalResult removeUnknown(@NotNull Set<UUID> allowedUuids);
 }

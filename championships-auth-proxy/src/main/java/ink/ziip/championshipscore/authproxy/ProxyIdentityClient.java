@@ -17,7 +17,7 @@ import java.util.UUID;
 
 final class ProxyIdentityClient {
     private static final String LOGIN_PROFILE_PREFIX = "/api/internal/bridge/login-profile/";
-    private static final String CHANGES_PATH = "/api/internal/bridge/changes";
+    private static final String PROXY_CHANGES_PATH = "/api/internal/bridge/proxy-changes";
     private static final String PROXY_BAN_SNAPSHOT_PATH = "/api/internal/bridge/proxy-ban-snapshot";
 
     private final URI baseUri;
@@ -59,7 +59,7 @@ final class ProxyIdentityClient {
 
     ProxyChangeBatch changesAfter(String cursor) throws Exception {
         if (cursor == null || !cursor.matches("^\\d{1,19}$")) throw new IllegalArgumentException("Invalid bridge cursor");
-        return signedGet(CHANGES_PATH + "?after=" + cursor + "&limit=100", CHANGES_PATH, ProxyChangeBatch.class);
+        return signedGet(PROXY_CHANGES_PATH + "?after=" + cursor + "&limit=100", PROXY_CHANGES_PATH, ProxyChangeBatch.class);
     }
 
     private <T> T signedGet(String path, Class<T> responseType) throws Exception {
@@ -112,6 +112,7 @@ final class ProxyIdentityClient {
     }
 
     static final class ProxyBanSnapshot {
+        public Boolean maintenance;
         public String nextCursor;
         public java.util.List<ProxyBan> bans;
     }
@@ -123,6 +124,7 @@ final class ProxyIdentityClient {
     }
 
     static final class ProxyChangeBatch {
+        public Boolean maintenance;
         public java.util.List<ProxyChange> changes;
         public String nextCursor;
     }

@@ -30,10 +30,10 @@ class ProxyBanSynchronizerTest {
     void bootstrapsCurrentBansThenAppliesOnlyNewBanEvents() throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/api/internal/bridge/proxy-ban-snapshot", exchange -> respond(exchange,
-                "{\"nextCursor\":\"9\",\"bans\":[{\"username\":\"ActivePlayer\",\"reason\":\"snapshot\"},"
+                "{\"maintenance\":false,\"nextCursor\":\"9\",\"bans\":[{\"username\":\"ActivePlayer\",\"reason\":\"snapshot\"},"
                         + "{\"username\":\"ExpiredPlayer\",\"reason\":\"expired\",\"expiresAt\":\"2000-01-01T00:00:00Z\"}]}"));
-        server.createContext("/api/internal/bridge/changes", exchange -> respond(exchange,
-                "{\"nextCursor\":\"11\",\"changes\":[{\"operation\":\"BANNED\",\"authmeUsername\":\"NewPlayer\",\"reason\":\"event\"},"
+        server.createContext("/api/internal/bridge/proxy-changes", exchange -> respond(exchange,
+                "{\"maintenance\":false,\"nextCursor\":\"11\",\"changes\":[{\"operation\":\"BANNED\",\"authmeUsername\":\"NewPlayer\",\"reason\":\"event\"},"
                         + "{\"operation\":\"UNBANNED\",\"authmeUsername\":\"FormerPlayer\"}]}"));
         server.start();
         try {

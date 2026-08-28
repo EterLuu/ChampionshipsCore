@@ -1,8 +1,10 @@
 package ink.ziip.championshipscore.authbridge.bridge;
 
+import ink.ziip.championshipscore.api.player.entry.PlayerUnknownRemovalResult;
 import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
 import ink.ziip.championshipscore.api.player.event.PlayerIdentityMigrationEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
+import ink.ziip.championshipscore.api.player.event.PlayerUnknownRemovalEvent;
 import ink.ziip.championshipscore.authbridge.BridgeText;
 import ink.ziip.championshipscore.authbridge.authme.AuthMeHashStore;
 import ink.ziip.championshipscore.authbridge.model.BridgeChange;
@@ -300,12 +302,46 @@ public final class BridgeSynchronizer implements Runnable {
         return resolveUuid(requireUsername(player.username()), player.uuidSource(), player.minecraftUuid());
     }
 
-    private Map<String, Object> removeUnknown(BridgeControlJob job) {
-        Set<String> desired = requirePlayers(job).stream()
-                .map(player -> requireUsername(player.username()))
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        AuthMeHashStore.ReconcileResult removed = authMe.removeUnknown(desired);
-        return Map.of("examined", removed.examined(), "removed", removed.changed());
+    private Map<String, Object> removeUnknown(BridgeControlJob job) throws Exception {
+        RemoveUnknownAllowlist allowlist = parseRemoveUnknownAllowlist(requirePlayers(job));
+        PlayerUnknownRemovalResult coreResult = notifyCoreUnknownRemoval(allowlist.uuids());
+        AuthMeHashStore.ReconcileResult removed = authMe.removeUnknown(allowlist.usernames());
+        state.retainIdentities(allowlist.usernames());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("examined", removed.examined());
+        result.put("removed", removed.changed());
+        result.put("coreExaminedUuids", coreResult.examinedUuids());
+        result.put("coreRemovedUuids", coreResult.removedUuids().size());
+        result.put("coreRemovedRows", coreResult.removedRows());
+        result.put("coreRemovedRowsByTable", coreResult.removedRowsByTable());
+        return result;
+    }
+
+    RemoveUnknownAllowlist parseRemoveUnknownAllowlist(List<BridgeControlPlayer> players) {
+        Set<String> usernames = new LinkedHashSet<>();
+        Set<String> accountIds = new LinkedHashSet<>();
+        Set<UUID> allowedUuids = new LinkedHashSet<>();
+        for (BridgeControlPlayer player : players) {
+            String username = requireUsername(player.username());
+            if (!usernames.add(username.toLowerCase(java.util.Locale.ROOT))) {
+                throw new IllegalArgumentException("Duplicate username in unknown removal");
+            }
+            if (!accountIds.add(requireAccountId(player.accountId()))) {
+                throw new IllegalArgumentException("Duplicate accountId in unknown removal");
+            }
+            if (!allowedUuids.add(resolveControlPlayerUuid(player))) {
+                throw new IllegalArgumentException("Duplicate Minecraft UUID in unknown removal");
+            }
+        }
+        return new RemoveUnknownAllowlist(usernames, allowedUuids);
+    }
+
+    record RemoveUnknownAllowlist(Set<String> usernames, Set<UUID> uuids) {
+        RemoveUnknownAllowlist {
+            usernames = Set.copyOf(usernames);
+            uuids = Set.copyOf(uuids);
+        }
     }
 
     private boolean serverIsEmpty() throws Exception {
@@ -339,6 +375,12 @@ public final class BridgeSynchronizer implements Runnable {
         PlayerIdentityMigrationEvent event = new PlayerIdentityMigrationEvent(players);
         Bukkit.getPluginManager().callEvent(event);
         return awaitCore(event.completion(), "identity migration");
+    }
+
+    private PlayerUnknownRemovalResult notifyCoreUnknownRemoval(Set<UUID> allowedUuids) {
+        PlayerUnknownRemovalEvent event = new PlayerUnknownRemovalEvent(allowedUuids);
+        Bukkit.getPluginManager().callEvent(event);
+        return awaitCore(event.completion(), "unknown player removal");
     }
 
     private static <T> T awaitCore(java.util.concurrent.CompletableFuture<T> completion, String operation) {

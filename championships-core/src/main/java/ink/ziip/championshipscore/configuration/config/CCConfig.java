@@ -27,7 +27,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 21;
+        return 22;
     }
 
     private static final Map<GameTypeEnum, List<String>> DEFAULT_FORMAL_EVENT_MAPS;
@@ -216,6 +216,31 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "daily.games.ParkourWarrior.concurrent-instances")
     public static int DAILY_PARKOUR_WARRIOR_CONCURRENT_INSTANCES;
+
+    // Optional cc-web DAILY leaderboard cache publisher.
+    @ConfigOption(path = "leaderboard-sync.enabled")
+    public static Boolean WEB_LEADERBOARD_SYNC_ENABLED;
+
+    @ConfigOption(path = "leaderboard-sync.base-url")
+    public static String WEB_LEADERBOARD_SYNC_BASE_URL;
+
+    @ConfigOption(path = "leaderboard-sync.key-id")
+    public static String WEB_LEADERBOARD_SYNC_KEY_ID;
+
+    @ConfigOption(path = "leaderboard-sync.hmac-secret")
+    public static String WEB_LEADERBOARD_SYNC_HMAC_SECRET;
+
+    @ConfigOption(path = "leaderboard-sync.allow-insecure-private-http")
+    public static Boolean WEB_LEADERBOARD_SYNC_ALLOW_INSECURE_PRIVATE_HTTP;
+
+    @ConfigOption(path = "leaderboard-sync.interval-seconds")
+    public static long WEB_LEADERBOARD_SYNC_INTERVAL_SECONDS;
+
+    @ConfigOption(path = "leaderboard-sync.connect-timeout-seconds")
+    public static long WEB_LEADERBOARD_SYNC_CONNECT_TIMEOUT_SECONDS;
+
+    @ConfigOption(path = "leaderboard-sync.request-timeout-seconds")
+    public static long WEB_LEADERBOARD_SYNC_REQUEST_TIMEOUT_SECONDS;
 
     // Players
     @ConfigOption(path = "max-players")

@@ -3,11 +3,13 @@ package ink.ziip.championshipscore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.daily.DailyManager;
 import ink.ziip.championshipscore.api.daily.DailyStatsManager;
+import ink.ziip.championshipscore.api.daily.WebLeaderboardManager;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
+import ink.ziip.championshipscore.api.player.event.PlayerUnknownRemovalEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerIdentityMigrationEvent;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
@@ -70,6 +72,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private CoreSidebarManager sidebarManager;
     private DailyManager dailyManager;
     private DailyStatsManager dailyStatsManager;
+    private WebLeaderboardManager webLeaderboardManager;
     private CCLogManager logManager;
     @Getter(AccessLevel.NONE)
     private final Set<BaseManager> startedManagers = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -93,6 +96,11 @@ public final class ChampionshipsCore extends JavaPlugin {
             @EventHandler
             public void onPlayerIdentityMigration(PlayerIdentityMigrationEvent event) {
                 handlePlayerIdentityMigration(event);
+            }
+
+            @EventHandler
+            public void onPlayerUnknownRemoval(PlayerUnknownRemovalEvent event) {
+                handlePlayerUnknownRemoval(event);
             }
         }, this);
         logManager = CCLogManager.install(this);
@@ -135,6 +143,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         sidebarManager = new CoreSidebarManager(this);
         dailyStatsManager = new DailyStatsManager(this);
         dailyManager = new DailyManager(this, dailyStatsManager);
+        webLeaderboardManager = new WebLeaderboardManager(this, dailyManager, dailyStatsManager);
 
         // Database connection and schema migration may take seconds and must not freeze the server.
         // The remaining managers are activated on the server thread only after this prerequisite succeeds.
@@ -185,6 +194,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         loadManager(remoteBingoManager);
         loadManager(dailyStatsManager);
         loadManager(dailyManager);
+        loadManager(webLeaderboardManager);
 
         loadManager(prepareSessionManager);
 
@@ -216,6 +226,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         bootstrapGeneration++;
         // Plugin shutdown logic
         unloadManager(sidebarManager);
+        unloadManager(webLeaderboardManager);
         unloadManager(dailyManager);
         unloadManager(dailyStatsManager);
         unloadManager(remoteBingoManager);
@@ -267,6 +278,18 @@ public final class ChampionshipsCore extends JavaPlugin {
                         event.completion().complete(true);
                     }
                 });
+    }
+
+    private void handlePlayerUnknownRemoval(PlayerUnknownRemovalEvent event) {
+        if (!bootstrapReady || playerManager == null) {
+            event.completion().completeExceptionally(
+                    new IllegalStateException("ChampionshipsCore is not ready for player data cleanup"));
+            return;
+        }
+        playerManager.removeUnknown(event.getAllowedUuids()).whenComplete((result, failure) -> {
+            if (failure != null) event.completion().completeExceptionally(failure);
+            else event.completion().complete(result);
+        });
     }
 
     private void handlePlayerIdentityMigration(PlayerIdentityMigrationEvent event) {

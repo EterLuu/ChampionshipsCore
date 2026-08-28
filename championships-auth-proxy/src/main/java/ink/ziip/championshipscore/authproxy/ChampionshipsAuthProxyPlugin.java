@@ -32,6 +32,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
     private String bannedMessage;
     private String revokedMessage;
     private String unavailableMessage;
+    private String maintenanceMessage;
     private ProxyBanSynchronizer banSynchronizer;
     private ScheduledTask banSynchronizerTask;
 
@@ -51,6 +52,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
             bannedMessage = config.getString("messages.banned");
             revokedMessage = config.getString("messages.revoked");
             unavailableMessage = config.getString("messages.unavailable");
+            maintenanceMessage = config.getString("messages.maintenance");
             banSynchronizer = new ProxyBanSynchronizer(
                     identities,
                     new ProxyBanState(new File(getDataFolder(), "ban-state.properties")),
@@ -91,6 +93,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
                 case "UNBOUND" -> reject(event, notBoundMessage);
                 case "BANNED" -> reject(event, bannedMessage(profile.reason, profile.expiresAt));
                 case "REVOKED" -> reject(event, revokedMessage);
+                case "MAINTENANCE" -> reject(event, maintenanceMessage);
                 default -> {
                     getLogger().warning("Unexpected login profile status for " + event.getConnection().getName() + ": " + profile.status);
                     reject(event, unavailableMessage);

@@ -226,8 +226,12 @@ public final class RedisManager extends BaseManager {
             return CompletableFuture.completedFuture(DeliveryDisposition.ACK);
 
         CompletionStage<Void> refresh = CompletableFuture.completedFuture(null);
+        CompletionStage<Void> dailyRefresh = CompletableFuture.completedFuture(null);
         if (event.domains().contains(DatabaseSyncDomain.PLAYER)) {
             plugin.getPlayerManager().invalidateDatabaseIdentityCache();
+            if ("player-unknown-removed".equals(event.reason())) {
+                dailyRefresh = plugin.getDailyStatsManager().reloadFromDatabase();
+            }
         }
         if (event.domains().contains(DatabaseSyncDomain.TEAM)
                 || event.domains().contains(DatabaseSyncDomain.PLAYER)) {
@@ -238,7 +242,10 @@ public final class RedisManager extends BaseManager {
                 || event.domains().contains(DatabaseSyncDomain.PLAYER)) {
             refresh = refresh.thenCompose(ignored -> plugin.getRankManager().refreshFromDatabase());
         }
-        return refresh.handle((ignored, failure) -> {
+        CompletionStage<Void> teamAndRankRefresh = refresh;
+        return dailyRefresh
+                .thenCompose(ignored -> teamAndRankRefresh)
+                .handle((ignored, failure) -> {
             if (failure != null) {
                 plugin.getLogger().log(Level.WARNING, "Database cache refresh failed for Redis event "
                         + event.eventId(), failure);

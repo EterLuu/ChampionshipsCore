@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 21
+  version: 22
 mode: "CHAMPIONSHIP"
 # Registration names used by formal event schedules. These are map identities, not physical world names.
 # Keep this section synchronized through /cc map rename; do not add map IDs in ScheduleManager code.
@@ -66,6 +66,16 @@ daily:
       countdown-seconds: 60
       # Runtime copies share the same physical course and are isolated by player visibility.
       concurrent-instances: 2
+# Optional publisher for cc-web DAILY leaderboards. Use an AUTHBRIDGE_WRITER key.
+leaderboard-sync:
+  enabled: false
+  base-url: "http://127.0.0.1:3000"
+  key-id: "cc-core"
+  hmac-secret: "change-me"
+  allow-insecure-private-http: false
+  interval-seconds: 300
+  connect-timeout-seconds: 5
+  request-timeout-seconds: 15
 max-players: 100
 whitelist: [ ]
 # Only used when Core must resolve an offline player's name (for example, adding a team member).
