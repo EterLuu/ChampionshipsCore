@@ -286,6 +286,7 @@ vote:
 
 difficulty_vote:
   result: "&6This round's card difficulty: &f{0}"
+  menu_title: "Choose card difficulty"
   menu_count: "&7Votes: &e{0}"
   menu_hint: "&eClick to choose"
   menu_picked: "&a✔ Your pick"
@@ -325,6 +326,7 @@ card_difficulty:
 
 lines_vote:
   result: "&6This round wins at: &f{0} lines"
+  menu_title: "Choose winning line count"
   menu_option: "&b{0} lines to win"
   menu_desc: "&7Complete {0} bingo line(s) to win the round"
   menu_count: "&7Votes: &e{0}"

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CCConfigMigrationTest {
@@ -108,5 +109,29 @@ class CCConfigMigrationTest {
                 bundled.getStringList("formal-events.TGTTOS.maps"));
         assertEquals(java.util.List.of("TRI"),
                 bundled.getStringList("formal-events.ParkourWarrior.maps"));
+    }
+
+    @Test
+    void migratesLegacyWeightedScoreSwitchAndKeepsExistingBehavior() throws Exception {
+        YamlConfiguration old = new YamlConfiguration();
+        old.loadFromString("weighted-score: true\n");
+
+        CCConfig.migrateWeightedScoreConfiguration(old);
+
+        assertTrue(old.getBoolean("weighted-score.enabled"));
+        assertEquals(CCConfig.DEFAULT_ROUND_MULTIPLIERS,
+                old.getDoubleList("weighted-score.round-multipliers"));
+    }
+
+    @Test
+    void rejectsInvalidRoundMultipliers() {
+        assertThrows(IllegalArgumentException.class,
+                () -> CCConfig.validateRoundMultipliers(java.util.List.of()));
+        assertThrows(IllegalArgumentException.class,
+                () -> CCConfig.validateRoundMultipliers(java.util.List.of(1D, -0.1D)));
+        assertThrows(IllegalArgumentException.class,
+                () -> CCConfig.validateRoundMultipliers(java.util.List.of(1D, Double.NaN)));
+        assertEquals(java.util.List.of(1D, 2.5D),
+                CCConfig.validateRoundMultipliers(java.util.List.of(1D, 2.5D)));
     }
 }

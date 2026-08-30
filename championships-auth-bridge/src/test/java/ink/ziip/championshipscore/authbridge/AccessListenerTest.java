@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.authbridge;
 
+import ink.ziip.championshipscore.auth.AuthAdmissionOwner;
 import ink.ziip.championshipscore.authbridge.bridge.LocalAccessState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,6 +39,30 @@ class AccessListenerTest {
         AccessListener.AccessDecision decision = listener(state, true).accessDecision("approvedplayer");
 
         assertEquals(AccessListener.AccessResult.ALLOWED, decision.result());
+    }
+
+    @Test
+    void proxyModeDoesNotRepeatLocalAllowlistAdmission() throws Exception {
+        LocalAccessState state = synchronizedState();
+
+        AccessListener.AccessDecision decision = explicitListener(state, AuthAdmissionOwner.PROXY)
+                .accessDecision("UnknownPlayer");
+
+        assertEquals(AccessListener.AccessResult.ALLOWED, decision.result());
+    }
+
+    @Test
+    void bridgeModeRejectsUnknownAndLocallyBannedPlayers() throws Exception {
+        LocalAccessState state = synchronizedState();
+        AccessListener bridge = explicitListener(state, AuthAdmissionOwner.BRIDGE);
+
+        assertEquals(AccessListener.AccessResult.UNBOUND,
+                bridge.accessDecision("UnknownPlayer").result());
+
+        state.recordIdentity("BannedPlayer", PLAYER_UUID);
+        state.ban("BannedPlayer", "rule", null);
+        assertEquals(AccessListener.AccessResult.BANNED,
+                bridge.accessDecision("BannedPlayer").result());
     }
 
     @Test
@@ -133,5 +158,10 @@ class AccessListenerTest {
 
     private static AccessListener listener(LocalAccessState state, boolean failClosed) {
         return new AccessListener(state, failClosed, MAINTENANCE, UNAVAILABLE, UUID_MISMATCH);
+    }
+
+    private static AccessListener explicitListener(LocalAccessState state, AuthAdmissionOwner owner) {
+        return new AccessListener(state, true, MAINTENANCE, UNAVAILABLE, UUID_MISMATCH,
+                "unbound", "banned", owner);
     }
 }

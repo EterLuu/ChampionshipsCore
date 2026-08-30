@@ -1,6 +1,6 @@
 # AuthBridge 与 AuthProxy 同步协议
 
-本文定义 `cc-web`、`ChampionshipsAuthBridge` 与 `ChampionshipsAuthProxy` 的身份、密码、封禁、ACK 和控制任务契约。AuthBridge 是可选的密码、准入和迁移同步组件；它不读取 Core 的 `identity.mode`，也不替网站猜测 UUID。AuthProxy 只做预登录准入与 UUID 转发。
+本文定义 `cc-web`、`ChampionshipsAuthBridge` 与 `ChampionshipsAuthProxy` 的身份、密码、封禁、ACK 和控制任务契约。AuthBridge 是可选的密码、准入和迁移同步组件；它不读取 Core 的 `identity.mode`，也不替网站猜测 UUID。AuthProxy 安装在 Bungee 上即固定为 `PROXY` 准入所有者，只做预登录准入与 UUID 转发。
 
 ## 1. 客户端鉴权与角色
 
@@ -85,13 +85,33 @@ Core 清理范围固定为 `players`、`team_members`、`player_points`、`daily
 
 AuthProxy 仅用于 cc-web 管理的 `PROFILE_UUID`/统一 UUID 登录部署。它从 `/login-profile/<username>` 获取当前有效 UUID，并在预登录阶段拒绝未绑定、撤销、封禁和维护中的账户；缺少 UUID 时拒绝登录，不生成离线 UUID。皮肤和签名档案仍由 cc-web 独立查询 Mojang，不参与 AuthBridge UUID 解析。
 
-启动时使用 `/proxy-ban-snapshot` 获取有效封禁、显式 `maintenance` 状态和当前 outbox 游标；之后轮询 `/proxy-changes?after=<cursor>`，只接收 `BANNED`、`UNBANNED`、用户名、原因、到期时间与 `maintenance`。该流不包含密码哈希，proxy key 也不能调用 writer ACK。每个 proxy key 的服务端只读游标独立推进；插件本地仍保留自己的 `ban-state.properties` 游标，避免 Web 短暂故障时丢失已知封禁状态。
+启动时使用 `/proxy-ban-snapshot` 获取全部当前获准玩家的 `username/status/uuid`、有效封禁、显式 `maintenance` 状态和当前 outbox 游标；之后轮询 `/proxy-changes?after=<cursor>`，接收 `PROVISION`、`WHITELISTED`、`USERNAME_UPDATED`、`REVOKED`、`BANNED`、`UNBANNED` 对应账户的当前最终准入状态。改名事件同时携带 `previousUsername`，Proxy 必须删除旧名称缓存。该流不包含密码哈希，proxy key 也不能调用 writer ACK。
+
+Proxy 将身份档案、UUID、封禁、维护状态和游标原子写入本地 `state.properties`；升级时若新文件尚不存在，会将旧版 `ban-state.properties` 原子迁移为新文件且不覆盖已有状态。实时 `/login-profile` 成功时同步刷新单人档案；连接、DNS、超时、HTTP 429 或 5xx 时可以按 `offline-cache` 配置回退，其他 HTTP 错误和响应校验错误不得回退。`max-stale-hours: 0` 表示不按时间自动失效；管理员可设置正数限制允许档案的最长陈旧时间。维护锁和未到期封禁不因普通档案超时而放行。每个 proxy key 的服务端只读游标独立推进。
+
+AuthProxy 没有 `access.admission-owner` 配置；只要插件启用，它就是玩家面对的准入决策点。后端 AuthBridge 不应在 `PROXY` 模式下再次按本地未绑定/封禁名单拒绝或踢出玩家，以免 Web 短暂延迟造成双重判定。
+
+## 6.1 AuthBridge 准入模式
+
+AuthBridge 的配置项如下，默认保持与 Bungee 部署兼容：
+
+```yaml
+access:
+  admission-owner: PROXY # PROXY 或 BRIDGE
+```
+
+| 模式 | AuthBridge 在连接链路中的职责 |
+| --- | --- |
+| `PROXY` | 处理 AuthMe 账户/密码同步、显式 UUID 解析、实际 Bukkit UUID 校验、维护锁和迁移安全保护；不重复判定未绑定/封禁，不因这些事件主动踢在线玩家。 |
+| `BRIDGE` | 除上述同步与校验外，使用本地身份 allowlist 和 `state.yml` 封禁缓存拒绝未绑定/封禁玩家；同步撤销或封禁事件后主动踢出在线玩家。首次同步前是否关闭准入由 `access.fail-closed-before-first-sync` 控制。 |
+
+`PROXY` 只适用于前面已有 AuthProxy 的 Bungee 链路；`BRIDGE` 适用于没有可靠代理准入或要求 Core 自行兜底的部署。两种模式都必须继续执行维护锁和 UUID mismatch 检查，且都不生成离线 UUID。两种模式均把 `BANNED`/`UNBANNED` 写入本地状态，保证重启后切换模式不会丢失封禁；只有 `BRIDGE` 使用该状态拒绝登录或主动踢人。
 
 存在 pending 或 failed 的 `IDENTITY_MODE_MIGRATION` 时，预登录返回 `MAINTENANCE`，snapshot 与 proxy stream 也必须显式返回 `maintenance:true`。旧版缺少该字段的服务应被插件视为响应不完整。
 
 ## 7. 测试和验收
 
-必须覆盖：离线算法与 Vanilla 一致、`UUID` 缺失/非法、Mojang 404 不回退、Mojang 名称不匹配、writer ACK 重试幂等、落后 writer 不推进全局确认、proxy key 不能读取密码或 ACK、多个 writer 分别领取和回报控制 target、迁移失败不切换 UUID 模式、未获准清理先校验完整允许名单并按 UUID 单事务删除 Core 数据、维护状态拒绝登录，以及同一账户在 AuthProxy、Yggdrasil、Paper `Player#getUniqueId()` 中的 UUID 一致性。
+必须覆盖：离线算法与 Vanilla 一致、`UUID` 缺失/非法、Mojang 404 不回退、Mojang 名称不匹配、writer ACK 重试幂等、落后 writer 不推进全局确认、proxy key 不能读取密码或 ACK、多个 writer 分别领取和回报控制 target、迁移失败不切换 UUID 模式、未获准清理先校验完整允许名单并按 UUID 单事务删除 Core 数据、维护状态拒绝登录、Proxy 全量缓存/改名/撤销/封禁持久化、Web 网络故障回退与鉴权错误不回退，以及同一账户在 AuthProxy、Yggdrasil、Paper `Player#getUniqueId()` 中的 UUID 一致性。
 
 ## 8. DAILY 排行榜快照
 

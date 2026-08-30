@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.authproxy;
 
+import ink.ziip.championshipscore.auth.AuthIdentity;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.HexFormat;
+import java.util.Set;
 import java.util.UUID;
 
 final class ProxyIdentityClient {
@@ -48,7 +50,7 @@ final class ProxyIdentityClient {
     }
 
     LoginProfile lookup(String username) throws Exception {
-        if (!username.matches("^[A-Za-z0-9_]{3,16}$")) throw new IllegalArgumentException("Invalid Minecraft username");
+        AuthIdentity.requireUsername(username);
         String path = LOGIN_PROFILE_PREFIX + username;
         return signedGet(path, LoginProfile.class);
     }
@@ -79,7 +81,7 @@ final class ProxyIdentityClient {
                 .GET()
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (response.statusCode() != 200) throw new IllegalStateException("Bridge API returned HTTP " + response.statusCode());
+        if (response.statusCode() != 200) throw new BridgeHttpException(response.statusCode());
         T profile = mapper.readValue(response.body(), responseType);
         if (profile instanceof LoginProfile loginProfile) validateLoginProfile(loginProfile);
         return profile;
@@ -87,10 +89,24 @@ final class ProxyIdentityClient {
 
     private static void validateLoginProfile(LoginProfile profile) {
         if (profile.status == null) throw new IllegalStateException("Bridge login profile omitted status");
+        if (!Set.of("ALLOWED", "UNBOUND", "BANNED", "REVOKED", "MAINTENANCE").contains(profile.status)) {
+            throw new IllegalStateException("Bridge login profile returned unsupported status");
+        }
         if ("ALLOWED".equals(profile.status)) {
             if (profile.uuid == null) throw new IllegalStateException("Allowed login profile omitted UUID");
-            UUID.fromString(profile.uuid);
+            AuthIdentity.parseUuid(profile.uuid, "login profile UUID");
         }
+    }
+
+    static boolean isServiceUnavailable(Throwable failure) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current instanceof java.io.IOException) return true;
+            if (current instanceof BridgeHttpException http
+                    && (http.statusCode == 429 || http.statusCode >= 500)) return true;
+            current = current.getCause();
+        }
+        return false;
     }
 
     private String sign(String method, String path, String timestamp, String requestId, String body) throws Exception {
@@ -105,6 +121,7 @@ final class ProxyIdentityClient {
     }
 
     static final class LoginProfile {
+        public String username;
         public String status;
         public String uuid;
         public String reason;
@@ -114,6 +131,7 @@ final class ProxyIdentityClient {
     static final class ProxyBanSnapshot {
         public Boolean maintenance;
         public String nextCursor;
+        public java.util.List<LoginProfile> profiles;
         public java.util.List<ProxyBan> bans;
     }
 
@@ -132,7 +150,19 @@ final class ProxyIdentityClient {
     static final class ProxyChange {
         public String operation;
         public String authmeUsername;
+        public String previousUsername;
+        public String status;
+        public String uuid;
         public String reason;
         public String expiresAt;
+    }
+
+    static final class BridgeHttpException extends Exception {
+        private final int statusCode;
+
+        BridgeHttpException(int statusCode) {
+            super("Bridge API returned HTTP " + statusCode);
+            this.statusCode = statusCode;
+        }
     }
 }

@@ -187,6 +187,18 @@ class GuiLanguageConfigurationTest {
         assertEquals(leafKeys(chinese), leafKeys(english));
     }
 
+    @Test
+    void bingoLocalesContainEveryVoteMenuTitle() {
+        for (String locale : List.of("zh_CN", "en_US")) {
+            YamlConfiguration language = YamlConfiguration.loadConfiguration(
+                    Path.of("src/main/resources/bingo/lang/" + locale + ".yml").toFile());
+            for (String key : List.of("vote.menu_title", "difficulty_vote.menu_title",
+                    "lines_vote.menu_title", "genesis.menu_title")) {
+                assertFalse(language.getString(key, "").isBlank(), locale + " is missing " + key);
+            }
+        }
+    }
+
     private static List<String> strings(ConfigurationSection section) {
         List<String> values = new ArrayList<>();
         for (String key : section.getKeys(true)) {

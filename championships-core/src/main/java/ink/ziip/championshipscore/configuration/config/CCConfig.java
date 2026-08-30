@@ -27,10 +27,12 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 22;
+        return 23;
     }
 
     private static final Map<GameTypeEnum, List<String>> DEFAULT_FORMAL_EVENT_MAPS;
+    static final List<Double> DEFAULT_ROUND_MULTIPLIERS =
+            List.of(1D, 1.2D, 1.2D, 1.5D, 1.5D, 1.8D);
 
     static {
         EnumMap<GameTypeEnum, List<String>> defaults = new EnumMap<>(GameTypeEnum.class);
@@ -55,6 +57,7 @@ public class CCConfig extends BaseConfigurationFile {
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdated) throws IOException {
         migrateLegacyRedisConfiguration(outdated);
         migrateIdentityConfiguration(outdated);
+        migrateWeightedScoreConfiguration(outdated);
         super.loadFromOutdatedConfiguration(outdated);
         copyFormalEventMaps(outdated);
     }
@@ -133,10 +136,33 @@ public class CCConfig extends BaseConfigurationFile {
         outdated.set("bingo.redis", null);
     }
 
+    /** Converts the legacy scalar switch while preserving its enabled state. */
+    static void migrateWeightedScoreConfiguration(@NotNull YamlConfiguration outdated) {
+        Object legacy = outdated.get("weighted-score");
+        if (!(legacy instanceof Boolean enabled)) return;
+        outdated.set("weighted-score", null);
+        outdated.set("weighted-score.enabled", enabled);
+        outdated.set("weighted-score.round-multipliers", DEFAULT_ROUND_MULTIPLIERS);
+    }
+
     @Override
     protected void loadCustomFileOptions() {
         PlayerUuidSource source = PlayerUuidSource.parse(IDENTITY_MODE);
         source.validateConfiguration(IDENTITY_PROFILE_API_BASE_URL);
+        WEIGHTED_SCORE_ROUND_MULTIPLIERS = validateRoundMultipliers(WEIGHTED_SCORE_ROUND_MULTIPLIERS);
+    }
+
+    static @NotNull List<Double> validateRoundMultipliers(List<Double> configured) {
+        if (configured == null || configured.isEmpty()) {
+            throw new IllegalArgumentException("weighted-score.round-multipliers must not be empty");
+        }
+        for (int index = 0; index < configured.size(); index++) {
+            Double multiplier = configured.get(index);
+            if (multiplier == null || !Double.isFinite(multiplier) || multiplier < 0D) {
+                throw new IllegalArgumentException("Invalid weighted-score multiplier for round " + (index + 1));
+            }
+        }
+        return List.copyOf(configured);
     }
 
     // Games
@@ -264,8 +290,11 @@ public class CCConfig extends BaseConfigurationFile {
     public static long IDENTITY_REQUEST_TIMEOUT_SECONDS;
 
     // Score
-    @ConfigOption(path = "weighted-score")
+    @ConfigOption(path = "weighted-score.enabled")
     public static Boolean WEIGHTED_SCORE;
+
+    @ConfigOption(path = "weighted-score.round-multipliers")
+    public static List<Double> WEIGHTED_SCORE_ROUND_MULTIPLIERS;
 
     //Spectator
     @ConfigOption(path = "strict-spectator-rule")

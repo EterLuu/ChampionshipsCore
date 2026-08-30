@@ -13,6 +13,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>ink.ziip</groupId>
+            <artifactId>championships-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>net.md-5</groupId>
             <artifactId>bungeecord-api</artifactId>
             <scope>provided</scope>

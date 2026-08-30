@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 22
+  version: 23
 mode: "CHAMPIONSHIP"
 # Registration names used by formal event schedules. These are map identities, not physical world names.
 # Keep this section synchronized through /cc map rename; do not add map IDs in ScheduleManager code.
@@ -87,7 +87,11 @@ identity:
   profile-api-base-url: "https://api.mojang.com"
   connect-timeout-seconds: 5
   request-timeout-seconds: 10
-weighted-score: false
+weighted-score:
+  enabled: false
+  # One-based formal game round multipliers. Extra entries allow events with more than six games;
+  # a round beyond this list contributes 0 weighted points until a coefficient is configured.
+  round-multipliers: [1.0, 1.2, 1.2, 1.5, 1.5, 1.8]
 strict-spectator-rule: false
 # 启用的游戏列表：只有列出的游戏会加载场地世界、可被指令操作并出现在 tab 补全中。
 # 可选值: Bingo, ParkourTag, BattleBox, TNTRun, SnowballShowdown, SkyWars, TGTTOS,

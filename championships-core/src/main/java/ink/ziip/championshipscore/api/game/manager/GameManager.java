@@ -1408,7 +1408,9 @@ public class GameManager extends BaseManager {
     /** Applies the same roster restriction as the explicit spectate command. Automatic routing bypasses it. */
     public boolean canManuallySpectate(@NotNull Player player) {
         if (player.hasPermission(MainCommand.ADMIN_PERMISSION)) return true;
-        if (!CCConfig.STRICT_SPECTATOR_RULE) return true;
+        boolean dailyLobby = plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby();
+        if (!shouldEnforceStrictSpectatorRule(Boolean.TRUE.equals(CCConfig.STRICT_SPECTATOR_RULE), dailyLobby))
+            return true;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (plugin.getRankManager().getRound() != 7 && team != null
                 && !player.hasPermission(ChampionshipPermissions.REFEREE)) {
@@ -1416,6 +1418,10 @@ public class GameManager extends BaseManager {
             return false;
         }
         return true;
+    }
+
+    static boolean shouldEnforceStrictSpectatorRule(boolean configured, boolean dailyLobby) {
+        return configured && !dailyLobby;
     }
 
     /** Lifecycle-active instances used by internal maintenance checks such as map rename protection. */

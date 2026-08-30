@@ -13,8 +13,11 @@ import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -27,7 +30,11 @@ import java.util.concurrent.TimeUnit;
  * AuthMe remains responsible for password verification once the player reaches a backend.
  */
 public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listener {
+    private static final String STATE_FILE_NAME = "state.properties";
+    private static final String LEGACY_STATE_FILE_NAME = "ban-state.properties";
+
     private ProxyIdentityClient identities;
+    private ProxyLoginResolver loginResolver;
     private String notBoundMessage;
     private String bannedMessage;
     private String revokedMessage;
@@ -53,9 +60,23 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
             revokedMessage = config.getString("messages.revoked");
             unavailableMessage = config.getString("messages.unavailable");
             maintenanceMessage = config.getString("messages.maintenance");
+            if (migrateLegacyStateFile(getDataFolder())) {
+                getLogger().info("Migrated auth proxy state from " + LEGACY_STATE_FILE_NAME
+                        + " to " + STATE_FILE_NAME + ".");
+            }
+            var accessState = new ProxyAccessState(new File(getDataFolder(), STATE_FILE_NAME));
+            long maxStaleHours = config.getLong("offline-cache.max-stale-hours", 0);
+            if (maxStaleHours < 0) throw new IllegalArgumentException("offline-cache.max-stale-hours must not be negative");
+            loginResolver = new ProxyLoginResolver(
+                    identities,
+                    accessState,
+                    config.getBoolean("offline-cache.enabled", true),
+                    maxStaleHours == 0 ? Duration.ZERO : Duration.ofHours(maxStaleHours),
+                    getLogger()
+            );
             banSynchronizer = new ProxyBanSynchronizer(
                     identities,
-                    new ProxyBanState(new File(getDataFolder(), "ban-state.properties")),
+                    accessState,
                     this::disconnectBannedPlayer,
                     getLogger()
             );
@@ -84,24 +105,24 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
 
     private void resolveLoginProfile(PreLoginEvent event) {
         try {
-            ProxyIdentityClient.LoginProfile profile = identities.lookup(event.getConnection().getName());
+            ProxyIdentityClient.LoginProfile profile = loginResolver.lookup(event.getConnection().getName());
             switch (profile.status) {
                 case "ALLOWED" -> {
                     event.getConnection().setOnlineMode(false);
                     event.getConnection().setUniqueId(UUID.fromString(profile.uuid));
                 }
-                case "UNBOUND" -> reject(event, notBoundMessage);
-                case "BANNED" -> reject(event, bannedMessage(profile.reason, profile.expiresAt));
-                case "REVOKED" -> reject(event, revokedMessage);
-                case "MAINTENANCE" -> reject(event, maintenanceMessage);
-                default -> {
-                    getLogger().warning("Unexpected login profile status for " + event.getConnection().getName() + ": " + profile.status);
-                    reject(event, unavailableMessage);
-                }
+                case "UNBOUND" -> reject(event, "UNBOUND", "Minecraft account is not bound", notBoundMessage);
+                case "BANNED" -> reject(event, "BANNED", banLogReason(profile.reason, profile.expiresAt),
+                        bannedMessage(profile.reason, profile.expiresAt));
+                case "REVOKED" -> reject(event, "REVOKED", "Server access has been revoked", revokedMessage);
+                case "MAINTENANCE" -> reject(event, "MAINTENANCE", "Identity service is in maintenance mode",
+                        maintenanceMessage);
+                default -> reject(event, "UNAVAILABLE", "Unsupported profile status: " + profile.status,
+                        unavailableMessage);
             }
         } catch (Exception exception) {
-            getLogger().warning("Could not resolve cc-web identity for " + event.getConnection().getName() + ": " + exception.getMessage());
-            reject(event, unavailableMessage);
+            String reason = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+            reject(event, "UNAVAILABLE", reason, unavailableMessage);
         } finally {
             event.completeIntent(this);
         }
@@ -120,15 +141,61 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
         return ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
     }
 
-    private static void reject(PreLoginEvent event, String message) {
+    static boolean migrateLegacyStateFile(File dataDirectory) throws IOException {
+        File stateFile = new File(dataDirectory, STATE_FILE_NAME);
+        File legacyFile = new File(dataDirectory, LEGACY_STATE_FILE_NAME);
+        if (stateFile.exists() || !legacyFile.isFile()) return false;
+        Files.createDirectories(dataDirectory.toPath());
+        try {
+            Files.move(legacyFile.toPath(), stateFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(legacyFile.toPath(), stateFile.toPath());
+        }
+        return true;
+    }
+
+    private void reject(PreLoginEvent event, String status, String reason, String message) {
+        getLogger().warning(rejectionLog(event.getConnection().getName(), status, reason));
         event.setCancelReason(TextComponent.fromLegacyText(ProxyText.format(message)));
         event.setCancelled(true);
+    }
+
+    static String rejectionLog(String username, String status, String reason) {
+        return "Rejected login: player=" + sanitizeLogValue(username, "unknown")
+                + ", status=" + sanitizeLogValue(status, "UNKNOWN")
+                + ", reason=" + sanitizeLogValue(reason, "not provided");
+    }
+
+    private static String banLogReason(String reason, String expiresAt) {
+        return "banReason=" + sanitizeLogValue(reason, "not provided")
+                + ", expiresAt=" + sanitizeLogValue(expiresAt, "not provided");
+    }
+
+    private static String sanitizeLogValue(String value, String fallback) {
+        if (value == null || value.isBlank()) return fallback;
+        StringBuilder sanitized = new StringBuilder(Math.min(value.length(), 500));
+        boolean previousWhitespace = false;
+        for (int index = 0; index < value.length() && sanitized.length() < 500; index++) {
+            char character = value.charAt(index);
+            boolean whitespace = Character.isWhitespace(character) || Character.isISOControl(character);
+            if (whitespace) {
+                if (!previousWhitespace && sanitized.length() > 0) sanitized.append(' ');
+            } else {
+                sanitized.append(character);
+            }
+            previousWhitespace = whitespace;
+        }
+        String result = sanitized.toString().trim();
+        return result.isEmpty() ? fallback : result;
     }
 
     private void disconnectBannedPlayer(String username, String reason, String expiresAt) {
         String message = bannedMessage(reason, expiresAt);
         for (ProxiedPlayer player : getProxy().getPlayers()) {
             if (player.isConnected() && player.getName().equalsIgnoreCase(username)) {
+                getLogger().warning("Disconnected banned player: player="
+                        + sanitizeLogValue(player.getName(), "unknown") + ", reason="
+                        + banLogReason(reason, expiresAt));
                 player.disconnect(TextComponent.fromLegacyText(ProxyText.format(message)));
             }
         }

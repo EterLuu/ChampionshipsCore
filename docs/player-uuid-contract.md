@@ -67,10 +67,11 @@ profile directory --(按名查询)--> AuthProxy / authlib-injector --(登录档�
 
 AuthProxy 是可选组件，并且只面向 cc-web 管理的 `PROFILE_UUID` 部署：
 
-1. 预登录时向 cc-web 查询准入结果与 current effective UUID，并把该 UUID 写入代理登录连接。
-2. cc-web 不返回 UUID、返回无效 UUID、服务不可用或身份不一致时失败关闭，禁止自行生成离线 UUID、使用账户 ID 或沿用旧缓存 UUID。
-3. AuthProxy 不支持也不尝试服务 `OFFLINE` 部署；此类服务器无需安装它。
-4. authlib-injector 负责 Yggdrasil/profile/皮肤兼容，AuthProxy 负责预登录注入。两者可以同时部署，但必须配置为返回同一 UUID，不能在后续阶段再次独立改写登录身份。
+1. 启动同步从 cc-web 获取全部当前获准玩家及 current effective UUID；正常预登录仍实时查询最新准入结果，并把权威 UUID 写入代理连接。
+2. 每次成功快照、增量或登录查询都会原子更新持久缓存。仅连接失败、DNS 故障、超时、HTTP 429 或 5xx 可回退到已同步的同名档案；401/403、其他 4xx、非法 JSON、未知状态与缺失/非法 UUID 均失败关闭。
+3. 离线回退不得生成离线 UUID、使用账户 ID 顶替或跨名称猜测。未知玩家、从未完成全量快照且未单独成功查询的玩家仍拒绝登录；已缓存的撤销、有效封禁和维护锁继续拒绝。
+4. AuthProxy 不支持也不尝试服务 `OFFLINE` 部署；此类服务器无需安装它。
+5. authlib-injector 负责 Yggdrasil/profile/皮肤兼容，AuthProxy 负责预登录注入。两者可以同时部署，但必须配置为返回同一 UUID，不能在后续阶段再次独立改写登录身份。
 
 ### 3.2 cc-web 的统一身份、Yggdrasil 与皮肤
 
@@ -88,6 +89,22 @@ cc-web 的 Yggdrasil 名称和 UUID 查询接口只返回已绑定玩家的 curr
 官方皮肤是独立职责：对于已绑定玩家，cc-web 可以向 Mojang 查询并透传 `textures` profile property。Mojang 的皮肤查询不得决定、替换或回填当前登录 UUID。
 
 cc-web 内部的 `SERVER_UUID`、`CUSTOM_UUID` 等只可表示历史数据或网站迁移阶段。它们不能成为 Core `identity.mode`，也不能要求 Core 了解 cc-web 的迁移算法。
+
+### 3.3 AuthProxy 与 AuthBridge 的准入职责
+
+AuthProxy 安装在 Bungee 上即表示代理准入模式（`PROXY`），不提供额外的模式开关。AuthBridge 安装在 Paper/Core 上时，通过 `access.admission-owner` 选择是否重复承担玩家准入：
+
+| 能力 | AuthProxy（固定 PROXY） | AuthBridge `PROXY` | AuthBridge `BRIDGE` |
+| --- | --- | --- | --- |
+| 预登录拒绝未绑定、撤销、封禁 | 负责 | 不负责，仅信任代理结果 | 负责，在 Paper 侧再次拒绝 |
+| 维护状态拒绝 | 负责 | 负责后端维护锁/迁移保护 | 负责，并向玩家提示 |
+| cc-web 不可用时的玩家准入 | 使用 `state.properties` 缓存按策略回退 | 不因 Web 不可用重复拒绝已由代理放行的玩家 | 按 `fail-closed-before-first-sync` 决定；首次同步前可拒绝 |
+| AuthMe 密码/账户同步 | 不接收密码或 writer ACK | 负责 | 负责 |
+| UUID 解析与 Bukkit UUID 校验 | 注入登录档案 UUID | 负责校验实际 Bukkit UUID，发现不一致阻断后端 | 同上 |
+| 撤销/封禁后的在线玩家 | 代理侧处理 | 不主动踢出，避免与代理重复 | Bridge 同步后主动踢出 |
+| 本地封禁持久化 | `state.properties` | 同步到 `state.yml` 供模式切换，但不作为当前准入依据 | 同步到 `state.yml`，用于离线期间拒绝 |
+
+因此，生产 Bungee 部署通常使用 AuthProxy + AuthBridge `PROXY`；没有 AuthProxy 或需要 Paper 独立阻断访问时才选择 AuthBridge `BRIDGE`。两者都不会生成离线 UUID，也不会改变 Core 的 `identity.mode`。
 
 ## 4. ChampionshipsAuthBridge 的最小边界
 
@@ -157,7 +174,10 @@ AuthBridge 是可选的密码与认证资料同步组件。它不读取或推断
 | `PROFILE_UUID` 玩家在线操作 | 只使用 Bukkit UUID，不额外调用 profile API。 |
 | 同名 UUID 冲突 | 普通操作拒绝，提示使用显式迁移流程。 |
 | cc-web 皮肤查询 | 可取得 Mojang `textures`，但不会改变登录 UUID。 |
-| AuthProxy 缺少 UUID | 拒绝登录，不生成离线 UUID。 |
+| AuthProxy 缺少 UUID | 实时与缓存均无有效 UUID 时拒绝登录，不生成离线 UUID。 |
+| cc-web 临时不可达（AuthProxy） | 已完成权威同步且未撤销/封禁的玩家沿用同名缓存 UUID 登录；未知玩家拒绝。 |
+| cc-web 临时不可达（AuthBridge `PROXY`） | 已由代理放行的玩家继续完成 AuthMe/后端登录；Bridge 仅保留维护锁和 UUID 不一致保护。 |
+| cc-web 临时不可达（AuthBridge `BRIDGE`） | 按 `fail-closed-before-first-sync` 处理；已有本地身份和封禁缓存可继续执行本地准入。 |
 | AuthBridge `UUID` 账户下发 | 只使用合法的显式 `minecraftUuid`，不回写 UUID。 |
 | AuthBridge `OFFLINE` 账户下发 | 使用事件用户名计算离线 UUID，结果与离线登录 UUID 一致。 |
 | AuthBridge `ONLINE` 账户下发 | 只查询 Mojang 官方档案；查询失败时拒绝事件，不回退离线 UUID。 |

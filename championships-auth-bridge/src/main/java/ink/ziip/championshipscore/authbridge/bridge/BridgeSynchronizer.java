@@ -5,6 +5,8 @@ import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
 import ink.ziip.championshipscore.api.player.event.PlayerIdentityMigrationEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerUnknownRemovalEvent;
+import ink.ziip.championshipscore.auth.AuthAdmissionOwner;
+import ink.ziip.championshipscore.auth.AuthIdentity;
 import ink.ziip.championshipscore.authbridge.BridgeText;
 import ink.ziip.championshipscore.authbridge.authme.AuthMeHashStore;
 import ink.ziip.championshipscore.authbridge.model.BridgeChange;
@@ -40,6 +42,8 @@ public final class BridgeSynchronizer implements Runnable {
     private final BridgeUuidResolver uuidResolver;
     private final String usernameUpdatedMessage;
     private final String accessRevokedMessage;
+    private final String bannedMessage;
+    private final AuthAdmissionOwner admissionOwner;
     private final AtomicBoolean running = new AtomicBoolean();
     private int consecutiveFailures;
     private long lastUnavailableLogAt;
@@ -48,12 +52,21 @@ public final class BridgeSynchronizer implements Runnable {
                               LocalAccessState state, String usernameUpdatedMessage,
                               String accessRevokedMessage) {
         this(plugin, client, authMe, state, usernameUpdatedMessage, accessRevokedMessage,
-                new BridgeUuidResolver(java.time.Duration.ofSeconds(5), java.time.Duration.ofSeconds(10)));
+                new BridgeUuidResolver(java.time.Duration.ofSeconds(5), java.time.Duration.ofSeconds(10)),
+                AuthAdmissionOwner.PROXY, "&#ff6b26你已被服务器封禁。");
     }
 
-    BridgeSynchronizer(Plugin plugin, BridgeApiClient client, AuthMeHashStore authMe,
+    public BridgeSynchronizer(Plugin plugin, BridgeApiClient client, AuthMeHashStore authMe,
                        LocalAccessState state, String usernameUpdatedMessage,
                        String accessRevokedMessage, BridgeUuidResolver uuidResolver) {
+        this(plugin, client, authMe, state, usernameUpdatedMessage, accessRevokedMessage, uuidResolver,
+                AuthAdmissionOwner.PROXY, "&#ff6b26你已被服务器封禁。");
+    }
+
+    public BridgeSynchronizer(Plugin plugin, BridgeApiClient client, AuthMeHashStore authMe,
+                       LocalAccessState state, String usernameUpdatedMessage,
+                       String accessRevokedMessage, BridgeUuidResolver uuidResolver,
+                       AuthAdmissionOwner admissionOwner, String bannedMessage) {
         this.plugin = plugin;
         this.client = client;
         this.authMe = authMe;
@@ -61,6 +74,8 @@ public final class BridgeSynchronizer implements Runnable {
         this.uuidResolver = uuidResolver;
         this.usernameUpdatedMessage = usernameUpdatedMessage;
         this.accessRevokedMessage = accessRevokedMessage;
+        this.admissionOwner = admissionOwner;
+        this.bannedMessage = bannedMessage;
     }
 
     @Override
@@ -188,10 +203,24 @@ public final class BridgeSynchronizer implements Runnable {
             case "REVOKED" -> {
                 state.revoke(username);
                 authMe.remove(username);
-                kick(username, accessRevokedMessage);
+                if (admissionOwner == AuthAdmissionOwner.BRIDGE) kick(username, accessRevokedMessage);
             }
-            // Bungee performs ban admission and disconnects existing sessions.
-            case "BANNED", "UNBANNED" -> {
+            case "BANNED" -> {
+                try {
+                    state.ban(username, change.reason(), change.expiresAt());
+                } catch (IOException failure) {
+                    throw new IllegalStateException("Unable to save local ban state", failure);
+                }
+                if (admissionOwner == AuthAdmissionOwner.BRIDGE) {
+                    kick(username, replaceBanPlaceholders(bannedMessage, change.reason(), change.expiresAt()));
+                }
+            }
+            case "UNBANNED" -> {
+                try {
+                    state.unban(username);
+                } catch (IOException failure) {
+                    throw new IllegalStateException("Unable to save local ban state", failure);
+                }
             }
             default -> throw new IllegalArgumentException("Unknown bridge operation: " + operation);
         }
@@ -359,6 +388,12 @@ public final class BridgeSynchronizer implements Runnable {
         });
     }
 
+    private static String replaceBanPlaceholders(String template, String reason, String expiresAt) {
+        return (template == null ? "" : template)
+                .replace("%reason%", reason == null || reason.isBlank() ? "违反服务器规则" : reason)
+                .replace("%expires%", expiresAt == null || expiresAt.isBlank() ? "请查看账号页面" : expiresAt);
+    }
+
     private static String replacePlaceholders(String template, String oldUsername, String newUsername) {
         return (template == null ? "" : template)
                 .replace("%old%", oldUsername == null ? "" : oldUsername)
@@ -410,10 +445,7 @@ public final class BridgeSynchronizer implements Runnable {
     }
 
     private static String requireUsername(String username) {
-        if (username == null || !username.matches("[A-Za-z0-9_]{3,16}")) {
-            throw new IllegalArgumentException("Invalid Minecraft username");
-        }
-        return username;
+        return AuthIdentity.requireUsername(username);
     }
 
     private static String requireAccountId(String accountId) {

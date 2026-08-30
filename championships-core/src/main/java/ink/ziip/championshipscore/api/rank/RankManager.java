@@ -604,7 +604,7 @@ public class RankManager extends BaseManager {
             int gameOrder = getGameOrder(gameTypeEnum);
             for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                 if (playerPointEntry.getValid() == 1 && playerPointEntry.getGame() == gameTypeEnum) {
-                    if (CCConfig.WEIGHTED_SCORE) {
+                    if (Boolean.TRUE.equals(CCConfig.WEIGHTED_SCORE)) {
                         points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * getGameWeight(gameTypeEnum);
                     } else
                         points += playerPointEntry.getPoints();
@@ -620,13 +620,13 @@ public class RankManager extends BaseManager {
     }
 
     public double getPointMultiple(int round) {
-        return switch (round) {
-            case 1 -> 1D;
-            case 2, 3 -> 1.2D;
-            case 4, 5 -> 1.5D;
-            case 6 -> 1.8D;
-            default -> 0D;
-        };
+        return configuredPointMultiple(round, CCConfig.WEIGHTED_SCORE_ROUND_MULTIPLIERS);
+    }
+
+    static double configuredPointMultiple(int round, List<Double> multipliers) {
+        if (round < 1 || multipliers == null || round > multipliers.size()) return 0D;
+        Double multiplier = multipliers.get(round - 1);
+        return multiplier == null ? 0D : multiplier;
     }
 
     private double getTeamPoints(ChampionshipTeam championshipTeam, GameTypeEnum gameTypeEnum) {

@@ -14,6 +14,11 @@
     <dependencies>
         <dependency>
             <groupId>ink.ziip</groupId>
+            <artifactId>championships-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ink.ziip</groupId>
             <artifactId>ChampionshipsCore</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>

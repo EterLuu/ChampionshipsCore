@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,6 +31,23 @@ class LocalAccessStateTest {
             assertEquals(4, state.authVersion("Allowed"));
             assertEquals(0, state.authVersion("Removed"));
             assertEquals(allowedUuid, new LocalAccessState(file).expectedUuid("Allowed"));
+        } finally {
+            Files.deleteIfExists(file.toPath());
+        }
+    }
+
+    @Test
+    void persistsBanStateAcrossRestart() throws Exception {
+        File file = Files.createTempFile("authbridge-ban-state", ".yml").toFile();
+        try {
+            LocalAccessState state = new LocalAccessState(file);
+            state.ban("BlockedPlayer", "rule violation", "2030-01-01T00:00:00Z");
+
+            LocalAccessState.Ban restored = new LocalAccessState(file)
+                    .activeBan("blockedplayer", Instant.parse("2029-01-01T00:00:00Z"));
+
+            assertEquals("rule violation", restored.reason());
+            assertEquals("2030-01-01T00:00:00Z", restored.expiresAt());
         } finally {
             Files.deleteIfExists(file.toPath());
         }

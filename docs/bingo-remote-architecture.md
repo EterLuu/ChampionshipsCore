@@ -1,5 +1,7 @@
 # Bingo 跨服拆分架构
 
+最后核对：2026-08-30（源码基线 `d703939`，协议 v5）
+
 ## 模式与启用原则
 
 远程 Bingo 由 ChampionshipsCore 控制面、Folia Worker、Redis Streams 和代理转服链路组成。`LOCAL` 适用于单服执行，`REMOTE` 适用于将 Bingo 世界与玩法负载隔离到独立 Folia 服务器的部署。新部署应先以 `LOCAL` 验证基础玩法，再在维护窗口切换到 `REMOTE`；不得在比赛运行中热切换执行器。
@@ -10,10 +12,10 @@
 
 | 模块 | 职责 |
 | --- | --- |
-| `championships-common` | 无 Bukkit 依赖的协议 v5、manifest、命令/事件、生命周期、路由契约和确定性 ID |
+| `championships-common` | 无 Bukkit 依赖的协议 v5、manifest、命令/事件、生命周期、路由契约、确定性 ID 和共享展示策略 |
 | `championships-bingo-engine` | 无 Bukkit 依赖的任务完成排序、格子/连线计分和结果哈希 |
-| `championships-platform-bukkit` | Paper/Folia Scheduler、代理 Plugin Message、散布、初始装备和常驻效果共享实现 |
-| `championships-redis` | Redis Streams 发布、consumer group、pending reclaim、DLQ 和消息编解码 |
+| `championships-platform-bukkit` | Paper/Folia Scheduler、任务事件判定、世界规则、玩家状态、队伍投影、聊天展示、散布、初始装备和常驻效果共享实现 |
+| `championships-redis` | Redis Streams 发布、consumer group、pending reclaim、DLQ、比赛 transport 和跨服公共聊天 |
 | `championships-bingo-worker` | 独立 Folia 执行插件，拥有世界、实体、背包观察、任务菜单和实时玩法 |
 | `championships-bingo-loadtest` | 仅供可丢弃世界使用的一次性 Folia 区块/实体压测插件；不参与正式玩法 |
 | `championships-core` | ChampionshipsCore 主插件；负责赛程 ownership、事件重放、积分和数据库持久化 |
@@ -41,7 +43,7 @@ ChampionshipsCore 是唯一控制面和正式积分权威。它负责：
 
 Worker 只拥有执行面：世界、实体、背包/进度/统计观察、玩家 UI 和本地 tick。它不能直接访问 ChampionshipsCore 数据库，也不能决定正式积分。
 
-初始装备、常驻效果、旁观状态、安全散布和记分板基础位于共享 Bukkit 平台模块，本地 Bingo 与 Worker 使用同一实现。计分、排名和胜者判定位于纯 Java engine，Core 与 Worker 各运行一份，避免复制玩法规则。Worker 不携带第二份 Bingo 玩法或语言配置：开局时 Core 将当前场地配置、`message.yml`、Bingo 语言文本与任务富文本冻结到 manifest。
+任务事件判定、世界规则、玩家状态清理、初始装备、常驻效果、旁观状态、安全散布、原生队伍与聊天展示位于共享 Bukkit 平台模块；规则介绍时间线、计时格式和排名窗口位于 common，本地 Bingo 与 Worker 使用同一实现。计分、排名和胜者判定位于纯 Java engine，Core 与 Worker 各运行一份，避免复制玩法规则。Worker 不携带第二份 Bingo 玩法或语言配置：开局时 Core 将当前场地配置、`message.yml`、Bingo 语言文本与任务富文本冻结到 manifest。
 
 ## 生命周期与路由
 
@@ -77,7 +79,7 @@ CREATED -> PREPARING -> READY -> ROUTING -> COUNTDOWN
 | --- | --- | --- |
 | Core | Worker 尚在 `PREPARING` | 留在 Core，等 Worker `READY` |
 | Core | `READY` / `ROUTING` / `COUNTDOWN` / `RUNNING` | 按 manifest ownership 送往 Worker |
-| Worker | 比赛非终态且拥有该玩家 | 恢复玩家或旁观状态；已开局时保留背包和原地玩家数据 |
+| Worker | 比赛非终态且拥有该玩家 | 恢复玩家或旁观状态；倒计时/开局后使用 Worker 记录的断线位置，保留背包和任务基线，不重新散布 |
 | Worker | 无活动 ownership 或比赛已结束 | 直接返回 Core 服务器 |
 
 动态旁观先由 Worker 确认 `SPECTATOR_ADDED` 后 Core 才转服，避免 Redis 命令与代理连接的竞态。
@@ -107,7 +109,10 @@ Worker 自己维护一个 Adventure Component 记分板，展示剩余时间、�
 <namespace>:bingo:events
 <namespace>:bingo:manifest:<matchId>:<epoch>
 <namespace>:core:data-sync
+<namespace>:chat:global
 ```
+
+`<namespace>:chat:global` 承载 Core 与 Worker 的普通公共聊天。每个实例使用基于稳定实例 ID 的独立 consumer group，因此在线实例都能收到每条新消息；实例 ID 重复会导致同组竞争消费。聊天消息包含发送者 UUID、名称、展示标签、队伍颜色、活动选手状态和 Adventure JSON，接收端必须按共享 `CrossServerChatText` 渲染。发送实例通过本服聊天事件显示原消息并忽略流内回声；超过 30 秒的消息会直接确认丢弃，不做离线补发。队伍私聊不写入该公共流。
 
 消费语义为至少一次：
 

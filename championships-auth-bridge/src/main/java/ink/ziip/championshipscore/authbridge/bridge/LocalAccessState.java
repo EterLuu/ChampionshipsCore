@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.authbridge.bridge;
 
+import ink.ziip.championshipscore.auth.AuthIdentity;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -14,6 +15,7 @@ import java.util.LinkedHashMap;
 public final class LocalAccessState {
     private final File file;
     private final Map<String, Identity> identities = new ConcurrentHashMap<>();
+    private final Map<String, Ban> bans = new ConcurrentHashMap<>();
     private final Map<String, Integer> authVersions = new ConcurrentHashMap<>();
     private volatile String cursor = "0";
     private volatile boolean synchronizedOnce;
@@ -48,6 +50,33 @@ public final class LocalAccessState {
 
     public void revoke(String username) {
         identities.remove(normalize(username));
+    }
+
+    public boolean hasIdentity(String username) {
+        return identities.containsKey(normalize(username));
+    }
+
+    public Ban activeBan(String username, java.time.Instant now) {
+        Ban ban = bans.get(normalize(username));
+        if (ban == null || ban.expiresAt() == null || ban.expiresAt().isBlank()) return ban;
+        try {
+            return java.time.Instant.parse(ban.expiresAt()).isAfter(now) ? ban : null;
+        } catch (java.time.format.DateTimeParseException ignored) {
+            return null;
+        }
+    }
+
+    public synchronized void ban(String username, String reason, String expiresAt) throws IOException {
+        AuthIdentity.requireUsername(username);
+        if (expiresAt != null && !expiresAt.isBlank()) java.time.Instant.parse(expiresAt);
+        bans.put(normalize(username), new Ban(reason == null ? "" : reason,
+                expiresAt == null || expiresAt.isBlank() ? null : expiresAt));
+        save();
+    }
+
+    public synchronized void unban(String username) throws IOException {
+        bans.remove(normalize(username));
+        save();
     }
 
     /** Reconciles local access metadata after an authoritative allowlist cleanup. */
@@ -189,6 +218,20 @@ public final class LocalAccessState {
         }
         var versionSection = yaml.getConfigurationSection("auth-versions");
         if (versionSection != null) for (String key : versionSection.getKeys(false)) authVersions.put(key, versionSection.getInt(key));
+        var banSection = yaml.getConfigurationSection("bans");
+        if (banSection != null) for (String key : banSection.getKeys(false)) {
+            var entry = banSection.getConfigurationSection(key);
+            if (entry == null) continue;
+            String expiresAt = entry.getString("expires-at");
+            if (expiresAt != null && !expiresAt.isBlank()) {
+                try {
+                    java.time.Instant.parse(expiresAt);
+                } catch (java.time.format.DateTimeParseException ignored) {
+                    continue;
+                }
+            }
+            bans.put(key, new Ban(entry.getString("reason", ""), expiresAt));
+        }
     }
 
     private void save() throws IOException {
@@ -207,14 +250,21 @@ public final class LocalAccessState {
             yaml.set("identities." + name + ".minecraft-uuid", identity.minecraftUuid());
         });
         authVersions.forEach((name, version) -> yaml.set("auth-versions." + name, version));
+        bans.forEach((name, ban) -> {
+            yaml.set("bans." + name + ".reason", ban.reason());
+            yaml.set("bans." + name + ".expires-at", ban.expiresAt());
+        });
         yaml.save(file);
     }
 
     private static String normalize(String username) {
-        return username.toLowerCase(Locale.ROOT);
+        return AuthIdentity.normalizeUsername(username);
     }
 
     public record Identity(String accountId, String minecraftUuid) {
+    }
+
+    public record Ban(String reason, String expiresAt) {
     }
 
     public record PendingAcknowledgement(String cursor) {

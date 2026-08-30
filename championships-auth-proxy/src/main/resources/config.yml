@@ -7,6 +7,11 @@ api:
   poll-seconds: 10
   connect-timeout-seconds: 3
   request-timeout-seconds: 5
+offline-cache:
+  # 已成功同步的准入状态、UUID、封禁和维护状态会持久化，cc-web 暂时不可用时继续使用。
+  enabled: true
+  # 0 表示不按时间失效；未知玩家以及从未完整同步过的玩家仍会拒绝登录。
+  max-stale-hours: 0
 messages:
   not-bound: |-
     &#696969&m--------------------------------

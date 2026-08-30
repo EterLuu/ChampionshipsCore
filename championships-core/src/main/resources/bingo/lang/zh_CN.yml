@@ -286,6 +286,7 @@ vote:
 
 difficulty_vote:
   result: "&6本局卡片难度：&f{0}"
+  menu_title: "选择卡片难度"
   menu_count: "&7当前票数：&e{0}"
   menu_hint: "&e点击选择"
   menu_picked: "&a✔ 你的选择"
@@ -325,6 +326,7 @@ card_difficulty:
 
 lines_vote:
   result: "&6本局胜利条件：&f{0} 条线"
+  menu_title: "选择胜利线数"
   menu_option: "&b{0} 条线获胜"
   menu_desc: "&7完成 {0} 条宾果线即可赢得本局"
   menu_count: "&7当前票数：&e{0}"

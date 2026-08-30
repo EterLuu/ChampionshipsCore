@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.authbridge.bridge;
 
+import ink.ziip.championshipscore.auth.AuthIdentity;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -49,21 +50,11 @@ public final class BridgeUuidResolver {
     }
 
     static UUID offlineUuid(String username) {
-        return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8));
+        return AuthIdentity.offlineUuid(username);
     }
 
     static UUID parseUuid(String value, String field) {
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("Missing " + field);
-        String compact;
-        if (value.matches("[0-9a-fA-F]{32}")) {
-            compact = value;
-        } else if (value.matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")) {
-            compact = value.replace("-", "");
-        } else {
-            throw new IllegalArgumentException("Invalid " + field);
-        }
-        return UUID.fromString(compact.substring(0, 8) + "-" + compact.substring(8, 12) + "-"
-                + compact.substring(12, 16) + "-" + compact.substring(16, 20) + "-" + compact.substring(20));
+        return AuthIdentity.parseUuid(value, field);
     }
 
     private UUID resolveMojang(String username) {
@@ -109,9 +100,7 @@ public final class BridgeUuidResolver {
     }
 
     private static void requireUsername(String username) {
-        if (username == null || !username.matches("[A-Za-z0-9_]{3,16}")) {
-            throw new IllegalArgumentException("Invalid Minecraft username");
-        }
+        AuthIdentity.requireUsername(username);
     }
 
     private static void closeQuietly(InputStream input) {

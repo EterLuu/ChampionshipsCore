@@ -7,7 +7,13 @@ api:
   connect-timeout-seconds: 5
   request-timeout-seconds: 10
 access:
+  # PROXY: AuthProxy rejects external logins; BRIDGE: this plugin owns backend admission.
+  admission-owner: PROXY
   fail-closed-before-first-sync: true
+  unbound-message: |-
+    &#ff6b26你还没有绑定 Minecraft 账号，请先完成账号绑定。
+  banned-message: |-
+    &#ff6b26你已被服务器封禁。
   maintenance-message: |-
     &#696969&m--------------------------------
     &#ff6b26&l暂时无法连接

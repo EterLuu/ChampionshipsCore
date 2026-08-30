@@ -1,5 +1,7 @@
 # ChampionshipsCore
 
+最后核对：2026-08-30（源码基线 `d703939`）
+
 ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综合赛事核心插件。它负责队伍与选手管理、比赛场地、游戏生命周期、积分排行、自动赛程、投票、观战、聊天分组和 PlaceholderAPI 变量。
 
 | 显示名称 | 命令标识 | 配置名称 |
@@ -24,7 +26,7 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 
 所有队伍会被分散到同一套主世界、下界和末地，完成 5×5 任务卡。任务可要求获得物品或药水、达成统计目标及完成进度；同一格可由多支队伍分别完成。玩家可右键副手地图，在地图和菜单两种卡片样式间切换。
 
-任务按完成顺序计分，连成横、竖或对角线会获得团队奖励。开局会发放探索所需的装备与物资，并提供队友传送；常驻效果、PvP 时机、时长和分值均由 Bingo 配置决定。
+任务按完成顺序计分，连成横、竖或对角线会获得团队奖励。开局会发放探索所需的装备与物资，并提供队友传送；常驻效果、PvP 时机、时长和分值均由 Bingo 配置决定。`LOCAL` 与 `REMOTE` 使用同一套任务判定、世界规则、玩家状态、计时格式、队伍颜色和展示策略；远端 Worker 只执行 Core 冻结后的比赛 manifest，不维护第二份玩法规则。
 
 ### 匹配赛建
 
@@ -115,11 +117,13 @@ mvn clean package
 
 仓库使用 Maven Reactor 管理共享协议、纯 Java Bingo 计分引擎、Paper/Folia 平台层、Redis transport、独立 Bingo Worker、压测插件、Core 插件及可选认证组件。根目录构建后，Core 制品位于 `target/ChampionshipsCore-1.3-SNAPSHOT.jar`，Bingo Worker 制品位于 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar`。
 
-`championships-auth-bridge` 是可选的 Paper 侧组件，用于将网站绑定资料同步到 AuthMe 并核对登录 UUID；`championships-auth-proxy` 是可选的 BungeeCord 侧组件，用于在代理登录阶段执行网站账户准入、封禁检查和有效 UUID 注入。两者均不替代 ChampionshipsCore 的赛事、队伍或积分功能。UUID 的跨组件边界见 [player-uuid-contract.md](docs/player-uuid-contract.md)。
+Core 与 Worker 的共享契约分布在 `championships-common`、`championships-bingo-engine`、`championships-platform-bukkit` 和 `championships-redis`。Bingo 任务观察、世界规则、玩家清理、原生计分板队伍、身份/聊天展示、规则介绍时间线、计时文本或排名窗口发生变化时，必须同时检查本地 Bingo 与 Worker 调用方，并成对构建、部署和重启两个服务。只替换其中一个 JAR 不能保证协议与玩家可见行为兼容。
+
+`championships-auth-bridge` 是可选的 Paper 侧组件，用于将网站绑定资料同步到 AuthMe 并核对登录 UUID；`championships-auth-proxy` 是可选的 BungeeCord 侧组件，用于在代理登录阶段执行网站账户准入、封禁检查和有效 UUID 注入。Proxy 会把 Web 签名快照中的准入状态、UUID、封禁、维护状态和事件游标持久化，cc-web 暂时不可达时，已同步玩家仍可用原 UUID 进入服务器并由本地 AuthMe 验证密码；未知玩家与非法响应继续失败关闭。两者均不替代 ChampionshipsCore 的赛事、队伍或积分功能。UUID 的跨组件边界见 [player-uuid-contract.md](docs/player-uuid-contract.md)。
 
 远程 Bingo 可通过 `bingo.execution-mode: REMOTE` 把世界与玩法执行迁移到独立 Folia Worker；`LOCAL` 模式仍保留为单服执行方案。部署前请阅读 [Worker README](championships-bingo-worker/README.md)、[跨服架构与上线流程](docs/bingo-remote-architecture.md) 和 [64 人性能指南](docs/bingo-64-player-performance-report.md)。性能指南中的逻辑玩家压测只覆盖区块与实体负载，不代替真实客户端的端到端验收。压测插件只能临时安装在可丢弃的测试世界，不得留在生产服务器。
 
-Bingo 任务机制与图集当前同步至 [MineBingo](https://gitee.com/chancelethay/minebingo) 提交 `dd84456fdf7784deca11e37618cb5af8708d21e9`（2026-08-19）。模式/难度投票与奇遇仅接入 ChampionshipsCore 的 DAILY 自由游玩，继续使用 CC 原有大厅、Party、匹配和临时队伍；正式赛与管理员手动局仍使用场地原有固定积分规则。
+Bingo 任务机制与图集以上游 [MineBingo](https://gitee.com/chancelethay/minebingo) 提交 `dd84456fdf7784deca11e37618cb5af8708d21e9`（2026-08-19）为同步基线；默认卡片与难度表在 2026-08-30 又按当前服务端物品获取条件重审了音乐唱片和锻造模板，并由资源契约测试锁定。模式、难度、胜利线数投票与奇遇仅接入 ChampionshipsCore 的 DAILY 自由游玩：三页投票共用 `daily-vote.seconds` 的单一倒计时，继续使用 CC 原有大厅、Party、匹配和临时队伍；正式赛与管理员手动局仍使用场地原有固定积分规则。
 
 推荐的首次部署顺序：
 
@@ -142,8 +146,9 @@ Bingo 任务机制与图集当前同步至 [MineBingo](https://gitee.com/chancel
 | `mode` | 插件运行模式，默认 `CHAMPIONSHIP` |
 | `max-players` | 赛事允许的最大玩家数 |
 | `whitelist` | 满员时优先放行的玩家名列表；仅影响 Core 的人数上限，不负责网站账户准入、封禁或 UUID 分配 |
-| `weighted-score` | 是否启用加权积分 |
-| `strict-spectator-rule` | 是否阻止参赛队员自由观战 |
+| `weighted-score.enabled` | 是否启用游戏归一化权重和比赛轮次系数 |
+| `weighted-score.round-multipliers` | 按正式比赛轮次从第 1 轮开始配置系数；超出列表的轮次按 0 计算 |
+| `strict-spectator-rule` | 正式赛事模式下是否阻止参赛队员自由观战；DAILY 模式不执行此限制 |
 | `enabled-games` | 本次赛事启用的游戏；未启用的游戏不会加载，也不会出现在相关命令中 |
 | `database.type` | `MARIADB` 使用 MariaDB 驱动，其他值使用 MySQL 驱动 |
 | `database.address` / `port` | 数据库地址和端口 |
@@ -152,6 +157,12 @@ Bingo 任务机制与图集当前同步至 [MineBingo](https://gitee.com/chancel
 | `team.max-members` | 每支队伍最多成员数，默认 4 |
 | `lobby.location` | 大厅出生点，也是比赛结束和地图保存时的返回点 |
 | `parkourtag.max-chaser-times` | 单名队员最多担任追逐者的次数 |
+| `redis.enabled` | 启用数据库缓存同步、跨服公共聊天和 REMOTE Bingo 所需的统一 Redis 生命周期 |
+| `redis.instance-id` | Core 实例的稳定唯一标识；`auto` 会在数据目录持久化生成，克隆实例后必须显式区分 |
+| `redis.uri` / `namespace` | Redis 连接地址和逻辑命名空间；Core 与 Worker 必须一致 |
+| `redis.consumer-group-prefix` | Core 数据同步及聊天 consumer group 的前缀 |
+| `bingo.execution-mode` | `LOCAL` 在 Core 内执行；`REMOTE` 把玩法执行交给 Folia Worker |
+| `bingo.worker-id` / `worker-server` | REMOTE 模式的 Worker 标识与代理服务名 |
 
 修改配置后执行：
 
@@ -409,9 +420,15 @@ python3 scripts/buildmart_blueprint_audit.py <蓝图文件或目录> \
 
 投票持续 120 秒，只允许已加入队伍的选手投票。已经记录为完成的游戏不能再次被投票；结束时插件按票数广播排行。
 
-每个场地在比赛中累计玩家积分，结束时写入数据库。`weighted-score` 开启后，总榜会按当前赛事轮次设置的权重计算。`/cc rank info` 可查看各项目权重。
+每个场地在比赛中累计玩家积分，结束时写入数据库。`weighted-score.enabled` 开启后，总榜会同时应用游戏归一化权重和 `weighted-score.round-multipliers` 中对应正式比赛轮次的系数。`/cc rank info` 可查看各项目权重。
 
-开启 `strict-spectator-rule` 后，正常赛事轮次中参赛队员不能随意观战；拥有 `cc.refuge` 的裁判或替补不受此限制。
+在正式赛事模式中开启 `strict-spectator-rule` 后，正常赛事轮次中的参赛队员不能随意观战；拥有 `cc.refuge` 的裁判或替补不受此限制。DAILY 模式始终跳过该判定。
+
+## 聊天与跨服展示
+
+普通聊天、加入/退出消息、TAB、Sidebar 和原生计分板队伍统一使用 `PlayerPresentation` 的身份格式。Core 与 Worker 都显示队伍颜色和活动选手状态；Worker 会从 manifest 投影本局原生队伍，并在平台不支持队伍变更时降级为插件侧 `/teammsg`、`/tm` 处理。
+
+启用 Redis 后，Core 和 Bingo Worker 的普通聊天会写入同一命名空间的聊天流，再由每个实例各自的 consumer group 投递给本服玩家和控制台。聊天依赖稳定且唯一的 Core `redis.instance-id` 与 Worker `worker-id`；重复 ID 会共享消费进度并造成实例漏收。Redis 不可用时，本服聊天仍由 Paper/Folia 正常显示，但不会跨服转发；`/teammsg` 仍只面向当前比赛队伍，不进入公共聊天流。
 
 ## PlaceholderAPI
 

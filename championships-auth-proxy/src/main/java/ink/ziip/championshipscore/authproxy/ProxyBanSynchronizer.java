@@ -1,9 +1,5 @@
 package ink.ziip.championshipscore.authproxy;
 
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
-import java.net.http.HttpTimeoutException;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,14 +14,14 @@ final class ProxyBanSynchronizer implements Runnable {
     }
 
     private final ProxyIdentityClient client;
-    private final ProxyBanState state;
+    private final ProxyAccessState state;
     private final BanKick kickBannedPlayer;
     private final Logger logger;
     private final AtomicBoolean running = new AtomicBoolean();
     private int consecutiveFailures;
     private long lastUnavailableLogAt;
 
-    ProxyBanSynchronizer(ProxyIdentityClient client, ProxyBanState state,
+    ProxyBanSynchronizer(ProxyIdentityClient client, ProxyAccessState state,
                          BanKick kickBannedPlayer, Logger logger) {
         this.client = client;
         this.state = state;
@@ -49,7 +45,7 @@ final class ProxyBanSynchronizer implements Runnable {
 
     private void logFailure(Exception failure) {
         consecutiveFailures++;
-        if (!isWebUnavailable(failure)) {
+        if (!ProxyIdentityClient.isServiceUnavailable(failure)) {
             logger.log(Level.WARNING, "Could not synchronize proxy ban state", failure);
             return;
         }
@@ -61,28 +57,16 @@ final class ProxyBanSynchronizer implements Runnable {
         }
     }
 
-    private static boolean isWebUnavailable(Throwable failure) {
-        Throwable current = failure;
-        while (current != null) {
-            if (current instanceof ConnectException || current instanceof HttpTimeoutException
-                    || current instanceof UnknownHostException || current instanceof IOException) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
-    }
-
     private void bootstrap() throws Exception {
         ProxyIdentityClient.ProxyBanSnapshot snapshot = client.banSnapshot();
         if (snapshot == null || snapshot.maintenance == null || snapshot.bans == null) {
-            throw new IllegalStateException("Bridge proxy ban snapshot is incomplete");
+            throw new IllegalStateException("Bridge proxy access snapshot is incomplete");
         }
+        state.replaceSnapshot(snapshot, Instant.now());
         for (ProxyIdentityClient.ProxyBan ban : snapshot.bans) {
             if (ban == null || !isActive(ban.expiresAt)) continue;
             kick(requireUsername(ban.username), ban.reason, ban.expiresAt);
         }
-        state.advance(requireCursor(snapshot.nextCursor));
     }
 
     private void applyChanges() throws Exception {
@@ -90,13 +74,16 @@ final class ProxyBanSynchronizer implements Runnable {
         if (batch == null || batch.maintenance == null || batch.changes == null) {
             throw new IllegalStateException("Bridge proxy change batch is incomplete");
         }
+        state.applyChanges(batch, Instant.now());
         for (ProxyIdentityClient.ProxyChange change : batch.changes) {
-            if (change != null && "BANNED".equals(change.operation) && isActive(change.expiresAt)
+            boolean banned = change != null && (change.status == null
+                    ? "BANNED".equals(change.operation)
+                    : "BANNED".equals(change.status));
+            if (banned && isActive(change.expiresAt)
                     && isMinecraftUsername(change.authmeUsername)) {
                 kick(change.authmeUsername, change.reason, change.expiresAt);
             }
         }
-        state.advance(requireCursor(batch.nextCursor));
     }
 
     private void kick(String username, String reason, String expiresAt) {
@@ -123,10 +110,4 @@ final class ProxyBanSynchronizer implements Runnable {
         return username != null && username.matches("^[A-Za-z0-9_]{3,16}$");
     }
 
-    private static String requireCursor(String cursor) {
-        if (cursor == null || !cursor.matches("^\\d{1,19}$")) {
-            throw new IllegalArgumentException("Invalid bridge cursor in response");
-        }
-        return cursor;
-    }
 }

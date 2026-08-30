@@ -1,5 +1,7 @@
 # Championships Bingo Folia Worker
 
+最后核对：2026-08-30（源码基线 `d703939`，协议 v5）
+
 该插件是 ChampionshipsCore 远程 Bingo 的执行面。Core 冻结比赛 manifest、掌握赛程与正式积分；Worker 只负责 Folia 世界、玩家状态、任务观察、界面和事件回传。Worker 不直接连接赛事数据库，也不应单独接受玩家直连。
 
 完整协议、状态机和故障边界见 [跨服拆分架构](../docs/bingo-remote-architecture.md)，64 人容量与配置依据见 [性能指南](../docs/bingo-64-player-performance-report.md)。
@@ -18,7 +20,19 @@
 mvn -pl championships-bingo-worker -am clean package
 ```
 
-产物为 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar`。替换运行 JAR 后必须重启 Bingo 服务；热重载不能替换已经加载的类。涉及共享协议或平台层时，Core 与 Worker 必须成对构建和重启。
+产物为 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar`。替换运行 JAR 后必须重启 Bingo 服务；热重载不能替换已经加载的类。涉及共享协议、Bingo engine、Bukkit 平台层、Redis transport 或跨服展示时，Core 与 Worker 必须成对构建、部署和重启。
+
+## 与 Core 的共享运行时
+
+Worker 不再维护本地 Bingo 的平行实现。以下行为由共享模块提供，修改时必须验证 `LOCAL` 与 `REMOTE` 两条路径：
+
+- 物品、进度、统计和事件型任务的判定及比赛内进度；
+- 世界 gamerule、昼夜/天气、难度、PvP、死亡保留和流浪商人策略；
+- 玩家生命、饱食、经验、效果、飞行与危险状态清理；
+- 队伍颜色、玩家身份、聊天行、加入/退出消息和原生计分板队伍投影；
+- 规则介绍时间线、`mm:ss` 计时文本、Sidebar 排名窗口及纯 Java 计分结果。
+
+Core 仍是 manifest、赛程、正式积分与数据库的唯一 owner。Worker 只使用 manifest 中冻结的名册、任务、规则和展示文案，不能从自己的资源目录覆盖比赛规则。
 
 ## 配置
 
@@ -38,7 +52,7 @@ mvn -pl championships-bingo-worker -am clean package
 | `worlds.*` | 一个比赛 slot 的主世界、下界和末地名称 |
 | `allow-reuse-without-reset` | 生产必须为 `false`；结算后全员回到 Core，Worker 会请求外层监督脚本移走旧存档并重启 Folia，旧存档由新进程后台清理；只允许本地开发跳过该流程 |
 
-倒计时、散布、任务、计分、PvP、常驻效果、语言和 Sidebar 不在 Worker 重复配置。它们由 Core 在开局时冻结进 manifest，因此改动 Core 的 Bingo 配置只影响之后新建的比赛。
+倒计时、散布、任务、计分、PvP、常驻效果、语言、Sidebar 和队伍展示不在 Worker 重复配置。它们由 Core 在开局时冻结进 manifest，因此改动 Core 的 Bingo 配置只影响之后新建的比赛。Worker 的 `worker-id` 还参与聊天 consumer group 命名，多个 Worker 必须使用不同 ID，否则会互相分摊消息而不是各自收到完整聊天。
 
 ## 部署与运行约束
 
@@ -46,7 +60,8 @@ mvn -pl championships-bingo-worker -am clean package
 2. 启动 Redis、Core、代理和 Worker，确认 Worker 已启用且没有命名空间/consumer group 错误。
 3. 代理中禁止玩家手动选择 Bingo 服务，并配置连接失败回退 Core。
 4. 先以一支测试队伍走通 `PREPARING → READY → ROUTING → COUNTDOWN → RUNNING → FINISHED`。
-5. 一局结束后确认玩家已返回 Core；Worker 会写入重置交接标记并关闭 Folia，监督脚本在 Java 完全退出后移走旧世界、重新启动 Folia，新进程随后在后台删除旧世界。
+5. 同时核对 Core 与 Worker 的任务完成、队伍颜色、TAB/Sidebar、普通跨服聊天和 `/teammsg`；这些属于共享玩家可见契约。
+6. 一局结束后确认玩家已返回 Core；Worker 会写入重置交接标记并关闭 Folia，监督脚本在 Java 完全退出后移走旧世界、重新启动 Folia，新进程随后在后台删除旧世界。
 
 不要在运行中的比赛热切换 Core 的 `LOCAL/REMOTE`，不要把多个并发比赛指向同一组三维度，也不要把 `allow-reuse-without-reset` 当作生产轮换方案。
 
@@ -66,8 +81,11 @@ mvn -pl championships-bingo-worker -am clean package
 | 玩家没有转服 | 代理服务名、Plugin Message channel、玩家是否属于 manifest、Worker 是否已 READY |
 | 玩家到达后比赛不开始 | `requiredAtStart` 到达状态、`PLAYER_ARRIVED` 序列、Core arrival timeout |
 | 任务不计数或重复 | Worker objective 日志、事件序列/completion sequence、outbox、Core inbox；不要直接修正式积分表 |
+| 两端任务判定或展示不同 | 确认 Core/Worker 来自同一次 reactor 构建并均已重启；检查 manifest 协议版本，不要在 Worker 另加规则配置 |
+| Worker 看不到 Core 聊天 | Redis URI/namespace、Core `instance-id`、Worker `worker-id`、聊天 consumer group 和 Redis 连接告警；本服聊天正常不代表跨服流正常 |
+| 队伍颜色或 `/teammsg` 异常 | manifest 队伍快照、原生 scoreboard team 是否可变；若平台拒绝变更，确认日志已进入插件侧命令降级 |
 | 比赛结束无法返回 | `proxy.return-server`、代理 channel、Core 服务是否可用 |
 | TPS 低但总 CPU 不高 | 查看每个 Folia region 的 TPS/MSPT、chunk/entity 数，通常是单热点而非整机 CPU 不足 |
 | 下一局被拒绝 | 这是脏世界保护；恢复快照或重建 Worker，不要在生产打开复用开关 |
 
-Worker 事件先进入本地 outbox，再发往 Redis。Redis 故障时不要删除 outbox 或强行重置 consumer group；保留日志和数据以便按事件序列恢复、对账。
+Worker 事件先进入本地 outbox，再发往 Redis。Redis 故障时不要删除 outbox 或强行重置 consumer group；保留日志和数据以便按事件序列恢复、对账。公共聊天是最多保留 30 秒的即时消息，不进入比赛 outbox；短时 Redis 故障期间未转发的聊天不会在恢复后补发。
