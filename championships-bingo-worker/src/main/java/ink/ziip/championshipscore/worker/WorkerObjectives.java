@@ -1,24 +1,18 @@
 package ink.ziip.championshipscore.worker;
 
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveEvaluator;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveRule;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoObjectiveProgressTracker;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Statistic;
-import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.RayTraceResult;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -43,7 +37,7 @@ final class WorkerObjectives {
     private volatile Map<String, List<Integer>> advancementCells;
     private final Map<UUID, Map<Integer, Integer>> statisticBaselines = new ConcurrentHashMap<>();
     private final Map<UUID, Double> boatTravelCentimeters = new ConcurrentHashMap<>();
-    private final EventProgress eventProgress = new EventProgress();
+    private final BingoObjectiveProgressTracker eventProgress = new BingoObjectiveProgressTracker();
 
     WorkerObjectives(List<BingoTaskSpec> specs) {
         replace(specs);
@@ -304,6 +298,7 @@ final class WorkerObjectives {
         private final int count;
         private final Set<Material> members;
         private final Set<String> subjects;
+        private final BingoEventObjectiveRule rule;
 
         private EventObjective(int cellIndex, String trigger, String param, int count,
                                Set<Material> members, Set<String> subjects) {
@@ -313,6 +308,11 @@ final class WorkerObjectives {
             this.count = count;
             this.members = members;
             this.subjects = subjects;
+            Set<String> biomeKeys = subjects.stream()
+                    .filter(subject -> subject.startsWith("BIOME="))
+                    .map(subject -> subject.substring("BIOME=".length()))
+                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            this.rule = new BingoEventObjectiveRule(trigger, param, count, members, biomeKeys);
         }
 
         @Override
@@ -326,36 +326,7 @@ final class WorkerObjectives {
 
         @Override
         public boolean matches(Player player, int ignored) {
-            UUID playerId = player.getUniqueId();
-            return switch (trigger) {
-                case "wear" -> "CHAIN".equalsIgnoreCase(param) ? wearsAny(player, param) : wearsFull(player, param);
-                case "wear_full_enchanted" -> wearsFullEnchanted(player);
-                case "wear_dyed" -> count >= 4
-                        ? wearsFullDyedLeatherDistinct(player) : distinctDyedLeatherColors(player) >= count;
-                case "wear_duration" -> wearDurationMet(player, playerId, param, count);
-                case "effect" -> hasEffect(player, param);
-                case "effect_at_once" -> player.getActivePotionEffects().size() >= count;
-                case "reach_level" -> player.getLevel() >= parseIntOr(param, Integer.MAX_VALUE);
-                case "reach" -> atReach(player, param);
-                case "hunger_empty" -> player.getFoodLevel() == 0;
-                case "spy" -> spyOn(player, param);
-                case "unique_collect" -> distinctMembersHeld(player, members) >= count;
-                case "all_collect" -> hasAllMembers(player, members);
-                case "stack_of_64" -> hasStackOf64(player);
-                case "fill_inventory_unique" -> fillInventoryUniqueMet(player);
-                case "craft_unique" -> eventProgress.distinctCount(playerId, "craft_unique") >= count;
-                case "eat_unique" -> eventProgress.distinctCount(playerId, "eat_unique") >= count;
-                case "eat_all" -> eventProgress.distinctCount(playerId, "eat_all:" + param) >= count;
-                case "breed_unique" -> eventProgress.distinctCount(playerId, "breed_unique") >= count;
-                case "leash_unique" -> distinctLeashedSpecies(player) >= count;
-                case "compost_unique" -> eventProgress.distinctCount(playerId, "compost_unique") >= count;
-                case "kill_family" -> eventProgress.count(playerId, "kill_family:" + param) >= count;
-                case "kill_unique" -> eventProgress.distinctCount(playerId, "kill_unique:" + param) >= count;
-                case "visit_biomes" -> visitBiomesMet(player, playerId, param, count, subjects);
-                case "advancement_count" -> eventProgress.count(playerId, "advancement_count") >= count;
-                case "spy_unique" -> spyUniqueMet(player, playerId, count);
-                default -> false;
-            };
+            return BingoEventObjectiveEvaluator.matches(player, rule, eventProgress);
         }
     }
 
@@ -410,203 +381,4 @@ final class WorkerObjectives {
         }
     }
 
-    private static final Map<String, List<Material>> WEAR_FAMILIES = Map.of(
-            "LEATHER", List.of(Material.LEATHER_HELMET, Material.LEATHER_CHESTPLATE, Material.LEATHER_LEGGINGS, Material.LEATHER_BOOTS),
-            "IRON", List.of(Material.IRON_HELMET, Material.IRON_CHESTPLATE, Material.IRON_LEGGINGS, Material.IRON_BOOTS),
-            "GOLDEN", List.of(Material.GOLDEN_HELMET, Material.GOLDEN_CHESTPLATE, Material.GOLDEN_LEGGINGS, Material.GOLDEN_BOOTS),
-            "DIAMOND", List.of(Material.DIAMOND_HELMET, Material.DIAMOND_CHESTPLATE, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS),
-            "COPPER", List.of(Material.COPPER_HELMET, Material.COPPER_CHESTPLATE, Material.COPPER_LEGGINGS, Material.COPPER_BOOTS),
-            "CHAIN", List.of(Material.CHAINMAIL_HELMET, Material.CHAINMAIL_CHESTPLATE, Material.CHAINMAIL_LEGGINGS, Material.CHAINMAIL_BOOTS));
-
-    private boolean wearDurationMet(Player player, UUID playerId, String param, int minutes) {
-        boolean active = "CARVED_PUMPKIN".equalsIgnoreCase(param)
-                && player.getInventory().getHelmet() != null
-                && player.getInventory().getHelmet().getType() == Material.CARVED_PUMPKIN;
-        return eventProgress.observeElapsed(playerId, "wear_duration:" + param, active) >= minutes * 60_000L;
-    }
-
-    private static boolean wearsAny(Player player, String family) {
-        List<Material> pieces = WEAR_FAMILIES.get(family.toUpperCase(Locale.ROOT));
-        if (pieces == null) return false;
-        for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item != null && pieces.contains(item.getType())) return true;
-        }
-        return false;
-    }
-
-    private static boolean wearsFull(Player player, String family) {
-        List<Material> pieces = WEAR_FAMILIES.get(family.toUpperCase(Locale.ROOT));
-        if (pieces == null) return false;
-        Set<Material> needed = EnumSet.copyOf(pieces);
-        for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item == null || !needed.remove(item.getType())) return false;
-        }
-        return needed.isEmpty();
-    }
-
-    private static boolean wearsFullEnchanted(Player player) {
-        for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item == null) return false;
-            ItemMeta meta = item.getItemMeta();
-            if (meta == null || !meta.hasEnchants()) return false;
-        }
-        return true;
-    }
-
-    private static int distinctDyedLeatherColors(Player player) {
-        Set<Integer> colors = new java.util.HashSet<>();
-        for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item != null && item.getItemMeta() instanceof LeatherArmorMeta meta && meta.isDyed()) {
-                colors.add(meta.getColor().asRGB());
-            }
-        }
-        return colors.size();
-    }
-
-    private static boolean wearsFullDyedLeatherDistinct(Player player) {
-        Set<Integer> colors = new java.util.HashSet<>();
-        for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item == null || !(item.getItemMeta() instanceof LeatherArmorMeta meta) || !meta.isDyed()
-                    || !colors.add(meta.getColor().asRGB())) return false;
-        }
-        return colors.size() == 4;
-    }
-
-    private static boolean hasEffect(Player player, String effect) {
-        PotionEffectType type = PotionEffectType.getByName(effect.toUpperCase(Locale.ROOT));
-        return type != null && player.hasPotionEffect(type);
-    }
-
-    private static boolean atReach(Player player, String place) {
-        World world = player.getWorld();
-        Location location = player.getLocation();
-        return switch (place.toUpperCase(Locale.ROOT)) {
-            case "BEDROCK" -> location.getY() < world.getMinHeight() + 10.0
-                    && location.clone().add(0, -1, 0).getBlock().getType() == Material.BEDROCK;
-            case "HEIGHT_LIMIT" -> location.getY() >= world.getMaxHeight();
-            case "NETHER_ROOF" -> world.getEnvironment() == World.Environment.NETHER && location.getY() >= 128.0;
-            default -> false;
-        };
-    }
-
-    private static boolean fillInventoryUniqueMet(Player player) {
-        Set<Material> distinct = EnumSet.noneOf(Material.class);
-        ItemStack[] contents = player.getInventory().getStorageContents();
-        if (contents.length == 0) return false;
-        for (ItemStack item : contents) {
-            if (item == null || item.getType().isAir() || !distinct.add(item.getType())) return false;
-        }
-        return true;
-    }
-
-    private static int distinctLeashedSpecies(Player player) {
-        Set<EntityType> species = EnumSet.noneOf(EntityType.class);
-        for (Entity entity : player.getWorld().getNearbyEntities(player.getLocation(), 12, 12, 12)) {
-            if (entity instanceof LivingEntity living && living.isLeashed() && living.getLeashHolder() == player) {
-                species.add(entity.getType());
-            }
-        }
-        return species.size();
-    }
-
-    private boolean visitBiomesMet(Player player, UUID playerId, String param, int count, Set<String> subjects) {
-        String biome = player.getLocation().getBlock().getBiome().getKey().getKey();
-        if (subjects.contains("BIOME=" + biome) || subjects.contains("BIOME=minecraft:" + biome)) {
-            eventProgress.recordDistinct(playerId, "visit_biomes:" + param, biome);
-        }
-        return eventProgress.distinctCount(playerId, "visit_biomes:" + param) >= count;
-    }
-
-    private static int distinctMembersHeld(Player player, Set<Material> members) {
-        Set<Material> distinct = EnumSet.noneOf(Material.class);
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && members.contains(item.getType())) distinct.add(item.getType());
-        }
-        return distinct.size();
-    }
-
-    private static boolean hasAllMembers(Player player, Set<Material> members) {
-        if (members.isEmpty()) return false;
-        Set<Material> held = EnumSet.noneOf(Material.class);
-        for (ItemStack item : player.getInventory().getStorageContents()) {
-            if (item != null && !item.getType().isAir()) held.add(item.getType());
-        }
-        return held.containsAll(members);
-    }
-
-    private static boolean hasStackOf64(Player player) {
-        for (ItemStack item : player.getInventory().getStorageContents()) {
-            if (item != null && item.getAmount() >= 64) return true;
-        }
-        return false;
-    }
-
-    private static boolean spyOn(Player player, String entityType) {
-        if (!usingSpyglass(player)) return false;
-        RayTraceResult result = player.getWorld().rayTraceEntities(player.getEyeLocation(),
-                player.getEyeLocation().getDirection(), 64,
-                entity -> entity instanceof Mob && entity.getType().name().equalsIgnoreCase(entityType)
-                        && player.hasLineOfSight(entity));
-        return result != null && result.getHitEntity() != null;
-    }
-
-    private boolean spyUniqueMet(Player player, UUID playerId, int target) {
-        if (!usingSpyglass(player)) return false;
-        RayTraceResult result = player.getWorld().rayTraceEntities(player.getEyeLocation(),
-                player.getEyeLocation().getDirection(), 64,
-                entity -> entity instanceof Mob && entity != player && player.hasLineOfSight(entity));
-        if (result == null || result.getHitEntity() == null) return false;
-        eventProgress.recordDistinct(playerId, "spy_unique", result.getHitEntity().getType().name());
-        return eventProgress.distinctCount(playerId, "spy_unique") >= target;
-    }
-
-    private static boolean usingSpyglass(Player player) {
-        return player.isHandRaised() && (player.getInventory().getItemInMainHand().getType() == Material.SPYGLASS
-                || player.getInventory().getItemInOffHand().getType() == Material.SPYGLASS);
-    }
-
-    private static int parseIntOr(String value, int fallback) {
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (NumberFormatException ignored) {
-            return fallback;
-        }
-    }
-
-    private static final class EventProgress {
-        private final Map<String, Map<UUID, Set<String>>> distinct = new ConcurrentHashMap<>();
-        private final Map<String, Map<UUID, Integer>> counts = new ConcurrentHashMap<>();
-        private final Map<String, Map<UUID, Long>> elapsedMillis = new ConcurrentHashMap<>();
-        private final Map<String, Map<UUID, Long>> observedAt = new ConcurrentHashMap<>();
-
-        void recordDistinct(UUID playerId, String bucket, String value) {
-            distinct.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>())
-                    .computeIfAbsent(playerId, ignored -> ConcurrentHashMap.newKeySet()).add(value);
-        }
-
-        int distinctCount(UUID playerId, String bucket) {
-            return distinct.getOrDefault(bucket, Map.of()).getOrDefault(playerId, Set.of()).size();
-        }
-
-        void increment(UUID playerId, String bucket) {
-            counts.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>()).merge(playerId, 1, Integer::sum);
-        }
-
-        int count(UUID playerId, String bucket) {
-            return counts.getOrDefault(bucket, Map.of()).getOrDefault(playerId, 0);
-        }
-
-        long observeElapsed(UUID playerId, String bucket, boolean active) {
-            Map<UUID, Long> observations = observedAt.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>());
-            long now = System.nanoTime();
-            if (!active) {
-                observations.remove(playerId);
-                return elapsedMillis.getOrDefault(bucket, Map.of()).getOrDefault(playerId, 0L);
-            }
-            Long previous = observations.put(playerId, now);
-            if (previous == null) return elapsedMillis.getOrDefault(bucket, Map.of()).getOrDefault(playerId, 0L);
-            return elapsedMillis.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>())
-                    .merge(playerId, Math.max(0L, now - previous) / 1_000_000L, Long::sum);
-        }
-    }
 }

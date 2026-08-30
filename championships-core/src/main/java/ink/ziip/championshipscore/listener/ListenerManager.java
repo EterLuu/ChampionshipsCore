@@ -25,6 +25,7 @@ public class ListenerManager extends BaseManager {
     @Override
     public void unload() {
         if (playerListener != null) {
+            playerListener.detachChatReceiver();
             playerListener.unRegister();
             playerListener = null;
         }

@@ -1,18 +1,22 @@
 package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
+import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
+import ink.ziip.championshipscore.protocol.BingoPresentation;
 import ink.ziip.championshipscore.protocol.MatchCommand;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.MatchState;
 import ink.ziip.championshipscore.protocol.transport.DeliveryDisposition;
 import ink.ziip.championshipscore.protocol.transport.InboundDelivery;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Keyed;
+import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.Location;
-import org.bukkit.Keyed;
-import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.Plugin;
 
 import java.util.HashMap;
@@ -20,8 +24,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,20 +36,24 @@ final class WorkerMatchRegistry {
     private final WorkerReturnRouter returnRouter;
     private final WorkerWorldResetCoordinator worldReset;
     private final WorkerWorldController worlds;
+    private final NativeTeamService nativeTeams;
     private final PlatformScheduler scheduler;
     private final Set<NamespacedKey> recipeKeys;
     private final Map<UUID, MatchManifest> manifests = new HashMap<>();
     private final Set<UUID> pendingObservations = ConcurrentHashMap.newKeySet();
     private WorkerMatchSession active;
+    private BingoPresentation latestPresentation;
     private boolean worldSlotConsumed;
 
     WorkerMatchRegistry(Plugin plugin, WorkerConfig config, DurableEventOutbox events,
-                        WorkerReturnRouter returnRouter, WorkerWorldController worlds) {
+                        WorkerReturnRouter returnRouter, WorkerWorldController worlds,
+                        NativeTeamService nativeTeams) {
         this.plugin = plugin;
         this.config = config;
         this.events = events;
         this.returnRouter = returnRouter;
         this.worlds = worlds;
+        this.nativeTeams = nativeTeams;
         this.scheduler = new PlatformScheduler(plugin);
         this.recipeKeys = loadRecipeKeys(plugin);
         this.worldReset = config.allowWorldReuseWithoutReset()
@@ -79,6 +85,7 @@ final class WorkerMatchRegistry {
                     + manifest.matchId());
         }
         manifests.put(manifest.matchId(), manifest);
+        latestPresentation = manifest.runtimeRules().presentation();
         return true;
     }
 
@@ -112,7 +119,7 @@ final class WorkerMatchRegistry {
             }
             if (!active.state().terminal()) return CompletableFuture.completedFuture(false);
         }
-        active = new WorkerMatchSession(plugin, config, manifest, events, returnRouter, worlds,
+        active = new WorkerMatchSession(plugin, config, manifest, events, returnRouter, worlds, nativeTeams,
                 worldReset == null ? () -> { } : worldReset::request);
         if (worldSlotConsumed && !config.allowWorldReuseWithoutReset()) {
             return active.rejectPreparation("world-slot-requires-reset");
@@ -169,13 +176,11 @@ final class WorkerMatchRegistry {
             session = active;
         }
         if (session == null || session.state().terminal() || !session.isPlaying(player.getUniqueId())) {
-            player.sendMessage(Component.text("[自由游玩] ", NamedTextColor.GREEN)
-                    .append(Component.text("你当前没有参与任何游戏。", NamedTextColor.GRAY)));
+            sendConfiguredMessage(player, "worker.play.leave.not-playing");
             return;
         }
         if (session.eventMode()) {
-            player.sendMessage(Component.text("[赛事] ", NamedTextColor.GOLD)
-                    .append(Component.text("正式赛事进行中，无法主动离开。", NamedTextColor.RED)));
+            sendConfiguredMessage(player, "worker.play.leave.event-denied");
             return;
         }
         session.requestVoluntaryLeave(player);
@@ -195,15 +200,13 @@ final class WorkerMatchRegistry {
             session = active;
         }
         if (session == null || session.state().terminal()) {
-            sender.sendMessage(Component.text("[Bingo] ", NamedTextColor.AQUA)
-                    .append(Component.text("当前没有可结束的比赛。", NamedTextColor.GRAY)));
+            sendConfiguredMessage(sender, "worker.admin.stop.no-active-match");
             return;
         }
         String reason = "admin-stop:" + sender.getName();
         plugin.getLogger().info("Admin match stop requested by " + sender.getName() + " (" + reason + ")");
         session.finish(reason);
-        sender.sendMessage(Component.text("[Bingo] ", NamedTextColor.AQUA)
-                .append(Component.text("已发起结束，正在按当前成绩结算…", NamedTextColor.GRAY)));
+        sendConfiguredMessage(sender, "worker.admin.stop.started");
     }
 
     private static Set<UUID> parsePlayers(String value) {
@@ -304,8 +307,35 @@ final class WorkerMatchRegistry {
         return active == null ? null : active.resolveChampionshipPlaceholder(playerId, params);
     }
 
-    synchronized WorkerPlayerPresentation playerPresentation(UUID playerId) {
-        return active == null ? WorkerPlayerPresentation.spectator() : active.playerPresentation(playerId);
+    synchronized PlayerPresentation playerPresentation(UUID playerId) {
+        return active == null
+                ? PlayerPresentation.spectator(latestPresentation == null
+                        ? "" : latestPresentation.message("papi.spectator"))
+                : active.playerPresentation(playerId);
+    }
+
+    boolean nativeTeamMutationSupported() {
+        return nativeTeams.mutationSupported();
+    }
+
+    void sendTeamMessage(Player sender, Component message) {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        if (session == null || !session.sendTeamMessage(sender, message)) {
+            sendConfiguredMessage(sender, "chat.team.unavailable");
+        }
+    }
+
+    boolean sendConfiguredMessage(CommandSender recipient, String key) {
+        BingoPresentation presentation;
+        synchronized (this) {
+            presentation = latestPresentation;
+        }
+        if (presentation == null) return false;
+        recipient.sendMessage(WorkerPresentationService.message(presentation, key));
+        return true;
     }
 
     private static Set<NamespacedKey> loadRecipeKeys(Plugin plugin) {

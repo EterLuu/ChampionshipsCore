@@ -20,6 +20,7 @@ import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.daily.DailyPlayerSnapshot;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.SharedSidebar;
+import ink.ziip.championshipscore.shared.presentation.RankingWindow;
 import ink.ziip.championshipscore.util.Utils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
@@ -267,11 +268,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     }
 
     static <T> List<T> selectRankingRows(List<T> ranked, T viewerEntry) {
-        List<T> selected = new ArrayList<>(ranked.subList(0, Math.min(8, ranked.size())));
-        if (viewerEntry != null && ranked.contains(viewerEntry) && !selected.contains(viewerEntry)) {
-            selected.add(viewerEntry);
-        }
-        return selected;
+        return RankingWindow.select(ranked, viewerEntry, 8);
     }
 
     private RenderedSidebar renderEdit(Player player, PrepareSession session, SidebarConfiguration config) {

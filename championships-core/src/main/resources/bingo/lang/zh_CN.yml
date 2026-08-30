@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 3
+  version: 4
 card:
   title: "&6&l宾果卡"
   win_hint: "&7连成一行、一列或一条对角线即可获胜"
@@ -17,6 +17,27 @@ compass:
   no_teammates: "&c没有可传送的在线队友。"
   target_offline: "&c该队友已下线。"
   teleport_success: "&a已传送到&f{0}&a。"
+remix:
+  blind-revealed: "&#bababa[&#8a70ff奇遇&#bababa]&#ededed 视障奇遇揭示了一项任务"
+  finale-locked: "&#bababa[&#8a70ff奇遇&#bababa]&#ededed 终曲奇遇封锁了一项任务"
+  variation-refreshed: "&#bababa[&#8a70ff奇遇&#bababa]&#ededed 变奏奇遇刷新了所有未完成任务"
+worker:
+  command:
+    no-permission: "&#bababa[&#ff6b26宾果&#bababa]&#ededed 权限不足"
+    admin-stop-usage: "&#bababa[&#fff566宾果&#bababa]&#ededed 用法 &#696969•&#ededed /cc game stop --confirm &#696969（结束当前比赛并按成绩结算）"
+    no-active-match: "&#bababa[&#ff6b26宾果&#bababa]&#ededed 当前没有进行中的比赛"
+    event-active: "&#bababa[&#fff566赛事&#bababa]&#ededed 正式赛事进行中，比赛结束后将自动返回大厅"
+    free-play-help: "&#bababa[&#31e061自由游玩&#bababa]&#ededed 离开当前游戏 &#696969•&#ededed /cc play leave"
+    admin-stop-help: "&#bababa[&#fff566宾果&#bababa]&#ededed 管理员结束比赛 &#696969•&#ededed /cc game stop --confirm"
+  play:
+    leave:
+      not-playing: "&#bababa[&#ff6b26自由游玩&#bababa]&#ededed 你当前没有参与任何游戏"
+      event-denied: "&#bababa[&#ff6b26赛事&#bababa]&#ededed 正式赛事进行中，无法主动离开"
+      started: "&#bababa[&#fff566自由游玩&#bababa]&#ededed 正在离开当前游戏"
+  admin:
+    stop:
+      no-active-match: "&#bababa[&#ff6b26宾果&#bababa]&#ededed 当前没有可结束的比赛"
+      started: "&#bababa[&#fff566宾果&#bababa]&#ededed 已发起结束，正在按当前成绩结算"
 spectator:
   teleport:
     name: "选择玩家"
@@ -198,6 +219,7 @@ board:
   title: "#3fb2ba[#31e061S#dbffe5³#e42d3eCC#bababa夏季联合锦标赛#3fb2ba]"
   separator: "#4f4f4f&m+-------------------+"
   current_game: "#ff0808当前游戏：#ff7373{0}"
+  current_status: "&#bababa场地状态 &#696969•&#ededed {0}"
   remaining_time: "#dfff2b剩余时间：#f6ffa8{0}"
   status_waiting: "#dfff2b场地状态：#f6ffa8等待玩家"
   status_preparing: "#dfff2b场地状态：#f6ffa8准备中"

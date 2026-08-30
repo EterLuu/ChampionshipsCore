@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
@@ -189,20 +190,8 @@ public class WorldManager extends BaseManager {
             return false;
         }
 
-        world.setDifficulty(Difficulty.NORMAL);
-        world.setSpawnFlags(true, true);
-        world.setAutoSave(true);
-        world.setGameRule(GameRules.SPAWN_MOBS, true);
-        disableWanderingTraders(world);
-        world.setGameRule(GameRules.MOB_GRIEFING, true);
-        world.setGameRule(GameRules.SPECTATORS_GENERATE_CHUNKS, false);
-        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-        world.setGameRule(GameRules.SHOW_DEATH_MESSAGES, false);
-        world.setGameRule(GameRules.KEEP_INVENTORY, true);
-        world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
-        world.setGameRule(GameRules.PVP, true);
-        world.setGameRule(GameRules.ADVANCE_TIME, true);
-        world.setGameRule(GameRules.LOCATOR_BAR, false);
+        BingoWorldRules.configure(world);
+        BingoWorldRules.applyPhase(world, BingoWorldRules.Phase.RUNNING, false);
         plugin.getLogger().log(Level.INFO, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "世界",
                 "世界=" + worldName + " 环境=" + environment
                         + " naturalMonsters=" + world.getAllowMonsters()

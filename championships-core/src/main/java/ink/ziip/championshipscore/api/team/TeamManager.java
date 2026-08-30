@@ -9,13 +9,14 @@ import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
+import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamOverlay;
+import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,15 +42,12 @@ public class TeamManager extends BaseManager {
         DATABASE_ERROR
     }
     private static final String DAILY_LOBBY_TEAM_ID = "ccd_lobby";
-    private static final String NO_SCOREBOARD_TEAM = "\u0000";
     private final ConcurrentHashMap<String, ChampionshipTeam> cachedTeams = new ConcurrentHashMap<>();
     /** Match-scoped teams used by DAILY runs. They never enter {@link #cachedTeams} or the database. */
     private final ConcurrentHashMap<UUID, ChampionshipTeam> transientTeamByPlayer = new ConcurrentHashMap<>();
     // ChampionshipTeam equality is display-name based. DAILY deliberately reuses colour names such
     // as "红队" between matches, so this registry must distinguish the actual runtime objects.
     private final Set<ChampionshipTeam> transientTeams = newTransientTeamRegistry();
-    private final ConcurrentHashMap<UUID, String> originalScoreboardTeamByPlayer = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, String> dailyLobbyOriginalTeamByPlayer = new ConcurrentHashMap<>();
     private final Set<String> pendingTeamNames = ConcurrentHashMap.newKeySet();
     private final Set<String> pendingTeamColors = ConcurrentHashMap.newKeySet();
     private final Set<String> pendingMemberNames = ConcurrentHashMap.newKeySet();
@@ -57,7 +55,10 @@ public class TeamManager extends BaseManager {
     private final Set<Integer> pendingTeamDeletions = ConcurrentHashMap.newKeySet();
     private final TeamDaoImpl teamDaoImpl = new TeamDaoImpl();
     private final BukkitScheduler scheduler;
-    private Scoreboard scoreboard;
+    private final NativeTeamService nativeTeams;
+    private final NativeTeamOverlay transientNativeTeams;
+    private final NativeTeamOverlay dailyLobbyNativeTeam;
+    private final Scoreboard scoreboard;
 
     private record FormalTeamSnapshot(int id, String name, String colorName, String colorCode,
                                       Map<UUID, String> members) {
@@ -69,9 +70,10 @@ public class TeamManager extends BaseManager {
 
     public TeamManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
-        ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
-        if (scoreboardManager != null)
-            scoreboard = scoreboardManager.getMainScoreboard();
+        nativeTeams = NativeTeamService.mainScoreboard();
+        transientNativeTeams = nativeTeams.newOverlay();
+        dailyLobbyNativeTeam = nativeTeams.newOverlay();
+        scoreboard = nativeTeams.scoreboard();
         scheduler = championshipsCore.getServer().getScheduler();
     }
 
@@ -108,13 +110,8 @@ public class TeamManager extends BaseManager {
                         result.complete(false);
                         return;
                     }
-                    Team scoreboardTeam = scoreboard.getTeam(colorName);
-                    if (scoreboardTeam != null) unregister(scoreboardTeam);
-                    scoreboardTeam = scoreboard.registerNewTeam(colorName);
-                    try {
-                        scoreboardTeam.color(Utils.toNamedTextColor(colorName, colorCode));
-                    } catch (RuntimeException ignored) {
-                    }
+                    Team scoreboardTeam = nativeTeams.replaceTeam(colorName, name, colorName,
+                            colorCode, Set.of(), Team.OptionStatus.ALWAYS);
                     cachedTeams.put(name, new ChampionshipTeam(createdId, name, colorName, colorCode, scoreboardTeam));
                     publishTeamChange("team-created");
                     result.complete(true);
@@ -211,13 +208,12 @@ public class TeamManager extends BaseManager {
     }
 
     private ChampionshipTeam createFormalTeam(FormalTeamSnapshot snapshot) {
-        Team scoreboardTeam = scoreboard.getTeam(snapshot.colorName());
-        if (scoreboardTeam != null) unregister(scoreboardTeam);
-        scoreboardTeam = scoreboard.registerNewTeam(snapshot.colorName());
-        try {
-            scoreboardTeam.color(Utils.toNamedTextColor(snapshot.colorName(), snapshot.colorCode()));
-        } catch (RuntimeException ignored) {
-        }
+        List<String> nativeEntries = snapshot.members().entrySet().stream()
+                .filter(entry -> !transientTeamByPlayer.containsKey(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .toList();
+        Team scoreboardTeam = nativeTeams.replaceTeam(snapshot.colorName(), snapshot.name(),
+                snapshot.colorName(), snapshot.colorCode(), nativeEntries, Team.OptionStatus.ALWAYS);
         snapshot.members().forEach((uuid, username) ->
                 plugin.getPlayerManager().cacheKnownIdentity(username, uuid));
         return new ChampionshipTeam(snapshot.id(), snapshot.name(), snapshot.colorName(), snapshot.colorCode(),
@@ -238,19 +234,15 @@ public class TeamManager extends BaseManager {
             if (team.addMember(member, authoritative.get(member))) changedMembers.add(member);
         }
 
-        Team scoreboardTeam = team.getTeam();
-        for (String entry : Set.copyOf(scoreboardTeam.getEntries())) scoreboardTeam.removeEntry(entry);
-        authoritative.forEach((uuid, username) -> {
-            if (!transientTeamByPlayer.containsKey(uuid)) scoreboardTeam.addEntry(username);
-        });
+        List<String> nativeEntries = authoritative.entrySet().stream()
+                .filter(entry -> !transientTeamByPlayer.containsKey(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .toList();
+        nativeTeams.syncEntries(team.getTeam(), nativeEntries);
     }
 
-    private static void unregister(Team team) {
-        if (team == null) return;
-        try {
-            team.unregister();
-        } catch (IllegalStateException ignored) {
-        }
+    private void unregister(Team team) {
+        nativeTeams.unregister(team);
     }
 
     @Override
@@ -369,38 +361,36 @@ public class TeamManager extends BaseManager {
                 throw new IllegalStateException("Player already belongs to a transient team: " + member);
         }
 
-        Team scoreboardTeam = scoreboard.getTeam(scoreboardId);
-        if (scoreboardTeam != null) scoreboardTeam.unregister();
-        scoreboardTeam = scoreboard.registerNewTeam(scoreboardId);
-        try {
-            scoreboardTeam.color(Utils.toNamedTextColor(colorName, colorCode));
-        } catch (RuntimeException ignored) {
-        }
-        scoreboardTeam.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+        Team scoreboardTeam = nativeTeams.replaceTeam(scoreboardId, displayName, colorName,
+                colorCode, Set.of(), Team.OptionStatus.NEVER);
+        transientNativeTeams.own(scoreboardTeam);
 
         Map<UUID, String> memberNames = new LinkedHashMap<>();
-        for (UUID member : members) {
-            Player online = Bukkit.getPlayer(member);
-            String playerName = online == null ? plugin.getPlayerManager().getCachedPlayerName(member) : online.getName();
-            if (playerName == null || "unknown".equals(playerName)) {
-                OfflinePlayer offline = Bukkit.getOfflinePlayer(member);
-                playerName = offline.getName();
-            }
-            // Keep the roster and transient lookup index identical even when Bukkit has never seen
-            // this UUID. The fallback is a valid scoreboard entry and is replaced by the real name
-            // as soon as the player identity is cached.
-            if (playerName == null) playerName = member.toString().substring(0, 16);
-            memberNames.put(member, playerName);
-            Team previous = scoreboard.getEntryTeam(playerName);
-            if (previous != null) {
-                String originalName = previous.getName();
-                if (DAILY_LOBBY_TEAM_ID.equals(originalName)) {
-                    originalName = dailyLobbyOriginalTeamByPlayer.getOrDefault(member, NO_SCOREBOARD_TEAM);
+        try {
+            for (UUID member : members) {
+                Player online = Bukkit.getPlayer(member);
+                String playerName = online == null ? plugin.getPlayerManager().getCachedPlayerName(member) : online.getName();
+                if (playerName == null || "unknown".equals(playerName)) {
+                    OfflinePlayer offline = Bukkit.getOfflinePlayer(member);
+                    playerName = offline.getName();
                 }
-                originalScoreboardTeamByPlayer.put(member, originalName);
+                // Keep the roster and transient lookup index identical even when Bukkit has never seen
+                // this UUID. The fallback is a valid scoreboard entry and is replaced by the real name
+                // as soon as the player identity is cached.
+                if (playerName == null) playerName = member.toString().substring(0, 16);
+                memberNames.put(member, playerName);
+                if (dailyLobbyNativeTeam.contains(member)) {
+                    transientNativeTeams.assign(member, playerName, scoreboardTeam,
+                            dailyLobbyNativeTeam.originalTeam(member));
+                } else {
+                    transientNativeTeams.assign(member, playerName, scoreboardTeam);
+                }
             }
-            scoreboardTeam.addEntry(playerName);
+        } catch (RuntimeException failure) {
+            transientNativeTeams.removeTeam(scoreboardTeam);
+            throw failure;
         }
+        for (UUID member : members) dailyLobbyNativeTeam.release(member);
 
         int id = scoreboardId.hashCode();
         if (id >= 0) id = -id - 1;
@@ -417,53 +407,18 @@ public class TeamManager extends BaseManager {
      */
     public synchronized void applyDailyLobbyIdentity(@NotNull Player player) {
         if (!Bukkit.isPrimaryThread()) throw new IllegalStateException("Daily lobby identity must be updated on the server thread");
-        Team lobbyTeam = scoreboard.getTeam(DAILY_LOBBY_TEAM_ID);
-        if (lobbyTeam == null) lobbyTeam = scoreboard.registerNewTeam(DAILY_LOBBY_TEAM_ID);
-        lobbyTeam.color(net.kyori.adventure.text.format.NamedTextColor.WHITE);
-
-        String playerName = player.getName();
-        Team current = scoreboard.getEntryTeam(playerName);
-        if (current == lobbyTeam) return;
-        if (current != null) {
-            dailyLobbyOriginalTeamByPlayer.compute(player.getUniqueId(), (ignored, original) ->
-                    original == null || NO_SCOREBOARD_TEAM.equals(original) ? current.getName() : original);
-        } else {
-            dailyLobbyOriginalTeamByPlayer.putIfAbsent(player.getUniqueId(), NO_SCOREBOARD_TEAM);
-        }
-        lobbyTeam.addEntry(playerName);
+        Team lobbyTeam = nativeTeams.getOrCreateTeam(DAILY_LOBBY_TEAM_ID, "DAILY", "white",
+                "#ffffff", Team.OptionStatus.ALWAYS);
+        dailyLobbyNativeTeam.own(lobbyTeam);
+        dailyLobbyNativeTeam.assign(player.getUniqueId(), player.getName(), lobbyTeam);
     }
 
     public synchronized void clearDailyLobbyIdentity(@NotNull Player player) {
-        restoreDailyLobbyIdentity(player.getUniqueId(), player.getName());
+        dailyLobbyNativeTeam.release(player.getUniqueId());
     }
 
     public synchronized void restoreDailyLobbyIdentities() {
-        for (UUID playerId : Set.copyOf(dailyLobbyOriginalTeamByPlayer.keySet())) {
-            String playerName = plugin.getPlayerManager().getPlayerName(playerId);
-            if (playerName == null) playerName = Bukkit.getOfflinePlayer(playerId).getName();
-            if (playerName != null) restoreDailyLobbyIdentity(playerId, playerName);
-            else dailyLobbyOriginalTeamByPlayer.remove(playerId);
-        }
-        Team lobbyTeam = scoreboard.getTeam(DAILY_LOBBY_TEAM_ID);
-        if (lobbyTeam != null && dailyLobbyOriginalTeamByPlayer.isEmpty()) {
-            try {
-                lobbyTeam.unregister();
-            } catch (IllegalStateException ignored) {
-            }
-        }
-    }
-
-    private void restoreDailyLobbyIdentity(UUID playerId, String playerName) {
-        String originalName = dailyLobbyOriginalTeamByPlayer.remove(playerId);
-        if (originalName == null) return;
-        Team lobbyTeam = scoreboard.getTeam(DAILY_LOBBY_TEAM_ID);
-        Team current = scoreboard.getEntryTeam(playerName);
-        if (current != lobbyTeam) return;
-        if (lobbyTeam != null) lobbyTeam.removeEntry(playerName);
-        if (!NO_SCOREBOARD_TEAM.equals(originalName)) {
-            Team original = scoreboard.getTeam(originalName);
-            if (original != null) original.addEntry(playerName);
-        }
+        dailyLobbyNativeTeam.close();
     }
 
     /** Removes a DAILY team and restores each player's exact pre-session scoreboard team when possible. */
@@ -477,29 +432,12 @@ public class TeamManager extends BaseManager {
 
         Set<UUID> members = new LinkedHashSet<>(team.getMembers());
         members.addAll(indexedMembers);
-        Team temporary = team.getTeam();
         for (UUID member : indexedMembers) {
             ChampionshipTeam indexedTeam = transientTeamByPlayer.get(member);
             if (indexedTeam == team) transientTeamByPlayer.remove(member, indexedTeam);
         }
-        if (temporary != null) {
-            try {
-                temporary.unregister();
-            } catch (IllegalStateException ignored) {
-            }
-        }
-        for (UUID member : members) {
-            String originalName = originalScoreboardTeamByPlayer.remove(member);
-            Team original = originalName == null ? null : scoreboard.getTeam(originalName);
-            String playerName = plugin.getPlayerManager().getPlayerName(member);
-            if (playerName == null) playerName = Bukkit.getOfflinePlayer(member).getName();
-            if (original != null && playerName != null) {
-                try {
-                    original.addEntry(playerName);
-                } catch (IllegalStateException ignored) {
-                }
-            }
-        }
+        for (UUID member : members) transientNativeTeams.release(member);
+        transientNativeTeams.removeTeam(team.getTeam());
     }
 
     /** Cleans every transient team from one match even if an individual scoreboard restoration fails. */
@@ -523,17 +461,7 @@ public class TeamManager extends BaseManager {
             boolean indexedMember = indexedTeam == team;
             if (indexedMember) transientTeamByPlayer.remove(member, indexedTeam);
             if (!rosterMember && !indexedMember) continue;
-            String playerName = plugin.getPlayerManager().getPlayerName(member);
-            if (playerName == null) playerName = Bukkit.getOfflinePlayer(member).getName();
-            if (team.getTeam() != null && playerName != null) team.getTeam().removeEntry(playerName);
-            String originalName = originalScoreboardTeamByPlayer.remove(member);
-            Team original = originalName == null ? null : scoreboard.getTeam(originalName);
-            if (original != null && playerName != null) {
-                try {
-                    original.addEntry(playerName);
-                } catch (IllegalStateException ignored) {
-                }
-            }
+            transientNativeTeams.release(member);
         }
     }
 

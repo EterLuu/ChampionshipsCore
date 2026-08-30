@@ -15,6 +15,10 @@ public final class RedisGroupNames {
         return group(prefix, "bingo", instanceId);
     }
 
+    public static String chat(String prefix, String instanceId) {
+        return group(prefix, "chat", instanceId);
+    }
+
     private static String group(String prefix, String purpose, String instanceId) {
         Objects.requireNonNull(prefix, "prefix");
         Objects.requireNonNull(instanceId, "instanceId");

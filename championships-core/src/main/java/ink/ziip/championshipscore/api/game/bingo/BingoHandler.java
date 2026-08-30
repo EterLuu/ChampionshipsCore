@@ -4,13 +4,13 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoNameTagObjective;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import lombok.Getter;
 import lombok.Setter;
 import io.papermc.paper.event.entity.EntityCompostItemEvent;
 import io.papermc.paper.event.player.PlayerShieldDisableEvent;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
@@ -249,19 +249,8 @@ public class BingoHandler extends BaseListener {
             bingoArea.onEventSignal(player, "use_golden_dandelion", "");
             return;
         }
-        if (item.getType() != Material.NAME_TAG || !item.hasItemMeta()) return;
-        String name = ChatColor.stripColor(item.getItemMeta().getDisplayName());
-        String normalized = name == null ? "" : name.toLowerCase(java.util.Locale.ROOT);
-        EntityType target = event.getRightClicked().getType();
-        if (target == EntityType.SHEEP && normalized.contains("jeb_")) {
-            bingoArea.onEventSignal(player, "name", "SHEEP_JEB");
-        } else if (target == EntityType.IRON_GOLEM
-                && (normalized.contains("dinnerbone") || normalized.contains("grumm"))) {
-            bingoArea.onEventSignal(player, "name", "IRON_GOLEM_DINNERBONE");
-        } else if (target == EntityType.GHAST
-                && (normalized.contains("dinnerbone") || normalized.contains("grumm"))) {
-            bingoArea.onEventSignal(player, "name", "GHAST_DINNERBONE");
-        }
+        String objective = BingoNameTagObjective.match(item, event.getRightClicked().getType());
+        if (objective != null) bingoArea.onEventSignal(player, "name", objective);
     }
 
     @EventHandler(ignoreCancelled = true)

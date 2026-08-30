@@ -1086,18 +1086,8 @@ categories:
   - id: overworld_music_disc_loot
     dimension: overworld
     members:
-      - { material: MUSIC_DISC_CAT }
       - { material: MUSIC_DISC_13 }
-      - { material: MUSIC_DISC_BLOCKS }
-      - { material: MUSIC_DISC_CHIRP }
-      - { material: MUSIC_DISC_FAR }
-      - { material: MUSIC_DISC_MALL }
-      - { material: MUSIC_DISC_MELLOHI }
-      - { material: MUSIC_DISC_STAL }
-      - { material: MUSIC_DISC_STRAD }
-      - { material: MUSIC_DISC_WARD }
-      - { material: MUSIC_DISC_11 }
-      - { material: MUSIC_DISC_WAIT }
+      - { material: MUSIC_DISC_CAT }
       - { material: MUSIC_DISC_OTHERSIDE }
       - { material: MUSIC_DISC_LAVA_CHICKEN }
       - { material: MUSIC_DISC_TEARS }
@@ -1176,7 +1166,6 @@ categories:
     members:
       - { material: ECHO_SHARD }
       - { material: RECOVERY_COMPASS }
-      - { material: MUSIC_DISC_5 }
       - { material: DISC_FRAGMENT_5 }
       - { material: SCULK }
       - { material: SCULK_CATALYST }
@@ -1608,7 +1597,7 @@ singletons:
     - { one_of: [TUBE_CORAL, BRAIN_CORAL, BUBBLE_CORAL, FIRE_CORAL, HORN_CORAL], icon: BRAIN_CORAL }
     - { one_of: [RAW_IRON, RAW_COPPER, RAW_GOLD], icon: RAW_IRON, count: 3 }
     - { one_of: ["*_HORSE_ARMOR"], icon: IRON_HORSE_ARMOR }
-    - { one_of: ["MUSIC_DISC_*"], icon: MUSIC_DISC_CAT }
+    - { one_of: [MUSIC_DISC_OTHERSIDE, MUSIC_DISC_PIGSTEP, MUSIC_DISC_13, MUSIC_DISC_CAT, MUSIC_DISC_BOUNCE, MUSIC_DISC_CREATOR, MUSIC_DISC_PRECIPICE, MUSIC_DISC_CREATOR_MUSIC_BOX, MUSIC_DISC_TEARS, MUSIC_DISC_LAVA_CHICKEN, MUSIC_DISC_RELIC], icon: MUSIC_DISC_CAT }
     - { one_of: ["*_DYE"], icon: RED_DYE }
     - { one_of: ["*_BANNER"], icon: WHITE_BANNER }
     - { one_of: [ZOMBIE_HEAD, SKELETON_SKULL, CREEPER_HEAD, PIGLIN_HEAD, WITHER_SKELETON_SKULL], icon: SKELETON_SKULL }

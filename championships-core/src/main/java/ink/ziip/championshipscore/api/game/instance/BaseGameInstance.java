@@ -13,6 +13,8 @@ import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
+import ink.ziip.championshipscore.shared.presentation.RuleIntroductionTimeline;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
@@ -66,8 +68,6 @@ public abstract class BaseGameInstance {
     /** Duration (seconds) of the optional rule-introduction phase preceding the normal preparation. */
     protected static final int INTRODUCTION_DURATION = 90;
     private static final int INTRODUCTION_TITLE_DURATION_SECONDS = 5;
-    private static final int INTRODUCTION_FIRST_RULE_SECOND = 10;
-    private static final int INTRODUCTION_DEFAULT_RULE_INTERVAL_SECONDS = 10;
 
     /** True while players are gathered at the introduction spawn point for the rules broadcast. */
     protected volatile boolean introductionPhase = false;
@@ -762,13 +762,9 @@ public abstract class BaseGameInstance {
     /** Removes all game state that could leak into the lobby and applies its authoritative mode. */
     public void sanitizeParticipantForLobby(@NotNull Player player, boolean teleport) {
         player.getInventory().clear();
-        for (org.bukkit.potion.PotionEffect effect : player.getActivePotionEffects()) {
-            player.removePotionEffect(effect.getType());
-        }
-        player.setFlying(false);
-        player.setAllowFlight(false);
-        player.setFireTicks(0);
-        player.setFallDistance(0f);
+        PlayerStateService.clearEffects(player);
+        PlayerStateService.disableFlight(player);
+        PlayerStateService.clearHazards(player);
         player.setLevel(0);
         if (teleport && getLobbyLocation() != null && getLobbyLocation().getWorld() != null)
             player.teleport(getScatteredLobbyLocation(player));
@@ -898,23 +894,12 @@ public abstract class BaseGameInstance {
                         .replace("%game%", gameTypeEnum.toString()), "",
                 INTRODUCTION_TITLE_DURATION_SECONDS * 20);
 
-        final int sectionCount = rules.size();
-        // The first section is always sent at t=10s; the rest are spread evenly across the remaining
-        // time so the last section lands shortly before the phase ends, whatever the section count.
-        final int availableAfterFirst = INTRODUCTION_DURATION - INTRODUCTION_FIRST_RULE_SECOND - 1;
-        final int interval = sectionCount <= 1
-                ? INTRODUCTION_DEFAULT_RULE_INTERVAL_SECONDS
-                : Math.max(1, availableAfterFirst / (sectionCount - 1));
         final int[] remain = {INTRODUCTION_DURATION};
 
         introductionTask = scheduler.runTaskTimer(plugin, () -> {
             int elapsed = INTRODUCTION_DURATION - remain[0];
-            if (remain[0] > 0 && elapsed >= INTRODUCTION_FIRST_RULE_SECOND
-                    && (elapsed - INTRODUCTION_FIRST_RULE_SECOND) % interval == 0) {
-                int section = (elapsed - INTRODUCTION_FIRST_RULE_SECOND) / interval;
-                if (section < sectionCount)
-                    broadcastRuleSection(rules.get(section));
-            }
+            int section = RuleIntroductionTimeline.sectionAt(elapsed, INTRODUCTION_DURATION, rules.size());
+            if (section >= 0) broadcastRuleSection(rules.get(section));
 
             showPreparationCountdown(remain[0]);
 

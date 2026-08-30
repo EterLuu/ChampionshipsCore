@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.team;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.util.Utils;
@@ -10,7 +11,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
@@ -203,8 +203,7 @@ public class ChampionshipTeam {
 
     public void clearEffectsForAllPlayers() {
         for (Player player : getOnlinePlayers()) {
-            for (PotionEffect potionEffect : player.getActivePotionEffects())
-                player.removePotionEffect(potionEffect.getType());
+            PlayerStateService.clearEffects(player);
         }
     }
 

@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 3
+  version: 4
 card:
   title: "&6&lBingo Card"
   win_hint: "&7Complete a full row, column, or diagonal to win"
@@ -17,6 +17,27 @@ compass:
   no_teammates: "&cNo online teammates to teleport to."
   target_offline: "&cThat teammate has gone offline."
   teleport_success: "&aTeleported to &f{0}&a."
+remix:
+  blind-revealed: "&#bababa[&#8a70ffRemix&#bababa]&#ededed Blind remix revealed a task"
+  finale-locked: "&#bababa[&#8a70ffRemix&#bababa]&#ededed Finale remix locked a task"
+  variation-refreshed: "&#bababa[&#8a70ffRemix&#bababa]&#ededed Variation remix refreshed every incomplete task"
+worker:
+  command:
+    no-permission: "&#bababa[&#ff6b26Bingo&#bababa]&#ededed You do not have permission"
+    admin-stop-usage: "&#bababa[&#fff566Bingo&#bababa]&#ededed Usage &#696969•&#ededed /cc game stop --confirm &#696969(settle and end the current match)"
+    no-active-match: "&#bababa[&#ff6b26Bingo&#bababa]&#ededed No match is currently active"
+    event-active: "&#bababa[&#fff566Event&#bababa]&#ededed The event match is active; you will return to the lobby when it ends"
+    free-play-help: "&#bababa[&#31e061Free Play&#bababa]&#ededed Leave this match &#696969•&#ededed /cc play leave"
+    admin-stop-help: "&#bababa[&#fff566Bingo&#bababa]&#ededed End the match as an administrator &#696969•&#ededed /cc game stop --confirm"
+  play:
+    leave:
+      not-playing: "&#bababa[&#ff6b26Free Play&#bababa]&#ededed You are not currently playing a game"
+      event-denied: "&#bababa[&#ff6b26Event&#bababa]&#ededed You cannot leave an active event match"
+      started: "&#bababa[&#fff566Free Play&#bababa]&#ededed Leaving the current match"
+  admin:
+    stop:
+      no-active-match: "&#bababa[&#ff6b26Bingo&#bababa]&#ededed There is no match to stop"
+      started: "&#bababa[&#fff566Bingo&#bababa]&#ededed Match settlement has started"
 spectator:
   teleport:
     name: "Choose Player"
@@ -198,6 +219,7 @@ board:
   title: "#3fb2ba[#31e061S#dbffe5³#e42d3eCC#bababa夏季联合锦标赛#3fb2ba]"
   separator: "#4f4f4f&m+-------------------+"
   current_game: "#ff0808Current game: #ff7373{0}"
+  current_status: "&#bababaMatch status &#696969•&#ededed {0}"
   remaining_time: "#dfff2bTime left: #f6ffa8{0}"
   status_waiting: "#dfff2bStatus: #f6ffa8Waiting for players"
   status_preparing: "#dfff2bStatus: #f6ffa8Preparing"

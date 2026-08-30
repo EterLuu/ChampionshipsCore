@@ -8,6 +8,8 @@ import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.game.RoundOutcome;
 import ink.ziip.championshipscore.api.game.bingo.gui.BingoCardMapRenderer;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoSpectatorService;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.api.game.bingo.gui.CardMapItem;
 import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.TaskData;
@@ -29,7 +31,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
-import org.bukkit.GameRules;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -47,6 +48,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -305,7 +307,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             int elapsed = Math.max(0, activeDuration - timer);
             int graceRemaining = Math.max(0, PVP_GRACE_SECONDS - elapsed);
             String timerTitle = MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN
-                    .replace("%time%", String.valueOf(timer));
+                    .replace("%time%", Utils.formatMinutesSeconds(timer));
             timerTitle += " &#bababa• " + (pvpEnabled
                     ? MessageConfig.BINGO_PVP_ACTIVE
                     : MessageConfig.BINGO_PVP_PROTECTION
@@ -537,22 +539,9 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     }
 
     private void applyVariantWorldRules() {
-        boolean night = activeVariant.remix() == BingoRemix.ETERNAL_NIGHT;
-        boolean day = activeVariant.remix() == BingoRemix.POLAR_DAY;
         for (String name : new String[]{WorldManager.BINGO_OVERWORLD, WorldManager.BINGO_NETHER, WorldManager.BINGO_END}) {
             World variantWorld = Bukkit.getWorld(name);
-            if (variantWorld == null) continue;
-            variantWorld.setGameRule(GameRules.KEEP_INVENTORY,
-                    !activeVariant.difficulty().clearsInventoryOnDeath());
-            if (night || day) {
-                variantWorld.setDifficulty(night ? org.bukkit.Difficulty.HARD : org.bukkit.Difficulty.EASY);
-                variantWorld.setGameRule(GameRules.ADVANCE_TIME, false);
-                variantWorld.setTime(night ? 18000L : 0L);
-            } else {
-                variantWorld.setDifficulty(org.bukkit.Difficulty.NORMAL);
-                variantWorld.setGameRule(GameRules.ADVANCE_TIME, true);
-                if (variantWorld.getEnvironment() == World.Environment.NORMAL) variantWorld.setTime(9000L);
-            }
+            if (variantWorld != null) BingoWorldRules.applyVariant(variantWorld, activeVariant);
         }
     }
 
@@ -590,10 +579,10 @@ public class BingoArea extends BaseMultiTeamGameInstance {
      *  is deprecated since 1.21.9). The gamerule covers melee and projectiles in one toggle, so the
      *  grace needs no per-event cancellation. */
     private void setBingoPvP(boolean enabled) {
-        for (String name : new String[]{WorldManager.BINGO_OVERWORLD, WorldManager.BINGO_NETHER, WorldManager.BINGO_END}) {
-            World w = Bukkit.getWorld(name);
-            if (w != null) w.setGameRule(GameRules.PVP, enabled);
-        }
+        BingoWorldRules.setPvp(Arrays.asList(
+                Bukkit.getWorld(WorldManager.BINGO_OVERWORLD),
+                Bukkit.getWorld(WorldManager.BINGO_NETHER),
+                Bukkit.getWorld(WorldManager.BINGO_END)), enabled);
     }
 
     @Override
@@ -853,12 +842,8 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     private void refreshVitals(Player player) {
         scheduler.runTask(plugin, () -> {
             player.setGameMode(GameMode.SURVIVAL);
-            player.setHealth(20.0);
-            player.setFoodLevel(20);
-            player.setFireTicks(0);
-            for (org.bukkit.potion.PotionEffect effect : player.getActivePotionEffects()) {
-                player.removePotionEffect(effect.getType());
-            }
+            PlayerStateService.resetVitals(player);
+            PlayerStateService.clearEffects(player);
             // The strip above just cleared the permanent effects too; re-apply them now (deferred, so
             // this runs after the kit/card handed out synchronously in handlePlayerJoin).
             BingoPermanentEffects.ensure(player, permanentEffects);

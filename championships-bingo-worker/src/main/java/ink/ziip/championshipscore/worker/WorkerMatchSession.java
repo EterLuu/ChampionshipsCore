@@ -6,9 +6,14 @@ import ink.ziip.championshipscore.bingo.engine.ScoringDecision;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoPermanentEffectService;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoSpectatorService;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamOverlay;
+import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.SharedSidebar;
+import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
 import ink.ziip.championshipscore.platform.bukkit.world.SafeScatterService;
 import ink.ziip.championshipscore.protocol.CompletionObservation;
 import ink.ziip.championshipscore.protocol.BingoManifestHasher;
@@ -28,6 +33,7 @@ import ink.ziip.championshipscore.protocol.MatchStateMachine;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
 import ink.ziip.championshipscore.protocol.PlayerSnapshot;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
@@ -37,7 +43,6 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
-import org.bukkit.GameRules;
 import org.bukkit.Instrument;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -45,8 +50,6 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Note;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -56,6 +59,7 @@ import org.bukkit.map.MapView;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.scoreboard.Team;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -81,6 +85,7 @@ final class WorkerMatchSession {
     private final DurableEventOutbox events;
     private final WorkerReturnRouter returnRouter;
     private final WorkerWorldController worlds;
+    private final NativeTeamService nativeTeams;
     private final Runnable worldReset;
     private final PlatformScheduler scheduler;
     private final NamespacedKey cardKey;
@@ -97,6 +102,10 @@ final class WorkerMatchSession {
     private final List<PotionEffect> permanentEffects;
     private final Map<UUID, PlayerSnapshot> participants = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<Integer, TeamSnapshot> teams;
+    private final Map<Integer, Team> nativeScoreboardTeams = new HashMap<>();
+    private final NativeTeamOverlay nativeTeamOverlay;
+    /** Native scoreboard teams are presentation-only and are unsupported by some Folia builds. */
+    private boolean nativeTeamsAvailable;
     private final Set<UUID> arrived = new HashSet<>();
     /** Last live position for a participant who disconnected during the match. */
     private final Map<UUID, Location> lastQuitLocations = new HashMap<>();
@@ -131,13 +140,17 @@ final class WorkerMatchSession {
 
     WorkerMatchSession(Plugin plugin, WorkerConfig config, MatchManifest manifest,
                        DurableEventOutbox events, WorkerReturnRouter returnRouter,
-                       WorkerWorldController worlds, Runnable worldReset) {
+                       WorkerWorldController worlds, NativeTeamService nativeTeams,
+                       Runnable worldReset) {
         this.plugin = plugin;
         this.config = config;
         this.manifest = manifest;
         this.events = events;
         this.returnRouter = returnRouter;
         this.worlds = worlds;
+        this.nativeTeams = nativeTeams;
+        this.nativeTeamsAvailable = nativeTeams.mutationSupported();
+        this.nativeTeamOverlay = nativeTeams.newOverlay();
         this.worldReset = worldReset;
         this.scheduler = new PlatformScheduler(plugin);
         this.cardKey = new NamespacedKey(plugin, "bingo_card");
@@ -203,17 +216,44 @@ final class WorkerMatchSession {
                 manifest.runMode() == ink.ziip.championshipscore.protocol.MatchRunMode.DAILY);
     }
 
-    WorkerPlayerPresentation playerPresentation(UUID playerId) {
+    PlayerPresentation playerPresentation(UUID playerId) {
         PlayerSnapshot participant = participants.get(playerId);
         TeamSnapshot team = participant == null || participant.teamId() == null
                 ? null : teams.get(participant.teamId());
-        String spectator = manifest.runtimeRules().presentation().messages()
-                .getOrDefault("papi.spectator", "旁观");
+        String spectator = manifest.runtimeRules().presentation().message("papi.spectator");
         String label = team == null
                 ? manifest.runMode() == MatchRunMode.DAILY ? "&6" + gameName() : spectator
                 : team.colorCode() + team.name();
         boolean activePlayer = participant != null && participant.role() == ParticipantRole.PLAYER && team != null;
-        return new WorkerPlayerPresentation(label, team == null ? null : team.colorCode(), activePlayer);
+        return new PlayerPresentation(label, team == null ? null : team.colorCode(), activePlayer);
+    }
+
+    boolean sendTeamMessage(Player sender, Component message) {
+        TeamSnapshot team;
+        List<UUID> recipients;
+        PlayerPresentation presentation;
+        synchronized (this) {
+            PlayerSnapshot senderSnapshot = participants.get(sender.getUniqueId());
+            if (senderSnapshot == null || senderSnapshot.role() != ParticipantRole.PLAYER
+                    || senderSnapshot.teamId() == null || lifecycle.state().terminal()) return false;
+            team = teams.get(senderSnapshot.teamId());
+            if (team == null) return false;
+            recipients = participants.values().stream()
+                    .filter(participant -> participant.role() == ParticipantRole.PLAYER
+                            && senderSnapshot.teamId().equals(participant.teamId()))
+                    .map(PlayerSnapshot::uuid)
+                    .toList();
+            presentation = playerPresentation(sender.getUniqueId());
+        }
+        Component line = message("chat.team.prefix")
+                .append(presentation.chatLine(sender.getName(), message));
+        scheduler.runGlobal(() -> {
+            for (UUID recipientId : recipients) {
+                Player recipient = plugin.getServer().getPlayer(recipientId);
+                if (recipient != null) scheduler.runEntity(recipient, () -> recipient.sendMessage(line));
+            }
+        });
+        return true;
     }
 
     synchronized boolean canPickupCard(UUID playerId, int teamId) {
@@ -285,6 +325,12 @@ final class WorkerMatchSession {
         if (!manifest.configHash().equals(BingoManifestHasher.hash(manifest))) {
             return failPreparation("manifest-config-hash-mismatch");
         }
+        try {
+            createNativeTeams();
+        } catch (RuntimeException failure) {
+            plugin.getLogger().log(Level.SEVERE, "Unable to create native Bingo teams", failure);
+            return failPreparation("native-team-sync-failed");
+        }
         createCardViews(world);
         updateSidebar();
         setPvp(false);
@@ -318,6 +364,7 @@ final class WorkerMatchSession {
                     || lastQuitLocations.containsKey(player.getUniqueId())
                     || (roundPrepared && snapshot.role() == ParticipantRole.PLAYER);
             currentState = lifecycle.state();
+            scheduler.runGlobal(() -> syncNativePlayer(snapshot, player.getName()));
             if (returning) {
                 scheduler.runEntity(player, () -> restoreParticipantState(player, snapshot));
                 return CompletableFuture.completedFuture(true);
@@ -326,7 +373,7 @@ final class WorkerMatchSession {
 
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         scheduler.runEntity(player, () -> {
-            resetVitals(player);
+            PlayerStateService.resetVitals(player);
             sidebar.show(player);
             refreshSidebar(player, snapshot);
             if (roundPrepared) {
@@ -478,14 +525,14 @@ final class WorkerMatchSession {
                 applySpectatorState(player);
             } else {
                 player.getInventory().clear();
-                clearEffects(player);
+                PlayerStateService.clearEffects(player);
                 player.setGameMode(GameMode.ADVENTURE);
                 player.setInvulnerable(false);
                 player.setFlying(false);
                 player.setAllowFlight(false);
             }
-            resetVitals(player);
-            resetExperience(player);
+            PlayerStateService.resetVitals(player);
+            PlayerStateService.resetExperience(player);
             if (destination != null) player.teleportAsync(destination);
             player.sendMessage(preparationMessage);
             showTitle(player, preparationTitle, preparationSubtitle, 1, 20, 1);
@@ -516,7 +563,7 @@ final class WorkerMatchSession {
             abort("overworld-unavailable-before-scatter");
             return;
         }
-        world.setTime(WorkerWorldController.START_TIME);
+        world.setTime(BingoWorldRules.START_TIME);
         roundPrepared = true;
         updateSidebar();
         List<Player> players = new ArrayList<>();
@@ -745,22 +792,9 @@ final class WorkerMatchSession {
     }
 
     private void applyVariantWorldRules() {
-        BingoRemix remix = manifest.scoring().variant().remix();
-        boolean night = remix == BingoRemix.ETERNAL_NIGHT;
-        boolean day = remix == BingoRemix.POLAR_DAY;
         for (String name : List.of(config.overworld(), config.nether(), config.end())) {
             World world = plugin.getServer().getWorld(name);
-            if (world == null) continue;
-            world.setGameRule(GameRules.KEEP_INVENTORY,
-                    !manifest.scoring().variant().difficulty().clearsInventoryOnDeath());
-            if (night || day) {
-                world.setDifficulty(night ? org.bukkit.Difficulty.HARD : org.bukkit.Difficulty.EASY);
-                world.setGameRule(GameRules.ADVANCE_TIME, false);
-                world.setTime(night ? 18000L : 0L);
-            } else {
-                world.setDifficulty(org.bukkit.Difficulty.NORMAL);
-                world.setGameRule(GameRules.ADVANCE_TIME, true);
-            }
+            if (world != null) BingoWorldRules.applyVariant(world, manifest.scoring().variant());
         }
     }
 
@@ -778,8 +812,7 @@ final class WorkerMatchSession {
         List<Integer> candidates = new ArrayList<>(hiddenCells);
         int cell = candidates.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(candidates.size()));
         hiddenCells.remove(cell);
-        forEachOnlinePlayer(player -> player.sendMessage(Component.text("视障奇遇揭示了一项任务。",
-                NamedTextColor.LIGHT_PURPLE)));
+        forEachOnlinePlayer(player -> player.sendMessage(message("remix.blind-revealed")));
         remixTask = scheduler.runGlobalLater(this::revealBlindCell, 60L * 20L);
     }
 
@@ -796,8 +829,7 @@ final class WorkerMatchSession {
         }
         int cell = candidates.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(candidates.size()));
         lockedCells.add(cell);
-        forEachOnlinePlayer(player -> player.sendMessage(Component.text("终曲奇遇封锁了一项任务。",
-                NamedTextColor.LIGHT_PURPLE)));
+        forEachOnlinePlayer(player -> player.sendMessage(message("remix.finale-locked")));
         remixTask = scheduler.runGlobalLater(this::lockFinaleCell, 60L * 20L);
     }
 
@@ -825,8 +857,7 @@ final class WorkerMatchSession {
             forEachOnlineParticipant((player, snapshot) -> {
                 if (snapshot.role() == ParticipantRole.PLAYER) objectives.captureBaselines(player);
             });
-            forEachOnlinePlayer(player -> player.sendMessage(Component.text(
-                    "变奏奇遇刷新了所有未完成任务。", NamedTextColor.LIGHT_PURPLE)));
+            forEachOnlinePlayer(player -> player.sendMessage(message("remix.variation-refreshed")));
         }
         remixTask = scheduler.runGlobalLater(this::varyOpenCells, 4L * 60L * 20L);
     }
@@ -976,13 +1007,14 @@ final class WorkerMatchSession {
 
     void requestVoluntaryLeave(Player player) {
         if (!isPlaying(player.getUniqueId())) return;
-        player.sendMessage(Component.text("正在离开自由游玩…", NamedTextColor.YELLOW));
+        player.sendMessage(message("worker.play.leave.started"));
         emit(MatchEventType.PLAYER_LEFT, Map.of(
                 "playerId", player.getUniqueId().toString(), "intent", "voluntary"));
     }
 
     CompletionStage<Boolean> removeParticipants(Set<UUID> playerIds) {
         if (playerIds.isEmpty()) return CompletableFuture.completedFuture(true);
+        removeNativeParticipants(playerIds);
         synchronized (this) {
             for (UUID playerId : playerIds) {
                 PlayerSnapshot participant = participants.get(playerId);
@@ -1000,7 +1032,7 @@ final class WorkerMatchSession {
             if (player == null) continue;
             scheduler.runEntity(player, () -> {
                 sidebar.hide(player);
-                resetVitals(player);
+                PlayerStateService.resetVitals(player);
                 player.getInventory().clear();
                 returnRouter.request(player);
             });
@@ -1327,14 +1359,14 @@ final class WorkerMatchSession {
         BingoSpectatorService.clear(player);
         if (!preserveInventory) {
             player.getInventory().clear();
-            clearEffects(player);
-            resetExperience(player);
+            PlayerStateService.clearEffects(player);
+            PlayerStateService.resetExperience(player);
         }
         player.setGameMode(GameMode.SURVIVAL);
         player.setInvulnerable(false);
         player.setAllowFlight(false);
         player.setFlying(false);
-        resetVitals(player);
+        PlayerStateService.resetVitals(player);
         if (!BingoStarterKitService.hasKit(player)) {
             WorkerStarterKit.give(player, team, manifest.runtimeRules().presentation(),
                     manifest.scoring().variant().remix(), manifest.runMode() == MatchRunMode.DAILY);
@@ -1446,24 +1478,6 @@ final class WorkerMatchSession {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
-    private void resetVitals(Player player) {
-        AttributeInstance maxHealth = player.getAttribute(Attribute.MAX_HEALTH);
-        player.setHealth(Math.min(20.0, maxHealth == null ? player.getHealth() : maxHealth.getValue()));
-        player.setFoodLevel(20);
-        player.setFireTicks(0);
-        player.setFallDistance(0F);
-    }
-
-    private static void resetExperience(Player player) {
-        player.setExp(0F);
-        player.setLevel(0);
-        player.setTotalExperience(0);
-    }
-
-    private static void clearEffects(Player player) {
-        for (PotionEffect effect : player.getActivePotionEffects()) player.removePotionEffect(effect.getType());
-    }
-
     CompletionStage<Boolean> removeSpectator(UUID playerId) {
         synchronized (this) {
             PlayerSnapshot existing = participants.get(playerId);
@@ -1482,7 +1496,7 @@ final class WorkerMatchSession {
                 sidebar.hide(player);
                 player.getInventory().clear();
                 BingoSpectatorService.clear(player);
-                clearEffects(player);
+                PlayerStateService.clearEffects(player);
                 player.setGameMode(GameMode.ADVENTURE);
             });
             returnRouter.request(player);
@@ -1496,6 +1510,7 @@ final class WorkerMatchSession {
             lifecycle.transitionTo(MatchState.ABORTED);
         }
         clearVisibility();
+        clearNativeTeams();
         worlds.freeze();
         CompletionStage<MatchEvent> published = emit(MatchEventType.PREPARE_FAILED, Map.of("reason", reason));
         worldReset.run();
@@ -1521,6 +1536,7 @@ final class WorkerMatchSession {
 
     private void routeEveryoneBack() {
         clearVisibility();
+        clearNativeTeams();
         List<PlayerSnapshot> routingParticipants;
         synchronized (this) {
             routingParticipants = List.copyOf(participants.values());
@@ -1532,13 +1548,88 @@ final class WorkerMatchSession {
                     sidebar.hide(player);
                     player.getInventory().clear();
                     BingoSpectatorService.clear(player);
-                    clearEffects(player);
+                    PlayerStateService.clearEffects(player);
                     player.setGameMode(GameMode.ADVENTURE);
                 });
             }
             returnRouter.request(participant.uuid());
         }
         worldReset.run();
+    }
+
+    private void createNativeTeams() {
+        if (!nativeTeamsAvailable) return;
+        clearNativeTeams();
+        try {
+            for (TeamSnapshot team : manifest.teams()) {
+                String scoreboardId = nativeTeamId(team.id());
+                Team nativeTeam = nativeTeams.replaceTeam(scoreboardId, team.name(), team.colorName(),
+                        team.colorCode(), List.of(), Team.OptionStatus.ALWAYS);
+                nativeTeamOverlay.own(nativeTeam);
+                nativeScoreboardTeams.put(team.id(), nativeTeam);
+            }
+        } catch (UnsupportedOperationException unsupported) {
+            disableNativeTeams(unsupported);
+            return;
+        }
+        for (PlayerSnapshot participant : manifest.participants()) {
+            if (participant.role() == ParticipantRole.PLAYER) {
+                syncNativePlayer(participant, participant.username());
+            }
+        }
+    }
+
+    private void syncNativePlayer(PlayerSnapshot participant, String username) {
+        if (!nativeTeamsAvailable) return;
+        if (participant.role() != ParticipantRole.PLAYER || participant.teamId() == null) return;
+        Team target = nativeScoreboardTeams.get(participant.teamId());
+        if (target == null || username == null || username.isBlank()) return;
+
+        try {
+            nativeTeamOverlay.assign(participant.uuid(), username, target);
+        } catch (UnsupportedOperationException unsupported) {
+            disableNativeTeams(unsupported);
+        }
+    }
+
+    private void removeNativeParticipants(Set<UUID> playerIds) {
+        if (!nativeTeamsAvailable) return;
+        for (UUID playerId : playerIds) {
+            try {
+                nativeTeamOverlay.release(playerId);
+            } catch (UnsupportedOperationException unsupported) {
+                disableNativeTeams(unsupported);
+                return;
+            }
+        }
+    }
+
+    private void clearNativeTeams() {
+        if (!nativeTeamsAvailable) {
+            nativeScoreboardTeams.clear();
+            return;
+        }
+        nativeTeamOverlay.close();
+        nativeScoreboardTeams.clear();
+    }
+
+    private void disableNativeTeams(UnsupportedOperationException unsupported) {
+        if (!nativeTeamsAvailable) return;
+        nativeTeamsAvailable = false;
+        nativeTeams.markMutationUnsupported();
+        try {
+            nativeTeamOverlay.close();
+        } catch (UnsupportedOperationException ignored) {
+            // The same platform limitation may also reject cleanup operations.
+        }
+        nativeScoreboardTeams.clear();
+        plugin.getLogger().warning("Native Bingo team projection is unavailable on this platform; "
+                + "continuing without native scoreboard teams (" + unsupported.getMessage() + ")");
+    }
+
+    static String nativeTeamId(int teamId) {
+        if (teamId < 0) throw new IllegalArgumentException("teamId must be non-negative");
+        return "ccb_" + Integer.toString(teamId, 36);
     }
 
     private void cancelTasks() {
@@ -1613,7 +1704,7 @@ final class WorkerMatchSession {
                 - (int) ((System.currentTimeMillis() - startedAtMillis) / 1000L));
         int graceRemaining = Math.max(0, manifest.runtimeRules().pvpGraceSeconds()
                 - (manifest.durationSeconds() - remaining));
-        Component title = message("bingo.timer", "%time%", Integer.toString(remaining)).append(
+        Component title = message("bingo.timer", "%time%", DurationText.minutesSeconds(remaining)).append(
                 WorkerPresentationService.component(" &#bababa• ")).append(pvpEnabled
                 ? message("bingo.pvp-active")
                 : message("bingo.pvp-protection", "%time%", Integer.toString(graceRemaining)));
@@ -1671,8 +1762,8 @@ final class WorkerMatchSession {
         List<Component> lines = new ArrayList<>();
         lines.add(message("board.separator"));
         lines.add(message("board.current_game", "{0}", gameName()));
-        lines.add(WorkerPresentationService.component("#1da4ad场地状态: #f6ffa8"
-                + WorkerPresentationService.sidebarStatus(manifest.runtimeRules().presentation(), currentState)));
+        lines.add(message("board.current_status", "{0}",
+                WorkerPresentationService.sidebarStatus(manifest.runtimeRules().presentation(), currentState)));
         lines.add(message("board.teams_header"));
         Integer viewerTeamId = viewer.role() == ParticipantRole.PLAYER ? viewer.teamId() : null;
         for (WorkerSidebarRanking.Entry entry : WorkerSidebarRanking.select(result, teams, viewerTeamId)) {
@@ -1783,10 +1874,10 @@ final class WorkerMatchSession {
     }
 
     private void setPvp(boolean enabled) {
-        for (String name : List.of(config.overworld(), config.nether(), config.end())) {
-            World world = plugin.getServer().getWorld(name);
-            if (world != null) world.setGameRule(GameRules.PVP, enabled);
-        }
+        BingoWorldRules.setPvp(java.util.Arrays.asList(
+                plugin.getServer().getWorld(config.overworld()),
+                plugin.getServer().getWorld(config.nether()),
+                plugin.getServer().getWorld(config.end())), enabled);
     }
 
     private Location introductionLocation() {

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.bingo.engine.BingoResult;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
+import ink.ziip.championshipscore.shared.presentation.RankingWindow;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +17,11 @@ final class WorkerSidebarRanking {
 
     static List<Entry> select(BingoResult result, Map<Integer, TeamSnapshot> teams, Integer viewerTeamId) {
         List<Integer> ranked = result.rankedTeamIds().stream().filter(teams::containsKey).toList();
+        List<Integer> visible = RankingWindow.select(ranked, viewerTeamId, LEADER_LIMIT);
         List<Entry> selected = new ArrayList<>(LEADER_LIMIT + 1);
-        for (int index = 0; index < Math.min(LEADER_LIMIT, ranked.size()); index++) {
-            int teamId = ranked.get(index);
-            selected.add(new Entry(teams.get(teamId), index + 1, java.util.Objects.equals(teamId, viewerTeamId)));
-        }
-        if (viewerTeamId != null && selected.stream().noneMatch(entry -> entry.team().id() == viewerTeamId)) {
-            int index = ranked.indexOf(viewerTeamId);
-            if (index >= 0) selected.add(new Entry(teams.get(viewerTeamId), index + 1, true));
+        for (int teamId : visible) {
+            selected.add(new Entry(teams.get(teamId), ranked.indexOf(teamId) + 1,
+                    java.util.Objects.equals(teamId, viewerTeamId)));
         }
         return List.copyOf(selected);
     }

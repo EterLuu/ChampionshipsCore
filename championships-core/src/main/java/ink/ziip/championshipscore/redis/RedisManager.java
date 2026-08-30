@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncEvent;
+import ink.ziip.championshipscore.protocol.CrossServerChatMessage;
 import ink.ziip.championshipscore.protocol.transport.DeliveryDisposition;
 import ink.ziip.championshipscore.protocol.transport.DeliveryHandler;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
@@ -34,6 +35,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import java.util.function.Consumer;
 
 /** One Core-owned Redis lifecycle for database invalidation and remote-game transports. */
 public final class RedisManager extends BaseManager {
@@ -55,6 +57,8 @@ public final class RedisManager extends BaseManager {
     private RedisConnectionConfig connectionConfig;
     private RedisStreamPublisher publisher;
     private RedisStreamConsumer syncConsumer;
+    private RedisChatTransport chatTransport;
+    private volatile Consumer<CrossServerChatMessage> chatReceiver = ignored -> { };
     private BukkitTask reconciliationTask;
     private BukkitTask connectionRetryTask;
     private String instanceId;
@@ -108,6 +112,7 @@ public final class RedisManager extends BaseManager {
         if (stopping.get() || ready.get() || !connecting.compareAndSet(false, true)) return;
         RedisStreamPublisher candidatePublisher = null;
         RedisStreamConsumer candidateConsumer = null;
+        RedisChatTransport candidateChat = null;
         try {
             candidatePublisher = new RedisStreamPublisher(connectionConfig);
             RedisConsumerConfig consumerConfig = new RedisConsumerConfig(
@@ -121,12 +126,22 @@ public final class RedisManager extends BaseManager {
                     dataSyncStream(), "$", this::consumeDatabaseSync,
                     failure -> plugin.getLogger().log(Level.SEVERE,
                             "Redis database-sync consumer failure", failure));
+            RedisConsumerConfig chatConsumerConfig = new RedisConsumerConfig(
+                    RedisGroupNames.chat(configuredGroupPrefix, instanceId), instanceId, 64,
+                    Duration.ofMillis(configuredBlockTimeoutMillis),
+                    Duration.ofMillis(configuredReclaimIdleMillis), configuredMaxDeliveries);
+            candidateChat = new RedisChatTransport(connectionConfig, chatConsumerConfig,
+                    this::receiveChat, failure -> plugin.getLogger().log(Level.WARNING,
+                    "Redis cross-server chat consumer failure", failure));
             RedisStreamPublisher connectedPublisher = candidatePublisher;
             RedisStreamConsumer connectedConsumer = candidateConsumer;
+            RedisChatTransport connectedChat = candidateChat;
             candidatePublisher.ping().thenCompose(ignored -> connectedConsumer.start())
+                    .thenCompose(ignored -> connectedChat.start())
                     .whenComplete((ignored, failure) -> finishConnectionAttempt(
-                            connectedPublisher, connectedConsumer, failure));
+                            connectedPublisher, connectedConsumer, connectedChat, failure));
         } catch (RuntimeException failure) {
+            close(candidateChat);
             close(candidateConsumer);
             close(candidatePublisher);
             connectionAttemptFailed(failure);
@@ -135,8 +150,10 @@ public final class RedisManager extends BaseManager {
     }
 
     private synchronized void finishConnectionAttempt(RedisStreamPublisher connectedPublisher,
-                                                       RedisStreamConsumer connectedConsumer, Throwable failure) {
+                                                       RedisStreamConsumer connectedConsumer,
+                                                       RedisChatTransport connectedChat, Throwable failure) {
         if (failure != null || stopping.get()) {
+            close(connectedChat);
             close(connectedConsumer);
             close(connectedPublisher);
             if (failure != null && !stopping.get()) connectionAttemptFailed(failure);
@@ -145,6 +162,7 @@ public final class RedisManager extends BaseManager {
         }
         publisher = connectedPublisher;
         syncConsumer = connectedConsumer;
+        chatTransport = connectedChat;
         connectionFailures.set(0);
         ready.set(true);
         connecting.set(false);
@@ -152,7 +170,8 @@ public final class RedisManager extends BaseManager {
         if (connectionRetryTask != null) connectionRetryTask.cancel();
         flushPendingPublications();
         plugin.getLogger().info(Utils.formatModuleLog("Redis", "启动",
-                "实例=" + instanceId + " 数据同步流=" + dataSyncStream()));
+                "实例=" + instanceId + " 数据同步流=" + dataSyncStream()
+                        + " 聊天流=" + RedisChatTransport.stream(connectionConfig)));
     }
 
     private void connectionAttemptFailed(Throwable failure) {
@@ -173,6 +192,24 @@ public final class RedisManager extends BaseManager {
 
     public String instanceId() {
         return instanceId;
+    }
+
+    public void setChatReceiver(Consumer<CrossServerChatMessage> receiver) {
+        chatReceiver = receiver == null ? ignored -> { } : receiver;
+    }
+
+    public void publishChat(CrossServerChatMessage message) {
+        RedisChatTransport current = chatTransport;
+        if (!ready.get() || current == null) return;
+        current.publish(message).exceptionally(failure -> {
+            plugin.getLogger().log(Level.WARNING,
+                    "Unable to publish cross-server chat message " + message.messageId(), failure);
+            return null;
+        });
+    }
+
+    private void receiveChat(CrossServerChatMessage message) {
+        chatReceiver.accept(message);
     }
 
     public void publishDatabaseChange(@NotNull String reason, @NotNull DatabaseSyncDomain first,
@@ -339,9 +376,11 @@ public final class RedisManager extends BaseManager {
         matchConsumers.clear();
         for (RedisMatchTransport transport : matchTransports.values()) transport.close();
         matchTransports.clear();
+        if (chatTransport != null) chatTransport.close();
         if (syncConsumer != null) syncConsumer.close();
         if (publisher != null) publisher.close();
         syncConsumer = null;
+        chatTransport = null;
         publisher = null;
     }
 

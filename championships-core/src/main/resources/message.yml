@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 34
+  version: 36
 no-permission: "&#bababa[&#ff6b26管理&#bababa]&#ededed 权限不足"
 server-full: "服务器已经满人！"
 command:
@@ -11,6 +11,11 @@ command:
   catalog-player: "&#fff566玩家功能"
   catalog-admin: "&#ff6b26赛事与管理"
   catalog-row: "&#bababa•&#ededed %usage%&#696969 —&#bababa %description%"
+chat:
+  team:
+    prefix: "&#bababa[&#24abff队伍&#bababa]&r "
+    usage: "&#bababa[&#ff6b26队伍&#bababa]&#ededed 用法 &#696969•&#ededed /teammsg <消息>"
+    unavailable: "&#bababa[&#ff6b26队伍&#bababa]&#ededed 你当前不在队伍中"
 daily:
   prefix: "&#bababa[&#31e061游戏大厅&#bababa]&r "
   mode:
@@ -248,7 +253,7 @@ bingo:
   game-end: "&#fff566宾果 &#bababa•&#ededed 本场结束，正在结算积分"
   game-end-title: "&#fff566&l宾果"
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
-  action-bar-count-down: "&#fff566宾果 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
+  action-bar-count-down: "&#fff566宾果 &#bababa•&#ededed 剩余 &#ff6b26%time%"
   pvp-protection: "&#31e061PvP保护&#ededed%time%秒"
   pvp-active: "&#ff6b26PvP已开启"
   pvp-start-count-down: "&#fff566宾果 &#bababa•&#ededed PvP将在&#ff6b26%time%秒&#ededed后开启"

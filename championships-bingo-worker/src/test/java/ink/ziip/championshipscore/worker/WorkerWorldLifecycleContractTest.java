@@ -27,16 +27,19 @@ class WorkerWorldLifecycleContractTest {
     @Test
     void waitingPhaseStopsEnvironmentalProgressAndDrops() throws IOException {
         String controller = source("WorkerWorldController.java");
+        String rules = Files.readString(Path.of("../championships-platform-bukkit/src/main/java/ink/ziip/"
+                + "championshipscore/platform/bukkit/bingo/BingoWorldRules.java"));
 
-        assertTrue(controller.contains("GameRules.ADVANCE_TIME, running"));
-        assertTrue(controller.contains("GameRules.ADVANCE_WEATHER, running"));
-        assertTrue(controller.contains("GameRules.SPAWN_MOBS, running"));
-        assertTrue(controller.contains("GameRules.SPAWNER_BLOCKS_WORK, running"));
-        assertTrue(controller.contains("GameRules.MOB_GRIEFING, running"));
-        assertTrue(controller.contains("GameRules.RANDOM_TICK_SPEED, running ? NORMAL_RANDOM_TICK_SPEED : 0"));
-        assertTrue(controller.contains("GameRules.MOB_DROPS, running"));
-        assertTrue(controller.contains("GameRules.ENTITY_DROPS, running"));
-        assertTrue(controller.contains("GameRules.BLOCK_DROPS, running"));
+        assertTrue(controller.contains("BingoWorldRules.applyPhase(world"));
+        assertTrue(rules.contains("GameRules.ADVANCE_TIME, running"));
+        assertTrue(rules.contains("GameRules.ADVANCE_WEATHER, running"));
+        assertTrue(rules.contains("GameRules.SPAWN_MOBS, running"));
+        assertTrue(rules.contains("GameRules.SPAWNER_BLOCKS_WORK, running"));
+        assertTrue(rules.contains("GameRules.MOB_GRIEFING, running"));
+        assertTrue(rules.contains("GameRules.RANDOM_TICK_SPEED, running ? NORMAL_RANDOM_TICK_SPEED : 0"));
+        assertTrue(rules.contains("GameRules.MOB_DROPS, running"));
+        assertTrue(rules.contains("GameRules.ENTITY_DROPS, running"));
+        assertTrue(rules.contains("GameRules.BLOCK_DROPS, running"));
     }
 
     @Test

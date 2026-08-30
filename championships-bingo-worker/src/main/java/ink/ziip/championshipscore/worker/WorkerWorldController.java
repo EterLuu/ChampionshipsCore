@@ -1,9 +1,7 @@
 package ink.ziip.championshipscore.worker;
 
-import org.bukkit.Difficulty;
-import org.bukkit.GameRules;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
 import org.bukkit.World;
-import org.bukkit.entity.WanderingTrader;
 import org.bukkit.plugin.Plugin;
 
 import java.util.List;
@@ -19,9 +17,6 @@ import java.util.List;
  * begins.</p>
  */
 final class WorkerWorldController {
-    static final long START_TIME = 9000L;
-    static final int NORMAL_RANDOM_TICK_SPEED = 3;
-
     private final Plugin plugin;
     private final WorkerConfig config;
 
@@ -31,15 +26,7 @@ final class WorkerWorldController {
     }
 
     void configureAndFreeze(World world) {
-        world.setDifficulty(Difficulty.NORMAL);
-        world.setAutoSave(true);
-        world.setGameRule(GameRules.SPECTATORS_GENERATE_CHUNKS, false);
-        world.setGameRule(GameRules.KEEP_INVENTORY, true);
-        world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
-        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-        world.setGameRule(GameRules.SHOW_DEATH_MESSAGES, false);
-        world.setGameRule(GameRules.PVP, true);
-        world.setGameRule(GameRules.LOCATOR_BAR, false);
+        BingoWorldRules.configure(world);
         apply(world, Phase.WAITING);
     }
 
@@ -71,34 +58,9 @@ final class WorkerWorldController {
     }
 
     private void apply(World world, Phase phase) {
-        boolean running = phase == Phase.RUNNING;
-        world.setSpawnFlags(running, running);
-        world.setGameRule(GameRules.ADVANCE_TIME, running);
-        world.setGameRule(GameRules.ADVANCE_WEATHER, running);
-        world.setGameRule(GameRules.SPAWN_MOBS, running);
-        world.setGameRule(GameRules.SPAWN_MONSTERS, running);
-        world.setGameRule(GameRules.SPAWN_PATROLS, running);
-        world.setGameRule(GameRules.SPAWN_PHANTOMS, running);
-        // Wandering traders have no role in Bingo and make the shared worlds accumulate
-        // persistent entities between matches. Keep them disabled in both phases.
-        world.setGameRule(GameRules.SPAWN_WANDERING_TRADERS, false);
-        for (WanderingTrader trader : world.getEntitiesByClass(WanderingTrader.class)) {
-            trader.remove();
-        }
-        world.setGameRule(GameRules.SPAWN_WARDENS, running);
-        world.setGameRule(GameRules.SPAWNER_BLOCKS_WORK, running);
-        world.setGameRule(GameRules.RAIDS, running);
-        world.setGameRule(GameRules.MOB_GRIEFING, running);
-        world.setGameRule(GameRules.RANDOM_TICK_SPEED, running ? NORMAL_RANDOM_TICK_SPEED : 0);
-        world.setGameRule(GameRules.MOB_DROPS, running);
-        world.setGameRule(GameRules.ENTITY_DROPS, running);
-        world.setGameRule(GameRules.BLOCK_DROPS, running);
-
-        if (!running && world.getName().equals(config.overworld())) {
-            world.setTime(START_TIME);
-            world.setStorm(false);
-            world.setThundering(false);
-        }
+        BingoWorldRules.applyPhase(world,
+                phase == Phase.RUNNING ? BingoWorldRules.Phase.RUNNING : BingoWorldRules.Phase.WAITING,
+                world.getName().equals(config.overworld()));
     }
 
     enum Phase {

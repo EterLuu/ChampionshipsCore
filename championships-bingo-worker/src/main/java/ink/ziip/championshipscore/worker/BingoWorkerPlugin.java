@@ -1,8 +1,9 @@
 package ink.ziip.championshipscore.worker;
 
-import ink.ziip.championshipscore.platform.bukkit.proxy.PluginMessagePlayerRouter;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoPortalRouter;
+import ink.ziip.championshipscore.platform.bukkit.proxy.PluginMessagePlayerRouter;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.redis.RedisMatchConsumer;
 import ink.ziip.championshipscore.redis.RedisMatchTransport;
 import org.bukkit.World;
@@ -27,6 +28,7 @@ public final class BingoWorkerPlugin extends JavaPlugin {
     private PlatformScheduler scheduler;
     private WorkerChampionshipPlaceholder placeholder;
     private WorkerWorldController worlds;
+    private WorkerChatService chat;
 
     @Override
     public void onEnable() {
@@ -62,10 +64,12 @@ public final class BingoWorkerPlugin extends JavaPlugin {
             outbox.initialize();
             router = new PluginMessagePlayerRouter(this, workerConfig.proxyChannel());
             returnRouter = new WorkerReturnRouter(this, router, workerConfig.returnServer());
-            registry = new WorkerMatchRegistry(this, workerConfig, outbox, returnRouter, worlds);
+            registry = new WorkerMatchRegistry(this, workerConfig, outbox, returnRouter, worlds,
+                    NativeTeamService.mainScoreboard());
+            chat = new WorkerChatService(this, workerConfig, registry);
             if (getCommand("cc") != null) getCommand("cc").setExecutor(new WorkerPlayCommand(registry));
             registerPlaceholderApi();
-            getServer().getPluginManager().registerEvents(new WorkerListener(this, registry), this);
+            getServer().getPluginManager().registerEvents(new WorkerListener(this, registry, chat), this);
             getServer().getPluginManager().registerEvents(new BingoPortalRouter(workerConfig.overworld(),
                     workerConfig.nether(), workerConfig.end()), this);
             consumer = new RedisMatchConsumer(workerConfig.redis(), workerConfig.consumer(),
@@ -82,6 +86,11 @@ public final class BingoWorkerPlugin extends JavaPlugin {
                     if (replayed > 0) getLogger().info("Replayed durable Bingo events: " + replayed);
                     return consumer.start();
                 })
+                .thenCompose(ignored -> chat.start().exceptionally(failure -> {
+                    getLogger().log(Level.WARNING,
+                            "Cross-server chat bridge is unavailable; Bingo matches remain enabled", failure);
+                    return null;
+                }))
                 .whenComplete((ignored, failure) -> {
                     if (failure == null) {
                         getLogger().info("Bingo worker ready: " + workerConfig.workerId());
@@ -134,6 +143,7 @@ public final class BingoWorkerPlugin extends JavaPlugin {
         if (placeholder != null) placeholder.unregister();
         placeholder = null;
         if (consumer != null) consumer.close();
+        if (chat != null) chat.close();
         if (returnRouter != null) returnRouter.close();
         if (router != null) router.close();
         if (scheduler != null) scheduler.cancelGlobalAndAsyncTasks();

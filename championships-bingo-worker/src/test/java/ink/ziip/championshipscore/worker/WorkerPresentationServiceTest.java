@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class WorkerPresentationServiceTest {
     @Test
@@ -36,10 +37,10 @@ class WorkerPresentationServiceTest {
     @Test
     void coreOwnedTemplateSurvivesPlaceholderResolution() {
         BingoPresentation presentation = new BingoPresentation(Map.of(
-                "timer", "&#fff566宾果 &#bababa• &#ededed剩余 &#ff6b26%time%s"));
+                "timer", "&#fff566宾果 &#bababa• &#ededed剩余 &#ff6b26%time%"));
         String plain = PlainTextComponentSerializer.plainText().serialize(
-                WorkerPresentationService.message(presentation, "timer", "%time%", "599"));
-        assertEquals("宾果 • 剩余 599s", plain);
+                WorkerPresentationService.message(presentation, "timer", "%time%", "09:59"));
+        assertEquals("宾果 • 剩余 09:59", plain);
     }
 
     @Test
@@ -60,8 +61,8 @@ class WorkerPresentationServiceTest {
     }
 
     @Test
-    void sidebarStatusFallsBackForOlderManifests() {
-        assertEquals("进行中", WorkerPresentationService.sidebarStatus(
+    void sidebarStatusRejectsIncompleteManifestPresentation() {
+        assertThrows(IllegalArgumentException.class, () -> WorkerPresentationService.sidebarStatus(
                 new BingoPresentation(Map.of()), MatchState.RUNNING));
     }
 

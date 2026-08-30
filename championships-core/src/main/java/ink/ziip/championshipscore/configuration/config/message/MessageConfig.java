@@ -21,13 +21,13 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 34;
+        return 36;
     }
 
     /** Replace every player-facing section so v30's terminology and spacing stay consistent at runtime. */
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) throws IOException {
-        for (String section : List.of("command", "team", "member", "reason", "area", "rank", "spectator", "game",
+        for (String section : List.of("command", "chat", "team", "member", "reason", "area", "rank", "spectator", "game",
                 "battlebox", "parkourtag", "skywars", "tgttos", "bingo", "buildmart", "tntrun",
                 "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky", "acerace", "daily", "vote"))
             outdatedConfiguration.set(section, null);
@@ -67,6 +67,16 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "command.catalog-row")
     public static String COMMAND_CATALOG_ROW;
+
+    // Chat
+    @ConfigOption(path = "chat.team.prefix")
+    public static String CHAT_TEAM_PREFIX;
+
+    @ConfigOption(path = "chat.team.usage")
+    public static String CHAT_TEAM_USAGE;
+
+    @ConfigOption(path = "chat.team.unavailable")
+    public static String CHAT_TEAM_UNAVAILABLE;
 
     // Free play
     @ConfigOption(path = "daily.prefix") public static String DAILY_PREFIX;

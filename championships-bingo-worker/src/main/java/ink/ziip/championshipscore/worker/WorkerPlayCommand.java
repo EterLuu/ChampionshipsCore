@@ -1,7 +1,5 @@
 package ink.ziip.championshipscore.worker;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -21,16 +19,13 @@ final class WorkerPlayCommand implements CommandExecutor {
                              @NotNull String label, @NotNull String[] args) {
         if (args.length >= 2 && args[0].equalsIgnoreCase("game") && args[1].equalsIgnoreCase("stop")) {
             if (!sender.hasPermission("cc.admin")) {
-                sender.sendMessage(Component.text("[Bingo] ", NamedTextColor.AQUA)
-                        .append(Component.text("你没有权限执行该指令。", NamedTextColor.RED)));
+                registry.sendConfiguredMessage(sender, "worker.command.no-permission");
                 return true;
             }
             if (args.length == 3 && args[2].equalsIgnoreCase("--confirm")) {
                 registry.requestAdminStop(sender);
             } else {
-                sender.sendMessage(Component.text("[Bingo] ", NamedTextColor.AQUA)
-                        .append(Component.text("用法：/cc game stop --confirm（结束当前比赛并按成绩结算）",
-                                NamedTextColor.GRAY)));
+                registry.sendConfiguredMessage(sender, "worker.command.admin-stop-usage");
             }
             return true;
         }
@@ -46,20 +41,14 @@ final class WorkerPlayCommand implements CommandExecutor {
     private void sendHelp(CommandSender sender) {
         WorkerMatchSession session = registry.activeSession();
         if (session == null || session.state().terminal()) {
-            sender.sendMessage(Component.text("[Bingo] ", NamedTextColor.AQUA)
-                    .append(Component.text("当前没有进行中的比赛。", NamedTextColor.GRAY)));
+            registry.sendConfiguredMessage(sender, "worker.command.no-active-match");
         } else if (session.eventMode()) {
-            sender.sendMessage(Component.text("[赛事] ", NamedTextColor.GOLD)
-                    .append(Component.text("正式赛事进行中，比赛结束后将自动返回大厅。", NamedTextColor.GRAY)));
+            registry.sendConfiguredMessage(sender, "worker.command.event-active");
         } else {
-            sender.sendMessage(Component.text("[自由游玩] ", NamedTextColor.GREEN)
-                    .append(Component.text("请使用 ", NamedTextColor.GRAY))
-                    .append(Component.text("/cc play leave", NamedTextColor.YELLOW))
-                    .append(Component.text(" 离开当前游戏。", NamedTextColor.GRAY)));
+            registry.sendConfiguredMessage(sender, "worker.command.free-play-help");
         }
         if (sender.hasPermission("cc.admin")) {
-            sender.sendMessage(Component.text("[Bingo] ", NamedTextColor.AQUA)
-                    .append(Component.text("管理员：/cc game stop --confirm 结束当前比赛。", NamedTextColor.GRAY)));
+            registry.sendConfiguredMessage(sender, "worker.command.admin-stop-help");
         }
     }
 }

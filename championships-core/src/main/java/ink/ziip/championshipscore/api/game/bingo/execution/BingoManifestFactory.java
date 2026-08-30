@@ -162,6 +162,9 @@ public final class BingoManifestFactory {
         messages.put("bingo.game-winner", MessageConfig.BINGO_GAME_WINNER);
         messages.put("papi.none", MessageConfig.PLACEHOLDER_NONE);
         messages.put("papi.spectator", MessageConfig.PLACEHOLDER_SPECTATOR);
+        messages.put("chat.team.prefix", MessageConfig.CHAT_TEAM_PREFIX);
+        messages.put("chat.team.usage", MessageConfig.CHAT_TEAM_USAGE);
+        messages.put("chat.team.unavailable", MessageConfig.CHAT_TEAM_UNAVAILABLE);
         messages.put("sidebar.status.waiting", MessageConfig.AREA_STATUS_WAITING);
         messages.put("sidebar.status.loading", MessageConfig.AREA_STATUS_LOADING);
         messages.put("sidebar.status.preparation", MessageConfig.AREA_STATUS_PREPARATION);
@@ -173,11 +176,18 @@ public final class BingoManifestFactory {
                 "card.completed_by", "card.completed_at", "card.occupied_by", "compass.item_name",
                 "compass.item_hint", "compass.menu_title", "compass.teammate_hint",
                 "compass.no_teammates", "compass.target_offline", "compass.teleport_success",
+                "remix.blind-revealed", "remix.finale-locked", "remix.variation-refreshed",
+                "worker.command.no-permission", "worker.command.admin-stop-usage",
+                "worker.command.no-active-match", "worker.command.event-active",
+                "worker.command.free-play-help", "worker.command.admin-stop-help",
+                "worker.play.leave.not-playing", "worker.play.leave.event-denied",
+                "worker.play.leave.started", "worker.admin.stop.no-active-match",
+                "worker.admin.stop.started",
                 "spectator.teleport.name", "spectator.teleport.hint", "spectator.teleport.menu_title",
                 "spectator.teleport.player", "spectator.teleport.team", "spectator.teleport.click",
                 "spectator.teleport.none", "spectator.speed.name", "spectator.speed.faster",
                 "spectator.speed.slower", "spectator.speed.feedback",
-                "board.title", "board.separator", "board.current_game", "board.remaining_time",
+                "board.title", "board.separator", "board.current_game", "board.current_status", "board.remaining_time",
                 "board.status_waiting", "board.status_preparing", "board.status_finished",
                 "board.teams_header", "board.team_score", "board.own_team_score", "board.footer")) {
             messages.put(key, lang.tr(key));

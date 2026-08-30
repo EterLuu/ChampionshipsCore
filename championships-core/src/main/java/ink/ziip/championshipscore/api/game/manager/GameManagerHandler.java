@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.GameMode;
 import org.bukkit.World;
@@ -18,7 +19,6 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.potion.PotionEffect;
 
 import java.util.UUID;
 import java.util.logging.Level;
@@ -132,9 +132,7 @@ public class GameManagerHandler extends BaseListener {
         // carried over from a previous/crashed game don't follow them into the lobby. Participants and
         // spectators are dispatched above and never reach here, so active game state is never touched.
         player.getInventory().clear();
-        for (PotionEffect potionEffect : player.getActivePotionEffects()) {
-            player.removePotionEffect(potionEffect.getType());
-        }
+        PlayerStateService.clearEffects(player);
 
         World world = player.getWorld();
         if (!lobbyAvailable()) {

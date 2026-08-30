@@ -19,16 +19,16 @@ final class WorkerChampionshipPlaceholderValues {
 
     static String resolve(PlayerSnapshot player, TeamSnapshot team, BingoPresentation presentation,
                           String params, boolean daily) {
-        String none = presentation.messages().getOrDefault("papi.none", "无");
-        String spectator = presentation.messages().getOrDefault("papi.spectator", "旁观");
+        String none = presentation.message("papi.none");
+        String spectator = presentation.message("papi.spectator");
         if (params.equals("tab_prefix")) {
             if (player != null && player.role() == ParticipantRole.PLAYER) {
                 return ChampionshipTabText.gamePrefix(
-                        presentation.messages().getOrDefault("game.name", "宾果时速"));
+                        presentation.message("game.name"));
             }
             String name = team == null
                     ? daily && player != null && player.role() == ParticipantRole.SPECTATOR
-                    ? "&6" + presentation.messages().getOrDefault("game.name", "宾果时速") : spectator
+                    ? "&6" + presentation.message("game.name") : spectator
                     : LegacyText.translateColorCodes(team.colorCode() + team.name());
             return ChampionshipTabText.bracketedPrefix(name);
         }
@@ -40,7 +40,7 @@ final class WorkerChampionshipPlaceholderValues {
             if (daily && team != null)
                 return ChampionshipTabText.dailyTeamFooter(LegacyText.translateColorCodes(team.colorCode() + team.name()));
             if (daily)
-                return ChampionshipTabText.currentGameFooter(presentation.messages().getOrDefault("game.name", "宾果时速"));
+                return ChampionshipTabText.currentGameFooter(presentation.message("game.name"));
             String name = team == null ? spectator : LegacyText.translateColorCodes(team.colorCode() + team.name());
             return ChampionshipTabText.teamFooter(name, team == null ? 0D : team.points());
         }

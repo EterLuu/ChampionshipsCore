@@ -4,13 +4,14 @@ import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent
 import io.papermc.paper.event.entity.EntityCompostItemEvent;
 import io.papermc.paper.event.entity.EntityInsideBlockEvent;
 import io.papermc.paper.event.player.PlayerShieldDisableEvent;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoNameTagObjective;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
-import ink.ziip.championshipscore.platform.bukkit.text.ChampionshipTabText;
+import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
+import ink.ziip.championshipscore.platform.bukkit.text.TeamChatCommandParser;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -71,6 +72,7 @@ import org.bukkit.event.player.PlayerItemBreakEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -113,43 +115,60 @@ final class WorkerListener implements Listener {
 
     private final WorkerMatchRegistry registry;
     private final PlatformScheduler scheduler;
+    private final WorkerChatService chat;
     private UUID lastPumpkinPlacer;
     private Location lastPumpkinLocation;
     private long lastPumpkinPlacedAt;
     private final Map<UUID, Long> recentBrushUses = new ConcurrentHashMap<>();
 
-    WorkerListener(Plugin plugin, WorkerMatchRegistry registry) {
+    WorkerListener(Plugin plugin, WorkerMatchRegistry registry, WorkerChatService chat) {
         this.registry = registry;
         this.scheduler = new PlatformScheduler(plugin);
+        this.chat = chat;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        WorkerPlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
+        PlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
         event.joinMessage(Component.translatable("multiplayer.player.joined",
-                ChampionshipTabText.playerIdentityComponent(presentation.label(), presentation.teamColorCode(),
-                        presentation.activePlayer(), player.getName())));
+                presentation.identity(player.getName())));
         registry.onJoin(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        WorkerPlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
+        PlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
         event.quitMessage(Component.translatable("multiplayer.player.left",
-                ChampionshipTabText.playerIdentityComponent(presentation.label(), presentation.teamColorCode(),
-                        presentation.activePlayer(), player.getName())));
+                presentation.identity(player.getName())));
         registry.onQuit(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
-        WorkerPlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
+        PlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
         event.renderer((source, sourceDisplayName, message, viewer) ->
-                ChampionshipTabText.chatLine(presentation.label(), presentation.teamColorCode(),
-                        presentation.activePlayer(), player.getName(), message));
+                presentation.chatLine(player.getName(), message));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void publishCrossServerChat(AsyncChatEvent event) {
+        chat.publish(event.getPlayer(), event.message());
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onTeamMessageCommand(PlayerCommandPreprocessEvent event) {
+        if (registry.nativeTeamMutationSupported()) return;
+        String message = TeamChatCommandParser.messageBody(event.getMessage());
+        if (message == null) return;
+        event.setCancelled(true);
+        if (message.isEmpty()) {
+            registry.sendConfiguredMessage(event.getPlayer(), "chat.team.usage");
+            return;
+        }
+        registry.sendTeamMessage(event.getPlayer(), Component.text(message));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -300,19 +319,8 @@ final class WorkerListener implements Listener {
             registry.observeEventSignal(player, "use_golden_dandelion", "");
             return;
         }
-        if (item.getType() != Material.NAME_TAG || !item.hasItemMeta()) return;
-        String name = ChatColor.stripColor(item.getItemMeta().getDisplayName());
-        String normalized = name == null ? "" : name.toLowerCase(java.util.Locale.ROOT);
-        EntityType target = event.getRightClicked().getType();
-        if (target == EntityType.SHEEP && normalized.contains("jeb_")) {
-            registry.observeEventSignal(player, "name", "SHEEP_JEB");
-        } else if (target == EntityType.IRON_GOLEM
-                && (normalized.contains("dinnerbone") || normalized.contains("grumm"))) {
-            registry.observeEventSignal(player, "name", "IRON_GOLEM_DINNERBONE");
-        } else if (target == EntityType.GHAST
-                && (normalized.contains("dinnerbone") || normalized.contains("grumm"))) {
-            registry.observeEventSignal(player, "name", "GHAST_DINNERBONE");
-        }
+        String objective = BingoNameTagObjective.match(item, event.getRightClicked().getType());
+        if (objective != null) registry.observeEventSignal(player, "name", objective);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

@@ -9,7 +9,10 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
-import ink.ziip.championshipscore.platform.bukkit.text.ChampionshipTabText;
+import ink.ziip.championshipscore.platform.bukkit.text.CrossServerChatText;
+import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
+import ink.ziip.championshipscore.platform.bukkit.text.TeamChatCommandParser;
+import ink.ziip.championshipscore.protocol.CrossServerChatMessage;
 import ink.ziip.championshipscore.util.Utils;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
@@ -24,12 +27,14 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 
 public class PlayerListener extends BaseListener {
     private final AtomicInteger onlinePlayerCount;
@@ -43,26 +48,79 @@ public class PlayerListener extends BaseListener {
             if (recipe instanceof Keyed keyedRecipe) discovered.add(keyedRecipe.getKey());
         });
         recipeKeys = Set.copyOf(discovered);
+        plugin.getRedisManager().setChatReceiver(this::receiveCrossServerChat);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
         PlayerPresentation presentation = presentation(player);
-        final Component messageOverride;
-        if (player.hasPermission(ChampionshipPermissions.REFEREE)) {
-            // Referees may colour their own message; identity still follows the same contract as TAB.
-            String typed = PlainTextComponentSerializer.plainText().serialize(event.message());
-            messageOverride = Utils.toComponent("&f" + typed);
-        } else {
-            messageOverride = null;
-        }
+        Component messageOverride = refereeMessage(player, event.message());
 
         event.renderer((source, sourceDisplayName, message, viewer) -> {
             Component actualMessage = messageOverride != null ? messageOverride : message;
-            return ChampionshipTabText.chatLine(presentation.label(), presentation.teamColorCode(),
-                    presentation.activePlayer(), player.getName(), actualMessage);
+            return presentation.chatLine(player.getName(), actualMessage);
         });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void publishCrossServerChat(AsyncChatEvent event) {
+        if (!plugin.getRedisManager().isReady()) return;
+        String sourceInstance = plugin.getRedisManager().instanceId();
+        if (sourceInstance == null || sourceInstance.isBlank()) return;
+        Player player = event.getPlayer();
+        PlayerPresentation presentation = presentation(player);
+        Component override = refereeMessage(player, event.message());
+        Component message = override == null ? event.message() : override;
+        plugin.getRedisManager().publishChat(CrossServerChatText.message(sourceInstance,
+                player.getUniqueId(), player.getName(), presentation, message, System.currentTimeMillis()));
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onTeamMessageCommand(PlayerCommandPreprocessEvent event) {
+        String message = TeamChatCommandParser.messageBody(event.getMessage());
+        if (message == null) return;
+        event.setCancelled(true);
+        Player sender = event.getPlayer();
+        if (message.isEmpty()) {
+            sender.sendMessage(Utils.toComponent(MessageConfig.CHAT_TEAM_USAGE));
+            return;
+        }
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(sender);
+        if (team == null) {
+            sender.sendMessage(Utils.toComponent(MessageConfig.CHAT_TEAM_UNAVAILABLE));
+            return;
+        }
+        PlayerPresentation presentation = presentation(sender);
+        Component line = Utils.toComponent(MessageConfig.CHAT_TEAM_PREFIX)
+                .append(presentation.chatLine(sender.getName(), Component.text(message)));
+        team.getOnlinePlayers().forEach(player -> player.sendMessage(line));
+    }
+
+    private Component refereeMessage(Player player, Component message) {
+        if (!player.hasPermission(ChampionshipPermissions.REFEREE)) return null;
+        // Referees may colour their own message; identity still follows the same contract as TAB.
+        String typed = PlainTextComponentSerializer.plainText().serialize(message);
+        return Utils.toComponent("&f" + typed);
+    }
+
+    private void receiveCrossServerChat(CrossServerChatMessage message) {
+        final Component line;
+        try {
+            line = CrossServerChatText.render(message);
+        } catch (RuntimeException malformed) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Rejected malformed cross-server chat component " + message.messageId(), malformed);
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            plugin.getServer().getOnlinePlayers().forEach(player -> player.sendMessage(line));
+            plugin.getServer().getConsoleSender().sendMessage(line);
+        });
+    }
+
+    void detachChatReceiver() {
+        plugin.getRedisManager().setChatReceiver(null);
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
@@ -104,8 +162,7 @@ public class PlayerListener extends BaseListener {
         playerManager.updatePlayer(player);
         PlayerPresentation presentation = presentation(player);
         event.joinMessage(Component.translatable("multiplayer.player.joined",
-                ChampionshipTabText.playerIdentityComponent(presentation.label(), presentation.teamColorCode(),
-                        presentation.activePlayer(), player.getName())));
+                presentation.identity(player.getName())));
 
         // Let normal join/teleport notices finish first, then restore a recent result that may have
         // been missed while this player was disconnected.
@@ -123,8 +180,7 @@ public class PlayerListener extends BaseListener {
         Player player = event.getPlayer();
         PlayerPresentation presentation = presentation(player);
         event.quitMessage(Component.translatable("multiplayer.player.left",
-                ChampionshipTabText.playerIdentityComponent(presentation.label(), presentation.teamColorCode(),
-                        presentation.activePlayer(), player.getName())));
+                presentation.identity(player.getName())));
     }
 
     private PlayerPresentation presentation(Player player) {
@@ -145,9 +201,6 @@ public class PlayerListener extends BaseListener {
         String label = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
         return new PlayerPresentation(label, team == null ? null : team.getColorCode(),
                 playerArea != null && team != null);
-    }
-
-    private record PlayerPresentation(String label, String teamColorCode, boolean activePlayer) {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

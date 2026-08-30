@@ -1,12 +1,13 @@
 package ink.ziip.championshipscore.util;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
@@ -20,7 +21,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -198,33 +198,12 @@ public class Utils {
      * against the 16 named colours directly, falling back to white.
      */
     public static NamedTextColor toNamedTextColor(@NotNull String color) {
-        switch (color.toLowerCase(Locale.ROOT)) {
-            case "green": return NamedTextColor.DARK_GREEN;
-            case "brown": return NamedTextColor.DARK_RED;
-            case "lime": return NamedTextColor.DARK_AQUA;
-            case "pink":
-            case "magenta": return NamedTextColor.LIGHT_PURPLE;
-            case "light_blue": return NamedTextColor.AQUA;
-            case "cyan": return NamedTextColor.GREEN;
-            case "purple": return NamedTextColor.DARK_PURPLE;
-            case "orange": return NamedTextColor.GOLD;
-            case "black":
-            case "gray": return NamedTextColor.DARK_GRAY;
-            case "light_gray": return NamedTextColor.GRAY;
-            default:
-                NamedTextColor named = NamedTextColor.NAMES.value(color.toLowerCase(Locale.ROOT));
-                return named != null ? named : NamedTextColor.WHITE;
-        }
+        return NativeTeamService.resolveNamedColor(color);
     }
 
     /** Uses an exact Minecraft named colour from the configured hex code when one exists. */
     public static NamedTextColor toNamedTextColor(@NotNull String color, @Nullable String colorCode) {
-        TextColor parsed = colorCode == null ? null : TextColor.fromHexString(colorCode);
-        if (parsed != null) {
-            NamedTextColor exact = NamedTextColor.namedColor(parsed.value());
-            if (exact != null) return exact;
-        }
-        return toNamedTextColor(color);
+        return NativeTeamService.resolveNamedColor(color, colorCode);
     }
 
     public static String[] getColorNames() {
@@ -251,8 +230,7 @@ public class Utils {
 
     /** Formats a non-negative number of seconds as a two-digit minutes/seconds clock. */
     public static String formatMinutesSeconds(long totalSeconds) {
-        long seconds = Math.max(0L, totalSeconds);
-        return String.format(Locale.ROOT, "%02d:%02d", seconds / 60L, seconds % 60L);
+        return DurationText.minutesSeconds(totalSeconds);
     }
 
     public static String getMessage(List<String> messages) {
