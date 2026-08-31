@@ -101,6 +101,12 @@
             <artifactId>annotations</artifactId>
             <version>26.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.13.2</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- SharedSidebar is part of the common Bukkit platform and must remain usable in the
              Paper artifact as well as the Folia worker. Both final jars shade their own copy. -->
         <dependency>

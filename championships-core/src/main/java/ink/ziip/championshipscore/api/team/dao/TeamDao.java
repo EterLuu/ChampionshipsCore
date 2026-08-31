@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.team.dao;
 
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
+import ink.ziip.championshipscore.api.team.entry.TeamImportEntry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,4 +35,7 @@ public interface TeamDao {
 
     /** Atomically removes every alias of this player from old teams and inserts the target membership. */
     boolean moveTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username);
+
+    /** Replaces the formal roster and starts a fresh event score epoch in one transaction. */
+    boolean replaceAllTeams(@NotNull List<TeamImportEntry> teams);
 }

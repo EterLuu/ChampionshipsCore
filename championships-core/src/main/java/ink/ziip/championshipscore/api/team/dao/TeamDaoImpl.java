@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.team.dao;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
+import ink.ziip.championshipscore.api.team.entry.TeamImportEntry;
 import ink.ziip.championshipscore.util.Utils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -308,6 +309,63 @@ public class TeamDaoImpl implements TeamDao {
             }
         } catch (SQLException | RuntimeException exception) {
             logFailure("迁移队伍成员", exception);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean replaceAllTeams(@NotNull List<TeamImportEntry> teams) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            connection.setAutoCommit(false);
+            try (Statement reset = connection.createStatement();
+                 PreparedStatement insertTeam = connection.prepareStatement("""
+                         INSERT INTO `teams` (`name`, `colorName`, `colorCode`) VALUES (?,?,?)
+                         """, Statement.RETURN_GENERATED_KEYS);
+                 PreparedStatement insertMember = connection.prepareStatement("""
+                         INSERT INTO `team_members` (`uuid`, `username`, `teamId`) VALUES (?,?,?)
+                         """)) {
+                // Keep the audit rows, but prevent a previous championship from contributing to this one.
+                reset.executeUpdate("UPDATE `player_points` SET `valid`=0 WHERE `valid`=1");
+                reset.executeUpdate("DELETE FROM `game_status`");
+                reset.executeUpdate("DELETE FROM `team_members`");
+                reset.executeUpdate("DELETE FROM `teams`");
+                for (TeamImportEntry imported : teams) {
+                    insertTeam.setString(1, imported.name());
+                    insertTeam.setString(2, imported.colorName());
+                    insertTeam.setString(3, imported.colorCode());
+                    if (insertTeam.executeUpdate() != 1) throw new SQLException("队伍未插入唯一记录: " + imported.name());
+                    int teamId;
+                    try (ResultSet keys = insertTeam.getGeneratedKeys()) {
+                        if (!keys.next()) throw new SQLException("队伍缺少自增 ID: " + imported.name());
+                        teamId = keys.getInt(1);
+                    }
+                    for (TeamImportEntry.Member member : imported.members()) {
+                        insertMember.setString(1, member.uuid().toString());
+                        insertMember.setString(2, member.username());
+                        insertMember.setInt(3, teamId);
+                        insertMember.addBatch();
+                    }
+                    int[] inserted = insertMember.executeBatch();
+                    if (Arrays.stream(inserted).anyMatch(count -> count != 1 && count != Statement.SUCCESS_NO_INFO))
+                        throw new SQLException("队伍成员批量插入不完整: " + imported.name());
+                }
+                connection.commit();
+                return true;
+            } catch (SQLException | RuntimeException failure) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+                throw failure;
+            } finally {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (SQLException ignored) {
+                }
+            }
+        } catch (SQLException | RuntimeException failure) {
+            logFailure("整表导入赛事队伍", failure);
             return false;
         }
     }

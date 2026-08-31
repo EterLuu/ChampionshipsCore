@@ -394,19 +394,21 @@ python3 scripts/buildmart_blueprint_audit.py <蓝图文件或目录> \
 
 ### 正式赛事建议流程
 
-1. `/cc admin vote start` 开放下一项目投票。
-2. 玩家使用 `/cc vote` 打开菜单，或使用 `/cc vote <配置名称>` 直接投票。
-3. `/cc admin vote end` 公布结果。
-4. 管理员执行 `/cc event start <游戏>` 启动常规正式赛程，或用 `/cc finale <游戏> start <场地>` 启动冠军决赛。
-5. 调度器广播项目介绍和积分规则，进行 10 秒倒计时。
-6. 游戏结束事件触发下一小轮；小轮之间默认等待 30 秒。
-7. 全部小轮结束后，调度器广播本项目积分和总榜，并将观众移出场地。
+1. 在 cc-web 完成赛事配置、报名和分队，切换为“比赛就绪”并生成 Core 导入链接。
+2. 执行 `/cc event teams import <cc-web链接> --confirm`，原子结束上一届积分并整体替换正式队伍。
+3. `/cc admin vote start` 开放下一项目投票；玩家使用 `/cc vote` 投票，随后 `/cc admin vote end` 公布结果。
+4. 管理员执行 `/cc event start <游戏>` 启动常规正式赛程；只能启动当前导入赛事游戏列表中的项目。冠军决赛仍使用 `/cc finale <游戏> start <场地>`。
+5. 调度器广播项目介绍和积分规则，进行 10 秒倒计时；游戏结束事件触发下一小轮，小轮之间默认等待 30 秒。
+6. 全部小轮结束后，调度器广播本项目积分和总榜，并将观众移出场地。
+7. 全部常规项目结算且无正式赛程运行后，执行 `/cc event archive --confirm` 上传团队和个人的完整逐游戏积分。
 
 ## 正式赛事命令
 
 | 命令 | 行为 |
 | --- | --- |
+| `/cc event teams import <cc-web链接> --confirm` | 校验并导入比赛就绪的赛事、固定羊毛色队伍和注册玩家；旧有效积分失效、旧轮次和队伍在同一数据库事务内清除 |
 | `/cc event start <游戏>` | 启动普通正式赛程；同一项目运行中再次执行会紧急停止 |
+| `/cc event archive --confirm` | 无正式赛程运行时，把当前赛事的团队/个人总分和逐游戏积分上传 cc-web 并标记已归档 |
 | `/cc finale dragoneggcarnival start <场地> [队伍1 队伍2]` | 在指定场地启动龙蛋狂欢决赛；未指定队伍时按总榜选择前二 |
 | `/cc finale dodgebolt start <场地> [队伍1 队伍2] [--force]` | 在指定场地启动躲避箭决赛；未指定队伍时按总榜选择前二，`--force` 允许使用在线子阵容 |
 | `/cc finale <游戏> cancel` | 取消决赛准备，或强制结束正在进行的正式决赛 |
@@ -420,7 +422,7 @@ python3 scripts/buildmart_blueprint_audit.py <蓝图文件或目录> \
 
 投票持续 120 秒，只允许已加入队伍的选手投票。已经记录为完成的游戏不能再次被投票；结束时插件按票数广播排行。
 
-每个场地在比赛中累计玩家积分，结束时写入数据库。`weighted-score.enabled` 开启后，总榜会同时应用游戏归一化权重和 `weighted-score.round-multipliers` 中对应正式比赛轮次的系数。`/cc rank info` 可查看各项目权重。
+每个场地在比赛中累计玩家积分，结束时写入数据库。`weighted-score.enabled` 开启后，总榜会应用游戏归一化权重；存在从 cc-web 导入的活动赛事时，再叠加该赛事的单游戏积分权重和轮次倍率。没有活动赛事时，轮次倍率回退到 `weighted-score.round-multipliers`。`/cc rank info` 可查看动态归一化权重。
 
 在正式赛事模式中开启 `strict-spectator-rule` 后，正常赛事轮次中的参赛队员不能随意观战；拥有 `cc.refuge` 的裁判或替补不受此限制。DAILY 模式始终跳过该判定。
 

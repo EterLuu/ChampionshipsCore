@@ -31,6 +31,8 @@ public final class CommandCatalog {
             new Entry("/cc game start <游戏> ...", "仅为指定队伍启动常规单局，不播报规则或自动调度观众"),
             new Entry("/cc game stop <游戏> <场地> <实例> --confirm", "精确结束一个运行实例；已开赛则正常结算"),
             new Entry("/cc event start <游戏>", "开始常规正式比赛并管理规则、观众和赛程；再次执行会紧急停止"),
+            new Entry("/cc event teams import <cc-web链接> --confirm", "清空旧赛事积分与队伍并导入比赛就绪的赛事"),
+            new Entry("/cc event archive --confirm", "把当前赛事完整团队与个人逐游戏积分归档到 cc-web"),
             new Entry("/cc event stop <游戏>", "显式停止正式比赛的赛程任务"),
             new Entry("/cc event reset|undo --confirm", "重置赛程或撤销最近正式比赛"),
             new Entry("/cc finale <游戏> start <场地> ...", "在指定场地启动已注册的冠军决赛"),

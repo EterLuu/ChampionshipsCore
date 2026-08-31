@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.player.identity.PlayerUuidLookupException;
 import ink.ziip.championshipscore.api.team.dao.TeamDaoImpl;
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
+import ink.ziip.championshipscore.api.team.entry.TeamImportEntry;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamOverlay;
@@ -119,6 +120,35 @@ public class TeamManager extends BaseManager {
                     pendingTeamNames.remove(normalizedName);
                     pendingTeamColors.remove(normalizedColor);
                 }
+            });
+        });
+        return result;
+    }
+
+    public CompletionStage<Boolean> replaceFormalTeams(@NotNull List<TeamImportEntry> teams) {
+        synchronized (cachedTeams) {
+            if (cachedTeams.values().stream().anyMatch(team -> plugin.getGameManager().getTeamCurrenArea(team) != null))
+                return CompletableFuture.completedFuture(false);
+        }
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        scheduler.runTaskAsynchronously(plugin, () -> {
+            boolean replaced = teamDaoImpl.replaceAllTeams(teams);
+            if (!replaced) {
+                result.complete(false);
+                return;
+            }
+            refreshFormalTeamsFromDatabase().whenComplete((ignored, failure) -> {
+                if (failure != null) {
+                    result.completeExceptionally(failure);
+                    return;
+                }
+                plugin.getRankManager().refreshFromDatabase().whenComplete((rankIgnored, rankFailure) -> {
+                    if (rankFailure != null) result.completeExceptionally(rankFailure);
+                    else {
+                        publishTeamChange("event-teams-imported");
+                        result.complete(true);
+                    }
+                });
             });
         });
         return result;

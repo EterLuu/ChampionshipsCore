@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.rank;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
+import ink.ziip.championshipscore.api.event.EventStateStore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.player.dao.PlayerDaoImpl;
@@ -65,6 +66,7 @@ public class RankManager extends BaseManager {
     private final AtomicBoolean rankTaskRunning = new AtomicBoolean();
     private final AtomicBoolean periodicRefreshPending = new AtomicBoolean();
     private final PendingPointTransactionStore pendingPointTransactions;
+    private volatile EventStateStore.ActiveEvent activeEvent;
     @Getter
     private List<Map.Entry<ChampionshipTeam, Double>> teamLeaderboard = new ArrayList<>();
     @Getter
@@ -84,6 +86,7 @@ public class RankManager extends BaseManager {
 
     @Override
     public void load() {
+        reloadActiveEventScoring();
         List<PlayerPointEntry> pendingEntries = pendingPointTransactions.load();
         if (!pendingEntries.isEmpty()) enqueueRankTask(() -> commitPointTransactions(pendingEntries));
         if (!pendingEntries.isEmpty()) {
@@ -446,6 +449,73 @@ public class RankManager extends BaseManager {
         return refreshed;
     }
 
+    /** Builds the complete current formal-event score table after all pending point writes. */
+    public CompletionStage<ChampionshipArchiveSnapshot> createChampionshipArchiveSnapshot() {
+        return refreshFromDatabase().thenApply(ignored -> buildChampionshipArchiveSnapshot());
+    }
+
+    private ChampionshipArchiveSnapshot buildChampionshipArchiveSnapshot() {
+        List<Map.Entry<GameTypeEnum, Integer>> games = gameOrder.entrySet().stream()
+                .filter(entry -> isScoringGame(entry.getKey()))
+                .sorted(Map.Entry.comparingByValue()).toList();
+        List<ChampionshipTeam> teams = new ArrayList<>(plugin.getTeamManager().getTeamList());
+        Map<Integer, ChampionshipTeam> teamById = new HashMap<>();
+        Map<Integer, Map<GameTypeEnum, Double>> teamScores = new HashMap<>();
+        Map<UUID, Map<GameTypeEnum, Double>> playerScores = new HashMap<>();
+        for (ChampionshipTeam team : teams) {
+            teamById.put(team.getId(), team);
+            teamScores.put(team.getId(), new EnumMap<>(GameTypeEnum.class));
+            for (UUID member : team.getMembers()) playerScores.put(member, new EnumMap<>(GameTypeEnum.class));
+        }
+        for (PlayerPointEntry entry : validPointSnapshot) {
+            ChampionshipTeam team = teamById.get(entry.getTeamId());
+            if (team == null || entry.getValid() != 1 || !isScoringGame(entry.getGame())
+                    || !playerScores.containsKey(entry.getUuid())) continue;
+            int order = getGameOrder(entry.getGame());
+            if (order < 1) continue;
+            double contribution = Boolean.TRUE.equals(CCConfig.WEIGHTED_SCORE)
+                    ? entry.getPoints() * getPointMultiple(order) * getGameWeight(entry.getGame())
+                    : entry.getPoints();
+            teamScores.get(team.getId()).merge(entry.getGame(), contribution, Double::sum);
+            playerScores.get(entry.getUuid()).merge(entry.getGame(), contribution, Double::sum);
+        }
+
+        List<ChampionshipArchiveSnapshot.TeamScore> rankedTeams = teams.stream().map(team -> {
+            Map<GameTypeEnum, Double> scores = teamScores.get(team.getId());
+            List<ChampionshipArchiveSnapshot.GameScore> perGame = archiveGameScores(games, scores);
+            return new ChampionshipArchiveSnapshot.TeamScore(team.getName(), 0,
+                    rounded(scores.values().stream().mapToDouble(Double::doubleValue).sum()), perGame);
+        }).sorted(Comparator.comparingDouble(ChampionshipArchiveSnapshot.TeamScore::totalScore).reversed()
+                .thenComparing(ChampionshipArchiveSnapshot.TeamScore::name, String.CASE_INSENSITIVE_ORDER)).toList();
+        List<ChampionshipArchiveSnapshot.TeamScore> withRanks = new ArrayList<>(rankedTeams.size());
+        for (int index = 0; index < rankedTeams.size(); index++) {
+            ChampionshipArchiveSnapshot.TeamScore team = rankedTeams.get(index);
+            withRanks.add(new ChampionshipArchiveSnapshot.TeamScore(team.name(), index + 1,
+                    team.totalScore(), team.gameScores()));
+        }
+
+        List<ChampionshipArchiveSnapshot.PlayerScore> players = new ArrayList<>();
+        teams.stream().sorted(Comparator.comparing(ChampionshipTeam::getName, String.CASE_INSENSITIVE_ORDER))
+                .forEach(team -> team.getTeamMemberEntries().forEach(member -> {
+                    Map<GameTypeEnum, Double> scores = playerScores.getOrDefault(member.getUuid(), Map.of());
+                    players.add(new ChampionshipArchiveSnapshot.PlayerScore(member.getUsername(), team.getName(),
+                            rounded(scores.values().stream().mapToDouble(Double::doubleValue).sum()), false,
+                            archiveGameScores(games, scores)));
+                }));
+        return new ChampionshipArchiveSnapshot(List.copyOf(withRanks), List.copyOf(players));
+    }
+
+    private static List<ChampionshipArchiveSnapshot.GameScore> archiveGameScores(
+            List<Map.Entry<GameTypeEnum, Integer>> games, Map<GameTypeEnum, Double> scores) {
+        return games.stream().map(entry -> new ChampionshipArchiveSnapshot.GameScore(
+                entry.getKey().name(), entry.getKey().toString(), entry.getKey().name(),
+                entry.getValue(), rounded(scores.getOrDefault(entry.getKey(), 0D)))).toList();
+    }
+
+    private static double rounded(double value) {
+        return BigDecimal.valueOf(value).setScale(4, RoundingMode.HALF_UP).doubleValue();
+    }
+
     /** Runs database-sensitive administration after all score writes submitted before this call. */
     public void runAfterPendingPointWrites(@NotNull Runnable task) {
         enqueueRankTask(task);
@@ -605,7 +675,8 @@ public class RankManager extends BaseManager {
             for (PlayerPointEntry playerPointEntry : playerPointEntries) {
                 if (playerPointEntry.getValid() == 1 && playerPointEntry.getGame() == gameTypeEnum) {
                     if (Boolean.TRUE.equals(CCConfig.WEIGHTED_SCORE)) {
-                        points += playerPointEntry.getPoints() * getPointMultiple(gameOrder) * getGameWeight(gameTypeEnum);
+                        points += playerPointEntry.getPoints() * getPointMultiple(gameOrder)
+                                * getGameWeight(gameTypeEnum);
                     } else
                         points += playerPointEntry.getPoints();
                 }
@@ -620,8 +691,16 @@ public class RankManager extends BaseManager {
     }
 
     public double getPointMultiple(int round) {
-        return configuredPointMultiple(round, CCConfig.WEIGHTED_SCORE_ROUND_MULTIPLIERS);
+        EventStateStore.ActiveEvent event = activeEvent;
+        List<Double> multipliers = event == null
+                ? CCConfig.WEIGHTED_SCORE_ROUND_MULTIPLIERS : event.roundMultipliers();
+        return configuredPointMultiple(round, multipliers);
     }
+
+    public void reloadActiveEventScoring() {
+        activeEvent = new EventStateStore(plugin).load();
+    }
+
 
     static double configuredPointMultiple(int round, List<Double> multipliers) {
         if (round < 1 || multipliers == null || round > multipliers.size()) return 0D;

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.event.EventStateStore;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.util.Utils;
@@ -28,6 +29,19 @@ public final class EventStartSubCommand extends BaseSubCommand {
         GameTypeEnum game = EventCommandSupport.parse(args[0]);
         if (game == null || !plugin.getGameManager().isGameEnabled(game) || !EventCommandSupport.canSchedule(game)) {
             Utils.sendAdminError(sender, "该游戏不能作为当前正式比赛启动");
+            return true;
+        }
+        EventStateStore.ActiveEvent active = new EventStateStore(plugin).load();
+        if (active == null) {
+            Utils.sendAdminError(sender, "尚未从 cc-web 导入比赛就绪的赛事配置和阵容");
+            return true;
+        }
+        if (active.archived()) {
+            Utils.sendAdminError(sender, "当前赛事已归档，请先导入下一届赛事");
+            return true;
+        }
+        if (!active.allows(game)) {
+            Utils.sendAdminError(sender, "该游戏不在当前赛事“" + active.title() + "”的游戏列表中");
             return true;
         }
 

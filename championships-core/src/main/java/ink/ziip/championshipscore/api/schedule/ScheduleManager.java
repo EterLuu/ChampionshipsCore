@@ -232,6 +232,13 @@ public class ScheduleManager extends BaseManager {
         };
     }
 
+    public boolean hasRunningFormalEvent() {
+        for (GameTypeEnum game : GameTypeEnum.values()) {
+            if (supportsFormalEvent(game) && isFormalEventRunning(game)) return true;
+        }
+        return false;
+    }
+
     public synchronized boolean isFinaleRunning(@NotNull GameTypeEnum gameType) {
         if (!FinaleGameRegistry.isRegistered(gameType)) return false;
         if (pendingFinaleRequest == gameType) return true;
