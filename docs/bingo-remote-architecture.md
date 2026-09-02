@@ -1,12 +1,12 @@
 # Bingo 跨服拆分架构
 
-最后核对：2026-08-30（源码基线 `d703939`，协议 v5）
+ChampionshipsCore 把 Bingo 的权威赛程与 Folia 玩法执行拆分到两个服务：Core 保留数据库、赛程、积分和 manifest 生成；Worker 在独立 Folia 实例执行世界、任务与界面。本文说明这条跨服链路的模式、数据流、部署顺序和验收边界。
 
 ## 模式与启用原则
 
 远程 Bingo 由 ChampionshipsCore 控制面、Folia Worker、Redis Streams 和代理转服链路组成。`LOCAL` 适用于单服执行，`REMOTE` 适用于将 Bingo 世界与玩法负载隔离到独立 Folia 服务器的部署。新部署应先以 `LOCAL` 验证基础玩法，再在维护窗口切换到 `REMOTE`；不得在比赛运行中热切换执行器。
 
-协议、计分、Redis、outbox、Worker 展示和目标观察均有自动化测试覆盖。项目还执行过 64 个逻辑玩家、移动区块加载和约 1 万至 2 万实体的 Folia 压力测试；结果与推荐参数见 [Bingo 64 人 Folia 性能指南](bingo-64-player-performance-report.md)。该测试不包含 64 个真实 Minecraft 连接，也不覆盖代理转服、Redis/MariaDB 故障恢复和完整比赛结算。生产部署前必须按本文的上线顺序完成端到端验收。
+协议、计分、Redis、outbox、Worker 展示和目标观察均有自动化测试覆盖。项目还执行过 64 个逻辑玩家、移动区块加载和约 1 万至 2 万实体的 Folia 压力测试；结果与推荐参数见 [Bingo 64 人 Folia 性能指南](bingo-64-player-performance-report.md)。该测试覆盖区块与实体负载；代理转服、Redis/MariaDB 故障恢复和完整比赛结算由端到端验收覆盖。生产部署前必须按本文的上线顺序完成验收。
 
 ## Maven 模块
 
@@ -28,7 +28,7 @@ championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar
 championships-bingo-loadtest/target/championships-bingo-loadtest-1.3-SNAPSHOT.jar
 ```
 
-Core 的历史制品路径保持不变；Worker JAR 已包含 Redis 客户端及所有内部模块，不需要把 common/engine/platform/redis 作为独立插件安装。LoadTest JAR 只应在维护期临时安装，测试结束后移出 `plugins/`；具体保护线和已知模型偏差见 [LoadTest README](../championships-bingo-loadtest/README.md)。
+Core 的历史制品路径保持不变；Worker JAR 已包含 Redis 客户端及所有内部模块，不需要把 common/engine/platform/redis 作为独立插件安装。LoadTest JAR 在维护期临时安装，测试结束后移出 `plugins/`；保护线和模型说明见 [LoadTest README](../championships-bingo-loadtest/README.md)。
 
 ## 权威边界
 

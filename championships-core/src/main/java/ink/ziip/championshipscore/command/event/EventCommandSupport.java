@@ -47,7 +47,6 @@ final class EventCommandSupport {
 
     static @NotNull WebEventApiClient webClient() {
         return new WebEventApiClient(CCConfig.WEB_LEADERBOARD_SYNC_BASE_URL,
-                CCConfig.WEB_LEADERBOARD_SYNC_KEY_ID, CCConfig.WEB_LEADERBOARD_SYNC_HMAC_SECRET,
                 Boolean.TRUE.equals(CCConfig.WEB_LEADERBOARD_SYNC_ALLOW_INSECURE_PRIVATE_HTTP),
                 CCConfig.WEB_LEADERBOARD_SYNC_CONNECT_TIMEOUT_SECONDS,
                 CCConfig.WEB_LEADERBOARD_SYNC_REQUEST_TIMEOUT_SECONDS);

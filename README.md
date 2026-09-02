@@ -1,8 +1,8 @@
 # ChampionshipsCore
 
-最后核对：2026-08-30（源码基线 `d703939`）
+ChampionshipsCore 是 Summer/Winter Collab Championship 使用的赛事核心插件。它把一套 Minecraft 服务端组织成完整的团队锦标赛：从队伍、场地和赛程，到实时计分、观战、聊天展示和最终排名，都由同一套插件统一管理。赛事团队可以用它手动开一场测试局，也可以在正式比赛中驱动多轮赛程、记录成绩并生成最终排名。
 
-ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综合赛事核心插件。它负责队伍与选手管理、比赛场地、游戏生命周期、积分排行、自动赛程、投票、观战、聊天分组和 PlaceholderAPI 变量。
+插件内置 13 个比赛项目，覆盖宾果探索、建造还原、竞速跑酷、团队对抗和决赛场景。每个项目都支持独立地图、规则介绍、复制场地、积分规则和观战边界。
 
 | 显示名称 | 命令标识 | 配置名称 |
 | --- | --- | --- |
@@ -24,77 +24,65 @@ ChampionshipsCore 是 Summer/Winter Collab Championship 使用的 Minecraft 综�
 
 ### 宾果
 
-所有队伍会被分散到同一套主世界、下界和末地，完成 5×5 任务卡。任务可要求获得物品或药水、达成统计目标及完成进度；同一格可由多支队伍分别完成。玩家可右键副手地图，在地图和菜单两种卡片样式间切换。
+所有队伍进入同一套主世界、下界和末地，共同完成 5×5 任务卡。任务会要求获得物品或药水、达成统计目标或完成进度；同一格可由多支队伍分别完成。玩家右键副手地图，即可在地图与菜单两种卡片样式间切换。
 
-任务按完成顺序计分，连成横、竖或对角线会获得团队奖励。开局会发放探索所需的装备与物资，并提供队友传送；常驻效果、PvP 时机、时长和分值均由 Bingo 配置决定。`LOCAL` 与 `REMOTE` 使用同一套任务判定、世界规则、玩家状态、计时格式、队伍颜色和展示策略；远端 Worker 只执行 Core 冻结后的比赛 manifest，不维护第二份玩法规则。
+完成按先后顺序计分，横、竖或对角连线带来团队奖励。开局发放探索装备与物资，并提供队友传送；常驻效果、PvP 时机、时长和分值由 Bingo 配置决定。`LOCAL` 与 `REMOTE` 共用同一套任务判定、世界规则、玩家状态、计时格式、队伍颜色和展示策略；远程 Worker 执行 Core 冻结后的比赛 manifest，保证两端呈现一致的玩法。
 
 ### 匹配赛建
 
-各队从公共资源大厅收集方块，在自己的建造位复刻参考建筑。普通建造位会随机分配蓝图，完成后自动补充；金色建造位按固定周期轮换高价值蓝图。
+各队从公共资源大厅收集方块，在自己的建造位复刻参考建筑。普通建造位随机分配蓝图，完成后自动补充；金色建造位按固定周期轮换高价值蓝图。
 
-提交时会逐方块核对蓝图，完全一致的建筑按星级和当前计分阶段结算；未完成建筑会按完成比例结算。比赛结束后还会按总星数、完成建筑数和平均星级发放排名奖励。
+提交时逐方块核对蓝图，完全一致的建筑按星级和当前计分阶段结算，未完成建筑按完成比例结算。比赛结束后，总星数、完成建筑数和平均星级还会决定排名奖励。
 
 ### 斗战方框
 
-两队争夺中央 3×3 区域。场地可配置装备套组和瞬间伤害药水点；任一队先用本队方块填满全部 9 格便立即获胜，否则倒计时结束后比较双方占据格数。击杀和回合结果都会计入积分。
+两队争夺中央 3×3 区域。场地可配置装备套组和瞬间伤害药水点；先用本队方块填满全部 9 格的队伍立即获胜。倒计时结束时仍未填满，则比较双方占据格数。击杀和回合结果都会计入积分。
 
 ### 跑酷追击
 
-每场对局由两支队伍参加，并在左右两个镜像区域同时进行：每队选择一名追逐者，追捕对方的逃生者。追逐者碰触逃生者即完成抓捕；未被抓获的逃生者按存活时长得分，追逐者则按抓捕和剩余时间得分，存活总时长较长的一方赢得对局奖励。
+每场对局由两支队伍参加，并在左右两个镜像区域同时进行：每队选择一名追逐者，追捕对方的逃生者。追逐者碰触逃生者即完成抓捕；逃生者按存活时长得分，追逐者按抓捕和剩余时间得分，存活总时长较长的一方赢得对局奖励。
 
-逃生者可使用场地提供的道具短暂干扰追逐者，追逐者也有专属的机动道具。追逐者选择次数、道具和回合时长均由场地配置决定。
+逃生者可用场地道具短暂干扰追逐者，追逐者也有专属的机动道具。追逐者选择次数、道具和回合时长由场地配置决定。
 
 ### 跑路战士
 
-玩家依次挑战主检查点、子检查点和终点路线。系统记录每名玩家的重生点与检查点进度，并按完成的不同星级路线计分；连续完成高星级路线时，单次收益会递增。
-
-完成最终路线会为全队施加倍率奖励。路线、检查点、时长和倍率均由场地配置决定。
+玩家依次挑战主检查点、子检查点和终点路线。系统记录每名玩家的重生点与检查点进度，按完成路线的星级计分；连续完成高星级路线时，单次收益递增。完成最终路线会为全队施加倍率奖励，路线、检查点、时长和倍率均由场地配置决定。
 
 ### 空岛乱斗
 
-各队从玻璃笼和队伍出生岛进入空岛生存战。比赛按场地规则依次开放乐魂、收缩安全区域并调整生命恢复；击杀、存活和淘汰其他队伍都会计分。玩家死亡后，携带物品会保存在死亡位置的箱子中。
+各队从玻璃笼和队伍出生岛进入空岛生存战。比赛按场地规则依次开放乐魂、收缩安全区域并调整生命恢复；击杀、存活和淘汰其他队伍都会计分。玩家死亡后，携带物品保存在死亡位置的箱子中。
 
 ### 去到另一边
 
-玩家穿越障碍并击打终点鸡完成地图。地图可分别配置船、道路工具、空手或鞘翅模式，以及流浪者生成点和随机出生区域。
-
-个人越早到达得分越高，团队完成会触发额外奖励。正式调度会依次使用已加载场地，每张地图进行一轮。
+玩家穿越障碍并击打终点鸡完成地图。地图可分别配置船、道路工具、空手或鞘翅模式，以及流浪者生成点和随机出生区域。个人越早到达得分越高，团队完成触发额外奖励；正式调度依次使用已加载场地，每张地图进行一轮。
 
 ### TNT飞跃
 
-玩家在多层方块场地生存，脚下方块会延迟消失，并在指定阶段触发 TNT 雨。玩家可使用鞘翅挽救坠落；每次淘汰会奖励仍存活的玩家，轮末再按生存名次结算。
-
-正式调度会使用预先生成的赛道副本，并按赛程配置进行多轮比赛。
+玩家在多层方块场地生存，脚下方块会延迟消失，指定阶段还会落下 TNT 雨。玩家可用鞘翅挽救坠落；每次淘汰奖励仍存活的玩家，轮末按生存名次结算。正式调度使用预先生成的赛道副本，并按赛程配置进行多轮比赛。
 
 ### 雪球大战
 
-玩家以队伍颜色装备进入竞技场，使用雪球和铁剑混战。被淘汰后会在随机点复活；击杀会补充雪球并计入个人与队伍分数。达到场地设定的击杀目标可提前结束，轮末按队伍击杀数排名结算。
+玩家以队伍颜色装备进入竞技场，使用雪球和铁剑混战。被淘汰后会在随机点复活；击杀会补充雪球，并计入个人与队伍分数。达到场地设定的击杀目标可提前结束，轮末按队伍击杀数排名结算。
 
 ### 烫手鳕鱼
 
-每轮随机选出一名鳕鱼持有者；持有者会持续受伤，攻击其他玩家可转移鳕鱼，转移后有短暂保护期。淘汰会奖励仍存活的玩家，最终再按生存名次结算。
-
-正式调度会将各队成员分散到多个场地，并按赛程配置进行多轮比赛。
+每轮随机选出一名鳕鱼持有者；持有者持续受伤，攻击其他玩家可转移鳕鱼，转移后进入短暂保护期。淘汰奖励仍存活的玩家，最终按生存名次结算。正式调度将各队成员分散到多个场地，并按赛程配置进行多轮比赛。
 
 ### 龙蛋狂欢
 
-这是两队同时进行的一场完整末影龙战。双方从镜像平台出发，使用固定装备、队伍方块和生存物资推进。
-
-队伍率先完成【解放末地】【下一世代】【远程折跃】中的任意两项即可获胜。摧毁末影水晶会为全队补充物资并提供随机强化；持续对末影龙造成伤害会为对手施加短暂负面效果。
+这是两队同时进行的一场完整末影龙战。双方从镜像平台出发，使用固定装备、队伍方块和生存物资推进。队伍率先完成【解放末地】【下一世代】【远程折跃】中的任意两项即可获胜；摧毁末影水晶为全队补充物资并提供随机强化，持续伤害末影龙会给对手施加短暂负面效果。
 
 ### 躲避箭
 
-总积分前两名进行五局三胜决赛。箭命中玩家即淘汰，将对方全队淘汰即可赢下一局；第一局由高顺位队伍获得两箭，后续小局双方各获得一箭。
+总积分前两名进行五局三胜决赛。箭命中玩家即淘汰，淘汰对方全队即赢下一局；第一局由高顺位队伍获得两箭，后续小局双方各获得一箭。
 
-- 玩家不能越过中央分界，箭在每次射击结束后会消失并刷新到对方半场。
-- 淘汰与累计射箭会推动平台逐层收缩；管理员可使用 `/cc finale dodgebolt` 下的裁判命令处理暂停、重开、淘汰和强制胜利。
-- 躲避箭是非积分决赛，不参与普通游戏投票。
+- 玩家保持在中央分界两侧；箭在每次射击结束后消失并刷新到对方半场。
+- 淘汰与累计射箭推动平台逐层收缩；管理员使用 `/cc finale dodgebolt` 下的裁判命令处理暂停、重开、淘汰和强制胜利。
+- 躲避箭是决赛项目，使用专属赛程管理。
 
 ### 王牌竞速
 
-所有选手在限时内按顺序通过进度点并完成配置圈数。只有正向穿过终点线才会结算一圈；跌落到赛段高度以下时会返回最近的重生点。
-
-每个进度点可切换鞘翅、激流三叉戟或无装备，并分别配置赛段跌落高度。场地可使用速度、跳跃和定向弹射机关；完赛名次和分段名次均会计分。
+所有选手在限时内按顺序通过进度点并完成配置圈数。正向穿过终点线结算一圈；跌落到赛段高度以下时返回最近的重生点。每个进度点可切换鞘翅、激流三叉戟或无装备，并分别配置赛段跌落高度。场地可使用速度、跳跃和定向弹射机关；完赛名次和分段名次均会计分。
 
 ## 运行要求
 
@@ -113,17 +101,15 @@ ProtocolLib、PlaceholderAPI 或 FastAsyncWorldEdit 缺失时，ChampionshipsCor
 mvn clean package
 ```
 
-构建产物位于 `target/`。将 `ChampionshipsCore` 插件本体和三个必需依赖放入 Paper 服务端的 `plugins/` 目录，然后启动一次服务端生成配置。
+构建完成后，将 `target/ChampionshipsCore-1.3-SNAPSHOT.jar` 与三个必需依赖放入 Paper 服务端的 `plugins/` 目录，然后启动一次服务端生成配置。
 
-仓库使用 Maven Reactor 管理共享协议、纯 Java Bingo 计分引擎、Paper/Folia 平台层、Redis transport、独立 Bingo Worker、压测插件、Core 插件及可选认证组件。根目录构建后，Core 制品位于 `target/ChampionshipsCore-1.3-SNAPSHOT.jar`，Bingo Worker 制品位于 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar`。
+仓库同时包含共享协议、Bingo 计分引擎、Paper/Folia 平台层、Redis transport、独立 Bingo Worker、压测插件、Core 插件和可选认证组件。根目录构建会生成 Core 与 Worker 两个主要制品。共享契约分布在 `championships-common`、`championships-bingo-engine`、`championships-platform-bukkit` 和 `championships-redis`；这些模块或跨端玩家可见行为发生变化时，Core 与 Worker 需成对构建、部署和重启。
 
-Core 与 Worker 的共享契约分布在 `championships-common`、`championships-bingo-engine`、`championships-platform-bukkit` 和 `championships-redis`。Bingo 任务观察、世界规则、玩家清理、原生计分板队伍、身份/聊天展示、规则介绍时间线、计时文本或排名窗口发生变化时，必须同时检查本地 Bingo 与 Worker 调用方，并成对构建、部署和重启两个服务。只替换其中一个 JAR 不能保证协议与玩家可见行为兼容。
+`championships-auth-bridge` 部署在 Paper 侧，负责账号绑定资料同步和登录 UUID 核对；`championships-auth-proxy` 部署在 BungeeCord 侧，在登录阶段执行账户准入、封禁检查和有效 UUID 注入。Proxy 持久化身份同步快照；同步源短暂不可达时，已同步玩家仍可进入服务器并由本地 AuthMe 验证密码。UUID 的跨组件边界见 [player-uuid-contract.md](docs/player-uuid-contract.md)。
 
-`championships-auth-bridge` 是可选的 Paper 侧组件，用于将网站绑定资料同步到 AuthMe 并核对登录 UUID；`championships-auth-proxy` 是可选的 BungeeCord 侧组件，用于在代理登录阶段执行网站账户准入、封禁检查和有效 UUID 注入。Proxy 会把 Web 签名快照中的准入状态、UUID、封禁、维护状态和事件游标持久化，cc-web 暂时不可达时，已同步玩家仍可用原 UUID 进入服务器并由本地 AuthMe 验证密码；未知玩家与非法响应继续失败关闭。两者均不替代 ChampionshipsCore 的赛事、队伍或积分功能。UUID 的跨组件边界见 [player-uuid-contract.md](docs/player-uuid-contract.md)。
+远程 Bingo 可通过 `bingo.execution-mode: REMOTE` 把世界与玩法执行交给独立 Folia Worker；`LOCAL` 模式保留单服执行方案。部署前阅读 [Worker README](championships-bingo-worker/README.md)、[跨服架构与上线流程](docs/bingo-remote-architecture.md) 和 [64 人性能指南](docs/bingo-64-player-performance-report.md)。性能指南中的逻辑玩家压测覆盖区块与实体负载；真实客户端的端到端验收是生产上线的最后一层确认。压测插件只临时安装在可丢弃的测试世界。
 
-远程 Bingo 可通过 `bingo.execution-mode: REMOTE` 把世界与玩法执行迁移到独立 Folia Worker；`LOCAL` 模式仍保留为单服执行方案。部署前请阅读 [Worker README](championships-bingo-worker/README.md)、[跨服架构与上线流程](docs/bingo-remote-architecture.md) 和 [64 人性能指南](docs/bingo-64-player-performance-report.md)。性能指南中的逻辑玩家压测只覆盖区块与实体负载，不代替真实客户端的端到端验收。压测插件只能临时安装在可丢弃的测试世界，不得留在生产服务器。
-
-Bingo 任务机制与图集以上游 [MineBingo](https://gitee.com/chancelethay/minebingo) 提交 `dd84456fdf7784deca11e37618cb5af8708d21e9`（2026-08-19）为同步基线；默认卡片与难度表在 2026-08-30 又按当前服务端物品获取条件重审了音乐唱片和锻造模板，并由资源契约测试锁定。模式、难度、胜利线数投票与奇遇仅接入 ChampionshipsCore 的 DAILY 自由游玩：三页投票共用 `daily-vote.seconds` 的单一倒计时，继续使用 CC 原有大厅、Party、匹配和临时队伍；正式赛与管理员手动局仍使用场地原有固定积分规则。
+Bingo 任务机制与图集来自上游 [MineBingo](https://gitee.com/chancelethay/minebingo)，并按 ChampionshipsCore 的服务端版本、资源获取条件与计分体系持续适配；默认卡片与难度表由资源契约测试保护。其三页任务投票接入 ChampionshipsCore 的 DAILY 自由游玩，共用 `daily-vote.seconds` 的单一倒计时和 CC 原有大厅、Party、匹配与临时队伍。正式赛与管理员手动局继续使用场地原有固定积分规则。
 
 推荐的首次部署顺序：
 
@@ -145,7 +131,7 @@ Bingo 任务机制与图集以上游 [MineBingo](https://gitee.com/chancelethay/
 | --- | --- |
 | `mode` | 插件运行模式，默认 `CHAMPIONSHIP` |
 | `max-players` | 赛事允许的最大玩家数 |
-| `whitelist` | 满员时优先放行的玩家名列表；仅影响 Core 的人数上限，不负责网站账户准入、封禁或 UUID 分配 |
+| `whitelist` | 满员时优先放行的玩家名列表；仅影响 Core 的人数上限，账户准入、封禁和 UUID 分配由身份桥接组件管理 |
 | `weighted-score.enabled` | 是否启用游戏归一化权重和比赛轮次系数 |
 | `weighted-score.round-multipliers` | 按正式比赛轮次从第 1 轮开始配置系数；超出列表的轮次按 0 计算 |
 | `strict-spectator-rule` | 正式赛事模式下是否阻止参赛队员自由观战；DAILY 模式不执行此限制 |
@@ -180,7 +166,7 @@ Bingo 的场地文件还可通过 `permanent-effects` 调整常驻效果，格�
 
 ## 权限
 
-插件只在 `/cc` 后的第一级命令上检查权限，子命令不会继续拼接权限节点。管理员权限会自动继承玩家命令。
+插件只在 `/cc` 后的第一级命令上检查权限。管理员权限会自动继承玩家命令。
 
 | 权限 | 可用功能 |
 | --- | --- |
@@ -193,7 +179,7 @@ Bingo 的场地文件还可通过 `permanent-effects` 调整常驻效果，格�
 ## 命令约定
 
 - `<参数>` 表示必填参数，`[参数]` 表示可选参数。
-- `<队伍>` 使用创建队伍时的内部名称，不是彩色显示名。
+- `<队伍>` 使用创建队伍时的内部名称。
 - 场地设置、WorldEdit 选区和当前位置相关命令必须由游戏内玩家执行。
 - 多数名称匹配区分大小写，推荐队伍名、场地名和蓝图名统一使用小写英文、数字和下划线。
 - 输入到中间命令节点时，插件会显示当前节点下的帮助列表，例如 `/cc game start` 或 `/cc event`。
@@ -259,7 +245,7 @@ light_gray cyan purple blue brown green red black
 /cc team member add red_rabbits Alex
 ```
 
-每名玩家只能属于一支队伍，人数不能超过 `team.max-members`。`identity.mode` 只在管理员按名称处理离线玩家时生效：`OFFLINE` 按 Minecraft 的 `OfflinePlayer:<玩家名>` 规则计算 UUID；`PROFILE_UUID` 调用 `identity.profile-api-base-url` 的标准 `/users/profiles/minecraft/<玩家名>` 接口。`PROFILE_UUID` 的返回值必须与代理登录时转发的 UUID 相同。在线玩家始终使用 Bukkit/代理提供的 UUID；档案接口返回 204/404、服务异常、响应格式错误与本地身份冲突都会明确失败，绝不静默回退为离线 UUID。完整边界见 [player-uuid-contract.md](docs/player-uuid-contract.md)。
+每名玩家只能属于一支队伍，人数受 `team.max-members` 限制。在线成员直接使用 Bukkit/代理提供的 UUID；离线成员的 UUID 由 `identity.mode` 决定：`OFFLINE` 按 Minecraft 的 `OfflinePlayer:<玩家名>` 规则计算，`PROFILE_UUID` 调用 `identity.profile-api-base-url` 的标准档案接口，并要求返回值与登录链路一致。档案缺失、服务异常、响应格式错误或本地身份冲突会终止该次操作并提示管理员。完整边界见 [player-uuid-contract.md](docs/player-uuid-contract.md)。
 
 ### 查询、传送和删除
 
@@ -292,9 +278,7 @@ light_gray cyan purple blue brown green red black
 | 所有队伍 | `/cc game start acerace all <场地>` |
 | 指定多队 | `/cc game start hotycodydusky <场地> <队伍...>` |
 
-`/cc game start` 只启动一次测试局，不创建正式赛事轮次，并且只处理命令明确指定的队伍
-（或 `all` 所代表的全部队伍）；它不会播报赛事规则、自动吸纳无队伍玩家旁观，也不会改动
-其他玩家的状态。常规正式赛的规则介绍、自动旁观调度和跨轮次观众承接由 `/cc event start` 管理；冠军决赛统一由 `/cc finale` 管理。
+`/cc game start` 用于手动测试局：它只处理命令指定的队伍（或 `all` 所代表的全部队伍），把成员加入指定实例，并保持其他玩家状态不变。常规正式赛的规则介绍、自动旁观调度和跨轮次观众承接由 `/cc event start` 管理；冠军决赛统一由 `/cc finale` 管理。
 
 ### 管理员命令
 
@@ -315,7 +299,7 @@ light_gray cyan purple blue brown green red black
 | `/cc admin world teleport <世界>` | 传送到世界出生点并开启飞行 |
 | `/cc admin world unload <世界>` | 保存并卸载世界，不删除世界文件 |
 
-主大厅世界和 Bingo 三维度不能删除或重命名。删除必须显式附加 `confirm`，且不会破坏仍被 ChampionshipsCore 地图配置引用的世界。重命名未加载世界时需给出其原环境；世界名只允许字母、数字、下划线和连字符；`create` 未指定环境时使用 `normal`。普通小游戏世界使用虚空生成器，Bingo 的 `bingo`、`bingo_nether` 和 `bingo_the_end` 三个世界则使用原版地形。
+主大厅世界和 Bingo 三维度不能删除或重命名。删除必须显式附加 `confirm`，且不会破坏仍被 ChampionshipsCore 地图配置引用的世界。重命名未加载世界时需给出其原环境；世界名只允许字母、数字、下划线和连字符；`create` 默认使用 `normal` 环境。普通小游戏世界使用虚空生成器，Bingo 的 `bingo`、`bingo_nether` 和 `bingo_the_end` 三个世界则使用原版地形。
 
 `world delete` 的世界名 Tab 补全会展示所有已加载或已存储世界，包含受保护世界；实际执行删除时仍会拒绝主大厅、Bingo 三维度以及被地图配置引用的世界。
 
@@ -328,7 +312,7 @@ light_gray cyan purple blue brown green red black
 /cc map rename <游戏> <旧场地名> <新场地名>
 ```
 
-`map edit` 会打开该游戏的地图列表。“新建地图”只建立尚未绑定世界的草稿，不会创建世界。之后可用 `/cc admin world create` 创建或加载世界，站在目标世界中通过向导的“绑定当前世界”步骤进行绑定；重复执行该步骤可更换绑定。已有地图可左键编辑，右键两次删除地图配置；删除地图不会删除物理世界，世界删除仍只由 `/cc admin world delete` 负责。
+`map edit` 会打开该游戏的地图列表。“新建地图”只建立尚未绑定世界的草稿，不会创建世界。之后可用 `/cc admin world create` 创建或加载世界，站在目标世界中通过向导的“绑定当前世界”步骤进行绑定；重复执行该步骤可更换绑定。已有地图可左键编辑，右键两次删除地图配置；删除地图仅移除配置关联，物理世界删除由 `/cc admin world delete` 独立处理。
 
 `map rename` 只接受空闲且未被 prepare 锁定的地图。它会卸载对应运行实例，同时修改配置文件名、配置内 `name` 和运行时登记名，并迁移正式积分及日常赛数据库记录，然后用新名称重新加载；任一步失败都会回滚数据库、配置文件和原登记。
 
@@ -394,21 +378,21 @@ python3 scripts/buildmart_blueprint_audit.py <蓝图文件或目录> \
 
 ### 正式赛事建议流程
 
-1. 在 cc-web 完成赛事配置、报名和分队，切换为“比赛就绪”并生成 Core 导入链接。
-2. 执行 `/cc event teams import <cc-web链接> --confirm`，原子结束上一届积分并整体替换正式队伍。
+1. 准备一份比赛就绪的赛事配置，包含固定羊毛色队伍、注册玩家和项目列表，并获取 Core 导入链接。
+2. 执行 `/cc event teams import <赛事配置链接> --confirm`，原子结束上一届积分并整体替换正式队伍。
 3. `/cc admin vote start` 开放下一项目投票；玩家使用 `/cc vote` 投票，随后 `/cc admin vote end` 公布结果。
 4. 管理员执行 `/cc event start <游戏>` 启动常规正式赛程；只能启动当前导入赛事游戏列表中的项目。冠军决赛仍使用 `/cc finale <游戏> start <场地>`。
 5. 调度器广播项目介绍和积分规则，进行 10 秒倒计时；游戏结束事件触发下一小轮，小轮之间默认等待 30 秒。
 6. 全部小轮结束后，调度器广播本项目积分和总榜，并将观众移出场地。
-7. 全部常规项目结算且无正式赛程运行后，执行 `/cc event archive --confirm` 上传团队和个人的完整逐游戏积分。
+7. 全部常规项目结算且无正式赛程运行后，执行 `/cc event export`。JSON 会写入 `plugins/ChampionshipsCore/exports/<赛事标识>-results.json`，供成绩发布流程读取。
 
 ## 正式赛事命令
 
 | 命令 | 行为 |
 | --- | --- |
-| `/cc event teams import <cc-web链接> --confirm` | 校验并导入比赛就绪的赛事、固定羊毛色队伍和注册玩家；旧有效积分失效、旧轮次和队伍在同一数据库事务内清除 |
+| `/cc event teams import <赛事配置链接> --confirm` | 校验并导入比赛就绪的赛事、固定羊毛色队伍和注册玩家；旧有效积分失效、旧轮次和队伍在同一数据库事务内清除 |
 | `/cc event start <游戏>` | 启动普通正式赛程；同一项目运行中再次执行会紧急停止 |
-| `/cc event archive --confirm` | 无正式赛程运行时，把当前赛事的团队/个人总分和逐游戏积分上传 cc-web 并标记已归档 |
+| `/cc event export` | 无正式赛程运行时，把当前赛事的团队/个人总分和逐游戏积分导出到 `plugins/ChampionshipsCore/exports/<赛事标识>-results.json` |
 | `/cc finale dragoneggcarnival start <场地> [队伍1 队伍2]` | 在指定场地启动龙蛋狂欢决赛；未指定队伍时按总榜选择前二 |
 | `/cc finale dodgebolt start <场地> [队伍1 队伍2] [--force]` | 在指定场地启动躲避箭决赛；未指定队伍时按总榜选择前二，`--force` 允许使用在线子阵容 |
 | `/cc finale <游戏> cancel` | 取消决赛准备，或强制结束正在进行的正式决赛 |
@@ -422,7 +406,7 @@ python3 scripts/buildmart_blueprint_audit.py <蓝图文件或目录> \
 
 投票持续 120 秒，只允许已加入队伍的选手投票。已经记录为完成的游戏不能再次被投票；结束时插件按票数广播排行。
 
-每个场地在比赛中累计玩家积分，结束时写入数据库。`weighted-score.enabled` 开启后，总榜会应用游戏归一化权重；存在从 cc-web 导入的活动赛事时，再叠加该赛事的单游戏积分权重和轮次倍率。没有活动赛事时，轮次倍率回退到 `weighted-score.round-multipliers`。`/cc rank info` 可查看动态归一化权重。
+每个场地在比赛中累计玩家积分，结束时写入数据库。`weighted-score.enabled` 开启后，总榜会应用游戏归一化权重；存在已导入的活动赛事时，再叠加该赛事的单游戏积分权重和轮次倍率。没有活动赛事时，轮次倍率回退到 `weighted-score.round-multipliers`。`/cc rank info` 可查看动态归一化权重。
 
 在正式赛事模式中开启 `strict-spectator-rule` 后，正常赛事轮次中的参赛队员不能随意观战；拥有 `cc.refuge` 的裁判或替补不受此限制。DAILY 模式始终跳过该判定。
 
@@ -430,7 +414,7 @@ python3 scripts/buildmart_blueprint_audit.py <蓝图文件或目录> \
 
 普通聊天、加入/退出消息、TAB、Sidebar 和原生计分板队伍统一使用 `PlayerPresentation` 的身份格式。Core 与 Worker 都显示队伍颜色和活动选手状态；Worker 会从 manifest 投影本局原生队伍，并在平台不支持队伍变更时降级为插件侧 `/teammsg`、`/tm` 处理。
 
-启用 Redis 后，Core 和 Bingo Worker 的普通聊天会写入同一命名空间的聊天流，再由每个实例各自的 consumer group 投递给本服玩家和控制台。聊天依赖稳定且唯一的 Core `redis.instance-id` 与 Worker `worker-id`；重复 ID 会共享消费进度并造成实例漏收。Redis 不可用时，本服聊天仍由 Paper/Folia 正常显示，但不会跨服转发；`/teammsg` 仍只面向当前比赛队伍，不进入公共聊天流。
+启用 Redis 后，Core 和 Bingo Worker 的普通聊天会写入同一命名空间的聊天流，再由每个实例各自的 consumer group 投递给本服玩家和控制台。聊天依赖稳定且唯一的 Core `redis.instance-id` 与 Worker `worker-id`；重复 ID 会共享消费进度并造成实例漏收。Redis 不可用时，本服聊天由 Paper/Folia 正常显示，跨服转发暂停。`/teammsg` 始终只面向当前比赛队伍。
 
 ## PlaceholderAPI
 
@@ -487,15 +471,21 @@ Bingo 同样支持通用的 `%bingo_area_status_[场地]%` 和 `%bingo_area_time
 
 ## 侧栏记分板
 
-ChampionshipsCore 内置基于 FastBoard 的统一侧栏，不再需要 SternalBoard。显示优先级为：
-参赛/旁观游戏板、地图 prepare 编辑板、管理员地图状态板、赛事大厅板。游戏板按玩家实际
-归属选择，不依赖所在世界；remote Bingo 的模板由 Core 随比赛 manifest 下发，Worker 不需要
-额外配置。
+ChampionshipsCore 内置基于 FastBoard 的统一侧栏，取代 SternalBoard。显示优先级为参赛/旁观游戏板、地图 prepare 编辑板、管理员地图状态板和赛事大厅板；游戏板按玩家实际归属选择。remote Bingo 的模板由 Core 随比赛 manifest 下发，Worker 复用同一份配置。
 
 所有标题、行文本、颜色、游戏模板和地图覆盖均位于 `scoreboards.yml`。配置沿用 `&`、
 `#RRGGBB` 和 `&#RRGGBB` 颜色写法，最多渲染 15 行；`/cc admin reload --confirm` 会原子重载，
 配置无效时继续使用上一份有效快照。默认模板保留原 SternalBoard 的赛事和游戏信息，并为
 队伍、对手、排行榜及管理员警告增加原生彩色显示。
+
+## 相关文档
+
+- [自由游玩模式](docs/daily-mode.md)
+- [Bingo 跨服拆分架构](docs/bingo-remote-architecture.md)
+- [Bingo 64 人性能指南](docs/bingo-64-player-performance-report.md)
+- [玩家 UUID 边界与演进方案](docs/player-uuid-contract.md)
+- [AuthBridge 与 AuthProxy 同步协议](docs/auth-bridge-protocol.md)
+- [地图重命名契约](docs/map-rename-contract.md)
 
 ## 数据目录
 
@@ -529,7 +519,7 @@ plugins/ChampionshipsCore/
     └── tierlists/
 ```
 
-正式改图前请备份整个插件数据目录和数据库。不要在比赛进行中执行保存地图、重载插件或直接编辑场地 YAML。
+正式改图前备份整个插件数据目录和数据库；保存地图、重载插件和场地 YAML 编辑安排在空闲窗口执行。
 
 ## 许可证
 

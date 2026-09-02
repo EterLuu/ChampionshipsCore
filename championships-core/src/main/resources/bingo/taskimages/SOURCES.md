@@ -1,6 +1,3 @@
-# Task image sources
+# 任务图像来源
 
-- The green-check badge (`check` in `stat_event.png`) adapts the checkmark silhouette from Kenney's
-  **Game Icons** pack. The source pack is released under Creative Commons CC0; the bundled sprite is
-  pixel-reduced, recolored, outlined, and shaded for Minecraft's map palette. Attribution is not
-  required, but is retained here for provenance.
+- `stat_event.png` 中的绿色对勾徽标改编自 Kenney **Game Icons** 图包中的对勾轮廓。该图包采用 Creative Commons CC0 许可；打包图像已按 Minecraft 地图调色板缩减像素、重新着色、描边并添加阴影。许可不要求署名，本文件保留来源记录。

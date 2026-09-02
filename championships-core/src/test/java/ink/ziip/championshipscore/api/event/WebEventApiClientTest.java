@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class WebEventApiClientTest {
     private final WebEventApiClient client = new WebEventApiClient(
-            "https://cc.example.test", "cc-core", "a".repeat(32), false, 1, 1);
+            "https://cc.example.test", false, 1, 1);
 
     @Test
     void refusesImportLinksFromAnotherOriginBeforeConnecting() {

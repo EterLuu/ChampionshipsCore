@@ -11,6 +11,6 @@ public final class EventMainCommand extends BaseMainCommand {
         addSubCommand(new EventResetSubCommand());
         addSubCommand(new EventUndoSubCommand());
         addSubCommand(new EventTeamsMainCommand());
-        addSubCommand(new EventArchiveSubCommand());
+        addSubCommand(new EventExportSubCommand());
     }
 }
