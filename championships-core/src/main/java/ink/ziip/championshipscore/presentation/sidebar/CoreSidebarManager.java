@@ -186,27 +186,30 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put("game.status", instance.getGameStageEnum().toString());
         values.put("game.run-mode", instance.getRunMode().name());
         values.put("game.instance", Integer.toString(instance.getCopyIndex() + 1));
-        values.put("viewer.role", spectator ? "旁观" : "参赛");
+        values.put("viewer.role", spectator
+                ? config.value("game.role-spectator", "旁观")
+                : config.value("game.role-participant", "参赛"));
         // A spectator may still have a persistent team assignment from the lobby or a previous
         // round.  Treat the view as neutral so the sidebar does not highlight that stale team.
         ChampionshipTeam viewerTeam = spectator ? null : plugin.getTeamManager().getTeamByPlayer(player);
-        values.put("viewer.team", viewerTeam == null ? "&7旁观者" : viewerTeam.getColoredName());
+        values.put("viewer.team", viewerTeam == null
+                ? config.value("game.spectator", "&7旁观者") : viewerTeam.getColoredName());
         if (instance instanceof BattleBoxArea area) {
             BattleBoxMatch match = area.currentMatch();
-            putMatchup(values, match == null ? null : match.getRight(), match == null ? null : match.getLeft());
+            putMatchup(config, values, match == null ? null : match.getRight(), match == null ? null : match.getLeft());
         } else if (instance instanceof ParkourTagArea area) {
             ParkourTagMatch match = area.currentMatch();
-            putMatchup(values, match == null ? null : match.getRight(), match == null ? null : match.getLeft());
+            putMatchup(config, values, match == null ? null : match.getRight(), match == null ? null : match.getLeft());
         }
 
         List<String> lines = new ArrayList<>();
         for (String raw : template.lines()) {
             if ("{ranking}".equals(raw) && instance instanceof BingoArea bingo) {
-                lines.addAll(renderLocalBingoRanking(bingo, game, viewerTeam));
+                lines.addAll(renderLocalBingoRanking(config, bingo, game, viewerTeam));
                 continue;
             }
             if ("{ranking}".equals(raw) && instance instanceof SnowballShowdownTeamArea snowball) {
-                lines.addAll(renderLocalSnowballRanking(player, snowball, game));
+                lines.addAll(renderLocalSnowballRanking(config, player, snowball, game));
                 continue;
             }
             String line = raw;
@@ -220,16 +223,18 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         return renderRaw(player, template.title(), lines, values, config.papiFallback());
     }
 
-    private static void putMatchup(Map<String, String> values, ChampionshipTeam right, ChampionshipTeam left) {
-        values.put("match.right", right == null ? "&7待定" : right.getColoredName());
-        values.put("match.left", left == null ? "&7待定" : left.getColoredName());
+    private static void putMatchup(SidebarConfiguration config, Map<String, String> values,
+                                   ChampionshipTeam right, ChampionshipTeam left) {
+        String undecided = config.value("match.undecided", "&7待定");
+        values.put("match.right", right == null ? undecided : right.getColoredName());
+        values.put("match.left", left == null ? undecided : left.getColoredName());
     }
 
-    private List<String> renderLocalBingoRanking(BingoArea bingo,
+    private List<String> renderLocalBingoRanking(SidebarConfiguration config, BingoArea bingo,
                                                  SidebarConfiguration.GameTemplate template,
                                                  ChampionshipTeam viewerTeam) {
         BingoRound round = bingo.getRound();
-        if (round == null) return List.of("&7暂无排行");
+        if (round == null) return List.of(config.value("ranking.none", "&7暂无排行"));
         List<ChampionshipTeam> ranked = round.rankedTeams();
         List<ChampionshipTeam> selected = selectRankingRows(ranked, viewerTeam);
         List<String> result = new ArrayList<>();
@@ -237,8 +242,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             int position = ranked.indexOf(team) + 1;
             String raw = bingo.getRunMode() == GameRunMode.DAILY
                     ? team.equals(viewerTeam)
-                    ? "{rank.team-color}&l▶ {rank.position}. {rank.team} &7({rank.tasks} 项)"
-                    : "{rank.team-color}{rank.position}. {rank.team} &7({rank.tasks} 项)"
+                    ? config.value("ranking.bingo-daily-own-row", "{rank.team-color}&l▶ {rank.position}. {rank.team} &7({rank.tasks} 项)")
+                    : config.value("ranking.bingo-daily-row", "{rank.team-color}{rank.position}. {rank.team} &7({rank.tasks} 项)")
                     : team.equals(viewerTeam) ? template.ownRankingLine() : template.rankingLine();
             String line = raw.replace("{rank.team-color}", team.getColorCode())
                     .replace("{rank.position}", Integer.toString(position))
@@ -250,10 +255,11 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         return result;
     }
 
-    private List<String> renderLocalSnowballRanking(Player player, SnowballShowdownTeamArea snowball,
+    private List<String> renderLocalSnowballRanking(SidebarConfiguration config, Player player,
+                                                    SnowballShowdownTeamArea snowball,
                                                     SidebarConfiguration.GameTemplate template) {
         List<ChampionshipTeam> ranked = snowball.getRankedTeams();
-        if (ranked.isEmpty()) return List.of("&7暂无排行");
+        if (ranked.isEmpty()) return List.of(config.value("ranking.none", "&7暂无排行"));
         ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
         List<String> result = new ArrayList<>();
         for (ChampionshipTeam team : selectRankingRows(ranked, viewerTeam)) {
@@ -279,16 +285,19 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("edit.game", session.getGameType().toString());
         values.put("edit.map", session.getAreaName());
-        values.put("edit.world", session.getTarget().worldName().isBlank() ? "&c尚未绑定" : session.getTarget().worldName());
-        values.put("edit.world-status", correctWorld ? "&a正确" : "&c错误");
+        values.put("edit.world", session.getTarget().worldName().isBlank()
+                ? config.value("map-edit.world-unbound", "&c尚未绑定") : session.getTarget().worldName());
+        values.put("edit.world-status", correctWorld
+                ? config.value("map-edit.world-correct", "&a正确")
+                : config.value("map-edit.world-wrong", "&c错误"));
         values.put("edit.done", Integer.toString(session.configDone()));
         values.put("edit.total", Integer.toString(session.configTotal()));
         values.put("edit.errors", Integer.toString(errors.size()));
         values.put("edit.progress-color", complete ? "&a" : "&e");
         values.put("edit.error-color", complete ? "&a" : "&c");
         values.put("edit.revision", Integer.toString(Objects.requireNonNullElse(map.getPrepareRevision(), 0)));
-        values.put("edit.publish-status", publishStatus(map));
-        values.put("edit.warning", editWarning(map, complete, correctWorld));
+        values.put("edit.publish-status", publishStatus(config, map));
+        values.put("edit.warning", editWarning(config, map, complete, correctWorld));
         return renderTemplate(player, config.mapEdit(), values);
     }
 
@@ -299,9 +308,11 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put("world.name", player.getWorld().getName());
         values.put("map.count", Integer.toString(maps.size()));
         values.put("map.publish-status", maps.stream().allMatch(entry -> entry.config().isPrepareReady())
-                ? "&a全部已发布" : "&e存在草稿或未保存修改");
+                ? config.value("map-publish.all-ready", "&a全部已发布")
+                : config.value("map-publish.any-unpublished", "&e存在草稿或未保存修改"));
         values.put("map.runtime-status", maps.stream().map(entry -> entry.instance().getGameStageEnum().toString())
-                .distinct().reduce((left, right) -> left + "&7 / " + right).orElse("&7未知"));
+                .distinct().reduce((left, right) -> left + "&7 / " + right)
+                .orElse(config.value("map-status.runtime-unknown", "&7未知")));
         values.put("map.revision", Integer.toString(Objects.requireNonNullElse(primary.config().getPrepareRevision(), 0)));
 
         List<Component> lines = new ArrayList<>();
@@ -393,17 +404,18 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         if (sidebar != null) sidebar.hide(player);
     }
 
-    private static String publishStatus(BaseGameConfig config) {
-        if (config.isPrepareReady()) return "&a已发布";
-        if (config.isPreparePublished()) return "&e有未发布修改";
-        return "&c尚未发布";
+    private static String publishStatus(SidebarConfiguration sidebar, BaseGameConfig config) {
+        if (config.isPrepareReady()) return sidebar.value("map-publish.ready", "&a已发布");
+        if (config.isPreparePublished()) return sidebar.value("map-publish.published", "&e有未发布修改");
+        return sidebar.value("map-publish.unpublished", "&c尚未发布");
     }
 
-    private static String editWarning(BaseGameConfig config, boolean complete, boolean correctWorld) {
-        if (!correctWorld) return "&c&l✗ 当前不在绑定世界，无法安全捕获配置";
-        if (!complete) return "&c&l✗ 地图配置尚未完成";
-        if (config.isPrepareDirty()) return "#ff6b26&l⚠ 修改尚未发布，不能用于比赛";
-        return "&a&l✓ 配置完整且已发布";
+    private static String editWarning(SidebarConfiguration sidebar, BaseGameConfig config,
+                                      boolean complete, boolean correctWorld) {
+        if (!correctWorld) return sidebar.value("map-edit.world-invalid", "&c&l✗ 当前不在绑定世界，无法安全捕获配置");
+        if (!complete) return sidebar.value("map-edit.incomplete", "&c&l✗ 地图配置尚未完成");
+        if (config.isPrepareDirty()) return sidebar.value("map-edit.dirty", "#ff6b26&l⚠ 修改尚未发布，不能用于比赛");
+        return sidebar.value("map-edit.complete", "&a&l✓ 配置完整且已发布");
     }
 
     private static String publishGlyph(BaseGameConfig config) {

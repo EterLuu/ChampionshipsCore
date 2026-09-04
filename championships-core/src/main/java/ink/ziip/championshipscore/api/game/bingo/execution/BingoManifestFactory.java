@@ -162,6 +162,10 @@ public final class BingoManifestFactory {
         messages.put("bingo.game-winner", MessageConfig.BINGO_GAME_WINNER);
         messages.put("papi.none", MessageConfig.PLACEHOLDER_NONE);
         messages.put("papi.spectator", MessageConfig.PLACEHOLDER_SPECTATOR);
+        messages.put("presentation.daily-game", MessageConfig.PRESENTATION_DAILY_GAME);
+        messages.put("presentation.tab.team-footer", MessageConfig.PRESENTATION_TAB_TEAM_FOOTER);
+        messages.put("presentation.tab.daily-team-footer", MessageConfig.PRESENTATION_TAB_DAILY_TEAM_FOOTER);
+        messages.put("presentation.tab.current-game-footer", MessageConfig.PRESENTATION_TAB_CURRENT_GAME_FOOTER);
         messages.put("chat.team.prefix", MessageConfig.CHAT_TEAM_PREFIX);
         messages.put("chat.team.usage", MessageConfig.CHAT_TEAM_USAGE);
         messages.put("chat.team.unavailable", MessageConfig.CHAT_TEAM_UNAVAILABLE);

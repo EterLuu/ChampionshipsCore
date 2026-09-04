@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,14 +36,14 @@ final class FinaleDirectStartSubCommand extends BaseSubCommand {
         ChampionshipTeam right = plugin.getTeamManager().getTeam(args[1]);
         ChampionshipTeam left = plugin.getTeamManager().getTeam(args[2]);
         if (right == null || left == null || right.equals(left)) {
-            Utils.sendAdminError(sender, "场地或队伍无效");
+            Utils.sendAdminError(sender, MessageConfig.FINALE_DIRECT_START_INVALID);
             return true;
         }
 
         boolean started;
         if (definition.gameType() == ink.ziip.championshipscore.api.object.game.GameTypeEnum.Dodgebolt) {
             if (plugin.getGameManager().getDodgeboltManager().getArea(args[0]) == null) {
-                Utils.sendAdminError(sender, "场地或队伍无效");
+                Utils.sendAdminError(sender, MessageConfig.FINALE_DIRECT_START_INVALID);
                 return true;
             }
             ChampionshipTeam higher = plugin.getRankManager().getCachedTeamPoints(right)
@@ -55,12 +56,14 @@ final class FinaleDirectStartSubCommand extends BaseSubCommand {
         }
 
         if (started) {
-            Utils.sendAdminSuccess(sender, definition.gameType() + " 已直接开始准备"
-                    + (force ? "，仅计入两队当前在线成员" : ""));
+            Utils.sendAdminSuccess(sender, (force
+                    ? MessageConfig.FINALE_DIRECT_START_STARTED_FORCED
+                    : MessageConfig.FINALE_DIRECT_START_STARTED)
+                    .replace("%game%", definition.gameType().name()));
         } else {
             Utils.sendAdminError(sender, force
-                    ? "启动失败，请确保每队至少有 1 名在线玩家，并检查配置或场地占用"
-                    : "启动失败，请检查配置、队员在线状态或场地占用");
+                    ? MessageConfig.FINALE_DIRECT_START_FORCED_FAILED
+                    : MessageConfig.FINALE_DIRECT_START_FAILED);
         }
         return true;
     }

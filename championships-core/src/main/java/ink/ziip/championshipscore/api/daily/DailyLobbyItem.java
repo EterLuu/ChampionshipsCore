@@ -28,10 +28,8 @@ final class DailyLobbyItem {
         ItemStack fallback = new ItemStack(Material.COMPASS);
         ItemMeta meta = fallback.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text("游戏大厅", NamedTextColor.AQUA)
-                    .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text("右键打开大厅菜单", NamedTextColor.GRAY)
-                    .decoration(TextDecoration.ITALIC, false)));
+            meta.displayName(GuiConfig.component("daily.hotbar.lobby.title"));
+            meta.lore(List.of());
             meta.getPersistentDataContainer().set(MARKER, PersistentDataType.BYTE, (byte) 1);
             fallback.setItemMeta(meta);
         }

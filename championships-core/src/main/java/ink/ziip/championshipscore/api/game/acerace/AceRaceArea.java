@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameI
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Enchants;
 import ink.ziip.championshipscore.util.Utils;
@@ -527,8 +528,11 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 spawned.setPersistent(false);
                 int binding = markerIndex < respawnProgressPointBindings.size()
                         ? respawnProgressPointBindings.get(markerIndex) : -1;
-                spawned.customName(net.kyori.adventure.text.Component.text(binding < 0
-                        ? "起点后" : "进度点 #" + (binding + 1) + " 后"));
+                String markerName = binding < 0
+                        ? GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.map-preview.states.marker-start.title")
+                        : GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.map-preview.states.marker-bound.title")
+                                .replace("%order%", String.valueOf(binding + 1));
+                spawned.customName(net.kyori.adventure.text.Component.text(markerName));
                 spawned.setCustomNameVisible(true);
                 spawned.getPersistentDataContainer().set(mapEditPreviewAreaKey,
                         PersistentDataType.STRING, areaName);

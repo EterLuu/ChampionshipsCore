@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.team;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -33,7 +34,7 @@ public class TeamListSubCommand extends BaseSubCommand {
         teams.sort(Comparator.comparing(ChampionshipTeam::getName, String.CASE_INSENSITIVE_ORDER));
 
         if (teams.isEmpty()) {
-            sender.sendMessage(Utils.translateColorCodes("&#696969没有已创建的队伍。"));
+            sender.sendMessage(Utils.translateColorCodes(MessageConfig.TEAM_NO_TEAMS));
             return true;
         }
 

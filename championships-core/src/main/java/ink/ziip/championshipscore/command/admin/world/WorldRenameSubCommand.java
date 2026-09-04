@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import org.bukkit.Bukkit;
@@ -43,35 +44,35 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         String newWorldName = args[1];
         WorldManager worldManager = plugin.getWorldManager();
         if (!WorldManager.isValidWorldName(oldWorldName) || !WorldManager.isValidWorldName(newWorldName)) {
-            Utils.sendAdminError(sender, "世界名仅支持字母、数字、下划线和连字符");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_INVALID_NAME);
             return true;
         }
         if (oldWorldName.equalsIgnoreCase(newWorldName)) {
-            Utils.sendAdminError(sender, "新旧世界名不能相同（不支持仅修改大小写）");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_SAME_NAME);
             return true;
         }
         if (Bukkit.getWorld(newWorldName) != null || worldManager.getWorldFolder(newWorldName).exists()) {
-            Utils.sendAdminError(sender, "目标世界 &#fff566" + newWorldName + " &#ededed已存在");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_TARGET_EXISTS.replace("%world%", newWorldName));
             return true;
         }
 
         World oldWorld = Bukkit.getWorld(oldWorldName);
         File oldFolder = worldManager.getWorldFolder(oldWorldName);
         if (oldWorld == null && !oldFolder.isDirectory()) {
-            Utils.sendAdminError(sender, "世界 &#fff566" + oldWorldName + " &#ededed不存在");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MISSING.replace("%world%", oldWorldName));
             return true;
         }
         if ((oldWorld != null && worldManager.isMainWorld(oldWorld))
                 || oldWorldName.equals(worldManager.getMainWorld() == null ? "" : worldManager.getMainWorld().getName())) {
-            Utils.sendAdminError(sender, "主大厅世界不能重命名");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MAIN_PROTECTED_RENAME);
             return true;
         }
         if (WorldManager.isBingoWorldName(oldWorldName)) {
-            Utils.sendAdminError(sender, "Bingo 三维度由游戏管理，不能通过此命令重命名");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_BINGO_PROTECTED_RENAME);
             return true;
         }
         if (plugin.getPrepareSessionManager().hasActiveSessions()) {
-            Utils.sendAdminError(sender, "仍有地图 prepare 会话进行中，不能重命名世界");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_PREPARE_ACTIVE_RENAME);
             return true;
         }
 
@@ -82,21 +83,21 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         }
         if (oldWorld == null) {
             if (requestedEnvironment == null) {
-                Utils.sendAdminError(sender, "未加载世界需在末尾指定原环境 &#fff566normal&#ededed、&#fff566nether&#ededed 或 &#fff566the_end");
+                Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_ENVIRONMENT_REQUIRED);
                 return true;
             }
             if (!worldManager.loadWorld(oldWorldName, requestedEnvironment, false)) {
-                Utils.sendAdminError(sender, "世界 &#fff566" + oldWorldName + " &#ededed加载失败 &#696969• 请检查控制台");
+                Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_LOAD_FAILED.replace("%world%", oldWorldName));
                 return true;
             }
             oldWorld = Bukkit.getWorld(oldWorldName);
             if (oldWorld == null) {
-                Utils.sendAdminError(sender, "世界 &#fff566" + oldWorldName + " &#ededed加载失败");
+                Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_LOAD_FAILED_SIMPLE.replace("%world%", oldWorldName));
                 return true;
             }
         } else if (requestedEnvironment != null && requestedEnvironment != oldWorld.getEnvironment()) {
-            Utils.sendAdminError(sender, "已加载世界的环境为 &#fff566" + oldWorld.getEnvironment().name().toLowerCase()
-                    + "&#ededed，不能指定其他环境");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_ENVIRONMENT_MISMATCH
+                    .replace("%environment%", oldWorld.getEnvironment().name().toLowerCase()));
             return true;
         }
 
@@ -113,23 +114,23 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         File oldTemplate = new File(new File(plugin.getDataFolder(), "maps"), oldWorldName);
         File newTemplate = new File(new File(plugin.getDataFolder(), "maps"), newWorldName);
         if (newTemplate.exists()) {
-            Utils.sendAdminError(sender, "目标地图模板 &#fff566" + newWorldName + " &#ededed已存在");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_TEMPLATE_EXISTS.replace("%world%", newWorldName));
             return true;
         }
         if (!worldManager.unloadWorld(oldWorldName, true)) {
-            Utils.sendAdminError(sender, "世界 &#fff566" + oldWorldName + " &#ededed卸载失败 &#696969• 请检查控制台");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", oldWorldName));
             return true;
         }
         if (!worldManager.renameWorldFiles(oldWorldName, newWorldName)) {
             worldManager.loadWorld(oldWorldName, environment, false);
-            Utils.sendAdminError(sender, "世界目录重命名失败 &#696969• 原世界已尝试恢复");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_DIRECTORY_RENAME_FAILED);
             return true;
         }
 
         boolean templateMoved = !oldTemplate.isDirectory() || worldManager.moveDirectory(oldTemplate, newTemplate);
         if (!templateMoved || !worldManager.loadWorld(newWorldName, environment, false)) {
             rollbackFiles(worldManager, oldWorldName, newWorldName, environment, oldTemplate, newTemplate, templateMoved);
-            Utils.sendAdminError(sender, "世界重命名失败 &#696969• 原世界已尝试恢复");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_RENAME_FAILED);
             return true;
         }
 
@@ -139,13 +140,15 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         if (migratedConfigs == null) {
             rollbackFiles(worldManager, oldWorldName, newWorldName, environment, oldTemplate, newTemplate, templateMoved);
             rollbackMapConfigs(mapConfigs.keySet(), newWorldName, newWorld, oldWorldName);
-            Utils.sendAdminError(sender, "地图配置迁移失败 &#696969• 原世界已尝试恢复");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_CONFIG_MIGRATION_FAILED);
             return true;
         }
         owners.forEach(manager -> manager.renameManagedWorld(oldWorldName, newWorldName));
 
-        Utils.sendAdminSuccess(sender, "已重命名世界 &#fff566" + oldWorldName + " &#ededed为 &#fff566" + newWorldName
-                + (movedPlayers == 0 ? "" : " &#696969• 已迁回 " + movedPlayers + " 名玩家"));
+        Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_WORLD_RENAMED
+                .replace("%old%", oldWorldName)
+                .replace("%new%", newWorldName)
+                .replace("%moved%", movedPlayers == 0 ? "" : MessageConfig.ADMIN_WORLD_MOVED_PLAYERS.replace("%count%", String.valueOf(movedPlayers))));
         return true;
     }
 
@@ -169,10 +172,10 @@ public class WorldRenameSubCommand extends BaseSubCommand {
             for (BaseGameInstance instance : manager.getRuntimeInstances()) {
                 if (!worldName.equals(instance.getWorldName())) continue;
                 if (instance.getGameStageEnum() != GameStageEnum.WAITING)
-                    return "世界 &#fff566" + worldName + " &#ededed正在被游戏使用，不能重命名";
+                    return MessageConfig.ADMIN_WORLD_GAME_IN_USE.replace("%world%", worldName);
                 BaseGameConfig config = instance.getGameConfig();
                 if (!config.ownsNamedWorld(worldName))
-                    return "世界 &#fff566" + worldName + " &#ededed的名称由游戏地图规则派生，不能通过此命令重命名";
+                    return MessageConfig.ADMIN_WORLD_NAME_DERIVED.replace("%world%", worldName);
                 configs.put(config, Boolean.TRUE);
                 owners.add(manager);
             }

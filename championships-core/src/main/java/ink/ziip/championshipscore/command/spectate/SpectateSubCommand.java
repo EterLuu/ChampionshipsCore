@@ -28,7 +28,7 @@ public class SpectateSubCommand extends BaseSubCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length > 3) {
@@ -65,7 +65,7 @@ public class SpectateSubCommand extends BaseSubCommand {
                 return true;
             }
             if (!plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
-                Utils.sendAdminError(sender, "该游戏当前未启用");
+                Utils.sendAdminError(sender, MessageConfig.SPECTATOR_GAME_DISABLED);
                 return true;
             }
             List<BaseGameInstance> candidates = plugin.getGameManager()
@@ -78,8 +78,8 @@ public class SpectateSubCommand extends BaseSubCommand {
                     .findFirst().orElse(null);
             if (baseArea == null) {
                 Utils.sendAdminError(sender, args.length == 3
-                        ? "找不到该场地正在运行的实例：&#fff566" + args[2]
-                        : "该场地尚未开启或已经结束，当前不可旁观");
+                        ? MessageConfig.SPECTATOR_INSTANCE_MISSING.replace("%instance%", args[2])
+                        : MessageConfig.SPECTATOR_AREA_UNAVAILABLE);
                 return true;
             }
             join(player, baseArea);

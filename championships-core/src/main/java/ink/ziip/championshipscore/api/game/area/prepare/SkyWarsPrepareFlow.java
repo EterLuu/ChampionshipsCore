@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ListStep;
@@ -26,21 +27,21 @@ public final class SkyWarsPrepareFlow extends SnapshotMapPrepareFlow {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
-        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.map-borders")),
-                Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.use-worldedit-to-select-the-complete-boundary-of-this-empty-island")), Material.BEDROCK,
+        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.menus.step-list.games.sky-wars.items.map-borders.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.sky-wars.items.map-borders.lore", 0)), Material.BEDROCK,
                 t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
                 (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.sky-wars.setup.map-boundaries-set"))));
-        steps.add(new StandAndRunStep("boundary_center", Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.border-center-point")),
-                Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.stand-at-the-center-of-the-horizontal-border-and-the-shrink-effect-and-click")), Material.COMPASS,
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_SW_MAP_BOUNDARIES_SET)));
+        steps.add(new StandAndRunStep("boundary_center", Component.text(GuiConfig.text("map-editor.menus.step-list.games.sky-wars.items.border-center.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.sky-wars.items.border-center.lore", 0)), Material.COMPASS,
                 t -> cfg(t).getBoundaryCenterPoint() != null, (t, l) -> cfg(t).setBoundaryCenterPoint(l),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.sky-wars.setup.boundary-center-point-set"))));
-        steps.add(new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")),
-                Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")), Material.ENDER_EYE,
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_SW_BORDER_CENTER_SET)));
+        steps.add(new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)), Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set"))));
-        steps.add(new ListStep("team_spawn_points", Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.team-spawn-point")),
-                Component.text(GuiConfig.text("map-editor.games.sky-wars.setup.add-spawn-positions-for-each-team-one-by-one")), Material.LIME_WOOL,
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
+        steps.add(new ListStep("team_spawn_points", Component.text(GuiConfig.text("map-editor.menus.step-list.games.sky-wars.items.team-spawn.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.sky-wars.items.team-spawn.lore", 0)), Material.LIME_WOOL,
                 t -> list(t), (t, values) -> cfg(t).setTeamSpawnPoints(values),
                 t -> list(t).isEmpty(), (t, s) -> { List<String> l = list(t); l.add(s); cfg(t).setTeamSpawnPoints(l); },
                 t -> cfg(t).setTeamSpawnPoints(new ArrayList<>()), t -> list(t).size()));

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -33,11 +34,11 @@ public class AdminReloadSubCommand extends BaseSubCommand {
 
         ChampionshipsCore plugin = ChampionshipsCore.getInstance();
         if (plugin.getPrepareSessionManager().hasActiveSessions()) {
-            Utils.sendAdminError(sender, "仍有地图 prepare 会话进行中，不能重载");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_PREPARE_ACTIVE);
             return true;
         }
         if (!RELOAD_IN_PROGRESS.compareAndSet(false, true)) {
-            Utils.sendAdminError(sender, "已有配置重载正在进行，请等待地图重置完成");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_ALREADY_RUNNING);
             return true;
         }
         Set<GameTypeEnum> previouslyEnabled = plugin.getGameManager().enabledGamesSnapshot();
@@ -46,11 +47,11 @@ public class AdminReloadSubCommand extends BaseSubCommand {
         if (!plugin.getConfigurationManager().reload()) {
             plugin.getScheduleManager().load();
             RELOAD_IN_PROGRESS.set(false);
-            Utils.sendAdminError(sender, "配置加载失败，运行时配置已回滚；请检查控制台错误");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_CONFIG_FAILED);
             return true;
         }
         List<String> restartRequired = previousSensitive.changedPaths();
-        Utils.sendAdminSuccess(sender, "配置读取完成，正在等待进行中的场地安全重置……");
+        Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_RELOAD_READ_DONE);
         plugin.getGameManager().hotReload(previouslyEnabled).whenComplete((report, failure) ->
                 plugin.getServer().getScheduler().runTask(plugin,
                         () -> finishReload(plugin, sender, report, failure, restartRequired)));
@@ -64,7 +65,7 @@ public class AdminReloadSubCommand extends BaseSubCommand {
         if (failure != null || report == null) {
             plugin.getScheduleManager().load();
             RELOAD_IN_PROGRESS.set(false);
-            Utils.sendAdminError(sender, "配置已读取，但地图重置失败；调度已恢复，请检查控制台错误");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_RESET_FAILED);
             plugin.getLogger().log(java.util.logging.Level.SEVERE, "Configuration hot reload failed", failure);
             return;
         }
@@ -83,23 +84,25 @@ public class AdminReloadSubCommand extends BaseSubCommand {
             plugin.getSidebarManager().invalidateAll();
             plugin.getScheduleManager().load();
             String restartNotice = restartRequired.isEmpty() ? ""
-                    : " &#696969• 需重启生效=" + String.join(",", restartRequired);
+                    : MessageConfig.ADMIN_RELOAD_RESTART_REQUIRED
+                            .replace("%items%", String.join(",", restartRequired));
             String resetFailure = report.failedResets() == 0 ? ""
-                    : " &#ff5555• 重置失败=" + report.failedResets();
-            String bingoFailure = bingoReady ? "" : " &#ff5555• Bingo内容配置加载失败";
+                    : MessageConfig.ADMIN_RELOAD_RESET_FAILURES.replace("%count%", String.valueOf(report.failedResets()));
+            String bingoFailure = bingoReady ? "" : MessageConfig.ADMIN_RELOAD_BINGO_FAILURE;
             String configFailure = report.failedConfigurations() == 0 ? ""
-                    : " &#ff5555• 地图配置失败=" + report.failedConfigurations();
-            Utils.sendAdminSuccess(sender, "配置已热重载 &#696969• 复用场地=" + report.reusedInstances()
-                    + " &#696969• 刷新地图配置=" + report.reloadedConfigurations()
-                    + configFailure
-                    + " &#696969• 重置进行中场地=" + report.resetInstances()
-                    + resetFailure
-                    + " &#696969• 新启用管理器=" + report.enabledManagers()
-                    + " &#696969• 停用管理器=" + report.disabledManagers()
-                    + (report.remoteMatchesStopped() == 0 ? ""
-                    : " &#696969• 已终止远程Bingo=" + report.remoteMatchesStopped())
-                    + bingoFailure
-                    + restartNotice);
+                    : MessageConfig.ADMIN_RELOAD_CONFIG_FAILURES.replace("%count%", String.valueOf(report.failedConfigurations()));
+            Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_RELOAD_COMPLETED
+                    .replace("%reused%", String.valueOf(report.reusedInstances()))
+                    .replace("%reloaded%", String.valueOf(report.reloadedConfigurations()))
+                    .replace("%configFailure%", configFailure)
+                    .replace("%reset%", String.valueOf(report.resetInstances()))
+                    .replace("%resetFailure%", resetFailure)
+                    .replace("%enabled%", String.valueOf(report.enabledManagers()))
+                    .replace("%disabled%", String.valueOf(report.disabledManagers()))
+                    .replace("%remote%", report.remoteMatchesStopped() == 0 ? ""
+                            : MessageConfig.ADMIN_RELOAD_REMOTE_STOPPED.replace("%count%", String.valueOf(report.remoteMatchesStopped())))
+                    .replace("%bingoFailure%", bingoFailure)
+                    .replace("%restartNotice%", restartNotice));
         } finally {
             RELOAD_IN_PROGRESS.set(false);
         }

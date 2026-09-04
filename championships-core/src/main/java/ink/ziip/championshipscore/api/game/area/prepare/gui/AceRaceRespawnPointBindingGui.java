@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.area.prepare.gui;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -55,8 +56,7 @@ public final class AceRaceRespawnPointBindingGui {
     public static void open(@NotNull PrepareSessionManager manager, @NotNull Player player,
                             @NotNull PrepareSession session, int respawnIndex) {
         Holder holder = new Holder(session, respawnIndex);
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54,
-                GuiConfig.text(MENU_PATH + ".copy.select-the-progress-line-to-which-the-respawn-point-belongs"), List.of());
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54, GuiConfig.component(MENU_PATH), List.of());
         holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -132,10 +132,8 @@ public final class AceRaceRespawnPointBindingGui {
                 continue;
             }
             boolean selected = progressIndex == current;
-            inventory.setItem(slot, item(Material.LIME_STAINED_GLASS_PANE,
-                    GuiConfig.text("map-editor.copy.progress-line") + (progressIndex + 1) + GuiConfig.text("map-editor.copy.after-suffix"),
-                    selected ? NamedTextColor.GREEN : NamedTextColor.AQUA,
-                    selected ? GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.copy.current-binding") : GuiConfig.text("map-editor.games.ace-race.menus.respawn-binding.copy.after-clicking-to-bind-to-this-progress-line")));
+            inventory.setItem(slot, configured("option", selected ? "selected" : null,
+                    Map.of("order", progressIndex + 1)));
         }
         inventory.setItem(PREVIOUS_SLOT, holder.page > 0
                 ? configured("previous", null, Map.of("page", holder.page, "pages", pageCount))

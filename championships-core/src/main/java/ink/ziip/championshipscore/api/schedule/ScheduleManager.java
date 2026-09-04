@@ -435,24 +435,24 @@ public class ScheduleManager extends BaseManager {
                                            @NotNull CommandSender requester, boolean forcePartialRoster) {
         FinaleGameDefinition definition = FinaleGameRegistry.definition(gameType);
         if (definition == null) {
-            Utils.sendAdminError(requester, "该游戏未注册为合法决赛游戏");
+            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_GAME_NOT_REGISTERED);
             return;
         }
         if (!plugin.getGameManager().isGameEnabled(gameType)) {
-            Utils.sendAdminError(requester, gameType + " 未在 enabled-games 中启用");
+            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_GAME_DISABLED.replace("%game%", gameType.name()));
             return;
         }
         if (forcePartialRoster && !definition.supportsPartialRoster()) {
-            Utils.sendAdminError(requester, "该决赛游戏不支持 --force 在线子阵容");
+            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_PARTIAL_ROSTER_UNSUPPORTED);
             return;
         }
         if (isFinaleRunning(gameType)) {
             stopFinale(gameType);
-            Utils.sendAdminInfo(requester, "已通过重复 start 紧急停止正式决赛：&#fff566" + gameType);
+            Utils.sendAdminInfo(requester, MessageConfig.SCHEDULE_FINALE_EMERGENCY_STOPPED.replace("%game%", gameType.name()));
             return;
         }
         if (isAnyFinaleRunning()) {
-            Utils.sendAdminError(requester, "已有其他正式决赛正在准备或进行");
+            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_OTHER_RUNNING);
             return;
         }
 
@@ -469,7 +469,8 @@ public class ScheduleManager extends BaseManager {
                     ? (configuredArea == null ? definition.defaultArea() : configuredArea) : requestedArea;
             BaseGameInstance instance = finaleArea(gameType, area);
             if (instance == null || !plugin.getPrepareSessionManager().canStart(gameType, area)) {
-                Utils.sendAdminError(requester, gameType + " 地图不存在或尚未发布：&#fff566" + area);
+                Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_MAP_UNAVAILABLE
+                        .replace("%game%", gameType.name()).replace("%map%", area));
                 return;
             }
 
@@ -484,7 +485,7 @@ public class ScheduleManager extends BaseManager {
                     ChampionshipTeam higherSeed = rightPoints >= leftPoints
                             ? finalists.right() : finalists.left();
                     if (Double.compare(rightPoints, leftPoints) == 0) {
-                        Utils.sendAdminInfo(requester, "两队积分相同，第一参数队伍将作为第一局两箭队伍");
+                        Utils.sendAdminInfo(requester, MessageConfig.SCHEDULE_FINALE_DODGEBOLT_TIE_SEED);
                     }
                     startDodgeboltTransition(area, (DodgeboltArea) instance,
                             finalists.right(), finalists.left(), higherSeed, requester, forcePartialRoster);
@@ -492,7 +493,7 @@ public class ScheduleManager extends BaseManager {
                 case DragonEggCarnival -> startDragonEggCarnivalTransition(
                         area, (DragonEggCarnivalArea) instance,
                         finalists.right(), finalists.left(), requester);
-                default -> Utils.sendAdminError(requester, "该决赛游戏尚未实现启动流程");
+                default -> Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_START_NOT_IMPLEMENTED);
             }
         });
     }
@@ -526,19 +527,19 @@ public class ScheduleManager extends BaseManager {
         ChampionshipTeam left = requestedLeft;
         if (right == null || left == null) {
             if (leaderboard.size() < 2) {
-                Utils.sendAdminError(requester, "队伍总榜不足两支队伍，无法自动选出决赛队伍");
+                Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_AUTO_FINALISTS_UNAVAILABLE);
                 return null;
             }
             if (leaderboard.size() > 2
                     && Double.compare(leaderboard.get(1).getValue(), leaderboard.get(2).getValue()) == 0) {
-                Utils.sendAdminError(requester, "第二名与第三名同分，请显式指定两支决赛队伍");
+                Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_TIE_BREAK_REQUIRED);
                 return null;
             }
             right = leaderboard.get(0).getKey();
             left = leaderboard.get(1).getKey();
         }
         if (right.equals(left)) {
-            Utils.sendAdminError(requester, "决赛必须指定两支不同队伍");
+            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_TEAMS_MUST_DIFFER);
             return null;
         }
         return new Finalists(right, left);
@@ -550,8 +551,10 @@ public class ScheduleManager extends BaseManager {
                                                    @NotNull ChampionshipTeam left,
                                                    @NotNull CommandSender requester) {
         final int[] remaining = {10};
-        Utils.sendAdminSuccess(requester, "龙蛋狂欢决赛已排定 &#bababa• " + right.getColoredName()
-                + " &#edededvs " + left.getColoredName() + " &#bababa• &#ededed地图 " + area);
+        Utils.sendAdminSuccess(requester, MessageConfig.SCHEDULE_FINALE_DRAGON_EGG_SCHEDULED
+                .replace("%right%", right.getColoredName())
+                .replace("%left%", left.getColoredName())
+                .replace("%map%", area));
         dragonEggCarnivalTransitionTask = scheduler.runTaskTimer(plugin, () -> {
             showRoundPreparationCountdown(GameTypeEnum.DragonEggCarnival, 1, remaining[0]);
             if (remaining[0] == 10) {
@@ -568,7 +571,7 @@ public class ScheduleManager extends BaseManager {
                         right, left, true, GameRunMode.EVENT)) {
                     plugin.getGameManager().spectateFinale(instance, right, left);
                 } else {
-                    Utils.sendAdminError(requester, "龙蛋狂欢决赛启动失败，请检查队员在线状态和场地占用");
+                    Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_DRAGON_EGG_START_FAILED);
                 }
                 return;
             }
@@ -581,12 +584,16 @@ public class ScheduleManager extends BaseManager {
                                           ChampionshipTeam higherSeed, CommandSender requester,
                                           boolean forcePartialRoster) {
         final int[] remaining = {10};
-        Utils.sendAdminSuccess(requester, "躲避箭决赛已排定 &#bababa• " + right.getColoredName()
-                + " &#edededvs " + left.getColoredName() + " &#bababa• &#ededed地图 " + area
-                + (forcePartialRoster ? " &#bababa• &#ff6b26强制阵容" : ""));
-        Utils.sendMessageToAllPlayers("&#bababa━━━━━━━━ &#fff566&l躲避箭决赛 &#bababa━━━━━━━━\n"
-                + right.getColoredName() + " &#edededvs " + left.getColoredName()
-                + "\n&#ededed第一局两箭：" + higherSeed.getColoredName());
+        Utils.sendAdminSuccess(requester, (forcePartialRoster
+                ? MessageConfig.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED_FORCED
+                : MessageConfig.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED)
+                .replace("%right%", right.getColoredName())
+                .replace("%left%", left.getColoredName())
+                .replace("%map%", area));
+        Utils.sendMessageToAllPlayers(MessageConfig.SCHEDULE_FINALE_DODGEBOLT_ANNOUNCEMENT
+                .replace("%right%", right.getColoredName())
+                .replace("%left%", left.getColoredName())
+                .replace("%first%", higherSeed.getColoredName()));
         dodgeboltTransitionTask = scheduler.runTaskTimer(plugin, () -> {
             showRoundPreparationCountdown(GameTypeEnum.Dodgebolt, 1, remaining[0]);
             if (remaining[0] == 0) {
@@ -597,8 +604,8 @@ public class ScheduleManager extends BaseManager {
                     plugin.getGameManager().spectateFinale(instance, right, left);
                 } else {
                     Utils.sendAdminError(requester, forcePartialRoster
-                            ? "躲避箭决赛强制启动失败，请确保每队至少有 1 名在线玩家并检查场地占用"
-                            : "躲避箭决赛启动失败，请检查队员在线状态和场地占用");
+                            ? MessageConfig.SCHEDULE_FINALE_DODGEBOLT_FORCED_START_FAILED
+                            : MessageConfig.SCHEDULE_FINALE_DODGEBOLT_START_FAILED);
                 }
                 return;
             }

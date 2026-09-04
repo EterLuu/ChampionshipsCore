@@ -2,6 +2,8 @@ package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.api.event.EventTeamImport;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +14,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EventCommandSupportTest {
+    @BeforeAll
+    static void stubValidationReminders() {
+        MessageConfig.EVENT_IMPORT_TEAM_COLOR_DUPLICATE = "队伍颜色重复：%color%。";
+        MessageConfig.EVENT_IMPORT_TEAM_COLOR_FIXED = "队伍颜色不是固定羊毛色：%color%。";
+        MessageConfig.EVENT_IMPORT_PLAYER_DUPLICATE = "玩家在阵容中重复：%player%。";
+        MessageConfig.EVENT_IMPORT_TEAM_SIZE_INVALID = "队伍人数不符合服务器限制：%team%，必须在%min%到%max%之间。";
+    }
+
     @BeforeEach
     void configureTeamSize() {
         CCConfig.TEAM_MAX_MEMBERS = 4;

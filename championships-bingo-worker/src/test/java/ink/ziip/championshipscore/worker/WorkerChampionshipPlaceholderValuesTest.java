@@ -16,7 +16,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class WorkerChampionshipPlaceholderValuesTest {
     private static final UUID PLAYER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final BingoPresentation PRESENTATION = new BingoPresentation(Map.of(
-            "game.name", "宾果时速", "papi.none", "无", "papi.spectator", "旁观"));
+            "game.name", "宾果时速", "papi.none", "无", "papi.spectator", "旁观",
+            "presentation.daily-game", "&6%game%",
+            "presentation.tab.team-footer", "&f队伍: %team% &f| 积分: %points%",
+            "presentation.tab.daily-team-footer", "&f队伍: %team%",
+            "presentation.tab.current-game-footer", "&f当前游戏: &b%game%"));
     private static final TeamSnapshot TEAM = new TeamSnapshot(3, "金队", "YELLOW", "&#fff566",
             List.of(PLAYER_ID), 1234.5D);
     private static final PlayerSnapshot PLAYER = new PlayerSnapshot(PLAYER_ID, "Player",

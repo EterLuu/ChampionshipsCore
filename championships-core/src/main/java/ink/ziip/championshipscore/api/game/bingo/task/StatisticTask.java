@@ -101,7 +101,8 @@ public record StatisticTask(StatisticHandle statistic, int count, Dimension dime
             case TRAVEL -> builder.append(BingoComponents.statistic(statistic))
                     .append(Component.text(": "))
                     .append(Component.text(count * 10))
-                    .append(Component.text(" " + MessageService.global().tr("task.blocks_unit")));
+                    .append(Component.text(" "))
+                    .append(Component.text(MessageService.global().tr("task.blocks_unit")));
             default -> builder.append(BingoComponents.statistic(statistic))
                     .append(Component.text(": "))
                     .append(amount);

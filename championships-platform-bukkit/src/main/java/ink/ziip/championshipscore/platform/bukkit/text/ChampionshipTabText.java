@@ -21,18 +21,19 @@ public final class ChampionshipTabText {
         return bracketedPrefix(LegacyText.translateColorCodes("&#fff566" + gameName));
     }
 
-    public static String teamFooter(String coloredTeamName, double points) {
-        return LegacyText.translateColorCodes("&f队伍: " + coloredTeamName + " &f| 积分: "
-                + LegacyText.formatPoints(points));
+    public static String teamFooter(String template, String coloredTeamName, double points) {
+        return LegacyText.translateColorCodes(template
+                .replace("%team%", coloredTeamName)
+                .replace("%points%", LegacyText.formatPoints(points)));
     }
 
-    public static String currentGameFooter(String gameName) {
-        return LegacyText.translateColorCodes("&f当前游戏: &b" + gameName);
+    public static String currentGameFooter(String template, String gameName) {
+        return LegacyText.translateColorCodes(template.replace("%game%", gameName));
     }
 
     /** DAILY has no championship points; its TAB footer identifies the temporary colour team only. */
-    public static String dailyTeamFooter(String coloredTeamName) {
-        return LegacyText.translateColorCodes("&f队伍: " + coloredTeamName);
+    public static String dailyTeamFooter(String template, String coloredTeamName) {
+        return LegacyText.translateColorCodes(template.replace("%team%", coloredTeamName));
     }
 
     /** Returns explicit white outside a game so scoreboard or parent-component colours cannot leak in. */

@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
  * Single source of truth for every GUI screen defined under gui.yml.
  *
  * <p>Each constant owns the absolute configuration prefix of its menu. Derived paths such as
- * {@code <menu>.items.<item>} or {@code <menu>.copy.<key>} are built through helper methods so
+ * {@code <menu>.items.<item>} or {@code <menu>.text.<key>} are built through helper methods so
  * callers never concatenate raw strings by hand.</p>
  */
 public enum MenuId {
@@ -77,7 +77,7 @@ public enum MenuId {
 
     /** Path of a localised text entry inside this menu's {@code copy} block. */
     public @NotNull String copy(@NotNull String key) {
-        return path + ".copy." + key;
+        return path + ".text." + key;
     }
 
     /** Path of a value under this menu's {@code layout} block. */

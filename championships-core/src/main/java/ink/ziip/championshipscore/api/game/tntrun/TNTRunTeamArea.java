@@ -342,14 +342,13 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     }
 
     private String tntRunBossBarTitle() {
-        String title = MessageConfig.TNT_RUN_ACTION_BAR_COUNT_DOWN
-                .replace("%time%", String.valueOf(timer));
         int activeSeconds = activeTntRainSeconds();
         if (activeSeconds > 0) {
-            title += " &#bababa• " + MessageConfig.TNT_RUN_TNT_RAIN_ACTIVE
-                    .replace("%time%", String.valueOf(activeSeconds));
+            return MessageConfig.TNT_RUN_BOSS_BAR_TNT_RAIN
+                    .replace("%time%", String.valueOf(timer))
+                    .replace("%rain-time%", String.valueOf(activeSeconds));
         }
-        return title;
+        return MessageConfig.TNT_RUN_BOSS_BAR.replace("%time%", String.valueOf(timer));
     }
 
     private int tntRainWarningSeconds() {

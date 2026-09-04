@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -27,13 +28,13 @@ public class WorldTeleportSubCommand extends BaseSubCommand {
             return true;
         }
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
 
         World world = Bukkit.getWorld(args[0]);
         if (world == null) {
-            Utils.sendAdminError(sender, "世界 &#fff566" + args[0] + " &#ededed未加载 &#696969• 请先使用 create");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_NOT_LOADED_CREATE.replace("%world%", args[0]));
             return true;
         }
 
@@ -41,13 +42,13 @@ public class WorldTeleportSubCommand extends BaseSubCommand {
         if (target == null)
             target = world.getSpawnLocation();
         if (!player.teleport(target)) {
-            Utils.sendAdminError(sender, "无法传送至世界 &#fff566" + world.getName());
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_TELEPORT_FAILED.replace("%world%", world.getName()));
             return true;
         }
         player.setGameMode(org.bukkit.GameMode.CREATIVE);
         player.setAllowFlight(true);
         player.setFlying(true);
-        Utils.sendAdminSuccess(sender, "已传送至世界 &#fff566" + world.getName() + " &#696969• 飞行已开启");
+        Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_WORLD_TELEPORTED.replace("%world%", world.getName()));
         return true;
     }
 

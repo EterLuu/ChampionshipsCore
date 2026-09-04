@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -13,6 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DailyTeamAllocationTest {
+    @org.junit.jupiter.api.BeforeAll
+    static void configureTeamNames() {
+        MessageConfig.DAILY_TEAM_NAMES = java.util.List.of(
+                "红", "绿", "蓝", "黄", "青", "紫", "橙", "白",
+                "黄绿", "粉红", "淡蓝", "品红", "灰", "黑", "棕", "浅灰");
+        MessageConfig.DAILY_TEAM_SUFFIX = "队";
+    }
+
     private static final DailyRules RULES = new DailyRules(2, 16, 4, 4, 5);
     private static final DailyRules SOLO_RULES = new DailyRules(1, 16, 4, 4, 60);
 

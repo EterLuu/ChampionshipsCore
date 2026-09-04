@@ -56,11 +56,6 @@ public final class DailyManager extends BaseManager {
             "#ff5555", "#55ff55", "#5555ff", "#ffff55", "#55ffff", "#aa00aa", "#ffaa00", "#ffffff",
             "#00aa00", "#ff55ff", "#00aaaa", "#aa0000", "#aaaaaa", "#000000", "#555555", "#aaaaaa"
     };
-    private static final String[] TEAM_NAMES = {
-            "红", "绿", "蓝", "黄", "青", "紫", "橙", "白",
-            "黄绿", "粉红", "淡蓝", "品红", "灰", "黑", "棕", "浅灰"
-    };
-
     private final Map<GameTypeEnum, DailyGameAdapter> adapters = new EnumMap<>(GameTypeEnum.class);
     private final Map<GameTypeEnum, DailyQueue> queues = new EnumMap<>(GameTypeEnum.class);
     private final Map<UUID, GameTypeEnum> queueByPlayer = new ConcurrentHashMap<>();
@@ -168,7 +163,7 @@ public final class DailyManager extends BaseManager {
         serverMode = next;
         CCConfig.MODE = next.name();
         plugin.getConfigurationManager().getCCConfig().saveOptions();
-        if (next == ServerMode.CHAMPIONSHIP) clearQueues("服务器已切换到正式比赛模式");
+        if (next == ServerMode.CHAMPIONSHIP) clearQueues(MessageConfig.DAILY_QUEUE_CLEAR_CHAMPIONSHIP);
         if (next != ServerMode.DAILY) closeOpenMenus();
         for (Player player : Bukkit.getOnlinePlayers()) syncLobbyItem(player);
         rebuildSnapshots();
@@ -181,13 +176,13 @@ public final class DailyManager extends BaseManager {
         Set<GameTypeEnum> configuredGames = enabledGames();
         boolean gamesChanged = !queues.keySet().equals(configuredGames);
         if (gamesChanged) {
-            clearQueues("DAILY 游戏配置已重载，请重新加入匹配");
+            clearQueues(MessageConfig.DAILY_QUEUE_CLEAR_RELOAD);
             queues.clear();
             for (GameTypeEnum game : configuredGames) queues.put(game, new DailyQueue(game));
         }
         if (serverMode != configuredMode) {
             serverMode = configuredMode;
-            if (configuredMode == ServerMode.CHAMPIONSHIP) clearQueues("服务器已切换到正式比赛模式");
+            if (configuredMode == ServerMode.CHAMPIONSHIP) clearQueues(MessageConfig.DAILY_QUEUE_CLEAR_CHAMPIONSHIP);
             if (configuredMode != ServerMode.DAILY) closeOpenMenus();
         }
         rebuildSnapshots();
@@ -263,7 +258,7 @@ public final class DailyManager extends BaseManager {
             return;
         }
         if (isQueued(player.getUniqueId())) {
-            message(player, "匹配中无法旁观，请先在匹配菜单中取消匹配");
+            message(player, MessageConfig.DAILY_SPECTATE_BLOCKED_QUEUED);
             return;
         }
         if (plugin.getGameManager().canManuallySpectate(player)) {
@@ -423,7 +418,7 @@ public final class DailyManager extends BaseManager {
     synchronized void pauseParty(DailyParty party, String reason) {
         UUID member = party.members().stream().findFirst().orElse(null);
         if (member == null || !leaveQueue(member, false)) return;
-        broadcast(party.members(), "&e" + reason + "。");
+        broadcast(party.members(), reason);
     }
 
     public void handleQuit(UUID player) {
@@ -509,16 +504,33 @@ public final class DailyManager extends BaseManager {
                 && !plugin.getGameManager().isWaitingForNextRound(player);
     }
 
-    /** Human-readable Party-menu state; {@code null} means the player can currently be invited. */
-    @Nullable String partyUnavailableReason(@NotNull UUID player) {
-        if (Bukkit.getPlayer(player) == null) return "已离线";
-        if (partyManager.getParty(player) != null) return "已有同行小队";
-        if (isQueued(player)) return "匹配中";
+    /** Stable Party-menu state; {@code null} means the player can currently be invited. */
+    @Nullable PartyUnavailableReason partyUnavailableReason(@NotNull UUID player) {
+        if (Bukkit.getPlayer(player) == null) return PartyUnavailableReason.OFFLINE;
+        if (partyManager.getParty(player) != null) return PartyUnavailableReason.IN_PARTY;
+        if (isQueued(player)) return PartyUnavailableReason.QUEUED;
         if (sessionByPlayer.get(player) != null
-                || plugin.getGameManager().getBasePlayerArea(player) != null) return "游戏中";
-        if (plugin.getGameManager().getPlayerSpectatorStatus(player) != null) return "观战中";
-        if (plugin.getGameManager().isWaitingForNextRound(player)) return "结算中";
-        return isDailyLobby() ? null : "当前模式不可用";
+                || plugin.getGameManager().getBasePlayerArea(player) != null) return PartyUnavailableReason.IN_GAME;
+        if (plugin.getGameManager().getPlayerSpectatorStatus(player) != null) return PartyUnavailableReason.SPECTATING;
+        if (plugin.getGameManager().isWaitingForNextRound(player)) return PartyUnavailableReason.SETTLING;
+        return isDailyLobby() ? null : PartyUnavailableReason.MODE_CLOSED;
+    }
+
+    /** Reasons are used directly as Party-menu item states; text remains in gui.yml. */
+    enum PartyUnavailableReason {
+        OFFLINE("offline"),
+        IN_PARTY("in-party"),
+        QUEUED("queued"),
+        IN_GAME("in-game"),
+        SPECTATING("spectating"),
+        SETTLING("settling"),
+        MODE_CLOSED("mode-closed");
+
+        private final String state;
+
+        PartyUnavailableReason(@NotNull String state) { this.state = state; }
+
+        @NotNull String state() { return state; }
     }
 
     private boolean canReceiveLobbyItem(@NotNull Player player) {
@@ -533,7 +545,7 @@ public final class DailyManager extends BaseManager {
     void syncLobbyItem(@NotNull Player player) {
         syncLobbyIdentity(player);
         if (canReceiveLobbyItem(player)) {
-            if (!DailyLobbyItem.give(player)) message(player, "物品栏没有空位，暂时无法发放大厅菜单。");
+            if (!DailyLobbyItem.give(player)) message(player, MessageConfig.DAILY_LOBBY_ITEM_NO_SPACE);
         } else {
             DailyLobbyItem.take(player);
         }
@@ -673,7 +685,7 @@ public final class DailyManager extends BaseManager {
                     || plugin.getGameManager().getBasePlayerArea(uuid) != null
                     || plugin.getGameManager().isWaitingForNextRound(uuid)) {
                 DailyParty party = partyManager.getParty(uuid);
-                if (party != null) pauseParty(party, "有成员离线或进入其他游戏，排队已暂停");
+                if (party != null) pauseParty(party, MessageConfig.DAILY_QUEUE_PAUSED_MEMBER);
                 else leaveQueue(uuid, false);
             }
         }
@@ -732,7 +744,7 @@ public final class DailyManager extends BaseManager {
                 int color = index % TEAM_COLORS.length;
                 String canonicalName = teamNameForColor(TEAM_COLORS[color]);
                 String configuredName = replace(MessageConfig.DAILY_TEAM_NAME,
-                        "%color%", TEAM_NAMES[color], "%number%", Integer.toString(index + 1));
+                        "%color%", teamColorName(color), "%number%", Integer.toString(index + 1));
                 teams.add(plugin.getTeamManager().createTransientTeam("ccd" + token + index,
                         configuredName.equals(canonicalName) ? configuredName : canonicalName,
                         TEAM_COLORS[color], TEAM_CODES[color], allocations.get(index)));
@@ -760,10 +772,18 @@ public final class DailyManager extends BaseManager {
      * public-match presentation separate from a player's persistent championship team.
      */
     public static @NotNull String teamNameForColor(@NotNull String colorName) {
+        String suffix = MessageConfig.DAILY_TEAM_SUFFIX;
         for (int index = 0; index < TEAM_COLORS.length; index++) {
-            if (TEAM_COLORS[index].equalsIgnoreCase(colorName)) return TEAM_NAMES[index] + "队";
+            if (TEAM_COLORS[index].equalsIgnoreCase(colorName))
+                return String.join("", teamColorName(index), suffix);
         }
-        return colorName + "队";
+        return String.join("", colorName, suffix);
+    }
+
+    private static @NotNull String teamColorName(int index) {
+        java.util.List<String> names = MessageConfig.DAILY_TEAM_NAMES;
+        if (names != null && index >= 0 && index < names.size()) return names.get(index);
+        return TEAM_COLORS[index].toLowerCase(java.util.Locale.ROOT).replace("_", " ");
     }
 
     private void finishStart(@NotNull PendingDailyStart pending,
@@ -968,7 +988,7 @@ public final class DailyManager extends BaseManager {
     private void clearQueues(String reason) {
         Set<UUID> players = new HashSet<>(queueByPlayer.keySet());
         for (UUID player : List.copyOf(players)) leaveQueue(player, false);
-        broadcast(players, "&e" + reason + "。");
+        broadcast(players, reason);
         queues.values().forEach(queue -> queue.countdown(-1));
     }
 
@@ -1041,7 +1061,7 @@ public final class DailyManager extends BaseManager {
     }
 
     private void message(Player player, String text) {
-        player.sendMessage(Utils.translateColorCodes(MessageConfig.DAILY_PREFIX + text));
+        player.sendMessage(Utils.translateColorCodes(MessageConfig.DAILY_PREFIXED.replace("%message%", text)));
     }
 
     public String modeDisplay() {
@@ -1064,12 +1084,10 @@ public final class DailyManager extends BaseManager {
         } else {
             title = replace(MessageConfig.DAILY_BOSSBAR_WAITING,
                     "%game%", queue.game().toString(), "%players%", Integer.toString(queue.size()),
-                    "%required%", Integer.toString(rules.minPlayers()));
+                    "%required%", Integer.toString(rules.minPlayers()),
+                    "%needs-group%", queue.groupCount() < 2 ? MessageConfig.DAILY_BOSSBAR_NEEDS_GROUP : "");
             progress = queue.size() / (double) Math.max(1, rules.minPlayers());
-            if (queue.groupCount() < 2) {
-                title += " &#bababa• &#fff566还需另一个玩家或同行小队";
-                progress = Math.min(progress, 0.95D);
-            }
+            if (queue.groupCount() < 2) progress = Math.min(progress, 0.95D);
         }
         BossBar bar = waitingBars.computeIfAbsent(queue.game(), ignored ->
                 Bukkit.createBossBar("", BarColor.YELLOW, BarStyle.SOLID));

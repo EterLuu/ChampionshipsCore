@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin.world;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -30,22 +31,29 @@ public class WorldListSubCommand extends BaseSubCommand {
 
         List<World> loaded = new ArrayList<>(Bukkit.getWorlds());
         loaded.sort((left, right) -> left.getName().compareToIgnoreCase(right.getName()));
-        Utils.sendAdminInfo(sender, "已加载世界 &#696969(" + loaded.size() + ")");
+        Utils.sendAdminInfo(sender, MessageConfig.ADMIN_WORLD_LIST_LOADED
+                    .replace("%count%", String.valueOf(loaded.size())));
         Set<String> loadedNames = new HashSet<>();
         for (World world : loaded) {
             loadedNames.add(world.getName());
-            String main = plugin.getWorldManager().isMainWorld(world) ? " &#fff566[主世界]" : "";
-            sender.sendMessage(Utils.translateColorCodes("&#bababa• &#ededed" + world.getName() + main + " &#696969— "
-                    + world.getEnvironment().name().toLowerCase() + " &#bababa• " + world.getPlayerCount() + " 人"));
+            String main = plugin.getWorldManager().isMainWorld(world)
+                    ? MessageConfig.ADMIN_WORLD_MAIN_SUFFIX : "";
+            sender.sendMessage(Utils.translateColorCodes(MessageConfig.ADMIN_WORLD_ROW
+                    .replace("%world%", world.getName())
+                    .replace("%main%", main)
+                    .replace("%environment%", world.getEnvironment().name().toLowerCase())
+                    .replace("%count%", String.valueOf(world.getPlayerCount()))));
         }
 
         List<String> unloaded = plugin.getWorldManager().getStoredWorldNames();
         unloaded.removeIf(loadedNames::contains);
-        Utils.sendAdminInfo(sender, "磁盘未加载世界 &#696969(" + unloaded.size() + ")");
+        Utils.sendAdminInfo(sender, MessageConfig.ADMIN_WORLD_LIST_UNLOADED
+                    .replace("%count%", String.valueOf(unloaded.size())));
         if (unloaded.isEmpty())
-            sender.sendMessage(Utils.translateColorCodes("&#696969无"));
+            sender.sendMessage(Utils.translateColorCodes(MessageConfig.ADMIN_WORLD_NONE));
         else
-            sender.sendMessage(Utils.translateColorCodes("&#bababa" + String.join("&#696969, &#bababa", unloaded)));
+            sender.sendMessage(Utils.translateColorCodes(MessageConfig.ADMIN_WORLD_UNLOADED_NAMES
+                    .replace("%worlds%", String.join(MessageConfig.ADMIN_WORLD_LIST_SEPARATOR, unloaded))));
         return true;
     }
 

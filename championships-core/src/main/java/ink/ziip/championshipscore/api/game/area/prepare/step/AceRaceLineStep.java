@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.acerace.AceRaceConfig;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -21,9 +22,9 @@ public final class AceRaceLineStep extends PrepareStep {
 
     public AceRaceLineStep(boolean start) {
         super(start ? "start_line" : "finish_line",
-                Component.text(start ? GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.starting-line") : GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.finish-line")),
-                Component.text(GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.race-line-selection-hint")
-                        + (start ? GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.the-current-location-also-serves-as-the-starting-point-of-birth") : GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.used-for-lap-counting-finishing"))),
+                Component.text(start ? GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.start-line.title") : GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.finish-line.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.start-line.lore", 0)
+                        + (start ? GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.start-line.lore", 1) : GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.finish-line.lore", 1))),
                 start ? Material.LIME_WOOL : Material.ORANGE_WOOL, StepCaptureType.WE_SELECTION);
         this.start = start;
     }
@@ -43,13 +44,13 @@ public final class AceRaceLineStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.please-use-worldedit-to-select-the-starting-line-or-finishing-line-first"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_ACE_LINE_SELECT_FIRST);
         }
         int spanX = Math.abs(selection[0].getBlockX() - selection[1].getBlockX());
         int spanY = Math.abs(selection[0].getBlockY() - selection[1].getBlockY());
         int spanZ = Math.abs(selection[0].getBlockZ() - selection[1].getBlockZ());
         if (spanY != 0 || (spanX > 0 && spanZ > 0) || (spanX == 0 && spanZ == 0))
-            return Utils.formatAdminError(GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.start-line-finish-line-must-be-the-same-height-a-straight-line-extending-in-the-x-or-z-direction"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_ACE_LINE_INVALID);
         AceRaceConfig config = cfg(session.getTarget());
         if (start) {
             config.setStartLinePos1(selection[0]);
@@ -61,14 +62,13 @@ public final class AceRaceLineStep extends PrepareStep {
         }
         session.markDirty();
         if (start) {
-            Utils.sendAdminInfo(player, GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.please-enter-the-fall-height-after-the-starting-line-leave-blank-to-retain-the-current-value")
-                    + config.getStartFallY() + "。");
-            AnvilInputGui.openInteger(player, GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.starting-line-fall-height"), config.getStartFallY(), value -> {
+            Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_ACE_START_FALL_INPUT.replace("%fall%", String.valueOf(config.getStartFallY())));
+            AnvilInputGui.openInteger(player, GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.start-fall-height.title"), config.getStartFallY(), value -> {
                 config.setStartFallY(value);
                 session.markDirty();
-                Utils.sendAdminSuccess(player, GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.the-fall-height-after-the-start-line-has-been-set-is") + value + "。");
+                Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_ACE_START_FALL_SET.replace("%fall%", String.valueOf(value)));
             });
         }
-        return Utils.formatAdminSuccess(start ? GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.start-line-set") : GuiConfig.text("map-editor.games.ace-race.steps.start-finish-lines.finish-line-set"));
+        return Utils.formatAdminSuccess(start ? MessageConfig.MAP_EDITOR_ACE_START_LINE_SET : MessageConfig.MAP_EDITOR_ACE_FINISH_LINE_SET);
     }
 }

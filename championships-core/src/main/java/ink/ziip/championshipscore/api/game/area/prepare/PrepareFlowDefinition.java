@@ -29,7 +29,7 @@ public abstract class PrepareFlowDefinition {
 
     /** Name used for the flow's primary edit location in the prepare UI. */
     public @NotNull String editorLocationName(@NotNull SetupTarget target) {
-        return GuiConfig.text("map-editor.common.area.template-arena-label");
+        return GuiConfig.text("map-editor.menus.step-list.items.template.title");
     }
 
     /** Build the step list bound to the given map/configuration target. */
@@ -43,7 +43,7 @@ public abstract class PrepareFlowDefinition {
     public @NotNull List<String> validate(@NotNull PrepareSession session) {
         List<String> errors = new ArrayList<>();
         if (session.getTarget().config().isWorldBindingPending() || !session.isWorldConfirmed())
-            errors.add(GuiConfig.text("map-editor.copy.bind-to-current-world"));
+            errors.add(GuiConfig.text("map-editor.menus.step-list.items.confirm-world.states.rebind.title"));
         for (PrepareStep step : session.getSteps()) {
             if (step.captureType() != StepCaptureType.CONFIRM_WORLD && !step.isSet(session))
                 errors.add(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer

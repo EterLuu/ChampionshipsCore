@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,9 +29,9 @@ final class DodgeboltForceWinSubCommand extends BaseSubCommand {
         DodgeboltArea area = plugin.getGameManager().getDodgeboltManager().getArea(args[0]);
         ChampionshipTeam team = plugin.getTeamManager().getTeam(args[1]);
         if (area == null || team == null || !area.forceChampion(team))
-            Utils.sendAdminError(sender, "该队伍不是本场决赛队伍，或比赛未运行");
+            Utils.sendAdminError(sender, MessageConfig.FINALE_DODGEBOLT_FORCE_WIN_INVALID);
         else
-            Utils.sendAdminSuccess(sender, "已指定冠军：" + team.getColoredName());
+            Utils.sendAdminSuccess(sender, MessageConfig.FINALE_DODGEBOLT_FORCE_WIN_SET.replace("%team%", team.getColoredName()));
         return true;
     }
 

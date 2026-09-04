@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.map;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -29,16 +30,18 @@ public final class MapEditSubCommand extends BaseSubCommand {
         }
         GameTypeEnum game = parseGame(args[0]);
         if (game == null) {
-            Utils.sendAdminError(sender, "未知游戏，可用：&#fff566" + supportedNames());
+            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_UNKNOWN_GAME
+                    .replace("%games%", supportedNames()));
             return true;
         }
         if (!plugin.getPrepareSessionManager().supports(game)) {
-            Utils.sendAdminError(sender, "该游戏暂不支持地图准备，可用：&#fff566" + supportedNames());
+            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_UNSUPPORTED_GAME
+                    .replace("%games%", supportedNames()));
             return true;
         }
         BaseGameInstanceManager<?> manager = plugin.getGameManager().getAreaManager(game);
         if (manager == null) {
-            Utils.sendAdminError(sender, "该游戏没有地图管理器");
+            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_NO_MANAGER);
             return true;
         }
         if (plugin.getGameManager().isGameManagerLoaded(game)) {
@@ -46,9 +49,9 @@ public final class MapEditSubCommand extends BaseSubCommand {
             return true;
         }
 
-        Utils.sendAdminInfo(player, "该游戏当前未启用，正在仅为地图编辑加载其配置……");
+        Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_COMMAND_LOADING_DISABLED);
         if (!plugin.getGameManager().loadGameForEditing(game)) {
-            Utils.sendAdminError(sender, "该游戏的地图管理器无法加载");
+            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_MANAGER_LOAD_FAILED);
             return true;
         }
         plugin.getServer().getScheduler().runTaskLater(plugin,

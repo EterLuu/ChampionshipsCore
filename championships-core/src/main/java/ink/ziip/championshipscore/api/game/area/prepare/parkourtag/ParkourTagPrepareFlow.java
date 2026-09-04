@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.parkourtag;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
@@ -67,8 +68,8 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
         steps.add(new SchematicStep(plugin -> schematic,
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.save-the-two-track-match-template")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.template-match-arena-selection-hint"))) {
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.template.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.template.lore", 0))) {
             @Override
             public String capture(@NotNull ink.ziip.championshipscore.api.game.area.prepare.PrepareSession session,
                                   @NotNull Player player) {
@@ -94,91 +95,91 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                 }));
 
         steps.add(new WeSelectionStep("area_pos",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.template-match-arena-boundary-name")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.frame-two-tracks-and-two-team-preparation-areas-other-game-copies-will-be-automatically-translated")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.arena-boundary.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.arena-boundary.lore", 0)),
                 Material.BEDROCK,
                 a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
                 (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.general-site-boundary-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_GENERAL_SITE_BOUNDARY_SET)));
 
         steps.add(new StandAndRunStep("spectator_spawn",
-                Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")),
-                Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)),
                 Material.ENDER_EYE,
                 a -> cfg(a).getSpectatorSpawnPoint() != null,
                 (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
 
         steps.add(new StandAndRunStep("right_prepare_spot",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.prepare-points-for-team-a-in-position")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.stand-at-the-location-where-team-a-gathers-before-the-official-countdown-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.prepare-a.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.prepare-a.lore", 0)),
                 Material.GREEN_WOOL,
                 a -> cfg(a).getRightPrepareSpot() != null,
                 (a, loc) -> cfg(a).setRightPrepareSpot(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-tag.setup.team-a-s-preparation-point-for-the-match-position-has-been-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TAG_PREPARE_A_SET)));
 
         steps.add(new StandAndRunStep("left_prepare_spot",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.prepare-points-for-team-b-in-position")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.stand-at-the-location-where-team-b-gathers-before-the-official-countdown-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.prepare-b.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.prepare-b.lore", 0)),
                 Material.RED_WOOL,
                 a -> cfg(a).getLeftPrepareSpot() != null,
                 (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-tag.setup.team-bs-preparation-point-for-the-match-position-has-been-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TAG_PREPARE_B_SET)));
 
         steps.add(new ParkourTagChaserButtonStep("right_chaser_button",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.team-a-chaser-button-for-position")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.aim-at-the-button-that-has-been-placed-on-the-wall-in-team-as-preparation-area-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.chaser-a.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.chaser-a.lore", 0)),
                 a -> cfg(a).getRightChaserButton(),
                 (a, loc) -> cfg(a).setRightChaserButton(loc)));
 
         steps.add(new ParkourTagChaserButtonStep("left_chaser_button",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.chaser-button-for-team-b-in-position")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.aim-at-the-button-that-has-been-placed-on-the-wall-in-the-preparation-area-of-team-b-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.chaser-b.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.chaser-b.lore", 0)),
                 a -> cfg(a).getLeftChaserButton(),
                 (a, loc) -> cfg(a).setLeftChaserButton(loc)));
 
         steps.add(new WeSelectionStep("right_area_pos",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.track-1-complete-boundary-a-chase-b-escape")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.select-the-first-complete-parkour-map-boundaries-restrain-pursuers-and-escapers-at-the-same-time")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.track-1-boundary.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.track-1-boundary.lore", 0)),
                 Material.GREEN_STAINED_GLASS,
                 a -> cfg(a).getRightAreaAreaPos1() != null && cfg(a).getRightAreaAreaPos2() != null,
                 (a, sel) -> { cfg(a).setRightAreaAreaPos1(sel[0]); cfg(a).setRightAreaAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-tag.setup.track-1-complete-boundary-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TAG_TRACK_1_BOUNDARY_SET)));
 
         steps.add(new StandAndRunStep("right_chaser_spawn",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.track-1-spawn-point-of-team-a-s-pursuers")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.the-spawn-position-of-team-a-s-pursuers-on-track-1")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.track-1-chaser.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.track-1-chaser.lore", 0)),
                 Material.GREEN_CONCRETE,
                 a -> cfg(a).getRightAreaChaserSpawnPoint() != null,
                 (a, loc) -> cfg(a).setRightAreaChaserSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-tag.setup.the-spawn-point-of-team-a-s-pursuers-on-track-1-has-been-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TAG_TRACK_1_CHASER_SET)));
 
         steps.add(escapeeStep("right_escapee_spawns",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.track-1-spawn-point-of-team-b-escapees")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.add-the-spawn-position-of-team-b-escapers-on-track-1-one-by-one")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.track-1-escapee.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.track-1-escapee.lore", 0)),
                 Material.LIME_WOOL,
                 ParkourTagConfig::getRightAreaEscapeeSpawnPoints,
                 ParkourTagConfig::setRightAreaEscapeeSpawnPoints));
 
         steps.add(new WeSelectionStep("left_area_pos",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.track-2-complete-boundary-b-chases-a-and-escapes")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.select-the-second-full-parkour-map-boundaries-restrain-pursuers-and-escapers-at-the-same-time")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.track-2-boundary.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.track-2-boundary.lore", 0)),
                 Material.RED_STAINED_GLASS,
                 a -> cfg(a).getLeftAreaAreaPos1() != null && cfg(a).getLeftAreaAreaPos2() != null,
                 (a, sel) -> { cfg(a).setLeftAreaAreaPos1(sel[0]); cfg(a).setLeftAreaAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-tag.setup.track-2-complete-borders-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TAG_TRACK_2_BOUNDARY_SET)));
 
         steps.add(new StandAndRunStep("left_chaser_spawn",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.track-2-team-b-chaser-spawn-point")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.the-spawn-position-of-team-b-chasers-on-track-2")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.track-2-chaser.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.track-2-chaser.lore", 0)),
                 Material.RED_CONCRETE,
                 a -> cfg(a).getLeftAreaChaserSpawnPoint() != null,
                 (a, loc) -> cfg(a).setLeftAreaChaserSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.parkour-tag.setup.the-spawn-point-of-team-b-chasers-on-track-2-has-been-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TAG_TRACK_2_CHASER_SET)));
 
         steps.add(escapeeStep("left_escapee_spawns",
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.track-2-team-a-escapers-spawn-point")),
-                Component.text(GuiConfig.text("map-editor.games.parkour-tag.setup.added-spawn-positions-of-team-a-escapees-on-track-2-one-by-one")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-tag.items.track-2-escapee.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-tag.items.track-2-escapee.lore", 0)),
                 Material.ORANGE_WOOL,
                 ParkourTagConfig::getLeftAreaEscapeeSpawnPoints,
                 ParkourTagConfig::setLeftAreaEscapeeSpawnPoints));

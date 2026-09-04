@@ -50,8 +50,7 @@ public final class AceRaceEquipmentGui {
                             @NotNull AceRaceEquipment current,
                             @NotNull Consumer<AceRaceEquipment> callback) {
         Holder holder = new Holder(session, callback);
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 9,
-                GuiConfig.text(MENU_PATH + ".copy.select-equipment-for-next-stage"), List.of());
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 9, GuiConfig.component(MENU_PATH), List.of());
         holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.inventory.setItem(1, option(Material.BARRIER, AceRaceEquipment.NONE, current, "none"));
         holder.inventory.setItem(3, option(Material.ELYTRA, AceRaceEquipment.ELYTRA, current, "elytra"));
@@ -91,7 +90,7 @@ public final class AceRaceEquipmentGui {
         fallback.editMeta(meta -> {
             meta.displayName(Component.text(equipment.displayName()).color(NamedTextColor.AQUA)
                     .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(equipment == current ? GuiConfig.text("map-editor.copy.current-selection") : GuiConfig.text("map-editor.copy.click-to-select"))
+            meta.lore(List.of(Component.text(equipment == current ? GuiConfig.line("map-editor.menus.step-list.items.option.states.selected.lore", 0) : GuiConfig.line("map-editor.menus.step-list.items.option.lore", 0))
                     .color(equipment == current ? NamedTextColor.GREEN : NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
         });

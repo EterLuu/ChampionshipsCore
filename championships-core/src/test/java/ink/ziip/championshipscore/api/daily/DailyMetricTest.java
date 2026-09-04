@@ -2,14 +2,28 @@ package ink.ziip.championshipscore.api.daily;
 
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DailyMetricTest {
+    @BeforeAll
+    static void loadGuiMetricFormats() throws Exception {
+        YamlConfiguration gui = YamlConfiguration.loadConfiguration(
+                Path.of("src/main/resources/gui.yml").toFile());
+        Field active = GuiConfig.class.getDeclaredField("active");
+        active.setAccessible(true);
+        active.set(null, gui);
+    }
+
     @Test
     void mapStatsKeepPeaksAndSumCountersLikeTheSqlUpsert() {
         DailyMapStat first = new DailyMapStat(1, 1, 1, 18, 2, 5, 210.5, 1, 0, 0, 32, 1);

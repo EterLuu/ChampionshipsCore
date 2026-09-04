@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.step.CheckpointListStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
@@ -35,15 +36,15 @@ public final class ParkourWarriorPrepareFlow extends PrepareFlowDefinition {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
-                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.copy.track-boundary")), Component.text(GuiConfig.text("map-editor.games.parkour-warrior.setup.use-worldedit-to-select-the-complete-area-of-the-parkour-track")),
+                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-warrior.items.track-boundary.title")), Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-warrior.items.track-boundary.lore", 0)),
                         Material.BEDROCK, t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                        (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.track-boundaries-set"))),
-                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")), Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")),
+                        (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_TRACK_BOUNDARY_SET)),
+                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")), Component.text(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)),
                         Material.ENDER_EYE, t -> cfg(t).getSpectatorSpawnPoint() != null,
-                        (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set"))),
-                new StandAndRunStep("player_spawn", Component.text(GuiConfig.text("map-editor.copy.player-spawn-point")), Component.text(GuiConfig.text("map-editor.games.parkour-warrior.setup.after-standing-at-the-starting-point-of-the-track-click")),
+                        (t, l) -> cfg(t).setSpectatorSpawnPoint(l), Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)),
+                new StandAndRunStep("player_spawn", Component.text(GuiConfig.text("map-editor.menus.step-list.games.parkour-warrior.items.player-spawn.title")), Component.text(GuiConfig.line("map-editor.menus.step-list.games.parkour-warrior.items.player-spawn.lore", 0)),
                         Material.PLAYER_HEAD, t -> cfg(t).getPlayerSpawnPoint() != null,
-                        (t, l) -> cfg(t).setPlayerSpawnPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.player-spawn-point-has-been-set"))),
+                        (t, l) -> cfg(t).setPlayerSpawnPoint(l), Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_PLAYER_SPAWN_POINT_SET)),
                 new CheckpointListStep());
     }
     private static ParkourWarriorConfig cfg(SetupTarget target) { return (ParkourWarriorConfig) target.config(); }

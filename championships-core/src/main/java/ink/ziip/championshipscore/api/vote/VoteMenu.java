@@ -1,13 +1,11 @@
 package ink.ziip.championshipscore.api.vote;
 
 import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
-
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -19,11 +17,9 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -39,7 +35,6 @@ final class VoteMenu implements Listener {
     private static final int BALLOT_SLOT = 40;
     private static final int CLOSE_SLOT = 49;
     private static final int VOTE_BAR_LENGTH = 8;
-    private static final Map<GameTypeEnum, GameEntry> GAME_ENTRIES = createGameEntries();
 
     private final VoteManager manager;
 
@@ -49,9 +44,7 @@ final class VoteMenu implements Listener {
 
     void open(@NotNull Player player) {
         Holder holder = new Holder(player.getUniqueId());
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, INVENTORY_SIZE,
-                "&6&l" + GuiConfig.text("voting.menus.ballot.copy.tournament-ballot")
-                        + "&f" + GuiConfig.text("voting.menus.ballot.copy.next-game"), candidateSlots(11));
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, INVENTORY_SIZE, "", candidateSlots(11));
         Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.inventory = inventory;
         refresh(holder);
@@ -60,18 +53,13 @@ final class VoteMenu implements Listener {
 
     void refreshOpenMenus() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            Inventory top = player.getOpenInventory().getTopInventory();
-            if (top.getHolder() instanceof Holder holder) {
-                refresh(holder);
-            }
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder) refresh(holder);
         }
     }
 
     void closeAll() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder) {
-                player.closeInventory();
-            }
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder) player.closeInventory();
         }
     }
 
@@ -79,22 +67,18 @@ final class VoteMenu implements Listener {
     public void onInventoryClick(@NotNull InventoryClickEvent event) {
         Inventory top = event.getView().getTopInventory();
         if (!(top.getHolder() instanceof Holder holder)) return;
-
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player) || event.getClickedInventory() != top) return;
         if (!holder.viewer.equals(player.getUniqueId())) {
             player.closeInventory();
             return;
         }
-
         if (event.getRawSlot() == slot("close", CLOSE_SLOT)) {
             player.closeInventory();
             return;
         }
-
         GameTypeEnum gameType = holder.gamesBySlot.get(event.getRawSlot());
         if (gameType == null) return;
-
         manager.vote(player, gameType);
         if (player.getOpenInventory().getTopInventory().getHolder() == holder) {
             refresh(holder);
@@ -104,27 +88,20 @@ final class VoteMenu implements Listener {
 
     @EventHandler
     public void onInventoryDrag(@NotNull InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof Holder) {
-            event.setCancelled(true);
-        }
+        if (event.getView().getTopInventory().getHolder() instanceof Holder) event.setCancelled(true);
     }
 
     private void refresh(@NotNull Holder holder) {
         Inventory inventory = holder.inventory;
         inventory.clear();
         holder.gamesBySlot.clear();
-
-        ItemStack border = configured("border", null, Map.of(),
-                item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of(), false, 1));
+        ItemStack border = configured("border", null, Map.of(), Material.BLACK_STAINED_GLASS_PANE);
         for (int slot : GuiConfig.slots(MENU_PATH + ".layout.border",
                 List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 45, 46, 47, 48, 49, 50, 51, 52, 53)))
             if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, border);
 
-        List<GameTypeEnum> candidates = List.of(GameTypeEnum.values()).stream()
-                .filter(manager::canVoteFor)
-                .toList();
-        List<Integer> slots = GuiConfig.slots(MENU_PATH + ".layout.content",
-                candidateSlots(candidates.size()));
+        List<GameTypeEnum> candidates = List.of(GameTypeEnum.values()).stream().filter(manager::canVoteFor).toList();
+        List<Integer> slots = GuiConfig.slots(MENU_PATH + ".layout.content", candidateSlots(candidates.size()));
         int totalVotes = manager.getTotalVoteCount();
         int highestVotes = candidates.stream().mapToInt(manager::getVoteNums).max().orElse(0);
         GameTypeEnum selected = manager.getPlayerVote(holder.viewer);
@@ -135,173 +112,92 @@ final class VoteMenu implements Listener {
             inventory.setItem(slot, gameItem(gameType, selected == gameType, totalVotes, highestVotes));
             holder.gamesBySlot.put(slot, gameType);
         }
+        if (candidates.isEmpty()) inventory.setItem(slot("empty", 22), configured("empty", null, Map.of(), Material.GRAY_DYE));
 
-        if (candidates.isEmpty()) {
-            inventory.setItem(slot("empty", 22), configured("empty", null, Map.of(), item(Material.GRAY_DYE,
-                    Component.text(GuiConfig.text("voting.menus.ballot.copy.there-are-currently-no-candidate-games-in-this-round"), NamedTextColor.GRAY),
-                    List.of(Component.text(GuiConfig.text("voting.menus.ballot.copy.waiting-for-venue-release"), NamedTextColor.DARK_GRAY)), false, 1)));
-        }
-
-        int remaining = Math.max(0, manager.getRemainingSeconds());
-        String remainingText = String.format(Locale.ROOT, "%d:%02d", remaining / 60, remaining % 60);
         int eligible = manager.getEligibleVoterCount();
         int turnoutPercentage = eligible == 0 ? 0 : (int) Math.round(totalVotes * 100D / eligible);
-        inventory.setItem(slot("time", TIME_SLOT), configured("time", null,
-                Map.of("time", remainingText), timeItem()));
-        inventory.setItem(slot("overview", OVERVIEW_SLOT), configured("overview", null,
-                Map.of("candidates", candidates.size(), "votes", totalVotes),
-                overviewItem(candidates, totalVotes, highestVotes)));
+        String remainingText = String.format(Locale.ROOT, "%d:%02d", manager.getRemainingSeconds() / 60, Math.max(0, manager.getRemainingSeconds()) % 60);
+        inventory.setItem(slot("time", TIME_SLOT), configured("time", null, Map.of("time", remainingText), Material.CLOCK));
+        inventory.setItem(slot("overview", OVERVIEW_SLOT), overviewItem(candidates, totalVotes, highestVotes));
         inventory.setItem(slot("turnout", TURNOUT_SLOT), configured("turnout", null,
-                Map.of("votes", totalVotes, "eligible", eligible, "percentage", turnoutPercentage), turnoutItem(totalVotes)));
+                Map.of("votes", totalVotes, "eligible", eligible, "percentage", turnoutPercentage,
+                        "bar", voteBar(totalVotes, eligible)), Material.NAME_TAG));
         inventory.setItem(slot("my-ballot", BALLOT_SLOT), configured("my-ballot",
-                selected == null ? "empty" : "selected", Map.of("game", selected == null ? "" : selected.toString()), ballotItem(selected)));
-        inventory.setItem(slot("close", CLOSE_SLOT), configured("close", null, Map.of(), item(Material.BARRIER,
-                Component.text(GuiConfig.text("voting.menus.ballot.copy.close"), NamedTextColor.RED),
-                List.of(), false, 1)));
+                selected == null ? "empty" : "selected", Map.of("game", selected == null ? "" : selected.toString()), Material.WRITABLE_BOOK));
+        inventory.setItem(slot("close", CLOSE_SLOT), configured("close", null, Map.of(), Material.BARRIER));
     }
 
     private ItemStack gameItem(@NotNull GameTypeEnum gameType, boolean selected, int totalVotes, int highestVotes) {
-        GameEntry entry = GAME_ENTRIES.getOrDefault(gameType,
-                new GameEntry(Material.PAPER, NamedTextColor.WHITE,
-                        GuiConfig.text("voting.menus.ballot.copy.championship-events"), GuiConfig.text("voting.menus.ballot.copy.make-your-selection-after-reviewing-the-game-rules")));
         int votes = manager.getVoteNums(gameType);
         int percentage = totalVotes == 0 ? 0 : (int) Math.round(votes * 100D / totalVotes);
-        int filled = totalVotes == 0 ? 0 : (int) Math.round(votes * VOTE_BAR_LENGTH / (double) totalVotes);
         boolean leading = highestVotes > 0 && votes == highestVotes;
-
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(entry.category, NamedTextColor.DARK_GRAY));
-        lore.add(Component.text(entry.description, NamedTextColor.GRAY));
-        lore.add(Component.empty());
-        lore.add(Component.text("■".repeat(filled), selected ? NamedTextColor.AQUA
-                        : leading ? NamedTextColor.GOLD : entry.color)
-                .append(Component.text("□".repeat(VOTE_BAR_LENGTH - filled), NamedTextColor.DARK_GRAY)));
-        lore.add(Component.text(votes + GuiConfig.text("voting.menus.ballot.copy.ticket"), NamedTextColor.WHITE)
-                .append(Component.text(GuiConfig.text("common.separator") + percentage + "%", NamedTextColor.GRAY)));
-        lore.add(Component.empty());
-        if (selected) {
-            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.my-choice"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD));
-            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.click-on-other-items-to-change-your-ticket"), NamedTextColor.DARK_GRAY));
-        } else if (leading) {
-            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.current-leader"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD));
-            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.click-to-vote-for-this-game"), NamedTextColor.YELLOW));
-        } else {
-            lore.add(Component.text(GuiConfig.text("voting.menus.ballot.copy.click-to-vote"), NamedTextColor.GREEN));
-        }
-
-        Component marker = selected ? Component.text("✓ ", NamedTextColor.AQUA)
-                : leading ? Component.text("★ ", NamedTextColor.GOLD) : Component.empty();
-        Component name = marker.append(Component.text(gameType.toString(), entry.color))
-                .decorate(TextDecoration.BOLD)
-                .decoration(TextDecoration.ITALIC, false);
         String state = selected ? "selected" : leading ? "leading" : "available";
-        return configured("candidate", state, Map.of("game", gameType.toString(), "category", entry.category,
-                "description", entry.description, "votes", votes, "percentage", percentage),
-                item(entry.material, name, lore, selected, 1));
+        return configured("games." + gameId(gameType), state, Map.of(
+                "game", gameType.toString(), "votes", votes, "percentage", percentage,
+                "bar", voteBar(votes, Math.max(1, totalVotes))), styleMaterial(gameType));
+    }
+
+    private ItemStack overviewItem(List<GameTypeEnum> candidates, int totalVotes, int highestVotes) {
+        List<GameTypeEnum> leaders = highestVotes == 0 ? List.of() : candidates.stream()
+                .filter(game -> manager.getVoteNums(game) == highestVotes).toList();
+        Map<String, Object> placeholders = Map.of(
+                "candidates", candidates.size(), "votes", totalVotes,
+                "leader", leaders.isEmpty() ? "" : leaders.getFirst().toString(),
+                "count", leaders.size());
+        return configured("overview", null, placeholders, Material.NETHER_STAR);
+    }
+
+    private String voteBar(int votes, int total) {
+        int filled = total == 0 ? 0 : Math.min(VOTE_BAR_LENGTH, (int) Math.round(votes * VOTE_BAR_LENGTH / (double) total));
+        return "■".repeat(filled) + "□".repeat(VOTE_BAR_LENGTH - filled);
+    }
+
+    private static String gameId(GameTypeEnum game) {
+        return switch (game) {
+            case Bingo -> "bingo";
+            case ParkourTag -> "parkour-tag";
+            case BattleBox -> "battle-box";
+            case TNTRun -> "tnt-run";
+            case SnowballShowdown -> "snowball-showdown";
+            case SkyWars -> "sky-wars";
+            case TGTTOS -> "tgttos";
+            case ParkourWarrior -> "parkour-warrior";
+            case HotyCodyDusky -> "hoty-cody-dusky";
+            case BuildMart -> "build-mart";
+            case AceRace -> "ace-race";
+            default -> "unknown";
+        };
+    }
+
+    private static Material styleMaterial(GameTypeEnum game) {
+        return switch (game) {
+            case Bingo -> Material.FILLED_MAP;
+            case ParkourTag -> Material.GOLDEN_CARROT;
+            case BattleBox -> Material.WHITE_WOOL;
+            case TNTRun -> Material.TNT;
+            case SnowballShowdown -> Material.SNOWBALL;
+            case SkyWars -> Material.GRASS_BLOCK;
+            case TGTTOS -> Material.FEATHER;
+            case ParkourWarrior -> Material.IRON_BOOTS;
+            case HotyCodyDusky -> Material.COD;
+            case BuildMart -> Material.CRAFTING_TABLE;
+            case AceRace -> Material.ELYTRA;
+            default -> Material.PAPER;
+        };
     }
 
     private static int slot(String item, int fallback) {
         return ConfiguredGui.slot(MENU_PATH + ".items." + item, fallback);
     }
 
-    private static ItemStack configured(String item, String state, Map<String, ?> placeholders,
-                                        ItemStack fallback) {
-        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders, fallback);
-    }
-
-    private ItemStack timeItem() {
-        int seconds = Math.max(0, manager.getRemainingSeconds());
-        String time = String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60);
-        NamedTextColor timeColor = seconds <= 15 ? NamedTextColor.RED
-                : seconds <= 30 ? NamedTextColor.GOLD : NamedTextColor.GREEN;
-        return item(Material.CLOCK,
-                Component.text(time, timeColor).decorate(TextDecoration.BOLD),
-                List.of(
-                        Component.text(GuiConfig.text("voting.menus.ballot.copy.countdown-to-voting-deadline"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("voting.menus.ballot.copy.results-will-be-locked-after-the-countdown-ends"), NamedTextColor.DARK_GRAY)
-                ), false, 1);
-    }
-
-    private ItemStack overviewItem(List<GameTypeEnum> candidates, int totalVotes, int highestVotes) {
-        List<GameTypeEnum> leaders = highestVotes == 0 ? List.of() : candidates.stream()
-                .filter(game -> manager.getVoteNums(game) == highestVotes)
-                .toList();
-        Component leaderLine;
-        if (leaders.isEmpty()) {
-            leaderLine = Component.text(GuiConfig.text("voting.menus.ballot.copy.waiting-for-the-first-ballot"), NamedTextColor.DARK_GRAY);
-        } else if (leaders.size() == 1) {
-            leaderLine = Component.text(GuiConfig.text("voting.menus.ballot.copy.leading-the-way"), NamedTextColor.GRAY)
-                    .append(Component.text(leaders.getFirst().toString(), NamedTextColor.GOLD));
-        } else {
-            leaderLine = Component.text(leaders.size() + GuiConfig.text("voting.menus.ballot.copy.games-tied-for-the-lead"), NamedTextColor.GOLD);
-        }
-
-        return item(Material.NETHER_STAR,
-                Component.text(GuiConfig.text("voting.menus.ballot.copy.next-game-it-s-up-to-you"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(
-                        Component.text(candidates.size() + GuiConfig.text("voting.menus.ballot.copy.candidate-games"), NamedTextColor.WHITE)
-                                .append(Component.text(GuiConfig.text("common.separator") + totalVotes + GuiConfig.text("voting.menus.ballot.copy.valid-votes"), NamedTextColor.GRAY)),
-                        leaderLine
-                ), false, 1);
-    }
-
-    private ItemStack turnoutItem(int totalVotes) {
-        int eligibleVoters = manager.getEligibleVoterCount();
-        int percentage = eligibleVoters == 0 ? 0
-                : (int) Math.round(totalVotes * 100D / eligibleVoters);
-        int filled = eligibleVoters == 0 ? 0
-                : Math.min(VOTE_BAR_LENGTH, (int) Math.round(totalVotes * VOTE_BAR_LENGTH / (double) eligibleVoters));
-        return item(Material.NAME_TAG,
-                Component.text(totalVotes + "/" + eligibleVoters, NamedTextColor.AQUA)
-                        .append(Component.text(GuiConfig.text("voting.menus.ballot.copy.already-invested"), NamedTextColor.WHITE))
-                        .decorate(TextDecoration.BOLD),
-                List.of(
-                        Component.text("■".repeat(filled), NamedTextColor.AQUA)
-                                .append(Component.text("□".repeat(VOTE_BAR_LENGTH - filled), NamedTextColor.DARK_GRAY))
-                                .append(Component.text("  " + percentage + "%", NamedTextColor.GRAY)),
-                        Component.text(GuiConfig.text("voting.menus.ballot.copy.contestant-voting-progress"), NamedTextColor.DARK_GRAY)
-                ), false, 1);
-    }
-
-    private ItemStack ballotItem(GameTypeEnum selected) {
-        if (selected == null) {
-            return item(Material.PAPER,
-                    Component.text(GuiConfig.text("voting.menus.ballot.copy.ballot-is-not-filled-in"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                    List.of(
-                            Component.text(GuiConfig.text("voting.menus.ballot.copy.select-an-item-from-above"), NamedTextColor.WHITE),
-                            Component.text(GuiConfig.text("voting.menus.ballot.copy.can-be-changed-at-any-time-before-voting-closes"), NamedTextColor.DARK_GRAY)
-                    ), false, 1);
-        }
-
-        GameEntry entry = GAME_ENTRIES.getOrDefault(selected,
-                new GameEntry(Material.PAPER, NamedTextColor.WHITE, GuiConfig.text("voting.menus.ballot.copy.championship-events"), ""));
-        return item(Material.WRITABLE_BOOK,
-                Component.text(GuiConfig.text("voting.menus.ballot.copy.my-vote"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                List.of(
-                        Component.text(selected.toString(), entry.color).decorate(TextDecoration.BOLD),
-                        Component.text(GuiConfig.text("voting.menus.ballot.copy.ballot-recorded"), NamedTextColor.GREEN)
-                ), true, 1);
-    }
-
-    private static ItemStack item(Material material, Component name, List<Component> lore,
-                                  boolean glint, int amount) {
-        ItemStack stack = new ItemStack(material, amount);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(name.decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream()
-                    .map(line -> line.decoration(TextDecoration.ITALIC, false))
-                    .toList());
-            meta.setEnchantmentGlintOverride(glint);
-            stack.setItemMeta(meta);
-        }
-        return stack;
+    private static ItemStack configured(String item, String state, Map<String, ?> placeholders, Material material) {
+        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders, material,
+                Component.empty(), List.of(), false);
     }
 
     private static List<Integer> candidateSlots(int count) {
         if (count <= 0) return List.of();
         if (count <= 7) return centeredRow(18, count);
-
         int firstRow = (count + 1) / 2;
         List<Integer> slots = new ArrayList<>(count);
         slots.addAll(centeredRow(9, firstRow));
@@ -312,40 +208,8 @@ final class VoteMenu implements Listener {
     private static List<Integer> centeredRow(int rowStart, int count) {
         int firstSlot = rowStart + (9 - count) / 2;
         List<Integer> slots = new ArrayList<>(count);
-        for (int index = 0; index < count; index++) {
-            slots.add(firstSlot + index);
-        }
+        for (int index = 0; index < count; index++) slots.add(firstSlot + index);
         return slots;
-    }
-
-    private static Map<GameTypeEnum, GameEntry> createGameEntries() {
-        Map<GameTypeEnum, GameEntry> entries = new EnumMap<>(GameTypeEnum.class);
-        entries.put(GameTypeEnum.Bingo, new GameEntry(Material.FILLED_MAP, NamedTextColor.LIGHT_PURPLE,
-                GuiConfig.text("voting.menus.ballot.copy.explore-teamwork"), GuiConfig.text("voting.menus.ballot.copy.complete-the-shared-bingo-card-seize-the-grid-and-connect")));
-        entries.put(GameTypeEnum.ParkourTag, new GameEntry(Material.GOLDEN_CARROT, NamedTextColor.AQUA,
-                GuiConfig.text("voting.menus.ballot.copy.chase-4v4"), GuiConfig.text("voting.menus.ballot.copy.chaser-capture-escapers-fight-for-time-to-survive")));
-        entries.put(GameTypeEnum.BattleBox, new GameEntry(Material.WHITE_WOOL, NamedTextColor.GOLD,
-                GuiConfig.text("voting.menus.ballot.copy.battle-4v4"), GuiConfig.text("voting.menus.ballot.copy.defeat-the-opponent-occupy-the-center-with-your-team-s-wool")));
-        entries.put(GameTypeEnum.TNTRun, new GameEntry(Material.TNT, NamedTextColor.RED,
-                GuiConfig.text("voting.menus.ballot.copy.survival-individual-competition"), GuiConfig.text("voting.menus.ballot.copy.persevere-until-the-end-on-the-collapsing-platform")));
-        entries.put(GameTypeEnum.SnowballShowdown, new GameEntry(Material.SNOWBALL, NamedTextColor.WHITE,
-                GuiConfig.text("voting.menus.ballot.copy.knock-back-survival-match"), GuiConfig.text("voting.menus.ballot.copy.use-snowballs-to-knock-your-opponents-out-of-the-shrinking-field")));
-        entries.put(GameTypeEnum.SkyWars, new GameEntry(Material.GRASS_BLOCK, NamedTextColor.YELLOW,
-                GuiConfig.text("voting.menus.ballot.copy.survival-team-battle"), GuiConfig.text("voting.menus.ballot.copy.collect-empty-island-resources-fight-in-shrinking-borders")));
-        entries.put(GameTypeEnum.TGTTOS, new GameEntry(Material.FEATHER, NamedTextColor.LIGHT_PURPLE,
-                GuiConfig.text("voting.menus.ballot.copy.racing-complete-the-race-as-a-team"), GuiConfig.text("voting.menus.ballot.copy.overcome-obstacles-and-reach-the-finish-line-compete-for-individual-and-team-rankings")));
-        entries.put(GameTypeEnum.ParkourWarrior, new GameEntry(Material.IRON_BOOTS, NamedTextColor.WHITE,
-                GuiConfig.text("voting.menus.ballot.copy.parkour-individual-competition"), GuiConfig.text("voting.menus.ballot.copy.challenge-branch-tracks-scored-by-difficulty-and-completion")));
-        entries.put(GameTypeEnum.HotyCodyDusky, new GameEntry(Material.COD, NamedTextColor.AQUA,
-                GuiConfig.text("voting.menus.ballot.copy.pass-survival-race"), GuiConfig.text("voting.menus.ballot.copy.pass-the-hot-cod-to-your-opponent-and-hold-on-until-the-end")));
-        entries.put(GameTypeEnum.BuildMart, new GameEntry(Material.CRAFTING_TABLE, NamedTextColor.GOLD,
-                GuiConfig.text("voting.menus.ballot.copy.build-teamwork"), GuiConfig.text("voting.menus.ballot.copy.collect-materials-and-divide-the-work-to-restore-as-many-blueprints-as-possible")));
-        entries.put(GameTypeEnum.AceRace, new GameEntry(Material.ELYTRA, NamedTextColor.GREEN,
-                GuiConfig.text("voting.menus.ballot.copy.racing-individual-competition"), GuiConfig.text("voting.menus.ballot.copy.control-the-elytra-and-trident-to-complete-multiple-laps-of-the-obstacle-course")));
-        return Map.copyOf(entries);
-    }
-
-    private record GameEntry(Material material, NamedTextColor color, String category, String description) {
     }
 
     private static final class Holder implements InventoryHolder {

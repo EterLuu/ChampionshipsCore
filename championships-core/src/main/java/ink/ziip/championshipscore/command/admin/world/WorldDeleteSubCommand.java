@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import org.bukkit.Bukkit;
@@ -47,23 +48,23 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
         World world = Bukkit.getWorld(worldName);
         File worldFolder = worldManager.getWorldFolder(worldName);
         if (world == null && !worldFolder.isDirectory()) {
-            Utils.sendAdminError(sender, "世界 &#fff566" + worldName + " &#ededed不存在");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MISSING.replace("%world%", worldName));
             return true;
         }
         if ((world != null && worldManager.isMainWorld(world))
                 || worldName.equals(worldManager.getMainWorld() == null ? "" : worldManager.getMainWorld().getName())) {
-            Utils.sendAdminError(sender, "主大厅世界不能删除");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MAIN_PROTECTED_DELETE);
             return true;
         }
         if (WorldManager.isBingoWorldName(worldName)) {
-            Utils.sendAdminError(sender, "Bingo 三维度由游戏管理，不能通过此命令删除");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_BINGO_PROTECTED_DELETE);
             return true;
         }
 
         String mapOwner = findMapOwner(worldName);
         if (mapOwner != null) {
-            Utils.sendAdminError(sender, "世界 &#fff566" + worldName + " &#ededed仍被地图 &#fff566" + mapOwner
-                    + " &#ededed引用，不能单独删除");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MAP_OWNER_PROTECTED
+                    .replace("%world%", worldName).replace("%map%", mapOwner));
             return true;
         }
 
@@ -75,9 +76,9 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
             if (!confirmed) {
                 pendingDeletes.put(player.getUniqueId(),
                         new PendingDelete(worldName, System.currentTimeMillis() + CONFIRM_WINDOW_MILLIS));
-                Utils.sendAdminError(player, "危险操作：将永久删除世界 &#fff566" + worldName
-                        + "&#ededed。请在 30 秒内再次执行 &#fff566/cc admin world delete "
-                        + worldName + " confirm");
+                Utils.sendAdminError(player, MessageConfig.ADMIN_WORLD_DELETE_CONFIRM
+                        .replace("%world%", worldName)
+                        .replace("%command%", MessageConfig.ADMIN_WORLD_DELETE_COMMAND.replace("%world%", worldName)));
                 return true;
             }
             pendingDeletes.remove(player.getUniqueId());
@@ -88,16 +89,17 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
 
         int movedPlayers = world == null ? 0 : world.getPlayerCount();
         if (world != null && !worldManager.unloadWorld(worldName, false)) {
-            Utils.sendAdminError(sender, "世界 &#fff566" + worldName + " &#ededed卸载失败 &#696969• 请检查控制台");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", worldName));
             return true;
         }
         if (!worldManager.deleteWorldFiles(worldFolder)) {
-            Utils.sendAdminError(sender, "世界 &#fff566" + worldName + " &#ededed删除失败 &#696969• 请检查控制台");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_DELETE_FAILED.replace("%world%", worldName));
             return true;
         }
 
-        Utils.sendAdminSuccess(sender, "已永久删除世界 &#fff566" + worldName
-                + (movedPlayers == 0 ? "" : " &#696969• 已迁回 " + movedPlayers + " 名玩家"));
+        Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_WORLD_DELETED
+                .replace("%world%", worldName)
+                .replace("%moved%", movedPlayers == 0 ? "" : MessageConfig.ADMIN_WORLD_MOVED_PLAYERS.replace("%count%", String.valueOf(movedPlayers))));
         return true;
     }
 

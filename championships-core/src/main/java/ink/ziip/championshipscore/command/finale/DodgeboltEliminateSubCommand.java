@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.finale;
 import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltArea;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -30,9 +31,9 @@ final class DodgeboltEliminateSubCommand extends BaseSubCommand {
         DodgeboltArea area = plugin.getGameManager().getDodgeboltManager().getArea(args[0]);
         Player player = Bukkit.getPlayerExact(args[1]);
         if (area == null || player == null || !area.eliminate(player, false))
-            Utils.sendAdminError(sender, "无法判定该玩家出局");
+            Utils.sendAdminError(sender, MessageConfig.FINALE_DODGEBOLT_ELIMINATION_INVALID);
         else
-            Utils.sendAdminSuccess(sender, "已判定 &#fff566" + player.getName() + " &#ededed出局");
+            Utils.sendAdminSuccess(sender, MessageConfig.FINALE_DODGEBOLT_ELIMINATED.replace("%player%", player.getName()));
         return true;
     }
 

@@ -148,8 +148,8 @@ public class VoteManager extends BaseManager {
         }
 
         if (list.isEmpty()) {
-            stringBuilder.append("&#ededed  本轮没有有效投票");
-            Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE, "&#ededed本轮没有有效投票", 40);
+            stringBuilder.append(MessageConfig.VOTE_NO_VALID_VOTES);
+            Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE, MessageConfig.VOTE_NO_VALID_VOTES, 40);
         } else {
             int highestVotes = list.getFirst().getValue();
             List<Map.Entry<GameTypeEnum, Integer>> tied = list.stream()
@@ -157,8 +157,8 @@ public class VoteManager extends BaseManager {
                     .toList();
             Map.Entry<GameTypeEnum, Integer> winner = tied.get(ThreadLocalRandom.current().nextInt(tied.size()));
             if (tied.size() > 1) {
-                stringBuilder.append("&#ededed  最高票并列，随机选中 &#fff566")
-                        .append(winner.getKey()).append("\n");
+                stringBuilder.append(MessageConfig.VOTE_TIED_WINNER
+                        .replace("%game%", winner.getKey().toString())).append("\n");
             }
             Utils.sendTitleToAllPlayers(MessageConfig.VOTE_END_VOTE_TITLE,
                     MessageConfig.VOTE_END_VOTE_SUBTITLE

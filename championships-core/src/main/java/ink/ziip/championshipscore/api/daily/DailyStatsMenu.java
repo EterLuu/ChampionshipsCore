@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.daily;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import net.kyori.adventure.text.Component;
@@ -51,7 +52,7 @@ final class DailyStatsMenu {
     void open(Player player) {
         StatsHolder holder = new StatsHolder(player.getUniqueId());
         holder.inventory = Bukkit.createInventory(holder, SIZE,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.personal-record"), NamedTextColor.DARK_AQUA).decorate(TextDecoration.BOLD));
+                GuiConfig.component(MENU_PATH + ".title"));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -120,9 +121,7 @@ final class DailyStatsMenu {
     private void openDetail(Player player, GameTypeEnum game) {
         DetailHolder holder = new DetailHolder(player.getUniqueId(), game);
         holder.inventory = Bukkit.createInventory(holder, SIZE,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.statistics-header-prefix"), NamedTextColor.DARK_AQUA)
-                        .append(Component.text(game.toString(), gameColor(game)))
-                        .decorate(TextDecoration.BOLD));
+                GuiConfig.component(MENU_PATH + ".items.game.states.detail.title", Map.of("game", game.toString())));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -146,16 +145,16 @@ final class DailyStatsMenu {
             holder.gamesBySlot.put(slot, game);
         }
         if (games.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.no-open-games-yet"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.completed-records-will-be-retained-forever"), NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text(MENU_PATH + ".items.empty.title"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.empty.lore", 0), NamedTextColor.DARK_GRAY)), false));
 
         inventory.setItem(BACK_SLOT, configured("back", null, Map.of(), item(Material.ARROW,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.return-to-lobby"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
+                Component.text(GuiConfig.text(MENU_PATH + ".items.back.title"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
         inventory.setItem(LEADERBOARD_SLOT, configured("leaderboard", null, Map.of(), item(Material.GOLD_INGOT,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.view-the-leaderboard"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.view-game-data-and-personal-record-rankings"), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.click-to-open"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)), false)));
-        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.close"), NamedTextColor.RED), List.of(), false)));
+                Component.text(GuiConfig.text(MENU_PATH + ".items.leaderboard.title"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.leaderboard.lore", 0), NamedTextColor.GRAY),
+                        Component.text(GuiConfig.line(MENU_PATH + ".items.leaderboard.lore", 1), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)), false)));
+        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, Component.text(GuiConfig.text(MENU_PATH + ".items.close.title"), NamedTextColor.RED), List.of(), false)));
     }
 
     private void refresh(DetailHolder holder) {
@@ -176,41 +175,40 @@ final class DailyStatsMenu {
             inventory.setItem(slots.get(index - from), mapItem(holder.viewer, holder.game, maps.get(index)));
         }
         if (maps.isEmpty()) inventory.setItem(31, item(Material.GRAY_DYE,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.no-subdivision-records-yet"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.after-completing-the-corresponding-game-the-map-record-will-be-displayed-here"), NamedTextColor.DARK_GRAY)), false));
+                Component.text(GuiConfig.text(MENU_PATH + ".items.empty.title"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.empty.lore", 0), NamedTextColor.DARK_GRAY)), false));
 
         inventory.setItem(BACK_SLOT, configured("back", null, Map.of(), item(Material.ARROW,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.return-to-game-category"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
+                Component.text(GuiConfig.text(MENU_PATH + ".items.back.states.detail.title"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
         inventory.setItem(LEADERBOARD_SLOT, configured("leaderboard", null, Map.of(), item(Material.GOLD_INGOT,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.view-the-leaderboard"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.view-game-data-and-personal-record-rankings"), NamedTextColor.GRAY)), false)));
+                Component.text(GuiConfig.text(MENU_PATH + ".items.leaderboard.title"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.leaderboard.lore", 0), NamedTextColor.GRAY)), false)));
         if (holder.page > 0) inventory.setItem(48, configured("previous", null, Map.of(), item(Material.ARROW,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.previous-page"), NamedTextColor.WHITE), List.of(), false)));
+                Component.text(GuiConfig.text(MENU_PATH + ".items.previous.title"), NamedTextColor.WHITE), List.of(), false)));
         inventory.setItem(REFRESH_SLOT, configured("refresh", null, Map.of(), item(Material.CLOCK,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.refresh"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.update-the-detailed-records-of-the-current-game"), NamedTextColor.GRAY)), false)));
+                Component.text(GuiConfig.text(MENU_PATH + ".items.refresh.title"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.refresh.lore", 0), NamedTextColor.GRAY)), false)));
         inventory.setItem(PAGE_SLOT, configured("page", null,
                 Map.of("page", holder.page + 1, "pages", holder.pageCount), item(Material.PAPER,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.ordinal-prefix") + (holder.page + 1) + " / " + holder.pageCount + GuiConfig.text("daily.menus.statistics-screen.copy.page-suffix"), NamedTextColor.AQUA)
-                        .decorate(TextDecoration.BOLD),
-                List.of(Component.text(maps.size() + GuiConfig.text("daily.menus.statistics-screen.copy.map"), NamedTextColor.GRAY)), false)));
+                GuiConfig.component(MENU_PATH + ".items.page.title", Map.of("page", holder.page + 1, "pages", holder.pageCount)),
+                List.of(Component.text(GuiConfig.text(MENU_PATH + ".items.page.lore", Map.of("maps", maps.size())), NamedTextColor.GRAY)), false)));
         if (holder.page + 1 < holder.pageCount) inventory.setItem(52, configured("next", null, Map.of(), item(Material.ARROW,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.next-page"), NamedTextColor.WHITE), List.of(), false)));
-        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.close"), NamedTextColor.RED), List.of(), false)));
+                Component.text(GuiConfig.text(MENU_PATH + ".items.next.title"), NamedTextColor.WHITE), List.of(), false)));
+        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, Component.text(GuiConfig.text(MENU_PATH + ".items.close.title"), NamedTextColor.RED), List.of(), false)));
     }
 
     private ItemStack playerSummary(UUID viewer, DailyStatSnapshot stat) {
         List<Component> lore = List.of(
-                line(GuiConfig.text("daily.menus.statistics-screen.copy.complete-session"), stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics-screen.copy.match-count-suffix"), NamedTextColor.WHITE),
+                LegacyText.component(GuiConfig.line(MENU_PATH + ".items.summary.lore", 0, Map.of("games", stat.gamesPlayed()))),
                 Component.empty(),
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.sort-by-game-click-on-card-to-see-breakdown"), NamedTextColor.GRAY)
+                Component.text(GuiConfig.line(MENU_PATH + ".items.summary.lore", 2), NamedTextColor.GRAY)
         );
         ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta rawMeta = stack.getItemMeta();
         if (!(rawMeta instanceof SkullMeta meta)) return item(Material.PLAYER_HEAD,
-                Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.my-overview"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, false);
+                Component.text(GuiConfig.text(MENU_PATH + ".items.summary.title"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, false);
         meta.setOwningPlayer(Bukkit.getOfflinePlayer(viewer));
-        meta.displayName(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.my-overview"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
+        meta.displayName(Component.text(GuiConfig.text(MENU_PATH + ".items.summary.title"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
         stack.setItemMeta(meta);
@@ -225,32 +223,30 @@ final class DailyStatsMenu {
         for (DailyMetric metric : DailyMetric.forGame(game)) {
             List<Double> values = daily.statsManager().metricValues(viewer, null, metric);
             if (values.isEmpty()) {
-                lore.add(line(GuiConfig.text(metric.labelKey()) + "  ",
-                        GuiConfig.text("daily.menus.statistics-screen.copy.no-record-yet"), NamedTextColor.DARK_GRAY));
+                lore.add(metricLine(DailyStatsMenu.metricRecordLabel(metric, 0),
+                        GuiConfig.text(MENU_PATH + ".items.metric.states.no-record.title")));
             } else {
                 recorded = true;
                 for (int index = 0; index < values.size(); index++) {
-                    lore.add(line(metricRecordLabel(metric, index) + "  ",
-                            daily.statsManager().formatMetricValue(viewer, null, metric, values.get(index)),
-                            metricColor(metric)));
+                    lore.add(metricLine(DailyStatsMenu.metricRecordLabel(metric, index),
+                            daily.statsManager().formatMetricValue(viewer, null, metric, values.get(index))));
                 }
             }
         }
-        lore.add(line(GuiConfig.text("daily.menus.statistics-screen.copy.participate-in-sessions"),
-                stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics-screen.copy.match-count-suffix"), NamedTextColor.WHITE));
+        lore.add(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.game.lore", 0, Map.of("games", stat.gamesPlayed()))));
         lore.add(Component.empty());
-        lore.add(Component.text(daily.knownMaps(game).size() + GuiConfig.text("daily.menus.statistics-screen.copy.maps-to-view-subdivisions"), NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.text(MENU_PATH + ".items.game.lore", Map.of("maps", daily.knownMaps(game).size())), NamedTextColor.GRAY));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.click-to-view-detailed-results"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+        lore.add(Component.text(GuiConfig.line(MENU_PATH + ".items.game.lore", 4), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
         return item(gameMaterial(game), Component.text(game.toString(), gameColor(game))
                 .decorate(TextDecoration.BOLD), lore, recorded);
     }
 
     private ItemStack gameSummary(GameTypeEnum game, DailyStatSnapshot stat) {
         List<Component> lore = new ArrayList<>();
-        lore.add(line(GuiConfig.text("daily.menus.statistics-screen.copy.participate-in-sessions"), stat.gamesPlayed() + GuiConfig.text("daily.menus.statistics-screen.copy.match-count-suffix"), NamedTextColor.WHITE));
+        lore.add(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.game.lore", 0, Map.of("games", stat.gamesPlayed()))));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.click-the-map-below-to-view-various-records"), NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.line(MENU_PATH + ".items.game.lore", 2), NamedTextColor.GRAY));
         return item(gameMaterial(game), Component.text(game.toString(), gameColor(game))
                 .decorate(TextDecoration.BOLD), lore, stat.gamesPlayed() > 0);
     }
@@ -262,22 +258,20 @@ final class DailyStatsMenu {
         for (DailyMetric metric : DailyMetric.forGame(game)) {
             List<Double> values = daily.statsManager().metricValues(viewer, map, metric);
             if (values.isEmpty()) {
-                lore.add(line(GuiConfig.text(metric.labelKey()) + "  ",
-                        GuiConfig.text("daily.menus.statistics-screen.copy.no-record-yet"), NamedTextColor.DARK_GRAY));
+                lore.add(metricLine(DailyStatsMenu.metricRecordLabel(metric, 0),
+                        GuiConfig.text(MENU_PATH + ".items.metric.states.no-record.title")));
             } else {
                 recorded = true;
                 for (int index = 0; index < values.size(); index++) {
-                    lore.add(line(metricRecordLabel(metric, index) + "  ",
-                            daily.statsManager().formatMetricValue(viewer, map, metric, values.get(index)),
-                            metricColor(metric)));
+                    lore.add(metricLine(DailyStatsMenu.metricRecordLabel(metric, index),
+                            daily.statsManager().formatMetricValue(viewer, map, metric, values.get(index))));
                 }
             }
         }
-        lore.add(line(GuiConfig.text("daily.menus.statistics-screen.copy.participate-in-sessions"),
-                daily.statsManager().mapStat(viewer, game, map).gamesPlayed()
-                        + GuiConfig.text("daily.menus.statistics-screen.copy.match-count-suffix"), NamedTextColor.WHITE));
+        lore.add(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.game.lore", 0,
+                Map.of("games", daily.statsManager().mapStat(viewer, game, map).gamesPlayed()))));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text("daily.menus.statistics-screen.copy.record-independently-by-map"), NamedTextColor.GRAY));
+        lore.add(Component.text(GuiConfig.line(MENU_PATH + ".items.map.lore", 2), NamedTextColor.GRAY));
         return item(gameMaterial(game), Component.text(map, gameColor(game)).decorate(TextDecoration.BOLD), lore, recorded);
     }
 
@@ -352,16 +346,16 @@ final class DailyStatsMenu {
 
     static String metricRecordLabel(DailyMetric metric, int index) {
         if (metric.format() != DailyMetric.Format.TIME) return GuiConfig.text(metric.labelKey());
-        String prefix = switch (index) {
-            case 0 -> GuiConfig.text("daily.menus.statistics-screen.copy.first-best");
-            case 1 -> GuiConfig.text("daily.menus.statistics-screen.copy.second-best");
-            default -> GuiConfig.text("daily.menus.statistics-screen.copy.third-best");
+        return switch (index) {
+            case 0 -> GuiConfig.text(metric.labelKey(1));
+            case 1 -> GuiConfig.text(metric.labelKey(2));
+            default -> GuiConfig.text(metric.labelKey(3));
         };
-        return prefix + GuiConfig.text(metric.labelKey());
     }
 
-    private static Component line(String label, String value, NamedTextColor color) {
-        return Component.text(label, NamedTextColor.GRAY).append(Component.text(value, color));
+    private static Component metricLine(String label, String value) {
+        return LegacyText.component(GuiConfig.line(MENU_PATH + ".items.metric.lore", 0,
+                Map.of("label", label, "value", value)));
     }
 
     private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {

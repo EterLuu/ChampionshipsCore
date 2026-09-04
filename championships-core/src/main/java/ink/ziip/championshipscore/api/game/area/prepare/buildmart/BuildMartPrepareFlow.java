@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -23,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** Build Mart flow: a hand-built resource hub plus a replicated, editable base template. */
 public class BuildMartPrepareFlow extends PrepareFlowDefinition {
@@ -50,7 +52,7 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
-        steps.add(selection("hub", GuiConfig.text("map-editor.games.build-mart.setup.resource-hall-boundary"), Material.CHEST,
+        steps.add(selection("hub", GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.hub.title"), Material.CHEST,
                 t -> cfg(t).getHubPos1() != null && cfg(t).getHubPos2() != null,
                 (t, v) -> { cfg(t).setHubPos1(v[0]); cfg(t).setHubPos2(v[1]); }));
         steps.add(new BuildMartBaseSchematicStep(base));
@@ -58,13 +60,13 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
 
         steps.add(new BuildMartWindZoneListStep());
         steps.add(new BuildMartMaterialZoneStep());
-        steps.add(point("spectator_spawn", GuiConfig.text("map-editor.copy.spectator-spawn-point"), Material.ENDER_EYE,
+        steps.add(point("spectator_spawn", GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title"), Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l)));
-        steps.add(new StandAndRunStep("hub_portal", Component.text(GuiConfig.text("map-editor.games.build-mart.setup.resource-hall-portal-location")),
-                Component.text(GuiConfig.text("map-editor.games.build-mart.setup.resource-hall-arrival-selection-hint")), Material.OBSIDIAN,
+        steps.add(new StandAndRunStep("hub_portal", Component.text(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.hub-portal.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.hub-portal.lore", 0)), Material.OBSIDIAN,
                 t -> cfg(t).getHubPortalPoint() != null,
-                (t, l) -> cfg(t).setHubPortalPoint(l), Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.setup.the-resource-hall-portal-landing-point-has-been-set"))));
-        steps.add(new BuildMartFloorSelectionStep("golden_display", Component.text(GuiConfig.text("map-editor.games.build-mart.setup.golden-blueprint-display-area-floor")),
+                (t, l) -> cfg(t).setHubPortalPoint(l), Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_PORTAL_SET)));
+        steps.add(new BuildMartFloorSelectionStep("golden_display", Component.text(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.golden-display.title")),
                 Material.GOLD_BLOCK, t -> cfg(t).getGoldenDisplayPoint() != null,
                 (t, l) -> cfg(t).setGoldenDisplayPoint(l)));
 
@@ -82,32 +84,32 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
     private static PrepareStep selection(String key, String name, Material icon,
             java.util.function.Predicate<SetupTarget> predicate,
             java.util.function.BiConsumer<SetupTarget, org.bukkit.util.Vector[]> setter) {
-        return new WeSelectionStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.games.build-mart.setup.use-worldedit-to-select-and-click")),
-                icon, predicate, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.already-set") + name + "。"));
+        return new WeSelectionStep(key, Component.text(name), Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.hub.lore", 0)),
+                icon, predicate, setter, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SET.replace("%name%", name)));
     }
 
     private static PrepareStep point(String key, String name, Material icon,
             java.util.function.Predicate<SetupTarget> predicate,
             java.util.function.BiConsumer<SetupTarget, Location> setter) {
-        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.copy.after-reaching-the-target-position-click")),
-                icon, predicate, setter, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.already-set") + name + "。"));
+        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.line("map-editor.menus.step-list.items.stand-run.lore", 0)),
+                icon, predicate, setter, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SET.replace("%name%", name)));
     }
 
     private static PrepareStep basePoint(String key, boolean selectedBlock) {
-        String display = GuiConfig.text("map-editor.games.build-mart.setup.template-base-label") + key;
+        String display = GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.base-floor.title", Map.of("key", key));
         if (selectedBlock) {
             return new SelectedBlockStep("base_" + key, Component.text(display),
-                    Component.text(GuiConfig.text("map-editor.games.build-mart.setup.use-worldedit-to-precisely-select-the-submit-button-square")), Material.STONE_BUTTON,
+                    Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-submit.lore", 0)), Material.STONE_BUTTON,
                     t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l));
         }
         if (!key.equals("portal")) {
             return new BuildMartFloorSelectionStep("base_" + key, Component.text(display), Material.BRICKS,
                     t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l));
         }
-        Component description = Component.text(GuiConfig.text("map-editor.games.build-mart.setup.team-base-arrival-selection-hint"));
+        Component description = Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-portal.lore", 0));
         return new StandAndRunStep("base_" + key, Component.text(display), description, Material.BRICKS,
                 t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.already-set") + display + "。"));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SET.replace("%name%", display)));
     }
 
     private static BuildMartConfig cfg(SetupTarget target) { return (BuildMartConfig) target.config(); }

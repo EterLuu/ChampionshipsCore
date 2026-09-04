@@ -28,7 +28,8 @@ final class WorkerChampionshipPlaceholderValues {
             }
             String name = team == null
                     ? daily && player != null && player.role() == ParticipantRole.SPECTATOR
-                    ? "&6" + presentation.message("game.name") : spectator
+                    ? presentation.message("presentation.daily-game")
+                            .replace("%game%", presentation.message("game.name")) : spectator
                     : LegacyText.translateColorCodes(team.colorCode() + team.name());
             return ChampionshipTabText.bracketedPrefix(name);
         }
@@ -38,11 +39,17 @@ final class WorkerChampionshipPlaceholderValues {
         }
         if (params.equals("tab_footer_status")) {
             if (daily && team != null)
-                return ChampionshipTabText.dailyTeamFooter(LegacyText.translateColorCodes(team.colorCode() + team.name()));
+                return ChampionshipTabText.dailyTeamFooter(
+                        presentation.message("presentation.tab.daily-team-footer"),
+                        LegacyText.translateColorCodes(team.colorCode() + team.name()));
             if (daily)
-                return ChampionshipTabText.currentGameFooter(presentation.message("game.name"));
+                return ChampionshipTabText.currentGameFooter(
+                        presentation.message("presentation.tab.current-game-footer"),
+                        presentation.message("game.name"));
             String name = team == null ? spectator : LegacyText.translateColorCodes(team.colorCode() + team.name());
-            return ChampionshipTabText.teamFooter(name, team == null ? 0D : team.points());
+            return ChampionshipTabText.teamFooter(
+                    presentation.message("presentation.tab.team-footer"), name,
+                    team == null ? 0D : team.points());
         }
 
         if (params.startsWith("player_team_name_no_color")) {

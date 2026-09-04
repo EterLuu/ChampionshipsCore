@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.finale.FinaleGameDefinition;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,9 +29,9 @@ final class FinaleCancelSubCommand extends BaseSubCommand {
             return true;
         }
         if (plugin.getScheduleManager().stopFinale(definition.gameType()))
-            Utils.sendAdminSuccess(sender, "已取消正式决赛：&#fff566" + definition.gameType());
+            Utils.sendAdminSuccess(sender, MessageConfig.FINALE_CANCELLED.replace("%game%", definition.gameType().name()));
         else
-            Utils.sendAdminInfo(sender, "该正式决赛当前未运行：&#fff566" + definition.gameType());
+            Utils.sendAdminInfo(sender, MessageConfig.FINALE_NOT_RUNNING.replace("%game%", definition.gameType().name()));
         return true;
     }
 

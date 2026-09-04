@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.GuiText;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
 import ink.ziip.championshipscore.api.game.acerace.AceRaceConfig;
@@ -23,12 +25,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /** Adds and safely edits ordered WorldEdit progress gates and their following segment rules. */
 public final class AceRaceProgressPointListStep extends PrepareStep {
     public AceRaceProgressPointListStep() {
-        super("progress_points", Component.text(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.racing-progress-points")),
-                Component.text(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-line-selection-hint")),
+        super("progress_points", Component.text(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-points.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-points.lore", 0)),
                 Material.LIME_CONCRETE, StepCaptureType.LIST);
     }
 
@@ -56,8 +59,8 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         Gate gate = captureGate(session, player);
         if (gate == null) return null;
         int defaultFallY = gate.pos1().getBlockY();
-        Utils.sendAdminInfo(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-point-fall-height-input-hint") + defaultFallY + "。");
-        AnvilInputGui.openInteger(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.enter-drop-height"), defaultFallY, fallY ->
+        Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_FALL_INPUT.replace("%fall%", String.valueOf(defaultFallY)));
+        AnvilInputGui.openInteger(player, GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-fall-height.title"), defaultFallY, fallY ->
                 AceRaceEquipmentGui.open(player, session, AceRaceEquipment.NONE, equipment -> {
                     ConfigurationSection root = cfg(session.getTarget()).ensureProgressPoints();
                     int order = orderedKeys(root).size() + 1;
@@ -68,8 +71,9 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
                     writeProgressPoint(progressPoint, order, gate, fallY, equipment);
                     session.markDirty();
                     reload(session);
-                    Utils.sendAdminSuccess(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-points-added") + order + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.drop-height")
-                            + fallY + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.stage-equipment") + equipment.displayName());
+                    Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_ADDED
+                            .replace("%order%", String.valueOf(order)).replace("%fall%", String.valueOf(fallY))
+                            .replace("%equipment%", equipment.displayName()));
                 }));
         return null;
     }
@@ -87,11 +91,19 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
             ConfigurationSection progressPoint = root.getConfigurationSection(key);
             if (progressPoint == null) continue;
             AceRaceEquipment equipment = AceRaceEquipment.fromConfig(progressPoint.getString("equipment"));
-            entries.add(new ListEntry(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-point") + progressPoint.getInt("order"), List.of(
-                    GuiConfig.text("map-editor.games.ace-race.steps.progress-points.line-selection") + format(progressPoint.getVector("pos1")) + " -> " + format(progressPoint.getVector("pos2")),
-                    GuiConfig.text("map-editor.games.ace-race.steps.progress-points.trigger-range-automatically-expands-to-both-sides-if-less-than-20-cells-select-line-y-3-and-above"),
-                    GuiConfig.text("map-editor.games.ace-race.steps.progress-points.fall-height-label") + progressPoint.getInt("fall-y"),
-                    GuiConfig.text("map-editor.games.ace-race.steps.progress-points.equipment-for-the-next-stage") + equipment.displayName())));
+            Map<String, String> placeholders = Map.of(
+                    "order", String.valueOf(progressPoint.getInt("order")),
+                    "pos1", format(progressPoint.getVector("pos1")),
+                    "pos2", format(progressPoint.getVector("pos2")),
+                    "fall", String.valueOf(progressPoint.getInt("fall-y")),
+                    "equipment", equipment.displayName());
+            entries.add(new ListEntry(
+                    GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-entry.title", placeholders),
+                    List.of(
+                            GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-entry.lore", 0, placeholders),
+                            GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-entry.lore", 1),
+                            GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-entry.lore", 2, placeholders),
+                            GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-entry.lore", 3, placeholders))));
         }
         return entries;
     }
@@ -109,20 +121,21 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         int order = existing.getInt("order", index + 1);
         int defaultFallY = existing.getInt("fall-y", gate.pos1().getBlockY());
         AceRaceEquipment current = AceRaceEquipment.fromConfig(existing.getString("equipment"));
-        Utils.sendAdminInfo(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.please-enter-the-fall-height-after-this-progress-point-leave-blank-to-retain-the-current-value") + defaultFallY + "。");
-        AnvilInputGui.openInteger(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.enter-drop-height"), defaultFallY, fallY ->
+        Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_EDIT_INPUT.replace("%fall%", String.valueOf(defaultFallY)));
+        AnvilInputGui.openInteger(player, GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-fall-height.title"), defaultFallY, fallY ->
                 AceRaceEquipmentGui.open(player, session, current, equipment -> {
                     ConfigurationSection progressPoint = cfg(session.getTarget()).ensureProgressPoints()
                             .getConfigurationSection(key);
                     if (progressPoint == null) {
-                        Utils.sendAdminError(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.this-progress-point-no-longer-exists"));
+                        Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_MISSING);
                         return;
                     }
                     writeProgressPoint(progressPoint, order, gate, fallY, equipment);
                     session.markDirty();
                     reload(session);
-                    Utils.sendAdminSuccess(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-points-updated") + order + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.drop-height")
-                            + fallY + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.stage-equipment") + equipment.displayName());
+                    Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_UPDATED
+                            .replace("%order%", String.valueOf(order)).replace("%fall%", String.valueOf(fallY))
+                            .replace("%equipment%", equipment.displayName()));
                 }));
         return null;
     }
@@ -134,30 +147,31 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
 
     public @NotNull String equipmentText(@NotNull PrepareSession session, int index) {
         ConfigurationSection progressPoint = progressPoint(session, index);
-        if (progressPoint == null) return GuiConfig.text("map-editor.games.ace-race.steps.progress-points.current-prop-entry-does-not-exist");
-        return GuiConfig.text("map-editor.games.ace-race.steps.progress-points.current-equipment") + AceRaceEquipment.fromConfig(
-                progressPoint.getString("equipment")).displayName();
+        if (progressPoint == null) return GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-binding.states.missing.title");
+        return GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-binding.states.current.title")
+                .replace("%equipment%", AceRaceEquipment.fromConfig(progressPoint.getString("equipment")).displayName());
     }
 
     /** Edits only the following segment's equipment, preserving the gate and fall height. */
     public void editEquipment(@NotNull PrepareSession session, @NotNull Player player, int index) {
         ConfigurationSection progressPoint = progressPoint(session, index);
         if (progressPoint == null) {
-            Utils.sendAdminError(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.this-progress-point-no-longer-exists"));
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_MISSING);
             return;
         }
         AceRaceEquipment current = AceRaceEquipment.fromConfig(progressPoint.getString("equipment"));
         AceRaceEquipmentGui.open(player, session, current, equipment -> {
             ConfigurationSection selected = progressPoint(session, index);
             if (selected == null) {
-                Utils.sendAdminError(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.this-progress-point-no-longer-exists"));
+                Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_MISSING);
                 return;
             }
             selected.set("equipment", equipment.configValue());
             session.markDirty();
             reload(session);
-            Utils.sendAdminSuccess(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-point-has-been-reached") + selected.getInt("order", index + 1)
-                    + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.the-equipment-for-the-next-stage-are-changed-to") + equipment.displayName());
+            Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_EQUIPMENT_UPDATED
+                    .replace("%order%", String.valueOf(selected.getInt("order", index + 1)))
+                    .replace("%equipment%", equipment.displayName()));
             ListStepGui.openEdit(player, session, this, index);
         });
     }
@@ -168,13 +182,13 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         ConfigurationSection root = cfg(session.getTarget()).ensureProgressPoints();
         List<String> keys = orderedKeys(root);
         if (index < 0 || index >= keys.size() || newOrder < 1 || newOrder > keys.size())
-            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.the-serial-number-must-be-between-1-and") + keys.size() + GuiConfig.text("map-editor.copy.range-end-suffix"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace("%max%", String.valueOf(keys.size())));
         String moved = keys.remove(index);
         keys.add(newOrder - 1, moved);
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.the-progress-point-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.copy.item-suffix"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_ACE_PROGRESS_ADJUSTED.replace("%order%", String.valueOf(newOrder)));
     }
 
     @Override
@@ -187,7 +201,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         renumber(root, keys);
         session.markDirty();
         reload(session);
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.deleted") + (index + 1) + GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-points"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_ACE_PROGRESS_DELETED.replace("%index%", String.valueOf(index + 1)));
     }
 
     private static Gate captureGate(@NotNull PrepareSession session, @NotNull Player player) {
@@ -195,14 +209,14 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            Utils.sendAdminError(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.please-use-worldedit-to-select-the-horizontal-straight-line-of-the-progress-point-first"));
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_SELECT_FIRST);
             return null;
         }
         int spanX = Math.abs(selection[0].getBlockX() - selection[1].getBlockX());
         int spanY = Math.abs(selection[0].getBlockY() - selection[1].getBlockY());
         int spanZ = Math.abs(selection[0].getBlockZ() - selection[1].getBlockZ());
         if (spanY != 0 || (spanX > 0 && spanZ > 0) || (spanX == 0 && spanZ == 0)) {
-            Utils.sendAdminError(player, GuiConfig.text("map-editor.games.ace-race.steps.progress-points.progress-points-must-be-the-same-height-a-straight-worldedit-line-extending-in-the-x-or-z-direction"));
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_LINE_INVALID);
             return null;
         }
         return new Gate(selection[0].clone(), selection[1].clone());
@@ -238,17 +252,18 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
     }
 
     private static String format(Vector vector) {
-        return vector == null ? GuiConfig.text("map-editor.copy.not-set") : vector.getBlockX() + ", " + vector.getBlockY() + ", " + vector.getBlockZ();
+        return vector == null ? GuiConfig.text("map-editor.menus.step-list.items.status.states.unset.title")
+                : GuiText.coordinate(vector.getBlockX(), vector.getBlockY(), vector.getBlockZ());
     }
 
     @Override
     public @NotNull Component listAddLabel() {
-        return Component.text(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.add-progress-points"));
+        return Component.text(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-add.title"));
     }
 
     @Override
     public @NotNull Component listAddHint() {
-        return Component.text(GuiConfig.text("map-editor.games.ace-race.steps.progress-points.use-worldedit-to-select-the-progress-point-straight-line-and-click"));
+        return Component.text(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-add.lore", 0));
     }
 
     private record Gate(@NotNull Vector pos1, @NotNull Vector pos2) {

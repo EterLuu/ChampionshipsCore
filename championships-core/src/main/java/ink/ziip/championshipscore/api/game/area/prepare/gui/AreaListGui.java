@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.area.prepare.gui;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
@@ -71,8 +72,8 @@ public final class AreaListGui {
         int needed = names.size() + 2; // areas + new + close
         int rows = Math.max(3, Math.min(6, (needed + 8) / 9));
         Holder holder = new Holder(gameType);
-        Inventory inv = Bukkit.createInventory(holder, rows * 9,
-                Component.text(gameType + GuiConfig.text("map-editor.menus.area-list.copy.venue-list")).decoration(TextDecoration.ITALIC, false));
+        Inventory inv = Bukkit.createInventory(holder, rows * 9, GuiConfig.component(MENU_PATH + ".title",
+                Map.of("game", gameType)));
         holder.setInventory(inv);
 
         int slot = 0;
@@ -84,15 +85,10 @@ public final class AreaListGui {
                 done = preview.configDone();
                 total = preview.configTotal();
             }
-            ItemStack item = PrepareKeys.item(Material.PAPER,
-                    Component.text(name).color(NamedTextColor.WHITE),
-                    List.of(Component.text(GuiConfig.text("map-editor.menus.area-list.copy.configuration-progress") + done + "/" + total).color(NamedTextColor.GRAY),
-                            Component.text(target != null && target.config().isPrepareReady()
-                                    ? GuiConfig.text("map-editor.menus.area-list.copy.published") : GuiConfig.text("map-editor.menus.area-list.copy.draft-with-unpublished-changes")).color(
-                                    target != null && target.config().isPrepareReady()
-                                            ? NamedTextColor.GREEN : NamedTextColor.YELLOW),
-                            Component.text(GuiConfig.text("map-editor.menus.area-list.copy.left-click-to-enter-editing")).color(NamedTextColor.AQUA),
-                            Component.text(GuiConfig.text("map-editor.menus.area-list.copy.right-click-to-delete-map-configuration-keep-world")).color(NamedTextColor.RED)));
+            boolean published = target != null && target.config().isPrepareReady();
+            ItemStack blank = PrepareKeys.item(Material.PAPER, Component.empty(), List.of());
+            ItemStack item = ConfiguredGui.item(MENU_PATH + ".items.area", published ? "published" : "draft",
+                    Map.of("name", name, "done", done, "total", total), blank);
             inv.setItem(slot, item);
             holder.slotToArea.put(slot, name);
             slot++;
@@ -100,15 +96,11 @@ public final class AreaListGui {
 
         holder.newSlot = slot;
         inv.setItem(slot, ConfiguredGui.item(MENU_PATH + ".items.new", null, Map.of(),
-                PrepareKeys.item(Material.EMERALD,
-                        Component.text(GuiConfig.text(MENU_PATH + ".copy.create-new-map")).color(NamedTextColor.GREEN),
-                        List.of(Component.text(GuiConfig.text(MENU_PATH + ".copy.click-and-enter-the-map-name")).color(NamedTextColor.GRAY)))));
+                PrepareKeys.item(Material.EMERALD, Component.empty(), List.of())));
 
         holder.closeSlot = rows * 9 - 1;
         inv.setItem(holder.closeSlot, ConfiguredGui.item(MENU_PATH + ".items.close", null, Map.of(),
-                PrepareKeys.item(Material.BARRIER,
-                        Component.text(GuiConfig.text(MENU_PATH + ".copy.close")).color(NamedTextColor.RED),
-                        List.of(Component.text(GuiConfig.text(MENU_PATH + ".copy.click-to-close-menu")).color(NamedTextColor.GRAY)))));
+                PrepareKeys.item(Material.BARRIER, Component.empty(), List.of())));
 
         player.openInventory(inv);
     }
@@ -127,7 +119,7 @@ public final class AreaListGui {
                         || holder.deleteConfirmationExpiresAt < System.currentTimeMillis()) {
                     holder.deleteConfirmation = areaName;
                     holder.deleteConfirmationExpiresAt = System.currentTimeMillis() + 30_000L;
-                    player.sendMessage(Component.text(GuiConfig.text("map-editor.menus.area-list.copy.delete-map-confirmation"))
+                    player.sendMessage(Component.text(MessageConfig.MAP_EDITOR_AREA_DELETE_CONFIRMATION)
                             .color(NamedTextColor.RED));
                     return;
                 }

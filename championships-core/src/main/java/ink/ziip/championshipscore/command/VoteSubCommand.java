@@ -20,7 +20,7 @@ public class VoteSubCommand extends BaseSubCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length > 1) {

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -27,7 +28,7 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
             return true;
         }
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
         int teleported = 0;
@@ -47,7 +48,7 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
         } else {
             ChampionshipTeam team = plugin.getTeamManager().getTeam(target);
             if (team == null) {
-                Utils.sendAdminError(sender, "队伍不存在：&#fff566" + target);
+                Utils.sendAdminError(sender, MessageConfig.ADMIN_TEAM_MISSING.replace("%team%", target));
                 return true;
             }
             for (Player teamPlayer : team.getOnlinePlayers()) {
@@ -55,7 +56,7 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
             }
         }
 
-        Utils.sendAdminSuccess(sender, "已将 &#fff566" + teleported + " &#ededed名在线玩家传送到你的位置");
+        Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_TELEPORTED_PLAYERS.replace("%count%", String.valueOf(teleported)));
 
         return true;
     }

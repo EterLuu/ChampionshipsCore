@@ -1,8 +1,133 @@
+admin:
+  team-missing: "队伍不存在：&#fff566%team%&#ededed。"
+  teleported-players: "已将&#fff566%count%&#ededed名在线玩家传送到你的位置。"
+  max-players-positive-integer: 人数必须是正整数。
+  max-players-greater-than-zero: 人数必须大于0。
+  max-players-set: "每场游戏最大玩家数已设为&#fff566%count%&#ededed。"
+  player-offline: "玩家不在线：%player%&#ededed。"
+  visibility-header: "&6[玩家显隐] &f%player% &7（%uuid%）"
+  visibility-line: "&7- &f%line%"
+  world:
+    delete-command: "/cc admin world delete %world% confirm"
+    list-separator: "&#696969, &#bababa"
+    invalid-name: 世界名仅支持字母、数字、下划线和连字符。
+    same-name: 新旧世界名不能相同（不支持仅修改大小写）。
+    target-exists: "目标世界&#fff566%world%&#ededed已存在。"
+    missing: "世界&#fff566%world%&#ededed不存在。"
+    main-protected-delete: 主大厅世界不能删除。
+    main-protected-rename: 主大厅世界不能重命名。
+    main-protected-unload: 主大厅世界不能卸载。
+    bingo-protected-delete: 宾果三维度由游戏管理，不能通过此命令删除。
+    bingo-protected-rename: 宾果三维度由游戏管理，不能通过此命令重命名。
+    map-owner-protected: "世界&#fff566%world%&#ededed仍被地图&#fff566%map%&#ededed引用，不能单独删除。"
+    delete-confirm: "危险操作：将永久删除世界&#fff566%world%&#ededed。请在30秒内再次执行&#fff566%command%&#ededed。"
+    unload-failed: "世界&#fff566%world%&#ededed卸载失败&#696969 •&#ededed 请检查控制台。"
+    delete-failed: "世界&#fff566%world%&#ededed删除失败&#696969 •&#ededed 请检查控制台。"
+    deleted: "已永久删除世界&#fff566%world%&#ededed%moved%&#ededed。"
+    moved-players: " &#696969•&#ededed 已迁回%count%名玩家"
+    already-loaded: "世界&#fff566%world%&#bababa已加载&#ededed。"
+    bingo-environment-required: "宾果维度&#fff566%world%&#ededed必须使用&#fff566%environment%&#ededed。"
+    load-failed: "世界&#fff566%world%&#ededed加载失败&#696969 •&#ededed 请检查控制台。"
+    load-failed-simple: "世界&#fff566%world%&#ededed加载失败。"
+    action-loaded: 加载
+    action-created: 创建
+    created: "已%action%世界&#fff566%world%&#696969 •&#ededed %environment%&#ededed。"
+    prepare-active-rename: 仍有地图准备会话进行中，不能重命名世界。
+    environment-required: "未加载世界需在末尾指定原环境&#fff566normal&#ededed、&#fff566nether&#ededed或&#fff566the_end&#ededed。"
+    environment-mismatch: "已加载世界的环境为&#fff566%environment%&#ededed，不能指定其他环境。"
+    template-exists: "目标地图模板&#fff566%world%&#ededed已存在。"
+    directory-rename-failed: "世界目录重命名失败&#696969 •&#ededed 原世界已尝试恢复。"
+    rename-failed: "世界重命名失败&#696969 •&#ededed 原世界已尝试恢复。"
+    config-migration-failed: "地图配置迁移失败&#696969 •&#ededed 原世界已尝试恢复。"
+    renamed: "已重命名世界&#fff566%old%&#ededed为&#fff566%new%&#ededed%moved%&#ededed。"
+    game-in-use: "世界&#fff566%world%&#ededed正在被游戏使用，不能重命名。"
+    name-derived: "世界&#fff566%world%&#ededed的名称由游戏地图规则派生，不能通过此命令重命名。"
+    not-loaded: "世界&#fff566%world%&#ededed未加载。"
+    not-loaded-create: "世界&#fff566%world%&#ededed未加载&#696969 •&#ededed 请先使用create。"
+    teleport-failed: "无法传送至世界&#fff566%world%&#ededed。"
+    teleported: "已传送至世界&#fff566%world%&#696969 •&#ededed 飞行已开启。"
+    unloaded: "已保存并卸载世界&#fff566%world%&#ededed%moved%&#ededed。"
+    list-loaded: "已加载世界&#696969（%count%）&#ededed"
+    main-suffix: " &#fff566[主世界]&#ededed"
+    row: "&#bababa •&#ededed %world%%main%&#696969 — %environment%&#bababa • %count%人&#ededed"
+    list-unloaded: "磁盘未加载世界&#696969（%count%）&#ededed"
+    none: "&#696969无&#ededed"
+    unloaded-names: "&#bababa%worlds%&#ededed"
+  reload:
+    prepare-active: 仍有地图准备会话进行中，不能重载。
+    already-running: 已有配置重载正在进行，请等待地图重置完成。
+    config-failed: 配置加载失败，运行时配置已回滚；请检查控制台错误。
+    read-done: 配置读取完成，正在等待进行中的场地安全重置……
+    reset-failed: 配置已读取，但地图重置失败；调度已恢复，请检查控制台错误。
+    restart-required: " &#696969• 需重启生效=%items%&#ededed"
+    reset-failures: " &#ff5555• 重置失败=%count%&#ededed"
+    bingo-failure: " &#ff5555• 宾果内容配置加载失败&#ededed"
+    config-failures: " &#ff5555• 地图配置失败=%count%&#ededed"
+    remote-stopped: " &#696969• 已终止远程宾果=%count%&#ededed"
+    completed: "配置已热重载&#696969 •&#ededed 复用场地=%reused%&#696969 •&#ededed 刷新地图配置=%reloaded%%configFailure%&#696969 •&#ededed 重置进行中场地=%reset%%resetFailure%&#696969 •&#ededed 新启用管理器=%enabled%&#696969 •&#ededed 停用管理器=%disabled%%remote%%bingoFailure%%restartNotice%&#ededed"
+  sudo-all: "已让&#fff566%count%&#ededed名在线玩家执行命令。"
+  sudo-team: "已让队伍 %team%&#ededed的&#fff566%count%&#ededed名在线玩家执行命令。"
+event:
+  unknown-error: 未知错误
+  import:
+    incomplete: 赛事信息不完整。
+    not-ready: 赛事尚未进入比赛就绪状态。
+    games-empty: 赛事游戏列表为空。
+    game-invalid: "赛事游戏无效或重复：%game%&#ededed。"
+    variant-invalid: "赛事游戏变体无效：%game%&#ededed。"
+    multiplier-count-invalid: 轮次倍率数量不能少于赛事游戏数量。
+    multiplier-invalid: 赛事轮次倍率无效。
+    team-count-invalid: "启用队伍数量必须在&#fff5661&#ededed到&#fff56616&#ededed之间。"
+    team-name-invalid: "队名无效：%team%&#ededed。"
+    team-name-duplicate: "队名重复：%team%&#ededed。"
+    team-color-duplicate: "队伍颜色重复：%color%&#ededed。"
+    team-color-fixed: "队伍颜色不是固定羊毛色：%color%&#ededed。"
+    team-size-invalid: "队伍人数不符合服务器限制：%team%&#ededed，必须在&#fff566%min%&#ededed到&#fff566%max%&#ededed之间。"
+    username-invalid: "玩家名无效：%player%&#ededed。"
+    uuid-invalid: "玩家UUID无效：%player%&#ededed。"
+    player-duplicate: "玩家在阵容中重复：%player%&#ededed。"
+    running: 正式比赛正在运行，不能替换队伍。
+    validating: 正在从cc-web校验阵容；成功后会结束上一届有效积分并整体替换队伍。
+    database-failed: 队伍数据库事务失败或比赛状态已变化。
+    state-save-failed: 队伍已导入，但赛事状态文件写入失败；请勿开始比赛并检查日志。
+    completed: "已导入赛事“%event%”：%teams%支队伍，%players%名玩家。"
+    failed: "阵容导入失败：%detail%&#ededed"
+  start:
+    game-invalid: 该游戏不能作为当前正式比赛启动。
+    no-event: 尚未从cc-web导入比赛就绪的赛事配置和阵容。
+    archived: 当前赛事已归档，请先导入下一届赛事。
+    game-not-in-event: "该游戏不在当前赛事“%event%”的游戏列表中：%game%&#ededed。"
+    started: "正式比赛已开始准备：&#fff566%game%&#ededed。"
+    emergency-stopped: "已通过重复start紧急停止正式比赛：&#fff566%game%&#ededed。"
+    unavailable: 宾果执行端尚未就绪、已有比赛运行，或参赛者当前不可用。
+    no-schedule: 该游戏没有可用的正式比赛赛程。
+  export:
+    no-event: 没有通过cc-web阵容链接导入的当前赛事。
+    still-running: 仍有正式比赛赛程运行，请先完成或停止比赛。
+    no-points: 当前赛事没有已结算的正式比赛积分。
+    summarizing: 正在汇总团队与个人逐游戏积分。
+    completed: "赛事“%event%”积分已导出：%teams%支队伍，%players%名玩家；文件：%file%&#ededed"
+    failed: "积分导出失败：%detail%&#ededed"
+  reset:
+    done: 正式比赛轮次已重置。
+  stop:
+    unavailable: 该游戏没有可停止的正式赛程。
+  stopped: "已停止正式比赛赛程：&#fff566%game%&#ededed。"
+  not-running: "该正式比赛当前未运行：&#fff566%game%&#ededed。"
+  undo:
+    unavailable: 没有可撤销的正式比赛。
+    started: "正在撤销&#fff566%game%&#696969 •&#ededed 约3秒后清除轮次与成绩。"
+auth:
+  identity-verification-failed: "&c无法验证玩家身份，请确认服务器 UUID 模式与登录代理配置一致。"
 dont-edit-this:
-  version: 36
+  version: 40
 no-permission: "&#bababa[&#ff6b26管理&#bababa]&#ededed 权限不足"
-server-full: "服务器成员数已达上限！"
+server-mode-switched: "服务器游玩方式已切换为&#fff566%mode%&#ededed。"
+server-full: 服务器成员数已达上限！
 command:
+  player-only: "&#bababa[&#ff6b26管理&#bababa]&#ededed 该命令只能由玩家执行。"
+  unknown-game: "&c未知游戏。"
+  daily-stats: "&e%game% &7| &f场次&#ededed %games% &7| &b具体数据请打开个人战绩菜单查看"
   help-header: "&#bababa━━━━━━━━ &#fff566&l命令帮助 &#bababa━━━━━━━━"
   help-row: "&#bababa•&#ededed %command%&#696969 —&#bababa %description%&#696969 %detail%"
   help-more: "&#696969..."
@@ -17,16 +142,35 @@ chat:
     usage: "&#bababa[&#ff6b26队伍&#bababa]&#ededed 用法 &#696969•&#ededed /teammsg <消息>"
     unavailable: "&#bababa[&#ff6b26队伍&#bababa]&#ededed 你当前不在队伍中"
 daily:
+  team-names:
+    - "红"
+    - "绿"
+    - "蓝"
+    - "黄"
+    - "青"
+    - "紫"
+    - "橙"
+    - "白"
+    - "黄绿"
+    - "粉红"
+    - "淡蓝"
+    - "品红"
+    - "灰"
+    - "黑"
+    - "棕"
+    - "浅灰"
+  team-suffix: "队"
+  prefixed: "%prefix%%message%"
   prefix: "&#bababa[&#31e061游戏大厅&#bababa]&r "
   mode:
-    championship: "正式赛事"
-    free-play: "自由模式"
+    championship: 正式赛事
+    free-play: 自由模式
   state:
-    idle: "悠闲待命"
-    selected: "已选游戏"
-    waiting-member: "等待队友"
-    queued: "匹配中"
-    playing: "游玩中"
+    idle: 悠闲待命
+    selected: 已选游戏
+    waiting-member: 等待队友
+    queued: 匹配中
+    playing: 游玩中
   team-name: "%color%队"
   unavailable: "&#ededed该模式当前未开放。"
   already-playing: "&#ededed你已经加入了一场游戏。"
@@ -47,44 +191,70 @@ daily:
   match-assigned: "&#ededed已进入&#fff566%map% &#bababa•&#ededed 场次%instance%"
   match-aborted: "&#ededed本场游戏意外中止，不会记录结果。"
   bossbar:
-    waiting: "&#fff566%game% &#bababa•&#ededed 等待同游者&#24abff%players%/%required%"
+    waiting: "&#fff566%game% &#bababa•&#ededed 等待同游者&#24abff%players%/%required%%needs-group%"
     countdown: "&#fff566%game% &#bababa•&#ededed 即将启程&#ff6b26%time%秒"
+    needs-group: "&#bababa•&#fff566 还需另一个玩家或同行小队"
+  queue-clear:
+    championship: "&#ededed服务器已切换到正式比赛模式，匹配队列已清空。"
+    reload: "&#edededDAILY 游戏配置已重载，请重新加入匹配。"
+  queue-paused-member: "&#ededed有成员离线或进入其他游戏，排队已暂停。"
   leaderboard:
     row-count: "&#ededed# %rank%&#24abff %player% &#bababa•&#31e061 %value%"
     row-time: "&#ededed# %rank%&#24abff %player% &#bababa•&#ff6b26 %value%"
     empty: "&#696969# %rank% 暂无记录"
+  spectate-blocked-queued: "&#ededed匹配中无法旁观，请先在匹配菜单中取消匹配。"
+  lobby-item-no-space: "&#ededed物品栏没有空位，暂时无法发放大厅菜单。"
+  party-invite-failed: "&#ff6b26邀请失败&#bababa；目标可能离线、已有同行小队，或你不是队长。"
+  party-invite-sent: "&#31e061已邀请&#24abff %target%&#ededed，邀请 60 秒有效。"
+  party-invite-received: "&#fff566%player% &#ededed邀请你加入同行小队，使用&#fff566 /cc party accept"
+  party-no-invite: "&#ff6b26没有有效邀请。"
+  party-member-joined: "&#31e061%player% &#ededed加入了同行小队。"
+  party-not-member-or-playing: "&#ff6b26你不在同行小队中，或正在游戏。"
+  party-left: "&#fff566已离开同行小队。"
+  party-member-left: "&#fff566%player% &#ededed离开了同行小队。"
+  party-disband-denied: "&#ff6b26只有队长可以解散同行小队，且游戏中不可操作。"
+  party-disbanded: "&#fff566同行小队已解散。"
+  party-none: "&#bababa当前没有同行小队；邀请玩家时会自动创建。"
+  party-info: "&#fff566队长: &#ededed%leader% &#696969• &#fff566成员: &#ededed%members% &#696969• &#fff566选择: &#ededed%game%"
 team:
-  successfully-added: "&#bababa[&#fff566管理&#bababa]&#ededed 已添加队伍%team%"
+  no-teams: "&#696969没有已创建的队伍。"
+  successfully-added: "&#bababa[&#ff6b26管理&#bababa]&#ededed 已添加队伍%team%"
   added-failed: "&#bababa[&#ff6b26管理&#bababa]&#ededed 无法添加队伍%team% &#696969• %reason%"
-  successfully-deleted: "&#bababa[&#fff566管理&#bababa]&#ededed 已删除队伍%team%"
+  successfully-deleted: "&#bababa[&#ff6b26管理&#bababa]&#ededed 已删除队伍%team%"
   deleted-failed: "&#bababa[&#ff6b26管理&#bababa]&#ededed 无法删除队伍%team% &#696969• %reason%"
+spawn:
+  in-game-or-spectating: "&#bababa[&#ff6b26大厅&#bababa] &#ededed正在游戏或观战，不能返回大厅"
+  missing: "&#bababa[&#ff6b26管理&#bababa]&#ededed 大厅出生点尚未配置"
 member:
   successfully-added: "&#bababa[&#fff566管理&#bababa]&#ededed 已将&#fff566%player%&#ededed加入%team%"
   added-failed: "&#bababa[&#ff6b26管理&#bababa]&#ededed 无法添加&#fff566%player% &#696969• %reason%"
   successfully-deleted: "&#bababa[&#fff566管理&#bababa]&#ededed 已将&#fff566%player%&#ededed移出%team%"
   deleted-failed: "&#bababa[&#ff6b26管理&#bababa]&#ededed 无法移除&#fff566%player% &#696969• %reason%"
 reason:
-  team-does-not-exist: "队伍不存在"
-  team-already-exist: "队伍已经存在"
-  member-does-not-exist: "成员不存在"
-  member-already-exist: "玩家已在队伍中"
-  invalid-player-name: "玩家名必须为3–16位字母、数字或下划线"
-  team-full: "队伍人数已满"
-  operation-in-progress: "队伍资料正在更新，请稍后重试"
-  player-not-registered: "该玩家未注册或尚未通过审核"
-  profile-service-unavailable: "暂时无法查询玩家身份，请稍后重试"
-  identity-conflict: "玩家身份记录存在冲突，请联系管理员检查"
-  database-error: "无法保存队伍资料，请稍后重试"
+  team-does-not-exist: 队伍不存在
+  team-already-exist: 队伍已经存在
+  member-does-not-exist: 成员不存在
+  member-already-exist: 玩家已在队伍中
+  invalid-player-name: 玩家名必须为3–16位字母、数字或下划线
+  team-full: 队伍人数已满
+  operation-in-progress: 队伍资料正在更新，请稍后重试
+  player-not-registered: 该玩家未注册或尚未通过审核
+  profile-service-unavailable: 暂时无法查询玩家身份，请稍后重试
+  identity-conflict: 玩家身份记录存在冲突，请联系管理员检查
+  database-error: 无法保存队伍资料，请稍后重试
 area-status:
-  waiting: "等待中"
-  loading: "加载中"
-  preparation: "预备中"
-  countdown: "倒计时"
-  progress: "进行中"
-  stopping: "结算中"
-  end: "已结束"
+  waiting: 等待中
+  loading: 加载中
+  preparation: 预备中
+  countdown: 倒计时
+  progress: 进行中
+  stopping: 结算中
+  end: 已结束
 rank:
-  rank-info: "&#bababa━━━━━━━━ &#fff566&l我的积分 &#bababa━━━━━━━━\n&#ededed个人&#fff566 # %player_rank% &#bababa•&#ff6b26 %player_point%分\n&#ededed队伍&#fff566 # %team_rank% &#bababa•&#ff6b26 %team_point%分"
+  rank-info: |-
+    &#bababa━━━━━━━━ &#fff566&l我的积分 &#bababa━━━━━━━━
+    &#ededed个人&#fff566 # %player_rank% &#bababa•&#ff6b26 %player_point%分
+    &#ededed队伍&#fff566 # %team_rank% &#bababa•&#ff6b26 %team_point%分
   team-board-bar: "&#bababa━━━━━━━━ &#fff566&l队伍总榜 &#bababa━━━━━━━━"
   game-team-board-bar: "&#bababa━━━━━━━━ &#8a70ff&l%game%&#fff566积分 &#bababa━━━━━━━━"
   team-board-row: "&#ededed  # %team_rank% %team% &#bababa•&#ff6b26 %team_point%分"
@@ -96,9 +266,28 @@ rank:
   final-board-bar: "&#bababa━━━━━━━━ &#8a70ff&l%game%&#fff566最终积分 &#bababa━━━━━━━━"
   final-recap-hint: "&#bababa完整总榜&#ededed /cc rank teamboard &#bababa• 再次查看结果&#ededed /cc rank recap"
   no-recap: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r&#ededed 目前没有可再次查看的结果。"
+  final-title: "&#fff566&l本轮结算"
+  final-subtitle: "&#ededed第1名 %winner% &#bababa•&#ff6b26 %points%分"
+  recap-hint-actionbar: "&#bababa聊天被顶掉？ &#ededed/cc rank recap &#bababa可重看本次结算"
+  recap-shown: "&#ededed已重新显示最近一次结算"
+  teamboard-hint: "&#bababa完整总榜 &#ededed/cc rank teamboard"
   game-weight-bar: "&#bababa━━━━━━━━ &#fff566&l游戏权重 &#bababa━━━━━━━━"
   game-weight-row: "&#ededed%game%&#fff566×%weight% &#bababa•&#ff6b26 %total_point%原始分"
+presentation:
+  daily-lobby: "&a大厅"
+  daily-game: "&6%game%"
+  tab:
+    team-footer: "&f队伍: %team% &f| 积分: %points%"
+    daily-team-footer: "&f队伍: %team%"
+    current-game-footer: "&f当前游戏: &b%game%"
 spectator:
+  display:
+    remote: "%area% &#696969•&#ededed 对局 %token%"
+    copy: "%area% &#696969•&#ededed 分区 %token%"
+    instance: "%area% &#696969•&#ededed 实例 %token%"
+  game-disabled: 该游戏当前未启用。
+  instance-missing: "找不到该场地正在运行的实例：&#fff566%instance%&#ededed。"
+  area-unavailable: 该场地尚未开启或已经结束，当前不可旁观。
   is-player: "&#bababa[&#ff6b26旁观&#bababa]&#ededed 参赛玩家不能进入旁观模式"
   leaving-area: "&#bababa[&#fff566旁观&#bababa]&#ededed 已退出旁观模式"
   cant-leaving-area: "&#bababa[&#ff6b26旁观&#bababa]&#ededed 当前没有旁观任何游戏"
@@ -111,19 +300,19 @@ game:
   single-game-start-failed: "&#bababa[&#ff6b26场地&#bababa]&#fff566 %game% &#bababa•&#ededed %area% &#bababa•&#ededed 无法开始"
   board-bar: "&#bababa━━━━━━━━ &#8a70ff&l%game%&#fff566本场积分 &#bababa━━━━━━━━"
   board-row: "&#ededed  # %team_rank% %team% &#bababa•&#ff6b26 %team_point%分"
-  parkourtag: "跑酷追击"
-  battlebox: "斗战方框"
-  tntrun: "TNT飞跃"
-  snowballsnowdown: "雪球大战"
-  skywars: "空岛乱斗"
-  tgttos: "去到另一边"
-  dragoneggcarnival: "龙蛋狂欢"
-  parkourwarrior: "跑路战士"
-  hotycodydusky: "烫手鳕鱼"
-  bingo: "宾果飞速"
-  buildmart: "匹配赛建"
-  dodgebolt: "躲避箭"
-  acerace: "王牌竞速"
+  parkourtag: 跑酷追击
+  battlebox: 斗战方框
+  tntrun: TNT飞跃
+  snowballsnowdown: 雪球大战
+  skywars: 空岛乱斗
+  tgttos: 去到另一边
+  dragoneggcarnival: 龙蛋狂欢
+  parkourwarrior: 跑路战士
+  hotycodydusky: 烫手鳕鱼
+  bingo: 宾果飞速
+  buildmart: 匹配赛建
+  dodgebolt: 躲避箭
+  acerace: 王牌竞速
   preparation-count-down: "&#fff566%game% &#bababa•&#ededed 准备&#ff6b26%time%秒"
   introduction-title: "&#fff566&l%game%"
   round-preparation-action-bar: "&#fff566%game% &#bababa•&#ededed 第%round%轮进入场地&#ff6b26%time%秒"
@@ -134,6 +323,17 @@ game:
   round-end-title: "&#fff566&l游戏结束"
   round-complete-title: "&#fff566&l本轮结束"
   round-end-subtitle: "&#ededed最终积分结算中"
+  stop:
+    instance: "&#fff566%game% &7/ &f%area% &7/ &f%token%"
+    unknown-game: "未知游戏：&#fff566%game%&#ededed。"
+    instance-missing: "找不到该场地的活动实例：&#fff566%token%&#ededed；可用实例：&f%available%&#ededed。"
+    instance-ambiguous: 实例标识不唯一，请使用命令补全重新选择；未结束任何实例。
+    exception: "结束实例时发生异常：%instance%&#ededed。"
+    settled: "已按当前成绩正常结束并结算：%instance%&#ededed。"
+    aborted: "实例尚未正式开赛，已精确作废并重置（不产生积分）：%instance%&#ededed。"
+    not-active: "该实例已结束或正在结算：%instance%&#ededed。"
+    replaced: "该实例已被替换，请重新使用命令补全选择：%instance%&#ededed。"
+    failed: "实例未能安全结束，请查看服务端日志：%instance%&#ededed。"
 battlebox:
   start-preparation: "&#bababa[&#fff566斗战方框&#bababa]&#ededed 选择装备，准备占领中央方框"
   start-preparation-title: "&#fff566&l斗战方框"
@@ -153,10 +353,10 @@ battlebox:
   action-bar-count-down: "&#fff566斗战方框 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
   show-points: "&#bababa[&#fff566斗战方框&#bababa] %team%&#ff6b26 %team_points% &#bababa• %rival%&#ff6b26 %rival_points%"
   kits:
-    armor: "武装！"
-    speed: "加速！"
-    heal: "治愈！"
-    pull: "拉扯！"
+    armor: 武装！
+    speed: 加速！
+    heal: 治愈！
+    pull: 拉扯！
 parkourtag:
   start-preparation: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 选定追击者，确认道具"
   start-preparation-title: "&#fff566&l跑酷追击"
@@ -199,20 +399,24 @@ skywars:
   player-death-by-void: "&#bababa[&#fff566空岛乱斗&#bababa]&#ededed %player%&#ff6b26坠入虚空"
   player-create-portal: "&#bababa[&#fff566空岛乱斗&#bababa]&#ededed %player%&#696969无法创建传送门"
   player-leave: "&#bababa[&#fff566空岛乱斗&#bababa]&#ededed %player%&#696969离场，计为出局"
-  action-bar-count-down: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
   whole-team-was-killed: "&#bababa[&#fff566空岛乱斗&#bababa] %team%&#ff6b26全队出局"
   board-shrink: "&#bababa[&#fff566空岛乱斗&#bababa]&#ff6b26 边界开始收缩"
   board-shrink-count-down: "&#fff566空岛乱斗 &#bababa•&#ededed 边界将在&#ff6b26%time%秒&#ededed后收缩"
-  board-shrink-active: "&#ff6b26边界收缩中&#ededed%time%秒"
+  boss-bar: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
+  boss-bar-shrink: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒 &#bababa•&#ff6b26 边界收缩中&#ededed%shrink-time%秒"
+  boss-bar-drain: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒 &#bababa•&#ff6b26 生命持续流失"
+  boss-bar-shrink-drain: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒 &#bababa•&#ff6b26 边界收缩中&#ededed%shrink-time%秒 &#bababa•&#ff6b26 生命持续流失"
   stop-board-shrink: "&#bababa[&#fff566空岛乱斗&#bababa]&#ededed 边界收缩完成"
   happy-ghast-spawned: "&#bababa[&#fff566空岛乱斗&#bababa]&#ededed 各存活队伍的快乐恶魂已在出生岛生成"
   happy-ghast-count-down: "&#fff566空岛乱斗 &#bababa•&#ededed 快乐恶魂将在&#ff6b26%time%秒&#ededed后生成"
   happy-ghast-spawned-action-bar: "&#fff566空岛乱斗 &#bababa•&#ff6b26 快乐恶魂已生成"
   deduct-food-level: "&#bababa[&#fff566空岛乱斗&#bababa]&#ff6b26 生存阶段 &#bababa•&#ededed 生命将持续流失"
   health-drain-count-down: "&#fff566空岛乱斗 &#bababa•&#ededed 生命流失将在&#ff6b26%time%秒&#ededed后开始"
-  health-drain-active: "&#ff6b26生命持续流失"
   out-of-border: "&#fff566空岛乱斗 &#bababa•&#ff6b26 返回边界内"
+  wrong-team-ghast: "&#fff566空岛乱斗 &#bababa• &#ff6b26这不是你们队的乐魂"
 tgttos:
+  return-reason:
+    accident: "发生事故"
   start-preparation: "&#bababa[&#fff566去到另一边&#bababa]&#ededed 起点就位"
   start-preparation-title: "&#fff566&l去到另一边"
   start-preparation-subtitle: "&#ededed确认路线 &#bababa•&#ff6b26 倒计时后出发"
@@ -225,6 +429,7 @@ tgttos:
   arrived-at-end-point: "&#bababa[&#fff566去到另一边&#bababa]&#ededed %player%&#ff6b26到达终点"
   team-arrived-at-end-point: "&#bababa[&#fff566去到另一边&#bababa] %team%&#fff566全员到达"
   fall-into-void: "&#fff566去到另一边 &#bababa•&#696969 已返回起点"
+  return-to-start: "&#fff566%reason%，返回起点"
 acerace:
   start-preparation: "&#bababa[&#fff566王牌竞速&#bababa]&#ededed 起跑线就位"
   start-preparation-title: "&#fff566&l王牌竞速"
@@ -254,6 +459,8 @@ bingo:
   game-end-title: "&#fff566&l宾果飞速"
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
   action-bar-count-down: "&#fff566宾果飞速 &#bababa•&#ededed 剩余 &#ff6b26%time%"
+  action-bar-count-down-pvp: "&#fff566宾果飞速 &#bababa•&#ededed 剩余 &#ff6b26%time% &#bababa•&#ff6b26 PvP已开启"
+  action-bar-count-down-protection: "&#fff566宾果飞速 &#bababa•&#ededed 剩余 &#ff6b26%time% &#bababa•&#31e061 PvP保护&#ededed%grace%秒"
   pvp-protection: "&#31e061PvP保护&#ededed%time%秒"
   pvp-active: "&#ff6b26PvP已开启"
   pvp-start-count-down: "&#fff566宾果飞速 &#bababa•&#ededed PvP将在&#ff6b26%time%秒&#ededed后开启"
@@ -261,6 +468,10 @@ bingo:
   task-completed: "&#bababa[&#fff566宾果飞速&#bababa]&#ededed %player%&#ff6b26完成&#fff566%task%&#696969（+%points%）"
   game-winner: "&#bababa[&#fff566宾果飞速&#bababa] %team%&#fff566获胜&#696969（%points%分）"
 buildmart:
+  bossbar:
+    title: "&#fff566匹配赛建 &#696969|&#ededed 剩余&#fff566%timer%秒 &#696969|&#ededed %golden%"
+    golden-none: "&#696969黄金：&#ededed无"
+    golden-active: "&#fff566黄金：&#ededed%blueprint% &#696969（%seconds%秒）"
   start-preparation: "&#bababa[&#fff566匹配赛建&#bababa]&#ededed 准备开工"
   start-preparation-title: "&#fff566&l匹配赛建"
   start-preparation-subtitle: "&#ededed确认分工 &#bababa•&#ff6b26 准备建造"
@@ -286,13 +497,13 @@ tntrun:
   start-preparation-subtitle: "&#ededed保持移动 &#bababa•&#ff6b26 尽全力存活"
   game-start-title: "&#ff6b26&lTNT飞跃"
   game-start-subtitle: "&#fff566&l脚下方块开始消失"
-  action-bar-count-down: "&#fff566TNT飞跃 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
   game-end-title: "&#fff566&lTNT飞跃"
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
   fall-into-void: "&#bababa[&#fff566TNT飞跃&#bababa]&#ededed %player%&#ff6b26出局"
   tnt-rain: "&#fff566TNT飞跃 &#bababa•&#ff6b26 TNT雨来袭"
   tnt-rain-count-down: "&#fff566TNT飞跃 &#bababa•&#ededed TNT雨将在&#ff6b26%time%秒&#ededed后来袭"
-  tnt-rain-active: "&#ff6b26TNT雨进行中&#ededed%time%秒"
+  boss-bar: "&#fff566TNT飞跃 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
+  boss-bar-tnt-rain: "&#fff566TNT飞跃 &#bababa•&#ededed 剩余&#ff6b26%time%秒 &#bababa•&#ff6b26 TNT雨进行中&#ededed%rain-time%秒"
 dragoneggcarnival:
   start-preparation: "&#bababa[&#fff566龙蛋狂欢&#bababa]&#ededed 双方就位 &#bababa•&#ff6b26 率先完成2项目标"
   start-preparation-title: "&#fff566&l龙蛋狂欢"
@@ -342,7 +553,9 @@ dodgebolt:
   resumed-title: "&#fff566&l比赛恢复"
   resumed-subtitle: "&#ededed决赛继续"
   round-restarted: "&#bababa[&#fff566躲避箭&#bababa]&#ededed 管理员已重开当前小局"
-  champion: "&#bababa━━━━━━━━ &#fff566&lS³CC冠军 &#bababa━━━━━━━━\n%team%&#ededed赢得躲避箭决赛 &#bababa•&#ff6b26 %score%"
+  champion: |-
+    &#bababa━━━━━━━━ &#fff566&lS³CC冠军 &#bababa━━━━━━━━
+    %team%&#ededed赢得躲避箭决赛 &#bababa•&#ff6b26 %score%
   champion-title: "&#fff566&l冠军诞生"
   champion-subtitle: "%team% &#bababa•&#ff6b26 %score%"
   stopped: "&#bababa[&#ff6b26躲避箭&#bababa]&#ededed 决赛已由管理员终止，本场不产生冠军"
@@ -400,13 +613,18 @@ hotycodydusky:
   player-leave: "&#bababa[&#fff566烫手鳕鱼&#bababa]&#ededed %player%&#696969离场"
   whole-team-was-killed: "&#bababa[&#fff566烫手鳕鱼&#bababa] %team%&#ff6b26全队出局"
 placeholder:
-  none: "无"
-  spectator: "旁观"
-  parkourtag-spectator: "观察者"
-  parkourtag-chaser: "追击者"
-  parkourtag-escapee: "逃脱者"
+  none: 无
+  spectator: 旁观
+  parkourtag-spectator: 观察者
+  parkourtag-chaser: 追击者
+  parkourtag-escapee: 逃脱者
 vote:
-  start-vote: "&#bababa━━━━━━━━ &#8a70ff&l游戏投票 &#bababa━━━━━━━━\n&#ededed打开菜单：&#fff566/cc vote &#bababa•&#ededed 或直接输入：&#fff566/cc vote <游戏>\n&#ededed限时&#ff6b2690秒&#ededed。"
+  no-valid-votes: "&#ededed本轮没有有效投票"
+  tied-winner: "&#ededed  最高票并列，随机选中&#fff566 %game%"
+  start-vote: |-
+    &#bababa━━━━━━━━ &#8a70ff&l游戏投票 &#bababa━━━━━━━━
+    &#ededed打开菜单：&#fff566/cc vote &#bababa•&#ededed 或直接输入：&#fff566/cc vote <游戏>
+    &#ededed限时&#ff6b2690秒&#ededed。
   start-vote-title: "&#8a70ff&l游戏投票"
   start-vote-subtitle: "&#ededed打开&#fff566 /cc vote"
   end-vote: "&#bababa━━━━━━━━ &#fff566&l投票结果 &#bababa━━━━━━━━"
@@ -419,4 +637,330 @@ vote:
   vote-failed-not-player: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r&#ededed 投票失败，非游戏玩家无法投票。"
   vote-board-row: "&#ededed  # %game_rank%&#24abff %game% &#bababa•&#ff6b26 %game_votes%票"
   boss-bar: "&#ededed剩余&#ff6b26%time% &#bababa•&#fff566 已投%votes%/%players% &#bababa•&#ededed 我的选择：&#24abff%vote%"
-  not-voted: "未投票"
+  not-voted: 未投票
+team-gui:
+  add-member-database-error: 无法保存队伍资料，请稍后重试。
+  add-member-identity-conflict: 添加失败；玩家可能已在队伍中，或存在同名身份冲突。
+  add-member-invalid-player-name: 玩家名必须为3–16位字母、数字或下划线。
+  add-member-operation-in-progress: 队伍资料正在更新，请稍后重试。
+  add-member-player-not-registered: 找不到该玩家；请确认玩家已在网站注册并通过准入。
+  add-member-profile-service-unavailable: 暂时无法查询玩家身份，请稍后重试。
+  add-member-team-full: 添加失败；队伍人数已满。
+  add-member-team-not-found: 添加失败；队伍已不存在。
+  failed-to-create-team-name-or-color-may-already-be-taken: 创建队伍失败，名称或颜色可能已被占用。
+  all-teams-teleported: 已将全部队伍的&#fff566%count%&#ededed名在线成员传送到当前位置。
+  member-removed: 已从&#fff566%team%&#ededed移除玩家&#fff566%player%&#ededed。
+  offline-player-joined: 已将离线玩家&#fff566%player%&#ededed加入%color%%team%&#ededed。
+  player-joined: 已将玩家&#fff566%player%&#ededed加入%color%%team%&#ededed。
+  player-moved: 已将玩家&#fff566%player%&#ededed调至%color%%team%&#ededed。
+  team-teleported: 已将%color%%team%&#ededed的&#fff566%count%&#ededed名在线成员传送到当前位置。
+  please-enter-a-valid-minecraft-player-name: 请输入有效的Minecraft玩家名（3–16位字母、数字或下划线）。
+  removal-failed-team-or-member-status-may-have-changed: 移除失败；队伍或成员状态可能已经改变。
+  team-created: 已创建队伍 %color%%team%&#ededed。
+  team-deleted: 已删除队伍&#fff566%team%&#ededed。
+  team-name-already-exists: 队伍名称已存在：&#fff566%team%&#ededed。
+  team-name-cannot-be-empty: 队伍名称不能为空。
+  team-names-cannot-exceed-64-characters-and-cannot-contain-control-characters: 队伍名称不能超过64个字符，也不能包含控制字符。
+  team-not-found-feedback: 队伍已不存在。
+  team-transfer-failed-database-or-player-status-may-have-changed: 调队失败，数据库或玩家身份状态可能已改变。
+  the-number-of-people-in-the-team-has-reached-the-upper-limit: 队伍人数已达到上限&#fff566%limit%&#ededed。
+  the-player-is-already-on-the-team: 玩家已经在该队伍中。
+  the-player-s-current-team-or-target-team-is-currently-in-the-game-cannot-change-teams: 玩家当前队伍或目标队伍正在游戏中，不能调队。
+  the-target-team-is-full: 目标队伍人数已满。
+  the-target-team-no-longer-exists: 目标队伍已不存在：&#fff566%team%&#ededed。
+  the-team-no-longer-exists: 队伍已不存在：&#fff566%team%&#ededed。
+  this-color-has-just-been-taken-by-another-team-please-choose-again: 该颜色刚刚被其他队伍占用，请重新选择。
+  unable-to-delete-team-team-may-be-in-game: 无法删除队伍；队伍可能正在游戏中。
+  unable-to-read-player-history: 无法读取历史玩家，请稍后重试。
+  you-no-longer-have-permission-to-use-the-team-management-interface: 你已没有使用队伍管理界面的权限。
+map-editor-input:
+  invalid-number: 请输入有效数字。
+  number-too-small: 份数必须至少为&#fff5661&#ededed。
+  invalid-integer: 请输入有效整数。
+  name-empty: 场地名不能为空。
+  name-too-long: 场地名不能超过&#fff56632&#ededed个字符。
+  name-invalid: 场地名包含无效字符。
+  name-already-exists: 场地&#fff566%name%&#ededed已存在。
+map-editor-area:
+  delete-confirmation: 请在30秒内再次右键确认；只删除配置，不会删除地图世界
+map-editor-session:
+  game-unavailable: 该游戏不可用。
+  create-conflict: 无法创建地图草稿；请确认名称未被占用。
+  delete-unavailable: 地图正在编辑或游戏管理器不可用，无法删除。
+  delete-failed: 地图正在运行或删除配置失败；物理世界未作任何改动。
+  deleted: "已删除地图配置&#fff566%map%&#ededed；物理世界保留，请按需使用 /cc admin world delete。"
+  unsupported-game: 该游戏暂不支持地图准备。
+  map-missing: 找不到地图&#fff566%map%&#ededed。
+  locked-by-editor: "该地图正由&#fff566%editor%&#ededed编辑。"
+  entered: "已进入地图准备&#bababa • &#fff566 %game%&#696969 /&#fff566 %map%&#ededed。"
+  usage-hint: "使用热键栏配置地图准备&#696969 • &#ededed 打开箱子编辑步骤&#696969 • &#ededed 屏障退出。"
+  exited: "已退出地图准备&#696969 • &#ededed 物品栏已还原。"
+  go-to-world: 请先前往当前地图世界%world%。
+  publish-instance-running: 同一地图仍有游戏实例运行，无法发布。
+  publish-started: 正在发布地图，请稍候……
+  save-instance-running: 同一地图仍有游戏实例运行，无法保存草稿。
+  save-started: 正在保存地图草稿，请稍候……
+  save-failed: 草稿保存失败，请查看控制台日志。
+  saved: "地图草稿已保存&#696969 • &#ededed 仍需完成全部点位后再发布。"
+  publish-failed: 地图发布失败，请查看控制台日志；草稿仍保持锁定状态。
+  published: "地图已发布&#696969 • &#ededed 版本&#fff566%revision%&#ededed。"
+  validation-passed-publish: 校验通过，开始发布。
+  validation-passed: 校验通过，可以发布。
+  validation-failed: "校验失败，仍缺少&#fff566%count%&#ededed项："
+  validation-error: "  &#ff6b26 • &#ededed %error%"
+  world-not-bound: 该地图尚未绑定世界，请先前往目标世界并使用“绑定当前世界”。
+  world-not-loaded: "地图世界&#fff566%world%&#ededed尚未加载。"
+  location-missing: 无法找到地图编辑位置。
+  teleport-failed: 传送至地图编辑位置失败。
+  teleported: "已传送至%location%&#ededed。"
+  snapshot-restored: "检测到未结束的地图准备&#696969 • &#ededed 物品栏已还原。"
+map-editor-command:
+  unknown-game: "未知游戏，可用：&#fff566%games%&#ededed。"
+  unsupported-game: "该游戏暂不支持地图准备，可用：&#fff566%games%&#ededed。"
+  no-manager: 该游戏没有地图管理器。
+  loading-disabled: 该游戏当前未启用，正在仅为地图编辑加载其配置……
+  loading-for-rename: 该游戏当前未启用，正在加载地图管理器……
+  manager-load-failed: 该游戏的地图管理器无法加载。
+buildmart-blueprint:
+  stars-range: "覆盖星级必须在&#fff5661–5&#ededed之间。"
+  selection-read-failed: 无法读取WorldEdit选区，请先选择蓝图区域。
+  height-limit: "蓝图高度上限&#fff566%limit%&#696969 •&#ededed 当前&#fff566%current%&#ededed。"
+  footprint-limit: "蓝图长宽上限&#fff566%limit%&#696969 •&#ededed 当前&#fff566%x%×%z%&#ededed。"
+  block-limit: "选区超过&#fff566%limit%&#ededed个方块，已取消。"
+  empty-selection: 选区内没有可导出的方块。
+  save-failed: "保存蓝图失败：&#fff566%detail%&#ededed"
+  exported-auto: "已导出蓝图&#fff566%name%&#696969 •&#ededed %stars%星&#696969 •&#ededed %blocks%个方块&#696969 •&#ededed 已自动归类。"
+  exported-manual: "已导出蓝图&#fff566%name%&#696969 •&#ededed %stars%星&#696969 •&#ededed %blocks%个方块&#696969 •&#ededed 手动覆盖。"
+  override-not-suggested: 手动星级与审查建议不同；未自动改写你的显式覆盖值。
+  map-missing: "找不到匹配赛建地图&#fff566%map%&#ededed。"
+  missing: "找不到蓝图&#fff566%blueprint%&#ededed。"
+  page-out-of-range: "页码超出范围，当前共&#fff566%pages%&#ededed页。"
+  stars-same: "%stars%★"
+  stars-changed: "%configured%→%suggested%★"
+  audit-header: "蓝图全量审查&#696969 •&#ededed 地图&#fff566 %map%&#696969 •&#ededed 第&#fff566 %page%/%pages%&#ededed页"
+  audit-summary: "总数&#fff566 %total%&#696969 •&#ededed 材料完整&#fff566 %covered%&#696969 •&#ededed 建议调整星级&#fff566 %mismatched%&#ededed"
+  audit-row: "&#fff566%name%&#696969 •&#ededed %stars%&#696969 •&#ededed 分数 %score%&#696969 •&#ededed %blocks%块&#696969 •&#ededed 材料 %coverage%&#ededed"
+  audit-title: "蓝图&#fff566 %name%&#696969 •&#ededed 当前 %configured%★&#696969 •&#ededed 建议&#fff566 %suggested%★&#696969 •&#ededed 难度分&#fff566 %score%&#ededed"
+  audit-structure: "结构&#696969 •&#ededed %blocks%块&#696969 •&#ededed %materials%种材料&#696969 •&#ededed 尺寸 %dimensions%&#696969 •&#ededed 连通区域 %components%&#ededed"
+  audit-state: "状态&#696969 •&#ededed 带状态 %stateful%&#696969 •&#ededed 方向 %directional%&#696969 •&#ededed 复杂 %complex%&#696969 •&#ededed 严格连接 %strict%&#ededed"
+  coverage-no-map: 材料清单不存在，材料覆盖未检查。请先加载匹配赛建地图。
+  coverage-no-zones: 材料清单不存在，材料覆盖未检查。请先保存该地图的材料区。
+  audit-materials: "材料&#696969 •&#ededed 直接 %direct%&#696969 •&#ededed 可加工 %craftable%&#696969 •&#ededed 区域 %islands%&#ededed"
+  coverage-full: 当前材料表可完整覆盖该蓝图。
+  coverage-uncovered: "未覆盖材料：&#fff566%materials%&#ededed"
+  audit-warning: "审查提醒：%warning%&#ededed"
+schedule-finale:
+  game-not-registered: 该游戏未注册为合法决赛游戏。
+  game-disabled: "&#fff566%game%&#ededed未在 enabled-games 中启用。"
+  partial-roster-unsupported: 该决赛游戏不支持 --force 在线子阵容。
+  emergency-stopped: "已通过重复 start 紧急停止正式决赛：&#fff566%game%&#ededed。"
+  other-running: 已有其他正式决赛正在准备或进行。
+  map-unavailable: "&#fff566%game%&#ededed地图不存在或尚未发布：&#fff566%map%&#ededed。"
+  start-not-implemented: 该决赛游戏尚未实现启动流程。
+  auto-finalists-unavailable: 队伍总榜不足两支队伍，无法自动选出决赛队伍。
+  tie-break-required: 第二名与第三名同分，请显式指定两支决赛队伍。
+  teams-must-differ: 决赛必须指定两支不同队伍。
+  dragon-egg:
+    scheduled: "龙蛋狂欢决赛已排定&#bababa • %right%&#ededed vs %left%&#bababa • &#ededed地图%map%&#ededed。"
+    start-failed: 龙蛋狂欢决赛启动失败，请检查队员在线状态和场地占用。
+  dodgebolt:
+    tie-seed: 两队积分相同，第一参数队伍将作为第一局两箭队伍。
+    scheduled: "躲避箭决赛已排定&#bababa • %right%&#ededed vs %left%&#bababa • &#ededed地图%map%&#ededed。"
+    scheduled-forced: "躲避箭决赛已排定&#bababa • %right%&#ededed vs %left%&#bababa • &#ededed地图%map%&#bababa • &#ff6b26强制阵容&#ededed。"
+    announcement: "&#bababa━━━━━━━━ &#fff566&l躲避箭决赛 &#bababa━━━━━━━━\n%right%&#ededed vs %left%\n&#ededed第一局两箭：%first%&#ededed"
+    start-failed: 躲避箭决赛启动失败，请检查队员在线状态和场地占用。
+    forced-start-failed: 躲避箭决赛强制启动失败，请确保每队至少有&#fff5661&#ededed名在线玩家并检查场地占用。
+finale:
+  direct-start-invalid: 场地或队伍无效。
+  direct-start-started: "&#fff566%game%&#ededed已直接开始准备。"
+  direct-start-started-forced: "&#fff566%game%&#ededed已直接开始准备，仅计入两队当前在线成员。"
+  direct-start-failed: 启动失败，请检查配置、队员在线状态或场地占用。
+  direct-start-forced-failed: 启动失败，请确保每队至少有&#fff5661&#ededed名在线玩家，并检查配置或场地占用。
+  start-team-required: 请指定两支不同的有效队伍。
+  cancelled: "已取消正式决赛：&#fff566%game%&#ededed。"
+  not-running: "该正式决赛当前未运行：&#fff566%game%&#ededed。"
+  dodgebolt:
+    area-missing: 找不到躲避箭场地。
+    control-executed: "躲避箭操作已执行：&#fff566%command%&#ededed。"
+    control-state-denied: 当前比赛状态不允许执行该操作。
+    elimination-invalid: 无法判定该玩家出局。
+    eliminated: "已判定&#fff566%player%&#ededed出局。"
+    force-win-invalid: 该队伍不是本场决赛队伍，或比赛未运行。
+    force-win-set: "已指定冠军：%team%&#ededed。"
+map-editor-rename:
+  already-running: 已有地图改名正在进行，请稍后再试。
+  no-manager: 该游戏没有地图管理器。
+  source-missing: 找不到原场地。
+  source-not-loaded: 原场地配置尚未加载，不能改名。
+  invalid-name: "新场地名不能为空、不能超过&#fff56632&#ededed个字符，且不能包含 \\/:*?\"<>|。"
+  invalid-relative: 新场地名无效。
+  same-name: 新旧场地名不能相同（不支持仅修改大小写）。
+  target-exists: "目标场地&#fff566%map%&#ededed已存在。"
+  prepare-active: 仍有地图准备会话进行中，不能改名。
+  event-running: 该游戏的正式赛程正在运行，不能改名。
+  area-running: 场地正在运行，不能改名。
+  target-config-exists: "目标配置文件&#fff566%file%&#ededed已存在。"
+  detach-failed: 场地卸载失败；配置和数据库均未修改。
+  detach-waiting: "已卸载场地&#fff566%map%&#ededed，正在等待持久化队列并迁移记录……"
+  pending-sync-failed: 无法同步待提交积分记录。
+  new-area-load-failed: 新名称场地加载失败。
+  completed: "已将场地&#fff566%old%&#ededed改名为&#fff566%new%&#696969 • &#ededed 同步数据库记录&#fff566%count%&#ededed条。"
+  failed-restored: 地图改名失败，原场地已尝试恢复；请检查控制台。
+map-editor-step:
+  step-set: "已设置：%name%。"
+  point-added-current: "已添加点位 &#696969•&#ededed 当前&#fff566%count%&#ededed个。"
+  point-list-cleared: 已清空点位列表。
+  deleted: "已删除第%order%个点位。"
+  general-site-boundary-set: 已设置场地总边界。
+  player-spawn-point-set: 已设置玩家出生点。
+  go-to-map-world-first: 请先前往当前地图世界%world%。
+  select-two-worldedit-endpoints: 请先用WorldEdit选取两个端点。
+  site-boundary-set: 已设置场地边界。
+  spectator-spawn-point-set: 观众出生点已设置。
+  point-adjusted-to: "已将点位调整为第%order%个。"
+  serial-number-between: "序号必须在1到%max%之间。"
+  track-boundary-set: 已设置赛道边界。
+  updated: "已更新第%order%个点位。"
+  countdown-blocks-closed: 已关闭开赛倒计时方块消失。
+  countdown-blocks-mode-set: "已设置消失方式：%mode%。"
+  countdown-blocks-volume-between: "选区体积必须在1到%max%个方块之间。"
+  countdown-blocks-set: "已设置开赛倒计时方块消失选区（%volume%个方块）。"
+  checkpoint-select-first: 请先用WorldEdit选取检查点进入区域。
+  checkpoint-added-current: "已添加检查点 &#696969• 当前&#fff566%count%&#ededed个。"
+  checkpoint-updated: "已更新第%order%个检查点的出生点和进入区域。"
+  checkpoint-deleted: "已删除第%order%个检查点。"
+  checkpoint-reselect: 请先用WorldEdit重新选取检查点进入区域。
+  checkpoint-adjusted-to: "已将检查点调整为第%order%个。"
+  world-in-use: 该世界已被其他地图使用，或相关地图仍在运行，暂时无法绑定。
+  world-bound: "已绑定地图世界：&#fff566%world%&#ededed。"
+  world-confirmed: 已确认游戏世界。
+  go-to-editing-site: 请先通过末影珍珠前往目标编辑场地。
+  schematic-save-failed: "保存模板失败，请检查WorldEdit选区：&#fff566%detail%&#ededed。"
+  schematic-saved: "已保存场地模板：&#fff566%file%&#ededed。"
+  selected-block-recorded: 已记录选中方块。
+  select-one-block-first: 请先用WorldEdit选中一个方块。
+  selection-must-be-one-block: 选区必须恰好为一个方块。
+  arena-generate-failed: "生成场地失败：&#fff566%detail%&#ededed。"
+  arena-generated: "已生成%count%份场地；完成点位后请验证并发布。"
+  arena-template-missing: 尚未保存场地模板，请先完成“保存场地模板”。
+  world-not-loaded: "世界%world%尚未加载。"
+  arena-max-count: "该地图最多只能生成%max%份场地。"
+  arena-count-positive: 场地份数必须大于0。
+  arena-total-set: "场地总数已设为%count%；已保留0号模板，并生成%copies%个副本。"
+  arena-instance-running: 这张地图仍有比赛正在进行，暂时无法重新生成或保存。
+  introduction-spawn-set: 已设置规则介绍专用出生点。
+  world-confirm-prompt: 前往&#fff566%world%&#ededed世界后点击此项确认
+map-editor-acerace:
+  line-select-first: 请先用WorldEdit选取起点线或终点线。
+  line-invalid: 起点线/终点线必须是同一高度、沿X或Z方向延伸的直线。
+  start-fall-input: 输入起点后的坠落重置高度；当前%fall%。
+  start-fall-set: 起点后的坠落重置高度已设为%fall%。
+  start-line-set: 已设置起点线。
+  finish-line-set: 已设置终点线。
+  preview-area-missing: 找不到当前Ace Race地图。
+  preview-enabled: 赛道点位预览已开启；右键末地水晶可编辑重生点。
+  preview-disabled: 已关闭赛道点位预览。
+  progress-fall-input: 输入通过此进度点后的坠落重置高度；当前%fall%。
+  progress-added: 已添加第 %order% 个进度点；坠落重置高度：%fall%；下一赛段装备：%equipment%。
+  progress-edit-input: 输入通过此进度点后的坠落重置高度；当前%fall%。
+  progress-missing: 该进度点已不存在。
+  progress-updated: 已更新第 %order% 个进度点；坠落重置高度：%fall%；下一赛段装备：%equipment%。
+  progress-equipment-updated: 已将第 %order% 个进度点的下一赛段装备改为%equipment%。
+  progress-deleted: 已删除第 %index% 个进度点。
+  progress-adjusted: 已将进度点调整为第 %order% 项。
+  progress-select-first: 请先用WorldEdit选取进度点水平直线。
+  progress-line-invalid: 进度点必须是同一高度、沿X或Z方向延伸的WorldEdit直线。
+  respawn-bound: 已将该重生点绑定到%binding%。
+map-editor-decarnival:
+  world-environment: 地图世界必须是末地环境。
+  fight-region: 场地边界需覆盖固定龙战区域（X/Z -104..104，Y 0..128）。
+  spectator-world: 观众出生点必须设在当前地图世界中。
+map-editor-daily-party:
+  invitation-cannot-accept: 当前无法接受这份邀请。
+  member-joined: "%player%已加入小队。"
+  click-online-to-invite: 请点击上方在线玩家发送组队邀请。
+  party-disbanded: 小队已解散。
+  party-left: 你已离开小队。
+  party-cannot-modify: 当前无法修改队伍。
+  player-cannot-invite: 该玩家暂时无法被邀请。
+  invitation-sent: 已向%target%发出邀请。
+  invited-by: "%player%邀请你加入小队，请打开游戏大厅接受邀请。"
+map-editor-bingo-teleport:
+  no-teammates: 当前没有可传送的在线队友。
+  unreachable: 该队友已不可达。
+  sent-to: 已传送到
+map-editor-spectator:
+  unavailable: 该场地已结束或当前不可观战。
+  visibility-all: 已显示场内全部玩家。
+  visibility-player: 现在仅显示玩家%player%。
+  visibility-team: 现在仅显示队伍%team%。
+  left: 已退出观战。
+  night-vision-enabled: 夜视已开启。
+  night-vision-disabled: 夜视已关闭。
+  teleported-to-player: 已前往：%player%
+  flight-speed: 飞行速度：%speed%
+map-editor-buildmart:
+  save-failed: 无法保存材料区配置，请查看服务器日志。
+  zone-deleted: 已删除%island%的第 %index% 个材料区。
+  zones-cleared: 已清空材料区列表。
+  centers-incomplete: 部分材料岛尚未设置中心点，无法自动判断选区归属。
+  zone-volume-invalid: 材料区体积必须在1到%max%个方块以内。
+  zone-saved: 已保存材料补给区（%blocks%个方块），自动归入%island%，并更新材料清单：buildmart/material-manifests/%file%。
+  zone-updated: 已更新%island%的材料补给区（%blocks%个方块）。
+  snapshot-failed: 保存材料区快照失败，请检查WorldEdit选区：%error%
+  base-count-positive: 队伍数必须大于0。
+  base-template-missing: 请先保存0号基地模板。
+  world-not-loaded: 地图世界尚未加载。
+  instance-running: 这张地图仍有比赛正在进行，暂时无法生成基地。
+  hub-missing: 请先设置资源大厅边界。
+  base-origin-missing: 请重新保存一次0号基地模板，以记录模板在世界中的位置。
+  generate-failed: 生成地图失败：%error%
+  base-generated: 已保留0号基地模板，并生成%count%个实际队伍基地；完成点位后请发布。
+  floor-select-first: 请先用WorldEdit选中7x1x7地板。
+  floor-invalid: 选区必须恰好为7x1x7地板。
+  floor-recorded: 已记录地板最低边角。
+  portal-set: 已设置资源大厅传送门落点。
+  wind-select-first: 请先用WorldEdit选取吹风口区域。
+  wind-added: 已添加吹风口区域，当前共%count%个。
+  wind-cleared: 已清空吹风口区域列表。
+  wind-updated: 已更新第 %index% 个吹风口区域。
+  wind-adjusted: 已将吹风口调整为第 %order% 项。
+map-editor-battlebox:
+  spawn-right-set: 已设置右侧队伍出生点。
+  spawn-left-set: 已设置左侧队伍出生点。
+  prepare-right-set: 右队预备点已设置。
+  prepare-left-set: 左队预备点已设置。
+  wool-set: 已设置羊毛区域。
+map-editor-tntrun:
+  track-boundary-set: 已设置0号赛道完整边界。
+  spawn-set: 已设置0号赛道出生点。
+map-editor-skywars:
+  map-boundaries-set: 已设置地图边界。
+  border-center-set: 已设置边界中心点。
+map-editor-tgttos:
+  area-type-set: "已设置地图装备类型：%value% &#696969• &#ededed%description%"
+  spawn-area-flat: 生成区域必须是恰好一格高的WorldEdit选区。
+  chicken-spawn-set: 已设置鸡生成区域；鸡会随机生成在选区上方一格。
+  player-spawn-set: 已设置玩家生成区域与统一朝向；玩家会随机生成在选区上方一格。
+map-editor-dodgebolt:
+  step-set: "已设置：%name%。"
+  count-required: "%name%至少%minimum%个，当前%count%个。"
+  point-unset: "%name%未设置。"
+  spectator-inside: 观众出生点必须在观赛区内。
+  spectator-outside: 观众出生点不能设在比赛区内。
+map-editor-parkourtag:
+  chaser-aim: 请对准8格内贴在墙上的按钮后再点击设置项。
+  world-not-loaded: 地图世界尚未加载，无法设置追击者按钮。
+  invalid-position: 第%index%号场地的对应位置不是空位、告示牌或按钮，无法同步生成按钮。
+  missing-wall: 第%index%号场地缺少可供按钮依附的墙面。
+  missing-space: 第%index%号场地按钮下方不是空位，无法生成提示牌。
+  missing-sign-wall: 第%index%号场地按钮下方缺少可供告示牌依附的墙面。
+  chaser-buttons-set: 追击者按钮已设置，并已同步到%count%个场地（含发光提示牌）。
+  sign-click: 点击上方按钮
+  sign-become: 成为追击者
+  prepare-a-set: A队预备点已设置。
+  prepare-b-set: B队预备点已设置。
+  track-1-boundary-set: 已设置赛道1完整边界。
+  track-1-chaser-set: 已设置赛道1的A队追击者出生点。
+  track-2-boundary-set: 已设置赛道2完整边界。
+  track-2-chaser-set: 已设置赛道2的B队追击者出生点。

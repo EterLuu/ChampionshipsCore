@@ -1,11 +1,13 @@
 package ink.ziip.championshipscore.api.game.buildmart;
 
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** Stable display/classification order for the 24 physical resource islands in Build Mart. */
 public enum BuildMartMaterialIsland {
+
     WHITE("white", "白色岛", Material.WHITE_WOOL),
     ORANGE("orange", "橙色岛", Material.ORANGE_WOOL),
     MAGENTA("magenta", "品红色岛", Material.MAGENTA_WOOL),
@@ -46,8 +48,12 @@ public enum BuildMartMaterialIsland {
         return id;
     }
 
+    public @NotNull String titleKey() {
+        return "map-editor.games.build-mart.menus.material-zones.items.island.states." + id + ".title";
+    }
+
     public @NotNull String displayName() {
-        return displayName;
+        return GuiConfig.text(titleKey());
     }
 
     public @NotNull Material icon() {

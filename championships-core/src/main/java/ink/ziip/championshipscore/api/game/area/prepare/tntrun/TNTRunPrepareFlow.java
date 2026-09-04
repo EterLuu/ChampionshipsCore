@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.tntrun;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -55,8 +56,8 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                 "tntrun"), "schematics"), target.name()), "arena.schem");
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
-                new SchematicStep(plugin -> schematic, Component.text(GuiConfig.text("map-editor.games.tnt-run.setup.save-track-template-number-0")),
-                        Component.text(GuiConfig.text("map-editor.games.tnt-run.setup.save-arena-schem-after-selecting-the-complete-single-track"))) {
+                new SchematicStep(plugin -> schematic, Component.text(GuiConfig.text("map-editor.menus.step-list.games.tnt-run.items.save-template.title")),
+                        Component.text(GuiConfig.line("map-editor.menus.step-list.games.tnt-run.items.save-template.lore", 0))) {
                     @Override
                     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
                         String result = super.capture(session, player);
@@ -71,14 +72,14 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                         return result;
                     }
                 },
-                new WeSelectionStep("copy_zero_bounds", Component.text(GuiConfig.text("map-editor.games.tnt-run.setup.template-track-boundary-name")),
-                        Component.text(GuiConfig.text("map-editor.games.tnt-run.setup.template-track-boundary-selection-hint")),
+                new WeSelectionStep("copy_zero_bounds", Component.text(GuiConfig.text("map-editor.menus.step-list.games.tnt-run.items.track-boundary.title")),
+                        Component.text(GuiConfig.line("map-editor.menus.step-list.games.tnt-run.items.track-boundary.lore", 0)),
                         Material.BEDROCK,
                         t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
                         (t, selection) -> {
                             cfg(t).setAreaPos1(selection[0]);
                             cfg(t).setAreaPos2(selection[1]);
-                        }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.tnt-run.setup.the-complete-boundary-of-track-0-has-been-set"))),
+                        }, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TNT_TRACK_BOUNDARY_SET)),
                 StampStep.adaptiveKeepingSource(plugin -> schematic,
                         (t, size) -> cfg(t).prepareCopyGrid(size),
                         (t, count) -> cfg(t).setCopies(count),
@@ -87,15 +88,15 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                             ArenaPreparer.clearAdditionalCopies(session.getPlugin(), world,
                                     previous.getCopyGrid(), previous.getCopies(), previous.getCopySize());
                         }),
-                new StandAndRunStep("copy_spawn", Component.text(GuiConfig.text("map-editor.games.tnt-run.setup.template-track-spawn-point-name")),
-                        Component.text(GuiConfig.text("map-editor.games.tnt-run.setup.stand-at-the-spawn-point-of-copy0-player-and-click")), Material.ELYTRA,
+                new StandAndRunStep("copy_spawn", Component.text(GuiConfig.text("map-editor.menus.step-list.games.tnt-run.items.spawn.title")),
+                        Component.text(GuiConfig.line("map-editor.menus.step-list.games.tnt-run.items.spawn.lore", 0)), Material.ELYTRA,
                         t -> cfg(t).getCopySpawn() != null, (t, loc) -> cfg(t).setCopySpawn(loc),
-                        Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.tnt-run.setup.the-spawn-point-of-track-0-has-been-set"))),
-                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")),
-                        Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")), Material.ENDER_EYE,
+                        Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TNT_SPAWN_SET)),
+                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")),
+                        Component.text(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)), Material.ENDER_EYE,
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, loc) -> cfg(t).setSpectatorSpawnPoint(loc),
-                        Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set")))
+                        Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET))
         );
     }
 

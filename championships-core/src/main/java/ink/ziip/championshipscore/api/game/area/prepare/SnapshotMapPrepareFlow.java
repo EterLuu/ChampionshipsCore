@@ -45,7 +45,7 @@ public abstract class SnapshotMapPrepareFlow extends PrepareFlowDefinition {
 
     @Override
     public @NotNull String editorLocationName(@NotNull SetupTarget target) {
-        return GuiConfig.text("map-editor.common.snapshot.edit-venue");
+        return GuiConfig.text("map-editor.menus.step-list.items.snapshot.title");
     }
 
     @Override

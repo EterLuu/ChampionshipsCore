@@ -33,8 +33,7 @@ public class AceRacePlaceholder extends BaseGamePlaceholder<AceRaceArea> {
         if (params.startsWith("player_position_")) {
             AceRaceArea area = resolvePlayerArea(params, "player_position_", offlinePlayer);
             return area == null ? MessageConfig.PLACEHOLDER_NONE
-                    : area.getPlayerPositionDisplay(offlinePlayer.getUniqueId())
-                    + "/" + area.getGamePlayers().size();
+                    : String.format("%s/%d", area.getPlayerPositionDisplay(offlinePlayer.getUniqueId()), area.getGamePlayers().size());
         }
         if (params.startsWith("player_lap_times_")) {
             AceRaceArea area = resolvePlayerArea(params, "player_lap_times_", offlinePlayer);
@@ -59,7 +58,7 @@ public class AceRacePlaceholder extends BaseGamePlaceholder<AceRaceArea> {
         if (params.startsWith("player_lap_")) {
             AceRaceArea area = resolvePlayerArea(params, "player_lap_", offlinePlayer);
             return area == null ? MessageConfig.PLACEHOLDER_NONE
-                    : area.getCurrentLap(offlinePlayer.getUniqueId()) + "/" + area.getGameConfig().getLaps();
+                    : String.format("%d/%d", area.getCurrentLap(offlinePlayer.getUniqueId()), area.getGameConfig().getLaps());
         }
         String progressPrefix = params.startsWith("player_progress_point_")
                 ? "player_progress_point_" : params.startsWith("player_checkpoint_")
@@ -67,7 +66,7 @@ public class AceRacePlaceholder extends BaseGamePlaceholder<AceRaceArea> {
         if (progressPrefix != null) {
             AceRaceArea area = resolvePlayerArea(params, progressPrefix, offlinePlayer);
             return area == null ? MessageConfig.PLACEHOLDER_NONE
-                    : area.getReachedProgressPoint(offlinePlayer.getUniqueId()) + "/" + area.getProgressPoints().size();
+                    : String.format("%d/%d", area.getReachedProgressPoint(offlinePlayer.getUniqueId()), area.getProgressPoints().size());
         }
         return null;
     }

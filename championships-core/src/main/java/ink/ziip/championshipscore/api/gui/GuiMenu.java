@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.gui;
 
+import ink.ziip.championshipscore.configuration.config.message.ButtonId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import net.kyori.adventure.text.Component;
@@ -84,28 +85,29 @@ public abstract class GuiMenu implements InventoryHolder {
     /**
      * Renders the standard navigation footer declared in {@code <menu>.layout.footer}.
      *
-     * <p>The slot for each control comes from the menu config; the display text always comes from
-     * {@code common.copy} so a single edit updates every menu. The {@code page} control additionally
+     * <p>The slot comes from the menu layout and presentation is inherited from the shared button
+     * template unless that menu overrides the named item. The {@code page} control additionally
      * receives {@code %page%}/{@code %pages%}/{@code %count%} placeholders.</p>
      */
     protected static void fillFooter(@NotNull Inventory inventory, @NotNull MenuId id,
                                      @NotNull Map<String, Object> pagePlaceholders) {
-        fillFooterItem(inventory, id, "previous", "previous-page", Map.of(), Material.ARROW);
-        fillFooterItem(inventory, id, "next", "next-page", Map.of(), Material.ARROW);
-        fillFooterItem(inventory, id, "page", "page", pagePlaceholders, Material.PAPER);
-        fillFooterItem(inventory, id, "back", "back", Map.of(), Material.ARROW);
-        fillFooterItem(inventory, id, "close", "close", Map.of(), Material.BARRIER);
-        fillFooterItem(inventory, id, "refresh", "refresh", Map.of(), Material.CLOCK);
+        fillFooterItem(inventory, id, ButtonId.PREVIOUS, Map.of(), Material.ARROW);
+        fillFooterItem(inventory, id, ButtonId.NEXT, Map.of(), Material.ARROW);
+        fillFooterItem(inventory, id, ButtonId.PAGE, pagePlaceholders, Material.PAPER);
+        fillFooterItem(inventory, id, ButtonId.BACK, Map.of(), Material.ARROW);
+        fillFooterItem(inventory, id, ButtonId.CLOSE, Map.of(), Material.BARRIER);
+        fillFooterItem(inventory, id, ButtonId.REFRESH, Map.of(), Material.CLOCK);
     }
 
     private static void fillFooterItem(@NotNull Inventory inventory, @NotNull MenuId id,
-                                       @NotNull String control, @NotNull String textKey,
-                                       @NotNull Map<String, Object> placeholders, @NotNull Material material) {
-        int slot = GuiConfig.integer(id.layout("footer." + control), -1);
+                                       @NotNull ButtonId button, @NotNull Map<String, Object> placeholders,
+                                       @NotNull Material fallbackMaterial) {
+        int slot = GuiConfig.integer(id.layout("footer." + button.id()), -1);
         if (slot < 0 || slot >= inventory.getSize()) return;
-        String prefix = "common.copy.";
-        String text = GuiConfig.text(prefix + textKey, placeholders);
-        inventory.setItem(slot, item(material, Component.text(text), List.of(), false));
+        GuiConfig.ItemSpec fallback = GuiConfig.button(button, placeholders,
+                new GuiConfig.ItemSpec(-1, fallbackMaterial, Component.text(button.id()), List.of(), false));
+        GuiConfig.ItemSpec spec = GuiConfig.item(id.item(button.id()), null, placeholders, fallback);
+        inventory.setItem(slot, item(spec.material(), spec.title(), spec.lore(), spec.glint()));
     }
 
     // ----- shared item builders --------------------------------------------------------------

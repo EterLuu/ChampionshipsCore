@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -21,8 +22,8 @@ import java.util.List;
 /** List editor for the WorldEdit cuboids that act as Build Mart wind vents. */
 public final class BuildMartWindZoneListStep extends PrepareStep {
     public BuildMartWindZoneListStep() {
-        super("wind_zones", Component.text(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.air-outlet-area")),
-                Component.text(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.use-worldedit-selection-to-add-multiple-blower-areas-updrafts-will-be-generated-above-each-area")),
+        super("wind_zones", Component.text(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.wind-zones.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.wind-zones.lore", 0)),
                 Material.WIND_CHARGE, StepCaptureType.LIST);
     }
 
@@ -43,20 +44,20 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
     @Override
     public String listAdd(@NotNull PrepareSession session, @NotNull Player player) {
         WindZone zone = selection(session, player);
-        if (zone == null) return Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.please-use-worldedit-to-select-the-blower-area-first"));
+        if (zone == null) return Utils.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_WIND_SELECT_FIRST);
         BuildMartConfig config = cfg(session.getTarget());
         List<WindZone> zones = new ArrayList<>(config.getWindZones());
         zones.add(zone);
         config.setWindZones(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.the-blower-area-has-been-added-currently") + zones.size() + GuiConfig.text("map-editor.copy.colored-item-count-suffix"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_WIND_ADDED.replace("%count%", String.valueOf(zones.size())));
     }
 
     @Override
     public String listClear(@NotNull PrepareSession session, @NotNull Player player) {
         cfg(session.getTarget()).setWindZones(List.of());
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.the-blower-area-list-has-been-cleared"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_WIND_CLEARED);
     }
 
     @Override
@@ -72,9 +73,13 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
             WindZone zone = zones.get(i);
             Vector min = Vector.getMinimum(zone.pos1(), zone.pos2());
             Vector max = Vector.getMaximum(zone.pos1(), zone.pos2());
-            entries.add(new ListEntry(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.air-outlet") + (i + 1), List.of(
-                    GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.area") + format(min) + " → " + format(max),
-                    GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.rising-range-y") + formatY(max.getY() + 1) + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.through-200-suffix"))));
+            entries.add(new ListEntry(GuiConfig.text(
+                    "map-editor.menus.step-list.games.build-mart.items.wind-entry.title",
+                    java.util.Map.of("number", i + 1)), List.of(
+                    GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.wind-entry.lore", 0,
+                            java.util.Map.of("range", String.format(java.util.Locale.ROOT, "%s → %s", format(min), format(max)))),
+                    GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.wind-entry.lore", 1,
+                            java.util.Map.of("top", formatY(max.getY() + 1))))));
         }
         return entries;
     }
@@ -82,13 +87,13 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
     @Override
     public String listEdit(@NotNull PrepareSession session, @NotNull Player player, int index) {
         WindZone zone = selection(session, player);
-        if (zone == null) return Utils.formatAdminError(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.please-use-worldedit-to-reselect-the-blower-area-first"));
+        if (zone == null) return Utils.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_WIND_SELECT_FIRST);
         List<WindZone> zones = new ArrayList<>(cfg(session.getTarget()).getWindZones());
         if (index < 0 || index >= zones.size()) return null;
         zones.set(index, zone);
         cfg(session.getTarget()).setWindZones(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.updated") + (index + 1) + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.wind-zone-count-suffix"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_WIND_UPDATED.replace("%index%", String.valueOf(index + 1)));
     }
 
     @Override
@@ -96,12 +101,12 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
                                int index, int newOrder) {
         List<WindZone> zones = new ArrayList<>(cfg(session.getTarget()).getWindZones());
         if (index < 0 || index >= zones.size() || newOrder < 1 || newOrder > zones.size())
-            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.the-serial-number-must-be-between-1-and") + zones.size() + GuiConfig.text("map-editor.copy.range-end-suffix"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace("%max%", String.valueOf(zones.size())));
         WindZone moved = zones.remove(index);
         zones.add(newOrder - 1, moved);
         cfg(session.getTarget()).setWindZones(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.the-air-blower-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.copy.item-suffix"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_WIND_ADJUSTED.replace("%order%", String.valueOf(newOrder)));
     }
 
     @Override
@@ -111,17 +116,17 @@ public final class BuildMartWindZoneListStep extends PrepareStep {
         zones.remove(index);
         cfg(session.getTarget()).setWindZones(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.deleted") + (index + 1) + GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.wind-zone-count-suffix"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_WIND_ADJUSTED.replace("%order%", String.valueOf(index + 1)));
     }
 
     @Override
     public @NotNull Component listAddLabel() {
-        return Component.text(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.add-blower-area"));
+        return Component.text(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.wind-add.title"));
     }
 
     @Override
     public @NotNull Component listAddHint() {
-        return Component.text(GuiConfig.text("map-editor.games.build-mart.steps.wind-zones.use-worldedit-to-select-an-area-and-click"));
+        return Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.wind-add.lore", 0));
     }
 
     private static WindZone selection(@NotNull PrepareSession session, @NotNull Player player) {

@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.event.EventTeamImport;
 import ink.ziip.championshipscore.api.event.WebEventApiClient;
 import ink.ziip.championshipscore.api.team.entry.TeamImportEntry;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,31 +57,33 @@ final class EventCommandSupport {
         if (imported.event() == null || imported.event().slug() == null || imported.event().title() == null
                 || !imported.event().slug().matches("[a-z0-9][a-z0-9-]{1,31}")
                 || imported.event().title().isBlank())
-            throw new IllegalArgumentException("赛事信息不完整");
+            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_INCOMPLETE);
         if (!"READY".equals(imported.event().lifecycleStatus()))
-            throw new IllegalArgumentException("赛事尚未进入比赛就绪状态");
+            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_NOT_READY);
         if (imported.event().games() == null || imported.event().games().isEmpty()
                 || imported.event().games().size() > 16)
-            throw new IllegalArgumentException("赛事游戏列表为空");
+            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_GAMES_EMPTY);
         Set<GameTypeEnum> eventGames = new HashSet<>();
         for (EventTeamImport.Game configured : imported.event().games()) {
             GameTypeEnum game = configured == null || configured.key() == null
                     ? null : GameTypeEnum.fromCommand(configured.key());
             if (game == null || FinaleGameRegistry.isRegistered(game) || !eventGames.add(game))
-                throw new IllegalArgumentException("赛事游戏无效或重复: " + (configured == null ? "null" : configured.key()));
+                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_GAME_INVALID
+                        .replace("%game%", configured == null ? "null" : configured.key()));
             if (configured.variantKey() == null || !configured.variantKey().matches("[a-z0-9][a-z0-9-]{0,39}")
                     || configured.label() == null || configured.label().isBlank() || configured.label().length() > 80)
-                throw new IllegalArgumentException("赛事游戏变体无效: " + configured.key());
+                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_VARIANT_INVALID
+                        .replace("%game%", configured.key()));
         }
         if (imported.event().roundMultipliers() == null
                 || imported.event().roundMultipliers().size() < eventGames.size())
-            throw new IllegalArgumentException("轮次倍率数量不能少于赛事游戏数量");
+            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_MULTIPLIER_COUNT_INVALID);
         for (Double multiplier : imported.event().roundMultipliers()) {
             if (multiplier == null || !Double.isFinite(multiplier) || multiplier < 0D || multiplier > 100D)
-                throw new IllegalArgumentException("赛事轮次倍率无效");
+                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_MULTIPLIER_INVALID);
         }
         if (imported.teams().isEmpty() || imported.teams().size() > TEAM_COLORS.size())
-            throw new IllegalArgumentException("启用队伍数量必须在 1 到 16 之间");
+            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_COUNT_INVALID);
         Set<String> names = new HashSet<>();
         Set<String> colors = new HashSet<>();
         Set<UUID> uuids = new HashSet<>();
@@ -90,26 +93,34 @@ final class EventCommandSupport {
             String name = team.name().trim();
             String color = team.colorName().toLowerCase(Locale.ROOT);
             if (name.isBlank() || name.length() > 64 || name.chars().anyMatch(Character::isISOControl))
-                throw new IllegalArgumentException("队名无效: " + name);
-            if (!names.add(name.toLowerCase(Locale.ROOT))) throw new IllegalArgumentException("队名重复: " + name);
-            if (!colors.add(color)) throw new IllegalArgumentException("队伍颜色重复: " + color);
+                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_NAME_INVALID.replace("%team%", name));
+            if (!names.add(name.toLowerCase(Locale.ROOT)))
+                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_NAME_DUPLICATE.replace("%team%", name));
+            if (!colors.add(color))
+                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_COLOR_DUPLICATE.replace("%color%", color));
             String expectedHex = TEAM_COLORS.get(color);
             if (expectedHex == null || !expectedHex.equalsIgnoreCase(team.colorHex()))
-                throw new IllegalArgumentException("队伍颜色不是固定羊毛色: " + color);
+                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_COLOR_FIXED.replace("%color%", color));
             if (team.members().isEmpty() || team.members().size() > CCConfig.TEAM_MAX_MEMBERS)
-                throw new IllegalArgumentException("队伍人数不符合服务器限制: " + name);
+                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_SIZE_INVALID
+                        .replace("%team%", name)
+                        .replace("%min%", "1")
+                        .replace("%max%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
             List<TeamImportEntry.Member> members = new ArrayList<>();
             for (EventTeamImport.Member member : team.members()) {
                 if (!member.username().matches("[A-Za-z0-9_]{3,16}"))
-                    throw new IllegalArgumentException("玩家名无效: " + member.username());
+                    throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_USERNAME_INVALID
+                            .replace("%player%", member.username()));
                 UUID uuid;
                 try {
                     uuid = UUID.fromString(member.uuid());
                 } catch (IllegalArgumentException failure) {
-                    throw new IllegalArgumentException("玩家 UUID 无效: " + member.username());
+                    throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_UUID_INVALID
+                            .replace("%player%", member.username()));
                 }
                 if (!uuids.add(uuid) || !usernames.add(member.username().toLowerCase(Locale.ROOT)))
-                    throw new IllegalArgumentException("玩家在阵容中重复: " + member.username());
+                    throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_PLAYER_DUPLICATE
+                            .replace("%player%", member.username()));
                 members.add(new TeamImportEntry.Member(uuid, member.username()));
             }
             teams.add(new TeamImportEntry(name, color, expectedHex, List.copyOf(members)));

@@ -12,6 +12,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -55,7 +56,7 @@ public final class StepMenuGui {
     public static void open(@NotNull Player player, @NotNull PrepareSession session) {
         Holder holder = new Holder(session);
         GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54,
-                GuiConfig.text(MENU_PATH + ".copy.preparatory-steps"), List.of());
+                GuiConfig.text(MENU_PATH + ".title"), List.of());
         Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.inventory = inventory;
         refresh(holder);
@@ -144,19 +145,23 @@ public final class StepMenuGui {
 
     private static ItemStack stepItem(@NotNull PrepareSession session, @NotNull PrepareStep step, int number) {
         boolean set = step.isSet(session);
-        String customState = step.stateText(session);
-        String state = customState != null ? customState : switch (step.captureType()) {
-            case CONFIRM_WORLD -> session.isWorldConfirmed() ? GuiConfig.text("map-editor.menus.step-list.copy.confirmed-world") : GuiConfig.text("map-editor.menus.step-list.copy.to-be-confirmed");
-            case STAMP -> session.isStamped() ? GuiConfig.text("map-editor.menus.step-list.copy.stamped-and-generated") : GuiConfig.text("map-editor.menus.step-list.copy.to-be-stamped");
-            case LIST -> set ? GuiConfig.text("map-editor.copy.already-set-prefix") + step.listCount(session) + GuiConfig.text("map-editor.copy.item-count-suffix") : GuiConfig.text("map-editor.menus.step-list.copy.to-be-set");
-            default -> set ? GuiConfig.text("map-editor.copy.already-set") : GuiConfig.text("map-editor.menus.step-list.copy.to-be-set");
+        String stateKey = switch (step.captureType()) {
+            case CONFIRM_WORLD -> session.isWorldConfirmed() ? "confirmed" : "unconfirmed";
+            case STAMP -> session.isStamped() ? "stamped" : "unstamped";
+            case LIST -> set ? "set" : "unset";
+            default -> set ? "set" : "unset";
         };
-        ItemStack item = PrepareKeys.item(step.icon(),
-                Component.text(number + ". ").color(NamedTextColor.GRAY)
-                        .append(step.displayName().color(NamedTextColor.WHITE)),
-                List.of(step.description().color(NamedTextColor.GRAY),
-                        Component.text(state).color(set ? NamedTextColor.GREEN : NamedTextColor.YELLOW),
-                        Component.text(GuiConfig.text("map-editor.menus.step-list.copy.click-to-edit")).color(NamedTextColor.AQUA)));
+        String state = step.stateText(session) != null
+                ? step.stateText(session)
+                : GuiConfig.text(MENU_PATH + ".items.step.states." + stateKey + ".title");
+        String action = GuiConfig.text(MENU_PATH + ".items.step.lore.2");
+        ItemStack fallback = PrepareKeys.item(step.icon(), Component.empty(), List.of());
+        ItemStack item = ConfiguredGui.item(MENU_PATH + ".items.step", stateKey, Map.of(
+                        "number", number,
+                        "title", PlainTextComponentSerializer.plainText().serialize(step.displayName()),
+                        "description", PlainTextComponentSerializer.plainText().serialize(step.description()),
+                        "state", state,
+                        "action", action), fallback);
         PrepareKeys.setStep(item, step.key());
         return item;
     }

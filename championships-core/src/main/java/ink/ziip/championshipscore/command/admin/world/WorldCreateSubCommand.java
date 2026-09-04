@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin.world;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import org.bukkit.Bukkit;
@@ -30,11 +31,11 @@ public class WorldCreateSubCommand extends BaseSubCommand {
 
         String worldName = args[0];
         if (!WorldManager.isValidWorldName(worldName)) {
-            Utils.sendAdminError(sender, "世界名仅支持字母、数字、下划线和连字符");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_INVALID_NAME);
             return true;
         }
         if (Bukkit.getWorld(worldName) != null) {
-            Utils.sendAdminInfo(sender, "世界 &#fff566" + worldName + " &#bababa已加载");
+            Utils.sendAdminInfo(sender, MessageConfig.ADMIN_WORLD_ALREADY_LOADED.replace("%world%", worldName));
             return true;
         }
 
@@ -47,8 +48,9 @@ public class WorldCreateSubCommand extends BaseSubCommand {
         WorldManager worldManager = plugin.getWorldManager();
         World.Environment bingoEnvironment = WorldManager.getBingoEnvironment(worldName);
         if (bingoEnvironment != null && args.length == 2 && environment != bingoEnvironment) {
-            Utils.sendAdminError(sender, "Bingo 维度 &#fff566" + worldName + " &#ededed必须使用 &#fff566"
-                    + bingoEnvironment.name().toLowerCase());
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_BINGO_ENVIRONMENT_REQUIRED
+                    .replace("%world%", worldName)
+                    .replace("%environment%", bingoEnvironment.name().toLowerCase()));
             return true;
         }
 
@@ -57,12 +59,14 @@ public class WorldCreateSubCommand extends BaseSubCommand {
                 ? worldManager.loadWorld(worldName, environment, false)
                 : worldManager.loadBingoWorld(worldName, bingoEnvironment);
         if (!loaded) {
-            Utils.sendAdminError(sender, "世界 &#fff566" + worldName + " &#ededed加载失败 &#696969• 请检查控制台");
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_LOAD_FAILED.replace("%world%", worldName));
             return true;
         }
 
-        Utils.sendAdminSuccess(sender, "已" + (existed ? "加载" : "创建") + "世界 &#fff566" + worldName
-                + " &#696969• " + (bingoEnvironment == null ? environment : bingoEnvironment).name().toLowerCase());
+        Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_WORLD_CREATED
+                .replace("%action%", existed ? MessageConfig.ADMIN_WORLD_ACTION_LOADED : MessageConfig.ADMIN_WORLD_ACTION_CREATED)
+                .replace("%world%", worldName)
+                .replace("%environment%", (bingoEnvironment == null ? environment : bingoEnvironment).name().toLowerCase()));
         return true;
     }
 

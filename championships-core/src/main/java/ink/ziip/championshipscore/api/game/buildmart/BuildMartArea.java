@@ -452,9 +452,11 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     /** Timer-bar title showing the round time left and the live golden-window countdown. */
     private String bossBarTitle() {
         String golden = currentGolden == null
-                ? "&7黄金: &f无"
-                : "&6黄金: &e" + currentGolden.getDisplayName() + " &7(" + goldenSecondsRemaining() + "s)";
-        return "&e匹配赛建 &7| &f剩余 &e" + timer + "s &7| " + golden;
+                ? MessageConfig.BUILD_MART_BOSSBAR_GOLDEN_NONE
+                : MessageConfig.BUILD_MART_BOSSBAR_GOLDEN_ACTIVE
+                        .replace("%blueprint%", currentGolden.getDisplayName())
+                        .replace("%seconds%", Integer.toString(goldenSecondsRemaining()));
+        return MessageConfig.BUILD_MART_BOSSBAR_TITLE.replace("%timer%", Integer.toString(timer)).replace("%golden%", golden);
     }
 
     /** Seconds left in the current golden window, derived from elapsed time and the rotation period. */

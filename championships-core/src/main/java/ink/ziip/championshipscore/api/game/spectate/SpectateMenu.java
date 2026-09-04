@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.spectate;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.GuiText;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartArea;
@@ -15,6 +16,7 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -184,7 +186,7 @@ public final class SpectateMenu implements Listener {
             return;
         }
         if (!manager.selectSpectatorArea(player, target)) {
-            Utils.sendAdminError(player, GuiConfig.text("spectator.copy.unavailable"));
+            Utils.sendAdminError(player, MessageConfig.SPECTATOR_UNAVAILABLE);
             refresh(holder);
             return;
         }
@@ -248,13 +250,13 @@ public final class SpectateMenu implements Listener {
         SubArenaDestination destination = holder.destinationsBySlot.get(slot);
         if (destination == null || !manager.canManuallySpectate(player)) return;
         if (!manager.selectSpectatorArea(player, holder.area, destination.location())) {
-            Utils.sendAdminError(player, GuiConfig.text("spectator.copy.unavailable"));
+            Utils.sendAdminError(player, MessageConfig.SPECTATOR_UNAVAILABLE);
             open(player);
             return;
         }
         player.sendMessage(MessageConfig.SPECTATOR_JOIN_AREA
                 .replace("%game%", holder.area.getGameTypeEnum().toString())
-                .replace("%area%", manager.getSpectatorDisplayName(holder.area) + GuiConfig.text("common.separator") + destination.label()));
+                .replace("%area%", String.join(GuiText.SEPARATOR, manager.getSpectatorDisplayName(holder.area), destination.label())));
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8F, 1.2F);
         player.closeInventory();
     }
@@ -305,7 +307,7 @@ public final class SpectateMenu implements Listener {
             for (int index = 0; index < spawns.size(); index++) {
                 Location location = safeLocation(spawns.get(index));
                 if (location != null) destinations.add(new SubArenaDestination(
-                        GuiConfig.text("spectator.copy.arena-section", Map.of("number", index + 1)), Material.TNT, location));
+                        GuiConfig.text("spectator.menus.sub-arena-selector.items.destination.states.arena.title", Map.of("number", index + 1)), Material.TNT, location));
             }
         } else if (instance instanceof SnowballShowdownTeamArea snowball) {
             ConfigurationSection section = snowball.getGameConfig().getPlayerSpawnPoints();
@@ -377,13 +379,13 @@ public final class SpectateMenu implements Listener {
         BuildMartDestination destination = holder.destinationsBySlot.get(slot);
         if (destination == null || !manager.canManuallySpectate(player)) return;
         if (!manager.selectSpectatorArea(player, holder.area, destination.location())) {
-            Utils.sendAdminError(player, GuiConfig.text("spectator.copy.unavailable"));
+            Utils.sendAdminError(player, MessageConfig.SPECTATOR_UNAVAILABLE);
             open(player);
             return;
         }
         player.sendMessage(MessageConfig.SPECTATOR_JOIN_AREA
                 .replace("%game%", holder.area.getGameTypeEnum().toString())
-                .replace("%area%", manager.getSpectatorDisplayName(holder.area) + GuiConfig.text("common.separator") + destination.label()));
+                .replace("%area%", String.join(GuiText.SEPARATOR, manager.getSpectatorDisplayName(holder.area), destination.label())));
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8F, 1.2F);
         player.closeInventory();
     }
@@ -425,7 +427,7 @@ public final class SpectateMenu implements Listener {
         List<BuildMartDestination> destinations = new ArrayList<>();
         GuiConfig.ItemSpec resource = GuiConfig.item(
                 "spectator.menus.build-mart-selector.items.resource-hub", Map.of());
-        destinations.add(new BuildMartDestination(GuiConfig.text("spectator.copy.resource-hub"), resource.title(),
+        destinations.add(new BuildMartDestination(GuiConfig.text("spectator.menus.build-mart-selector.items.resource-hub.title"), resource.title(),
                 resource.material(), area.getSpectatorSpawnLocation(), resource.lore()));
 
         List<ChampionshipTeam> teams = area.getGameTeams();
@@ -441,7 +443,7 @@ public final class SpectateMenu implements Listener {
             Map<String, Object> values = Map.of("team", team.getName(), "team_color", legacyColor(teamColor(team)));
             GuiConfig.ItemSpec configured = GuiConfig.item(
                     "spectator.menus.build-mart-selector.items.team-base", values);
-            destinations.add(new BuildMartDestination(GuiConfig.text("spectator.copy.team-base", values),
+            destinations.add(new BuildMartDestination(GuiConfig.text("spectator.menus.build-mart-selector.items.team-base.title", values),
                     configured.title(), material, base.getPortalPoint(), configured.lore()));
         }
         return destinations;
@@ -518,7 +520,7 @@ public final class SpectateMenu implements Listener {
         appendTeams(lore, instance);
         if (selected) {
             lore.add(Component.empty());
-            lore.add(GuiConfig.component("spectator.menus.venue-selector.copy.watching"));
+            lore.add(LegacyText.component(GuiConfig.line("spectator.menus.venue-selector.items.match.states.watching.lore", 0)));
         }
         return item(style.material(), configured.title(), lore, configured.glint());
     }
@@ -527,23 +529,23 @@ public final class SpectateMenu implements Listener {
         if (instance instanceof BasePairedGameInstance paired) {
             ChampionshipTeam right = paired.getRightChampionshipTeam();
             ChampionshipTeam left = paired.getLeftChampionshipTeam();
-            lore.add(GuiConfig.component("spectator.menus.venue-selector.copy.paired-heading"));
-            lore.add(teamName(right)
-                    .append(Component.text(" " + GuiConfig.text("common.versus") + " ", NamedTextColor.DARK_GRAY))
-                    .append(teamName(left)));
+            lore.add(GuiConfig.component("spectator.menus.venue-selector.items.match.states.paired.title"));
+            lore.add(LegacyText.component(GuiConfig.text(
+                    "spectator.menus.venue-selector.items.match.states.paired-line.title",
+                    Map.of("right", legacyTeamName(right), "left", legacyTeamName(left)))));
             return;
         }
         if (instance instanceof BaseMultiTeamGameInstance multiTeam) {
             List<ChampionshipTeam> teams = multiTeam.getGameTeams();
-            lore.add(GuiConfig.component("spectator.menus.venue-selector.copy.multi-heading"));
+            lore.add(GuiConfig.component("spectator.menus.venue-selector.items.match.states.multi.title"));
             if (teams.isEmpty()) {
-                lore.add(GuiConfig.component("spectator.menus.venue-selector.copy.waiting"));
+                lore.add(GuiConfig.component("spectator.menus.venue-selector.items.match.states.waiting.title"));
                 return;
             }
             for (int index = 0; index < teams.size(); index += 2) {
                 Component line = teamName(teams.get(index));
                 if (index + 1 < teams.size()) {
-                    line = line.append(Component.text(GuiConfig.text("common.separator"), NamedTextColor.DARK_GRAY))
+                    line = line.append(Component.text(GuiText.SEPARATOR, NamedTextColor.DARK_GRAY))
                             .append(teamName(teams.get(index + 1)));
                 }
                 lore.add(line);
@@ -551,8 +553,14 @@ public final class SpectateMenu implements Listener {
         }
     }
 
+    private static String legacyTeamName(ChampionshipTeam team) {
+        return team == null
+                ? GuiConfig.text("spectator.menus.venue-selector.items.match.states.undecided.title")
+                : String.join("", legacyColor(teamColor(team)), team.getName());
+    }
+
     private static Component teamName(ChampionshipTeam team) {
-        if (team == null) return GuiConfig.component("spectator.menus.venue-selector.copy.undecided");
+        if (team == null) return GuiConfig.component("spectator.menus.venue-selector.items.match.states.undecided.title");
         return Component.text(team.getName(), teamColor(team));
     }
 

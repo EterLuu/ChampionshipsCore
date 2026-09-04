@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
@@ -52,13 +53,13 @@ public class PrepareSession {
 
         PrepareStep introductionSpawn = new StandAndRunStep(
                 "introduction_spawn",
-                Component.text(GuiConfig.text("map-editor.session.rule-introduction-spawn-point-can-be-covered")),
-                Component.text(GuiConfig.text("map-editor.session.rules-spawn-selection-hint")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.items.introduction-spawn.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.items.introduction-spawn.lore", 0)),
                 Material.BOOK,
                 setup -> setup.config().getIntroductionSpawnPoint() != null
                         || setup.config().getSpectatorSpawnPoint() != null,
                 (setup, location) -> setup.config().setIntroductionSpawnPoint(location),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.session.rules-have-been-set-to-introduce-dedicated-spawn-points")));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_INTRODUCTION_SPAWN_SET));
 
         int spectatorSpawn = -1;
         int confirmWorld = -1;
@@ -71,11 +72,11 @@ public class PrepareSession {
 
         PrepareStep introductionMode = new ToggleStep(
                 "introduction_game_mode",
-                Component.text(GuiConfig.text("map-editor.session.rule-introduction-mode")),
-                Component.text(GuiConfig.text("map-editor.session.click-to-switch-to-the-player-mode-in-the-introduction-stage-of-the-map-rules")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.items.introduction-mode.lore", 0)),
                 Material.RECOVERY_COMPASS,
                 setup -> setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
-                        ? GuiConfig.text("map-editor.session.current-spectator-mode") : GuiConfig.text("map-editor.session.current-adventure-mode"),
+                        ? GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.states.spectator.title") : GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.states.adventure.title"),
                 setup -> setup.config().setIntroductionGameMode(
                         setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
                                 ? GameMode.ADVENTURE : GameMode.SPECTATOR));

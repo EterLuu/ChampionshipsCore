@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
@@ -28,11 +29,11 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
-        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.copy.site-boundaries")), Component.text(GuiConfig.text("map-editor.copy.use-worldedit-to-select-the-complete-game-area")),
+        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.menus.step-list.items.site-boundary.title")), Component.text(GuiConfig.line("map-editor.menus.step-list.items.site-boundary.lore", 0)),
                 Material.BEDROCK, t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.site-boundaries-set"))));
-        steps.add(location("spectator_spawn", GuiConfig.text("map-editor.copy.spectator-spawn-point"), Material.ENDER_EYE,
-                t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l), GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set")));
+                (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); }, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SITE_BOUNDARY_SET)));
+        steps.add(location("spectator_spawn", GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title"), Material.ENDER_EYE,
+                t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l), MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET));
         return steps;
     }
 
@@ -41,15 +42,15 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
         List<String> errors = new ArrayList<>(super.validate(session));
         World world = Bukkit.getWorld(session.getTarget().worldName());
         if (world != null && world.getEnvironment() != World.Environment.THE_END)
-            errors.add(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.the-map-world-must-be-an-end-environment"));
+            errors.add(GuiConfig.line("MessageConfig.MAP_EDITOR_DEC_WORLD_ENVIRONMENT", 0));
         DragonEggCarnivalConfig config = cfg(session.getTarget());
         if (config.getAreaPos1() != null && config.getAreaPos2() != null
                 && !coversRequiredFightRegion(config.getAreaPos1(), config.getAreaPos2()))
-            errors.add(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.the-site-boundary-needs-to-cover-the-fixed-dragon-battle-area-x-z-104-104-y-0-128"));
+            errors.add(GuiConfig.line("MessageConfig.MAP_EDITOR_DEC_FIGHT_REGION", 0));
         Location spectator = config.getSpectatorSpawnPoint();
         if (spectator != null && spectator.getWorld() != null
                 && !spectator.getWorld().getName().equals(session.getTarget().worldName()))
-            errors.add(GuiConfig.text("map-editor.games.dragon-egg-carnival.setup.the-spawn-point-of-the-spectator-must-be-in-the-current-map-world"));
+            errors.add(GuiConfig.line("MessageConfig.MAP_EDITOR_DEC_SPECTATOR_WORLD", 0));
         return errors;
     }
 
@@ -66,7 +67,7 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
     private static DragonEggCarnivalConfig cfg(SetupTarget target) { return (DragonEggCarnivalConfig) target.config(); }
     private static PrepareStep location(String key, String name, Material icon, java.util.function.Predicate<SetupTarget> set,
                                         java.util.function.BiConsumer<SetupTarget, Location> setter, String done) {
-        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.text("map-editor.copy.after-reaching-the-target-position-click")), icon, set, setter,
+        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.line("map-editor.menus.step-list.items.stand-run.lore", 0)), icon, set, setter,
                 Utils.formatAdminSuccess(done));
     }
 }

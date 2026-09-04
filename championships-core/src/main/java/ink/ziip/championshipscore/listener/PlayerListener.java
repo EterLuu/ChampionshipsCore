@@ -132,7 +132,7 @@ public class PlayerListener extends BaseListener {
                 .prepareIdentity(event.getName(), event.getUniqueId());
         if (!migration.successful()) {
             event.kickMessage(LegacyComponentSerializer.legacySection()
-                    .deserialize(Utils.translateColorCodes("&c无法验证玩家身份，请确认服务器 UUID 模式与登录代理配置一致。")));
+                    .deserialize(Utils.translateColorCodes(MessageConfig.IDENTITY_VERIFICATION_FAILED)));
             event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
             return;
         }
@@ -194,7 +194,8 @@ public class PlayerListener extends BaseListener {
             BaseGameInstance shownArea = playerArea;
             if (shownArea == null)
                 shownArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
-            String label = shownArea == null ? "&a大厅" : "&6" + shownArea.getGameTypeEnum();
+            String label = shownArea == null ? MessageConfig.PRESENTATION_DAILY_LOBBY
+                    : MessageConfig.PRESENTATION_DAILY_GAME.replace("%game%", shownArea.getGameTypeEnum().toString());
             return new PlayerPresentation(label, team == null ? null : team.getColorCode(),
                     playerArea != null && team != null);
         }

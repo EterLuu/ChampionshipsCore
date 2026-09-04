@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -64,8 +65,8 @@ public class StampStep extends PrepareStep {
                       BiConsumer<PrepareSession, World> preStampCleaner,
                       int maxCount, boolean keepSourceCopy, boolean ignored) {
         super("stamp",
-                Component.text(GuiConfig.text("map-editor.steps.arena-generation.stamp-and-generate-multiple-maps")),
-                Component.text(GuiConfig.text("map-editor.steps.arena-generation.after-entering-the-number-of-copies-paste-n-copies-of-the-site-and-solidify-them-as-templates")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.items.stamp.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.items.stamp.lore", 0)),
                 Material.DISPENSER,
                 StepCaptureType.STAMP);
         this.fileResolver = fileResolver;
@@ -127,22 +128,22 @@ public class StampStep extends PrepareStep {
     @Override
     public String stamp(@NotNull PrepareSession session, @NotNull Player player, int count) {
         if (count < 1) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.arena-generation.the-number-of-venue-shares-must-be-greater-than-0"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_COUNT_POSITIVE);
         }
         if (count > maxCount) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.arena-generation.the-map-can-only-generate-at-most") + maxCount + GuiConfig.text("map-editor.steps.arena-generation.venue"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_MAX_COUNT.replace("%max%", String.valueOf(maxCount)));
         }
         File file = fileResolver.apply(session.getPlugin());
         if (!file.isFile()) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.arena-generation.missing-venue-template-please-complete-first-save-venue-template"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_TEMPLATE_MISSING);
         }
         String worldName = session.getTarget().worldName();
         World world = Bukkit.getWorld(worldName);
         if (world == null) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.arena-generation.world") + worldName + GuiConfig.text("map-editor.steps.arena-generation.not-loaded-yet"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_WORLD_NOT_LOADED.replace("%world%", worldName));
         }
         if (!session.getTarget().canSaveMap()) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.arena-generation.there-is-still-a-game-instance-running-on-the-same-map-cannot-be-regenerated-or-saved"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING);
         }
         ArenaGrid resolvedGrid;
         try {
@@ -155,7 +156,7 @@ public class StampStep extends PrepareStep {
                 ArenaPreparer.stampCopies(session.getPlugin(), world, file, resolvedGrid, count);
             if (sizeWriter != null) sizeWriter.accept(session.getTarget(), size);
         } catch (Exception e) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.arena-generation.failed-to-generate-venue") + e.getMessage());
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATE_FAILED.replace("%detail%", e.getMessage()));
         }
 
         copyCountWriter.accept(session.getTarget(), count);
@@ -165,8 +166,7 @@ public class StampStep extends PrepareStep {
         session.setWorldConfirmed(true);
         session.setStamped(true);
         return Utils.formatAdminSuccess(keepSourceCopy
-                ? GuiConfig.text("map-editor.steps.arena-generation.the-total-number-of-venues-has-been-set-to") + count + GuiConfig.text("map-editor.steps.arena-generation.the-original-image-number-0-was-retained-and-generated")
-                    + Math.max(0, count - 1) + GuiConfig.text("map-editor.steps.arena-generation.copies")
-                : GuiConfig.text("map-editor.steps.arena-generation.generated") + count + GuiConfig.text("map-editor.steps.arena-generation.site-please-verify-and-publish-after-completing-the-location"));
+                ? MessageConfig.MAP_EDITOR_STEP_ARENA_TOTAL_SET.replace("%count%", String.valueOf(count)).replace("%copies%", String.valueOf(Math.max(0, count - 1)))
+                : MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATED.replace("%count%", String.valueOf(count)));
     }
 }

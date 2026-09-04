@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 4
+  version: 5
 card:
   title: "&6&lBingo Card"
   win_hint: "&7Complete a full row, column, or diagonal to win"
@@ -18,9 +18,54 @@ compass:
   target_offline: "&cThat teammate has gone offline."
   teleport_success: "&aTeleported to &f{0}&a."
 remix:
-  blind-revealed: "&#bababa[&#8a70ffRemix&#bababa]&#ededed Blind remix revealed a task"
-  finale-locked: "&#bababa[&#8a70ffRemix&#bababa]&#ededed Finale remix locked a task"
-  variation-refreshed: "&#bababa[&#8a70ffRemix&#bababa]&#ededed Variation remix refreshed every incomplete task"
+  nether:
+    name: "Nether"
+    description: "Everyone starts in the Nether; cards favor Nether tasks"
+  scale:
+    name: "Scale"
+    description: "The card scales to 3×3 or 4×4"
+  differential:
+    name: "Differential"
+    description: "Each player sees different tasks; teammates share cell progress"
+  upgrade:
+    name: "Upgrade"
+    description: "Receive Netherite, Elytra, and firework upgrade kits"
+  blind:
+    name: "Blind"
+    description: "Tasks start hidden and are revealed over time"
+  feast:
+    name: "Feast"
+    description: "The card consists only of progress, or statistic and event tasks"
+  coop:
+    name: "Co-op"
+    description: "All teams cooperate on the same card"
+  genesis:
+    name: "Genesis"
+    description: "Each player chooses an item to add to the card"
+  colorful:
+    name: "Colorful"
+    description: "The card prioritizes tasks using all sixteen dye colors"
+  chain:
+    name: "Chain"
+    description: "After the first cell, only adjacent cells may be completed"
+  variation:
+    name: "Variation"
+    description: "Refreshes every incomplete task every four minutes"
+  finale:
+    name: "Finale"
+    description: "From minute five, one cell is permanently locked each minute"
+  eternal_night:
+    name: "Eternal Night"
+    description: "Time is locked to night and difficulty is set to hard"
+  polar_day:
+    name: "Polar Day"
+    description: "Time is locked to day and difficulty is set to easy"
+  parallax:
+    name: "Parallax"
+    description: "Team card layouts are scrambled and must be re-matched cell by cell"
+  speedrun:
+    name: "Speedrun"
+    description: "Uses a fixed 3×3 End speedrun card and speedrun kit"
 worker:
   command:
     no-permission: "&#bababa[&#ff6b26Bingo&#bababa]&#ededed You do not have permission"
@@ -268,6 +313,8 @@ mode:
 
 vote:
   started: "&dBingo vote started! Choose the mode, difficulty, and winning lines within {0} seconds."
+  remaining: "&7Vote ends in &e{0} &7seconds"
+  cancelled-insufficient: "&cVote cancelled because too few players joined; players return to matchmaking."
   bossbar: "&dBingo vote &7• {0}s remaining"
   previous: "Previous page"
   next: "Next page"
@@ -335,4 +382,7 @@ lines_vote:
 
 genesis:
   started: "&5Genesis! Pick a task for this round from the random items within {0} seconds."
+  triggered: "&5✦ Remix! This round uses {0} &7{1}"
+  title: "&5Remix"
   menu_title: "Genesis: pick a task for this round"
+  menu_hint: "&eClick to add this item to the card"

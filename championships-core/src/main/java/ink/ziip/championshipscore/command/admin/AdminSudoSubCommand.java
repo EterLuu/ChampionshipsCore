@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.admin;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -34,21 +35,22 @@ public class AdminSudoSubCommand extends BaseSubCommand {
                 player.performCommand(commands);
                 affected++;
             }
-            Utils.sendAdminSuccess(sender, "已让 &#fff566" + affected + " &#ededed名在线玩家执行命令");
+            Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_SUDO_ALL.replace("%count%", String.valueOf(affected)));
             return true;
         }
 
         ChampionshipTeam team = plugin.getTeamManager().getTeam(args[0]);
         if (team == null) {
-            Utils.sendAdminError(sender, "队伍不存在：&#fff566" + args[0]);
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_TEAM_MISSING.replace("%team%", args[0]));
             return true;
         }
         List<Player> onlinePlayers = team.getOnlinePlayers();
         for (Player teamPlayer : onlinePlayers) {
             teamPlayer.performCommand(commands);
         }
-        Utils.sendAdminSuccess(sender, "已让队伍 " + team.getColoredName() + " &#ededed的 &#fff566"
-                + onlinePlayers.size() + " &#ededed名在线玩家执行命令");
+        Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_SUDO_TEAM
+                .replace("%team%", team.getColoredName())
+                .replace("%count%", String.valueOf(onlinePlayers.size())));
 
         return true;
     }

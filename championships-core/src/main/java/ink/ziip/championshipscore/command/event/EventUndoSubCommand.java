@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -25,9 +26,10 @@ public final class EventUndoSubCommand extends BaseSubCommand {
         }
         GameTypeEnum latest = plugin.getScheduleManager().deleteLatestGame();
         if (latest == null)
-            Utils.sendAdminError(sender, "没有可撤销的正式比赛");
+            Utils.sendAdminError(sender, MessageConfig.EVENT_UNDO_UNAVAILABLE);
         else
-            Utils.sendAdminSuccess(sender, "正在撤销 &#fff566" + latest + " &#696969• 约 3 秒后清除轮次与成绩");
+            Utils.sendAdminSuccess(sender, MessageConfig.EVENT_UNDO_STARTED
+                    .replace("%game%", latest.name()));
         return true;
     }
 

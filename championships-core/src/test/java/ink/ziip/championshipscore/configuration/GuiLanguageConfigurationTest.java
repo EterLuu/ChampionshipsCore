@@ -24,6 +24,23 @@ class GuiLanguageConfigurationTest {
     private static final Pattern UNPADDED_HASH = Pattern.compile("(?<!：)(?<=\\S)#|#(?=\\S)");
     private static final Pattern SPACE_AFTER_CHINESE_COLON = Pattern.compile("：[ \\t]");
     private static final Pattern UNPADDED_BRACKET_SUFFIX = Pattern.compile("](?=\\S)");
+    private static final Pattern STANDALONE_GUI_TEXT_PATH = Pattern.compile(
+            "GuiConfig\\.(?:text|line|component)\\([^\\n]*\\.text\\.");
+
+    @Test
+    void guiTextIsNotAssembledByStringConcatenation() throws IOException {
+        List<String> violations = new ArrayList<>();
+        try (var sources = Files.walk(Path.of("src/main/java"))) {
+            for (Path source : sources.filter(path -> path.toString().endsWith(".java")).toList()) {
+                String java = Files.readString(source);
+                if (hasTopLevelConfigurationConcat(java))
+                    violations.add(source.getFileName().toString());
+                Matcher standalone = STANDALONE_GUI_TEXT_PATH.matcher(java);
+                while (standalone.find()) violations.add(source.getFileName() + ": standalone .text path");
+            }
+        }
+        assertTrue(violations.isEmpty(), "GUI text must use placeholders, not concatenation: " + violations);
+    }
 
     @Test
     void everyGuiReferenceResolvesToConfiguredCopy() throws IOException {
@@ -44,11 +61,31 @@ class GuiLanguageConfigurationTest {
     @Test
     void guiKeysUseAnEnglishBusinessHierarchy() throws IOException {
         YamlConfiguration gui = YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertEquals(15, gui.getInt("dont-edit-this.version"));
+        assertEquals(22, gui.getInt("dont-edit-this.version"));
 
+        assertFalse(gui.isConfigurationSection("common"), "top-level common GUI state is obsolete");
+        assertFalse(gui.isConfigurationSection("buttons.copy"), "shared buttons must not reintroduce copy");
         List<String> copyKeys = leafKeys(gui).stream()
                 .filter(key -> !key.equals("dont-edit-this.version"))
                 .toList();
+        assertFalse(copyKeys.stream().anyMatch(key -> key.contains(".copy.")),
+                "copy keys are obsolete: " + copyKeys.stream().filter(key -> key.contains(".copy.")).toList());
+        assertFalse(gui.isConfigurationSection("map-editor.steps"), "map-editor steps must live under a menu");
+        assertFalse(gui.isConfigurationSection("map-editor.session"), "map-editor session text must live under step-list");
+        assertFalse(gui.isConfigurationSection("teams.menus.shared"), "teams shared text must bind to buttons or move to messages");
+        ConfigurationSection mapEditorGames = gui.getConfigurationSection("map-editor.games");
+        List<String> obsoleteGameFlows = new ArrayList<>();
+        if (mapEditorGames != null) {
+            for (String game : mapEditorGames.getKeys(false)) {
+                for (String section : List.of("setup", "steps", "session")) {
+                    if (gui.isConfigurationSection("map-editor.games." + game + "." + section)) {
+                        obsoleteGameFlows.add("map-editor.games." + game + "." + section);
+                    }
+                }
+            }
+        }
+        assertTrue(obsoleteGameFlows.isEmpty(),
+                "game flow text must live under map-editor menus: " + obsoleteGameFlows);
         List<String> nonEnglish = copyKeys.stream()
                 .filter(key -> !key.matches("[a-z0-9]+(?:[.-][a-z0-9]+)*"))
                 .toList();
@@ -59,6 +96,15 @@ class GuiLanguageConfigurationTest {
                 .toList();
         assertTrue(implementationShaped.isEmpty(),
                 "GUI paths must describe product areas, not Java implementation classes: " + implementationShaped);
+
+        assertFalse(gui.isConfigurationSection("daily.metrics"), "daily metrics are metric button states, not a free text group");
+        List<String> textSections = copyKeys.stream()
+                .filter(key -> key.equals("daily.metrics")
+                        || key.startsWith("daily.metrics.")
+                        || key.endsWith(".text")
+                        || key.contains(".text."))
+                .toList();
+        assertTrue(textSections.isEmpty(), "loose GUI text sections are forbidden: " + textSections);
 
         List<String> numbered = copyKeys.stream()
                 .filter(key -> key.matches("(?:^|.*\\.)(?:text|message|label)-\\d+$"))
@@ -199,6 +245,42 @@ class GuiLanguageConfigurationTest {
         }
     }
 
+    @Test
+    void everyPresentationLeafIsBoundToAMenuOrButton() {
+        YamlConfiguration gui = YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
+        List<String> structuralSuffixes = List.of(".material", ".slot", ".slots", ".use", ".glint");
+        List<String> invalid = new ArrayList<>();
+        for (String key : leafKeys(gui)) {
+            if (key.equals("dont-edit-this.version")
+                    || key.endsWith(".layout.content") || key.endsWith(".layout.border")
+                    || key.endsWith(".size")
+                    || structuralSuffixes.stream().anyMatch(key::endsWith)) {
+                continue;
+            }
+            if (!key.endsWith(".title") && !key.endsWith(".lore")) invalid.add(key);
+        }
+        assertTrue(invalid.isEmpty(), "GUI presentation must only use title/lore leaves: " + invalid);
+
+        List<String> unbound = new ArrayList<>();
+        for (String key : leafKeys(gui)) {
+            if (key.equals("dont-edit-this.version") || !key.endsWith(".title") && !key.endsWith(".lore")) continue;
+            if (!key.startsWith("buttons.") && !key.contains(".buttons.")
+                    && !key.contains(".menus.") && !key.contains(".hotbar."))
+                unbound.add(key);
+        }
+        assertTrue(unbound.isEmpty(), "GUI copy must be bound to a menu, button or hotbar item: " + unbound);
+
+        List<String> badStateLeaves = leafKeys(gui).stream()
+                .filter(key -> key.contains(".states."))
+                .filter(key -> {
+                    String suffix = key.substring(key.lastIndexOf('.') + 1);
+                    return !suffix.equals("title") && !suffix.equals("lore") && !suffix.equals("material")
+                            && !suffix.equals("glint") && !suffix.equals("slot") && !suffix.equals("slots");
+                })
+                .toList();
+        assertTrue(badStateLeaves.isEmpty(), "button states may override only presentation fields: " + badStateLeaves);
+    }
+
     private static List<String> strings(ConfigurationSection section) {
         List<String> values = new ArrayList<>();
         for (String key : section.getKeys(true)) {
@@ -208,6 +290,22 @@ class GuiLanguageConfigurationTest {
                     .map(String.class::cast).forEach(values::add);
         }
         return values;
+    }
+
+    private static boolean hasTopLevelConfigurationConcat(String source) {
+        for (String statement : source.split(";")) {
+            if (!statement.contains("GuiConfig.") && !statement.contains("MessageConfig.")) continue;
+            int depth = 0;
+            for (int index = 0; index < statement.length(); index++) {
+                char character = statement.charAt(index);
+                if (character == '(') depth++;
+                if (character == ')') depth = Math.max(0, depth - 1);
+                if (character == '+' && depth == 0
+                        && (index + 1 >= statement.length() || statement.charAt(index + 1) != '+'))
+                    return true;
+            }
+        }
+        return false;
     }
 
     private static List<String> leafKeys(ConfigurationSection section) {

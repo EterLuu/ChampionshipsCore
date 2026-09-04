@@ -318,16 +318,20 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     }
 
     private String skyWarsBossBarTitle() {
-        String title = MessageConfig.SKY_WARS_ACTION_BAR_COUNT_DOWN.replace("%time%", String.valueOf(timer));
-        SkyWarsShrink activeShrink = activeShrink();
-        if (activeShrink != null) {
-            int remaining = Math.max(0, timer - activeShrink.getEndTime());
-            title += " &#bababa• " + MessageConfig.SKY_WARS_BOARD_SHRINK_ACTIVE
-                    .replace("%time%", String.valueOf(remaining));
+        boolean shrink = activeShrink() != null;
+        boolean drain = timer <= variant().rules().disableHealthRegainAtRemainingSeconds();
+        if (shrink && drain) {
+            return MessageConfig.SKY_WARS_BOSS_BAR_SHRINK_DRAIN
+                    .replace("%time%", String.valueOf(timer))
+                    .replace("%shrink-time%", String.valueOf(Math.max(0, timer - activeShrink().getEndTime())));
         }
-        if (timer <= variant().rules().disableHealthRegainAtRemainingSeconds())
-            title += " &#bababa• " + MessageConfig.SKY_WARS_HEALTH_DRAIN_ACTIVE;
-        return title;
+        if (shrink) {
+            return MessageConfig.SKY_WARS_BOSS_BAR_SHRINK
+                    .replace("%time%", String.valueOf(timer))
+                    .replace("%shrink-time%", String.valueOf(Math.max(0, timer - activeShrink().getEndTime())));
+        }
+        if (drain) return MessageConfig.SKY_WARS_BOSS_BAR_DRAIN.replace("%time%", String.valueOf(timer));
+        return MessageConfig.SKY_WARS_BOSS_BAR.replace("%time%", String.valueOf(timer));
     }
 
     private void announceUpcomingTimedEvent() {

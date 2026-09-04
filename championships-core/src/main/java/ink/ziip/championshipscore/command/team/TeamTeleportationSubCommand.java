@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.team;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -35,7 +36,7 @@ public class TeamTeleportationSubCommand extends BaseSubCommand {
 
         ChampionshipTeam team = plugin.getTeamManager().getTeam(args[0]);
         if (team == null) {
-            Utils.sendAdminError(sender, "队伍不存在：&#fff566" + args[0]);
+            Utils.sendAdminError(sender, MessageConfig.ADMIN_TEAM_MISSING.replace("%team%", args[0]));
             return true;
         }
         for (Player teamPlayer : team.getOnlinePlayers()) {

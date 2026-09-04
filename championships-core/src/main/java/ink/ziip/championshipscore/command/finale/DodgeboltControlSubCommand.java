@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltArea;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,7 +26,7 @@ final class DodgeboltControlSubCommand extends BaseSubCommand {
         }
         DodgeboltArea area = plugin.getGameManager().getDodgeboltManager().getArea(args[0]);
         if (area == null) {
-            Utils.sendAdminError(sender, "找不到躲避箭场地");
+            Utils.sendAdminError(sender, MessageConfig.FINALE_DODGEBOLT_AREA_MISSING);
             return true;
         }
         boolean success = switch (commandName) {
@@ -35,8 +36,8 @@ final class DodgeboltControlSubCommand extends BaseSubCommand {
             case "stop" -> area.stopMatch();
             default -> false;
         };
-        if (success) Utils.sendAdminSuccess(sender, "躲避箭操作已执行：&#fff566" + commandName);
-        else Utils.sendAdminError(sender, "当前比赛状态不允许执行该操作");
+        if (success) Utils.sendAdminSuccess(sender, MessageConfig.FINALE_DODGEBOLT_CONTROL_EXECUTED.replace("%command%", commandName));
+        else Utils.sendAdminError(sender, MessageConfig.FINALE_DODGEBOLT_CONTROL_STATE_DENIED);
         return true;
     }
 

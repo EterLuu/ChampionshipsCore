@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.api.daily.DailyStatSnapshot;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -20,7 +21,7 @@ public final class DailySubCommand extends BaseSubCommand {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length < 1) { sendUsage(sender); return true; }
@@ -31,10 +32,11 @@ public final class DailySubCommand extends BaseSubCommand {
         }
         if (args[0].equalsIgnoreCase("stats")) {
             GameTypeEnum game = args.length > 1 ? parseGame(args[1]) : null;
-            if (args.length > 1 && game == null) { message(sender, "&c未知游戏。"); return true; }
+            if (args.length > 1 && game == null) { message(sender, MessageConfig.COMMAND_UNKNOWN_GAME); return true; }
             DailyStatSnapshot stat = plugin.getDailyManager().statsManager().stat(player.getUniqueId(), game);
-            message(sender, "&e" + (game == null ? "综合" : game.name()) + " &7| &f场次 " + stat.gamesPlayed()
-                    + " &7| &b具体数据请打开个人战绩菜单查看");
+            message(sender, MessageConfig.COMMAND_DAILY_STATS
+                    .replace("%game%", game == null ? MessageConfig.DAILY_MODE_CHAMPIONSHIP : game.toString())
+                    .replace("%games%", String.valueOf(stat.gamesPlayed())));
             return true;
         }
         sendUsage(sender);
@@ -48,7 +50,7 @@ public final class DailySubCommand extends BaseSubCommand {
 
     private void message(CommandSender sender, String value) {
         sender.sendMessage(Utils.translateColorCodes(
-                ink.ziip.championshipscore.configuration.config.message.MessageConfig.DAILY_PREFIX + value));
+                ink.ziip.championshipscore.configuration.config.message.MessageConfig.DAILY_PREFIXED.replace("%message%", value)));
     }
 
     @Override

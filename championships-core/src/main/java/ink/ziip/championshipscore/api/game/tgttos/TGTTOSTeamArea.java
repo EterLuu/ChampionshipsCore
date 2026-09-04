@@ -231,7 +231,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
                 && !arrivedPlayers.contains(player.getUniqueId())) {
             scheduler.runTask(plugin, () -> {
                 player.spigot().respawn();
-                scheduler.runTask(plugin, () -> resetElytraPlayerToStart(player, "发生事故"));
+                scheduler.runTask(plugin, () -> resetElytraPlayerToStart(player, MessageConfig.TGTTOS_RETURN_REASON_ACCIDENT));
             });
             return;
         }
@@ -261,7 +261,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
                 getGameConfig().getPlayerSpawnAreaPos2(), getGameConfig().getPlayerSpawnYaw(),
                 getGameConfig().getPlayerSpawnPitch());
         if (spawn != null) player.teleport(spawn);
-        Utils.sendActionBar(player, "&#fff566" + reason + "，返回起点");
+        Utils.sendActionBar(player, MessageConfig.TGTTOS_RETURN_TO_START.replace("%reason%", reason));
     }
 
     /**

@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 4
+  version: 5
 card:
   title: "&6&l宾果卡"
   win_hint: "&7连成一行、一列或一条对角线即可获胜"
@@ -18,9 +18,54 @@ compass:
   target_offline: "&c该队友已下线。"
   teleport_success: "&a已传送到&f{0}&a。"
 remix:
-  blind-revealed: "&#bababa[&#8a70ff奇遇&#bababa]&#ededed 视障奇遇揭示了一项任务"
-  finale-locked: "&#bababa[&#8a70ff奇遇&#bababa]&#ededed 终曲奇遇封锁了一项任务"
-  variation-refreshed: "&#bababa[&#8a70ff奇遇&#bababa]&#ededed 变奏奇遇刷新了所有未完成任务"
+  nether:
+    name: "下界"
+    description: "全员在下界开局，卡片偏向下界任务"
+  scale:
+    name: "缩放"
+    description: "卡片缩为 3×3 或 4×4"
+  differential:
+    name: "差分"
+    description: "每位玩家看到不同任务，队友共享格位进度"
+  upgrade:
+    name: "升级"
+    description: "获得下界合金、鞘翅和烟花升级套装"
+  blind:
+    name: "视障"
+    description: "任务初始隐藏，并随时间逐项揭示"
+  feast:
+    name: "盛宴"
+    description: "整张卡只由进度，或统计与事件任务组成"
+  coop:
+    name: "合作"
+    description: "全场合作完成同一张卡"
+  genesis:
+    name: "创世"
+    description: "每位玩家选一个物品加入卡片"
+  colorful:
+    name: "缤纷"
+    description: "卡片优先包含十六种染料颜色任务"
+  chain:
+    name: "连锁"
+    description: "首格后只能完成相邻格"
+  variation:
+    name: "变奏"
+    description: "每四分钟刷新所有未完成任务"
+  finale:
+    name: "终曲"
+    description: "第五分钟起每分钟永久封锁一格"
+  eternal_night:
+    name: "永夜"
+    description: "时间锁定深夜，难度设为困难"
+  polar_day:
+    name: "极昼"
+    description: "时间锁定白昼，难度设为简单"
+  parallax:
+    name: "视差"
+    description: "各队卡位被打乱，完成后逐格归位"
+  speedrun:
+    name: "速通"
+    description: "使用固定 3×3 末地冲刺卡和速通套装"
 worker:
   command:
     no-permission: "&#bababa[&#ff6b26宾果&#bababa]&#ededed 权限不足"
@@ -268,6 +313,8 @@ mode:
 
 vote:
   started: "&d宾果投票开始！请在 {0} 秒内选择模式、难度和胜利线数。"
+  remaining: "&7投票剩余 &e{0} &7秒"
+  cancelled-insufficient: "&c投票因参与人数不足而取消，玩家将返回匹配队列。"
   bossbar: "&d宾果投票 &7• 剩余 &e{0} &7秒"
   previous: "上一页"
   next: "下一页"
@@ -335,4 +382,7 @@ lines_vote:
 
 genesis:
   started: "&5创世！请在 {0} 秒内从随机物品中为本局挑选一个任务。"
+  triggered: "&5✦ 奇遇降临！本局触发【{0}】 &7{1}"
+  title: "&5奇遇"
   menu_title: "创世：为本局挑选任务"
+  menu_hint: "&e点击把该物品加入卡片"

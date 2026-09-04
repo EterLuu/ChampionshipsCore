@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.battlebox;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
@@ -66,8 +67,8 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
         steps.add(new SchematicStep(plugin -> schematic,
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.save-venue-template")),
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.use-worldedit-to-select-the-entire-venue-and-click-save-as-arena-schem"))) {
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.save-template.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.save-template.lore", 0))) {
             @Override
             public String capture(@NotNull ink.ziip.championshipscore.api.game.area.prepare.PrepareSession session,
                                   @NotNull Player player) {
@@ -93,64 +94,64 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                 }));
 
         steps.add(new WeSelectionStep("area_pos",
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.template-arena-boundary-name")),
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.frame-the-complete-hand-preserved-site-0-this-minimum-angle-determines-where-the-copy-will-be-pasted")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.arena-boundary.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.arena-boundary.lore", 0)),
                 Material.BEDROCK,
                 a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
                 (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.general-site-boundary-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_GENERAL_SITE_BOUNDARY_SET)));
 
         steps.add(new StandAndRunStep("spectator_spawn",
-                Component.text(GuiConfig.text("map-editor.copy.spectator-spawn-point")),
-                Component.text(GuiConfig.text("map-editor.copy.stand-in-a-spectator-position-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)),
                 Material.ENDER_EYE,
                 a -> cfg(a).getSpectatorSpawnPoint() != null,
                 (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
 
         steps.add(new StandAndRunStep("right_spawn",
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.the-team-s-spawn-point-on-the-right")),
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-at-the-birth-position-of-the-team-on-the-right-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.spawn-right.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.spawn-right.lore", 0)),
                 Material.GREEN_WOOL,
                 a -> cfg(a).getRightSpawnPoint() != null,
                 (a, loc) -> cfg(a).setRightSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.the-spawn-point-of-the-team-on-the-right-has-been-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_SPAWN_RIGHT_SET)));
 
         steps.add(new StandAndRunStep("left_spawn",
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.spawn-point-of-the-left-team")),
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-at-the-birth-position-of-the-left-team-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.spawn-left.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.spawn-left.lore", 0)),
                 Material.RED_WOOL,
                 a -> cfg(a).getLeftSpawnPoint() != null,
                 (a, loc) -> cfg(a).setLeftSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.the-spawn-point-of-the-left-team-has-been-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_SPAWN_LEFT_SET)));
 
         steps.add(new StandAndRunStep("right_prepare_spot",
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.right-team-ready-point")),
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-at-the-team-s-ready-position-on-the-right-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.prepare-right.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.prepare-right.lore", 0)),
                 Material.GREEN_STAINED_GLASS,
                 a -> cfg(a).getRightPrepareSpot() != null,
                 (a, loc) -> cfg(a).setRightPrepareSpot(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.right-team-ready-point-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_PREPARE_RIGHT_SET)));
 
         steps.add(new StandAndRunStep("left_prepare_spot",
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.left-team-ready-point")),
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.stand-at-the-team-s-ready-position-on-the-left-and-click")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.prepare-left.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.prepare-left.lore", 0)),
                 Material.RED_STAINED_GLASS,
                 a -> cfg(a).getLeftPrepareSpot() != null,
                 (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.left-team-ready-point-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_PREPARE_LEFT_SET)));
 
         steps.add(new WeSelectionStep("wool_pos",
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.wool-area")),
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.use-worldedit-to-select-the-wool-placement-area")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.wool-area.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.wool-area.lore", 0)),
                 Material.YELLOW_WOOL,
                 a -> cfg(a).getWoolPos1() != null && cfg(a).getWoolPos2() != null,
                 (a, sel) -> { cfg(a).setWoolPos1(sel[0]); cfg(a).setWoolPos2(sel[1]); },
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.battle-box.setup.wool-area-set"))));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_WOOL_SET)));
 
         steps.add(new ListStep("potion_spawn_points",
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.potion-spawn-point")),
-                Component.text(GuiConfig.text("map-editor.games.battle-box.setup.add-potion-spawn-locations-one-by-one")),
+                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.potion-spawn.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.potion-spawn.lore", 0)),
                 Material.LIME_WOOL,
                 a -> cfg(a).getPotionSpawnPoints(),
                 (a, values) -> cfg(a).setPotionSpawnPoints(values),

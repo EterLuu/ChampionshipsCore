@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -32,7 +33,8 @@ public final class GameStopSubCommand extends BaseSubCommand {
 
         GameTypeEnum game = GameTypeEnum.fromCommand(args[0]);
         if (game == null) {
-            Utils.sendAdminError(sender, "未知游戏：&#fff566" + args[0]);
+            Utils.sendAdminError(sender, MessageConfig.GAME_STOP_UNKNOWN_GAME
+                    .replace("%game%", args[0]));
             return true;
         }
 
@@ -45,12 +47,13 @@ public final class GameStopSubCommand extends BaseSubCommand {
             String available = mapInstances.stream()
                     .map(plugin.getGameManager()::getSpectatorInstanceToken)
                     .distinct().sorted().reduce((left, right) -> left + ", " + right).orElse("无");
-            Utils.sendAdminError(sender, "找不到该场地的活动实例：&#fff566" + args[2]
-                    + " &7| 可用实例：&f" + available);
+            Utils.sendAdminError(sender, MessageConfig.GAME_STOP_INSTANCE_MISSING
+                    .replace("%token%", args[2])
+                    .replace("%available%", available));
             return true;
         }
         if (tokenMatches.size() > 1) {
-            Utils.sendAdminError(sender, "实例标识不唯一，请使用命令补全重新选择；未结束任何实例。");
+            Utils.sendAdminError(sender, MessageConfig.GAME_STOP_INSTANCE_AMBIGUOUS);
             return true;
         }
         BaseGameInstance target = tokenMatches.getFirst();
@@ -69,19 +72,22 @@ public final class GameStopSubCommand extends BaseSubCommand {
                                @NotNull String area, @NotNull String token,
                                @Nullable GameManager.GameStopResult result, @Nullable Throwable failure) {
         Runnable response = () -> {
-            String target = "&#fff566" + game.commandName() + " &7/ &f" + area + " &7/ &f" + token;
+            String target = MessageConfig.GAME_STOP_INSTANCE
+                    .replace("%game%", game.commandName())
+                    .replace("%area%", area)
+                    .replace("%token%", token);
             if (failure != null || result == null) {
-                Utils.sendAdminError(sender, "结束实例时发生异常：" + target);
+                Utils.sendAdminError(sender, MessageConfig.GAME_STOP_EXCEPTION.replace("%instance%", target));
                 if (failure != null) plugin.getLogger().warning("game stop failed | " + failure.getMessage());
                 return;
             }
             switch (result) {
-                case SETTLEMENT_STARTED -> Utils.sendAdminSuccess(sender, "已按当前成绩正常结束并结算：" + target);
+                case SETTLEMENT_STARTED -> Utils.sendAdminSuccess(sender, MessageConfig.GAME_STOP_SETTLED.replace("%instance%", target));
                 case PRE_START_ABORTED -> Utils.sendAdminSuccess(sender,
-                        "实例尚未正式开赛，已精确作废并重置（不产生积分）：" + target);
-                case NOT_ACTIVE -> Utils.sendAdminInfo(sender, "该实例已结束或正在结算：" + target);
-                case NOT_REGISTERED -> Utils.sendAdminError(sender, "该实例已被替换，请重新使用命令补全选择：" + target);
-                case FAILED -> Utils.sendAdminError(sender, "实例未能安全结束，请查看服务端日志：" + target);
+                        MessageConfig.GAME_STOP_ABORTED.replace("%instance%", target));
+                case NOT_ACTIVE -> Utils.sendAdminInfo(sender, MessageConfig.GAME_STOP_NOT_ACTIVE.replace("%instance%", target));
+                case NOT_REGISTERED -> Utils.sendAdminError(sender, MessageConfig.GAME_STOP_REPLACED.replace("%instance%", target));
+                case FAILED -> Utils.sendAdminError(sender, MessageConfig.GAME_STOP_FAILED.replace("%instance%", target));
             }
         };
         if (Bukkit.isPrimaryThread()) response.run();

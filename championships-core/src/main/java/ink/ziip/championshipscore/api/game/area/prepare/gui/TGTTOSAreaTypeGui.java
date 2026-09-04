@@ -56,8 +56,7 @@ public final class TGTTOSAreaTypeGui {
     public static void open(@NotNull Player player, @NotNull PrepareSession session,
                             @NotNull TGTTOSAreaTypeStep step) {
         Holder holder = new Holder(session, step);
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54,
-                GuiConfig.text(MENU_PATH + ".copy.select-map-equipment-type"), List.of());
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54, "", List.of());
         holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -133,16 +132,8 @@ public final class TGTTOSAreaTypeGui {
     private static ItemStack option(@NotNull TGTTOSAreaTypeStep.Option option, String current) {
         ItemStack item = new ItemStack(option.icon());
         boolean selected = option.value().equalsIgnoreCase(current == null ? "" : current);
-        item.editMeta(meta -> {
-            meta.displayName(Component.text(option.name()).color(selected ? NamedTextColor.GREEN : NamedTextColor.AQUA)
-                    .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(option.description()).color(NamedTextColor.GRAY)
-                            .decoration(TextDecoration.ITALIC, false),
-                    Component.text(selected ? GuiConfig.text("map-editor.copy.current-selection") : GuiConfig.text("map-editor.copy.click-to-select"))
-                            .color(selected ? NamedTextColor.GREEN : NamedTextColor.WHITE)
-                            .decoration(TextDecoration.ITALIC, false)));
-        });
-        return item;
+        return ConfiguredGui.item(MENU_PATH + ".items.option." + option.value().toLowerCase(), selected ? "selected" : "idle",
+                java.util.Map.of(), option.icon(), Component.empty(), List.of(), false);
     }
 
     private static ItemStack filler() {

@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.buildmart.blueprint.BlueprintBlock;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprintAuditor;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -50,7 +51,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                 return true;
             }
             if (overriddenStars < 1 || overriddenStars > 5) {
-                Utils.sendAdminError(sender, "覆盖星级必须在 &#fff5661–5 &#ededed之间。");
+                Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_STARS_RANGE);
                 return true;
             }
         }
@@ -59,7 +60,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         try {
             selection = plugin.getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            Utils.sendAdminError(sender, "无法读取 WorldEdit 选区，请先选择蓝图区域。");
+            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_SELECTION_READ_FAILED);
             return true;
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
@@ -70,11 +71,15 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         int sizeY = max.getBlockY() - min.getBlockY() + 1;
         int sizeZ = max.getBlockZ() - min.getBlockZ() + 1;
         if (sizeY > MAX_SIZE) {
-            Utils.sendAdminError(sender, "蓝图高度上限 &#fff566" + MAX_SIZE + " &#696969• &#ededed当前 &#fff566" + sizeY);
+            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_HEIGHT_LIMIT
+                    .replace("%limit%", String.valueOf(MAX_SIZE)).replace("%current%", String.valueOf(sizeY)));
             return true;
         }
         if (sizeX > MAX_SIZE || sizeZ > MAX_SIZE) {
-            Utils.sendAdminError(sender, "蓝图长宽上限 &#fff566" + MAX_SIZE + " &#696969• &#ededed当前 &#fff566" + sizeX + "×" + sizeZ);
+            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_FOOTPRINT_LIMIT
+                    .replace("%limit%", String.valueOf(MAX_SIZE))
+                    .replace("%x%", String.valueOf(sizeX))
+                    .replace("%z%", String.valueOf(sizeZ)));
             return true;
         }
 
@@ -93,14 +98,15 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                     blocks.add(ox + "," + oy + "," + oz + "=" + normalized.getAsString());
                     blueprintBlocks.add(new BlueprintBlock(ox, oy, oz, normalized.clone()));
                     if (blocks.size() > MAX_BLOCKS) {
-                        Utils.sendAdminError(sender, "选区超过 &#fff566" + MAX_BLOCKS + " &#ededed个方块，已取消。");
+                        Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_BLOCK_LIMIT
+                            .replace("%limit%", String.valueOf(MAX_BLOCKS)));
                         return true;
                     }
                 }
             }
         }
         if (blocks.isEmpty()) {
-            Utils.sendAdminError(sender, "选区内没有可导出的方块。");
+            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_EMPTY_SELECTION);
             return true;
         }
 
@@ -123,20 +129,24 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         try {
             yaml.save(file);
         } catch (Exception exception) {
-            Utils.sendAdminError(sender, "保存蓝图失败：&#fff566" + exception.getMessage());
+            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED
+                    .replace("%detail%", String.valueOf(exception.getMessage())));
             return true;
         }
 
         manager.reloadOrderPool();
-        Utils.sendAdminSuccess(sender, "已导出蓝图 &#fff566" + name + " &#696969• &#ededed" + stars
-                + " 星 &#696969• &#ededed" + blocks.size() + " 个方块"
-                + (overriddenStars == null ? " &#696969• &#ededed已自动归类" : " &#696969• &#ededed手动覆盖"));
+        Utils.sendAdminSuccess(sender, (overriddenStars == null
+                ? MessageConfig.BUILD_MART_BLUEPRINT_EXPORTED_AUTO
+                : MessageConfig.BUILD_MART_BLUEPRINT_EXPORTED_MANUAL)
+                .replace("%name%", name)
+                .replace("%stars%", String.valueOf(stars))
+                .replace("%blocks%", String.valueOf(blocks.size())));
         BuildMartBlueprint saved = manager.getOrderPool().byId(name);
         if (saved != null) {
             BuildMartBlueprintAuditor.Audit audit = BuildMartBlueprintAuditor.audit(saved, inventory);
             BuildMartBlueprintAuditSubCommand.showAudit(sender, audit, config);
             if (overriddenStars != null && overriddenStars != suggestedStars) {
-                Utils.sendAdminError(sender, "手动星级与审查建议不同；未自动改写你的显式覆盖值。");
+                Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_OVERRIDE_NOT_SUGGESTED);
             }
         }
         return true;

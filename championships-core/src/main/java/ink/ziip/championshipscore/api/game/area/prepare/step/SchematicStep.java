@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -58,10 +59,10 @@ public class SchematicStep extends PrepareStep {
         } catch (Exception e) {
             String detail = e.getMessage();
             if (detail == null || detail.isBlank()) detail = e.getClass().getSimpleName();
-            return Utils.formatAdminError(GuiConfig.text("map-editor.steps.schematic.failed-to-save-template-please-check-worldedit-selection") + detail);
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SCHEMATIC_SAVE_FAILED.replace("%detail%", detail));
         }
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.schematic.venue-template-saved") + file.getName());
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SCHEMATIC_SAVED.replace("%file%", file.getName()));
     }
 
     /** Allows game-specific steps to persist metadata that cannot be recovered reliably from the file. */

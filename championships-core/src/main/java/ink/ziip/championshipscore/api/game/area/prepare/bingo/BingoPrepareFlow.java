@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.bingo;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -55,12 +56,12 @@ public class BingoPrepareFlow extends PrepareFlowDefinition {
 
         StandAndRunStep spectator = new StandAndRunStep(
                 "spectator_spawn",
-                Component.text(GuiConfig.text("map-editor.games.bingo.setup.set-the-spawn-point-of-spectators")),
-                Component.text(GuiConfig.text("map-editor.games.bingo.setup.after-reaching-the-target-point-click")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.bingo.items.spectator-spawn.title", 0)),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.bingo.items.spectator-spawn.lore", 0)),
                 Material.ENDER_EYE,
                 t -> ((BingoConfig) t.config()).getSpectatorSpawnPoint() != null,
                 (t, loc) -> ((BingoConfig) t.config()).setSpectatorSpawnPoint(loc),
-                Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.spectator-spawn-point-has-been-set")));
+                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET));
 
         return List.of(confirm, spectator);
     }

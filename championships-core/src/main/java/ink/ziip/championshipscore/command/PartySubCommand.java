@@ -24,7 +24,7 @@ public final class PartySubCommand extends BaseSubCommand {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length < 1) {
@@ -38,44 +38,45 @@ public final class PartySubCommand extends BaseSubCommand {
                 if (args.length != 2) { sendUsage(sender); return true; }
                 Player target = Bukkit.getPlayerExact(args[1]);
                 if (target == null || !parties.invite(uuid, target.getUniqueId())) {
-                    message(sender, "&#ff6b26邀请失败&#bababa；目标可能离线、已有同行小队，或你不是队长。");
+                    message(sender, MessageConfig.DAILY_PARTY_INVITE_FAILED);
                     return true;
                 }
-                message(sender, "&#31e061已邀请 &#24abff" + target.getName() + "&#ededed，邀请 60 秒有效。");
-                message(target, "&#fff566" + player.getName() + " &#ededed邀请你加入同行小队，使用 &#fff566/cc party accept");
+                message(sender, MessageConfig.DAILY_PARTY_INVITE_SENT.replace("%target%", target.getName()));
+                message(target, MessageConfig.DAILY_PARTY_INVITE_RECEIVED.replace("%player%", player.getName()));
             }
             case "accept" -> {
                 DailyParty party = parties.accept(uuid);
-                if (party == null) message(sender, "&#ff6b26没有有效邀请。");
-                else broadcast(party.members(), "&#31e061" + player.getName() + " &#ededed加入了同行小队。");
+                if (party == null) message(sender, MessageConfig.DAILY_PARTY_NO_INVITE);
+                else broadcast(party.members(), MessageConfig.DAILY_PARTY_MEMBER_JOINED_BROADCAST.replace("%player%", player.getName()));
             }
             case "leave" -> {
                 DailyParty party = parties.getParty(uuid);
-                if (party == null || !parties.leave(uuid)) message(sender, "&#ff6b26你不在同行小队中，或正在游戏。");
+                if (party == null || !parties.leave(uuid)) message(sender, MessageConfig.DAILY_PARTY_NOT_MEMBER_OR_PLAYING);
                 else {
-                    message(sender, "&#fff566已离开同行小队。");
-                    broadcast(party.members(), "&#fff566" + player.getName() + " &#ededed离开了同行小队。");
+                    message(sender, MessageConfig.DAILY_PARTY_LEFT_COMMAND);
+                    broadcast(party.members(), MessageConfig.DAILY_PARTY_MEMBER_LEFT_BROADCAST.replace("%player%", player.getName()));
                 }
             }
             case "disband" -> {
                 DailyParty party = parties.getParty(uuid);
                 Set<UUID> members = party == null ? Set.of() : party.members();
-                if (!parties.disband(uuid)) message(sender, "&#ff6b26只有队长可以解散同行小队，且游戏中不可操作。");
-                else broadcast(members, "&#fff566同行小队已解散。");
+                if (!parties.disband(uuid)) message(sender, MessageConfig.DAILY_PARTY_DISBAND_DENIED);
+                else broadcast(members, MessageConfig.DAILY_PARTY_DISBANDED_COMMAND);
             }
             case "info" -> {
                 DailyParty party = parties.getParty(uuid);
                 if (party == null) {
-                    message(sender, "&#bababa当前没有同行小队；邀请玩家时会自动创建。");
+                    message(sender, MessageConfig.DAILY_PARTY_NONE);
                     return true;
                 }
                 String names = party.members().stream().map(Bukkit::getOfflinePlayer)
                         .map(offline -> offline.getName() == null ? offline.getUniqueId().toString() : offline.getName())
                         .reduce((left, right) -> left + ", " + right).orElse("-");
                 String leader = Bukkit.getOfflinePlayer(party.leader()).getName();
-                message(sender, "&#fff566队长: &#ededed" + (leader == null ? party.leader() : leader)
-                        + " &#696969• &#fff566成员: &#ededed" + names + " &#696969• &#fff566选择: &#ededed"
-                        + (party.selectedGame() == null ? "-" : party.selectedGame().name()));
+                message(sender, MessageConfig.DAILY_PARTY_INFO
+                        .replace("%leader%", leader == null ? party.leader().toString() : leader)
+                        .replace("%members%", names)
+                        .replace("%game%", party.selectedGame() == null ? "-" : party.selectedGame().name()));
             }
             default -> sendUsage(sender);
         }
@@ -90,7 +91,7 @@ public final class PartySubCommand extends BaseSubCommand {
     }
 
     private void message(CommandSender sender, String value) {
-        sender.sendMessage(Utils.translateColorCodes(MessageConfig.DAILY_PREFIX + value));
+        sender.sendMessage(Utils.translateColorCodes(MessageConfig.DAILY_PREFIXED.replace("%message%", value)));
     }
 
     @Override

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -60,14 +61,14 @@ public class ListStep extends PrepareStep {
     public String listAdd(@NotNull PrepareSession session, @NotNull Player player) {
         adder.accept(session.getTarget(), Utils.getLocationConfigString(Utils.centerOnBlock(player.getLocation())));
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.list-editor.points-added-current") + listCount(session) + GuiConfig.text("map-editor.copy.colored-item-count-suffix"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_POINT_ADDED_CURRENT.replace("%count%", String.valueOf(listCount(session))));
     }
 
     @Override
     public String listClear(@NotNull PrepareSession session, @NotNull Player player) {
         clearer.accept(session.getTarget());
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.steps.list-editor.point-list-cleared"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_POINT_LIST_CLEARED);
     }
 
     @Override
@@ -81,7 +82,7 @@ public class ListStep extends PrepareStep {
         List<String> values = values(session);
         for (int i = 0; i < values.size(); i++) {
             String value = values.get(i);
-            entries.add(new ListEntry(GuiConfig.text("map-editor.steps.list-editor.point") + (i + 1), List.of(formatLocation(value))));
+            entries.add(new ListEntry(GuiConfig.text("map-editor.menus.list-editor.items.entry.title", java.util.Map.of("title", i + 1)), List.of(formatLocation(value))));
         }
         return entries;
     }
@@ -93,7 +94,7 @@ public class ListStep extends PrepareStep {
         values.set(index, Utils.getLocationConfigString(Utils.centerOnBlock(player.getLocation())));
         setter.accept(session.getTarget(), values);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.updated") + (index + 1) + GuiConfig.text("map-editor.copy.points"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_UPDATED.replace("%order%", String.valueOf(index + 1)));
     }
 
     @Override
@@ -101,12 +102,12 @@ public class ListStep extends PrepareStep {
                                int index, int newOrder) {
         List<String> values = values(session);
         if (index < 0 || index >= values.size() || newOrder < 1 || newOrder > values.size())
-            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.the-serial-number-must-be-between-1-and") + values.size() + GuiConfig.text("map-editor.copy.range-end-suffix"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace("%max%", String.valueOf(values.size())));
         String value = values.remove(index);
         values.add(newOrder - 1, value);
         setter.accept(session.getTarget(), values);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.the-point-has-been-adjusted-to-the") + newOrder + GuiConfig.text("map-editor.copy.item-suffix"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_POINT_ADJUSTED_TO.replace("%order%", String.valueOf(newOrder)));
     }
 
     @Override
@@ -116,7 +117,7 @@ public class ListStep extends PrepareStep {
         values.remove(index);
         setter.accept(session.getTarget(), values);
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.copy.deleted") + (index + 1) + GuiConfig.text("map-editor.copy.points"));
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_DELETED.replace("%order%", String.valueOf(index + 1)));
     }
 
     private List<String> values(@NotNull PrepareSession session) {

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.event.EventStateStore;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -28,20 +29,21 @@ public final class EventStartSubCommand extends BaseSubCommand {
         }
         GameTypeEnum game = EventCommandSupport.parse(args[0]);
         if (game == null || !plugin.getGameManager().isGameEnabled(game) || !EventCommandSupport.canSchedule(game)) {
-            Utils.sendAdminError(sender, "该游戏不能作为当前正式比赛启动");
+            Utils.sendAdminError(sender, MessageConfig.EVENT_START_GAME_INVALID);
             return true;
         }
         EventStateStore.ActiveEvent active = new EventStateStore(plugin).load();
         if (active == null) {
-            Utils.sendAdminError(sender, "尚未从 cc-web 导入比赛就绪的赛事配置和阵容");
+            Utils.sendAdminError(sender, MessageConfig.EVENT_START_NO_EVENT);
             return true;
         }
         if (active.archived()) {
-            Utils.sendAdminError(sender, "当前赛事已归档，请先导入下一届赛事");
+            Utils.sendAdminError(sender, MessageConfig.EVENT_START_ARCHIVED);
             return true;
         }
         if (!active.allows(game)) {
-            Utils.sendAdminError(sender, "该游戏不在当前赛事“" + active.title() + "”的游戏列表中");
+            Utils.sendAdminError(sender, MessageConfig.EVENT_START_GAME_NOT_IN_EVENT
+                    .replace("%event%", active.title()).replace("%game%", game.name()));
             return true;
         }
 
@@ -52,13 +54,15 @@ public final class EventStartSubCommand extends BaseSubCommand {
 
         ScheduleManager.EventAction action = plugin.getScheduleManager().startOrStopFormalEvent(game);
         if (action == ScheduleManager.EventAction.STARTED) {
-            Utils.sendAdminSuccess(sender, "正式比赛已开始准备：&#fff566" + game);
+            Utils.sendAdminSuccess(sender, MessageConfig.EVENT_START_STARTED
+                    .replace("%game%", game.name()));
         } else if (action == ScheduleManager.EventAction.STOPPED) {
-            Utils.sendAdminInfo(sender, "已通过重复 start 紧急停止正式比赛：&#fff566" + game);
+            Utils.sendAdminInfo(sender, MessageConfig.EVENT_START_EMERGENCY_STOPPED
+                    .replace("%game%", game.name()));
         } else if (action == ScheduleManager.EventAction.UNAVAILABLE) {
-            Utils.sendAdminError(sender, "Bingo 执行端尚未就绪、已有比赛运行，或参赛者当前不可用");
+            Utils.sendAdminError(sender, MessageConfig.EVENT_START_UNAVAILABLE);
         } else {
-            Utils.sendAdminError(sender, "该游戏没有可用的正式比赛赛程");
+            Utils.sendAdminError(sender, MessageConfig.EVENT_START_NO_SCHEDULE);
         }
         return true;
     }

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -29,7 +30,7 @@ public final class AdminVisibilitySubCommand extends BaseSubCommand {
         if (args.length == 1) {
             target = Bukkit.getPlayerExact(args[0]);
             if (target == null) {
-                Utils.sendAdminError(sender, "玩家不在线：" + args[0]);
+                Utils.sendAdminError(sender, MessageConfig.ADMIN_PLAYER_OFFLINE.replace("%player%", args[0]));
                 return true;
             }
         } else if (sender instanceof Player player) {
@@ -39,9 +40,11 @@ public final class AdminVisibilitySubCommand extends BaseSubCommand {
             return true;
         }
 
-        sender.sendMessage("§6[玩家显隐] §f" + target.getName() + " §7(" + target.getUniqueId() + ")");
+        sender.sendMessage(MessageConfig.ADMIN_VISIBILITY_HEADER
+                .replace("%player%", target.getName())
+                .replace("%uuid%", String.valueOf(target.getUniqueId())));
         for (String line : plugin.getVisibilityManager().describe(target.getUniqueId()))
-            sender.sendMessage("§7- §f" + line);
+            sender.sendMessage(MessageConfig.ADMIN_VISIBILITY_LINE.replace("%line%", line));
         return true;
     }
 

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -24,18 +25,17 @@ public class SpawnSubCommand extends BaseSubCommand {
             return true;
         }
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, "该命令只能由玩家执行");
+            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (plugin.getGameManager().getBasePlayerArea(player.getUniqueId()) != null
                 || plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId()) != null) {
-            player.sendMessage(Utils.translateColorCodes(
-                    "&#bababa[&#ff6b26大厅&#bababa] &#ededed正在游戏或观战，不能返回大厅"));
+            player.sendMessage(Utils.translateColorCodes(MessageConfig.SPAWN_IN_GAME_OR_SPECTATING));
             return true;
         }
         Location lobby = CCConfig.LOBBY_LOCATION;
         if (lobby == null || lobby.getWorld() == null) {
-            Utils.sendAdminError(sender, "大厅出生点尚未配置");
+            Utils.sendAdminError(sender, MessageConfig.SPAWN_MISSING);
             return true;
         }
         player.teleport(lobby);

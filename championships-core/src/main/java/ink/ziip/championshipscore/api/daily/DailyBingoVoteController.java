@@ -14,6 +14,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.TaskData;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TagFilters;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSource;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
+import ink.ziip.championshipscore.configuration.config.message.GuiText;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -41,6 +42,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
@@ -229,11 +231,7 @@ final class DailyBingoVoteController {
                 : plugin.getGameManager().getBingoManager().dailyVoteSeconds();
         MessageService messages = MessageService.global();
         int phaseSeconds = secondsLeft;
-        broadcast(messages == null ? switch (next) {
-            case MODE -> "&d宾果投票开始！请选择模式、难度和胜利线数。";
-            case DIFFICULTY, LINES -> throw new IllegalStateException("Intermediate vote pages do not have timers");
-            case GENESIS -> "&d创世奇遇：每位玩家选择一个物品加入本局卡片。";
-        } : messages.tr(switch (next) {
+        broadcast(messages.tr(switch (next) {
             case MODE -> "vote.started";
             case DIFFICULTY, LINES -> throw new IllegalStateException("Intermediate vote pages do not have timers");
             case GENESIS -> "genesis.started";
@@ -249,7 +247,7 @@ final class DailyBingoVoteController {
                 if (result == null || result.isDone()) return;
                 long online = voters.stream().filter(uuid -> Bukkit.getPlayer(uuid) != null).count();
                 if (!daily.isDailyLobby() || online < 2) {
-                    broadcast("&c投票因参与人数不足而取消，玩家将返回匹配队列。");
+                    broadcast(MessageService.global().tr("vote.cancelled-insufficient"));
                     cancel();
                     return;
                 }
@@ -257,7 +255,7 @@ final class DailyBingoVoteController {
                 updateBossBar();
                 if (secondsLeft <= 0) finishPhase();
                 else if (secondsLeft <= 5 || secondsLeft == 10)
-                    broadcast("&7投票剩余 &e" + secondsLeft + " &7秒");
+                    broadcast(MessageService.global().tr("vote.remaining", secondsLeft));
             }
         }, 20L, 20L);
     }
@@ -276,19 +274,18 @@ final class DailyBingoVoteController {
                 }
                 selectedMode = BingoMode.valueOf(winner.name());
                 MessageService messages = MessageService.global();
-                broadcast(messages == null ? "&6本局模式：&f" + modeName(selectedMode)
-                        : messages.tr(winner == ModeChoice.RANDOM ? "vote.result_random" : "vote.result",
+                broadcast(messages.tr(winner == ModeChoice.RANDOM ? "vote.result_random" : "vote.result",
                         messages.tr("mode." + selectedMode.name().toLowerCase() + ".name")));
                 List<BingoDifficulty> difficultyChoices = new ArrayList<>(List.of(BingoDifficulty.values()));
                 if (teams.stream().anyMatch(team -> team.getMembers().size() <= 1))
                     difficultyChoices.remove(BingoDifficulty.EXTREME);
                 selectedDifficulty = winner(difficultyChoices, difficultyVotes);
-                broadcast(messages == null ? "&6本局难度：&f" + difficultyName(selectedDifficulty)
-                        : messages.tr("difficulty_vote.result", messages.tr("card_difficulty." + selectedDifficulty.name().toLowerCase() + ".name")));
+                broadcast(messages.tr("difficulty_vote.result",
+                        messages.tr("card_difficulty." + selectedDifficulty.name().toLowerCase() + ".name")));
                 int lines = selectedMode == BingoMode.SPEEDRUN
                         ? winner(List.of(1, 2, 3, 4, 5), lineVotes) : 1;
                 if (selectedMode == BingoMode.SPEEDRUN)
-                    broadcast(messages == null ? "&6本局胜利条件：&f" + lines + " 条线" : messages.tr("lines_vote.result", lines));
+                    broadcast(messages.tr("lines_vote.result", lines));
                 complete(lines);
             }
             case GENESIS -> finishGenesis();
@@ -304,12 +301,17 @@ final class DailyBingoVoteController {
             remix = BingoRemix.random();
         }
         if (remix != BingoRemix.NONE) {
-            broadcast("&5✦ 奇遇降临！本局触发【" + remixName(remix) + "】 &7" + remixDescription(remix));
+            MessageService remixMessages = MessageService.global();
+            String remixName = remixMessages.tr("remix." + remix.name().toLowerCase(Locale.ROOT) + ".name");
+            String remixDescription = remixMessages.tr("remix." + remix.name().toLowerCase(Locale.ROOT) + ".description");
+            broadcast(remixMessages.tr("genesis.triggered", remixName, remixDescription));
             for (UUID voter : voters) {
                 Player player = Bukkit.getPlayer(voter);
                 if (player != null) player.showTitle(Title.title(
-                        Component.text("奇遇", NamedTextColor.LIGHT_PURPLE),
-                        Component.text(remixName(remix) + " · " + remixDescription(remix), NamedTextColor.GRAY)));
+                        Component.text(remixMessages.tr("genesis.title"), NamedTextColor.LIGHT_PURPLE),
+                        Component.text(remixName, NamedTextColor.GRAY)
+                                .append(Component.text(GuiText.SEPARATOR, NamedTextColor.GRAY))
+                                .append(Component.text(remixDescription, NamedTextColor.GRAY))));
             }
         }
         if (remix == BingoRemix.GENESIS) {
@@ -377,12 +379,7 @@ final class DailyBingoVoteController {
     private void open(Player player, VoteHolder holder) {
         MessageService messages = MessageService.global();
         Phase votePhase = holder.votePhase();
-        String title = messages == null ? switch (votePhase) {
-            case MODE -> "宾果模式投票";
-            case DIFFICULTY -> "宾果难度投票";
-            case LINES -> "宾果胜利线数投票";
-            case GENESIS -> "创世物品选择";
-        } : messages.tr(switch (votePhase) {
+        String title = messages.tr(switch (votePhase) {
             case MODE -> "vote.menu_title";
             case DIFFICULTY -> "difficulty_vote.menu_title";
             case LINES -> "lines_vote.menu_title";
@@ -435,14 +432,10 @@ final class DailyBingoVoteController {
             int line = lines;
             int count = (int) lineVotes.values().stream().filter(value -> value == line).count();
             boolean picked = Integer.valueOf(line).equals(lineVotes.get(viewer));
-            List<String> lore = new ArrayList<>(List.of(messages == null
-                    ? "完成 " + line + " 条宾果线即可赢得本局"
-                    : messages.tr("lines_vote.menu_desc", line), ""));
-            lore.add(messages == null ? "当前票数：" + count : messages.tr("lines_vote.menu_count", count));
-            lore.add(messages == null ? (picked ? "✔ 你的选择" : "点击投票")
-                    : messages.tr(picked ? "lines_vote.menu_picked" : "lines_vote.menu_hint"));
-            ItemStack stack = item(Material.LIGHT,
-                    messages == null ? line + " 条线获胜" : messages.tr("lines_vote.menu_option", line),
+            List<String> lore = new ArrayList<>(List.of(messages.tr("lines_vote.menu_desc", line), ""));
+            lore.add(messages.tr("lines_vote.menu_count", count));
+            lore.add(messages.tr(picked ? "lines_vote.menu_picked" : "lines_vote.menu_hint"));
+            ItemStack stack = item(Material.LIGHT, messages.tr("lines_vote.menu_option", line),
                     lore, NamedTextColor.YELLOW, picked);
             ItemMeta meta = stack.getItemMeta();
             if (meta != null) {
@@ -465,7 +458,8 @@ final class DailyBingoVoteController {
         for (int index = 0; index < options.size(); index++) {
             Material material = options.get(index);
             inventory.setItem(9 + index, item(material, material.key().asString(),
-                    List.of(material == selected ? "✔ 你的选择" : "点击把该物品加入卡片"),
+                    List.of(MessageService.global().tr(selected == material
+                            ? "vote.menu_picked" : "genesis.menu_hint")),
                     NamedTextColor.LIGHT_PURPLE, material == selected));
         }
     }
@@ -473,21 +467,16 @@ final class DailyBingoVoteController {
     private void renderNavigation(Inventory inventory, VoteHolder holder) {
         Phase current = holder.votePhase();
         MessageService messages = MessageService.global();
-        String previous = messages == null ? "上一页" : messages.tr("vote.previous");
-        String next = messages == null ? "下一页" : messages.tr("vote.next");
-        String close = messages == null ? "关闭" : messages.tr("vote.close");
-        String page = messages == null ? switch (current) {
-            case MODE -> "第 1 / 3 页 • 模式";
-            case DIFFICULTY -> "第 2 / 3 页 • 难度";
-            case LINES -> "第 3 / 3 页 • 胜利线数";
-            case GENESIS -> "";
-        } : messages.tr(switch (current) {
+        String previous = messages.tr("vote.previous");
+        String next = messages.tr("vote.next");
+        String close = messages.tr("vote.close");
+        String page = messages.tr(switch (current) {
             case MODE -> "vote.page_mode";
             case DIFFICULTY -> "vote.page_difficulty";
             case LINES -> "vote.page_lines";
             case GENESIS -> "vote.page_mode";
         });
-        String freeNavigation = messages == null ? "可自由翻页调整选择" : messages.tr("vote.free_navigation");
+        String freeNavigation = messages.tr("vote.free_navigation");
         inventory.setItem(PREVIOUS_SLOT, current == Phase.MODE
                 ? item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of(), NamedTextColor.GRAY, false)
                 : item(Material.ARROW, previous, List.of(), NamedTextColor.WHITE, false));
@@ -502,20 +491,19 @@ final class DailyBingoVoteController {
                          UUID viewer, Map<UUID, T> votes, boolean locked) {
         int count = (int) votes.values().stream().filter(choice::equals).count();
         MessageService messages = MessageService.global();
-        String name = messages == null ? langKey : messages.tr(langKey + ".name");
-        List<String> lore = new ArrayList<>(messages == null ? List.of() : messages.lines(langKey + ".lore"));
+        String name = messages.tr(langKey + ".name");
+        List<String> lore = new ArrayList<>(messages.lines(langKey + ".lore"));
         lore.add("");
-        if (locked) lore.add(messages == null ? "当前阵容不可选择" : messages.tr(
+        if (locked) lore.add(messages.tr(
                 langKey.startsWith("mode.") ? "vote.menu_locked" : "difficulty_vote.menu_locked"));
         else {
             String countKey = langKey.startsWith("mode.") ? "vote.menu_count"
                     : langKey.startsWith("card_difficulty.") ? "difficulty_vote.menu_count" : "lines_vote.menu_count";
             String hintKey = langKey.startsWith("mode.") ? "vote.menu_hint"
                     : langKey.startsWith("card_difficulty.") ? "difficulty_vote.menu_hint" : "lines_vote.menu_hint";
-            lore.add(messages == null ? "当前票数：" + count : messages.tr(countKey, count));
+            lore.add(messages.tr(countKey, count));
             boolean picked = choice.equals(votes.get(viewer));
-            lore.add(messages == null ? (picked ? "✔ 你的选择" : "点击投票")
-                    : messages.tr(picked ? (langKey.startsWith("mode.") ? "vote.menu_picked"
+            lore.add(messages.tr(picked ? (langKey.startsWith("mode.") ? "vote.menu_picked"
                     : langKey.startsWith("card_difficulty.") ? "difficulty_vote.menu_picked" : "lines_vote.menu_picked") : hintKey));
         }
         ItemStack stack = item(locked ? Material.BARRIER : icon, name, lore,
@@ -595,9 +583,7 @@ final class DailyBingoVoteController {
     private void updateBossBar() {
         if (result == null || result.isDone() || phase == null) return;
         MessageService messages = MessageService.global();
-        String title = messages == null
-                ? "宾果投票 · 剩余 " + secondsLeft + " 秒"
-                : messages.tr("vote.bossbar", secondsLeft);
+        String title = messages.tr("vote.bossbar", secondsLeft);
         String legacyTitle = LEGACY.serialize(LEGACY.deserialize(title));
         if (bossBar == null) bossBar = Bukkit.createBossBar(legacyTitle, BarColor.PURPLE, BarStyle.SOLID);
         else bossBar.setTitle(legacyTitle);
@@ -609,36 +595,5 @@ final class DailyBingoVoteController {
         }
     }
 
-    private static String modeName(BingoMode mode) { return switch (mode) {
-        case DOMINATION -> "占据"; case SPEEDRUN -> "速通"; case QUANTITY -> "竞量"; case POINTS -> "积分";
-    }; }
-    private static String difficultyName(BingoDifficulty difficulty) { return switch (difficulty) {
-        case EASY -> "新手"; case LITE -> "简单"; case NORMAL -> "标准"; case HARD -> "困难"; case EXTREME -> "极难";
-    }; }
-    private static String remixName(BingoRemix remix) { return switch (remix) {
-        case NONE -> "无"; case NETHER -> "下界"; case SCALE -> "缩放"; case DIFFERENTIAL -> "差分";
-        case UPGRADE -> "升级"; case BLIND -> "视障"; case FEAST -> "盛宴"; case COOP -> "合作";
-        case GENESIS -> "创世"; case COLORFUL -> "缤纷"; case CHAIN -> "连锁"; case VARIATION -> "变奏";
-        case FINALE -> "终曲"; case ETERNAL_NIGHT -> "永夜"; case POLAR_DAY -> "极昼";
-        case PARALLAX -> "视差"; case SPEEDRUN -> "速通";
-    }; }
-    private static String remixDescription(BingoRemix remix) { return switch (remix) {
-        case NONE -> "";
-        case NETHER -> "全员在下界开局，卡片偏向下界任务";
-        case SCALE -> "卡片缩为 3×3 或 4×4";
-        case DIFFERENTIAL -> "每位玩家看到不同任务，队友共享格位进度";
-        case UPGRADE -> "获得下界合金、鞘翅和烟花升级套装";
-        case BLIND -> "任务初始隐藏，并随时间逐项揭示";
-        case FEAST -> "整张卡只由进度，或统计与事件任务组成";
-        case COOP -> "全场合作完成同一张卡";
-        case GENESIS -> "每位玩家选一个物品加入卡片";
-        case COLORFUL -> "卡片优先包含十六种染料颜色任务";
-        case CHAIN -> "首格后只能完成相邻格";
-        case VARIATION -> "每四分钟刷新所有未完成任务";
-        case FINALE -> "第五分钟起每分钟永久封锁一格";
-        case ETERNAL_NIGHT -> "时间锁定深夜，难度设为困难";
-        case POLAR_DAY -> "时间锁定白昼，难度设为简单";
-        case PARALLAX -> "各队卡位被打乱，完成后逐格归位";
-        case SPEEDRUN -> "使用固定 3×3 末地冲刺卡和速通套装";
-    }; }
+
 }

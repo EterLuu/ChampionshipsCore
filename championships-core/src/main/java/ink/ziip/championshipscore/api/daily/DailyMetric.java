@@ -1,11 +1,13 @@
 package ink.ziip.championshipscore.api.daily;
 
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Metric registry shared by the DAILY stats and leaderboard menus, so both always list the same
@@ -64,8 +66,13 @@ public enum DailyMetric {
     }
 
     /** Label lookup key inside gui.yml. */
+    /** Label lookup key for one of three timed-record attempts. */
+    public @NotNull String labelKey(int attempt) {
+        return String.format(java.util.Locale.ROOT, "%s-best%d", labelKey(), attempt);
+    }
+
     public @NotNull String labelKey() {
-        return "daily.metrics." + name().toLowerCase(Locale.ROOT).replace('_', '-');
+        return "daily.menus.statistics-screen.items.metric.states." + name().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 
     /** Stable leaderboard id: per map when a map is given, otherwise the cross-map aggregate. */
@@ -99,9 +106,15 @@ public enum DailyMetric {
         long seconds = totalSeconds % 60L;
         String duration = "%02d:%02d:%02d".formatted(hours, minutes, seconds);
         return switch (metric) {
-            case PKW_STARS_TIME -> "%d⭐ %s".formatted(Math.round(value), duration);
-            case PKW_POINTS_TIME -> "%d分 %s".formatted(Math.round(value), duration);
+            case PKW_STARS_TIME -> GuiConfig.line(valueKey(metric), 0, Map.of(
+                    "stars", Long.toString(Math.round(value)), "duration", duration));
+            case PKW_POINTS_TIME -> GuiConfig.line(valueKey(metric), 0, Map.of(
+                    "points", Long.toString(Math.round(value)), "duration", duration));
             default -> format(metric, value);
         };
+    }
+
+    private static @NotNull String valueKey(@NotNull DailyMetric metric) {
+        return metric.labelKey() + ".lore";
     }
 }

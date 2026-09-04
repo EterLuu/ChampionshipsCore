@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -30,7 +31,7 @@ public final class MapRenameService {
                        @NotNull String requestedOldName, @NotNull String newName) {
         if (!Bukkit.isPrimaryThread()) throw new IllegalStateException("Map rename must begin on the main thread");
         if (!renameRunning.compareAndSet(false, true)) {
-            Utils.sendAdminError(sender, "已有地图改名正在进行，请稍后再试");
+            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_RENAME_ALREADY_RUNNING);
             return;
         }
 
@@ -53,7 +54,8 @@ public final class MapRenameService {
         Path newPath = oldPath.resolveSibling(newName + ".yml");
         if (Files.exists(newPath)) {
             renameRunning.set(false);
-            Utils.sendAdminError(sender, "目标配置文件 &#fff566" + newPath.getFileName() + " &#ededed已存在");
+            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_RENAME_TARGET_CONFIG_EXISTS
+                    .replace("%file%", String.valueOf(newPath.getFileName())));
             return;
         }
         try {
@@ -68,11 +70,12 @@ public final class MapRenameService {
         String newWorldName = buildMartWorldPlan == null ? oldWorldName : buildMartWorldPlan.newWorldName();
         if (!manager.detachAreaForRename(oldName)) {
             renameRunning.set(false);
-            Utils.sendAdminError(sender, "场地卸载失败；配置和数据库均未修改");
+            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_RENAME_DETACH_FAILED);
             return;
         }
 
-        Utils.sendAdminInfo(sender, "已卸载场地 &#fff566" + oldName + "&#ededed，正在等待持久化队列并迁移记录……");
+        Utils.sendAdminInfo(sender, MessageConfig.MAP_EDITOR_RENAME_DETACH_WAITING
+                .replace("%map%", oldName));
         RenameContext context = new RenameContext(sender, game, manager, oldName, newName,
                 oldDisplayName, oldAssetName, oldWorldName, newWorldName,
                 buildMartWorldPlan != null && buildMartWorldPlan.movesWorld(), oldPath, newPath);
@@ -82,20 +85,20 @@ public final class MapRenameService {
 
     private String validate(BaseGameInstanceManager<?> manager, GameTypeEnum game,
                             String oldName, String newName) {
-        if (manager == null) return "该游戏没有地图管理器";
-        if (oldName == null) return "找不到原场地";
-        if (manager.getMapConfig(oldName) == null) return "原场地配置尚未加载，不能改名";
+        if (manager == null) return MessageConfig.MAP_EDITOR_RENAME_NO_MANAGER;
+        if (oldName == null) return MessageConfig.MAP_EDITOR_RENAME_SOURCE_MISSING;
+        if (manager.getMapConfig(oldName) == null) return MessageConfig.MAP_EDITOR_RENAME_SOURCE_NOT_LOADED;
         if (newName.isBlank() || newName.length() > 32 || newName.matches(".*[\\\\/:*?\"<>|].*"))
-            return "新场地名不能为空、不能超过 32 个字符，且不能包含 \\/:*?\"<>|";
-        if (newName.equals(".") || newName.equals("..")) return "新场地名无效";
-        if (oldName.equalsIgnoreCase(newName)) return "新旧场地名不能相同（不支持仅修改大小写）";
+            return MessageConfig.MAP_EDITOR_RENAME_INVALID_NAME;
+        if (newName.equals(".") || newName.equals("..")) return MessageConfig.MAP_EDITOR_RENAME_INVALID_RELATIVE;
+        if (oldName.equalsIgnoreCase(newName)) return MessageConfig.MAP_EDITOR_RENAME_SAME_NAME;
         if (manager.getAreaNameList().stream().anyMatch(name -> name.equalsIgnoreCase(newName)))
-            return "目标场地 &#fff566" + newName + " &#ededed已存在";
-        if (plugin.getPrepareSessionManager().hasActiveSessions()) return "仍有地图 prepare 会话进行中，不能改名";
+            return MessageConfig.MAP_EDITOR_RENAME_TARGET_EXISTS.replace("%map%", newName);
+        if (plugin.getPrepareSessionManager().hasActiveSessions()) return MessageConfig.MAP_EDITOR_RENAME_PREPARE_ACTIVE;
         if (plugin.getScheduleManager().isFormalEventRunning(game))
-            return "该游戏的正式赛程正在运行，不能改名";
+            return MessageConfig.MAP_EDITOR_RENAME_EVENT_RUNNING;
         if (!plugin.getGameManager().getSpectatableMapInstances(game, oldName).isEmpty()
-                || !manager.canRenameArea(oldName)) return "场地正在运行，不能改名";
+                || !manager.canRenameArea(oldName)) return MessageConfig.MAP_EDITOR_RENAME_AREA_RUNNING;
         return null;
     }
 
@@ -115,7 +118,7 @@ public final class MapRenameService {
                     context.oldDisplayName(), context.newName());
             if (!plugin.getRankManager().renamePendingAreaRecords(
                     context.game(), context.oldDisplayName(), context.newName())) {
-                throw new IllegalStateException("无法同步待提交积分记录");
+                throw new IllegalStateException(MessageConfig.MAP_EDITOR_RENAME_PENDING_SYNC_FAILED);
             }
             pendingRenamed = true;
             if (context.movesDedicatedBuildMartWorld()) {
@@ -137,13 +140,14 @@ public final class MapRenameService {
                     context.oldName(), context.newName()));
             boolean loaded = onMain(() -> context.manager().loadAreaAfterRename(
                     context.newName(), context.newWorldName()));
-            if (!loaded) throw new IllegalStateException("新名称场地加载失败");
+            if (!loaded) throw new IllegalStateException(MessageConfig.MAP_EDITOR_RENAME_NEW_AREA_LOAD_FAILED);
             connection.commit();
             plugin.getDailyStatsManager().renameMap(context.game(), context.oldName(), context.newName());
             plugin.getRankManager().refreshAfterPendingPointWrites();
-            finish(context.sender(), true, "已将场地 &#fff566" + context.oldName()
-                    + " &#ededed改名为 &#fff566" + context.newName()
-                    + " &#696969• &#ededed同步数据库记录 &#fff566" + counts.total() + " &#ededed条");
+            finish(context.sender(), true, MessageConfig.MAP_EDITOR_RENAME_COMPLETED
+                    .replace("%old%", context.oldName())
+                    .replace("%new%", context.newName())
+                    .replace("%count%", String.valueOf(counts.total())));
             return;
         } catch (Exception exception) {
             if (connection != null) {
@@ -157,7 +161,7 @@ public final class MapRenameService {
                     managedWorldRenamed, pendingRenamed);
             plugin.getLogger().log(Level.SEVERE, "地图改名失败，已执行回滚："
                     + context.oldName() + " -> " + context.newName(), exception);
-            finish(context.sender(), false, "地图改名失败，原场地已尝试恢复；请检查控制台");
+            finish(context.sender(), false, MessageConfig.MAP_EDITOR_RENAME_FAILED_RESTORED);
         } finally {
             if (connection != null) {
                 try {

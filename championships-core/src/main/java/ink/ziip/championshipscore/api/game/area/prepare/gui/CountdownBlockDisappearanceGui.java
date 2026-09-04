@@ -61,7 +61,7 @@ public final class CountdownBlockDisappearanceGui {
                             @NotNull CountdownBlockDisappearanceStep step) {
         Holder holder = new Holder(session, step);
         GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 27,
-                GuiConfig.text(MENU_PATH + ".copy.the-countdown-block-disappears"), List.of());
+                GuiConfig.text(MENU_PATH + ".title"), List.of());
         holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -112,9 +112,8 @@ public final class CountdownBlockDisappearanceGui {
         Vector first = config.getCountdownBlockDisappearancePos1();
         Vector second = config.getCountdownBlockDisappearancePos2();
         boolean enabled = first != null && second != null;
-        String selection = enabled ? GuiConfig.text("map-editor.copy.already-set-prefix") + volume(first, second) + GuiConfig.text("map-editor.menus.countdown-blocks.copy.blocks") : GuiConfig.text("map-editor.menus.countdown-blocks.copy.not-set-function-turned-off");
-        inventory.setItem(SELECTION_SLOT, configured("selection", null,
-                Map.of("selection", selection)));
+        inventory.setItem(SELECTION_SLOT, configured("selection", enabled ? "enabled" : "disabled",
+                Map.of("volume", enabled ? String.valueOf(volume(first, second)) : "")));
 
         CountdownBlockDisappearanceStep.Mode current =
                 CountdownBlockDisappearanceStep.Mode.from(config.getCountdownBlockDisappearanceMode());
@@ -137,9 +136,14 @@ public final class CountdownBlockDisappearanceGui {
     private static ItemStack modeItem(@NotNull CountdownBlockDisappearanceStep.Mode mode,
                                       @NotNull CountdownBlockDisappearanceStep.Mode current,
                                       boolean enabled) {
-        return item(mode.icon(), mode.displayName(), mode == current ? NamedTextColor.GREEN : NamedTextColor.WHITE,
-                mode == current ? GuiConfig.text("map-editor.menus.countdown-blocks.copy.current-approach") : GuiConfig.text("map-editor.copy.click-to-select"),
-                enabled ? GuiConfig.text("map-editor.menus.countdown-blocks.copy.will-be-completed-3-seconds-before-the-countdown-to-the-start-of-the-game") : GuiConfig.text("map-editor.menus.countdown-blocks.copy.please-set-up-worldedit-selection-first"));
+        String item = switch (mode) {
+            case RANDOM -> "random";
+            case DOOR_EAST_WEST -> "east-west";
+            case DOOR_NORTH_SOUTH -> "north-south";
+            case DOOR_VERTICAL -> "vertical";
+            case DIRECT -> "direct";
+        };
+        return configured(item, mode == current ? "current" : "idle", Map.of("enabled", enabled ? "1" : "0"));
     }
 
     private static ItemStack item(@NotNull Material material, @NotNull String name,

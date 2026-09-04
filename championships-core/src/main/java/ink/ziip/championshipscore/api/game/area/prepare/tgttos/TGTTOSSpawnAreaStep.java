@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.tgttos;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -48,10 +49,10 @@ public final class TGTTOSSpawnAreaStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.please-use-worldedit-to-select-two-endpoints-first"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
         }
         if (selection[0].getBlockY() != selection[1].getBlockY()) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.games.tgttos.steps.spawn-area.the-generated-area-must-be-a-worldedit-selection-that-is-exactly-one-block-high"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_TGT_SPAWN_AREA_FLAT);
         }
 
         TGTTOSConfig config = (TGTTOSConfig) session.getTarget().config();
@@ -66,7 +67,7 @@ public final class TGTTOSSpawnAreaStep extends PrepareStep {
         }
         session.markDirty();
         return Utils.formatAdminSuccess(spawnType == SpawnType.CHICKEN
-                ? GuiConfig.text("map-editor.games.tgttos.steps.spawn-area.chicken-spawn-area-set")
-                : GuiConfig.text("map-editor.games.tgttos.steps.spawn-area.player-spawn-area-set"));
+                ? MessageConfig.MAP_EDITOR_TGT_CHICKEN_SPAWN_SET
+                : MessageConfig.MAP_EDITOR_TGT_PLAYER_SPAWN_SET);
     }
 }

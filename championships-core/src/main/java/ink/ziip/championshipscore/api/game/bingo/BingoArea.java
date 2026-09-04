@@ -306,12 +306,12 @@ public class BingoArea extends BaseMultiTeamGameInstance {
 
             int elapsed = Math.max(0, activeDuration - timer);
             int graceRemaining = Math.max(0, PVP_GRACE_SECONDS - elapsed);
-            String timerTitle = MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN
-                    .replace("%time%", Utils.formatMinutesSeconds(timer));
-            timerTitle += " &#bababa• " + (pvpEnabled
-                    ? MessageConfig.BINGO_PVP_ACTIVE
-                    : MessageConfig.BINGO_PVP_PROTECTION
-                    .replace("%time%", String.valueOf(graceRemaining)));
+            String timerTitle = pvpEnabled
+                    ? MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PVP
+                    .replace("%time%", Utils.formatMinutesSeconds(timer))
+                    : MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PROTECTION
+                    .replace("%time%", Utils.formatMinutesSeconds(timer))
+                    .replace("%grace%", String.valueOf(graceRemaining));
             updateGameTimerBossBar(timerTitle, timer, activeDuration);
             if (!pvpEnabled && graceRemaining >= 1 && graceRemaining <= 10) {
                 sendActionBarToAllGamePlayers(MessageConfig.BINGO_PVP_START_COUNT_DOWN

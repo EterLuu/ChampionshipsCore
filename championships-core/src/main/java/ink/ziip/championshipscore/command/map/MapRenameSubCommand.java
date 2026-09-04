@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.map;
 import ink.ziip.championshipscore.api.game.area.rename.MapRenameService;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -30,13 +31,14 @@ public final class MapRenameSubCommand extends BaseSubCommand {
         }
         GameTypeEnum game = parseGame(args[0]);
         if (game == null) {
-            Utils.sendAdminError(sender, "未知游戏，可用：&#fff566" + String.join(", ", allGameNames()));
+            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_UNKNOWN_GAME
+                    .replace("%games%", String.join(", ", allGameNames())));
             return true;
         }
         if (!plugin.getGameManager().isGameManagerLoaded(game)) {
-            Utils.sendAdminInfo(sender, "该游戏当前未启用，正在加载地图管理器……");
+            Utils.sendAdminInfo(sender, MessageConfig.MAP_EDITOR_COMMAND_LOADING_FOR_RENAME);
             if (!plugin.getGameManager().loadGameForEditing(game)) {
-                Utils.sendAdminError(sender, "该游戏的地图管理器无法加载");
+                Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_MANAGER_LOAD_FAILED);
                 return true;
             }
             plugin.getServer().getScheduler().runTaskLater(plugin,

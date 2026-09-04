@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.tgttos;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
@@ -15,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 
 /** Selects the map's player equipment/game-mode profile from the prepare menu. */
 public final class TGTTOSAreaTypeStep extends PrepareStep {
@@ -22,15 +24,15 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
     }
 
     private static final List<Option> OPTIONS = List.of(
-            new Option("BOAT", Material.OAK_BOAT, "BOAT", GuiConfig.text("map-editor.games.tgttos.steps.area-type.oak-boat-survival")),
-            new Option("ROAD", Material.DIAMOND_PICKAXE, "ROAD", GuiConfig.text("map-editor.games.tgttos.steps.area-type.diamond-pickaxe-and-team-concrete-survival")),
-            new Option("NONE", Material.BARRIER, "NONE", GuiConfig.text("map-editor.games.tgttos.steps.area-type.no-items-adventure")),
-            new Option("ELYTRA", Material.ELYTRA, "ELYTRA", GuiConfig.text("map-editor.games.tgttos.steps.area-type.indestructible-elytra-adventure"))
+            new Option("BOAT", Material.OAK_BOAT, "BOAT", GuiConfig.text("map-editor.games.tgttos.menus.area-type.items.option.boat.title")),
+            new Option("ROAD", Material.DIAMOND_PICKAXE, "ROAD", GuiConfig.text("map-editor.games.tgttos.menus.area-type.items.option.road.title")),
+            new Option("NONE", Material.BARRIER, "NONE", GuiConfig.text("map-editor.games.tgttos.menus.area-type.items.option.none.title")),
+            new Option("ELYTRA", Material.ELYTRA, "ELYTRA", GuiConfig.text("map-editor.games.tgttos.menus.area-type.items.option.elytra.title"))
     );
 
     public TGTTOSAreaTypeStep() {
-        super("area_type", Component.text(GuiConfig.text("map-editor.games.tgttos.steps.area-type.map-equipment-type")),
-                Component.text(GuiConfig.text("map-editor.games.tgttos.steps.area-type.open-the-menu-and-select-the-starting-mode-and-items")), Material.CHEST, StepCaptureType.SELECT);
+        super("area_type", Component.text(GuiConfig.text("map-editor.menus.step-list.games.tgttos.items.area-type.title")),
+                Component.text(GuiConfig.line("map-editor.menus.step-list.games.tgttos.items.area-type.lore", 0)), Material.CHEST, StepCaptureType.SELECT);
     }
 
     public static List<Option> options() {
@@ -47,7 +49,10 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
     public String stateText(PrepareSession session) {
         if (session == null) return null;
         Option option = find(config(session).getAreaType());
-        return option == null ? GuiConfig.text("map-editor.copy.not-set") : option.name() + "（" + option.description() + "）";
+        return option == null
+                ? GuiConfig.text("map-editor.menus.step-list.items.status.states.unset.title")
+                : GuiConfig.text("map-editor.menus.step-list.games.tgttos.items.area-type.states.selected.title",
+                        Map.of("option", option.name(), "description", option.description()));
     }
 
     @Override
@@ -59,8 +64,7 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
     public String select(@NotNull PrepareSession session, @NotNull Option option) {
         config(session).setAreaType(option.value());
         session.markDirty();
-        return Utils.formatAdminSuccess(GuiConfig.text("map-editor.games.tgttos.steps.area-type.map-equipment-type-set") + option.name()
-                + " &#696969• &#ededed" + option.description());
+        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TGT_AREA_TYPE_SET.replace("%value%", option.name()).replace("%description%", option.description()));
     }
 
     private static TGTTOSConfig config(PrepareSession session) {

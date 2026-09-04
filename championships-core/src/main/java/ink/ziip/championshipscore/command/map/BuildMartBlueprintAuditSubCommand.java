@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprin
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprintAuditor;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -41,7 +42,8 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
         String areaName = args.length >= 2 && !isInteger(args[1]) ? args[1] : null;
         BuildMartConfig config = resolveConfig(manager, areaName);
         if (areaName != null && config == null) {
-            Utils.sendAdminError(sender, "找不到 Build Mart 地图 &#fff566" + areaName);
+            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_MAP_MISSING
+                    .replace("%map%", areaName));
             return true;
         }
         BuildMartMaterialManifest.AuditInventory inventory = config == null
@@ -65,7 +67,8 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
         }
         BuildMartBlueprint blueprint = manager.getOrderPool().byId(args[0].toLowerCase(Locale.ROOT));
         if (blueprint == null) {
-            Utils.sendAdminError(sender, "找不到蓝图 &#fff566" + args[0]);
+            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_MISSING
+                    .replace("%blueprint%", args[0]));
             return true;
         }
         showAudit(sender, BuildMartBlueprintAuditor.audit(blueprint, inventory), config);
@@ -82,55 +85,78 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
                 .toList();
         int pages = Math.max(1, (audits.size() + PAGE_SIZE - 1) / PAGE_SIZE);
         if (page > pages) {
-            Utils.sendAdminError(sender, "页码超出范围，当前共 &#fff566" + pages + " &#ededed页");
+            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_PAGE_OUT_OF_RANGE
+                    .replace("%pages%", String.valueOf(pages)));
             return;
         }
         long covered = audits.stream().filter(BuildMartBlueprintAuditor.Audit::fullyCovered).count();
         long mismatched = audits.stream().filter(a -> a.configuredStars() != a.suggestedStars()).count();
         String map = config == null ? "无材料清单" : config.getAreaName();
-        Utils.sendAdminInfo(sender, "蓝图全量审查 &#696969• &#ededed地图 &#fff566" + map
-                + " &#696969• &#ededed第 &#fff566" + page + "/" + pages + " &#ededed页");
-        Utils.sendAdminInfo(sender, "总数 &#fff566" + audits.size() + " &#696969• &#ededed材料完整 &#fff566"
-                + covered + " &#696969• &#ededed建议调整星级 &#fff566" + mismatched);
+        Utils.sendAdminInfo(sender, MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_HEADER
+                .replace("%map%", map)
+                .replace("%page%", String.valueOf(page))
+                .replace("%pages%", String.valueOf(pages)));
+        Utils.sendAdminInfo(sender, MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_SUMMARY
+                .replace("%total%", String.valueOf(audits.size()))
+                .replace("%covered%", String.valueOf(covered))
+                .replace("%mismatched%", String.valueOf(mismatched)));
         int from = (page - 1) * PAGE_SIZE;
         int to = Math.min(audits.size(), from + PAGE_SIZE);
         for (BuildMartBlueprintAuditor.Audit audit : audits.subList(from, to)) {
             String coverage = !audit.coverageChecked() ? "?" : audit.fullyCovered() ? "✓" : "缺"
                     + audit.uncoveredMaterials().size();
             String stars = audit.configuredStars() == audit.suggestedStars()
-                    ? audit.configuredStars() + "★" : audit.configuredStars() + "→" + audit.suggestedStars() + "★";
-            Utils.sendAdminInfo(sender, "&#fff566" + audit.name() + " &#696969• &#ededed" + stars
-                    + " &#696969• &#ededed分数 " + audit.score() + " &#696969• &#ededed" + audit.blocks()
-                    + " 块 &#696969• &#ededed材料 " + coverage);
+                    ? MessageConfig.BUILD_MART_BLUEPRINT_STARS_SAME.replace("%stars%", String.valueOf(audit.configuredStars()))
+                    : MessageConfig.BUILD_MART_BLUEPRINT_STARS_CHANGED
+                            .replace("%configured%", String.valueOf(audit.configuredStars()))
+                            .replace("%suggested%", String.valueOf(audit.suggestedStars()));
+            Utils.sendAdminInfo(sender, MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_ROW
+                    .replace("%name%", audit.name())
+                    .replace("%stars%", stars)
+                    .replace("%score%", String.valueOf(audit.score()))
+                    .replace("%blocks%", String.valueOf(audit.blocks()))
+                    .replace("%coverage%", coverage));
         }
     }
 
     static void showAudit(CommandSender sender, BuildMartBlueprintAuditor.Audit audit, BuildMartConfig config) {
-        Utils.sendAdminInfo(sender, "蓝图 &#fff566" + audit.name() + " &#696969• &#ededed当前 "
-                + audit.configuredStars() + "★ &#696969• &#ededed建议 &#fff566" + audit.suggestedStars()
-                + "★ &#696969• &#ededed难度分 &#fff566" + audit.score());
-        Utils.sendAdminInfo(sender, "结构 &#696969• &#ededed" + audit.blocks() + " 块 &#696969• &#ededed"
-                + audit.uniqueMaterials() + " 种材料 &#696969• &#ededed尺寸 " + audit.dimensions()
-                + " &#696969• &#ededed连通区域 " + audit.components());
-        Utils.sendAdminInfo(sender, "状态 &#696969• &#ededed带状态 " + audit.statefulBlocks()
-                + " &#696969• &#ededed方向 " + audit.directionalBlocks() + " &#696969• &#ededed复杂 "
-                + audit.complexStateBlocks() + " &#696969• &#ededed严格连接 " + audit.strictConnectableBlocks());
+        Utils.sendAdminInfo(sender, MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_TITLE
+                .replace("%name%", audit.name())
+                .replace("%configured%", String.valueOf(audit.configuredStars()))
+                .replace("%suggested%", String.valueOf(audit.suggestedStars()))
+                .replace("%score%", String.valueOf(audit.score())));
+        Utils.sendAdminInfo(sender, MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_STRUCTURE
+                .replace("%blocks%", String.valueOf(audit.blocks()))
+                .replace("%materials%", String.valueOf(audit.uniqueMaterials()))
+                .replace("%dimensions%", audit.dimensions())
+                .replace("%components%", String.valueOf(audit.components())));
+        Utils.sendAdminInfo(sender, MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_STATE
+                .replace("%stateful%", String.valueOf(audit.statefulBlocks()))
+                .replace("%directional%", String.valueOf(audit.directionalBlocks()))
+                .replace("%complex%", String.valueOf(audit.complexStateBlocks()))
+                .replace("%strict%", String.valueOf(audit.strictConnectableBlocks())));
         if (!audit.coverageChecked()) {
-            Utils.sendAdminError(sender, "材料清单不存在，材料覆盖未检查。"
-                    + (config == null ? "请先加载 Build Mart 地图。" : "请先保存该地图的材料区。"));
+            Utils.sendAdminError(sender, config == null
+                    ? MessageConfig.BUILD_MART_BLUEPRINT_COVERAGE_NO_MAP
+                    : MessageConfig.BUILD_MART_BLUEPRINT_COVERAGE_NO_ZONES);
         } else {
             String islands = audit.materialIslands().isEmpty() ? "-" : audit.materialIslands().stream()
                     .map(island -> island.displayName()).collect(Collectors.joining("、"));
-            Utils.sendAdminInfo(sender, "材料 &#696969• &#ededed直接 " + audit.directMaterials()
-                    + " &#696969• &#ededed可加工 " + audit.craftableMaterials() + " &#696969• &#ededed区域 " + islands);
+            Utils.sendAdminInfo(sender, MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_MATERIALS
+                    .replace("%direct%", String.valueOf(audit.directMaterials()))
+                    .replace("%craftable%", String.valueOf(audit.craftableMaterials()))
+                    .replace("%islands%", islands));
             if (audit.uncoveredMaterials().isEmpty()) {
-                Utils.sendAdminSuccess(sender, "当前材料表可完整覆盖该蓝图。");
+                Utils.sendAdminSuccess(sender, MessageConfig.BUILD_MART_BLUEPRINT_COVERAGE_FULL);
             } else {
-                Utils.sendAdminError(sender, "未覆盖材料：&#fff566" + audit.uncoveredMaterials().stream()
-                        .map(Material::getKey).map(key -> key.getKey()).collect(Collectors.joining("、")));
+                Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_COVERAGE_UNCOVERED
+                        .replace("%materials%", audit.uncoveredMaterials().stream()
+                                .map(Material::getKey).map(key -> key.getKey()).collect(Collectors.joining("、"))));
             }
         }
-        for (String warning : audit.warnings()) Utils.sendAdminError(sender, "审查提醒：" + warning);
+        for (String warning : audit.warnings())
+                Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_WARNING
+                        .replace("%warning%", warning));
     }
 
     static @Nullable BuildMartConfig resolveConfig(BuildMartManager manager, @Nullable String requested) {

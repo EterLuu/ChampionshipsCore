@@ -10,12 +10,16 @@ import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /** Configurable text used by inventory menus, hotbar controls and map-preparation screens. */
 public final class GuiConfig extends BaseConfigurationFile {
     private static YamlConfiguration active = new YamlConfiguration();
+    private static final Pattern LEGACY_GAME_FLOW_SECTION =
+            Pattern.compile("^map-editor\\.games\\.([a-z0-9-]+)\\.(?:steps|setup)\\.(.+)$");
 
     public GuiConfig(@NotNull ChampionshipsCore plugin) {
         super(plugin);
@@ -33,12 +37,39 @@ public final class GuiConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 15;
+        return 22;
     }
 
     @Override
     protected void loadCustomFileOptions() {
         active = configuration;
+    }
+
+    @Override
+    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdated) throws IOException {
+        // v15 -> v16: shared copy was folded into menu-local text and global button templates.
+        for (String key : outdated.getKeys(true)) {
+            if (outdated.isConfigurationSection(key)) continue;
+            String migrated = migrateLegacyKey(key);
+            if (migrated != null && !configuration.isSet(migrated)) {
+                configuration.set(migrated, outdated.get(key));
+            }
+        }
+        super.loadFromOutdatedConfiguration(outdated);
+    }
+
+    private static @Nullable String migrateLegacyKey(@NotNull String key) {
+        return switch (key) {
+            case "common.copy.previous-page" -> "buttons.previous.title";
+            case "common.copy.next-page" -> "buttons.next.title";
+            case "common.copy.page" -> "buttons.page.title";
+            case "common.copy.back" -> "buttons.back.title";
+            case "common.copy.close" -> "buttons.close.title";
+            case "common.copy.refresh" -> "buttons.refresh.title";
+            case "common.copy.confirm" -> "buttons.confirm.title";
+            case "common.copy.cancel" -> "buttons.cancel.title";
+            default -> null;
+        };
     }
 
     public static @NotNull String text(@NotNull String path) {
@@ -52,6 +83,15 @@ public final class GuiConfig extends BaseConfigurationFile {
 
     public static @NotNull List<String> lines(@NotNull String path) {
         return active.getStringList(path);
+    }
+
+    public static @NotNull String line(@NotNull String path, int index) {
+        List<String> lines = active.getStringList(path);
+        return index >= 0 && index < lines.size() ? lines.get(index) : "";
+    }
+
+    public static @NotNull String line(@NotNull String path, int index, @NotNull Map<String, ?> placeholders) {
+        return replace(line(path, index), placeholders);
     }
 
     public static @NotNull List<String> lines(@NotNull String path, @NotNull Map<String, ?> placeholders) {
@@ -110,21 +150,50 @@ public final class GuiConfig extends BaseConfigurationFile {
                 LegacyText.component(path), List.of(), false));
     }
 
-    /** Reads a configured button while retaining the existing implementation as a safe fallback. */
+    /** Reads a configured item, inheriting unset fields from its shared button template. */
     public static @NotNull ItemSpec item(@NotNull String path, String state,
                                          @NotNull Map<String, ?> placeholders,
                                          @NotNull ItemSpec fallback) {
+        String use = active.isString(path + ".use") ? active.getString(path + ".use", "") : "";
+        ItemSpec template = use.isBlank() ? fallback : button(use, state, placeholders, fallback);
+        return item(path, state, placeholders, fallback, template);
+    }
+
+    /** Reads a shared button by stable identifier. */
+    public static @NotNull ItemSpec button(@NotNull ButtonId button,
+                                           @NotNull Map<String, ?> placeholders,
+                                           @NotNull ItemSpec fallback) {
+        return button(button.id(), null, placeholders, fallback);
+    }
+
+    /** Reads a shared button template; menu items may override any individual field. */
+    public static @NotNull ItemSpec button(@NotNull String id,
+                                           @NotNull Map<String, ?> placeholders,
+                                           @NotNull ItemSpec fallback) {
+        return button(id, null, placeholders, fallback);
+    }
+
+    private static @NotNull ItemSpec button(@NotNull String id, @Nullable String state,
+                                            @NotNull Map<String, ?> placeholders,
+                                            @NotNull ItemSpec fallback) {
+        return item("buttons." + id, state, placeholders, fallback, fallback);
+    }
+
+    private static @NotNull ItemSpec item(@NotNull String path, @Nullable String state,
+                                          @NotNull Map<String, ?> placeholders,
+                                          @NotNull ItemSpec fallback,
+                                          @NotNull ItemSpec template) {
         String statePath = state == null || state.isBlank() ? null : path + ".states." + state;
-        int slot = stateValueInt(statePath, path, "slot", fallback.slot());
-        Material material = materialValue(statePath, path, "material", fallback.material());
+        int slot = stateValueInt(statePath, path, "slot", template.slot());
+        Material material = materialValue(statePath, path, "material", template.material());
         String configuredTitle = stateValueString(statePath, path, "title", null);
         List<String> configuredLore = stateValueLines(statePath, path, "lore");
-        boolean glint = stateValueBoolean(statePath, path, "glint", fallback.glint());
+        boolean glint = stateValueBoolean(statePath, path, "glint", template.glint());
         return new ItemSpec(slot, material,
-                configuredTitle == null ? fallback.title()
+                configuredTitle == null ? template.title()
                         : LegacyText.component(replace(configuredTitle, placeholders))
                         .decoration(TextDecoration.ITALIC, false),
-                configuredLore == null ? fallback.lore() : configuredLore.stream()
+                configuredLore == null ? template.lore() : configuredLore.stream()
                         .map(line -> LegacyText.component(replace(line, placeholders))
                                 .decoration(TextDecoration.ITALIC, false)).toList(), glint);
     }

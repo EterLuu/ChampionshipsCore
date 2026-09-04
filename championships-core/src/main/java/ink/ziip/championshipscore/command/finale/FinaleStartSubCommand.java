@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +42,7 @@ final class FinaleStartSubCommand extends BaseSubCommand {
         ChampionshipTeam right = optionCount == 3 ? plugin.getTeamManager().getTeam(args[1]) : null;
         ChampionshipTeam left = optionCount == 3 ? plugin.getTeamManager().getTeam(args[2]) : null;
         if (optionCount == 3 && (right == null || left == null || right.equals(left))) {
-            Utils.sendAdminError(sender, "请指定两支不同的有效队伍");
+            Utils.sendAdminError(sender, MessageConfig.FINALE_START_TEAM_REQUIRED);
             return true;
         }
         plugin.getScheduleManager().requestFinale(

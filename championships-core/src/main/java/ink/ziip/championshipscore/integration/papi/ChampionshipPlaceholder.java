@@ -94,7 +94,8 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
             if (team != null) return ChampionshipTabText.bracketedPrefix(team.getColoredName());
             BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
             if (area == null) area = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
-            String status = area == null ? "&a大厅" : "&6" + area.getGameTypeEnum();
+            String status = area == null ? MessageConfig.PRESENTATION_DAILY_LOBBY
+                    : MessageConfig.PRESENTATION_DAILY_GAME.replace("%game%", area.getGameTypeEnum().toString());
             return ChampionshipTabText.bracketedPrefix(status);
         }
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
@@ -112,14 +113,16 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
     private String tabFooterStatus(OfflinePlayer player) {
         if (isDaily()) {
             ChampionshipTeam team = visibleTeam(player);
-            if (team != null) return ChampionshipTabText.dailyTeamFooter(team.getColoredName());
+            if (team != null) return ChampionshipTabText.dailyTeamFooter(
+                    MessageConfig.PRESENTATION_TAB_DAILY_TEAM_FOOTER, team.getColoredName());
             DailyPlayerSnapshot snapshot = plugin.getDailyManager().snapshot(player.getUniqueId());
             String game = "-".equals(snapshot.activeGame()) ? snapshot.selectedGame() : snapshot.activeGame();
-            return ChampionshipTabText.currentGameFooter(game);
+            return ChampionshipTabText.currentGameFooter(
+                    MessageConfig.PRESENTATION_TAB_CURRENT_GAME_FOOTER, game);
         }
         ChampionshipTeam team = visibleTeam(player);
         String name = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
-        return ChampionshipTabText.teamFooter(name,
+        return ChampionshipTabText.teamFooter(MessageConfig.PRESENTATION_TAB_TEAM_FOOTER, name,
                 plugin.getRankManager().getPlayerTeamPoints(player.getUniqueId()));
     }
 

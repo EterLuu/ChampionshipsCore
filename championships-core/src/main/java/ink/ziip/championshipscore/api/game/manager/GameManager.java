@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.manager;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
@@ -1492,13 +1493,17 @@ public class GameManager extends BaseManager {
         String name = instance.getGameConfig().getAreaName();
         if (name == null || name.isBlank()) name = instance.getGameConfig().getConfigName();
         if (instance instanceof RemoteBingoInstance remote)
-            return name + " · 对局 " + remote.matchId().toString().substring(0, 8);
-        if (instance instanceof ParkourTagArea)
-            return name + " · 分区 " + (instance.getCopyIndex() + 1);
-        if (instance instanceof BattleBoxArea)
-            return name + " · 分区 " + (instance.getCopyIndex() + 1);
+            return MessageConfig.SPECTATOR_DISPLAY_REMOTE
+                    .replace("%area%", name)
+                    .replace("%token%", remote.matchId().toString().substring(0, 8));
+        if (instance instanceof ParkourTagArea || instance instanceof BattleBoxArea)
+            return MessageConfig.SPECTATOR_DISPLAY_COPY
+                    .replace("%area%", name)
+                    .replace("%token%", Integer.toString(instance.getCopyIndex() + 1));
         if (instance instanceof ink.ziip.championshipscore.api.game.acerace.AceRaceArea)
-            return name + " · 实例 " + (instance.getCopyIndex() + 1);
+            return MessageConfig.SPECTATOR_DISPLAY_INSTANCE
+                    .replace("%area%", name)
+                    .replace("%token%", Integer.toString(instance.getCopyIndex() + 1));
         return name;
     }
 

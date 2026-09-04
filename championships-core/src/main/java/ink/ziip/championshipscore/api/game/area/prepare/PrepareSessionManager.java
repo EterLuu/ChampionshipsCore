@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -130,11 +131,11 @@ public class PrepareSessionManager extends BaseManager {
     public void createAndEnter(@NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String name) {
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
         if (mgr == null) {
-            Utils.sendAdminError(player, "该游戏不可用");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_GAME_UNAVAILABLE);
             return;
         }
         if (!mgr.addArea(name, "")) {
-            Utils.sendAdminError(player, "无法创建地图草稿；请确认名称未被占用");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_CREATE_CONFLICT);
             return;
         }
         var target = mgr.getSetupTarget(gameType, name);
@@ -149,28 +150,28 @@ public class PrepareSessionManager extends BaseManager {
     public boolean deleteArea(@NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String name) {
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
         if (mgr == null || mapLocks.containsKey(lockKey(gameType, name))) {
-            Utils.sendAdminError(player, "地图正在编辑或游戏管理器不可用，无法删除");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_DELETE_UNAVAILABLE);
             return false;
         }
         if (!mgr.deleteArea(name)) {
-            Utils.sendAdminError(player, "地图正在运行或删除配置失败；物理世界未作任何改动");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_DELETE_FAILED);
             return false;
         }
-        Utils.sendAdminSuccess(player, "已删除地图配置 &#fff566" + name
-                + " &#696969• &#ededed物理世界保留，请按需使用 /cc admin world delete");
+        Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_SESSION_DELETED
+                .replace("%map%", name));
         return true;
     }
 
     public void enterSession(@NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String areaName) {
         PrepareFlowDefinition flow = flows.get(gameType);
         if (flow == null) {
-            Utils.sendAdminError(player, "该游戏暂不支持 prepare");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_UNSUPPORTED_GAME);
             return;
         }
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
         var target = mgr == null ? null : mgr.getSetupTarget(gameType, areaName);
         if (target == null) {
-            Utils.sendAdminError(player, "找不到地图 &#fff566" + areaName);
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_MAP_MISSING.replace("%map%", areaName));
             return;
         }
         if (sessions.containsKey(player.getUniqueId())) exitSession(player);
@@ -178,8 +179,8 @@ public class PrepareSessionManager extends BaseManager {
         UUID owner = mapLocks.putIfAbsent(lockKey, player.getUniqueId());
         if (owner != null && !owner.equals(player.getUniqueId())) {
             Player editor = Bukkit.getPlayer(owner);
-            Utils.sendAdminError(player, "该地图正由 &#fff566"
-                    + (editor == null ? owner : editor.getName()) + " &#ededed编辑");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_LOCKED_BY_EDITOR
+                    .replace("%editor%", editor == null ? String.valueOf(owner) : editor.getName()));
             return;
         }
 
@@ -191,8 +192,9 @@ public class PrepareSessionManager extends BaseManager {
         player.setAllowFlight(true);
         player.setFlying(true);
         teleportToEditorLocation(player, session);
-        Utils.sendAdminSuccess(player, "进入 prepare &#bababa• &#fff566" + gameType + " &#696969/ &#fff566" + areaName);
-        Utils.sendAdminInfo(player, "使用热键栏配置 prepare &#696969• 打开箱子编辑步骤 &#696969• 屏障退出");
+        Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_SESSION_ENTERED
+                .replace("%game%", gameType.name()).replace("%map%", areaName));
+        Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_SESSION_USAGE_HINT);
         refreshSidebar(player);
     }
 
@@ -205,7 +207,7 @@ public class PrepareSessionManager extends BaseManager {
         restoreSnapshot(player);
         snapshots.remove(player.getUniqueId());
         deleteSnapshotFile(player.getUniqueId());
-        Utils.sendAdminSuccess(player, "已退出 prepare &#696969• 物品栏已还原");
+        Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_SESSION_EXITED);
         refreshSidebar(player);
     }
 
@@ -219,7 +221,8 @@ public class PrepareSessionManager extends BaseManager {
                 && step.captureType() != StepCaptureType.TOGGLE
                 && step.captureType() != StepCaptureType.SELECT
                 && !session.getFlow().isInCorrectWorld(player, session.getTarget())) {
-            Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_GO_TO_WORLD
+                    .replace("%world%", session.getTarget().worldName()));
             return;
         }
         switch (step.captureType()) {
@@ -249,10 +252,10 @@ public class PrepareSessionManager extends BaseManager {
             case "publish" -> {
                 if (!validate(player, session, true)) return;
                 if (!session.getTarget().canSaveMap()) {
-                    Utils.sendAdminError(player, "同一地图仍有游戏实例运行，无法发布");
+                    Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_PUBLISH_INSTANCE_RUNNING);
                     return;
                 }
-                Utils.sendAdminInfo(player, "正在发布地图，请稍候……");
+                Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_SESSION_PUBLISH_STARTED);
                 UUID playerId = player.getUniqueId();
                 session.getFlow().publish(session).whenComplete((published, error) -> {
                     Runnable completion = () -> completePublish(playerId, session,
@@ -268,15 +271,16 @@ public class PrepareSessionManager extends BaseManager {
 
     private void saveDraft(@NotNull Player player, @NotNull PrepareSession session) {
         if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
-            Utils.sendAdminError(player, "请先前往当前地图世界 " + session.getTarget().worldName());
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_GO_TO_WORLD
+                    .replace("%world%", session.getTarget().worldName()));
             return;
         }
         if (!session.getTarget().canSaveMap()) {
-            Utils.sendAdminError(player, "同一地图仍有游戏实例运行，无法保存草稿");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_SAVE_INSTANCE_RUNNING);
             return;
         }
         session.markDirty();
-        Utils.sendAdminInfo(player, "正在保存地图草稿，请稍候……");
+        Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_SESSION_SAVE_STARTED);
         UUID playerId = player.getUniqueId();
         session.getFlow().saveDraft(session).whenComplete((saved, error) -> {
             Runnable completion = () -> completeDraftSave(playerId, session,
@@ -291,7 +295,7 @@ public class PrepareSessionManager extends BaseManager {
         if (player == null || sessions.get(playerId) != session)
             return;
         if (!saved) {
-            Utils.sendAdminError(player, "草稿保存失败，请查看控制台日志");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_SAVE_FAILED);
             PrepareModeInventory.refresh(player, session);
             return;
         }
@@ -305,7 +309,7 @@ public class PrepareSessionManager extends BaseManager {
         player.setAllowFlight(true);
         player.setFlying(true);
         PrepareModeInventory.refresh(player, session);
-        Utils.sendAdminSuccess(player, "地图草稿已保存 &#696969• &#ededed仍需完成全部点位后再发布");
+        Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_SESSION_SAVED);
         refreshSidebar(player);
     }
 
@@ -317,7 +321,7 @@ public class PrepareSessionManager extends BaseManager {
         if (player == null || sessions.get(playerId) != session)
             return;
         if (!published) {
-            Utils.sendAdminError(player, "地图发布失败，请查看控制台日志；草稿仍保持锁定状态");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_PUBLISH_FAILED);
             PrepareModeInventory.refresh(player, session);
             return;
         }
@@ -328,8 +332,8 @@ public class PrepareSessionManager extends BaseManager {
         if (destination != null && destination.getWorld() != null)
             player.teleport(destination);
         PrepareModeInventory.refresh(player, session);
-        Utils.sendAdminSuccess(player, "地图已发布 &#696969• &#edededrevision &#fff566"
-                + session.getTarget().config().getPrepareRevision());
+        Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_SESSION_PUBLISHED
+                .replace("%revision%", String.valueOf(session.getTarget().config().getPrepareRevision())));
         refreshSidebar(player);
     }
 
@@ -344,11 +348,14 @@ public class PrepareSessionManager extends BaseManager {
     private boolean validate(Player player, PrepareSession session, boolean forPublish) {
         java.util.List<String> errors = session.getFlow().validate(session);
         if (errors.isEmpty()) {
-            Utils.sendAdminSuccess(player, forPublish ? "校验通过，开始发布" : "校验通过，可以发布");
+            Utils.sendAdminSuccess(player, forPublish ? MessageConfig.MAP_EDITOR_SESSION_VALIDATION_PASSED_PUBLISH : MessageConfig.MAP_EDITOR_SESSION_VALIDATION_PASSED);
             return true;
         }
-        Utils.sendAdminError(player, "校验失败，仍缺少 &#fff566" + errors.size() + " &#ededed项：");
-        for (String error : errors) player.sendMessage(Utils.translateColorCodes("  &#ff6b26• &#ededed" + error));
+        Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_VALIDATION_FAILED
+                .replace("%count%", String.valueOf(errors.size())));
+        for (String error : errors)
+                player.sendMessage(Utils.translateColorCodes(
+                        MessageConfig.MAP_EDITOR_SESSION_VALIDATION_ERROR.replace("%error%", error)));
         return false;
     }
 
@@ -356,31 +363,32 @@ public class PrepareSessionManager extends BaseManager {
     private boolean teleportToEditorLocation(@NotNull Player player, @NotNull PrepareSession session) {
         String worldName = session.getFlow().worldName(session.getTarget());
         if (worldName.isBlank()) {
-            Utils.sendAdminInfo(player, "该地图尚未绑定世界，请先前往目标世界并使用“绑定当前世界”。");
+            Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_SESSION_WORLD_NOT_BOUND);
             return false;
         }
         org.bukkit.World world = Bukkit.getWorld(worldName);
         if (world == null) {
-            Utils.sendAdminError(player, "地图世界 &#fff566" + worldName + " &#ededed尚未加载");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_WORLD_NOT_LOADED
+                    .replace("%world%", worldName));
             return false;
         }
 
         Location destination = session.getFlow().copyZeroLocation(session.getTarget());
         if (destination != null && destination.getWorld() == null) destination.setWorld(world);
         if (destination == null || destination.getWorld() == null) {
-            Utils.sendAdminError(player, "无法找到地图编辑位置");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_LOCATION_MISSING);
             return false;
         }
         if (!player.teleport(destination)) {
-            Utils.sendAdminError(player, "传送至地图编辑位置失败");
+            Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_TELEPORT_FAILED);
             return false;
         }
         player.setGameMode(org.bukkit.GameMode.CREATIVE);
         player.setAllowFlight(true);
         player.setFlying(true);
 
-        Utils.sendAdminSuccess(player, "已传送至 "
-                + session.getFlow().editorLocationName(session.getTarget()));
+        Utils.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_SESSION_TELEPORTED
+                .replace("%location%", session.getFlow().editorLocationName(session.getTarget())));
         return true;
     }
 
@@ -429,7 +437,7 @@ public class PrepareSessionManager extends BaseManager {
         restorePlayerState(player, snap);
         deleteSnapshotFile(player.getUniqueId());
         snapshots.remove(player.getUniqueId());
-        Utils.sendAdminInfo(player, "检测到未结束的 prepare &#696969• 物品栏已还原");
+        Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_SESSION_SNAPSHOT_RESTORED);
     }
 
     private void saveSnapshotFile(@NotNull UUID id, @NotNull Snapshot snap) {

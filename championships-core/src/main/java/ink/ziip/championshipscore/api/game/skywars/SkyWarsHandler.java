@@ -201,7 +201,7 @@ public class SkyWarsHandler extends BaseListener {
         }
 
         event.setCancelled(true);
-        Utils.sendActionBar(player, "&#fff566空岛乱斗 &#bababa• &#ff6b26这不是你们队的乐魂");
+        Utils.sendActionBar(player, MessageConfig.SKYWARS_WRONG_TEAM_GHAST);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

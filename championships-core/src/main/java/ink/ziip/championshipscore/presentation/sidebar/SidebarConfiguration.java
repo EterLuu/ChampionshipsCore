@@ -24,10 +24,11 @@ public final class SidebarConfiguration {
     private final Template mapStatus;
     private final Template mapEdit;
     private final Map<GameTypeEnum, GameTemplate> games;
+    private final Map<String, String> values;
 
     private SidebarConfiguration(boolean enabled, boolean papiFallback, long updateIntervalTicks,
                                  Template lobby, Template dailyLobby, Template mapStatus, Template mapEdit,
-                                 Map<GameTypeEnum, GameTemplate> games) {
+                                 Map<GameTypeEnum, GameTemplate> games, Map<String, String> values) {
         this.enabled = enabled;
         this.papiFallback = papiFallback;
         this.updateIntervalTicks = updateIntervalTicks;
@@ -36,6 +37,7 @@ public final class SidebarConfiguration {
         this.mapStatus = mapStatus;
         this.mapEdit = mapEdit;
         this.games = Map.copyOf(games);
+        this.values = Map.copyOf(values);
     }
 
     public static @NotNull SidebarConfiguration load(@NotNull File file) {
@@ -48,6 +50,15 @@ public final class SidebarConfiguration {
         if (styleSection != null) {
             for (String key : styleSection.getKeys(false)) {
                 styles.put(key.toLowerCase(Locale.ROOT), styleSection.getString(key, ""));
+            }
+        }
+
+        Map<String, String> values = new LinkedHashMap<>();
+        ConfigurationSection valueSection = yaml.getConfigurationSection("values");
+        if (valueSection != null) {
+            for (String key : valueSection.getKeys(true)) {
+                if (valueSection.isConfigurationSection(key)) continue;
+                values.put(key, style(valueSection.getString(key, ""), styles));
             }
         }
 
@@ -100,7 +111,7 @@ public final class SidebarConfiguration {
         if (interval < 1L) throw new IllegalArgumentException("update interval must be positive");
         return new SidebarConfiguration(yaml.getBoolean("settings.enabled", true),
                 yaml.getBoolean("settings.papi-fallback", true), interval,
-                lobby, dailyLobby, mapStatus, mapEdit, games);
+                lobby, dailyLobby, mapStatus, mapEdit, games, values);
     }
 
     private static Template template(YamlConfiguration yaml, String path, Map<String, String> styles,
@@ -178,6 +189,10 @@ public final class SidebarConfiguration {
 
     public GameTemplate game(GameTypeEnum gameType) {
         return games.get(gameType);
+    }
+
+    public String value(String key, String fallback) {
+        return values.getOrDefault(key, fallback);
     }
 
     /** Frozen worker-facing fields transported inside the existing Bingo presentation map. */

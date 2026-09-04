@@ -37,6 +37,8 @@ class LanguageKeyUsageTest {
                     // EventTask constructs these keys from YAML trigger/param values at runtime.
                     .filter(key -> !key.startsWith("task.event."))
                     .filter(key -> !key.startsWith("task.effect."))
+                    // BingoRemix constructs remix.<enum>.name/description at runtime.
+                    .filter(key -> !key.startsWith("remix."))
                     .filter(key -> !sources.contains("\"" + key + "\""))
                     .toList();
             assertTrue(unused.isEmpty(), locale + " contains unused keys: " + unused);

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -25,13 +26,13 @@ public final class EventStopSubCommand extends BaseSubCommand {
         }
         GameTypeEnum game = EventCommandSupport.parse(args[0]);
         if (game == null || !plugin.getGameManager().isGameEnabled(game) || !EventCommandSupport.canSchedule(game)) {
-            Utils.sendAdminError(sender, "该游戏没有可停止的正式赛程");
+            Utils.sendAdminError(sender, MessageConfig.EVENT_STOP_UNAVAILABLE);
             return true;
         }
         if (plugin.getScheduleManager().stopFormalEvent(game))
-            Utils.sendAdminSuccess(sender, "已停止正式比赛赛程：&#fff566" + game);
+            Utils.sendAdminSuccess(sender, MessageConfig.EVENT_STOPPED.replace("%game%", game.name()));
         else
-            Utils.sendAdminInfo(sender, "该正式比赛当前未运行：&#fff566" + game);
+            Utils.sendAdminInfo(sender, MessageConfig.EVENT_NOT_RUNNING.replace("%game%", game.name()));
         return true;
     }
 

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.api.object.game.ServerMode;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -32,7 +33,7 @@ public final class SwitchSubCommand extends BaseSubCommand {
             return true;
         }
         plugin.getDailyManager().switchMode(next);
-        Utils.sendAdminSuccess(sender, "服务器游玩方式已切换为 &#fff566" + plugin.getDailyManager().modeDisplay());
+        Utils.sendAdminSuccess(sender, MessageConfig.SERVER_MODE_SWITCHED.replace("%mode%", plugin.getDailyManager().modeDisplay()));
         return true;
     }
 

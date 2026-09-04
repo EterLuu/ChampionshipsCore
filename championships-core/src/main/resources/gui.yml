@@ -1,2044 +1,3930 @@
 dont-edit-this:
-  version: 15
-common:
-  separator: ' • '
-  versus: '对阵'
-  copy:
-    previous-page: '上一页'
-    next-page: '下一页'
-    close: '关闭'
-    refresh: '刷新'
-    back: '返回'
-    ordinal-prefix: '第'
-    page-suffix: '页'
-    page: '第 %page% / %pages% 页'
-    confirm: '确认'
-    cancel: '取消'
+  version: 22
 map-editor:
   games:
     ace-race:
-      setup:
       menus:
         equipment:
-          title: '选择下一赛段的装备'
+          title: 选择下一赛段的装备
           size: 9
           items:
-            none:     {slot: 1, material: BARRIER}
-            elytra:   {slot: 3, material: ELYTRA}
-            trident:  {slot: 5, material: TRIDENT}
-            dolphins: {slot: 7, material: HEART_OF_THE_SEA}
-          copy:
-            select-equipment-for-next-stage: '选择下一赛段的装备'
+            none:
+              slot: 1
+              material: BARRIER
+            elytra:
+              slot: 3
+              material: ELYTRA
+            trident:
+              slot: 5
+              material: TRIDENT
+            dolphins:
+              slot: 7
+              material: HEART_OF_THE_SEA
         respawn-binding:
-          title: '选择重生点对应的进度线'
+          title: 选择重生点对应的进度线
           size: 54
           layout:
-            content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+            content:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+              - 18
+              - 19
+              - 20
+              - 21
+              - 22
+              - 23
+              - 24
+              - 25
+              - 26
+              - 27
+              - 28
+              - 29
+              - 30
+              - 31
+              - 32
+              - 33
+              - 34
+              - 35
+              - 36
+              - 37
+              - 38
+              - 39
+              - 40
+              - 41
+              - 42
+              - 43
+              - 44
           items:
             previous:
               slot: 45
               material: ARROW
-              title: '上一页'
-              lore: ['第 %page% 页']
+              title: 上一页
+              lore:
+                - 第 %page% 页
             back:
               slot: 48
               material: BARRIER
-              title: '返回重生点编辑'
+              title: 返回重生点编辑
             start:
               slot: 49
               material: COMPASS
-              title: '起点之后（不绑定进度线）'
-              lore: ['点击选择']
+              title: 起点之后（不绑定进度线）
+              lore:
+                - 点击选择
               states:
-                selected: {lore: ['当前绑定']}
+                selected:
+                  lore:
+                    - 当前绑定
             next:
               slot: 53
               material: ARROW
-              title: '下一页'
-              lore: ['第 %page% / %pages% 页']
-          copy:
-            select-the-progress-line-to-which-the-respawn-point-belongs: '选择重生点对应的进度线'
-            current-binding: '当前绑定'
-            after-clicking-to-bind-to-this-progress-line: '点击绑定到这条进度线之后'
-            back-to-respawn-editor: '返回重生点编辑'
-            after-starting-point-no-progress-line-bound: '起点之后（不绑定进度线）'
-      steps:
-        start-finish-lines:
-          starting-line: '起点线'
-          finish-line: '终点线'
-          race-line-selection-hint: '用WorldEdit选取一条水平底线；判定范围会从该高度向上延伸'
-          the-current-location-also-serves-as-the-starting-point-of-birth: '当前位置同时作为起跑出生点'
-          used-for-lap-counting-finishing: '用于计算圈数和判定完赛'
-          please-use-worldedit-to-select-the-starting-line-or-finishing-line-first: '请先用WorldEdit选取起点线或终点线。'
-          start-line-finish-line-must-be-the-same-height-a-straight-line-extending-in-the-x-or-z-direction: '起点线/终点线必须是同一高度、沿X或Z方向延伸的直线。'
-          please-enter-the-fall-height-after-the-starting-line-leave-blank-to-retain-the-current-value: '输入起点后的坠落重置高度；留空则保留当前值'
-          starting-line-fall-height: '起点后的坠落重置高度'
-          the-fall-height-after-the-start-line-has-been-set-is: '起点后的坠落重置高度已设为'
-          start-line-set: '已设置起点线。'
-          finish-line-set: '已设置终点线。'
-        map-preview:
-          show-track-point-preview: '赛道点位预览'
-          preview-display-and-cleanup-hint: '开启后用末地水晶标出重生点，并用粒子显示进度线；退出编辑时自动清理'
-          currently-turned-on: '当前：已开启'
-          currently-closed: '当前：已关闭'
-          unable-to-find-current-ace-race-map-instance: '找不到当前Ace Race地图。'
-          track-point-preview-has-been-turned-on-the-crystal-can-right-click-to-edit-the-respawn-point: '赛道点位预览已开启；右键末地水晶可编辑重生点。'
-          track-point-preview-has-been-closed: '已关闭赛道点位预览。'
-        progress-points:
-          racing-progress-points: '竞速进度点'
-          progress-line-selection-hint: '用WorldEdit选取水平直线；不足20格会向两侧延伸，判定范围覆盖线下3格及以上'
-          progress-point-fall-height-input-hint: '输入通过此进度点后的坠落重置高度；留空则使用进度线高度'
-          enter-drop-height: '输入坠落重置高度'
-          progress-points-added: '已添加进度点 # '
-          drop-height: '&#696969• 坠落重置高度：'
-          stage-equipment: '&#696969• 下一赛段装备：'
-          progress-point: '进度点 # '
-          line-selection: '选线：'
-          trigger-range-automatically-expands-to-both-sides-if-less-than-20-cells-select-line-y-3-and-above: '判定范围：不足20格会向两侧延伸；覆盖进度线下3格及以上'
-          fall-height-label: '坠落重置高度：'
-          equipment-for-the-next-stage: '下一赛段装备：'
-          please-enter-the-fall-height-after-this-progress-point-leave-blank-to-retain-the-current-value: '输入通过此进度点后的坠落重置高度；留空则保留当前值'
-          this-progress-point-no-longer-exists: '该进度点已不存在。'
-          progress-points-updated: '已更新进度点 # '
-          current-prop-entry-does-not-exist: '当前装备：条目已不存在'
-          current-equipment: '当前装备：'
-          progress-point-has-been-reached: '已将进度点 # '
-          the-equipment-for-the-next-stage-are-changed-to: '之后的赛段装备已改为'
-          the-progress-point-has-been-adjusted-to-the: '已将进度点调整为第'
-          progress-points: '个进度点。'
-          please-use-worldedit-to-select-the-horizontal-straight-line-of-the-progress-point-first: '请先用WorldEdit选取进度点水平直线。'
-          progress-points-must-be-the-same-height-a-straight-worldedit-line-extending-in-the-x-or-z-direction: '进度点必须是同一高度、沿X或Z方向延伸的WorldEdit直线。'
-          add-progress-points: '添加进度点'
-          use-worldedit-to-select-the-progress-point-straight-line-and-click: '用WorldEdit选取进度点直线后点击'
-        respawn-points:
-          racing-spawn-point: '竞速重生点'
-          stage-binding-and-save-behavior: '系统会按位置判断所属赛段，也可手动指定；玩家进入3格范围时会保存进度'
-          the-corresponding-progress-line-not-loaded: '所属进度线：未加载'
-          the-corresponding-progress-line-after-the-starting-point: '所属进度线：起点后'
-          belonging-progress-line: '所属进度线：# '
-          this-spawn-point-has-been-bound-to: '已将该重生点绑定到'
-          after-starting-point: '起点后'
-          add-spawn-point: '添加重生点'
-          respawn-point-selection-hint: '站在重生位置后点击；赛段默认按坐标判断，可再手动指定'
-    dodgebolt:
-      setup:
-        playing-area-boundaries: '比赛区边界'
-        boundaries-of-viewing-area: '观赛活动区边界'
-        retractable-platform: '可收缩平台'
-        right-team-activity-area: '右队活动区域'
-        left-team-activity-area: '左队活动区域'
-        right-team-archery-area: '右队射箭区域'
-        left-team-archery-area: '左队射箭区域'
-        right-team-players-spawn-point: '右队选手出生点'
-        the-left-team-players-spawn-point: '左队选手出生点'
-        right-team-arrow-refresh-point: '右队箭刷新点'
-        left-team-arrow-refresh-point: '左队箭刷新点'
-        the-spectator-spawn-point-must-be-within-the-spectator-activity-area: '观众出生点必须在观赛区内'
-        the-spectator-spawn-point-must-be-outside-the-competition-area: '观众出生点不能设在比赛区内'
-        use-worldedit-to-select-two-endpoints: '用WorldEdit选定两个端点'
-        add-points-one-by-one: '逐个添加点位'
-        at-least: '（至少'
-        person-current: '个，当前'
-    dragon-egg-carnival:
-      setup:
-        the-map-world-must-be-an-end-environment: '地图世界必须是末地环境'
-        the-site-boundary-needs-to-cover-the-fixed-dragon-battle-area-x-z-104-104-y-0-128: '场地边界需覆盖固定龙战区域（X/Z -104..104，Y 0..128）'
-        the-spawn-point-of-the-spectator-must-be-in-the-current-map-world: '观众出生点必须设在当前地图世界中'
-    hoty-cody-dusky:
-      setup:
-        click-after-standing-at-the-birth-position: '站到出生位置后点击'
-    parkour-warrior:
-      setup:
-        use-worldedit-to-select-the-complete-area-of-the-parkour-track: '用WorldEdit框选整条跑酷赛道'
-        after-standing-at-the-starting-point-of-the-track-click: '站到赛道起点后点击'
-    sky-wars:
-      setup:
-        map-borders: '地图边界'
-        use-worldedit-to-select-the-complete-boundary-of-this-empty-island: '用WorldEdit框选整张空岛地图'
-        map-boundaries-set: '已设置地图边界。'
-        border-center-point: '边界中心点'
-        stand-at-the-center-of-the-horizontal-border-and-the-shrink-effect-and-click: '站到边界收缩的中心位置后点击'
-        boundary-center-point-set: '已设置边界中心点。'
-        team-spawn-point: '队伍出生点'
-        add-spawn-positions-for-each-team-one-by-one: '逐个添加每队的出生位置'
-    snowball-showdown:
-      setup:
-        use-worldedit-to-select-a-complete-snow-field-area: '用WorldEdit框选整片雪球场地'
-        add-player-spawn-locations-in-this-area-one-by-one: '逐个添加该区域的玩家出生位置'
+              title: 下一页
+              lore:
+                - 第 %page% / %pages% 页
+            option:
+              material: LIME_STAINED_GLASS_PANE
+              title: "&#ededed第 %order% 项"
+              lore:
+                - "&#a0a0a0点击绑定到这条进度线之后"
+              states:
+                selected:
+                  glint: true
+                  lore:
+                    - "&#55ff55当前绑定"
     tgttos:
-      setup:
-        monster-spawn-point-optional: '怪物生成点（可选）'
-        add-monster-spawn-locations-one-by-one-if-left-blank-no-monsters-will-be-spawned-in-this-picture: '逐个添加怪物生成位置；留空则本图不生成怪物'
-        chicken-spawning-area: '鸡生成区域'
-        use-worldedit-to-select-a-plane-one-block-high-chickens-are-randomly-generated-one-block-above-it: '用WorldEdit选取一格高的平面；鸡随机生成在其上方一格'
-        player-spawn-area-and-orientation: '玩家生成区域与朝向'
-        player-spawn-area-selection-hint: '看向开局方向后，用WorldEdit选取一格高的平面；所有玩家统一朝向'
-        optional: '可选（'
       menus:
         area-type:
-          title: '选择地图装备类型'
+          title: 选择地图装备类型
           size: 54
           layout:
-            content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+            content:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+              - 18
+              - 19
+              - 20
+              - 21
+              - 22
+              - 23
+              - 24
+              - 25
+              - 26
+              - 27
+              - 28
+              - 29
+              - 30
+              - 31
+              - 32
+              - 33
+              - 34
+              - 35
+              - 36
+              - 37
+              - 38
+              - 39
+              - 40
+              - 41
+              - 42
+              - 43
+              - 44
           items:
             previous:
               slot: 45
               material: ARROW
-              title: '上一页'
+              title: 上一页
             back:
               slot: 49
               material: BARRIER
-              title: '返回'
+              title: 返回
             next:
               slot: 53
               material: ARROW
-              title: '下一页'
-          copy:
-            select-map-equipment-type: '选择地图装备类型'
-      steps:
-        area-type:
-          oak-boat-survival: '生存模式 • 橡木船'
-          diamond-pickaxe-and-team-concrete-survival: '生存模式 • 钻石镐与队伍混凝土'
-          no-items-adventure: '冒险模式 • 无初始物品'
-          indestructible-elytra-adventure: '冒险模式 • 不可损坏的鞘翅'
-          map-equipment-type: '地图装备类型'
-          open-the-menu-and-select-the-starting-mode-and-items: '点击选择开局游戏模式和初始物品'
-          map-equipment-type-set: '已设置地图装备类型：&#fff566'
-        spawn-area:
-          the-generated-area-must-be-a-worldedit-selection-that-is-exactly-one-block-high: '生成区域必须是恰好一格高的WorldEdit选区。'
-          chicken-spawn-area-set: '已设置鸡生成区域；鸡会随机生成在选区上方一格。'
-          player-spawn-area-set: '已设置玩家生成区域与统一朝向；玩家会随机生成在选区上方一格。'
-    battle-box:
-      setup:
-        save-venue-template: '保存场地模板'
-        use-worldedit-to-select-the-entire-venue-and-click-save-as-arena-schem: '用WorldEdit选取整个场地后点击，保存为arena.schem'
-        template-arena-boundary-name: '模板场地（0号）完整边界'
-        frame-the-complete-hand-preserved-site-0-this-minimum-angle-determines-where-the-copy-will-be-pasted: '框选完整的0号模板场地；选区最小角将作为副本粘贴基准点'
-        the-team-s-spawn-point-on-the-right: '右侧队伍出生点'
-        stand-at-the-birth-position-of-the-team-on-the-right-and-click: '站到右侧队伍出生位置后点击'
-        the-spawn-point-of-the-team-on-the-right-has-been-set: '已设置右侧队伍出生点。'
-        spawn-point-of-the-left-team: '左侧队伍出生点'
-        stand-at-the-birth-position-of-the-left-team-and-click: '站到左侧队伍出生位置后点击'
-        the-spawn-point-of-the-left-team-has-been-set: '已设置左侧队伍出生点。'
-        right-team-ready-point: '右队预备点'
-        stand-at-the-team-s-ready-position-on-the-right-and-click: '站到右侧队伍预备位置后点击'
-        right-team-ready-point-set: '右队预备点已设置。'
-        left-team-ready-point: '左队预备点'
-        stand-at-the-team-s-ready-position-on-the-left-and-click: '站到左侧队伍预备位置后点击'
-        left-team-ready-point-set: '左队预备点已设置。'
-        wool-area: '羊毛区域'
-        use-worldedit-to-select-the-wool-placement-area: '用WorldEdit选取羊毛放置区域'
-        wool-area-set: '已设置羊毛区域。'
-        potion-spawn-point: '药水生成点'
-        add-potion-spawn-locations-one-by-one: '逐个添加药水生成位置'
-    bingo:
-      setup:
-        set-the-spawn-point-of-spectators: '设置观众出生点'
-        after-reaching-the-target-point-click: '站到目标点位后点击'
+              title: 下一页
+            option:
+              boat:
+                material: OAK_BOAT
+                title: "&#55ffff生存模式 • 橡木船"
+                lore:
+                  - "&#a0a0a0开局提供橡木船"
+                states:
+                  selected:
+                    glint: true
+                    lore:
+                      - "&#55ff55当前选择"
+                  idle:
+                    lore:
+                      - "&#a0a0a0点击选择"
+              road:
+                material: DIAMOND_PICKAXE
+                title: "&#55ffff生存模式 • 钻石镐与队伍混凝土"
+                lore:
+                  - "&#a0a0a0开局提供钻石镐与队伍混凝土"
+                states:
+                  selected:
+                    glint: true
+                    lore:
+                      - "&#55ff55当前选择"
+                  idle:
+                    lore:
+                      - "&#a0a0a0点击选择"
+              none:
+                material: BARRIER
+                title: "&#55ffff冒险模式 • 无初始物品"
+                lore:
+                  - "&#a0a0a0开局不提供物品"
+                states:
+                  selected:
+                    glint: true
+                    lore:
+                      - "&#55ff55当前选择"
+                  idle:
+                    lore:
+                      - "&#a0a0a0点击选择"
+              elytra:
+                material: ELYTRA
+                title: "&#55ffff冒险模式 • 不可损坏的鞘翅"
+                lore:
+                  - "&#a0a0a0开局提供不可损坏的鞘翅"
+                states:
+                  selected:
+                    glint: true
+                    lore:
+                      - "&#55ff55当前选择"
+                  idle:
+                    lore:
+                      - "&#a0a0a0点击选择"
     build-mart:
-      steps:
-        base-template:
-          save-base-0-template: '保存模板基地（0号）'
-          template-base-selection-hint: '在0号位置框选完整基地；这里仅作为复制模板，不会分配给队伍'
-        floor-selection:
-          precisely-select-the-7x1x7-floor-with-worldedit: '用WorldEdit精确选中7x1x7地板'
-          please-use-worldedit-to-select-the-7x1x7-floor-first: '请先用WorldEdit选中7x1x7地板。'
-          the-selection-must-be-exactly-7x1x7-floor: '选区必须恰好为7x1x7地板。'
-          the-lowest-corner-of-the-floor-has-been-recorded: '已记录地板最低边角。'
-        material-zones:
-          save-the-material-area-selection-as-it-is-restored-regularly-during-the-game: '保存选区内的方块状态，比赛中会定时恢复'
-          not-set-optional: '未设置（可选）'
-          already-set: '已设置 • '
-        base-generation:
-          generate-team-base: '生成队伍基地'
-          team-base-count-input-hint: '输入参赛队伍上限；0号保留为模板，实际基地从1号开始'
-          the-number-of-teams-must-be-greater-than-0: '队伍数必须大于0。'
-          please-save-the-number-0-base-template-first: '请先保存0号基地模板。'
-          the-map-world-has-not-been-loaded-yet: '地图世界尚未加载。'
-          there-is-still-a-game-instance-running-on-the-same-map-cannot-be-spawned: '这张地图仍有比赛正在进行，暂时无法生成基地。'
-          please-set-the-resource-hall-boundary-first: '请先设置资源大厅边界。'
-          please-re-save-the-number-0-base-template-once-to-record-the-location-of-the-template-in-the-world: '请重新保存一次0号基地模板，以记录模板在世界中的位置。'
-          failed-to-generate-map: '生成地图失败：&#fff566'
-          base-template-number-0-has-been-reserved-and-generated: '已保留0号基地模板，并生成&#fff566'
-          actual-team-base-please-post-after-completing-the-points: '&#ededed个实际队伍基地；完成点位后请发布。'
-        wind-zones:
-          air-outlet-area: '上升气流区'
-          use-worldedit-selection-to-add-multiple-blower-areas-updrafts-will-be-generated-above-each-area: '用WorldEdit添加一个或多个区域；每个区域上方都会产生上升气流'
-          please-use-worldedit-to-select-the-blower-area-first: '请先用WorldEdit选取吹风口区域。'
-          the-blower-area-has-been-added-currently: '已添加吹风口区域 &#696969• 当前&#fff566'
-          the-blower-area-list-has-been-cleared: '已清空吹风口区域列表。'
-          air-outlet: '吹风口 # '
-          area: '区域：'
-          rising-range-y: '上升范围：Y='
-          through-200-suffix: '至200'
-          please-use-worldedit-to-reselect-the-blower-area-first: '请先用WorldEdit重新选取吹风口区域。'
-          wind-zone-count-suffix: '个吹风口区域。'
-          the-air-blower-has-been-adjusted-to-the: '已将吹风口调整为第'
-          add-blower-area: '添加吹风口区域'
-          use-worldedit-to-select-an-area-and-click: '用WorldEdit选取区域后点击'
-      setup:
-        resource-hall-boundary: '资源大厅边界'
-        resource-hall-portal-location: '资源大厅传送门落点'
-        resource-hall-arrival-selection-hint: '站到玩家从基地传送后应出现的位置；不要站在传送门方块内'
-        the-resource-hall-portal-landing-point-has-been-set: '已设置资源大厅传送门落点。'
-        golden-blueprint-display-area-floor: '黄金蓝图展示区地板'
-        use-worldedit-to-select-and-click: '用WorldEdit选区后点击'
-        template-base-label: '模板基地（0号） • '
-        use-worldedit-to-precisely-select-the-submit-button-square: '用WorldEdit精确选中提交按钮方块'
-        team-base-arrival-selection-hint: '站到玩家从资源大厅返回后应出现的位置；不要站在传送门方块内'
       menus:
         material-zones:
-          unable-to-save-material-area-configuration-please-check-server-logs: '无法保存材料区配置，请查看服务器日志。'
-          deleted: '已删除&#fff566'
-          ordinal-infix: '&#ededed的第&#fff566'
-          deleted-material-zone-count-suffix: '&#ededed个材料区。'
-          material-area-list-cleared: '已清空材料区列表。'
-          material-island-centers-incomplete: '部分材料岛尚未设置中心点，无法自动判断选区归属。'
-          the-material-area-volume-must-be-between-1-and: '材料区体积必须在1到'
-          a-snapshot-of-the-saved-material-area-as-it-is: '已保存材料补给区（&#fff566'
-          squares-automatically-classified: '&#ededed个方块），自动归入&#fff566'
-          and-update-the-read-only-material-manifest-buildmart-material-manifests: '&#ededed，并更新材料清单：&#fff566buildmart/material-manifests/'
-          updated: '已更新&#fff566'
-          a-snapshot-of-the-material-area-as-it-is: '&#ededed的材料补给区（&#fff566'
-          blocks: '&#ededed个方块）。'
-          failed-to-save-material-area-snapshot-please-check-worldedit-selection: '保存材料区快照失败，请检查WorldEdit选区：&#fff566'
-          material-area-snapshot: '.材料区快照'
-          range: '范围：'
-          full-block-status-will-be-restored-upon-replenishment: '补充材料时会恢复这里保存的全部方块状态'
-          click-to-delete-this-material-area: '点击删除这个材料补给区'
-          save-current-worldedit-selection: '保存当前WorldEdit选区'
-          record-a-full-block-snapshot-of-the-selection: '保存选区内全部方块及其状态'
-          automatically-classified-into-the-nearest-material-island-according-to-horizontal-distance: '系统会按水平距离归入最近的材料岛'
-          update-the-original-snapshot-when-the-range-is-exactly-the-same-as-the-existing-material-area: '范围与已有材料区完全相同时更新原快照'
-          synchronously-update-the-read-only-material-list: '同时更新材料清单'
-          go-to: '前往第'
-          the-center-has-not-been-configured-yet: '中心尚未配置'
-          center: '中心：'
-          return-to-island-list: '返回岛屿列表'
-          view-all-24-material-islands: '查看全部24个材料岛'
-          unable-to-automatically-classify-material-areas: '无法自动归类材料区'
-          number-of-material-areas: '材料区数量：'
-          click-to-view-the-material-area-on-the-island: '点击查看岛内材料区'
-          update-the-original-snapshot-when-the-range-is-exactly-the-same: '范围完全相同时更新原快照'
-          clear-all-material-areas: '清空全部材料区'
-          delete-all-material-areas-on-24-islands: '删除24个材料岛上的全部补给区'
-          material-island-count-label: '24个材料岛'
-          uncategorized: '未分类'
-    parkour-tag:
-      steps:
-        chaser-button:
-          please-aim-at-the-button-posted-on-the-wall-within-8-squares-and-then-click-the-setting-item: '请对准&#fff5668格内贴在墙上的按钮&#ededed后再点击设置项。'
-          map-world-not-loaded-yet-can-t-set-chaser-button: '地图世界尚未加载，无法设置追击者按钮。'
-          ordinal-prefix: '第&#fff566'
-          invalid-mirrored-chaser-button-position: '&#ededed号场地的对应位置不是空位、告示牌或按钮，无法同步生成按钮。'
-          venue-no-lacks-wall-surface-for-buttons-to-attach-to: '&#ededed号场地缺少可供按钮依附的墙面。'
-          there-is-no-empty-space-under-the-field-button-the-prompt-card-cannot-be-generated: '&#ededed号场地按钮下方不是空位，无法生成提示牌。'
-          there-is-no-wall-below-the-venue-button-for-the-notice-board-to-attach-to: '&#ededed号场地按钮下方缺少可供告示牌依附的墙面。'
-          chaser-button-set-and-for: '追击者按钮已设置，并已同步到&#fff566'
-          venue-synchronization-buttons-and-illuminated-prompt-signs: '&#ededed个场地（含发光提示牌）。'
-          click-the-button-above: '点击上方按钮'
-          become-a-chaser: '成为追击者'
-      setup:
-        save-the-two-track-match-template: '保存双赛道对局模板'
-        template-match-arena-selection-hint: '框选整个0号模板：两条镜像赛道、双方准备区和观赛区'
-        template-match-arena-boundary-name: '模板对局（0号）完整边界'
-        frame-two-tracks-and-two-team-preparation-areas-other-game-copies-will-be-automatically-translated: '框住两条赛道和双方准备区；其他比赛分区会自动按此模板生成'
-        prepare-points-for-team-a-in-position: 'A队预备点'
-        stand-at-the-location-where-team-a-gathers-before-the-official-countdown-and-click: '站到A队正式倒计时前集合的位置后点击'
-        team-a-s-preparation-point-for-the-match-position-has-been-set: 'A队预备点已设置。'
-        prepare-points-for-team-b-in-position: 'B队预备点'
-        stand-at-the-location-where-team-b-gathers-before-the-official-countdown-and-click: '站到B队正式倒计时前集合的位置后点击'
-        team-bs-preparation-point-for-the-match-position-has-been-set: 'B队预备点已设置。'
-        team-a-chaser-button-for-position: 'A队追击者按钮'
-        aim-at-the-button-that-has-been-placed-on-the-wall-in-team-as-preparation-area-and-click: '对准A队准备区内已经贴墙放置的按钮后点击'
-        chaser-button-for-team-b-in-position: 'B队追击者按钮'
-        aim-at-the-button-that-has-been-placed-on-the-wall-in-the-preparation-area-of-team-b-and-click: '对准B队准备区内已经贴墙放置的按钮后点击'
-        track-1-complete-boundary-a-chase-b-escape: '赛道1完整边界（A追B逃）'
-        select-the-first-complete-parkour-map-boundaries-restrain-pursuers-and-escapers-at-the-same-time: '选取第一张完整跑酷地图；边界同时约束追击者和逃跑者'
-        track-1-complete-boundary-set: '已设置赛道1完整边界。'
-        track-1-spawn-point-of-team-a-s-pursuers: '赛道1：A队追击者出生点'
-        the-spawn-position-of-team-a-s-pursuers-on-track-1: 'A队追击者在赛道1的出生位置'
-        the-spawn-point-of-team-a-s-pursuers-on-track-1-has-been-set: '已设置赛道1的A队追击者出生点。'
-        track-1-spawn-point-of-team-b-escapees: '赛道1：B队逃跑者出生点'
-        add-the-spawn-position-of-team-b-escapers-on-track-1-one-by-one: '逐个添加B队逃跑者在赛道1的出生位置'
-        track-2-complete-boundary-b-chases-a-and-escapes: '赛道2完整边界（B追A逃）'
-        select-the-second-full-parkour-map-boundaries-restrain-pursuers-and-escapers-at-the-same-time: '选取第二张完整跑酷地图；边界同时约束追击者和逃跑者'
-        track-2-complete-borders-set: '已设置赛道2完整边界。'
-        track-2-team-b-chaser-spawn-point: '赛道2：B队追击者出生点'
-        the-spawn-position-of-team-b-chasers-on-track-2: 'B队追击者在赛道2的出生位置'
-        the-spawn-point-of-team-b-chasers-on-track-2-has-been-set: '已设置赛道2的B队追击者出生点。'
-        track-2-team-a-escapers-spawn-point: '赛道2：A队逃跑者出生点'
-        added-spawn-positions-of-team-a-escapees-on-track-2-one-by-one: '逐个添加A队逃跑者在赛道2的出生位置'
-    tnt-run:
-      setup:
-        save-track-template-number-0: '保存0号赛道模板'
-        save-arena-schem-after-selecting-the-complete-single-track: '用WorldEdit框选完整赛道，并保存为arena.schem'
-        template-track-boundary-name: '模板赛道（0号）完整边界'
-        template-track-boundary-selection-hint: '框选完整的0号模板赛道；选区最小角将作为副本粘贴基准点'
-        the-complete-boundary-of-track-0-has-been-set: '已设置0号赛道完整边界。'
-        template-track-spawn-point-name: '模板赛道（0号）玩家出生点'
-        stand-at-the-spawn-point-of-copy0-player-and-click: '站到0号模板赛道的玩家出生位置后点击'
-        the-spawn-point-of-track-0-has-been-set: '已设置0号赛道出生点。'
-  copy:
-    after-reaching-the-target-position-click: 站到目标位置后点击
-    after-suffix: 后
-    already-set: 已设置
-    already-set-prefix: 已设置（
-    bind-to-current-world: 绑定当前世界
-    click-to-select: 点击选择
-    colored-item-count-suffix: '&#ededed个'
-    current-selection: 当前选择
-    deleted: 已删除第
-    general-site-boundary-set: 已设置场地总边界。
-    go-to: 前往
-    item-count-suffix: 个）
-    item-suffix: 项。
-    material-area: 材料补给区
-    material-zone-count-suffix: 个材料区
-    next-page: 下一页
-    not-set: 未设置
-    ordinal-prefix: 第
-    page-suffix: 页
-    player-spawn-point: 玩家出生点
-    player-spawn-point-has-been-set: 已设置玩家出生点。
-    please-go-to-the-current-map-world-first: 请先前往当前地图世界
-    please-use-worldedit-to-select-two-endpoints-first: 请先用WorldEdit选取两个端点。
-    points: 个点位。
-    previous-page: 上一页
-    progress-line: '进度线 # '
-    range-end-suffix: 之间。
-    return: 返回
-    return-to-prepare-toolbar: 返回地图准备工具栏
-    site-boundaries: 场地边界
-    site-boundaries-set: 已设置场地边界。
-    spectator-spawn-point: 观众出生点
-    spectator-spawn-point-has-been-set: 观众出生点已设置。
-    stand-in-a-spectator-position-and-click: 站到观众出生位置后点击
-    the-point-has-been-adjusted-to-the: 已将点位调整为第
-    the-serial-number-must-be-between-1-and: 序号必须在1到
-    total-prefix: 共
-    track-boundaries-set: 已设置赛道边界。
-    track-boundary: 赛道边界
-    updated: 已更新第
-    use-worldedit-to-select-the-complete-area-of-this-track: 用WorldEdit框选整条赛道
-    use-worldedit-to-select-the-complete-game-area: 用WorldEdit框选整片比赛区域
-    within-blocks: 个方块以内。
-  common:
-    area:
-      template-arena-label: '0号场地'
-    snapshot:
-      edit-venue: '编辑场地'
-  session:
-    rule-introduction-spawn-point-can-be-covered: '规则介绍专用出生点（可选）'
-    rules-spawn-selection-hint: '站到目标位置后点击；不设置则使用观众出生点'
-    rules-have-been-set-to-introduce-dedicated-spawn-points: '已设置规则介绍专用出生点。'
-    rule-introduction-mode: '规则介绍时的游戏模式'
-    click-to-switch-to-the-player-mode-in-the-introduction-stage-of-the-map-rules: '点击切换规则介绍期间玩家使用的游戏模式'
-    current-spectator-mode: '当前：旁观模式'
-    current-adventure-mode: '当前：冒险模式'
-  steps:
-    location:
-      add-current-point: '添加当前点位'
-    checkpoints:
-      parkour-checkpoint: '跑酷检查点'
-      add-a-master-checkpoint-with-the-current-position-and-worldedit-selection-at-least-one-is-required: '站在重生位置并用WorldEdit选取触发范围；至少设置一个检查点'
-      please-use-worldedit-to-select-the-checkpoint-to-enter-the-area-first: '请先用WorldEdit选取检查点进入区域。'
-      checkpoint-added-current: '已添加检查点 &#696969• 当前&#fff566'
-      checkpoint: '检查点 # '
-      spawn-point: '出生点：'
-      enter-area: '进入区域：'
-      please-use-worldedit-to-reselect-the-checkpoint-to-enter-the-area: '请先用WorldEdit重新选取检查点进入区域。'
-      checkpoint-spawn-points-and-entry-areas: '个检查点的出生点和进入区域。'
-      the-checkpoint-has-been-adjusted-to-the: '已将检查点调整为第'
-      checkpoint-count-suffix: '个检查点。'
-      add-master-checkpoint: '添加主检查点'
-      stand-at-the-spawn-point-and-select-the-area-to-enter-and-click: '站在出生点并选取进入区域后点击'
-    world-confirmation:
-      confirm-the-world: '确认所在世界'
-      click-to-bind-or-change-to-the-current-world: '点击将这张地图绑定到你当前所在的世界'
-      click-this-to-confirm-after-entering-the-world: '世界后点击此项确认'
-      the-current-world-is-already-used-by-another-map-or-the-map-is-running-cannot-be-bound: '该世界已被其他地图使用，或相关地图仍在运行，暂时无法绑定。'
-      bound-map-world: '已绑定地图世界：&#fff566'
-      confirmed-game-world: '已确认游戏世界。'
-      please-go-to-the-target-editing-site-through-the-ender-pearl-first: '请先通过末影珍珠前往目标编辑场地。'
-    countdown-blocks:
-        random-discrete-type: '随机离散型'
-        open-door-thing: '开门式（东西）'
-        open-door-type-north-and-south: '开门式（南北）'
-        open-door-type-vertical: '开门式（竖直）'
-        disappear-directly: '直接消失'
-        the-countdown-block-for-the-start-of-the-game-disappears-optional: '开赛倒计时方块消失（可选）'
-        set-the-selection-and-how-to-disappear-within-3-seconds-leave-it-blank-to-disable-it: '设置方块选区，以及开赛前最后3秒的消失方式；不设置则关闭此功能'
-        optional: '可选'
-        not-enabled-optional: '未启用（可选）'
-        enabled: '已启用 • '
-        the-selection-volume-must-be-between-1-and: '选区体积必须在1到'
-        the-start-countdown-box-has-been-set-to-disappear-from-the-selection-area: '已设置开赛倒计时方块消失选区（'
-        blocks: '个方块）。'
-        disappearance-method-set: '已设置消失方式：'
-        closed-start-countdown-box-disappears: '已关闭开赛倒计时方块消失。'
-    list-editor:
-        points-added-current: '已添加点位 &#696969•&#ededed 当前&#fff566'
-        point-list-cleared: '已清空点位列表。'
-        point: '点位'
-    schematic:
-      failed-to-save-template-please-check-worldedit-selection: '保存模板失败，请检查WorldEdit选区：&#fff566'
-      venue-template-saved: '已保存场地模板：&#fff566'
-    selected-block:
-      please-use-worldedit-to-select-a-block-first: '请先用WorldEdit选中一个方块。'
-      the-selection-must-be-exactly-one-square: '选区必须恰好为一个方块。'
-      checked-box-recorded: '已记录选中方块。'
-    arena-generation:
-      stamp-and-generate-multiple-maps: '批量生成比赛分区'
-      after-entering-the-number-of-copies-paste-n-copies-of-the-site-and-solidify-them-as-templates: '输入场地总数，自动复制模板并保存地图'
-      the-number-of-venue-shares-must-be-greater-than-0: '场地份数必须大于0。'
-      the-map-can-only-generate-at-most: '该地图最多只能生成&#fff566'
-      venue: '&#ededed份场地。'
-      missing-venue-template-please-complete-first-save-venue-template: '尚未保存场地模板，请先完成“保存场地模板”。'
-      world: '世界&#fff566'
-      not-loaded-yet: '&#ededed尚未加载。'
-      there-is-still-a-game-instance-running-on-the-same-map-cannot-be-regenerated-or-saved: '这张地图仍有比赛正在进行，暂时无法重新生成或保存。'
-      failed-to-generate-venue: '生成场地失败：&#fff566'
-      the-total-number-of-venues-has-been-set-to: '场地总数已设为&#fff566'
-      the-original-image-number-0-was-retained-and-generated: '&#ededed；已保留0号模板，并生成&#fff566'
-      copies: '&#ededed个副本。'
-      generated: '已生成&#fff566'
-      site-please-verify-and-publish-after-completing-the-location: '&#ededed份场地；完成点位后请验证并发布。'
-    worldedit-selection:
+          title: "&#55ffff材料补给区"
+          items:
+            save:
+              material: GOLDEN_AXE
+              title: "&#fff566保存当前WorldEdit选区"
+              lore:
+                - "&#a0a0a0保存选区内全部方块及其状态"
+                - "&#a0a0a0系统会按水平距离归入最近的材料岛"
+                - "&#a0a0a0范围与已有材料区完全相同时更新原快照"
+                - "&#a0a0a0同时更新材料清单"
+            clear:
+              material: RED_WOOL
+              title: "&#ff5555清空全部材料区"
+              lore:
+                - "&#a0a0a0删除24个材料岛上的全部补给区"
+            page:
+              material: COMPASS
+              title: "&#55ffff材料岛 • 第 %page% / %pages% 页"
+              lore:
+                - "&#a0a0a0共 %count% 个材料区"
+            back:
+              material: ARROW
+              title: "&#ededed返回岛屿列表"
+              lore:
+                - "&#a0a0a0查看全部24个材料岛"
+            island:
+              material: STRUCTURE_BLOCK
+              title: "&#ededed第 %order% 项 • %name%"
+              states:
+                white:
+                  title: "白色岛"
+                orange:
+                  title: "橙色岛"
+                magenta:
+                  title: "品红色岛"
+                light-blue:
+                  title: "淡蓝色岛"
+                yellow:
+                  title: "黄色岛"
+                lime:
+                  title: "黄绿色岛"
+                pink:
+                  title: "粉红色岛"
+                gray:
+                  title: "灰色岛"
+                light-gray:
+                  title: "淡灰色岛"
+                cyan:
+                  title: "青色岛"
+                purple:
+                  title: "紫色岛"
+                blue:
+                  title: "蓝色岛"
+                brown:
+                  title: "棕色岛"
+                green:
+                  title: "绿色岛"
+                red:
+                  title: "红色岛"
+                black:
+                  title: "黑色岛"
+                plants:
+                  title: "植物类"
+                nether:
+                  title: "下界类"
+                trees:
+                  title: "树木类"
+                bricks:
+                  title: "砖块类"
+                stone:
+                  title: "石头类"
+                minerals:
+                  title: "矿物类"
+                sand-gravel:
+                  title: "沙砾类"
+                copper:
+                  title: "铜类"
+              lore:
+                - "&#a0a0a0中心：%center%"
+                - "&#a0a0a0材料区数量：%count%"
+                - "&#55ffff点击查看岛内材料区"
+              states:
+                unconfigured:
+                  material: BARRIER
+                  lore:
+                    - "&#ff5555中心尚未配置"
+                    - "&#696969无法自动归类材料区"
+            uncategorized:
+              title: "&#ff5555未分类"
+            zone:
+              material: STRUCTURE_BLOCK
+              title: "&#ededed第 %order% 项 • "
+              lore:
+                - "&#a0a0a0范围：%range%"
+                - "&#696969补充材料时会恢复这里保存的全部方块状态"
+                - "&#ff5555点击删除这个材料补给区"
+              states:
+                no-material:
+                  title: "&#a0a0a0第 %order% 个材料区快照"
   menus:
     prepare-toolbar:
       items:
         status:
           slot: 0
           material: PAPER
-          title: '&#ededed&l地图准备模式'
+          title: "&#ededed&l地图准备模式"
           lore:
-            - '&#a0a0a0游戏：&#ededed%game% &#696969• 地图：&#55ffff%map%'
-            - '&#a0a0a0目标世界：&#ededed%world%'
-            - '&#55ffff进度：%done%/%total%'
+            - "&#a0a0a0游戏：&#ededed%game% &#696969• 地图：&#55ffff%map%"
+            - "&#a0a0a0目标世界：&#ededed%world%"
+            - "&#55ffff进度：%done%/%total%"
+            - "%readiness%"
+          states:
+            ready:
+              title: "&#55ff55状态：✅ 已发布"
+            draft:
+              title: "&#ffaa00状态：⚠ 草稿（有未发布改动）"
+            complete:
+              title: "&#55ff55全部步骤已完成"
+            pending:
+              title: "&#ffaa00待办："
+            pending-entry:
+              lore:
+                - "&#ffaa00• %step%"
         teleport:
           slot: 1
           material: ENDER_PEARL
-          title: '&#55ffff&l传送至 %destination%'
+          title: "&#55ffff&l传送至 %destination%"
           lore:
-            - '&#a0a0a0前往世界：&#ededed%world%'
+            - "&#a0a0a0前往世界：&#ededed%world%"
         steps:
           slot: 2
           material: CHEST
-          title: '&#55ffff&l编辑准备步骤'
+          title: "&#55ffff&l编辑准备步骤"
           lore:
-            - '&#a0a0a0打开完整步骤列表'
-            - '&#a0a0a0步骤总数：&#ededed%count%'
+            - "&#a0a0a0打开完整步骤列表"
+            - "&#a0a0a0步骤总数：&#ededed%count%"
         validate:
           slot: 3
           material: SPYGLASS
-          title: '&#fff566&l校验地图'
+          title: "&#fff566&l校验地图"
           lore:
-            - '&#a0a0a0查看尚未完成的必需步骤'
+            - "&#a0a0a0查看尚未完成的必需步骤"
         publish:
           slot: 4
           states:
             draft:
               material: YELLOW_DYE
-              title: '&#ffaa00&l验证并发布'
+              title: "&#ffaa00&l验证并发布"
               lore:
-                - '&#a0a0a0检查通过后保存地图，并允许开赛'
+                - "&#a0a0a0检查通过后保存地图，并允许开赛"
             published:
               material: LIME_DYE
-              title: '&#55ff55&l地图已发布'
+              title: "&#55ff55&l地图已发布"
               lore:
-                - '&#a0a0a0重新发布会创建新的地图版本'
+                - "&#a0a0a0重新发布会创建新的地图版本"
         wand:
           slot: 5
           material: WOODEN_AXE
-          title: '&#ffaa00&lWorldEdit选区工具'
+          title: "&#ffaa00&lWorldEdit选区工具"
           lore:
-            - '&#a0a0a0左键选第一个点，右键选第二个点'
-            - '&#696969用于设置边界和模板'
+            - "&#a0a0a0左键选第一个点，右键选第二个点"
+            - "&#696969用于设置边界和模板"
         save-draft:
           slot: 6
           material: WRITABLE_BOOK
-          title: '&#ffaa00&l保存草稿'
+          title: "&#ffaa00&l保存草稿"
           lore:
-            - '&#a0a0a0保存当前方块改动，无需先完成全部点位'
-            - '&#fff566草稿不可开赛，请完成配置后再发布'
+            - "&#a0a0a0保存当前方块改动，无需先完成全部点位"
+            - "&#fff566草稿不可开赛，请完成配置后再发布"
         exit:
           slot: 8
           material: BARRIER
-          title: '&#ff5555&l退出地图准备模式'
+          title: "&#ff5555&l退出地图准备模式"
           lore:
-            - '&#a0a0a0恢复原物品栏并退出'
-      copy:
-        game: '游戏：'
-        map: '地图：'
-        target-world: '目标世界：'
-        already-in-the-correct-world: '✅ 已在目标世界'
-        please-go-to-this-world: '❌ 请先前往目标世界'
-        progress: '进度：'
-        status-published: '状态：✅ 已发布'
-        status-draft-with-unpublished-changes: '状态：⚠ 草稿（有未发布改动）'
-        all-steps-completed: '全部步骤已完成'
-        to-do: '待办：'
-        map-preparation-mode: '地图准备模式'
-        send-to: '传送至'
-        world-go-to: '世界/前往'
-        editing-preparation-steps: '编辑准备步骤'
-        open-multi-line-step-menu: '打开完整步骤列表'
-        number-of-steps: '步骤总数：'
-        exit-map-preparation-mode: '退出地图准备模式'
-        restore-inventory-and-exit: '恢复原物品栏并退出'
-        check-map: '校验地图'
-        list-all-required-steps-that-are-not-completed: '查看尚未完成的必需步骤'
-        map-published: '地图已发布'
-        verify-and-publish: '验证并发布'
-        release-again-to-generate-a-new-revision: '重新发布会创建新的地图版本'
-        after-the-verification-is-passed-the-world-is-solidified-and-the-game-is-allowed-to-start: '检查通过后保存地图，并允许开赛'
-        save-draft: '保存草稿'
-        save-current-block-changes-does-not-require-all-points-to-be-completed: '保存当前方块改动，无需先完成全部点位'
-        the-draft-is-still-unavailable-for-competition-publish-after-completing-the-configuration: '草稿不可开赛，请完成配置后再发布'
-        worldedit-selection-tool: 'WorldEdit选区工具'
-        left-click-to-select-pos1-right-click-to-select-pos2-for-border-template-step: '左键选第一个点，右键选第二个点；用于设置边界和模板'
+            - "&#a0a0a0恢复原物品栏并退出"
     input:
-      copy:
-        enter-venue-name: '输入场地名'
-        enter-the-number-of-copies: '输入份数'
-        please-enter-valid-numbers: '请输入有效数字。'
-        number-of-copies-must-be-at-least-1: '份数必须至少为&#fff5661'
-        please-enter-a-valid-integer: '请输入有效整数。'
-        enter-in-the-rename-field-above-then-click-on-the-result-box-on-the-right-to-confirm: '在上方输入内容，然后点击右侧结果栏确认'
-        venue-name-cannot-be-empty: '场地名不能为空。'
-        venue-name-cannot-exceed-32-characters: '场地名不能超过&#fff56632&#ededed个字符。'
-        venue-name-contains-invalid-characters: '场地名包含无效字符。'
-        venue: '场地&#fff566'
-        already-exists: '&#ededed已存在。'
-    area-list:
       items:
+        name:
+          material: PAPER
+          title: "&#fff566输入场地名"
+        number:
+          material: PAPER
+          title: "&#fff566输入份数"
+        hint:
+          material: PAPER
+          title: "&#a0a0a0在上方输入内容，然后点击右侧结果栏确认"
+    area-list:
+      title: "&#ededed%game% &#696969• &#55ffff场地列表"
+      items:
+        area:
+          material: PAPER
+          title: "&#ededed%name%"
+          lore:
+            - "&#a0a0a0配置进度：&#ededed%done%/%total%"
+          states:
+            published:
+              lore:
+                - "&#a0a0a0配置进度：&#ededed%done%/%total%"
+                - "&#55ff55✅ 已发布"
+                - "&#55ffff左键：编辑地图"
+                - "&#ff5555右键：删除地图配置（不会删除世界）"
+            draft:
+              lore:
+                - "&#a0a0a0配置进度：&#ededed%done%/%total%"
+                - "&#ffaa00⚠ 草稿（有未发布改动）"
+                - "&#55ffff左键：编辑地图"
+                - "&#ff5555右键：删除地图配置（不会删除世界）"
         new:
           material: EMERALD
-          title: '新建地图'
-          lore: ['点击后输入新地图名称']
+          title: "&#55ff55新建地图"
+          lore:
+            - "&#a0a0a0点击后输入新地图名称"
         close:
           material: BARRIER
-          title: '关闭'
-          lore: ['点击关闭']
-      copy:
-        venue-list: '场地列表'
-        configuration-progress: '配置进度：'
-        published: '✅ 已发布'
-        draft-with-unpublished-changes: '⚠ 草稿（有未发布改动）'
-        left-click-to-enter-editing: '左键：编辑地图'
-        right-click-to-delete-map-configuration-keep-world: '右键：删除地图配置（不会删除世界）'
-        create-new-map: '新建地图'
-        click-and-enter-the-map-name: '点击后输入新地图名称'
-        close: '关闭'
-        click-to-close-menu: '点击关闭'
-        delete-map-confirmation: '请在30秒内再次右键确认；只删除配置，不会删除地图世界'
+          title: "&#ff5555关闭"
+          lore:
+            - "&#a0a0a0点击关闭"
     countdown-blocks:
-      title: '开赛倒计时方块效果'
+      title: "&#ffaa00&l开赛倒计时方块效果"
       size: 27
       items:
         selection:
           slot: 10
           material: GOLDEN_AXE
-          title: '使用当前WorldEdit选区'
-          lore: ['%selection%', '点击保存当前选区']
+          title: "&#fff566使用当前WorldEdit选区"
+          lore:
+            - "&#a0a0a0点击保存当前选区"
+          states:
+            enabled:
+              lore:
+                - "&#a0a0a0当前选区：&#ededed%volume%个方块"
+                - "&#a0a0a0点击保存当前选区"
+            disabled:
+              lore:
+                - "&#a0a0a0未设置（功能关闭）"
+                - "&#a0a0a0点击保存当前选区"
+        random:
+          slot: 12
+          material: SAND
+          title: "&#ededed随机离散型"
+          lore:
+            - "&#a0a0a0方块会在开赛前最后3秒内消失"
+          states:
+            current:
+              glint: true
+              lore:
+                - "&#55ff55当前方式"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
+            idle:
+              lore:
+                - "&#a0a0a0点击选择"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
+        east-west:
+          slot: 13
+          material: OAK_DOOR
+          title: "&#ededed开门式（东西）"
+          lore:
+            - "&#a0a0a0方块会在开赛前最后3秒内消失"
+          states:
+            current:
+              glint: true
+              lore:
+                - "&#55ff55当前方式"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
+            idle:
+              lore:
+                - "&#a0a0a0点击选择"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
+        north-south:
+          slot: 14
+          material: SPRUCE_DOOR
+          title: "&#ededed开门式（南北）"
+          lore:
+            - "&#a0a0a0方块会在开赛前最后3秒内消失"
+          states:
+            current:
+              glint: true
+              lore:
+                - "&#55ff55当前方式"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
+            idle:
+              lore:
+                - "&#a0a0a0点击选择"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
+        vertical:
+          slot: 15
+          material: IRON_BARS
+          title: "&#ededed开门式（竖直）"
+          lore:
+            - "&#a0a0a0方块会在开赛前最后3秒内消失"
+          states:
+            current:
+              glint: true
+              lore:
+                - "&#55ff55当前方式"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
+            idle:
+              lore:
+                - "&#a0a0a0点击选择"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
+        direct:
+          slot: 16
+          material: TNT
+          title: "&#ededed直接消失"
+          lore:
+            - "&#a0a0a0方块会在开赛前最后3秒内消失"
+          states:
+            current:
+              glint: true
+              lore:
+                - "&#55ff55当前方式"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
+            idle:
+              lore:
+                - "&#a0a0a0点击选择"
+                - "&#a0a0a0方块会在开赛前最后3秒内消失"
         clear:
           slot: 17
           material: BARRIER
-          title: '关闭并清除选区'
-          lore: ['删除已保存的方块消失选区']
+          title: "&#ff5555关闭并清除选区"
+          lore:
+            - "&#a0a0a0删除已保存的方块消失选区"
         back:
           slot: 22
           material: ARROW
-          title: '返回'
-          lore: ['返回准备步骤']
-      copy:
-        the-countdown-block-disappears: '开赛倒计时方块效果'
-        blocks: '个方块）'
-        not-set-function-turned-off: '未设置（功能关闭）'
-        set-the-current-worldedit-selection: '使用当前WorldEdit选区'
-        click-to-read-the-current-selection: '点击保存当前选区'
-        close-and-clear-selection: '关闭并清除选区'
-        delete-the-saved-block-and-disappear-the-selection: '删除已保存的方块消失选区'
-        return-to-preparation-steps: '返回准备步骤'
-        current-approach: '当前方式'
-        will-be-completed-3-seconds-before-the-countdown-to-the-start-of-the-game: '方块会在开赛前最后3秒内消失'
-        please-set-up-worldedit-selection-first: '请先设置WorldEdit选区'
+          title: "&#ededed返回"
+          lore:
+            - "&#a0a0a0返回准备步骤"
     list-editor:
       items:
         add:
           slot: 0
           material: LIME_WOOL
+          title: "&#55ff55&l添加点位"
+          lore: []
         view:
           slot: 1
           material: BOOK
-          title: '查看已设置列表'
-          lore: ['调整顺序、重新设置位置，或删除条目']
+          title: "&#ededed查看已设置列表"
+          lore:
+            - "&#a0a0a0调整顺序、重新设置位置，或删除条目"
         info:
           slot: 4
           material: PAPER
+          title: "&#ededed当前点位数：%count%"
+          states:
+            set:
+              lore:
+                - "&#55ff55已设置"
+            unset:
+              lore:
+                - "&#ffaa00未设置"
         back:
           slot: 8
           material: ARROW
-          title: '返回'
-          lore: ['返回地图准备工具栏']
-      copy:
-        point-management: '点位管理：'
-        view-the-set-list: '查看已设置列表'
-        edit-serial-number-item-by-item-actual-information-or-delete: '调整顺序、重新设置位置，或删除条目'
-        current-number-of-points: '当前点位数：'
-        list-set: '已设置列表：'
-        click-to-edit-this: '点击编辑此项'
-        return-to-point-management: '返回点位管理'
-        edit-point: '编辑点位 # '
-        edit-serial-number: '编辑序号'
-        adjust-the-order-of-this-item-in-the-list: '调整此项在列表中的顺序'
-        edit-own-progress-line: '更改所属进度线'
-        select-which-progress-line-the-respawn-point-is-behind: '选择玩家经过哪条进度线后可在此重生'
-        edit-stage-equipment: '更改赛段装备'
-        do-not-modify-line-selection-and-drop-height: '只更换装备，不改进度线和坠落高度'
-        edit-actual-information: '重新设置位置或范围'
-        use-current-position-current-selection-override: '用当前位置或当前选区重新设置'
-        delete-this-item: '删除此项'
-        only-delete-the-current-item: '只删除当前这一项'
-        return-to-list: '返回列表'
-        enter-new-serial-number: '输入新序号'
+          title: "&#ededed返回"
+          lore:
+            - "&#a0a0a0返回地图准备工具栏"
+        entry:
+          material: PAPER
+          title: "&#ededed%title%"
+          lore:
+            - "&#a0a0a0点击编辑此项"
+        previous:
+          slot: 45
+          use: previous
+          material: ARROW
+          title: "&#ededed上一页"
+          lore:
+            - "&#55ffff第 %page% 页"
+        next:
+          slot: 53
+          use: next
+          material: ARROW
+          title: "&#ededed下一页"
+          lore:
+            - "&#55ffff第 %page% / %pages% 页"
+        entry-back:
+          slot: 49
+          material: BARRIER
+          title: "&#ff5555返回点位管理"
+          lore: []
+        editor:
+          title: "&#55ffff&l编辑第 %number% 项"
+        order:
+          material: NAME_TAG
+          title: "&#fff566&l编辑序号"
+          lore:
+            - "&#a0a0a0调整此项在列表中的顺序"
+        binding:
+          material: IRON_BARS
+          states:
+            progress-line:
+              material: IRON_BARS
+              title: "&#ff55ff&l更改所属进度线"
+              lore:
+                - "&#a0a0a0%binding%"
+                - "&#696969选择玩家经过哪条进度线后可在此重生"
+            equipment:
+              material: HEART_OF_THE_SEA
+              title: "&#ff55ff&l更改赛段装备"
+              lore:
+                - "&#a0a0a0%equipment%"
+                - "&#696969只更换装备，不改进度线和坠落高度"
+        actual:
+          material: COMPASS
+          title: "&#55ffff&l重新设置位置或范围"
+          lore:
+            - "&#a0a0a0用当前位置或当前选区重新设置"
+        delete:
+          material: RED_WOOL
+          title: "&#ff5555&l删除此项"
+          lore:
+            - "&#696969只删除当前这一项"
+        return:
+          material: ARROW
+          title: "&#ededed返回列表"
+          lore: []
+      title: "&#55ffff&l%step%"
     step-list:
-      title: '准备步骤'
+      title: 准备步骤
       size: 54
       layout:
-        content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+        content:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
       items:
         previous:
           slot: 45
           material: ARROW
-          title: '上一页'
-          lore: ['第 %page% 页']
+          title: 上一页
+          lore:
+            - 第 %page% 页
           states:
-            disabled: {material: GRAY_STAINED_GLASS_PANE, title: '准备步骤', lore: ['共 %total% 项']}
+            disabled:
+              material: GRAY_STAINED_GLASS_PANE
+              title: 准备步骤
+              lore:
+                - 共 %total% 项
         back:
           slot: 49
           material: BARRIER
-          title: '返回地图准备工具栏'
-          lore: ['关闭步骤菜单']
+          title: 返回地图准备工具栏
+          lore:
+            - 关闭步骤菜单
         next:
           slot: 53
           material: ARROW
-          title: '下一页'
-          lore: ['第 %page% / %pages% 页']
+          title: 下一页
+          lore:
+            - 第 %page% / %pages% 页
           states:
-            disabled: {material: GRAY_STAINED_GLASS_PANE, title: '已是最后一页', lore: ['没有更多步骤']}
-      copy:
-        preparatory-steps: '准备步骤'
-        item-suffix: '项'
-        close-step-menu: '关闭步骤菜单'
-        already-the-last-page: '已是最后一页'
-        no-more-steps: '没有更多步骤'
-        confirmed-world: '已确认所在世界'
-        to-be-confirmed: '待确认'
-        stamped-and-generated: '已批量生成'
-        to-be-stamped: '待生成'
-        to-be-set: '待设置'
-        click-to-edit: '点击编辑'
+            disabled:
+              material: GRAY_STAINED_GLASS_PANE
+              title: 已是最后一页
+              lore:
+                - 没有更多步骤
+        step:
+          states:
+            confirmed:
+              title: 已确认所在世界
+            unconfirmed:
+              title: 待确认
+            stamped:
+              title: 已批量生成
+            unstamped:
+              title: 待生成
+            set:
+              title: 已设置（
+            unset:
+              title: 待设置
+          lore:
+            - ""
+            - ""
+            - 点击编辑
+        stand-run:
+          lore:
+            - 站到目标位置后点击
+        confirm-world:
+          states:
+            rebind:
+              title: 绑定当前世界
+              lore:
+                - 点击将这张地图绑定到你当前所在的世界
+            confirm:
+              lore:
+                - 前往
+          title: 确认所在世界
+        option:
+          lore:
+            - 点击选择
+          states:
+            selected:
+              lore:
+                - 当前选择
+        introduction-spawn:
+          title: 规则介绍专用出生点（可选）
+          lore:
+            - 站到目标位置后点击；不设置则使用观众出生点
+        introduction-mode:
+          title: 规则介绍时的游戏模式
+          lore:
+            - 点击切换规则介绍期间玩家使用的游戏模式
+          states:
+            spectator:
+              title: 当前：旁观模式
+            adventure:
+              title: 当前：冒险模式
+        list-add:
+          title: 添加当前点位
+        material-zone:
+          title: 材料补给区
+        status:
+          states:
+            unset:
+              title: 未设置
+            set:
+              title: "&#55ff55已设置"
+        page:
+          title: 页
+        player-spawn:
+          title: 玩家出生点
+        progress-line:
+          title: "进度线 # "
+        site-boundary:
+          title: 场地边界
+          lore:
+            - 用WorldEdit框选整片比赛区域
+        snapshot:
+          title: 编辑场地
+        template:
+          title: 模板场地（0号）
+        spectator-spawn:
+          title: 观众出生点
+          lore:
+            - 站到观众出生位置后点击
+        track-boundary:
+          title: 赛道边界
+          lore:
+            - 用WorldEdit框选整条赛道
+        countdown-blocks:
+          title: 开赛倒计时方块消失（可选）
+          lore:
+            - 设置方块选区，以及开赛前最后3秒的消失方式；不设置则关闭此功能
+          states:
+            optional:
+              title: 可选
+            disabled:
+              title: 未启用（可选）
+            enabled:
+              title: "&#55ff55已启用：%mode%"
+        checkpoints:
+          title: 跑酷检查点
+          lore:
+            - 站在重生位置并用WorldEdit选取触发范围；至少设置一个检查点
+        checkpoint-add:
+          title: 添加主检查点
+          lore:
+            - 站在出生点并选取进入区域后点击
+        checkpoint-entry:
+          title: "&#ededed检查点 %order% • %name%"
+          lore:
+            - ""
+            - "&#a0a0a0出生点：%spawn%"
+            - "&#a0a0a0进入区域：%pos1% → %pos2%"
+        stamp:
+          title: 批量生成比赛分区
+          lore:
+            - 输入场地总数，自动复制模板并保存地图
+        countdownBlock: {}
+        confirmWorld: {}
+      games:
+        ace-race:
+          items:
+            start-line:
+              material: LIME_WOOL
+              title: "&#55ff55起点线"
+              lore:
+                - "&#a0a0a0用WorldEdit选取一条水平底线；判定范围会从该高度向上延伸"
+                - "&#696969当前位置同时作为起跑出生点"
+            finish-line:
+              material: ORANGE_WOOL
+              title: "&#ffaa00终点线"
+              lore:
+                - "&#a0a0a0用WorldEdit选取一条水平底线；判定范围会从该高度向上延伸"
+                - "&#696969用于计算圈数和判定完赛"
+            map-preview:
+              material: END_CRYSTAL
+              title: "&#55ffff赛道点位预览"
+              lore:
+                - "&#a0a0a0开启后用末地水晶标出重生点，并用粒子显示进度线；退出编辑时自动清理"
+              states:
+                enabled:
+                  title: "&#55ff55当前：已开启"
+                  glint: true
+                disabled:
+                  title: "&#a0a0a0当前：已关闭"
+                marker-start:
+                  title: "&#55ffff起点后"
+                marker-bound:
+                  title: "&#55ffff进度点 # %order% 后"
+            progress-points:
+              material: LIME_CONCRETE
+              title: "&#55ffff竞速进度点"
+              lore:
+                - "&#a0a0a0用WorldEdit选取水平直线；不足20格会向两侧延伸，判定范围覆盖线下3格及以上"
+            progress-add:
+              material: LIME_WOOL
+              title: "&#55ff55添加进度点"
+              lore:
+                - "&#a0a0a0用WorldEdit选取进度点直线后点击"
+            progress-entry:
+              material: PAPER
+              title: "&#ededed第 %order% 个进度点"
+              lore:
+                - "&#a0a0a0选线：%pos1% → %pos2%"
+                - "&#696969判定范围：不足20格会向两侧延伸；覆盖进度线下3格及以上"
+                - "&#a0a0a0坠落重置高度：%fall%"
+                - "&#a0a0a0下一赛段装备：%equipment%"
+            progress-fall-height:
+              material: PAPER
+              title: "&#fff566输入坠落重置高度"
+            progress-binding:
+              material: IRON_BARS
+              states:
+                missing:
+                  title: "&#ff5555当前装备：条目已不存在"
+                current:
+                  title: "&#ededed当前装备：%equipment%"
+            respawn-points:
+              material: PLAYER_HEAD
+              title: "&#55ffff竞速重生点"
+              lore:
+                - "&#a0a0a0系统会按位置判断所属赛段，也可手动指定；玩家进入3格范围时会保存进度"
+            respawn-add:
+              material: LIME_WOOL
+              title: "&#55ff55添加重生点"
+              lore:
+                - "&#a0a0a0站在重生位置后点击；赛段默认按坐标判断，可再手动指定"
+            respawn-binding:
+              material: IRON_BARS
+              states:
+                not-loaded:
+                  title: "&#ff5555所属进度线：未加载"
+                after-start:
+                  title: "&#ededed所属进度线：起点后"
+                bound:
+                  title: "&#ededed所属进度线：第 %line% 项"
+            start-fall-height:
+              material: PAPER
+              title: "&#fff566起点后的坠落重置高度"
+        dodgebolt:
+          items:
+            area:
+              material: BEDROCK
+              title: "&#55ffff比赛区边界"
+              lore:
+                - "&#a0a0a0用WorldEdit选定两个端点"
+            spectator-area:
+              material: SPYGLASS
+              title: "&#55ffff观赛活动区边界"
+              lore:
+                - "&#a0a0a0用WorldEdit选定两个端点"
+            platform:
+              material: SMOOTH_STONE
+              title: "&#55ffff可收缩平台"
+              lore:
+                - "&#a0a0a0用WorldEdit选定两个端点"
+            right-area:
+              material: RED_STAINED_GLASS
+              title: "&#ff5555右队活动区域"
+              lore:
+                - "&#a0a0a0用WorldEdit选定两个端点"
+            left-area:
+              material: BLUE_STAINED_GLASS
+              title: "&#5555ff左队活动区域"
+              lore:
+                - "&#a0a0a0用WorldEdit选定两个端点"
+            right-shoot:
+              material: RED_CONCRETE
+              title: "&#ff5555右队射箭区域"
+              lore:
+                - "&#a0a0a0用WorldEdit选定两个端点"
+            left-shoot:
+              material: BLUE_CONCRETE
+              title: "&#5555ff左队射箭区域"
+              lore:
+                - "&#a0a0a0用WorldEdit选定两个端点"
+            right-spawn:
+              material: RED_WOOL
+              title: "&#ff5555右队选手出生点"
+              lore:
+                - "&#a0a0a0逐个添加点位"
+            left-spawn:
+              material: BLUE_WOOL
+              title: "&#5555ff左队选手出生点"
+              lore:
+                - "&#a0a0a0逐个添加点位"
+            right-arrow:
+              material: ARROW
+              title: "&#ff5555右队箭刷新点"
+              lore:
+                - "&#a0a0a0站到目标位置后点击"
+            left-arrow:
+              material: SPECTRAL_ARROW
+              title: "&#5555ff左队箭刷新点"
+              lore:
+                - "&#a0a0a0站到目标位置后点击"
+        dragon-egg-carnival: {}
+        hoty-cody-dusky:
+          items:
+            player-spawn:
+              material: PLAYER_HEAD
+              title: "&#55ffff玩家出生点"
+              lore:
+                - "&#a0a0a0站到出生位置后点击"
+        parkour-warrior:
+          items:
+            track-boundary:
+              material: BEDROCK
+              title: "&#55ffff跑酷赛道"
+              lore:
+                - "&#a0a0a0用WorldEdit框选整条跑酷赛道"
+            player-spawn:
+              material: PLAYER_HEAD
+              title: "&#55ffff玩家出生点"
+              lore:
+                - "&#a0a0a0站到赛道起点后点击"
+        sky-wars:
+          items:
+            map-borders:
+              material: BEDROCK
+              title: "&#55ffff地图边界"
+              lore:
+                - "&#a0a0a0用WorldEdit框选整张空岛地图"
+            border-center:
+              material: COMPASS
+              title: "&#55ffff边界中心点"
+              lore:
+                - "&#a0a0a0站到边界收缩的中心位置后点击"
+            team-spawn:
+              material: LIME_WOOL
+              title: "&#55ff55队伍出生点"
+              lore:
+                - "&#a0a0a0逐个添加每队的出生位置"
+        snowball-showdown:
+          items:
+            site-boundary:
+              material: BEDROCK
+              title: "&#55ffff雪球场地"
+              lore:
+                - "&#a0a0a0用WorldEdit框选整片雪球场地"
+            lane-spawn:
+              material: PLAYER_HEAD
+              title: "&#55ffff玩家出生点%lane%"
+              lore:
+                - "&#a0a0a0逐个添加该区域的玩家出生位置"
+        tgttos:
+          items:
+            area-type:
+              material: CHEST
+              title: "&#55ffff地图装备类型"
+              lore:
+                - "&#a0a0a0点击选择开局游戏模式和初始物品"
+              states:
+                selected:
+                  title: "&#55ffff%option% • %description%"
+            monster-spawn:
+              material: ZOMBIE_HEAD
+              title: "&#55ffff怪物生成点（可选）"
+              lore:
+                - "&#a0a0a0逐个添加怪物生成位置；留空则本图不生成怪物"
+              states:
+                count:
+                  title: "&#a0a0a0可选（%count%个）"
+            chicken-spawn-area:
+              material: EGG
+              title: "&#ffff55鸡生成区域"
+              lore:
+                - "&#a0a0a0用WorldEdit选取一格高的平面；鸡随机生成在其上方一格"
+            player-spawn-area:
+              material: PLAYER_HEAD
+              title: "&#55ffff玩家生成区域与朝向"
+              lore:
+                - "&#a0a0a0看向开局方向后，用WorldEdit选取一格高的平面；所有玩家统一朝向"
+        battle-box:
+          items:
+            save-template:
+              material: STRUCTURE_BLOCK
+              title: "&#55ffff保存场地模板"
+              lore:
+                - "&#a0a0a0用WorldEdit选取整个场地后点击，保存为arena.schem"
+            arena-boundary:
+              material: BEDROCK
+              title: "&#55ffff模板场地（0号）完整边界"
+              lore:
+                - "&#a0a0a0框选完整的0号模板场地；选区最小角将作为副本粘贴基准点"
+            spawn-right:
+              material: GREEN_WOOL
+              title: "&#55ff55右侧队伍出生点"
+              lore:
+                - "&#a0a0a0站到右侧队伍出生位置后点击"
+            spawn-left:
+              material: RED_WOOL
+              title: "&#ff5555左侧队伍出生点"
+              lore:
+                - "&#a0a0a0站到左侧队伍出生位置后点击"
+            prepare-right:
+              material: GREEN_STAINED_GLASS
+              title: "&#55ff55右队预备点"
+              lore:
+                - "&#a0a0a0站到右侧队伍预备位置后点击"
+            prepare-left:
+              material: RED_STAINED_GLASS
+              title: "&#ff5555左队预备点"
+              lore:
+                - "&#a0a0a0站到左侧队伍预备位置后点击"
+            wool-area:
+              material: YELLOW_WOOL
+              title: "&#ffff55羊毛区域"
+              lore:
+                - "&#a0a0a0用WorldEdit选取羊毛放置区域"
+            potion-spawn:
+              material: LIME_WOOL
+              title: "&#55ff55药水生成点"
+              lore:
+                - "&#a0a0a0逐个添加药水生成位置"
+        bingo:
+          items:
+            spectator-spawn:
+              material: ENDER_EYE
+              title: "&#55ffff设置观众出生点"
+              lore:
+                - "&#a0a0a0站到目标点位后点击"
+        build-mart:
+          items:
+            hub:
+              material: CHEST
+              title: "&#55ffff资源大厅边界"
+              lore:
+                - "&#a0a0a0用WorldEdit选区后点击"
+            base-schematic:
+              material: STRUCTURE_BLOCK
+              title: "&#55ffff保存模板基地（0号）"
+              lore:
+                - "&#a0a0a0在0号位置框选完整基地；这里仅作为复制模板，不会分配给队伍"
+            stamp:
+              material: DISPENSER
+              title: "&#ffaa00生成队伍基地"
+              lore:
+                - "&#a0a0a0输入参赛队伍上限；0号保留为模板，实际基地从1号开始"
+            wind-zones:
+              material: OAK_DOOR
+              title: "&#55ffff上升气流区"
+              lore:
+                - "&#a0a0a0用WorldEdit添加一个或多个区域；每个区域上方都会产生上升气流"
+            wind-add:
+              material: LIME_WOOL
+              title: "&#55ff55添加吹风口区域"
+              lore:
+                - "&#a0a0a0用WorldEdit选取区域后点击"
+            wind-entry:
+              material: PAPER
+              title: "&#ededed第 %number% 个吹风口"
+              lore:
+                - "&#a0a0a0区域：%range%"
+                - "&#a0a0a0上升范围：Y=%top%至200"
+            material-zone-step:
+              material: CHEST
+              title: "&#55ffff材料补给区"
+              lore:
+                - "&#a0a0a0保存选区内的方块状态，比赛中会定时恢复"
+              states:
+                set:
+                  title: "&#55ff55已设置 • %count%个材料区"
+            hub-portal:
+              material: OBSIDIAN
+              title: "&#55ffff资源大厅传送门落点"
+              lore:
+                - "&#a0a0a0站到玩家从基地传送后应出现的位置；不要站在传送门方块内"
+            golden-display:
+              material: GOLD_BLOCK
+              title: "&#ffaa00黄金蓝图展示区地板"
+              lore:
+                - "&#a0a0a0用WorldEdit精确选中7x1x7地板"
+            base-floor:
+              material: PAPER
+              title: "&#ededed模板基地：%key%"
+              lore:
+                - "&#a0a0a0用WorldEdit精确选中7x1x7地板"
+            base-submit:
+              material: PAPER
+              title: "&#ededed模板基地：%key%"
+              lore:
+                - "&#a0a0a0用WorldEdit精确选中提交按钮方块"
+            base-portal:
+              material: PAPER
+              title: "&#ededed模板基地：%key%"
+              lore:
+                - "&#a0a0a0站到玩家从资源大厅返回后应出现的位置；不要站在传送门方块内"
+        parkour-tag:
+          items:
+            template:
+              material: STRUCTURE_BLOCK
+              title: "&#55ffff保存双赛道对局模板"
+              lore:
+                - "&#a0a0a0框选整个0号模板：两条镜像赛道、双方准备区和观赛区"
+            arena-boundary:
+              material: BEDROCK
+              title: "&#55ffff模板对局（0号）完整边界"
+              lore:
+                - "&#a0a0a0框住两条赛道和双方准备区；其他比赛分区会自动按此模板生成"
+            prepare-a:
+              material: GREEN_WOOL
+              title: "&#55ff55A队预备点"
+              lore:
+                - "&#a0a0a0站到A队正式倒计时前集合的位置后点击"
+            prepare-b:
+              material: RED_WOOL
+              title: "&#ff5555B队预备点"
+              lore:
+                - "&#a0a0a0站到B队正式倒计时前集合的位置后点击"
+            chaser-a:
+              material: STONE_BUTTON
+              title: "&#55ff55A队追击者按钮"
+              lore:
+                - "&#a0a0a0对准A队准备区内已经贴墙放置的按钮后点击"
+            chaser-b:
+              material: STONE_BUTTON
+              title: "&#ff5555B队追击者按钮"
+              lore:
+                - "&#a0a0a0对准B队准备区内已经贴墙放置的按钮后点击"
+            track-1-boundary:
+              material: GREEN_STAINED_GLASS
+              title: "&#55ff55赛道1完整边界（A追B逃）"
+              lore:
+                - "&#a0a0a0选取第一张完整跑酷地图；边界同时约束追击者和逃跑者"
+            track-1-chaser:
+              material: GREEN_CONCRETE
+              title: "&#55ff55赛道1：A队追击者出生点"
+              lore:
+                - "&#a0a0a0A队追击者在赛道1的出生位置"
+            track-1-escapee:
+              material: LIME_WOOL
+              title: "&#55ff55赛道1：B队逃跑者出生点"
+              lore:
+                - "&#a0a0a0逐个添加B队逃跑者在赛道1的出生位置"
+            track-2-boundary:
+              material: RED_STAINED_GLASS
+              title: "&#ff5555赛道2完整边界（B追A逃）"
+              lore:
+                - "&#a0a0a0选取第二张完整跑酷地图；边界同时约束追击者和逃跑者"
+            track-2-chaser:
+              material: RED_CONCRETE
+              title: "&#ff5555赛道2：B队追击者出生点"
+              lore:
+                - "&#a0a0a0B队追击者在赛道2的出生位置"
+            track-2-escapee:
+              material: ORANGE_WOOL
+              title: "&#ff5555赛道2：A队逃跑者出生点"
+              lore:
+                - "&#a0a0a0逐个添加A队逃跑者在赛道2的出生位置"
+        tnt-run:
+          items:
+            save-template:
+              material: STRUCTURE_BLOCK
+              title: "&#55ffff保存0号赛道模板"
+              lore:
+                - "&#a0a0a0用WorldEdit框选完整赛道，并保存为arena.schem"
+            track-boundary:
+              material: BEDROCK
+              title: "&#55ffff模板赛道（0号）完整边界"
+              lore:
+                - "&#a0a0a0框选完整的0号模板赛道；选区最小角将作为副本粘贴基准点"
+            spawn:
+              material: ELYTRA
+              title: "&#55ffff模板赛道（0号）玩家出生点"
+              lore:
+                - "&#a0a0a0站到0号模板赛道的玩家出生位置后点击"
 spectator:
   menus:
     venue-selector:
-      title: '&#55ffff&l选择观战场地'
+      title: "&#55ffff&l选择观战场地"
       size: 54
       layout:
-        content: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
-        border: [0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 47, 51]
+        content:
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+        border:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 5
+          - 6
+          - 7
+          - 8
+          - 45
+          - 46
+          - 47
+          - 51
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
-          title: ' '
+          title: " "
           lore: []
         status:
           slot: 4
           material: SPYGLASS
-          title: '&#55ffff&l观战大厅'
+          title: "&#55ffff&l观战大厅"
           lore: []
           states:
             idle:
               lore:
-                - '&#a0a0a0进行中场地：&#55ff55%count%'
-                - '&#696969当前未在观战'
+                - "&#a0a0a0进行中场地：&#55ff55%count%"
+                - "&#696969当前未在观战"
             watching:
               glint: true
               lore:
-                - '&#a0a0a0进行中场地：&#55ff55%count%'
-                - '&#a0a0a0当前观战：&#55ffff%game% &#696969• &#ededed%venue%'
+                - "&#a0a0a0进行中场地：&#55ff55%count%"
+                - "&#a0a0a0当前观战：&#55ffff%game% &#696969• &#ededed%venue%"
         match:
           material: ENDER_EYE
-          title: '%game_color%&l%game% &#696969• &#ededed%venue%'
+          title: "%game_color%&l%game% &#696969• &#ededed%venue%"
           lore:
-            - '&#a0a0a0场地：&#ededed%venue%'
-            - '&#a0a0a0阶段：%stage_color%%stage%'
-            - '&#a0a0a0观众：&#55ffff%audience%'
+            - "&#a0a0a0场地：&#ededed%venue%"
+            - "&#a0a0a0阶段：%stage_color%%stage%"
+            - "&#a0a0a0观众：&#55ffff%audience%"
           states:
             watching:
               glint: true
+              lore:
+                - "&#55ff55&l✓ 正在旁观"
+            paired:
+              title: "&#ffaa00本场对战："
+            paired-line:
+              title: "%right% 对阵 %left%"
+            multi:
+              title: "&#ffaa00参赛队伍："
+            waiting:
+              title: "&#696969等待队伍数据"
+            undecided:
+              title: "&#696969待定"
         empty:
           slot: 22
           material: GRAY_DYE
-          title: '&#a0a0a0暂无进行中的场地'
+          title: "&#a0a0a0暂无进行中的场地"
           lore:
-            - '&#696969比赛进入规则介绍或准备阶段后，会显示在这里'
+            - "&#696969比赛进入规则介绍或准备阶段后，会显示在这里"
         leave:
           slot: 45
           material: REDSTONE
-          title: '&#ff5555退出观战'
+          title: "&#ff5555退出观战"
           lore:
-            - '&#a0a0a0当前场地：&#ededed%venue%'
+            - "&#a0a0a0当前场地：&#ededed%venue%"
         previous:
           slot: 48
           material: ARROW
-          title: '&#ededed上一页'
+          title: "&#ededed上一页"
           lore: []
         refresh:
           slot: 49
           material: CLOCK
-          title: '&#fff566刷新'
+          title: "&#fff566刷新"
           lore:
-            - '&#696969场地状态每秒自动更新'
+            - "&#696969场地状态每秒自动更新"
         page:
           slot: 50
           material: PAPER
-          title: '&#55ffff第 %page% / %pages% 页'
+          title: "&#55ffff第 %page% / %pages% 页"
           lore:
-            - '&#a0a0a0正在运行：&#ededed%count% 个场地'
+            - "&#a0a0a0正在运行：&#ededed%count% 个场地"
         next:
           slot: 52
           material: ARROW
-          title: '&#ededed下一页'
+          title: "&#ededed下一页"
           lore: []
         close:
           slot: 53
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
-      copy:
-        watching: '&#55ff55&l✓ 正在旁观'
-        paired-heading: '&#ffaa00本场对战：'
-        multi-heading: '&#ffaa00参赛队伍：'
-        waiting: '&#696969等待队伍数据'
-        undecided: '待定'
     sub-arena-selector:
-      title: '&#55ffff&l选择比赛分区'
+      title: "&#55ffff&l选择比赛分区"
       size: 54
       layout:
-        content: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
-        border: [0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 47, 51]
+        content:
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+        border:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 5
+          - 6
+          - 7
+          - 8
+          - 45
+          - 46
+          - 47
+          - 51
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
-          title: ' '
+          title: " "
           lore: []
         summary:
           slot: 4
           material: ENDER_EYE
-          title: '%game_color%&l%game% &#696969• &#ededed%venue%'
+          title: "%game_color%&l%game% &#696969• &#ededed%venue%"
           lore:
-            - '&#a0a0a0请选择要前往的比赛分区'
+            - "&#a0a0a0请选择要前往的比赛分区"
         destination:
           material: ENDER_EYE
-          title: '&#ededed&l%name%'
+          title: "&#ededed&l%name%"
           lore:
-            - '&#a0a0a0点击前往该分区的比赛出生点'
+            - "&#a0a0a0点击前往该分区的比赛出生点"
+          states:
+            arena:
+              title: "&#ededed&l比赛分区 %number%"
         back:
           slot: 45
           material: ARROW
-          title: '&#ededed返回场地列表'
+          title: "&#ededed返回场地列表"
           lore: []
         previous:
           slot: 48
           material: ARROW
-          title: '&#ededed上一页'
+          title: "&#ededed上一页"
           lore: []
         refresh:
           slot: 49
           material: CLOCK
-          title: '&#fff566刷新'
+          title: "&#fff566刷新"
           lore: []
         page:
           slot: 50
           material: PAPER
-          title: '&#55ffff第 %page% / %pages% 页'
+          title: "&#55ffff第 %page% / %pages% 页"
           lore:
-            - '&#a0a0a0比赛分区：&#ededed%count% 个'
+            - "&#a0a0a0比赛分区：&#ededed%count% 个"
         next:
           slot: 52
           material: ARROW
-          title: '&#ededed下一页'
+          title: "&#ededed下一页"
           lore: []
         close:
           slot: 53
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
     build-mart-selector:
-      title: '&#ffaa00&l选择匹配赛建观战位置'
+      title: "&#ffaa00&l选择匹配赛建观战位置"
       size: 54
       layout:
-        content: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
-        border: [0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 47, 51]
+        content:
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+        border:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 5
+          - 6
+          - 7
+          - 8
+          - 45
+          - 46
+          - 47
+          - 51
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
-          title: ' '
+          title: " "
           lore: []
         summary:
           slot: 4
           material: CRAFTING_TABLE
-          title: '&#ffaa00&l匹配赛建 &#696969• &#ededed%venue%'
+          title: "&#ffaa00&l匹配赛建 &#696969• &#ededed%venue%"
           lore:
-            - '&#a0a0a0观战位置：&#ededed%count% 个'
+            - "&#a0a0a0观战位置：&#ededed%count% 个"
         resource-hub:
           material: CHEST
-          title: '&#ffaa00&l资源大厅'
+          title: "&#ffaa00&l资源大厅"
           lore:
-            - '&#a0a0a0公共材料区'
+            - "&#a0a0a0公共材料区"
         team-base:
           material: WHITE_WOOL
-          title: '%team_color%&l%team%&#ededed的基地'
+          title: "%team_color%&l%team%&#ededed的基地"
           lore:
-            - '&#a0a0a0队伍建筑区'
+            - "&#a0a0a0队伍建筑区"
         back:
           slot: 45
           material: ARROW
-          title: '&#ededed返回场地列表'
+          title: "&#ededed返回场地列表"
           lore: []
         previous:
           slot: 48
           material: ARROW
-          title: '&#ededed上一页'
+          title: "&#ededed上一页"
           lore: []
         refresh:
           slot: 49
           material: CLOCK
-          title: '&#fff566刷新'
+          title: "&#fff566刷新"
           lore: []
         page:
           slot: 50
           material: PAPER
-          title: '&#55ffff第 %page% / %pages% 页'
+          title: "&#55ffff第 %page% / %pages% 页"
           lore:
-            - '&#a0a0a0观战位置：&#ededed%count% 个'
+            - "&#a0a0a0观战位置：&#ededed%count% 个"
         next:
           slot: 52
           material: ARROW
-          title: '&#ededed下一页'
+          title: "&#ededed下一页"
           lore: []
         close:
           slot: 53
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
     visibility:
-      title: '&#55ffff&l玩家显示设置'
+      title: "&#55ffff&l玩家显示设置"
       size: 9
       layout:
-        content: [2, 4, 6, 8]
+        content:
+          - 2
+          - 4
+          - 6
+          - 8
       items:
         show-all:
           slot: 2
           material: LIME_DYE
-          title: '&#55ff55&l显示全部玩家'
+          title: "&#55ff55&l显示全部玩家"
           lore:
-            - '&#a0a0a0清除筛选并显示场内所有玩家'
+            - "&#a0a0a0清除筛选并显示场内所有玩家"
         show-player:
           slot: 4
           material: PLAYER_HEAD
-          title: '&#ff55ff&l仅显示所选玩家'
+          title: "&#ff55ff&l仅显示所选玩家"
           lore:
-            - '&#a0a0a0选择一名玩家，隐藏其他玩家'
+            - "&#a0a0a0选择一名玩家，隐藏其他玩家"
         show-team:
           slot: 6
           material: WHITE_WOOL
-          title: '&#ffaa00&l仅显示所选队伍'
+          title: "&#ffaa00&l仅显示所选队伍"
           lore:
-            - '&#a0a0a0选择一支队伍，隐藏其他玩家'
+            - "&#a0a0a0选择一支队伍，隐藏其他玩家"
         close:
           slot: 8
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
     player-visibility-selector:
-      title: '&#ff55ff&l选择要显示的玩家'
+      title: "&#ff55ff&l选择要显示的玩家"
       size: 9
       layout:
-        content: [0, 1, 2, 3, 4, 5, 6, 7]
+        content:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
       items:
         player:
           material: PLAYER_HEAD
-          title: '&#ededed%player%'
+          title: "&#ededed%player%"
           lore:
-            - '&#a0a0a0点击后仅显示该玩家'
+            - "&#a0a0a0点击后仅显示该玩家"
         close:
           slot: 8
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
     player-teleport-selector:
-      title: '&#55ff55&l选择要前往的玩家'
+      title: "&#55ff55&l选择要前往的玩家"
       size: 54
       layout:
-        content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
+        content:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
       items:
         player:
           material: PLAYER_HEAD
-          title: '&#ededed%player%'
+          title: "&#ededed%player%"
           lore:
-            - '&#a0a0a0点击前往该玩家的位置'
+            - "&#a0a0a0点击前往该玩家的位置"
         previous:
           slot: 45
           material: ARROW
-          title: '&#ededed上一页'
+          title: "&#ededed上一页"
           lore: []
         close:
           slot: 48
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
         page:
           slot: 49
           material: PAPER
-          title: '&#55ffff第 %page% / %pages% 页'
+          title: "&#55ffff第 %page% / %pages% 页"
           lore: []
         next:
           slot: 53
           material: ARROW
-          title: '&#ededed下一页'
+          title: "&#ededed下一页"
           lore: []
     team-visibility-selector:
-      title: '&#ffaa00&l选择要显示的队伍'
+      title: "&#ffaa00&l选择要显示的队伍"
       size: 9
       layout:
-        content: [0, 1, 2, 3, 4, 5, 6, 7]
+        content:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
       items:
         team:
           material: WHITE_WOOL
-          title: '%team_color%&l%team%'
+          title: "%team_color%&l%team%"
           lore:
-            - '&#a0a0a0点击后仅显示该队伍成员'
+            - "&#a0a0a0点击后仅显示该队伍成员"
         close:
           slot: 8
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
   hotbar:
     participant-controls:
       slot: 8
       material: COMPASS
-      title: '&#55ff55&l选择玩家'
+      title: "&#55ff55&l选择玩家"
       lore:
-        - '&#a0a0a0右键：选择一名玩家并前往'
-        - '&#a0a0a0左键：玩家显示设置'
+        - "&#a0a0a0右键：选择一名玩家并前往"
+        - "&#a0a0a0左键：玩家显示设置"
       glint: true
     night-vision:
       slot: 0
       material: COAL
-      title: '&#55ffff&l夜视'
+      title: "&#55ffff&l夜视"
       lore:
-        - '&#a0a0a0点击切换夜视'
+        - "&#a0a0a0点击切换夜视"
       states:
-        enabled: {material: SEA_LANTERN, glint: true}
-        disabled: {material: COAL, glint: false}
+        enabled:
+          material: SEA_LANTERN
+          glint: true
+        disabled:
+          material: COAL
+          glint: false
     player-teleport:
       slot: 1
       material: COMPASS
-      title: '&#55ff55&l选择玩家'
+      title: "&#55ff55&l选择玩家"
       lore:
-        - '&#a0a0a0右键选择一名参赛玩家并前往'
+        - "&#a0a0a0右键选择一名参赛玩家并前往"
     player-visibility:
       slot: 4
       material: GLASS
-      title: '&#ededed&l玩家显示设置'
+      title: "&#ededed&l玩家显示设置"
       lore:
-        - '&#a0a0a0点击选择全部、单名玩家或单支队伍'
+        - "&#a0a0a0点击选择全部、单名玩家或单支队伍"
     leave:
       slot: 5
       material: RED_DYE
-      title: '&#ff5555&l退出观战'
+      title: "&#ff5555&l退出观战"
       lore:
-        - '&#a0a0a0点击退出观战并返回大厅'
+        - "&#a0a0a0点击退出观战并返回大厅"
     flight-speed:
       slot: 7
       material: FEATHER
-      title: '&#fff566&l飞行速度：%speed%'
+      title: "&#fff566&l飞行速度：%speed%"
       lore:
-        - '&#55ff55左键：提高速度'
-        - '&#ff5555右键：降低速度'
+        - "&#55ff55左键：提高速度"
+        - "&#ff5555右键：降低速度"
     venue-selector:
       slot: 8
       material: SPYGLASS
-      title: '&#55ffff&l选择观战场地'
+      title: "&#55ffff&l选择观战场地"
       lore:
-        - '&#a0a0a0点击打开场地列表'
+        - "&#a0a0a0点击打开场地列表"
       glint: true
-  copy:
-    unavailable: '该场地已结束或当前不可观战。'
-    visibility-all: '已显示场内全部玩家。'
-    visibility-player: '现在仅显示玩家%player%。'
-    visibility-team: '现在仅显示队伍%team%。'
-    left: '已退出观战。'
-    night-vision: '夜视已%state%。'
-    teleported-to-player: '已前往：%player%'
-    flight-speed: '飞行速度：%speed%'
-    states:
-      enabled: '开启'
-      disabled: '关闭'
-    arena-section: '比赛分区 %number%'
-    resource-hub: '资源大厅'
-    team-base: '%team%的基地'
 teams:
   menus:
     overview:
-      title: '&#ffaa00&l队伍管理'
+      title: "&#ffaa00&l队伍管理"
       size: 54
       layout:
-        content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
-        border: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53]
+        content:
+          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+        border:
+          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
+          - 48, 49, 50, 51, 52, 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
-          title: ' '
+          title: " "
           lore: []
         team:
-          title: '&#ededed&l%team%'
+          title: "&#ededed&l%team%"
           lore:
-            - '&#a0a0a0在线：&#55ff55%online%&#696969 / &#ededed%members%'
-            - ''
-            - '&#fff566点击管理成员与队伍'
+            - "&#a0a0a0在线 &#55ff55%online%&#a0a0a0 / &#a0a0a0%members%"
+            - "&#a0a0a0ID：&#ededed%id% • 显示颜色：%color%"
+            - "&#a0a0a0点击管理成员与队伍"
         empty:
           material: GRAY_DYE
-          title: '&#a0a0a0暂无队伍'
+          title: "&#a0a0a0还没有队伍"
           lore:
-            - '&#696969点击左下角创建第一支队伍'
+            - "&#a0a0a0点击左下角创建第一支队伍"
         create:
           material: EMERALD
-          title: '&#55ff55&l创建队伍'
+          title: "&#55ff55&l创建队伍"
           lore:
-            - '&#a0a0a0输入队伍ID，再选择显示颜色'
+            - "&#a0a0a0先输入队伍ID，再选择显示颜色"
         quick-assign:
           material: PLAYER_HEAD
-          title: '&#55ffff&l快速更换队伍'
+          title: "&#55ffff&l快速更换队伍"
           lore:
-            - '&#a0a0a0选择在线玩家，再选择目标队伍'
-            - '&#696969移动已入队玩家前需要再次确认'
+            - "&#a0a0a0选择在线玩家，再选择目标队伍"
+            - "&#a0a0a0移动已入队玩家前需要再次确认"
         previous:
           material: ARROW
-          title: '&#ededed上一页'
+          title: "&#ededed上一页"
           lore: []
         refresh:
           material: SUNFLOWER
-          title: '&#fff566刷新'
+          title: "&#fff566刷新"
           lore: []
         page:
           material: PAPER
-          title: '&#55ffff第 %page% / %pages% 页'
+          title: "&#55ffff第 %page% / %pages% 页"
           lore:
-            - '&#a0a0a0共 %count% 支队伍'
+            - "&#a0a0a0共 %count% 支队伍"
         next:
           material: ARROW
-          title: '&#ededed下一页'
+          title: "&#ededed下一页"
           lore: []
         teleport-all:
           material: ENDER_EYE
-          title: '&#ff55ff传送全部队伍到这里'
+          title: "&#ff55ff传送全部队伍到这里"
           lore:
-            - '&#a0a0a0仅传送在线成员'
-            - ''
-            - '&#fff566点击后需要确认'
+            - "&#a0a0a0仅传送在线成员"
+            - ""
+            - "&#fff566点击后需要确认"
         close:
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
+        page-unit:
+          title: 支队伍
     members:
-      title: '&#55ffff&l队伍成员管理'
+      title: "&#ffaa00&l%team% • 成员管理"
       size: 54
       layout:
-        content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
-        border: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53]
+        content:
+          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+        border:
+          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
+          - 48, 49, 50, 51, 52, 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
-          title: ' '
+          title: " "
           lore: []
         member:
+          title: "&#ededed&l%player%"
           states:
             online:
               glint: true
+              lore:
+                - "&#55ff55● 在线"
+                - ""
+                - "&#ff5555点击移除成员"
+            offline:
+              lore:
+                - "&#a0a0a0○ 离线"
+                - ""
+                - "&#ff5555点击移除成员"
         empty:
           material: PLAYER_HEAD
-          title: '&#a0a0a0队伍中还没有成员'
+          title: "&#a0a0a0队伍中还没有成员"
           lore:
-            - '&#696969从左下角添加在线或历史玩家'
+            - "&#a0a0a0从左下角添加在线玩家或输入玩家名"
         add-player:
           states:
             available:
               material: LIME_DYE
-              title: '&#55ff55&l添加在线玩家'
+              title: "&#55ff55&l添加在线玩家"
+              lore:
+                - "&#a0a0a0从当前在线且尚未入队的玩家中选择"
             full:
               material: RED_DYE
-              title: '&#ff5555&l队伍人数已满'
+              title: "&#ff5555&l队伍人数已满"
+              lore:
+                - "&#a0a0a0%members% / %max%"
+                - "&#a0a0a0移除成员后才能继续添加"
         history:
           material: BOOK
-          title: '&#55ffff历史离线玩家'
-        previous:
-          material: ARROW
-          title: '&#ededed上一页'
-          lore: []
+          title: "&#55ffff历史离线玩家"
+          lore:
+            - "&#a0a0a0从服务器记录中选择尚未入队的离线玩家"
         back:
           material: ARROW
-          title: '&#ededed返回队伍列表'
+          title: "&#ededed返回队伍总览"
           lore: []
         refresh:
           material: SUNFLOWER
-          title: '&#fff566刷新'
+          title: "&#fff566刷新"
           lore: []
         page:
           material: PAPER
-          title: '&#55ffff第 %page% / %pages% 页'
+          title: "&#55ffff第 %page% / %pages% 页"
           lore:
-            - '&#a0a0a0共 %count% 名成员'
+            - "&#a0a0a0共 %count% 名成员"
         next:
           material: ARROW
-          title: '&#ededed下一页'
+          title: "&#ededed下一页"
           lore: []
         teleport:
           material: ENDER_PEARL
-          title: '&#ff55ff传送本队到这里'
+          title: "&#ff55ff传送本队到这里"
           lore:
-            - '&#a0a0a0将传送 %online% 名在线成员'
+            - "&#a0a0a0%online%名在线成员将被传送"
         delete:
           material: TNT
-          title: '&#ff5555删除队伍'
+          title: "&#ff5555删除队伍"
           lore:
-            - '&#a0a0a0永久删除队伍及成员关系'
-            - ''
-            - '&#fff566点击后需要确认'
+            - "&#a0a0a0永久删除队伍及成员关系"
+            - ""
+            - "&#fff566点击后需要确认"
         close:
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
-    shared:
-      copy:
-        team-management: '队伍管理'
-        no-team-yet: '还没有队伍'
-        click-on-the-lower-left-corner-to-create-the-first-team: '点击左下角创建第一支队伍'
-        create-a-team: '创建队伍'
-        enter-internal-name-then-select-team-color: '先输入队伍ID，再选择显示颜色'
-        quick-team-transfer: '快速更换队伍'
-        select-online-players-then-select-target-team: '选择在线玩家，再选择目标队伍'
-        players-who-already-have-a-team-will-ask-for-a-second-confirmation: '移动已入队玩家前需要再次确认'
-        refresh: '刷新'
-        team-count-suffix: '支队伍'
-        previous-page: '上一页'
-        next-page: '下一页'
-        teleport-all-teams-here: '传送全部队伍到这里'
-        only-transfer-online-members: '仅传送在线成员'
-        confirmation-required-after-clicking: '点击后需要确认'
-        the-team-no-longer-exists: '队伍已不存在：&#fff566'
-        member-management: '成员管理'
-        there-are-no-members-in-the-team-yet: '队伍中还没有成员'
-        add-online-players-from-the-lower-left-corner-or-enter-player-name: '从左下角添加在线玩家或输入玩家名'
-        the-queue-is-full: '队伍已满'
-        members: '名成员'
-        remove-members-before-you-can-continue-adding-them: '移除成员后才能继续添加'
-        add-online-player: '添加在线玩家'
-        select-from-players-currently-online-and-not-yet-in-a-queue: '从当前在线且尚未入队的玩家中选择'
-        history-offline-players: '离线玩家'
-        select-from-logged-offline-players-who-have-not-yet-been-queued: '从服务器记录中选择尚未入队的离线玩家'
-        you-can-also-enter-the-player-name-manually-on-the-next-page: '也可在下一页手动输入玩家名'
-        return-to-team-list: '返回队伍列表'
-        page-member-count-suffix: '名成员'
-        teleport-this-team-here: '传送本队到这里'
-        online-members-will-be-transferred: '名在线成员将被传送'
-        delete-team: '删除队伍'
-        permanently-delete-team-and-membership-relationships: '永久删除队伍和成员关系'
-        the-number-of-people-in-the-team-has-reached-the-upper-limit: '队伍人数已达到上限&#fff566'
-        select-new-member: '选择新成员'
-        click-to-join: '点击加入'
-        no-online-players-to-add: '没有可添加的在线玩家'
-        can-be-used-after-returning-enter-player-name: '也可以返回后手动输入玩家名'
-        return-to-member-management: '返回成员管理'
-        optional-players: '名可选玩家'
-        choose-team-color: '选择队伍颜色'
-        internal-color-name: '内部颜色名：'
-        display-color: '显示颜色：'
-        click-to-create-a-team: '点击创建队伍'
-        has-been: '已被'
-        use: '使用'
-        quickly-adjust-the-team-select-players: '快速换队 • 选择玩家'
-        not-currently-in-a-team: '当前未分队'
-        current-team: '当前队伍：'
-        click-to-select-target-team: '点击选择目标队伍'
-        online-players: '名在线玩家'
-        select: '选择'
-        team-possessive-suffix: '的队伍'
-        current-membership-team: '当前所在队伍'
-        click-to-join-directly: '点击直接加入'
-        click-to-confirm-the-team-transfer: '点击后确认更换队伍'
-        no-teams-available-yet: '还没有可选队伍'
-        return-to-online-players: '返回在线玩家'
-        current: '当前：'
-        historical-player-currently-offline: '历史玩家 • 当前离线'
-        no-optional-offline-player-history: '没有可选的离线历史玩家'
-        you-can-use-the-lower-left-corner-to-manually-enter-the-player-name: '可以使用左下角手动输入玩家名'
-        manually-enter-player-name: '手动输入玩家名'
-        only-used-if-the-player-cannot-be-found-in-the-history-list: '仅在历史列表中找不到玩家时使用'
-        please-check-the-spelling-carefully: '请仔细核对拼写'
-        offline-players: '名离线玩家'
-        confirm-action: '确认操作'
-        delete-team-confirmation-title: '删除队伍'
-        remove-member: '移除成员'
-        teleport-all-teams: '传送全部队伍'
-        will: '将'
-        adjust-to: '调至'
-        confirm: '确认'
-        cancel: '取消'
-        enter-the-team-s-internal-name: '输入队伍内部名称'
-        enter-the-name-of-the-player-you-want-to-add: '输入要添加的玩家名'
-        enter-in-the-rename-field-above-then-click-on-the-result-box-on-the-right: '在上方重命名栏输入，再点击右侧结果格'
-        you-no-longer-have-permission-to-use-the-team-management-interface: '你已没有使用队伍管理界面的权限。'
-        team-not-found-feedback: '队伍已不存在。'
-        team-name-already-exists: '队伍名称已存在：&#fff566'
-        this-color-has-just-been-taken-by-another-team-please-choose-again: '该颜色刚刚被其他队伍占用，请重新选择。'
-        team-created: '已创建队伍'
-        failed-to-create-team-name-or-color-may-already-be-taken: '创建队伍失败，名称或颜色可能已被占用。'
-        team-deleted: '已删除队伍&#fff566'
-        unable-to-delete-team-team-may-be-in-game: '无法删除队伍；队伍可能正在游戏中。'
-        already-from: '已从&#fff566'
-        remove-player: '&#ededed移除玩家&#fff566'
-        removal-failed-team-or-member-status-may-have-changed: '移除失败；队伍或成员状态可能已经改变。'
-        all-teams-have-been: '已将全部队伍的&#fff566'
-        online-members-teleported-to-current-location: '&#ededed名在线成员传送到当前位置。'
-        team-name-cannot-be-empty: '队伍名称不能为空。'
-        team-names-cannot-exceed-64-characters-and-cannot-contain-control-characters: '队伍名称不能超过64个字符，也不能包含控制字符。'
-        please-enter-a-valid-minecraft-player-name: '请输入有效的Minecraft玩家名（3–16位字母、数字或下划线）。'
-        player-has-been: '已将玩家&#fff566'
-        join: '&#ededed加入'
-        add-member-identity-conflict: '添加失败；玩家可能已在队伍中，或存在同名身份冲突。'
-        add-member-invalid-player-name: '玩家名必须为3–16位字母、数字或下划线。'
-        add-member-team-not-found: '添加失败；队伍已不存在。'
-        add-member-team-full: '添加失败；队伍人数已满。'
-        add-member-operation-in-progress: '队伍资料正在更新，请稍后重试。'
-        add-member-player-not-registered: '找不到该玩家；请确认玩家已在网站注册并通过准入。'
-        add-member-profile-service-unavailable: '暂时无法查询玩家身份，请稍后重试。'
-        add-member-database-error: '无法保存队伍资料，请稍后重试。'
-        players-have-been-taken-offline: '已将离线玩家&#fff566'
-        failed-to-add-player-may-have-just-been-split-or-there-is-an-identity-conflict: '添加失败；玩家可能刚刚被分队，或存在身份冲突。'
-        unable-to-read-player-history: '无法读取历史玩家，请稍后重试。'
-        the-target-team-no-longer-exists: '目标队伍已不存在：&#fff566'
-        move-to-team-infix: '&#ededed调至'
-        the-player-is-already-on-the-team: '玩家已经在该队伍中。'
-        the-target-team-is-full: '目标队伍人数已满。'
-        the-player-s-current-team-or-target-team-is-currently-in-the-game-cannot-change-teams: '玩家当前队伍或目标队伍正在游戏中，不能调队。'
-        team-transfer-failed-database-or-player-status-may-have-changed: '调队失败，数据库或玩家身份状态可能已改变。'
-        already: '已将'
-        of: '&#ededed的&#fff566'
-        online: '在线'
-        color: '颜色'
-        internal-id: '内部ID'
-        click-to-manage-members-and-teams: '点击管理成员与队伍'
-        online-status: '● 在线'
-        offline: '○ 离线'
-        click-to-remove-the-team: '点击移出队伍'
-        the-team-and-all-member-relationships-will-be-permanently-deleted: '队伍及全部成员关系会被永久删除'
-        teams-currently-participating-in-the-game-cannot-be-deleted: '正在参加游戏的队伍无法删除'
-        players-will-immediately-lose-their-membership-in-the-team: '玩家将立即失去该队伍身份'
-        all-online-members-of-the-team-will-arrive-at-your-location: '所有队伍的在线成员会到达你的位置'
-        current-venue: '当前所在场地：'
-        admin-location: '管理员位置'
-        old-team-relationships-will-be-replaced-atomically-in-a-database-transaction: '系统会安全替换玩家原有的队伍关系'
-        operations-will-be-refused-while-either-team-is-playing: '相关队伍正在比赛时无法操作'
-        ordinal-prefix: '第'
-        page-suffix: '页'
-        total-prefix: '共'
-        close: '关闭'
-        white: '白色'
-        orange: '橙色'
-        magenta: '品红色'
-        light-blue: '淡蓝色'
-        yellow: '黄色'
-        yellow-green: '黄绿色'
-        pink: '粉红色'
-        gray: '灰色'
-        light-gray: '淡灰色'
-        cyan: '青色'
-        purple: '紫色'
-        blue: '蓝色'
-        brown: '棕色'
-        green: '绿色'
-        red: '红色'
-        black: '黑色'
-daily:
-  menus:
-    lobby-screen:
-      title: '&#00aaaa&l游戏大厅'
-      size: 27
+        page-unit:
+          title: 名成员
+        member-count-unit:
+          title: 名成员
+    add-player:
+      title: "&#55ffff&l%team% • 选择新成员"
+      size: 54
       layout:
-        content: [11, 13, 15, 17]
-        border: [0, 1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+        content:
+          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+        border:
+          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
+          - 48, 49, 50, 51, 52, 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
-          title: ' '
+          title: " "
+          lore: []
+        candidate:
+          title: "&#55ff55&l%player%"
+          lore:
+            - "&#a0a0a0点击加入 %team%"
+        empty:
+          material: GRAY_DYE
+          title: "&#a0a0a0没有可添加的在线玩家"
+          lore:
+            - "&#a0a0a0也可以返回后手动输入玩家名"
+        back:
+          material: ARROW
+          title: "&#ededed返回成员管理"
+          lore: []
+        previous:
+          material: ARROW
+          title: "&#ededed上一页"
+          lore: []
+        page:
+          material: PAPER
+          title: "&#55ffff第 %page% / %pages% 页"
+          lore:
+            - "&#a0a0a0共 %count% 名可选玩家"
+        next:
+          material: ARROW
+          title: "&#ededed下一页"
+          lore: []
+        close:
+          material: BARRIER
+          title: "&#ff5555关闭"
+          lore: []
+    color-picker:
+      title: "&#ffaa00&l选择队伍颜色"
+      size: 36
+      layout:
+        content:
+          - 10, 11, 12, 13, 14, 15, 16
+          - 19, 20, 21, 22, 23, 24, 25
+          - 28, 29, 30, 31, 32
+      items:
+        color:
+          title: "&#ededed&l%label%"
+          lore:
+            - "&#a0a0a0内部颜色名：&#ededed%name%"
+            - "&#a0a0a0显示颜色：&#ededed%hex%"
+            - ""
+            - "%availability%"
+          states:
+            white: {title: "&#ededed&l白色"}
+            orange: {title: "&#ffaa00&l橙色"}
+            magenta: {title: "&#ff55ff&l品红色"}
+            light-blue: {title: "&#55ffff&l淡蓝色"}
+            yellow: {title: "&#ffff55&l黄色"}
+            yellow-green: {title: "&#80c71f&l黄绿色"}
+            pink: {title: "&#f38baa&l粉红色"}
+            gray: {title: "&#a0a0a0&l灰色"}
+            light-gray: {title: "&#9d9d97&l淡灰色"}
+            cyan: {title: "&#169c9c&l青色"}
+            purple: {title: "&#8932b8&l紫色"}
+            blue: {title: "&#3c44aa&l蓝色"}
+            brown: {title: "&#835432&l棕色"}
+            green: {title: "&#5e7c16&l绿色"}
+            red: {title: "&#b02e26&l红色"}
+            black: {title: "&#1d1d21&l黑色"}
+        available:
+          lore:
+            - "&#55ff55点击创建队伍"
+        in-use:
+          lore:
+            - "&#ff5555已被 %team% 使用"
+        back:
+          material: ARROW
+          title: "&#ededed返回队伍总览"
+          lore: []
+    quick-assign:
+      title: "&#55ffff&l快速换队 • 选择玩家"
+      size: 54
+      layout:
+        content:
+          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+        border:
+          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
+          - 48, 49, 50, 51, 52, 53
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: " "
+          lore: []
+        player:
+          title: "&#55ff55&l%player%"
+          states:
+            unassigned:
+              lore:
+                - "&#a0a0a0当前未分队"
+                - ""
+                - "&#fff566点击选择目标队伍"
+            assigned:
+              lore:
+                - "&#a0a0a0当前队伍：&#ededed%team%"
+                - ""
+                - "&#fff566点击选择目标队伍"
+        back:
+          material: ARROW
+          title: "&#ededed返回队伍总览"
+          lore: []
+        previous:
+          material: ARROW
+          title: "&#ededed上一页"
+          lore: []
+        page:
+          material: PAPER
+          title: "&#55ffff第 %page% / %pages% 页"
+          lore:
+            - "&#a0a0a0共 %count% 名在线玩家"
+        next:
+          material: ARROW
+          title: "&#ededed下一页"
+          lore: []
+        close:
+          material: BARRIER
+          title: "&#ff5555关闭"
+          lore: []
+    target-team:
+      title: "&#ffaa00&l%player% • 选择目标队伍"
+      size: 54
+      layout:
+        content:
+          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+        border:
+          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
+          - 48, 49, 50, 51, 52, 53
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: " "
+          lore: []
+        team:
+          title: "&#ededed&l%team%"
+          states:
+            current:
+              glint: true
+              lore:
+                - "&#a0a0a0%members% / %max%"
+                - "&#55ff55当前所在队伍"
+            full:
+              lore:
+                - "&#a0a0a0%members% / %max%"
+                - "&#ff5555队伍人数已满"
+            join:
+              lore:
+                - "&#a0a0a0%members% / %max%"
+                - ""
+                - "&#fff566点击直接加入"
+            move:
+              lore:
+                - "&#a0a0a0%members% / %max%"
+                - ""
+                - "&#fff566点击后确认更换队伍"
+        empty:
+          material: GRAY_DYE
+          title: "&#a0a0a0还没有可选队伍"
+          lore: []
+        back:
+          material: ARROW
+          title: "&#ededed返回在线玩家"
+          lore: []
+        selected-player:
+          title: "&#55ffff&l%player%"
+          states:
+            unassigned:
+              lore:
+                - "&#a0a0a0当前未分队"
+            assigned:
+              lore:
+                - "&#a0a0a0当前队伍：&#ededed%team%"
+        close:
+          material: BARRIER
+          title: "&#ff5555关闭"
+          lore: []
+    known-player:
+      title: "&#55ffff&l%team% • 选择历史玩家"
+      size: 54
+      layout:
+        content:
+          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+        border:
+          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
+          - 48, 49, 50, 51, 52, 53
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: " "
+          lore: []
+        candidate:
+          title: "&#a0a0a0&l%player%"
+          lore:
+            - "&#a0a0a0历史玩家 • 当前离线"
+            - ""
+            - "&#a0a0a0点击加入 %team%"
+        empty:
+          material: GRAY_DYE
+          title: "&#a0a0a0没有可选的离线历史玩家"
+          lore:
+            - "&#a0a0a0可以使用左下角手动输入玩家名"
+        manual-input:
+          material: NAME_TAG
+          title: "&#55ffff手动输入玩家名"
+          lore:
+            - "&#a0a0a0仅在历史列表中找不到玩家时使用"
+            - "&#a0a0a0请仔细核对拼写"
+        back:
+          material: ARROW
+          title: "&#ededed返回成员管理"
+          lore: []
+        previous:
+          material: ARROW
+          title: "&#ededed上一页"
+          lore: []
+        page:
+          material: PAPER
+          title: "&#55ffff第 %page% / %pages% 页"
+          lore:
+            - "&#a0a0a0共 %count% 名离线玩家"
+        next:
+          material: ARROW
+          title: "&#ededed下一页"
+          lore: []
+        close:
+          material: BARRIER
+          title: "&#ff5555关闭"
+          lore: []
+    confirm:
+      title: "&#ff5555&l确认操作"
+      size: 27
+      layout:
+        border:
+          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26
+      items:
+        action:
+          lore:
+            - "&#a0a0a0确认后才会执行"
+          states:
+            delete:
+              material: TNT
+              title: "&#ff5555&l删除队伍：%team%"
+              lore:
+                - "&#a0a0a0此操作会删除队伍及全部成员关系"
+            remove:
+              material: RED_DYE
+              title: "&#ff5555&l移除成员：%player%"
+              lore:
+                - "&#a0a0a0此操作会将玩家移出 %team%"
+            teleport-all:
+              material: ENDER_EYE
+              title: "&#ff55ff&l传送全部队伍"
+              lore:
+                - "&#a0a0a0此操作只传送全部在线成员"
+            move:
+              material: COMPASS
+              title: "&#ffaa00&l将 %player% 调至 %team%"
+              lore:
+                - "&#a0a0a0此操作会更换玩家的当前队伍"
+        confirm:
+          material: LIME_CONCRETE
+          title: "&#55ff55&l确认"
+          lore: []
+        cancel:
+          material: RED_CONCRETE
+          title: "&#ff5555&l取消"
+          lore: []
+    input:
+      items:
+        team-name:
+          title: "&#fff566输入队伍内部名称"
+        player-name:
+          title: "&#fff566输入要添加的玩家名"
+        hint:
+          title: "&#a0a0a0在上方重命名栏输入，再点击右侧结果格"
+  buttons:
+    previous:
+      title: "&#ededed上一页"
+    next:
+      title: "&#ededed下一页"
+    page:
+      title: "&#55ffff第 %page% / %pages% 页"
+      lore:
+        - "&#a0a0a0共 %count% %unit%"
+    close:
+      title: "&#ff5555关闭"
+
+daily:
+  menus:
+    lobby-screen:
+      title: "&#00aaaa&l游戏大厅"
+      size: 27
+      layout:
+        content:
+          - 11
+          - 13
+          - 15
+          - 17
+        border:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+      items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: " "
           lore: []
         status:
           slot: 4
           material: NETHER_STAR
-          title: '&#55ff55&l大厅状态'
+          title: "&#55ff55&l大厅状态"
           lore:
-            - '&#a0a0a0当前状态：&#ededed%queue%'
-            - '&#a0a0a0当前游戏：&#55ffff%game%'
-            - '&#a0a0a0同行人数：&#ededed%party_size%人'
-            - ''
-            - '&#a0a0a0从下方选择一项功能开始'
+            - "&#a0a0a0当前状态：&#ededed%queue%"
+            - "&#a0a0a0当前游戏：&#55ffff%game%"
+            - "&#a0a0a0同行人数：&#ededed%party_size%人"
+            - ""
+            - "&#a0a0a0从下方选择一项功能开始"
         statistics:
           slot: 11
           material: WRITABLE_BOOK
-          title: '&#ff55ff&l个人战绩'
+          title: "&#ff55ff&l个人战绩"
           lore:
-            - '&#a0a0a0查看游玩场次与各游戏详细数据'
-            - '&#a0a0a0以及每种游戏的个人纪录'
-            - ''
-            - '&#55ff55&l点击查看'
+            - "&#a0a0a0查看游玩场次与各游戏详细数据"
+            - "&#a0a0a0以及每种游戏的个人纪录"
+            - ""
+            - "&#55ff55&l点击查看"
         matchmaking:
           slot: 13
           material: COMPASS
-          title: '&#55ffff&l进入匹配'
+          title: "&#55ffff&l进入匹配"
           lore:
-            - '&#a0a0a0选择想参加的游戏'
-            - '&#a0a0a0实时查看人数与开赛进度'
-            - ''
-            - '&#55ff55&l点击进入'
+            - "&#a0a0a0选择想参加的游戏"
+            - "&#a0a0a0实时查看人数与开赛进度"
+            - ""
+            - "&#55ff55&l点击进入"
         party:
           slot: 15
           material: PLAYER_HEAD
-          title: '&#ffaa00&l小队功能'
+          title: "&#ffaa00&l小队功能"
           lore:
-            - '&#a0a0a0邀请朋友一起参加匹配'
-            - '&#a0a0a0接受邀请或管理小队'
-            - ''
-            - '&#55ff55&l点击打开'
+            - "&#a0a0a0邀请朋友一起参加匹配"
+            - "&#a0a0a0接受邀请或管理小队"
+            - ""
+            - "&#55ff55&l点击打开"
         spectate:
           slot: 17
           material: SPYGLASS
-          title: '&#fff566&l观战比赛'
+          title: "&#fff566&l观战比赛"
           lore:
-            - '&#a0a0a0查看正在进行的游戏'
-            - '&#a0a0a0并选择现场场地观战'
-            - ''
-            - '&#55ff55&l点击打开'
+            - "&#a0a0a0查看正在进行的游戏"
+            - "&#a0a0a0并选择现场场地观战"
+            - ""
+            - "&#55ff55&l点击打开"
         close:
           slot: 22
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
-      copy:
-        game-lobby: '游戏大厅'
-        lobby-status: '大厅状态'
-        current-status: '当前状态：'
-        current-game: '当前游戏：'
-        number-of-people-traveling-together: '小队人数：'
-        player-count-suffix: '人'
-        select-a-function-below-to-get-started: '选择下方功能'
-        personal-record: '个人战绩'
-        check-your-game-sessions-and-detailed-records: '查看你的游玩场次与各游戏详细数据'
-        and-detailed-records-of-each-game: '以及各游戏的个人记录'
-        click-to-view: '点击查看'
-        enter-matching: '进入匹配'
-        choose-the-game-you-want-to-participate-in: '选择想要参加的游戏'
-        check-the-number-of-people-and-opening-progress-in-real-time: '实时查看人数与开场进度'
-        click-to-enter: '点击进入'
-        team-function: '小队'
-        invite-friends-to-join-the-match: '邀请朋友一起进入匹配'
-        accept-invitations-or-manage-partys: '接受邀请或管理你的小队'
-        click-to-open: '点击打开'
-        spectator-game: '旁观游戏'
-        view-currently-playing-games: '查看当前正在进行的游戏'
-        and-select-live-venues-to-spectate-on: '选择一场正在进行的比赛'
-        close: '关闭'
     game-selection-screen:
-      title: '&#55ffff&l选择游戏 &#696969• &#ededed自由游玩'
+      title: "&#55ffff&l选择游戏 &#696969• &#ededed自由游玩"
       size: 54
       layout:
-        content: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25]
-        border: [0, 2, 3, 5, 6, 8, 45, 46, 48, 50, 52]
+        content:
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+        border:
+          - 0
+          - 2
+          - 3
+          - 5
+          - 6
+          - 8
+          - 45
+          - 46
+          - 48
+          - 50
+          - 52
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
-          title: ' '
+          title: " "
           lore: []
         party:
           slot: 1
-          title: '&#55ffff&l小队'
+          title: "&#55ffff&l小队"
+          states:
+            party:
+              material: PLAYER_HEAD
+              glint: true
+              lore:
+                - "&#a0a0a0队长：&#55ffff%leader%"
+                - "&#a0a0a0人数：&#ededed%size%人"
+                - ""
+                - "&#ffaa00小队成员"
+            solo:
+              material: PLAYER_HEAD
+              lore:
+                - "&#a0a0a0队长：&#55ffff%leader%"
+                - "&#a0a0a0人数：&#ededed%size%人"
+                - ""
+                - "&#696969你将以个人身份参加匹配"
+                - "&#fff566点击打开组队功能"
         overview:
           slot: 4
           material: NETHER_STAR
-          title: '&#55ff55&l匹配大厅'
+          title: "&#55ff55&l匹配大厅"
           lore:
-            - '&#a0a0a0开放游戏：&#ededed%games%'
-            - '&#a0a0a0正在等候：&#fff566%queued%人'
-            - '&#a0a0a0进行中：&#ffaa00%active%'
-            - ''
-            - '&#696969选择下方游戏即可加入匹配'
+            - "&#a0a0a0开放游戏：&#ededed%games%"
+            - "&#a0a0a0正在等候：&#fff566%queued%人"
+            - "&#a0a0a0进行中：&#ffaa00%active%"
+            - ""
+            - "&#696969选择下方游戏即可加入匹配"
         statistics:
           slot: 7
           material: WRITABLE_BOOK
-          title: '&#ff55ff&l我的战绩'
-        game:
-          states:
-            selected:
-              glint: true
+          title: "&#ff55ff&l我的战绩"
+          lore:
+            - "&#a0a0a0场次：&#ededed%games%场"
+            - "&#696969每局单独记录成绩，不计入锦标赛积分"
         empty:
           slot: 22
           material: GRAY_DYE
-          title: '&#a0a0a0暂无开放游戏'
+          title: "&#a0a0a0暂无开放游戏"
           lore:
-            - '&#696969管理员开放游戏后会显示在这里'
+            - "&#696969管理员开放游戏后会显示在这里"
         leave:
           slot: 45
           states:
             active:
               material: REDSTONE_TORCH
-              title: '&#ff5555&l退出当前游戏'
+              title: "&#ff5555&l退出当前游戏"
             inactive:
               material: GRAY_DYE
-              title: '&#a0a0a0当前未参加游戏'
+              title: "&#a0a0a0当前未参加游戏"
         leaderboard:
           slot: 47
           material: GOLD_INGOT
-          title: '&#ffaa00&l排行榜'
+          title: "&#ffaa00&l排行榜"
         refresh:
           slot: 49
           material: CLOCK
-          title: '&#fff566&l刷新'
+          title: "&#fff566&l刷新"
           lore:
-            - '&#696969队列和倒计时会自动更新'
+            - "&#696969队列和倒计时会自动更新"
         back:
           slot: 51
           material: ARROW
-          title: '&#ededed返回大厅'
+          title: "&#ededed返回大厅"
           lore: []
         close:
           slot: 53
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
-      copy:
-        no-open-games-yet: '暂无可玩游戏'
-        please-wait-for-the-administrator-to-open-the-game-game: '管理员开放游戏后会显示在这里'
-        leave-current-game: '退出当前游戏'
-        not-yet-join-the-game: '当前不在游戏或匹配中'
-        the-accompanying-team-will-leave-together: '整个小队将一起退出'
-        if-there-is-no-one-on-the-field-the-game-will-end-directly: '若场内无人，游戏将直接结束'
-        select-the-item-above-to-join-the-match: '点击上方游戏开始匹配'
-        refresh: '刷新'
-        queue-and-countdown-automatically-updated-every-second: '队列与倒计时每秒自动更新'
-        return-to-lobby: '返回大厅'
-        close: '关闭'
-        captain: '队长：'
-        number-of-people: '人数：'
-        player-count-suffix: '人'
-        peer-members: '小队成员'
-        currently-entering-matches-as-an-individual: '你将以个人身份参加匹配'
-        click-to-open-the-team-function: '点击打开组队功能'
-        any-member-can-change-the-game-for-the-whole-team: '小队成员均可为全队选择游戏'
-        party: '小队'
-        open-games: '个可玩游戏'
-        people-are-waiting: '人正在等候'
-        all-current-games-are-eligible: '所有开放游戏均可匹配'
-        items-are-in-play: '个游戏正在进行'
-        no-need-to-form-a-team-in-advance-automatically-form-a-team-after-matching-is-completed: '无需提前组队，匹配成功后会自动分组'
-        click-on-an-item-to-join-or-change-it-for-the-entire-team: '点击游戏即可加入，或为整个小队更改选择'
-        match-lobby: '匹配大厅'
-        my-record: '我的战绩'
-        number-of-sessions: '场次：'
-        each-game-s-results-are-recorded-independently-points-are-not-inherited: '每局单独记录成绩，不计入锦标赛积分'
-        game-items: '游戏'
-        complete-challenges-with-other-players: '与其他玩家一起完成挑战'
-        game-state: '游戏状态：'
-        map-in-progress: '进行中地图：'
-        match-count-suffix: '场'
-        instance-capacity: '单场容量：'
-        idle-instances: '个空闲场地'
-        all-instances-are-in-use: '所有场地都在使用中'
-        can-be-added-to-the-match: '可加入匹配'
-        waiting-for-idle-instance: '等待空闲场地'
-        the-number-of-people-reaches-the-opening-number: '人即可开赛'
-        about-to-depart: '即将开赛'
-        seconds: '秒'
-        requires-another-player-or-party: '还需要一名玩家或一个小队'
-        preparing-for-countdown: '开赛倒计时'
-        still-need: '还需'
-        fellow-traveler: '名玩家'
-        team-rules: '组队规则'
-        each-team-has-at-most: '每队至多'
-        people-most: '人 • 最多'
-        team-count-suffix: '队'
-        requires-at-least-2-independent-players-or-companion-squads: '至少需要两个独立报名方（玩家或小队）'
-        single-field-capacity: '单场容量：'
-        map: '地图：'
-        waiting-place: '等待场地'
-        my-results: '我的成绩：'
-        already-in-the-waiting-queue: '✓ 正在等待空闲场地'
-        matching-will-be-automatically-resumed-after-the-instance-becomes-idle: '有场地空闲后会自动继续匹配'
-        current-selection: '✓ 当前选择'
-        clicking-again-will-not-join-again: '再次点击不会重复加入'
-        click-to-join-the-match: '点击加入匹配'
-        click-to-join-the-waiting-room: '点击等待空闲场地'
-        the-party-will-be-selected-simultaneously: '整个小队会同步选择'
-        the-countdown-starts-automatically-after-the-instance-becomes-idle: '场地空闲后会自动开始倒计时'
-        click-to-view-game-data-and-time-records: '点击查看各游戏具体数据与计时纪录'
-        ranking-list: '排行榜'
-        explore-teamwork: '探索 • 团队协作'
-        complete-shared-bingo-tasks-strive-for-connections-and-full-collection: '合作完成宾果任务，争取连线并集齐整张卡片'
-        racing-independent-track-instance: '竞速 • 独立赛道'
-        controlling-the-elytra-and-trident-challenge-the-fastest-complete-lap: '驾驭鞘翅与三叉戟，挑战最快完整圈'
-        confrontation-original-end-dragon-battle: '对抗 • 原版末影龙战'
-        compete-for-three-end-game-progressions-be-the-first-to-complete-two-of-them: '争夺三项末地进度，率先完成其中两项'
-        parkour-challenge-multi-difficulty-checkpoints: '跑酷 • 多难度检查点'
-        challenge-checkpoints-of-each-difficulty-and-reach-the-finish-first: '挑战各难度检查点收集星星，率先抵达终点'
+        games:
+          bingo:
+            material: FILLED_MAP
+            title: "&#ededed&l宾果"
+            states:
+              available:
+                lore:
+                  - "&#696969探索 • 团队协作"
+                  - "&#a0a0a0合作完成宾果任务，争取连线并集齐整张卡片"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ff55&l点击加入匹配"
+                  - "&#696969整个小队会同步选择"
+                glint: false
+              waiting:
+                lore:
+                  - "&#696969探索 • 团队协作"
+                  - "&#a0a0a0合作完成宾果任务，争取连线并集齐整张卡片"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#ffaa00&l点击等待空闲场地"
+                  - "&#696969场地空闲后会自动开始倒计时"
+                glint: false
+              selected:
+                lore:
+                  - "&#696969探索 • 团队协作"
+                  - "&#a0a0a0合作完成宾果任务，争取连线并集齐整张卡片"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 当前选择"
+                  - "&#696969再次点击不会重复加入"
+                glint: true
+              selected-waiting:
+                lore:
+                  - "&#696969探索 • 团队协作"
+                  - "&#a0a0a0合作完成宾果任务，争取连线并集齐整张卡片"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 正在等待空闲场地"
+                  - "&#696969有场地空闲后会自动继续匹配"
+                glint: true
+          ace-race:
+            material: ELYTRA
+            title: "&#ededed&l王牌竞速"
+            states:
+              available:
+                lore:
+                  - "&#696969竞速 • 独立赛道"
+                  - "&#a0a0a0驾驭鞘翅与三叉戟，挑战最快完整圈"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ff55&l点击加入匹配"
+                  - "&#696969整个小队会同步选择"
+                glint: false
+              waiting:
+                lore:
+                  - "&#696969竞速 • 独立赛道"
+                  - "&#a0a0a0驾驭鞘翅与三叉戟，挑战最快完整圈"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#ffaa00&l点击等待空闲场地"
+                  - "&#696969场地空闲后会自动开始倒计时"
+                glint: false
+              selected:
+                lore:
+                  - "&#696969竞速 • 独立赛道"
+                  - "&#a0a0a0驾驭鞘翅与三叉戟，挑战最快完整圈"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 当前选择"
+                  - "&#696969再次点击不会重复加入"
+                glint: true
+              selected-waiting:
+                lore:
+                  - "&#696969竞速 • 独立赛道"
+                  - "&#a0a0a0驾驭鞘翅与三叉戟，挑战最快完整圈"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 正在等待空闲场地"
+                  - "&#696969有场地空闲后会自动继续匹配"
+                glint: true
+          dragon-egg:
+            material: DRAGON_EGG
+            title: "&#ededed&l龙蛋狂欢"
+            states:
+              available:
+                lore:
+                  - "&#696969对抗 • 原版末影龙战"
+                  - "&#a0a0a0争夺三项末地进度，率先完成其中两项"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ff55&l点击加入匹配"
+                  - "&#696969整个小队会同步选择"
+                glint: false
+              waiting:
+                lore:
+                  - "&#696969对抗 • 原版末影龙战"
+                  - "&#a0a0a0争夺三项末地进度，率先完成其中两项"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#ffaa00&l点击等待空闲场地"
+                  - "&#696969场地空闲后会自动开始倒计时"
+                glint: false
+              selected:
+                lore:
+                  - "&#696969对抗 • 原版末影龙战"
+                  - "&#a0a0a0争夺三项末地进度，率先完成其中两项"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 当前选择"
+                  - "&#696969再次点击不会重复加入"
+                glint: true
+              selected-waiting:
+                lore:
+                  - "&#696969对抗 • 原版末影龙战"
+                  - "&#a0a0a0争夺三项末地进度，率先完成其中两项"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 正在等待空闲场地"
+                  - "&#696969有场地空闲后会自动继续匹配"
+                glint: true
+          parkour-warrior:
+            material: LEATHER_BOOTS
+            title: "&#ededed&l跑酷战士"
+            states:
+              available:
+                lore:
+                  - "&#696969跑酷 • 多难度检查点"
+                  - "&#a0a0a0挑战各难度检查点收集星星，率先抵达终点"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ff55&l点击加入匹配"
+                  - "&#696969整个小队会同步选择"
+                glint: false
+              waiting:
+                lore:
+                  - "&#696969跑酷 • 多难度检查点"
+                  - "&#a0a0a0挑战各难度检查点收集星星，率先抵达终点"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#ffaa00&l点击等待空闲场地"
+                  - "&#696969场地空闲后会自动开始倒计时"
+                glint: false
+              selected:
+                lore:
+                  - "&#696969跑酷 • 多难度检查点"
+                  - "&#a0a0a0挑战各难度检查点收集星星，率先抵达终点"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 当前选择"
+                  - "&#696969再次点击不会重复加入"
+                glint: true
+              selected-waiting:
+                lore:
+                  - "&#696969跑酷 • 多难度检查点"
+                  - "&#a0a0a0挑战各难度检查点收集星星，率先抵达终点"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0组队规则：&#ededed%team_size%人/队 • 最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 正在等待空闲场地"
+                  - "&#696969有场地空闲后会自动继续匹配"
+                glint: true
     leaderboard-screen:
       title: "&#ffaa00&l排行榜"
       size: 54
       layout:
-        content: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25]
-        border: [0, 2, 3, 5, 6, 8, 45, 46, 47, 51]
+        content:
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+        border:
+          - 0
+          - 2
+          - 3
+          - 5
+          - 6
+          - 8
+          - 45
+          - 46
+          - 47
+          - 51
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
           title: " "
           lore: []
-        player: {slot: 1, material: PLAYER_HEAD, title: "&#55ffff&l我的榜单名片", lore: []}
-        overview: {slot: 4, material: NETHER_STAR, title: "&#ffaa00&l荣誉榜", lore: []}
-        records: {slot: 7, material: CLOCK, title: "&#ff55ff&l我的计时纪录", lore: []}
-        category: {material: PAPER, title: "%board%", lore: []}
-        row: {material: PLAYER_HEAD, title: "&#a0a0a0第 %rank% 名 &#ededed%player%", lore: []}
-        empty: {slot: 22, material: GRAY_DYE, title: "&#a0a0a0暂无上榜记录", lore: []}
-        back: {slot: 45, material: ARROW, title: "&#ededed返回", lore: []}
-        previous: {slot: 48, material: ARROW, title: "&#ededed上一页", lore: []}
-        refresh: {slot: 49, material: CLOCK, title: "&#fff566刷新", lore: []}
-        page: {slot: 50, material: PAPER, title: "&#55ffff第 %page% / %pages% 页", lore: []}
-        next: {slot: 52, material: ARROW, title: "&#ededed下一页", lore: []}
-        close: {slot: 53, material: BARRIER, title: "&#ff5555关闭", lore: []}
-      copy:
-        honor-roll: '荣誉榜'
-        list-categories: '个榜单分类'
-        records-on-the-list: '条上榜成绩'
-        game-specific-records-are-independent-of-each-other: '各游戏的具体数据与竞速纪录彼此独立'
-        timing-records-are-always-differentiated-by-game-map: '计时纪录始终按游戏地图区分'
-        return-to-game-selection: '返回游戏选择'
-        continue-to-add-or-adjust-free-matching: '继续加入或调整自由匹配'
-        previous-page: '上一页'
-        ordinal-prefix: '第'
-        page-suffix: '页'
-        next-page: '下一页'
-        no-list-record-yet: '暂无上榜记录'
-        after-completing-a-corresponding-game-the-record-will-be-displayed-here: '完成对应游戏后，你的纪录会显示在这里'
-        the-ranking-list-only-reads-data-in-this-mode: '这里只统计休闲匹配成绩'
-        return-to-list-category: '返回榜单分类'
-        valid-records: '条有效成绩'
-        my-list-business-card: '我的榜单名片'
-        overall-list: '总榜'
-        not-yet-on-the-list: '尚未上榜'
-        record: '战绩'
-        select-the-category-below-to-view-detailed-rankings: '选择下方分类查看详细名次'
-        first-connection: '首次连线'
-        all-collection: '全收集'
-        fastest-lap: '最快单圈'
-        fastest-three-complete-laps: '最快完整三圈'
-        first-best: '第一'
-        second-best: '第二'
-        third-best: '第三'
-        unlocked-after-completing-bingo-or-ace-race: '完成宾果或王牌竞速后解锁'
-        times-from-different-maps-will-not-be-mixed-in-rankings: '不同地图的时间不会混合排名'
-        my-time-record: '我的计时纪录'
-        top-of-the-list: '榜首'
-        my-ranking-has-not-been-listed-yet: '我的名次尚未上榜'
-        my-ranking: '我的名次 # '
-        players-on-the-list: '位玩家上榜'
-        click-to-view-the-complete-list: '点击查看完整榜单'
-        players-have-valid-records: '位玩家留下有效纪录'
-        i-m-not-on-the-list-yet: '我尚未上榜'
-        best-time-to-use: '最佳用时'
-        list-value: '榜单数值'
-        current-top-list: '★ 当前榜首'
-        podium-record: '◆ 领奖台纪录'
-        this-is-your-record: '这是你的纪录'
-        bingo: '宾果 • '
-        fastest-time-from-opening-to-first-completion-of-any-connection: '从开场到首次完成任意连线的最快时间'
-        fastest-time-from-opening-to-completing-the-entire-card: '从开场到完成整张卡片的最快时间'
-        ace-racing: '王牌竞速 • '
-        fastest-time-for-a-complete-legal-lap-of-the-map: '该地图完整合法单圈的最快时间'
-        the-fastest-time-to-complete-three-laps-of-the-map: '该地图完整三圈的最快时间'
-        top-three-per-map: '每张地图显示各指标前三名'
-        map: '张地图'
-        maps-top-three-details: '张地图可查看前三榜单'
-        rate-boards-require-min-games: '率类榜单需至少5场才会上榜'
-        this-mode: '本模式'
-        historical-list: '历史榜单'
-        refresh: '刷新'
-        list-reading-memory-cache-does-not-block-the-game: '排行榜使用缓存数据，不会影响游戏流畅度'
-        close: '关闭'
-        menu-title: '&#fff566&l排行榜'
-        board-title: '&#fff566&l%board%'
+        player:
+          slot: 1
+          material: PLAYER_HEAD
+          title: "&#55ffff&l我的榜单名片"
+          lore:
+            - "&#a0a0a0选择下方分类查看详细名次"
+            - "&#696969计时纪录始终按游戏地图区分"
+        overview:
+          slot: 4
+          material: NETHER_STAR
+          title: "&#ffaa00&l荣誉榜"
+          lore:
+            - "&#ededed%games%个榜单分类 &#696969• &#a0a0a0%entries%条上榜成绩"
+            - "&#696969各游戏的具体数据与竞速纪录彼此独立"
+            - "&#fff566计时纪录始终按游戏地图区分"
+          states:
+            board:
+              lore:
+                - "&#a0a0a0每张地图显示各指标前三名"
+                - "&#ededed%maps%张地图"
+        records:
+          slot: 7
+          material: CLOCK
+          title: "&#ff55ff&l我的计时纪录"
+          lore:
+            - "&#fff566不同地图的时间不会混合排名"
+          states:
+            empty:
+              lore:
+                - "&#a0a0a0尚未上榜"
+        category:
+          material: PAPER
+          title: "&#ededed%board%"
+          lore:
+            - "  &#a0a0a0榜首：&#ffaa00%leader% &#696969• &#ededed%value%"
+            - "  &#a0a0a0暂无上榜记录"
+            - "&#55ff55&l点击查看完整榜单"
+            - "&#a0a0a0%maps%张地图可查看前三榜单"
+            - "&#696969率类榜单需至少5场才会上榜"
+        row:
+          material: PLAYER_HEAD
+          title: "&#a0a0a0第 %rank% 名 &#ededed%player%"
+          lore:
+            - "  &#a0a0a0第%rank%名 &#ededed%player% &#696969• &#ffaa00%value%"
+        empty:
+          slot: 22
+          material: GRAY_DYE
+          title: "&#a0a0a0暂无上榜记录"
+          lore:
+            - "&#696969完成对应游戏后，你的纪录会显示在这里"
+            - "&#fff566这里只统计休闲匹配成绩"
+        back:
+          slot: 45
+          material: ARROW
+          title: "&#ededed返回游戏选择"
+          states:
+            board:
+              title: "&#ededed返回榜单分类"
+        previous:
+          slot: 48
+          material: ARROW
+          title: "&#ededed上一页"
+          lore: []
+        refresh:
+          slot: 49
+          material: CLOCK
+          title: "&#fff566刷新"
+          lore:
+            - "&#696969排行榜使用缓存数据，不会影响游戏流畅度"
+        page:
+          slot: 50
+          material: PAPER
+          title: "&#55ffff第 %page% / %pages% 页"
+          lore:
+            - "&#a0a0a0%maps%张地图"
+        next:
+          slot: 52
+          material: ARROW
+          title: "&#ededed下一页"
+          lore: []
+        close:
+          slot: 53
+          material: BARRIER
+          title: "&#ff5555关闭"
+          lore: []
     party-screen:
-      title: '&#55ffff&l小队管理'
+      title: "&#55ffff&l小队管理"
       size: 54
       layout:
-        content: [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44]
-        border: [0, 1, 2, 3, 5, 6, 8, 46, 48, 50, 51, 52]
+        content:
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+        border:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 5
+          - 6
+          - 8
+          - 46
+          - 48
+          - 50
+          - 51
+          - 52
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
-          title: ' '
+          title: " "
           lore: []
         summary:
           slot: 4
-          title: '&#55ffff&l我的小队'
+          title: "&#55ffff&l我的小队"
           states:
+            solo:
+              material: PLAYER_HEAD
+              lore:
+                - "&#a0a0a0你目前没有加入小队"
+                - ""
+                - "&#55ff55点击玩家列表即可发出邀请"
             party:
+              material: PLAYER_HEAD
               glint: true
+              lore:
+                - "&#a0a0a0队长：&#55ffff%leader%"
+                - "&#a0a0a0人数：&#ededed%size%人"
+                - "&#a0a0a0选择：&#fff566%game%"
+                - ""
         invitation:
           slot: 7
           states:
             none:
               material: PAPER
-              title: '&#a0a0a0暂无待处理邀请'
+              title: "&#a0a0a0邀请状态"
+              lore:
+                - "&#a0a0a0暂无待处理邀请"
+                - "&#a0a0a0点击玩家列表发送邀请"
             pending:
               material: WRITABLE_BOOK
-              title: '&#ffaa00&l收到小队邀请'
+              title: "&#ffaa00&l收到组队邀请"
               glint: true
+              lore:
+                - "&#ededed%inviter%邀请你加入小队"
+                - ""
+                - "&#55ff55&l点击接受邀请"
         player:
           states:
             available:
-              glint: true
-        empty:
-          slot: 22
-          material: GRAY_DYE
-          title: '&#a0a0a0暂无其他在线玩家'
-          lore:
-            - '&#696969在线玩家与组队状态会显示在这里'
+              material: PLAYER_HEAD
+              title: "&#ededed&l%player%"
+              lore:
+                - "&#a0a0a0队伍状态：&#ededed未加入小队"
+                - "&#a0a0a0队长：&#55ffff%leader%"
+                - "&#a0a0a0人数：&#ededed%size%人"
+                - ""
+                - "&#fff566点击发送组队邀请"
+            offline:
+              material: PLAYER_HEAD
+              title: "&#a0a0a0&l%player%"
+              lore:
+                - "&#a0a0a0当前状态：&#ffaa00已离线"
+                - ""
+                - "&#696969当前无法发送邀请"
+            in-party:
+              material: PLAYER_HEAD
+              title: "&#a0a0a0&l%player%"
+              lore:
+                - "&#a0a0a0当前状态：&#ffaa00已在队伍中"
+                - ""
+                - "&#696969当前无法发送邀请"
+            queued:
+              material: PLAYER_HEAD
+              title: "&#a0a0a0&l%player%"
+              lore:
+                - "&#a0a0a0当前状态：&#ffaa00匹配中"
+                - ""
+                - "&#696969当前无法发送邀请"
+            in-game:
+              material: PLAYER_HEAD
+              title: "&#a0a0a0&l%player%"
+              lore:
+                - "&#a0a0a0当前状态：&#ffaa00游戏中"
+                - ""
+                - "&#696969当前无法发送邀请"
+            spectating:
+              material: PLAYER_HEAD
+              title: "&#a0a0a0&l%player%"
+              lore:
+                - "&#a0a0a0当前状态：&#ffaa00观战中"
+                - ""
+                - "&#696969当前无法发送邀请"
+            settling:
+              material: PLAYER_HEAD
+              title: "&#a0a0a0&l%player%"
+              lore:
+                - "&#a0a0a0当前状态：&#ffaa00结算中"
+                - ""
+                - "&#696969当前无法发送邀请"
+            mode-closed:
+              material: PLAYER_HEAD
+              title: "&#a0a0a0&l%player%"
+              lore:
+                - "&#a0a0a0当前状态：&#ffaa00当前模式不可用"
+                - ""
+                - "&#696969当前无法发送邀请"
+            locked:
+              material: PLAYER_HEAD
+              title: "&#a0a0a0&l%player%"
+              lore:
+                - "&#a0a0a0队伍状态：&#ededed不适用"
+                - ""
+                - "&#696969只有队长可以发送邀请"
         action:
           slot: 45
           states:
             invite:
               material: LIME_DYE
-              title: '&#55ff55&l邀请说明'
+              title: "&#55ff55&l邀请说明"
+              lore:
+                - "&#a0a0a0点击上方在线玩家发送组队邀请"
             disband:
               material: RED_DYE
-              title: '&#ff5555&l解散小队'
+              title: "&#ff5555&l解散小队"
+              lore:
+                - "&#a0a0a0队伍正在匹配或进行游戏时不可修改"
             leave:
               material: RED_DYE
-              title: '&#ff5555&l离开小队'
+              title: "&#ff5555&l离开小队"
+              lore:
+                - "&#a0a0a0队伍正在匹配或进行游戏时不可修改"
         back:
           slot: 47
           material: ARROW
-          title: '&#ededed返回大厅'
+          title: "&#ededed返回大厅"
           lore: []
         refresh:
           slot: 49
           material: CLOCK
-          title: '&#fff566&l刷新'
+          title: "&#fff566&l刷新"
+          lore:
+            - "&#a0a0a0更新在线玩家与邀请状态"
         close:
           slot: 53
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
-      copy:
-        team-function: '小队'
-        this-invitation-cannot-be-accepted-at-this-time: '当前无法接受这份邀请。'
-        already-joined-the-party: '已加入小队。'
-        please-click-on-the-online-players-above-to-send-team-invitations: '请点击上方在线玩家发送组队邀请。'
-        the-party-has-been-disbanded: '小队已解散。'
-        you-have-left-the-companion-group: '你已离开小队。'
-        team-cannot-be-modified-at-the-moment: '当前无法修改队伍。'
-        this-player-cannot-be-invited-at-the-moment: '该玩家暂时无法被邀请。'
-        already-sent-to: '已向'
-        send-invitation: '发出邀请。'
-        you-are-invited-to-join-the-party-please-open-the-game-lobby-to-accept-the-invitation: '邀请你加入小队，请打开游戏大厅接受邀请。'
-        there-are-no-other-online-players-yet: '暂无其他在线玩家'
-        online-players-will-display-their-team-status-here: '在线玩家会在这里显示队伍状态'
-        invitation-instructions: '邀请说明'
-        disband-the-team: '解散队伍'
-        leave-the-team: '离开队伍'
-        click-on-the-online-player-above-to-send-a-team-invitation: '点击上方在线玩家发送组队邀请'
-        teams-cannot-be-modified-while-they-are-matching-or-playing-a-game: '队伍正在匹配或进行游戏时不可修改'
-        return-to-lobby: '返回大厅'
-        refresh: '刷新'
-        update-online-player-and-invitation-status: '更新在线玩家与邀请状态'
-        close: '关闭'
-        you-currently-dont-have-a-party: '你目前没有加入小队'
-        click-player-list-to-send-invitation-hint: '点击玩家列表即可发出邀请'
-        captain: '队长：'
-        number-of-people: '人数：'
-        player-count-suffix: '人'
-        select: '选择：'
-        party: '小队'
-        invitation-status: '邀请状态'
-        no-invitations-pending: '暂无待处理邀请'
-        click-player-list-to-invite-action: '点击玩家列表发送邀请'
-        received-a-team-invitation: '收到组队邀请'
-        invite-you-to-join-the-peer-group: '邀请你加入小队'
-        click-to-accept-the-invitation: '点击接受邀请'
-        team-status: '队伍状态：'
-        no-team: '无队伍'
-        teamed-up: '已组队'
-        current-status: '当前状态：'
-        click-to-send-team-invitation: '点击发送组队邀请'
-        unable-to-send-invitation-at-the-moment: '当前无法发送邀请'
-        only-the-team-leader-can-send-invitations: '只有队长可以发送邀请'
+        empty:
+          slot: 22
+          material: GRAY_DYE
+          title: "&#a0a0a0暂无其他在线玩家"
+          lore:
+            - "&#696969在线玩家会在这里显示队伍状态"
     statistics-screen:
       title: "&#55ffff&l个人战绩"
       size: 54
       layout:
-        content: [20, 21, 22, 23, 24, 29, 30, 31, 32, 33]
-        border: [0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 48, 51, 52]
+        content:
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+        border:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 5
+          - 6
+          - 7
+          - 8
+          - 45
+          - 46
+          - 48
+          - 51
+          - 52
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
           title: " "
           lore: []
-        summary: {slot: 4, material: PLAYER_HEAD, title: "&#55ffff&l我的概览", lore: []}
-        game: {title: "%game%", lore: []}
-        metric: {title: "%title%", lore: []}
-        map: {title: "%map%", lore: []}
-        empty: {slot: 22, material: GRAY_DYE, title: "&#a0a0a0暂无开放游戏", lore: []}
-        back: {slot: 45, material: ARROW, title: "&#ededed返回", lore: []}
-        leaderboard: {slot: 47, material: GOLD_INGOT, title: "&#ffaa00&l查看排行榜", lore: []}
-        previous: {slot: 48, material: ARROW, title: "&#ededed上一页", lore: []}
-        refresh: {slot: 49, material: CLOCK, title: "&#fff566刷新", lore: []}
-        page: {slot: 50, material: PAPER, title: "&#55ffff第 %page% / %pages% 页", lore: []}
-        next: {slot: 52, material: ARROW, title: "&#ededed下一页", lore: []}
-        close: {slot: 53, material: BARRIER, title: "&#ff5555关闭", lore: []}
-      copy:
-        personal-record: '个人战绩'
-        statistics-header-prefix: '个人战绩 • '
-        no-open-games-yet: '暂无开放游戏'
-        completed-records-will-be-retained-forever: '已完成的比赛纪录会一直保留'
-        return-to-lobby: '返回大厅'
-        view-the-leaderboard: '查看排行榜'
-        view-game-data-and-personal-record-rankings: '查看各游戏具体数据与个人纪录排名'
-        click-to-open: '点击打开'
-        close: '关闭'
-        match-count-suffix: '场'
-        number-of-connections: '连线数'
-        record-count-suffix: '条'
-        cumulative-completed-connections-across-all-bingo-games: '你在所有宾果对局中完成的连线总数'
-        total-tasks-completed: '完成任务总数'
-        item-count-suffix: '个'
-        cumulative-completed-tasks-for-all-bingo-games: '你在所有宾果对局中完成的任务总数'
-        most-completed-in-a-single-game: '单场最多完成'
-        highest-number-of-tasks-completed-in-a-bingo-game: '单场宾果完成任务数的最高纪录'
-        no-subdivision-records-yet: '暂无细分纪录'
-        after-completing-the-corresponding-game-the-map-record-will-be-displayed-here: '完成对应游戏后，地图纪录会显示在这里'
-        return-to-game-category: '返回游戏分类'
-        previous-page: '上一页'
-        refresh: '刷新'
-        update-the-detailed-records-of-the-current-game: '更新当前游戏的详细纪录'
-        all-maps-accumulated: '全部地图累计'
-        bingo-data-accumulated-by-game-not-split-by-map: '宾果成绩合并统计，不按地图分别显示'
-        ordinal-prefix: '第'
-        page-suffix: '页'
-        map: '张地图'
-        next-page: '下一页'
-        complete-session: '完成场次'
-        sort-by-game-click-on-card-to-see-breakdown: '按游戏分类，点击卡片查看细分'
-        my-overview: '我的总览'
-        lines-completed-label: '连线数'
-        complete-the-task: '完成任务'
-        most-in-a-single-game: '单场最多'
-        click-to-view-cumulative-breakdown-data: '点击查看累计细分数据'
-        maps-to-view-subdivisions: '张地图可查看细分'
-        click-to-view-detailed-results: '点击查看详细战绩'
-        participate-in-sessions: '参与场次'
-        view-the-cumulative-breakdown-of-bingo-data-below: '下方查看宾果累计细分数据'
-        click-the-map-below-to-view-various-records: '下方按地图查看各项纪录'
-        no-record-yet: '暂无纪录'
-        record-independently-by-map: '按地图独立记录'
-        fastest-lap: '最快单圈'
-        fastest-three-complete-laps: '最快完整三圈'
-        first-best: '第一'
-        second-best: '第二'
-        third-best: '第三'
+        summary:
+          slot: 4
+          material: PLAYER_HEAD
+          title: "&#55ffff&l我的概览"
+          lore:
+            - 完整场次：
+            - ""
+            - "&#a0a0a0按游戏分类，点击卡片查看分图明细"
+        game:
+          material: PAPER
+          title: "&#ededed&l%game%"
+          lore:
+            - "&#a0a0a0参与场次：&#ededed%games%"
+            - ""
+            - "%maps%张地图可查看分图明细"
+            - ""
+            - "&#55ff55&l点击查看详细战绩"
+          states:
+            detail:
+              title: "&#55ffff&l战绩：%game%"
+        metric:
+          title: "%title%"
+          lore:
+            - "&#a0a0a0%label% &#696969• &#ededed%value%"
+          states:
+            no-record:
+              title: "&#696969暂无记录"
+            bingo-max-tasks:
+              title: 单场最多完成物品
+            bingo-max-lines:
+              title: 单场最多连线
+            bingo-max-firsts:
+              title: 单场最多首个完成物品
+            acerace-fastest-lap:
+              title: 最快单圈
+            acerace-fastest-three-laps:
+              title: 最快完整三圈
+            dragon-max-damage:
+              title: 单场对末影龙最多伤害
+            dragon-first-liberate-rate:
+              title: 场均首个解放末地率
+            dragon-first-next-gen-rate:
+              title: 场均首个下一世代率
+            dragon-first-gateway-rate:
+              title: 场均首个远程折跃率
+            pkw-stars-time:
+              title: 星数-时间
+              lore:
+              - "%stars%⭐ %duration%"
+            pkw-points-time:
+              title: 积分-时间
+              lore:
+              - "%points%分 %duration%"
+            acerace-fastest-lap-best1:
+              title: 第一最快单圈
+            acerace-fastest-lap-best2:
+              title: 第二最快单圈
+            acerace-fastest-lap-best3:
+              title: 第三最快单圈
+            acerace-fastest-three-laps-best1:
+              title: 第一最快完整三圈
+            acerace-fastest-three-laps-best2:
+              title: 第二最快完整三圈
+            acerace-fastest-three-laps-best3:
+              title: 第三最快完整三圈
+        map:
+          material: PAPER
+          title: "&#ededed&l%map%"
+          lore:
+            - 参与场次：
+            - ""
+            - "&#696969按地图独立记录"
+        empty:
+          slot: 22
+          material: GRAY_DYE
+          title: "&#a0a0a0暂无开放游戏"
+          lore:
+            - "&#696969完成对局后的记录会永久保留"
+        back:
+          slot: 45
+          material: ARROW
+          title: "&#ededed返回游戏选择"
+          states:
+            detail:
+              title: "&#ededed返回游戏分类"
+        leaderboard:
+          slot: 47
+          material: GOLD_INGOT
+          title: "&#ffaa00&l查看排行榜"
+          lore:
+            - "&#a0a0a0查看游戏数据与个人纪录排名"
+            - "&#55ff55&l点击打开"
+        previous:
+          slot: 48
+          material: ARROW
+          title: "&#ededed上一页"
+          lore: []
+        refresh:
+          slot: 49
+          material: CLOCK
+          title: "&#fff566刷新"
+          lore:
+            - "&#a0a0a0更新当前游戏的详细记录"
+        page:
+          slot: 50
+          material: PAPER
+          title: "&#55ffff第 %page% / %pages% 页"
+          lore:
+            - "&#a0a0a0%maps%张地图"
+        next:
+          slot: 52
+          material: ARROW
+          title: "&#ededed下一页"
+          lore: []
+        close:
+          slot: 53
+          material: BARRIER
+          title: "&#ff5555关闭"
+          lore: []
   hotbar:
     lobby:
       material: COMPASS
-      title: '&#55ffff&l游戏大厅'
+      title: "&#55ffff&l游戏大厅"
       lore:
-        - '&#a0a0a0右键打开大厅菜单'
-  metrics:
-    bingo-max-tasks: '单场最多完成物品'
-    bingo-max-lines: '单场最多连线'
-    bingo-max-firsts: '单场最多首个完成物品'
-    acerace-fastest-lap: '最快单圈'
-    acerace-fastest-three-laps: '最快完整三圈'
-    dragon-max-damage: '单场对末影龙最多伤害'
-    dragon-first-liberate-rate: '场均首个解放末地率'
-    dragon-first-next-gen-rate: '场均首个下一世代率'
-    dragon-first-gateway-rate: '场均首个远程折跃率'
-    pkw-stars-time: '星数-时间'
-    pkw-points-time: '积分-时间'
+        - "&#a0a0a0右键打开大厅菜单"
 games:
   bingo:
     menus:
       teammate-teleport:
-        title: '&#55ffff&l传送至队友'
+        title: "&#55ffff&l传送至队友"
         size: 54
         layout:
-          content: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53]
+          content:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+            - 10
+            - 11
+            - 12
+            - 13
+            - 14
+            - 15
+            - 16
+            - 17
+            - 18
+            - 19
+            - 20
+            - 21
+            - 22
+            - 23
+            - 24
+            - 25
+            - 26
+            - 27
+            - 28
+            - 29
+            - 30
+            - 31
+            - 32
+            - 33
+            - 34
+            - 35
+            - 36
+            - 37
+            - 38
+            - 39
+            - 40
+            - 41
+            - 42
+            - 43
+            - 44
+            - 45
+            - 46
+            - 47
+            - 48
+            - 49
+            - 50
+            - 51
+            - 52
+            - 53
         items:
           teammate:
             material: ENDER_PEARL
-            title: '&#ededed&l%player%'
-            lore: ['&#a0a0a0点击传送到这名队友']
-        copy:
-          there-are-currently-no-online-teammates-to-teleport-to: '当前没有可传送的在线队友'
-          teleport-to-teammates: '传送至队友'
-          click-to-teleport-to-this-teammate: '点击传送到此队友'
-          this-teammate-is-no-longer-reachable: '该队友已不可达'
-          sent-to: '已传送到'
+            title: "&#ededed&l%player%"
+            lore:
+              - "&#a0a0a0点击传送到这名队友"
       card:
-        title: '&#ff55ff&l宾果卡片'
+        title: "&#ff55ff&l宾果卡片"
         layout:
-          content: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+          content:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
         items:
           info:
             slot: 0
             material: MAP
-            title: '&#ff55ff&l宾果卡片'
-            lore: ['&#a0a0a0率先完成连线或整张卡片即可获胜']
+            title: "&#ff55ff&l宾果卡片"
+            lore:
+              - "&#a0a0a0率先完成连线或整张卡片即可获胜"
 voting:
   menus:
     ballot:
-      title: '&#ffaa00&l锦标赛投票 &#ededed• 下一场'
+      title: "&#ffaa00&l锦标赛投票 &#ededed• 下一场"
       size: 54
       layout:
-        content: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22]
-        border: [0, 1, 2, 3, 4, 5, 6, 7, 8, 45, 46, 47, 48, 49, 50, 51, 52, 53]
+        content:
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 19
+          - 20
+          - 21
+          - 22
+        border:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 45
+          - 46
+          - 47
+          - 48
+          - 49
+          - 50
+          - 51
+          - 52
+          - 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
-          title: ' '
+          title: " "
           lore: []
         candidate:
-          title: '&#ededed&l%game%'
+          title: "&#ededed&l%game%"
           lore:
-            - '&#696969%category%'
-            - '&#a0a0a0%description%'
-            - ''
-            - '&#ededed%votes%票 &#696969• %percentage%%'
-            - ''
-            - '&#55ff55点击投票'
+            - "&#696969%category%"
+            - "&#a0a0a0%description%"
+            - ""
+            - "&#ededed%votes%票 &#696969• %percentage%%"
+            - ""
+            - "&#55ff55点击投票"
           states:
             selected:
-              title: '&#55ffff&l✓ %game%'
+              title: "&#55ffff&l✓ %game%"
               glint: true
               lore:
-                - '&#696969%category%'
-                - '&#a0a0a0%description%'
-                - ''
-                - '&#ededed%votes%票 &#696969• %percentage%%'
-                - ''
-                - '&#55ffff&l✓ 我的选择'
+                - "&#696969%category%"
+                - "&#a0a0a0%description%"
+                - ""
+                - "&#ededed%votes%票 &#696969• %percentage%%"
+                - ""
+                - "&#55ffff&l✓ 我的选择"
             leading:
-              title: '&#ffaa00&l★ %game%'
+              title: "&#ffaa00&l★ %game%"
               lore:
-                - '&#696969%category%'
-                - '&#a0a0a0%description%'
-                - ''
-                - '&#ededed%votes%票 &#696969• %percentage%%'
-                - ''
-                - '&#ffaa00&l★ 当前领跑'
+                - "&#696969%category%"
+                - "&#a0a0a0%description%"
+                - ""
+                - "&#ededed%votes%票 &#696969• %percentage%%"
+                - ""
+                - "&#ffaa00&l★ 当前领跑"
         empty:
           slot: 22
           material: GRAY_DYE
-          title: '&#a0a0a0本轮暂无候选游戏'
-          lore: ['&#696969等待管理员开放候选游戏']
+          title: "&#a0a0a0本轮暂无候选游戏"
+          lore:
+            - "&#696969等待管理员开放候选游戏"
         time:
           slot: 1
           material: CLOCK
-          title: '&#fff566&l%time%'
-          lore: ['&#a0a0a0投票截止倒计时', '&#696969结果将在倒计时结束后锁定']
+          title: "&#fff566&l%time%"
+          lore:
+            - "&#a0a0a0投票截止倒计时"
+            - "&#696969结果将在倒计时结束后锁定"
         overview:
           slot: 4
           material: NETHER_STAR
-          title: '&#ffaa00&l下一场，由你决定'
-          lore: ['&#ededed%candidates%个候选游戏 &#696969• %votes%张有效选票']
+          title: "&#ffaa00&l下一场，由你决定"
+          lore:
+            - "&#ededed%candidates%个候选游戏 &#696969• %votes%张有效选票"
+            - "%leader%"
+            - "%count%个游戏并列领先"
+            - "&#696969等待第一张选票"
         turnout:
           slot: 7
           material: NAME_TAG
-          title: '&#55ffff&l%votes%/%eligible% 已投'
-          lore: ['&#a0a0a0参赛者投票进度：&#ededed%percentage%%']
+          title: "&#55ffff&l%votes%/%eligible% 已投"
+          lore:
+            - "%bar%"
+            - "&#a0a0a0参赛者投票进度：&#ededed%percentage%%"
         my-ballot:
           slot: 40
           material: WRITABLE_BOOK
-          title: '&#55ffff&l我的选票'
-          lore: ['&#55ff55%game%', '&#55ff55选票已记录']
+          title: "&#55ffff&l我的选票"
+          lore:
+            - "&#55ff55%game%"
+            - "&#55ff55选票已记录"
           states:
             empty:
               material: PAPER
-              title: '&#a0a0a0&l选票未填写'
-              lore: ['&#ededed从上方选择一个游戏', '&#696969投票结束前可以随时更改']
+              title: "&#a0a0a0&l选票未填写"
+              lore:
+                - "&#ededed从上方选择一个游戏"
+                - "&#696969投票结束前可以随时更改"
             selected:
               glint: true
         close:
           slot: 49
           material: BARRIER
-          title: '&#ff5555关闭'
+          title: "&#ff5555关闭"
           lore: []
-      copy:
-        tournament-ballot: '锦标赛投票'
-        next-game: ' • 下一场'
-        there-are-currently-no-candidate-games-in-this-round: '本轮暂无候选游戏'
-        waiting-for-venue-release: '等待管理员开放候选游戏'
-        close: '关闭'
-        championship-events: '候选游戏'
-        make-your-selection-after-reviewing-the-game-rules: '查看游戏规则，然后选出下一场比赛'
-        ticket: '票'
-        my-choice: '✓ 我的选择'
-        click-on-other-items-to-change-your-ticket: '点击其他游戏即可改票'
-        current-leader: '★ 当前领跑'
-        click-to-vote-for-this-game: '点击投给这个游戏'
-        click-to-vote: '点击投票'
-        countdown-to-voting-deadline: '投票截止倒计时'
-        results-will-be-locked-after-the-countdown-ends: '结果将在倒计时结束后锁定'
-        waiting-for-the-first-ballot: '等待第一张选票'
-        leading-the-way: '领跑：'
-        games-tied-for-the-lead: '个游戏并列领先'
-        next-game-it-s-up-to-you: '下一场，由你决定'
-        candidate-games: '个候选游戏'
-        valid-votes: '张有效选票'
-        already-invested: '已投'
-        contestant-voting-progress: '参赛者投票进度'
-        ballot-is-not-filled-in: '选票未填写'
-        select-an-item-from-above: '从上方选择一个游戏'
-        can-be-changed-at-any-time-before-voting-closes: '投票结束前可以随时更改'
-        my-vote: '我的选票'
-        ballot-recorded: '选票已记录'
-        explore-teamwork: '探索 • 团队协作'
-        complete-the-shared-bingo-card-seize-the-grid-and-connect: '合作完成宾果任务，抢占格子并争取连线'
-        chase-4v4: '追逐 • 4v4'
-        chaser-capture-escapers-fight-for-time-to-survive: '追击者抓人，逃脱者尽可能坚持更久'
-        battle-4v4: '战斗 • 4v4'
-        defeat-the-opponent-occupy-the-center-with-your-team-s-wool: '击败对手，并用本队羊毛占领中心区域'
-        survival-individual-competition: '生存 • 个人赛'
-        persevere-until-the-end-on-the-collapsing-platform: '在不断崩落的平台上坚持到最后'
-        knock-back-survival-match: '击退 • 生存赛'
-        use-snowballs-to-knock-your-opponents-out-of-the-shrinking-field: '用雪球将对手击出逐渐缩小的场地'
-        survival-team-battle: '生存 • 团队战'
-        collect-empty-island-resources-fight-in-shrinking-borders: '搜集空岛资源，在收缩边界中交战'
-        racing-complete-the-race-as-a-team: '竞速 • 全队完赛'
-        overcome-obstacles-and-reach-the-finish-line-compete-for-individual-and-team-rankings: '跨越障碍冲向终点，争夺个人和团队名次'
-        parkour-individual-competition: '跑酷 • 个人赛'
-        challenge-branch-tracks-scored-by-difficulty-and-completion: '挑战不同难度的分支赛道，按难度和完成度得分'
-        pass-survival-race: '传递 • 生存赛'
-        pass-the-hot-cod-to-your-opponent-and-hold-on-until-the-end: '把烫手鳕鱼传给对手并坚持到最后'
-        build-teamwork: '建造 • 团队协作'
-        collect-materials-and-divide-the-work-to-restore-as-many-blueprints-as-possible: '采集材料、分工建造，尽可能还原更多蓝图'
-        racing-individual-competition: '竞速 • 个人赛'
-        control-the-elytra-and-trident-to-complete-multiple-laps-of-the-obstacle-course: '驾驭鞘翅与三叉戟完成多圈障碍赛道'
+        games:
+          bingo:
+            material: FILLED_MAP
+            title: "&#ededed&l宾果"
+            states:
+              available:
+                lore:
+                  - "&#696969探索 • 团队协作"
+                  - "&#a0a0a0合作完成宾果任务，抢占格子并争取连线"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 宾果"
+                glint: true
+                lore:
+                  - "&#696969探索 • 团队协作"
+                  - "&#a0a0a0合作完成宾果任务，抢占格子并争取连线"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 宾果"
+                lore:
+                  - "&#696969探索 • 团队协作"
+                  - "&#a0a0a0合作完成宾果任务，抢占格子并争取连线"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          parkour-tag:
+            material: GOLDEN_CARROT
+            title: "&#ededed&l跑酷追击"
+            states:
+              available:
+                lore:
+                  - "&#696969追逐 • 4v4"
+                  - "&#a0a0a0追击者抓人，逃脱者尽可能坚持更久"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 跑酷追击"
+                glint: true
+                lore:
+                  - "&#696969追逐 • 4v4"
+                  - "&#a0a0a0追击者抓人，逃脱者尽可能坚持更久"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 跑酷追击"
+                lore:
+                  - "&#696969追逐 • 4v4"
+                  - "&#a0a0a0追击者抓人，逃脱者尽可能坚持更久"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          battle-box:
+            material: WHITE_WOOL
+            title: "&#ededed&l战斗盒子"
+            states:
+              available:
+                lore:
+                  - "&#696969战斗 • 4v4"
+                  - "&#a0a0a0击败对手，并用本队羊毛占领中心区域"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 战斗盒子"
+                glint: true
+                lore:
+                  - "&#696969战斗 • 4v4"
+                  - "&#a0a0a0击败对手，并用本队羊毛占领中心区域"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 战斗盒子"
+                lore:
+                  - "&#696969战斗 • 4v4"
+                  - "&#a0a0a0击败对手，并用本队羊毛占领中心区域"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          tnt-run:
+            material: TNT
+            title: "&#ededed&l跑爆 TNT"
+            states:
+              available:
+                lore:
+                  - "&#696969生存 • 个人赛"
+                  - "&#a0a0a0在不断崩落的平台上坚持到最后"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 跑爆 TNT"
+                glint: true
+                lore:
+                  - "&#696969生存 • 个人赛"
+                  - "&#a0a0a0在不断崩落的平台上坚持到最后"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 跑爆 TNT"
+                lore:
+                  - "&#696969生存 • 个人赛"
+                  - "&#a0a0a0在不断崩落的平台上坚持到最后"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          snowball-showdown:
+            material: SNOWBALL
+            title: "&#ededed&l雪球对决"
+            states:
+              available:
+                lore:
+                  - "&#696969击退 • 生存赛"
+                  - "&#a0a0a0用雪球将对手击出逐渐缩小的场地"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 雪球对决"
+                glint: true
+                lore:
+                  - "&#696969击退 • 生存赛"
+                  - "&#a0a0a0用雪球将对手击出逐渐缩小的场地"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 雪球对决"
+                lore:
+                  - "&#696969击退 • 生存赛"
+                  - "&#a0a0a0用雪球将对手击出逐渐缩小的场地"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          sky-wars:
+            material: GRASS_BLOCK
+            title: "&#ededed&l空岛战争"
+            states:
+              available:
+                lore:
+                  - "&#696969生存 • 团队战"
+                  - "&#a0a0a0搜集空岛资源，在收缩边界中交战"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 空岛战争"
+                glint: true
+                lore:
+                  - "&#696969生存 • 团队战"
+                  - "&#a0a0a0搜集空岛资源，在收缩边界中交战"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 空岛战争"
+                lore:
+                  - "&#696969生存 • 团队战"
+                  - "&#a0a0a0搜集空岛资源，在收缩边界中交战"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          tgttos:
+            material: FEATHER
+            title: "&#ededed&l极速跑酷"
+            states:
+              available:
+                lore:
+                  - "&#696969竞速 • 全队完赛"
+                  - "&#a0a0a0跨越障碍冲向终点，争夺个人和团队名次"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 极速跑酷"
+                glint: true
+                lore:
+                  - "&#696969竞速 • 全队完赛"
+                  - "&#a0a0a0跨越障碍冲向终点，争夺个人和团队名次"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 极速跑酷"
+                lore:
+                  - "&#696969竞速 • 全队完赛"
+                  - "&#a0a0a0跨越障碍冲向终点，争夺个人和团队名次"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          parkour-warrior:
+            material: IRON_BOOTS
+            title: "&#ededed&l跑酷战士"
+            states:
+              available:
+                lore:
+                  - "&#696969跑酷 • 个人赛"
+                  - "&#a0a0a0挑战不同难度的分支赛道，按难度和完成度得分"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 跑酷战士"
+                glint: true
+                lore:
+                  - "&#696969跑酷 • 个人赛"
+                  - "&#a0a0a0挑战不同难度的分支赛道，按难度和完成度得分"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 跑酷战士"
+                lore:
+                  - "&#696969跑酷 • 个人赛"
+                  - "&#a0a0a0挑战不同难度的分支赛道，按难度和完成度得分"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          hoty-cody-dusky:
+            material: COD
+            title: "&#ededed&l烫手鳕鱼"
+            states:
+              available:
+                lore:
+                  - "&#696969传递 • 生存赛"
+                  - "&#a0a0a0把烫手鳕鱼传给对手并坚持到最后"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 烫手鳕鱼"
+                glint: true
+                lore:
+                  - "&#696969传递 • 生存赛"
+                  - "&#a0a0a0把烫手鳕鱼传给对手并坚持到最后"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 烫手鳕鱼"
+                lore:
+                  - "&#696969传递 • 生存赛"
+                  - "&#a0a0a0把烫手鳕鱼传给对手并坚持到最后"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          build-mart:
+            material: CRAFTING_TABLE
+            title: "&#ededed&l建筑马拉松"
+            states:
+              available:
+                lore:
+                  - "&#696969建造 • 团队协作"
+                  - "&#a0a0a0采集材料、分工建造，尽可能还原更多蓝图"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 建筑马拉松"
+                glint: true
+                lore:
+                  - "&#696969建造 • 团队协作"
+                  - "&#a0a0a0采集材料、分工建造，尽可能还原更多蓝图"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 建筑马拉松"
+                lore:
+                  - "&#696969建造 • 团队协作"
+                  - "&#a0a0a0采集材料、分工建造，尽可能还原更多蓝图"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          ace-race:
+            material: ELYTRA
+            title: "&#ededed&l王牌竞速"
+            states:
+              available:
+                lore:
+                  - "&#696969竞速 • 个人赛"
+                  - "&#a0a0a0驾驭鞘翅与三叉戟完成多圈障碍赛道"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 王牌竞速"
+                glint: true
+                lore:
+                  - "&#696969竞速 • 个人赛"
+                  - "&#a0a0a0驾驭鞘翅与三叉戟完成多圈障碍赛道"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 王牌竞速"
+                lore:
+                  - "&#696969竞速 • 个人赛"
+                  - "&#a0a0a0驾驭鞘翅与三叉戟完成多圈障碍赛道"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+buttons:
+  previous:
+    material: ARROW
+    title: "&#ededed上一页"
+    lore: []
+  next:
+    material: ARROW
+    title: "&#ededed下一页"
+    lore: []
+  page:
+    material: PAPER
+    title: "&#55ffff第 %page% / %pages% 页"
+    lore: []
+  back:
+    material: ARROW
+    title: "&#ededed返回"
+    lore: []
+  close:
+    material: BARRIER
+    title: "&#ff5555关闭"
+    lore: []
+  refresh:
+    material: CLOCK
+    title: "&#fff566刷新"
+    lore: []
+  confirm:
+    material: LIME_WOOL
+    title: "&#55ff55确认"
+    lore: []
+  cancel:
+    material: RED_WOOL
+    title: "&#ff5555取消"
+    lore: []
+  border:
+    material: GRAY_STAINED_GLASS_PANE
+    title: " "
+    lore: []
+  empty:
+    material: GRAY_DYE
+    title: "&#a0a0a0暂无内容"
+    lore: []

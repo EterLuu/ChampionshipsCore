@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.bingo;
 
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -97,15 +98,14 @@ public final class BingoCompassListener extends BaseListener {
             teammates.add(target);
         }
         if (teammates.isEmpty()) {
-            player.sendMessage(Component.text(GuiConfig.text("games.bingo.menus.teammate-teleport.copy.there-are-currently-no-online-teammates-to-teleport-to")).color(NamedTextColor.YELLOW));
+            player.sendMessage(Component.text(MessageConfig.MAP_EDITOR_BINGO_NO_TEAMMATES).color(NamedTextColor.YELLOW));
             return;
         }
         teammates.sort(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER));
 
         int rows = Math.max(1, Math.min(6, (teammates.size() + 8) / 9));
         CompassHolder holder = new CompassHolder();
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, rows * 9,
-                GuiConfig.text("games.bingo.menus.teammate-teleport.copy.teleport-to-teammates"),
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, rows * 9, "",
                 java.util.stream.IntStream.range(0, rows * 9).boxed().toList());
         Inventory inv = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.setInventory(inv);
@@ -122,7 +122,7 @@ public final class BingoCompassListener extends BaseListener {
         item.editMeta(meta -> {
             meta.displayName(Utils.toComponent(Utils.formatPlayerName(target))
                     .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(GuiConfig.text("games.bingo.menus.teammate-teleport.copy.click-to-teleport-to-this-teammate")).color(NamedTextColor.GRAY)
+            meta.lore(List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.teammate.lore", 0)).color(NamedTextColor.GRAY)
                     .decoration(TextDecoration.ITALIC, false)));
             if (TARGET_KEY != null) {
                 meta.getPersistentDataContainer().set(TARGET_KEY, PersistentDataType.STRING,
@@ -152,13 +152,13 @@ public final class BingoCompassListener extends BaseListener {
         }
         Player target = Bukkit.getPlayer(targetId);
         if (target == null || !target.isOnline() || area.notAreaPlayer(target)) {
-            player.sendMessage(Component.text(GuiConfig.text("games.bingo.menus.teammate-teleport.copy.this-teammate-is-no-longer-reachable")).color(NamedTextColor.YELLOW));
+            player.sendMessage(Component.text(MessageConfig.MAP_EDITOR_BINGO_UNREACHABLE).color(NamedTextColor.YELLOW));
             player.closeInventory();
             return;
         }
         player.closeInventory();
         player.teleportAsync(target.getLocation());
-        player.sendMessage(Component.text(GuiConfig.text("games.bingo.menus.teammate-teleport.copy.sent-to"), NamedTextColor.AQUA)
+        player.sendMessage(Component.text(MessageConfig.MAP_EDITOR_BINGO_SENT_TO, NamedTextColor.AQUA)
                 .append(Utils.toComponent(Utils.formatPlayerName(target))));
     }
 

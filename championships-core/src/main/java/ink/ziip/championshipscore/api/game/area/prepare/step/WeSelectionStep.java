@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -48,7 +49,7 @@ public class WeSelectionStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            return Utils.formatAdminError(GuiConfig.text("map-editor.copy.please-use-worldedit-to-select-two-endpoints-first"));
+            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
         }
         setter.accept(session.getTarget(), selection);
         session.markDirty();

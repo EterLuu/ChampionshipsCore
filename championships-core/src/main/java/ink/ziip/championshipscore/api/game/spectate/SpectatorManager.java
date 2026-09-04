@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.spectate;
 
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import io.papermc.paper.event.entity.EntityInsideBlockEvent;
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -291,7 +292,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
             Bukkit.getScheduler().runTask(plugin, () -> openControlScreen(player, ControlScreen.VISIBILITY));
         } else if (slot == hotbarSlot("leave", 5)) {
             if (gameManager.leaveSpectating(player))
-                feedback(player, GuiConfig.text("spectator.copy.left"), NamedTextColor.RED, 0.8F);
+                feedback(player, MessageConfig.SPECTATOR_LEFT, NamedTextColor.RED, 0.8F);
         } else if (slot == hotbarSlot("flight-speed", 7)) {
             adjustFlySpeed(player, rightClick ? -.05F : .05F);
         } else if (slot == hotbarSlot("venue-selector", 8)) {
@@ -564,8 +565,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
         SpectatorSession updated = session.withNightVision(enabled);
         sessions.put(player.getUniqueId(), updated);
         if (updated.external()) applyExternalControlItems(player, updated);
-        feedback(player, GuiConfig.text("spectator.copy.night-vision",
-                        Map.of("state", stateText(enabled))),
+        feedback(player, enabled ? MessageConfig.SPECTATOR_NIGHT_VISION_ENABLED
+                        : MessageConfig.SPECTATOR_NIGHT_VISION_DISABLED,
                 enabled ? NamedTextColor.GREEN : NamedTextColor.RED, enabled ? 1.2F : 0.8F);
     }
 
@@ -588,7 +589,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         player.setFlySpeed(speed);
         SpectatorSession session = sessions.get(player.getUniqueId());
         if (session != null && session.external()) applyExternalControlItems(player, session);
-        feedback(player, GuiConfig.text("spectator.copy.flight-speed", Map.of("speed", speedText(player))), NamedTextColor.YELLOW,
+        feedback(player, MessageConfig.SPECTATOR_FLIGHT_SPEED.replace("%speed%", speedText(player)), NamedTextColor.YELLOW,
                 delta > 0 ? 1.25F : 0.8F);
     }
 
@@ -696,12 +697,12 @@ public final class SpectatorManager extends BaseManager implements Listener {
                     .anyMatch(candidate -> candidate.getUniqueId().equals(targetId))) {
                 if (holder.screen == ControlScreen.PLAYER_TELEPORT) {
                     player.teleportAsync(target.getLocation());
-                    feedback(player, GuiConfig.text("spectator.copy.teleported-to-player",
-                            Map.of("player", target.getName())), NamedTextColor.LIGHT_PURPLE, 1.2F);
+                    feedback(player, MessageConfig.SPECTATOR_TELEPORTED_TO_PLAYER
+                            .replace("%player%", target.getName()), NamedTextColor.LIGHT_PURPLE, 1.2F);
                 } else {
                 plugin.getVisibilityManager().showOnlyPlayers(player.getUniqueId(), Set.of(targetId));
-                feedback(player, GuiConfig.text("spectator.copy.visibility-player",
-                        Map.of("player", target.getName())), NamedTextColor.LIGHT_PURPLE, 1.2F);
+                feedback(player, MessageConfig.SPECTATOR_VISIBILITY_PLAYER
+                        .replace("%player%", target.getName()), NamedTextColor.LIGHT_PURPLE, 1.2F);
                 }
                 player.closeInventory();
             }
@@ -713,15 +714,15 @@ public final class SpectatorManager extends BaseManager implements Listener {
             ChampionshipTeam team = holder.teams.get(slot);
             if (team != null && session.area() instanceof BaseMultiTeamGameInstance) {
                 plugin.getVisibilityManager().showOnlyTeams(player.getUniqueId(), Set.of(team.getId()));
-                feedback(player, GuiConfig.text("spectator.copy.visibility-team",
-                        Map.of("team", team.getName())), NamedTextColor.GOLD, 1.2F);
+                feedback(player, MessageConfig.SPECTATOR_VISIBILITY_TEAM
+                        .replace("%team%", team.getName()), NamedTextColor.GOLD, 1.2F);
                 player.closeInventory();
             }
             return;
         }
         if (slot == menuItemSlot("visibility", "show-all", 2)) {
             plugin.getVisibilityManager().clearManualOverrides(player.getUniqueId());
-            feedback(player, GuiConfig.text("spectator.copy.visibility-all"), NamedTextColor.GREEN, 1.2F);
+            feedback(player, MessageConfig.SPECTATOR_VISIBILITY_ALL, NamedTextColor.GREEN, 1.2F);
             player.closeInventory();
         } else if (slot == menuItemSlot("visibility", "show-player", 4)) {
             openControlScreen(player, ControlScreen.PLAYER_VISIBILITY);
@@ -780,10 +781,6 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (configured.slot() >= 0 && configured.slot() < 9)
             inventory.setItem(configured.slot(),
                     item(configured.material(), configured.title(), configured.lore(), configured.glint()));
-    }
-
-    private static String stateText(boolean enabled) {
-        return GuiConfig.text(enabled ? "spectator.copy.states.enabled" : "spectator.copy.states.disabled");
     }
 
     private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
