@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ParkourWarriorStartAllSubCommand extends BaseSubCommand {
     public ParkourWarriorStartAllSubCommand() {
-        super("all", "所有队伍开始跑酷战士", "/cc game start parkourwarrior all <场地>");
+        super("all", "所有队伍开始跑路战士", "/cc game start parkourwarrior all <场地>");
     }
 
     @Override

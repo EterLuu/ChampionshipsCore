@@ -13,7 +13,7 @@ import java.util.List;
 
 public class SkyWarsStartAllSubCommand extends BaseSubCommand {
     public SkyWarsStartAllSubCommand() {
-        super("all", "所有队伍开始空岛战争", "/cc game start skywars all <场地>");
+        super("all", "所有队伍开始空岛乱斗", "/cc game start skywars all <场地>");
     }
 
     @Override

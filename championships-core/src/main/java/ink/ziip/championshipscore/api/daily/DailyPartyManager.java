@@ -59,7 +59,7 @@ public final class DailyPartyManager {
                 || partyByPlayer.containsKey(target) || !daily.canJoinParty(target)) return null;
         DailyParty party = invite.party();
         if (daily.isPartyInSession(party)) return null;
-        daily.pauseParty(party, "同行小队成员发生变化");
+        daily.pauseParty(party, "小队成员发生变化");
         if (!party.add(target)) return null;
         partyByPlayer.put(target, party);
         return party;
@@ -68,7 +68,7 @@ public final class DailyPartyManager {
     public synchronized boolean leave(@NotNull UUID player) {
         DailyParty party = partyByPlayer.get(player);
         if (party == null || daily.isPartyInSession(party)) return false;
-        daily.pauseParty(party, "同行小队成员发生变化");
+        daily.pauseParty(party, "小队成员发生变化");
         partyByPlayer.remove(player, party);
         party.remove(player);
         if (party.size() == 0) removeParty(party);
@@ -78,7 +78,7 @@ public final class DailyPartyManager {
     public synchronized boolean disband(@NotNull UUID leader) {
         DailyParty party = partyByPlayer.get(leader);
         if (party == null || !party.isLeader(leader) || daily.isPartyInSession(party)) return false;
-        daily.pauseParty(party, "同行小队已解散");
+        daily.pauseParty(party, "小队已解散");
         removeParty(party);
         return true;
     }

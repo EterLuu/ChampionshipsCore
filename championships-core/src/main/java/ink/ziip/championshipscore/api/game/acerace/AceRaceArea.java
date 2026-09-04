@@ -597,7 +597,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (progressPoints.isEmpty() || respawnPoints.isEmpty() || getGameConfig().getStartSpawnPoint() == null
                 || !getGameConfig().hasStartLine() || !getGameConfig().hasFinishLine()) {
             logGame(java.util.logging.Level.WARNING, "启动",
-                    "赛道缺少进度点、重生点、起点出生点、起点线或终点线，已取消本局");
+                    "赛道缺少进度点、重生点、起点出生点、起点线或终点线，已取消本场");
             endGameFinally();
             return;
         }

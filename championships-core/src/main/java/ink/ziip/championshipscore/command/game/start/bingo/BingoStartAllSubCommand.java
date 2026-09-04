@@ -13,7 +13,7 @@ import java.util.List;
 
 public class BingoStartAllSubCommand extends BaseSubCommand {
     public BingoStartAllSubCommand() {
-        super("all", "所有队伍开始宾果", "/cc game start bingo all <场地>");
+        super("all", "所有队伍开始宾果飞速", "/cc game start bingo all <场地>");
     }
 
     @Override

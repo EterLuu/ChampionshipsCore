@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class SkyWarsStartMainCommand extends BaseMainCommand {
     public SkyWarsStartMainCommand() {
-        super("skywars", "空岛战争");
+        super("skywars", "空岛乱斗");
         addSubCommand(new SkyWarsStartAllSubCommand());
     }
 }

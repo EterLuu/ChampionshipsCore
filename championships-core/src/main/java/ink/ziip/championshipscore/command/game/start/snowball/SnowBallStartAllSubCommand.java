@@ -13,7 +13,7 @@ import java.util.List;
 
 public class SnowBallStartAllSubCommand extends BaseSubCommand {
     public SnowBallStartAllSubCommand() {
-        super("all", "所有队伍开始雪球对决", "/cc game start snowball all <场地>");
+        super("all", "所有队伍开始雪球大战", "/cc game start snowball all <场地>");
     }
 
     @Override

@@ -17,7 +17,7 @@ import java.util.UUID;
 
 public final class PartySubCommand extends BaseSubCommand {
     public PartySubCommand() {
-        super("party", "管理临时同行小队", "/cc party <invite|accept|leave|disband|info> [玩家]", PLAYER_PERMISSION);
+        super("party", "管理临时小队", "/cc party <invite|accept|leave|disband|info> [玩家]", PLAYER_PERMISSION);
     }
 
     @Override

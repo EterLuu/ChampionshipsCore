@@ -26,13 +26,13 @@ player-spawn-points:
 #游戏正式开始前，玩家会先被传送到introduction-spawn-point，在45秒内于聊天框分段播报下面的
 #规则文案（rules，每个子列表为一段，支持&颜色码与&#RRGGBB十六进制颜色），期间可以自由参观
 #场地；结束后传送到正式准备点位，读秒后开始游戏。
-# introduction-spawn-point留空时使用旁观出生点；把rules设为[]可跳过该阶段。
+# introduction-spawn-point留空时使用观战出生点；把rules设为[]可跳过该阶段。
 introduction-spawn-point:
 rules:
   - - "&#696969==========&r &#ff6b26[&6雪球大战&#ff6b26] &#696969==========&r"
     - "&#fff566搓个雪球，把对手统统轰下去吧！"
     - "&#ededed用雪球击退对手，将他们打下平台"
-    - "&#ededed坠入虚空即被淘汰，成为旁观玩家"
+    - "&#ededed坠入虚空即被淘汰，成为观战玩家"
     - "&#ededed和队友配合，把对手逼到边缘再出手"
   - - "&#696969==========&r&#fff566积分规则&#696969==========&r"
     - "&#ededed每击落一名对手：&#fff566+4分"

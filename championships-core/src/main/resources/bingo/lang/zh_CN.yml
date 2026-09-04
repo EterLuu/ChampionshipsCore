@@ -4,7 +4,7 @@ card:
   title: "&6&l宾果卡"
   win_hint: "&7连成一行、一列或一条对角线即可获胜"
   map_name: "{0}&f宾果卡"
-  spectator_map_name: "&7&l旁观者&f宾果总览卡"
+  spectator_map_name: "&7&l观战者&f宾果总览卡"
   map_hint: "&7右键查看任务详情"
   completed_by: "&7完成者："
   completed_at: "&7完成时间：&f{0}"
@@ -68,12 +68,12 @@ remix:
     description: "使用固定 3×3 末地冲刺卡和速通套装"
 worker:
   command:
-    no-permission: "&#bababa[&#ff6b26宾果&#bababa]&#ededed 权限不足"
-    admin-stop-usage: "&#bababa[&#fff566宾果&#bababa]&#ededed 用法 &#696969•&#ededed /cc game stop --confirm &#696969（结束当前比赛并按成绩结算）"
-    no-active-match: "&#bababa[&#ff6b26宾果&#bababa]&#ededed 当前没有进行中的比赛"
+    no-permission: "&#bababa[&#ff6b26宾果飞速&#bababa]&#ededed 权限不足"
+    admin-stop-usage: "&#bababa[&#fff566宾果飞速&#bababa]&#ededed 用法 &#696969•&#ededed /cc game stop --confirm &#696969（结束当前比赛并按成绩结算）"
+    no-active-match: "&#bababa[&#ff6b26宾果飞速&#bababa]&#ededed 当前没有进行中的比赛"
     event-active: "&#bababa[&#fff566赛事&#bababa]&#ededed 正式赛事进行中，比赛结束后将自动返回大厅"
     free-play-help: "&#bababa[&#31e061自由游玩&#bababa]&#ededed 离开当前游戏 &#696969•&#ededed /cc play leave"
-    admin-stop-help: "&#bababa[&#fff566宾果&#bababa]&#ededed 管理员结束比赛 &#696969•&#ededed /cc game stop --confirm"
+    admin-stop-help: "&#bababa[&#fff566宾果飞速&#bababa]&#ededed 管理员结束比赛 &#696969•&#ededed /cc game stop --confirm"
   play:
     leave:
       not-playing: "&#bababa[&#ff6b26自由游玩&#bababa]&#ededed 你当前没有参与任何游戏"
@@ -81,8 +81,8 @@ worker:
       started: "&#bababa[&#fff566自由游玩&#bababa]&#ededed 正在离开当前游戏"
   admin:
     stop:
-      no-active-match: "&#bababa[&#ff6b26宾果&#bababa]&#ededed 当前没有可结束的比赛"
-      started: "&#bababa[&#fff566宾果&#bababa]&#ededed 已发起结束，正在按当前成绩结算"
+      no-active-match: "&#bababa[&#ff6b26宾果飞速&#bababa]&#ededed 当前没有可结束的比赛"
+      started: "&#bababa[&#fff566宾果飞速&#bababa]&#ededed 已发起结束，正在按当前成绩结算"
 spectator:
   teleport:
     name: "选择玩家"
@@ -309,13 +309,13 @@ mode:
     name: "&d随机模式"
     lore:
       - "&7从以上模式中随机抽取一个，"
-      - "&7作为本局的游戏模式。"
+      - "&7作为本场的游戏模式。"
 
 vote:
-  started: "&d宾果投票开始！请在 {0} 秒内选择模式、难度和胜利线数。"
+  started: "&d宾果飞速投票开始！请在 {0} 秒内选择模式、难度和胜利线数。"
   remaining: "&7投票剩余 &e{0} &7秒"
   cancelled-insufficient: "&c投票因参与人数不足而取消，玩家将返回匹配队列。"
-  bossbar: "&d宾果投票 &7• 剩余 &e{0} &7秒"
+  bossbar: "&d宾果飞速投票 &7• 剩余 &e{0} &7秒"
   previous: "上一页"
   next: "下一页"
   close: "关闭"
@@ -323,7 +323,7 @@ vote:
   page_mode: "第 1 / 3 页 • 模式"
   page_difficulty: "第 2 / 3 页 • 难度"
   page_lines: "第 3 / 3 页 • 胜利线数"
-  result: "&6本局模式：&f{0}"
+  result: "&6本场模式：&f{0}"
   result_random: "&6随机模式抽中：&f{0}"
   menu_title: "选择游戏模式"
   menu_count: "&7当前票数：&e{0}"
@@ -332,7 +332,7 @@ vote:
   menu_locked: "&c🔒 需要 ≥4 支队伍才可选"
 
 difficulty_vote:
-  result: "&6本局卡片难度：&f{0}"
+  result: "&6本场卡片难度：&f{0}"
   menu_title: "选择卡片难度"
   menu_count: "&7当前票数：&e{0}"
   menu_hint: "&e点击选择"
@@ -372,17 +372,17 @@ card_difficulty:
       - "&c⚠ 死亡将清空背包（物品不掉落）"
 
 lines_vote:
-  result: "&6本局胜利条件：&f{0} 条线"
+  result: "&6本场胜利条件：&f{0} 条线"
   menu_title: "选择胜利线数"
   menu_option: "&b{0} 条线获胜"
-  menu_desc: "&7完成 {0} 条宾果线即可赢得本局"
+  menu_desc: "&7完成 {0} 条宾果线即可赢得本场"
   menu_count: "&7当前票数：&e{0}"
   menu_hint: "&e点击投票"
   menu_picked: "&a✔ 你的选择"
 
 genesis:
-  started: "&5创世！请在 {0} 秒内从随机物品中为本局挑选一个任务。"
-  triggered: "&5✦ 奇遇降临！本局触发【{0}】 &7{1}"
+  started: "&5创世！请在 {0} 秒内从随机物品中为本场挑选一个任务。"
+  triggered: "&5✦ 奇遇降临！本场触发【{0}】 &7{1}"
   title: "&5奇遇"
-  menu_title: "创世：为本局挑选任务"
+  menu_title: "创世：为本场挑选任务"
   menu_hint: "&e点击把该物品加入卡片"

@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class SnowBallStartMainCommand extends BaseMainCommand {
     public SnowBallStartMainCommand() {
-        super("snowball", "雪球对决");
+        super("snowball", "雪球大战");
         addSubCommand(new SnowBallStartAllSubCommand());
     }
 }

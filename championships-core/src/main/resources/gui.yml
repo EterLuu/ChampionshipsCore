@@ -305,16 +305,15 @@ map-editor:
                   title: "沙砾类"
                 copper:
                   title: "铜类"
-              lore:
-                - "&#a0a0a0中心：%center%"
-                - "&#a0a0a0材料区数量：%count%"
-                - "&#55ffff点击查看岛内材料区"
-              states:
                 unconfigured:
                   material: BARRIER
                   lore:
                     - "&#ff5555中心尚未配置"
                     - "&#696969无法自动归类材料区"
+              lore:
+                - "&#a0a0a0中心：%center%"
+                - "&#a0a0a0材料区数量：%count%"
+                - "&#55ffff点击查看岛内材料区"
             uncategorized:
               title: "&#ff5555未分类"
             zone:
@@ -776,7 +775,7 @@ map-editor:
             - 点击切换规则介绍期间玩家使用的游戏模式
           states:
             spectator:
-              title: 当前：旁观模式
+              title: 当前：观战模式
             adventure:
               title: 当前：冒险模式
         list-add:
@@ -1337,7 +1336,7 @@ spectator:
             watching:
               glint: true
               lore:
-                - "&#55ff55&l✓ 正在旁观"
+                - "&#55ff55&l✓ 正在观战"
             paired:
               title: "&#ffaa00本场对战："
             paired-line:
@@ -1781,7 +1780,7 @@ spectator:
       material: COMPASS
       title: "&#55ff55&l选择玩家"
       lore:
-        - "&#a0a0a0右键选择一名参赛玩家并前往"
+        - "&#a0a0a0右键选择一名参赛者并前往"
     player-visibility:
       slot: 4
       material: GLASS
@@ -2321,7 +2320,7 @@ daily:
           lore:
             - "&#a0a0a0当前状态：&#ededed%queue%"
             - "&#a0a0a0当前游戏：&#55ffff%game%"
-            - "&#a0a0a0同行人数：&#ededed%party_size%人"
+            - "&#a0a0a0小队人数：&#ededed%party_size%人"
             - ""
             - "&#a0a0a0从下方选择一项功能开始"
         statistics:
@@ -2476,7 +2475,7 @@ daily:
         games:
           bingo:
             material: FILLED_MAP
-            title: "&#ededed&l宾果"
+            title: "&#ededed&l宾果飞速"
             states:
               available:
                 lore:
@@ -2728,7 +2727,7 @@ daily:
                 glint: true
           parkour-warrior:
             material: LEATHER_BOOTS
-            title: "&#ededed&l跑酷战士"
+            title: "&#ededed&l跑路战士"
             states:
               available:
                 lore:
@@ -3493,7 +3492,7 @@ voting:
         games:
           bingo:
             material: FILLED_MAP
-            title: "&#ededed&l宾果"
+            title: "&#ededed&l宾果飞速"
             states:
               available:
                 lore:
@@ -3505,7 +3504,7 @@ voting:
                   - ""
                   - "&#55ff55点击投票"
               selected:
-                title: "&#55ffff&l✓ 宾果"
+                title: "&#55ffff&l✓ 宾果飞速"
                 glint: true
                 lore:
                   - "&#696969探索 • 团队协作"
@@ -3517,7 +3516,7 @@ voting:
                   - "&#55ffff&l✓ 我的选择"
                   - "&#696969点击其他游戏即可改票"
               leading:
-                title: "&#ffaa00&l★ 宾果"
+                title: "&#ffaa00&l★ 宾果飞速"
                 lore:
                   - "&#696969探索 • 团队协作"
                   - "&#a0a0a0合作完成宾果任务，抢占格子并争取连线"
@@ -3601,7 +3600,7 @@ voting:
                   - "&#fff566点击投给这个游戏"
           tnt-run:
             material: TNT
-            title: "&#ededed&l跑爆 TNT"
+            title: "&#ededed&lTNT飞跃"
             states:
               available:
                 lore:
@@ -3613,7 +3612,7 @@ voting:
                   - ""
                   - "&#55ff55点击投票"
               selected:
-                title: "&#55ffff&l✓ 跑爆 TNT"
+                title: "&#55ffff&l✓ TNT飞跃"
                 glint: true
                 lore:
                   - "&#696969生存 • 个人赛"
@@ -3625,7 +3624,7 @@ voting:
                   - "&#55ffff&l✓ 我的选择"
                   - "&#696969点击其他游戏即可改票"
               leading:
-                title: "&#ffaa00&l★ 跑爆 TNT"
+                title: "&#ffaa00&l★ TNT飞跃"
                 lore:
                   - "&#696969生存 • 个人赛"
                   - "&#a0a0a0在不断崩落的平台上坚持到最后"
@@ -3637,7 +3636,7 @@ voting:
                   - "&#fff566点击投给这个游戏"
           snowball-showdown:
             material: SNOWBALL
-            title: "&#ededed&l雪球对决"
+            title: "&#ededed&l雪球大战"
             states:
               available:
                 lore:
@@ -3649,7 +3648,7 @@ voting:
                   - ""
                   - "&#55ff55点击投票"
               selected:
-                title: "&#55ffff&l✓ 雪球对决"
+                title: "&#55ffff&l✓ 雪球大战"
                 glint: true
                 lore:
                   - "&#696969击退 • 生存赛"
@@ -3661,7 +3660,7 @@ voting:
                   - "&#55ffff&l✓ 我的选择"
                   - "&#696969点击其他游戏即可改票"
               leading:
-                title: "&#ffaa00&l★ 雪球对决"
+                title: "&#ffaa00&l★ 雪球大战"
                 lore:
                   - "&#696969击退 • 生存赛"
                   - "&#a0a0a0用雪球将对手击出逐渐缩小的场地"
@@ -3673,7 +3672,7 @@ voting:
                   - "&#fff566点击投给这个游戏"
           sky-wars:
             material: GRASS_BLOCK
-            title: "&#ededed&l空岛战争"
+            title: "&#ededed&l空岛乱斗"
             states:
               available:
                 lore:
@@ -3685,7 +3684,7 @@ voting:
                   - ""
                   - "&#55ff55点击投票"
               selected:
-                title: "&#55ffff&l✓ 空岛战争"
+                title: "&#55ffff&l✓ 空岛乱斗"
                 glint: true
                 lore:
                   - "&#696969生存 • 团队战"
@@ -3697,7 +3696,7 @@ voting:
                   - "&#55ffff&l✓ 我的选择"
                   - "&#696969点击其他游戏即可改票"
               leading:
-                title: "&#ffaa00&l★ 空岛战争"
+                title: "&#ffaa00&l★ 空岛乱斗"
                 lore:
                   - "&#696969生存 • 团队战"
                   - "&#a0a0a0搜集空岛资源，在收缩边界中交战"
@@ -3709,7 +3708,7 @@ voting:
                   - "&#fff566点击投给这个游戏"
           tgttos:
             material: FEATHER
-            title: "&#ededed&l极速跑酷"
+            title: "&#ededed&l去到另一边"
             states:
               available:
                 lore:
@@ -3721,7 +3720,7 @@ voting:
                   - ""
                   - "&#55ff55点击投票"
               selected:
-                title: "&#55ffff&l✓ 极速跑酷"
+                title: "&#55ffff&l✓ 去到另一边"
                 glint: true
                 lore:
                   - "&#696969竞速 • 全队完赛"
@@ -3733,7 +3732,7 @@ voting:
                   - "&#55ffff&l✓ 我的选择"
                   - "&#696969点击其他游戏即可改票"
               leading:
-                title: "&#ffaa00&l★ 极速跑酷"
+                title: "&#ffaa00&l★ 去到另一边"
                 lore:
                   - "&#696969竞速 • 全队完赛"
                   - "&#a0a0a0跨越障碍冲向终点，争夺个人和团队名次"
@@ -3745,7 +3744,7 @@ voting:
                   - "&#fff566点击投给这个游戏"
           parkour-warrior:
             material: IRON_BOOTS
-            title: "&#ededed&l跑酷战士"
+            title: "&#ededed&l跑路战士"
             states:
               available:
                 lore:
@@ -3757,7 +3756,7 @@ voting:
                   - ""
                   - "&#55ff55点击投票"
               selected:
-                title: "&#55ffff&l✓ 跑酷战士"
+                title: "&#55ffff&l✓ 跑路战士"
                 glint: true
                 lore:
                   - "&#696969跑酷 • 个人赛"
@@ -3769,7 +3768,7 @@ voting:
                   - "&#55ffff&l✓ 我的选择"
                   - "&#696969点击其他游戏即可改票"
               leading:
-                title: "&#ffaa00&l★ 跑酷战士"
+                title: "&#ffaa00&l★ 跑路战士"
                 lore:
                   - "&#696969跑酷 • 个人赛"
                   - "&#a0a0a0挑战不同难度的分支赛道，按难度和完成度得分"
@@ -3817,7 +3816,7 @@ voting:
                   - "&#fff566点击投给这个游戏"
           build-mart:
             material: CRAFTING_TABLE
-            title: "&#ededed&l建筑马拉松"
+            title: "&#ededed&l匹配赛建"
             states:
               available:
                 lore:
@@ -3829,7 +3828,7 @@ voting:
                   - ""
                   - "&#55ff55点击投票"
               selected:
-                title: "&#55ffff&l✓ 建筑马拉松"
+                title: "&#55ffff&l✓ 匹配赛建"
                 glint: true
                 lore:
                   - "&#696969建造 • 团队协作"
@@ -3841,7 +3840,7 @@ voting:
                   - "&#55ffff&l✓ 我的选择"
                   - "&#696969点击其他游戏即可改票"
               leading:
-                title: "&#ffaa00&l★ 建筑马拉松"
+                title: "&#ffaa00&l★ 匹配赛建"
                 lore:
                   - "&#696969建造 • 团队协作"
                   - "&#a0a0a0采集材料、分工建造，尽可能还原更多蓝图"

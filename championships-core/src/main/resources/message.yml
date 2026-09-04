@@ -63,7 +63,7 @@ admin:
     reset-failures: " &#ff5555• 重置失败=%count%&#ededed"
     bingo-failure: " &#ff5555• 宾果内容配置加载失败&#ededed"
     config-failures: " &#ff5555• 地图配置失败=%count%&#ededed"
-    remote-stopped: " &#696969• 已终止远程宾果=%count%&#ededed"
+    remote-stopped: " &#696969• 已终止远程宾果飞速=%count%&#ededed"
     completed: "配置已热重载&#696969 •&#ededed 复用场地=%reused%&#696969 •&#ededed 刷新地图配置=%reloaded%%configFailure%&#696969 •&#ededed 重置进行中场地=%reset%%resetFailure%&#696969 •&#ededed 新启用管理器=%enabled%&#696969 •&#ededed 停用管理器=%disabled%%remote%%bingoFailure%%restartNotice%&#ededed"
   sudo-all: "已让&#fff566%count%&#ededed名在线玩家执行命令。"
   sudo-team: "已让队伍 %team%&#ededed的&#fff566%count%&#ededed名在线玩家执行命令。"
@@ -193,7 +193,7 @@ daily:
   bossbar:
     waiting: "&#fff566%game% &#bababa•&#ededed 等待同游者&#24abff%players%/%required%%needs-group%"
     countdown: "&#fff566%game% &#bababa•&#ededed 即将启程&#ff6b26%time%秒"
-    needs-group: "&#bababa•&#fff566 还需另一个玩家或同行小队"
+    needs-group: "&#bababa•&#fff566 还需另一个玩家或小队"
   queue-clear:
     championship: "&#ededed服务器已切换到正式比赛模式，匹配队列已清空。"
     reload: "&#edededDAILY 游戏配置已重载，请重新加入匹配。"
@@ -202,19 +202,19 @@ daily:
     row-count: "&#ededed# %rank%&#24abff %player% &#bababa•&#31e061 %value%"
     row-time: "&#ededed# %rank%&#24abff %player% &#bababa•&#ff6b26 %value%"
     empty: "&#696969# %rank% 暂无记录"
-  spectate-blocked-queued: "&#ededed匹配中无法旁观，请先在匹配菜单中取消匹配。"
+  spectate-blocked-queued: "&#ededed匹配中无法观战，请先在匹配菜单中取消匹配。"
   lobby-item-no-space: "&#ededed物品栏没有空位，暂时无法发放大厅菜单。"
-  party-invite-failed: "&#ff6b26邀请失败&#bababa；目标可能离线、已有同行小队，或你不是队长。"
+  party-invite-failed: "&#ff6b26邀请失败&#bababa；目标可能离线、已有小队，或你不是队长。"
   party-invite-sent: "&#31e061已邀请&#24abff %target%&#ededed，邀请 60 秒有效。"
-  party-invite-received: "&#fff566%player% &#ededed邀请你加入同行小队，使用&#fff566 /cc party accept"
+  party-invite-received: "&#fff566%player% &#ededed邀请你加入小队，使用&#fff566 /cc party accept"
   party-no-invite: "&#ff6b26没有有效邀请。"
-  party-member-joined: "&#31e061%player% &#ededed加入了同行小队。"
-  party-not-member-or-playing: "&#ff6b26你不在同行小队中，或正在游戏。"
-  party-left: "&#fff566已离开同行小队。"
-  party-member-left: "&#fff566%player% &#ededed离开了同行小队。"
-  party-disband-denied: "&#ff6b26只有队长可以解散同行小队，且游戏中不可操作。"
-  party-disbanded: "&#fff566同行小队已解散。"
-  party-none: "&#bababa当前没有同行小队；邀请玩家时会自动创建。"
+  party-member-joined: "&#31e061%player% &#ededed加入了小队。"
+  party-not-member-or-playing: "&#ff6b26你不在小队中，或正在游戏。"
+  party-left: "&#fff566已离开小队。"
+  party-member-left: "&#fff566%player% &#ededed离开了小队。"
+  party-disband-denied: "&#ff6b26只有队长可以解散小队，且游戏中不可操作。"
+  party-disbanded: "&#fff566小队已解散。"
+  party-none: "&#bababa当前没有小队；邀请玩家时会自动创建。"
   party-info: "&#fff566队长: &#ededed%leader% &#696969• &#fff566成员: &#ededed%members% &#696969• &#fff566选择: &#ededed%game%"
 team:
   no-teams: "&#696969没有已创建的队伍。"
@@ -287,12 +287,12 @@ spectator:
     instance: "%area% &#696969•&#ededed 实例 %token%"
   game-disabled: 该游戏当前未启用。
   instance-missing: "找不到该场地正在运行的实例：&#fff566%instance%&#ededed。"
-  area-unavailable: 该场地尚未开启或已经结束，当前不可旁观。
-  is-player: "&#bababa[&#ff6b26旁观&#bababa]&#ededed 参赛玩家不能进入旁观模式"
-  leaving-area: "&#bababa[&#fff566旁观&#bababa]&#ededed 已退出旁观模式"
-  cant-leaving-area: "&#bababa[&#ff6b26旁观&#bababa]&#ededed 当前没有旁观任何游戏"
-  join-area: "&#bababa[&#fff566旁观&#bababa]&#ededed 正在旁观&#fff566%game% &#bababa•&#ededed 场地%area%"
-  cant-join-area: "&#bababa[&#ff6b26旁观&#bababa]&#ededed 已在旁观其他场地 &#696969•&#ededed /cc spectate leave"
+  area-unavailable: 该场地尚未开启或已经结束，当前不可观战。
+  is-player: "&#bababa[&#ff6b26观战&#bababa]&#ededed 参赛者不能进入观战模式"
+  leaving-area: "&#bababa[&#fff566观战&#bababa]&#ededed 已退出观战模式"
+  cant-leaving-area: "&#bababa[&#ff6b26观战&#bababa]&#ededed 当前没有观战任何游戏"
+  join-area: "&#bababa[&#fff566观战&#bababa]&#ededed 正在观战&#fff566%game% &#bababa•&#ededed 场地%area%"
+  cant-join-area: "&#bababa[&#ff6b26观战&#bababa]&#ededed 已在观战其他场地 &#696969•&#ededed /cc spectate leave"
 game:
   team-game-start-successful: "&#bababa[&#fff566场地&#bababa]&#fff566 %game% &#bababa•&#ededed %area% &#bababa• %team%&#ededed对阵%rival% &#bababa•&#ededed 已开始准备"
   team-game-start-failed: "&#bababa[&#ff6b26场地&#bababa]&#fff566 %game% &#bababa•&#ededed %area% &#bababa•&#ededed 无法开始%team%&#ededed对阵%rival%"
@@ -341,11 +341,11 @@ battlebox:
   game-start-soon-title: "&#fff566&l斗战方框"
   game-start-title: "&#ff6b26&l斗战方框"
   game-start-subtitle: "&#fff566&l游戏开始"
-  game-end: "&#fff566斗战方框 &#bababa•&#ededed 本局结束，正在结算积分"
+  game-end: "&#fff566斗战方框 &#bababa•&#ededed 本场结束，正在结算积分"
   game-end-title: "&#fff566&l斗战方框"
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
-  win: "&#bababa[&#fff566斗战方框&#bababa] %team%&#ededed赢下本局"
-  draw: "&#bababa[&#fff566斗战方框&#bababa]&#ededed 本局平局"
+  win: "&#bababa[&#fff566斗战方框&#bababa] %team%&#ededed赢下本场"
+  draw: "&#bababa[&#fff566斗战方框&#bababa]&#ededed 本场平局"
   kill-player: "&#bababa[&#fff566斗战方框&#bababa] %killer%&#ff6b26 →&#ededed %player%"
   player-leave: "&#bababa[&#fff566斗战方框&#bababa]&#ededed %player%&#696969离场"
   kit-choose: "&#bababa[&#fff566斗战方框&#bababa]&#ededed 装备 &#bababa•&#fff566 %kit%"
@@ -381,7 +381,7 @@ parkourtag:
     use-ender-eye-failed: "&#bababa[&#ff6b26跑酷追击&#bababa]&#ededed 道具尚未就绪"
     use-feather: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 速度II&#ff6b26 6秒"
     use-wind-charge: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 追击者浮空&#ff6b261.5秒"
-    use-wind-charge-failed: "&#bababa[&#ff6b26跑酷追击&#bababa]&#ededed 本局已使用"
+    use-wind-charge-failed: "&#bababa[&#ff6b26跑酷追击&#bababa]&#ededed 本场已使用"
 skywars:
   start-preparation: "&#bababa[&#fff566空岛乱斗&#bababa]&#ededed 出生岛就位"
   start-preparation-title: "&#fff566&l空岛乱斗"
@@ -455,7 +455,7 @@ bingo:
   game-start: "&#ff6b26宾果飞速 &#bababa•&#ededed 卡片已发放，开始探索"
   game-start-title: "&#ff6b26&l宾果飞速"
   game-start-subtitle: "&#fff566&l卡片已发放"
-  game-end: "&#fff566宾果 &#bababa•&#ededed 本场结束，正在结算积分"
+  game-end: "&#fff566宾果飞速 &#bababa•&#ededed 本场结束，正在结算积分"
   game-end-title: "&#fff566&l宾果飞速"
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
   action-bar-count-down: "&#fff566宾果飞速 &#bababa•&#ededed 剩余 &#ff6b26%time%"
@@ -540,7 +540,7 @@ dodgebolt:
   shrink: "&#bababa[&#fff566躲避箭&#bababa]&#ededed 场地收缩&#ff6b26%level%&#bababa/%max%"
   shrink-warning: "&#fff566躲避箭 &#bababa•&#ededed 边界将在&#ff6b26%time%秒&#ededed后收缩"
   round-win: "&#bababa[&#fff566躲避箭&#bababa]&#ededed 第%round%局 &#bababa• %team%&#fff566获胜&#696969（%right_wins%-%left_wins%）"
-  round-win-title: "&#fff566&l本局结束"
+  round-win-title: "&#fff566&l本场结束"
   round-win-subtitle: "%team% &#bababa•&#ff6b26 %right_wins%-%left_wins%"
   next-round: "&#fff566躲避箭 &#bababa•&#ededed 第%round%局进入场地&#ff6b26%time%秒"
   score-bar: "&#fff566第%round%局 &#bababa• %right%&#ff6b26 %right_wins%&#696969[%right_alive%] &#bababa- &#696969[%left_alive%]&#ff6b26 %left_wins%%left% &#bababa• %state%"
@@ -614,7 +614,7 @@ hotycodydusky:
   whole-team-was-killed: "&#bababa[&#fff566烫手鳕鱼&#bababa] %team%&#ff6b26全队出局"
 placeholder:
   none: 无
-  spectator: 旁观
+  spectator: 观战
   parkourtag-spectator: 观察者
   parkourtag-chaser: 追击者
   parkourtag-escapee: 逃脱者

@@ -187,13 +187,13 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put("game.run-mode", instance.getRunMode().name());
         values.put("game.instance", Integer.toString(instance.getCopyIndex() + 1));
         values.put("viewer.role", spectator
-                ? config.value("game.role-spectator", "旁观")
+                ? config.value("game.role-spectator", "观战")
                 : config.value("game.role-participant", "参赛"));
         // A spectator may still have a persistent team assignment from the lobby or a previous
         // round.  Treat the view as neutral so the sidebar does not highlight that stale team.
         ChampionshipTeam viewerTeam = spectator ? null : plugin.getTeamManager().getTeamByPlayer(player);
         values.put("viewer.team", viewerTeam == null
-                ? config.value("game.spectator", "&7旁观者") : viewerTeam.getColoredName());
+                ? config.value("game.spectator", "&7观战者") : viewerTeam.getColoredName());
         if (instance instanceof BattleBoxArea area) {
             BattleBoxMatch match = area.currentMatch();
             putMatchup(config, values, match == null ? null : match.getRight(), match == null ? null : match.getLeft());
@@ -389,7 +389,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     private Map<String, String> withViewerValues(Player player, Map<String, String> values) {
         ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
         Map<String, String> effective = new LinkedHashMap<>();
-        effective.put("viewer.team", viewerTeam == null ? "&7旁观者" : viewerTeam.getColoredName());
+        effective.put("viewer.team", viewerTeam == null ? "&7观战者" : viewerTeam.getColoredName());
         effective.putAll(values);
         return effective;
     }

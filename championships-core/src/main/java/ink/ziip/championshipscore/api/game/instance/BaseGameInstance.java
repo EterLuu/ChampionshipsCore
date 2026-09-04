@@ -1127,7 +1127,7 @@ public abstract class BaseGameInstance {
     protected void announceGameEnd(String title, String subtitle) {
         clearBossBars();
         if (settlementSuppressed) {
-            logGame(Level.INFO, "流程", "本局已作废，不执行结算公告");
+            logGame(Level.INFO, "流程", "本场已作废，不执行结算公告");
             return;
         }
         sendActionBarToAllGamePlayers(MessageConfig.GAME_END_ACTION_BAR
@@ -1235,7 +1235,7 @@ public abstract class BaseGameInstance {
             if (error != null || !Boolean.TRUE.equals(success)) {
                 spectators.remove(uuid);
                 plugin.getGameManager().clearSpectatorStatus(uuid, this);
-                logGame(Level.WARNING, "旁观", "异步传送失败，已清除旁观状态 | 玩家=" + player.getName()
+                logGame(Level.WARNING, "观战", "异步传送失败，已清除观战状态 | 玩家=" + player.getName()
                         + (error == null ? "" : " | " + error.getMessage()));
                 return;
             }

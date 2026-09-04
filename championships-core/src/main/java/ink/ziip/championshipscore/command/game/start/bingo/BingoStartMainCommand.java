@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public class BingoStartMainCommand extends BaseMainCommand {
     public BingoStartMainCommand() {
-        super("bingo", "宾果");
+        super("bingo", "宾果飞速");
         addSubCommand(new BingoStartAllSubCommand());
     }
 }

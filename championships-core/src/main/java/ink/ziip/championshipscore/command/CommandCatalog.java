@@ -16,7 +16,7 @@ public final class CommandCatalog {
     private static final List<Entry> PLAYER_COMMANDS = List.of(
             new Entry("/cc spawn", "回到大厅（游戏或观战期间不可用）"),
             new Entry("/cc play [leave|leaderboard]", "选择自由游戏、离开游玩或查看榜单"),
-            new Entry("/cc party invite|accept|leave|disband|info", "管理仅在本次相聚期间存在的同行小队"),
+            new Entry("/cc party invite|accept|leave|disband|info", "管理仅在本次相聚期间存在的小队"),
             new Entry("/cc daily leave|stats [游戏]", "退出自由匹配或查看独立游玩统计"),
             new Entry("/cc vote [游戏]", "打开投票菜单或直接投票"),
             new Entry("/cc spectate [leave | <游戏> <场地>]", "打开观战菜单或直接选择场地"),

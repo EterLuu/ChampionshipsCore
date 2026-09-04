@@ -26,9 +26,9 @@ values:
     dirty: "#ff6b26&l⚠ 修改尚未发布，不能用于比赛"
     complete: "&a&l✓ 配置完整且已发布"
   game:
-    role-spectator: "旁观"
+    role-spectator: "观战"
     role-participant: "参赛"
-    spectator: "&7旁观者"
+    spectator: "&7观战者"
   match:
     undecided: "&7待定"
   ranking:
@@ -66,8 +66,8 @@ boards:
       - '#dfff2b当前游戏：#f6ffa8{daily.selected-game}'
       - '#ff0808当前状态：#ff7373{daily.queue-state}'
       - ''
-      - '&f同行队长：#24abff{daily.party-leader}'
-      - '&f同行人数：#ff6e26{daily.party-size}'
+      - '&f小队队长：#24abff{daily.party-leader}'
+      - '&f小队人数：#ff6e26{daily.party-size}'
       - ''
       - '#4287f5等候人数：#ff6e26{daily.queue-players}'
       - '#4287f5启程倒计时：#ff6e26{daily.countdown}'
@@ -147,7 +147,7 @@ boards:
     SkyWars:
       title: '{style.title}'
       lines:
-        - '#ff0808当前游戏：#ff7373空岛战争'
+        - '#ff0808当前游戏：#ff7373空岛乱斗'
         - '#dfff2b轮次：#f6ffa8%schedule_round_skywars%/3'
         - ''
         - '#1da4ad场地状态：#f6ffa8{game.status}'
@@ -246,7 +246,7 @@ boards:
       ranking-line: '{rank.team-color}{rank.position}. {rank.team} &f{rank.score} &7({rank.tasks})'
       own-ranking-line: '{rank.team-color}&l▶ {rank.position}. {rank.team} &f&l{rank.score} &7({rank.tasks})'
       lines:
-        - '#ff0808当前游戏：#ff7373宾果时速'
+        - '#ff0808当前游戏：#ff7373宾果飞速'
         - '#1da4ad场地状态：#f6ffa8{game.status}'
         - '&f本队任务数：#ff6e26{viewer.tasks}'
         - '#4287f5总榜'
@@ -278,7 +278,7 @@ boards:
         - '%dodgebolt_area_right_team_[areaName]% &f: &c%dodgebolt_area_right_wins_[areaName]%&7局&f | &e%dodgebolt_area_right_alive_[areaName]%&7人'
         - '%dodgebolt_area_left_team_[areaName]% &f: &c%dodgebolt_area_left_wins_[areaName]%&7局&f | &e%dodgebolt_area_left_alive_[areaName]%&7人'
         - ''
-        - '&f本局已射箭：#ff6e26%dodgebolt_area_shots_[areaName]%'
+        - '&f本场已射箭：#ff6e26%dodgebolt_area_shots_[areaName]%'
         - ''
         - '{style.footer}'
 

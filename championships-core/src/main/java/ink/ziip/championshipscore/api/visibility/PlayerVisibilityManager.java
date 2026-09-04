@@ -215,9 +215,9 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
         List<String> result = new ArrayList<>();
         result.add("模式=" + state.mode() + " | 来源=" + state.owner());
         result.add("原因=" + state.reason());
-        result.add("身份=" + (spectator != null ? "旁观者" : participant != null ? "游戏玩家" : "未加入游戏")
+        result.add("身份=" + (spectator != null ? "观战者" : participant != null ? "游戏玩家" : "未加入游戏")
                 + (forcedAll ? "（最终规则：始终可见全部）" : ""));
-        result.add("全局规则=游戏玩家看不到本局旁观者；旁观者与未加入游戏者始终可见全部");
+        result.add("全局规则=游戏玩家看不到本场观战者；观战者与未加入游戏者始终可见全部");
         if (!state.teamIds().isEmpty()) result.add("允许队伍ID=" + state.teamIds());
         if (!state.playerIds().isEmpty()) result.add("允许玩家UUID=" + state.playerIds());
         UUID session = sessionByPlayer.get(playerId);
