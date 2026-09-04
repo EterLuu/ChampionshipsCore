@@ -15,7 +15,12 @@ values:
     unpublished: "&c尚未发布"
     all-ready: "&a全部已发布"
     any-unpublished: "&e存在草稿或未保存修改"
+  map-status:
+    runtime-unknown: "&7未知"
   map-edit:
+    world-unbound: "&c尚未绑定"
+    world-correct: "&a正确"
+    world-wrong: "&c错误"
     world-invalid: "&c&l✗ 当前不在绑定世界，无法安全捕获配置"
     incomplete: "&c&l✗ 地图配置尚未完成"
     dirty: "#ff6b26&l⚠ 修改尚未发布，不能用于比赛"
@@ -30,12 +35,6 @@ values:
     none: "&7暂无排行"
     bingo-daily-row: "{rank.team-color}{rank.position}. {rank.team} &7({rank.tasks} 项)"
     bingo-daily-own-row: "{rank.team-color}&l▶ {rank.position}. {rank.team} &7({rank.tasks} 项)"
-  map-status:
-    runtime-unknown: "&7未知"
-  map-edit:
-    world-unbound: "&c尚未绑定"
-    world-correct: "&a正确"
-    world-wrong: "&c错误"
 
 style:
   title: '#3fb2ba[#31e061S#dbffe5³#e42d3eCC#bababa夏季联合锦标赛#3fb2ba]'
