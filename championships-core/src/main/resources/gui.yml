@@ -461,7 +461,7 @@ map-editor:
                 - "&#a0a0a0点击保存当前选区"
             disabled:
               lore:
-                - "&#a0a0a0未设置（功能关闭）"
+                - "&#a0a0a0未配置（功能关闭）"
                 - "&#a0a0a0点击保存当前选区"
         random:
           slot: 12
@@ -578,7 +578,7 @@ map-editor:
                 - "&#55ff55已设置"
             unset:
               lore:
-                - "&#ffaa00未设置"
+                - "&#ffaa00未配置"
         back:
           slot: 8
           material: ARROW
@@ -768,7 +768,7 @@ map-editor:
         introduction-spawn:
           title: 规则介绍专用出生点（可选）
           lore:
-            - 站到目标位置后点击；不设置则使用观众出生点
+            - 站到目标位置后点击；不设置则使用观战者出生点
         introduction-mode:
           title: 规则介绍时的游戏模式
           lore:
@@ -785,7 +785,7 @@ map-editor:
         status:
           states:
             unset:
-              title: 未设置
+              title: 未配置
             set:
               title: "&#55ff55已设置"
         page:
@@ -803,9 +803,9 @@ map-editor:
         template:
           title: 模板场地（0号）
         spectator-spawn:
-          title: 观众出生点
+          title: 观战者出生点
           lore:
-            - 站到观众出生位置后点击
+            - 站到观战者出生位置后点击
         track-boundary:
           title: 赛道边界
           lore:
@@ -930,7 +930,7 @@ map-editor:
                 - "&#a0a0a0用WorldEdit选定两个端点"
             spectator-area:
               material: SPYGLASS
-              title: "&#55ffff观赛活动区边界"
+              title: "&#55ffff观战活动区边界"
               lore:
                 - "&#a0a0a0用WorldEdit选定两个端点"
             platform:
@@ -1101,7 +1101,7 @@ map-editor:
           items:
             spectator-spawn:
               material: ENDER_EYE
-              title: "&#55ffff设置观众出生点"
+              title: "&#55ffff设置观战者出生点"
               lore:
                 - "&#a0a0a0站到目标点位后点击"
         build-mart:
@@ -1176,7 +1176,7 @@ map-editor:
               material: STRUCTURE_BLOCK
               title: "&#55ffff保存双赛道对局模板"
               lore:
-                - "&#a0a0a0框选整个0号模板：两条镜像赛道、双方准备区和观赛区"
+                - "&#a0a0a0框选整个0号模板：两条镜像赛道、双方准备区和观战区"
             arena-boundary:
               material: BEDROCK
               title: "&#55ffff模板对局（0号）完整边界"
@@ -1331,7 +1331,7 @@ spectator:
           lore:
             - "&#a0a0a0场地：&#ededed%venue%"
             - "&#a0a0a0阶段：%stage_color%%stage%"
-            - "&#a0a0a0观众：&#55ffff%audience%"
+            - "&#a0a0a0观战者：&#55ffff%audience%"
           states:
             watching:
               glint: true
@@ -2030,22 +2030,22 @@ teams:
             - ""
             - "%availability%"
           states:
-            white: {title: "&#ededed&l白色"}
-            orange: {title: "&#ffaa00&l橙色"}
-            magenta: {title: "&#ff55ff&l品红色"}
-            light-blue: {title: "&#55ffff&l淡蓝色"}
-            yellow: {title: "&#ffff55&l黄色"}
-            yellow-green: {title: "&#80c71f&l黄绿色"}
-            pink: {title: "&#f38baa&l粉红色"}
-            gray: {title: "&#a0a0a0&l灰色"}
-            light-gray: {title: "&#9d9d97&l淡灰色"}
-            cyan: {title: "&#169c9c&l青色"}
-            purple: {title: "&#8932b8&l紫色"}
-            blue: {title: "&#3c44aa&l蓝色"}
-            brown: {title: "&#835432&l棕色"}
-            green: {title: "&#5e7c16&l绿色"}
-            red: {title: "&#b02e26&l红色"}
-            black: {title: "&#1d1d21&l黑色"}
+            white: {title: "&#ededed&l白"}
+            orange: {title: "&#ffaa00&l橙"}
+            magenta: {title: "&#ff55ff&l品红"}
+            light-blue: {title: "&#55ffff&l淡蓝"}
+            yellow: {title: "&#ffff55&l黄"}
+            yellow-green: {title: "&#80c71f&l黄绿"}
+            pink: {title: "&#f38baa&l粉红"}
+            gray: {title: "&#a0a0a0&l灰"}
+            light-gray: {title: "&#9d9d97&l浅灰"}
+            cyan: {title: "&#169c9c&l青"}
+            purple: {title: "&#8932b8&l紫"}
+            blue: {title: "&#3c44aa&l蓝"}
+            brown: {title: "&#835432&l棕"}
+            green: {title: "&#5e7c16&l绿"}
+            red: {title: "&#b02e26&l红"}
+            black: {title: "&#1d1d21&l黑"}
         available:
           lore:
             - "&#55ff55点击创建队伍"
@@ -2335,12 +2335,12 @@ daily:
         matchmaking:
           slot: 13
           material: COMPASS
-          title: "&#55ffff&l进入匹配"
+          title: "&#55ffff&l加入匹配"
           lore:
             - "&#a0a0a0选择想参加的游戏"
             - "&#a0a0a0实时查看人数与开赛进度"
             - ""
-            - "&#55ff55&l点击进入"
+            - "&#55ff55&l点击加入"
         party:
           slot: 15
           material: PLAYER_HEAD
@@ -2448,7 +2448,7 @@ daily:
           states:
             active:
               material: REDSTONE_TORCH
-              title: "&#ff5555&l退出当前游戏"
+              title: "&#ff5555&l退出本场"
             inactive:
               material: GRAY_DYE
               title: "&#a0a0a0当前未参加游戏"

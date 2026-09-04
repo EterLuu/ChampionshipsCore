@@ -668,7 +668,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                 rightConcrete, rightCarpet, leftConcrete, leftCarpet);
         logGame(Level.INFO, "队伍颜色", "右队=" + rightChampionshipTeam.getName() + "(" + rightChampionshipTeam.getColorName()
                 + ") 左队=" + leftChampionshipTeam.getName() + "(" + leftChampionshipTeam.getColorName()
-                + ") 已替换比赛区和观赛区内 " + replacements + " 个占位方块");
+                + ") 已替换比赛区和观战区内 " + replacements + " 个占位方块");
     }
 
     private static int replaceFinalistColors(@NotNull World world, @NotNull Vector pos1, @NotNull Vector pos2,

@@ -163,7 +163,7 @@ class GuiLanguageConfigurationTest {
 
         assertEquals("&#a0a0a0进行中场地：&#55ff55%count%",
                 gui.getStringList("spectator.menus.venue-selector.items.status.states.idle.lore").getFirst());
-        assertEquals("&#a0a0a0观众：&#55ffff%audience%",
+        assertEquals("&#a0a0a0观战者：&#55ffff%audience%",
                 gui.getStringList("spectator.menus.venue-selector.items.match.lore").get(2));
     }
 

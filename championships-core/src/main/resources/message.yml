@@ -183,7 +183,7 @@ daily:
   queue-selected: "&#24abff%player%&#ededed将队伍游戏改为&#fff566%game%&#ededed。"
   queue-left: "&#ededed队伍已退出匹配。"
   not-in-play: "&#ededed你当前没有参与匹配或游戏。"
-  play-left: "&#ededed%players%名成员已离开本场游玩。"
+  play-left: "&#ededed%players%名成员已退出本场。"
   queue-ready: "&#fff566%game% &#bababa•&#ededed 人数已满足，&#ff6b26%time%秒&#ededed后开始匹配。"
   queue-countdown: "&#fff566%game% &#bababa•&#ededed 将在&#ff6b26%time%秒&#ededed后开始。"
   queue-composition-failed: "&#ededed当前组队组合无法完成分队，请调整人数后重试。"
@@ -816,7 +816,7 @@ map-editor-step:
   go-to-map-world-first: 请先前往当前地图世界%world%。
   select-two-worldedit-endpoints: 请先用WorldEdit选取两个端点。
   site-boundary-set: 已设置场地边界。
-  spectator-spawn-point-set: 观众出生点已设置。
+  spectator-spawn-point-set: 观战者出生点已设置。
   point-adjusted-to: "已将点位调整为第%order%个。"
   serial-number-between: "序号必须在1到%max%之间。"
   track-boundary-set: 已设置赛道边界。
@@ -874,7 +874,7 @@ map-editor-acerace:
 map-editor-decarnival:
   world-environment: 地图世界必须是末地环境。
   fight-region: 场地边界需覆盖固定龙战区域（X/Z -104..104，Y 0..128）。
-  spectator-world: 观众出生点必须设在当前地图世界中。
+  spectator-world: 观战者出生点必须设在当前地图世界中。
 map-editor-daily-party:
   invitation-cannot-accept: 当前无法接受这份邀请。
   member-joined: "%player%已加入小队。"
@@ -903,7 +903,7 @@ map-editor-buildmart:
   save-failed: 无法保存材料区配置，请查看服务器日志。
   zone-deleted: 已删除%island%的第 %index% 个材料区。
   zones-cleared: 已清空材料区列表。
-  centers-incomplete: 部分材料岛尚未设置中心点，无法自动判断选区归属。
+  centers-incomplete: 部分材料岛尚未配置中心点，无法自动判断选区归属。
   zone-volume-invalid: 材料区体积必须在1到%max%个方块以内。
   zone-saved: 已保存材料补给区（%blocks%个方块），自动归入%island%，并更新材料清单：buildmart/material-manifests/%file%。
   zone-updated: 已更新%island%的材料补给区（%blocks%个方块）。
@@ -945,9 +945,9 @@ map-editor-tgttos:
 map-editor-dodgebolt:
   step-set: "已设置：%name%。"
   count-required: "%name%至少%minimum%个，当前%count%个。"
-  point-unset: "%name%未设置。"
-  spectator-inside: 观众出生点必须在观赛区内。
-  spectator-outside: 观众出生点不能设在比赛区内。
+  point-unset: "%name%未配置。"
+  spectator-inside: 观战者出生点必须在观战区内。
+  spectator-outside: 观战者出生点不能设在比赛区内。
 map-editor-parkourtag:
   chaser-aim: 请对准8格内贴在墙上的按钮后再点击设置项。
   world-not-loaded: 地图世界尚未加载，无法设置追击者按钮。

@@ -17,7 +17,7 @@ import java.util.List;
 
 public class AdminTeleportationSubCommand extends BaseSubCommand {
     public AdminTeleportationSubCommand() {
-        super("teleport", "将指定队伍、游戏玩家或观众传送到你的位置",
+        super("teleport", "将指定队伍、游戏玩家或观战者传送到你的位置",
                 "/cc admin teleport <队伍ID|gameplayers|spectators>");
     }
 
