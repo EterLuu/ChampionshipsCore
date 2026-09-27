@@ -218,6 +218,7 @@ public final class DailyManager extends BaseManager {
             message(player, MessageConfig.DAILY_UNAVAILABLE);
             return;
         }
+        if (reopenBingoVote(player)) return;
         if (sessionByPlayer.containsKey(player.getUniqueId())
                 || plugin.getGameManager().getBasePlayerArea(player.getUniqueId()) != null
                 || plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId()) != null
@@ -233,7 +234,7 @@ public final class DailyManager extends BaseManager {
             message(player, MessageConfig.DAILY_UNAVAILABLE);
             return;
         }
-        matchMenu.open(player);
+        if (!reopenBingoVote(player)) matchMenu.open(player);
     }
 
     void openStatsMenu(@NotNull Player player) {
@@ -276,6 +277,7 @@ public final class DailyManager extends BaseManager {
             message(requester, MessageConfig.DAILY_UNAVAILABLE);
             return false;
         }
+        if (game == GameTypeEnum.Bingo && reopenBingoVote(requester)) return true;
         DailyRules targetRules = rules(game);
         DailyQueue target = queues.computeIfAbsent(game, DailyQueue::new);
         if (targetRules == null) {
@@ -553,6 +555,8 @@ public final class DailyManager extends BaseManager {
 
     /** Re-renders active DAILY inventories after a map identity or leaderboard change. */
     public void refreshOpenMenus() {
+        if (Bukkit.getOnlinePlayers().stream()
+                .noneMatch(player -> isDailyMenuHolder(player.getOpenInventory().getTopInventory().getHolder()))) return;
         lobbyMenu.refreshOpenMenus();
         matchMenu.refreshOpenMenus();
         statsMenu.refreshOpenMenus();
@@ -563,15 +567,19 @@ public final class DailyManager extends BaseManager {
     private void closeOpenMenus() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Object holder = player.getOpenInventory().getTopInventory().getHolder();
-            if (holder instanceof DailyLobbyMenu.LobbyHolder
-                    || holder instanceof DailyGameMenu.MenuHolder
-                    || holder instanceof DailyStatsMenu.StatsHolder
-                    || holder instanceof DailyStatsMenu.DetailHolder
-                    || holder instanceof DailyPartyMenu.PartyHolder
-                    || holder instanceof DailyLeaderboardMenu.LeaderboardHolder) {
+            if (isDailyMenuHolder(holder)) {
                 player.closeInventory();
             }
         }
+    }
+
+    private static boolean isDailyMenuHolder(Object holder) {
+        return holder instanceof DailyLobbyMenu.LobbyHolder
+                || holder instanceof DailyGameMenu.MenuHolder
+                || holder instanceof DailyStatsMenu.StatsHolder
+                || holder instanceof DailyStatsMenu.DetailHolder
+                || holder instanceof DailyPartyMenu.PartyHolder
+                || holder instanceof DailyLeaderboardMenu.LeaderboardHolder;
     }
 
     boolean isPartyInSession(@NotNull DailyParty party) {
@@ -925,8 +933,8 @@ public final class DailyManager extends BaseManager {
         if (instance.getRunMode() != GameRunMode.DAILY) return;
         DailySession session = sessionByInstance.get(instance);
         if (session == null) return;
+        if (!settlingInstances.add(instance)) return;
         statsManager.recordMatch(session, instance.getPlayerPointsSnapshot());
-        settlingInstances.add(instance);
         scheduleLobbyResync(instance, session);
     }
 
@@ -1061,7 +1069,7 @@ public final class DailyManager extends BaseManager {
     }
 
     private void message(Player player, String text) {
-        player.sendMessage(Utils.translateColorCodes(MessageConfig.DAILY_PREFIXED.replace("%message%", text)));
+        player.sendMessage(Utils.translateColorCodes(Utils.dailyMessage(text)));
     }
 
     public String modeDisplay() {

@@ -34,9 +34,17 @@ public final class SafeScatterService {
     );
 
     private final PlatformScheduler scheduler;
+    private final java.util.logging.Logger logger;
+    private volatile boolean cancelled;
 
     public SafeScatterService(Plugin plugin) {
         this.scheduler = new PlatformScheduler(plugin);
+        this.logger = plugin.getLogger();
+    }
+
+    /** Permanently cancels this match-owned scatter service after settlement or abort. */
+    public void cancelPending() {
+        cancelled = true;
     }
 
     public void performScatterAsync(
@@ -46,6 +54,7 @@ public final class SafeScatterService {
 
     public void performScatterAsync(
             World world, List<Player> players, int radius, int jitter, int maxTries, Runnable onComplete) {
+        if (cancelled) return;
         if (world == null || players.isEmpty()) {
             if (onComplete != null) onComplete.run();
             return;
@@ -53,9 +62,12 @@ public final class SafeScatterService {
         int discRadius = Math.max(1, radius);
         int radialJitter = Math.max(0, jitter);
         int tries = Math.max(8, maxTries);
+        logger.info("Bingo scatter: world=" + world.getName() + ", players=" + players.size()
+                + ", radius=" + discRadius + ", jitter=" + radialJitter + ", maxTries=" + tries);
         List<Player> playerSnapshot = List.copyOf(players);
         scheduler.supplyGlobal(() -> world.getSpawnLocation().clone()).thenAccept(spawn ->
                 processPlayersAsync(world, spawn, playerSnapshot.size(), discRadius, radialJitter, tries, locations -> {
+                    if (cancelled) return;
                     List<CompletableFuture<Void>> teleports = new ArrayList<>();
                     for (int i = 0; i < playerSnapshot.size(); i++) {
                         Location target = i < locations.size() ? locations.get(i) : spawn;
@@ -63,7 +75,9 @@ public final class SafeScatterService {
                     }
                     CompletableFuture.allOf(teleports.toArray(CompletableFuture[]::new))
                             .whenComplete((ignored, error) -> {
-                                if (onComplete != null) scheduler.runAt(spawn, onComplete);
+                                if (!cancelled && onComplete != null) scheduler.runAt(spawn, () -> {
+                                    if (!cancelled) onComplete.run();
+                                });
                             });
                 }));
     }
@@ -106,7 +120,9 @@ public final class SafeScatterService {
     private void findSingleSpotAsync(World world, Location spawn, List<Location> taken,
                                      int radius, int jitter, int triesLeft,
                                      Consumer<Location> callback) {
+        if (cancelled) return;
         if (triesLeft <= 0) {
+            logger.warning("Bingo scatter exhausted safe-location attempts; using spawn fallback in " + world.getName());
             world.getChunkAtAsync(spawn)
                     .thenCompose(chunk -> scheduler.supplyAt(spawn, () -> fallbackWorldSpawn(world, spawn)))
                     .whenComplete((location, error) -> {
@@ -212,12 +228,24 @@ public final class SafeScatterService {
     }
 
     private CompletableFuture<Void> teleportReset(Player player, Location location) {
+        if (cancelled) return CompletableFuture.completedFuture(null);
         return player.teleportAsync(location)
-                .thenCompose(ignored -> scheduler.runEntityFuture(player, () -> {
+                .thenCompose(success -> scheduler.runEntityFuture(player, () -> {
+                    if (!Boolean.TRUE.equals(success)) {
+                        logger.warning("Bingo scatter teleport rejected: player=" + player.getName());
+                        return;
+                    }
                     player.setFallDistance(0f);
                     player.setFireTicks(0);
+                    logger.info("Bingo scatter placed: player=" + player.getName()
+                            + ", world=" + location.getWorld().getName()
+                            + ", x=" + location.getX() + ", y=" + location.getY() + ", z=" + location.getZ());
                 }))
-                .exceptionally(error -> null);
+                .exceptionally(error -> {
+                    logger.log(java.util.logging.Level.WARNING,
+                            "Bingo scatter teleport failed: player=" + player.getUniqueId(), error);
+                    return null;
+                });
     }
 
     private boolean isClearSpace(Material material) {

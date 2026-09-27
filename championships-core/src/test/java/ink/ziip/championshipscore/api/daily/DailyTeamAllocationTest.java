@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.junit.jupiter.api.Test;
@@ -14,6 +17,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(ConfigurationStateExtension.class)
 class DailyTeamAllocationTest {
     @org.junit.jupiter.api.BeforeAll
     static void configureTeamNames() {

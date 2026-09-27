@@ -21,26 +21,39 @@ class WorkerPresentationServiceTest {
     }
 
     @Test
-    void longRuleListsAreCompressedIntoIntroductionWindow() {
-        for (int section = 0; section < 8; section++) {
-            assertEquals(section, WorkerPresentationService.sectionAt(10 + section * 4, 45, 8));
-        }
-    }
-
-    @Test
-    void compactHexAndLegacyColoursAreAccepted() {
-        String plain = PlainTextComponentSerializer.plainText()
-                .serialize(WorkerPresentationService.component("&#ff6b26宾果 &f规则"));
-        assertEquals("宾果 规则", plain);
-    }
-
-    @Test
     void coreOwnedTemplateSurvivesPlaceholderResolution() {
         BingoPresentation presentation = new BingoPresentation(Map.of(
                 "timer", "&#fff566宾果 &#bababa• &#ededed剩余 &#ff6b26%time%"));
         String plain = PlainTextComponentSerializer.plainText().serialize(
                 WorkerPresentationService.message(presentation, "timer", "%time%", "09:59"));
         assertEquals("宾果 • 剩余 09:59", plain);
+    }
+
+    @Test
+    void dailyPrefixResolvesForParticipantAndSpectatorMessages() {
+        BingoPresentation presentation = new BingoPresentation(Map.of(
+                "prefix", "&a[游戏大厅] ",
+                "participant", "%prefix%欢迎 %player%",
+                "spectator", "%prefix%正在旁观 %player%"));
+        assertEquals("[游戏大厅] 欢迎 Alex", PlainTextComponentSerializer.plainText().serialize(
+                WorkerPresentationService.message(presentation, "participant", "%player%", "Alex")));
+        assertEquals("[游戏大厅] 正在旁观 Alex", PlainTextComponentSerializer.plainText().serialize(
+                WorkerPresentationService.message(presentation, "spectator", "%player%", "Alex")));
+    }
+
+    @Test
+    void oldManifestsWithoutPrefixRemainRenderable() {
+        BingoPresentation presentation = new BingoPresentation(Map.of("notice", "%prefix%已加入"));
+        assertEquals("已加入", PlainTextComponentSerializer.plainText().serialize(
+                WorkerPresentationService.message(presentation, "notice")));
+    }
+
+    @Test
+    void prefixInsideReplacementMessageIsAlsoResolved() {
+        BingoPresentation presentation = new BingoPresentation(Map.of(
+                "prefix", "&a[大厅] ", "notice", "%message%"));
+        assertEquals("[大厅] 已退出", PlainTextComponentSerializer.plainText().serialize(
+                WorkerPresentationService.message(presentation, "notice", "%message%", "%prefix%已退出")));
     }
 
     @Test

@@ -167,6 +167,7 @@ public final class BingoManifestFactory {
         messages.put("presentation.tab.daily-team-footer", MessageConfig.PRESENTATION_TAB_DAILY_TEAM_FOOTER);
         messages.put("presentation.tab.current-game-footer", MessageConfig.PRESENTATION_TAB_CURRENT_GAME_FOOTER);
         messages.put("chat.team.prefix", MessageConfig.CHAT_TEAM_PREFIX);
+        messages.put("prefix", runMode == GameRunMode.DAILY ? MessageConfig.DAILY_PREFIX : "");
         messages.put("chat.team.usage", MessageConfig.CHAT_TEAM_USAGE);
         messages.put("chat.team.unavailable", MessageConfig.CHAT_TEAM_UNAVAILABLE);
         messages.put("sidebar.status.waiting", MessageConfig.AREA_STATUS_WAITING);

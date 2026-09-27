@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -14,6 +17,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(ConfigurationStateExtension.class)
 class DailyMetricTest {
     @BeforeAll
     static void loadGuiMetricFormats() throws Exception {

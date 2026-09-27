@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.worker;
 
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveEvaluator;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveRule;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoObjectiveProgressTracker;
@@ -36,7 +37,7 @@ final class WorkerObjectives {
     private volatile List<Objective> pollingObjectives;
     private volatile Map<String, List<Integer>> advancementCells;
     private final Map<UUID, Map<Integer, Integer>> statisticBaselines = new ConcurrentHashMap<>();
-    private final Map<UUID, Double> boatTravelCentimeters = new ConcurrentHashMap<>();
+    private final BingoRidingTravel ridingTravel = new BingoRidingTravel();
     private final BingoObjectiveProgressTracker eventProgress = new BingoObjectiveProgressTracker();
 
     WorkerObjectives(List<BingoTaskSpec> specs) {
@@ -61,7 +62,7 @@ final class WorkerObjectives {
         cellsByAdvancement.replaceAll((ignored, cells) -> List.copyOf(cells));
         this.advancementCells = Map.copyOf(cellsByAdvancement);
         statisticBaselines.clear();
-        boatTravelCentimeters.clear();
+        ridingTravel.clear();
     }
 
     void captureBaselines(Player player) {
@@ -92,12 +93,9 @@ final class WorkerObjectives {
             if (!eligibleCell.test(objective.cellIndex())) continue;
             int baseline = baselines.getOrDefault(objective.cellIndex(), 0);
             boolean matched = objective.matches(player, baseline);
-            if (objective instanceof StatisticObjective statistic
-                    && statistic.statistic() == Statistic.BOAT_ONE_CM) {
-                int vanillaDelta = statistic.read(player) - baseline;
-                double tracked = boatTravelCentimeters.getOrDefault(player.getUniqueId(), 0.0D);
-                int trackedDelta = tracked >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) Math.floor(tracked);
-                matched = Math.max(vanillaDelta, trackedDelta) >= statistic.target();
+            if (objective instanceof StatisticObjective statistic) {
+                matched = ridingTravel.delta(player.getUniqueId(), statistic.statistic(),
+                        statistic.read(player) - baseline) >= statistic.target();
             }
             if (matched) {
                 matches.add(objective.cellIndex());
@@ -134,9 +132,9 @@ final class WorkerObjectives {
         eventProgress.increment(player.getUniqueId(), bucket);
     }
 
-    void recordBoatMovement(Player player, double centimeters) {
+    void recordRidingMovement(Player player, org.bukkit.Statistic statistic, double centimeters, BingoRidingTravel.Source source) {
         if (player == null || !Double.isFinite(centimeters) || centimeters <= 0.0D) return;
-        boatTravelCentimeters.merge(player.getUniqueId(), centimeters, Double::sum);
+        ridingTravel.record(player.getUniqueId(), statistic, centimeters, source);
     }
 
     private Objective parse(BingoTaskSpec spec) {

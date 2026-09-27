@@ -1,7 +1,35 @@
 dont-edit-this:
-  version: 22
+  version: 45
 map-editor:
   games:
+    frostbite:
+      menus:
+        prepare:
+          items:
+            boundary:
+              material: BEDROCK
+              title: "第一张地图边界"
+              lore:
+                - "使用选区设置；其余三张地图按配置间距平移"
+            spectator:
+              material: ENDER_EYE
+              title: "观战出生点"
+              lore:
+                - "站在安全的观战位置点击设置"
+            spawns:
+              material: ENDER_PEARL
+              title: "公共重生点"
+              lore:
+                - "编辑第一张地图的重生点，四张地图同步使用"
+            items:
+              material: GOLD_BLOCK
+              title: "道具补给点"
+              lore:
+                - "编辑第一张地图的补给点，四张地图同步使用"
+            points:
+              title: "补给与重生点列表"
+              lore:
+                - "只编辑第一张地图坐标，自动应用到其余三张地图"
     ace-race:
       menus:
         equipment:
@@ -107,6 +135,730 @@ map-editor:
                   glint: true
                   lore:
                     - "&#55ff55当前绑定"
+    riptide-rush:
+      menus:
+        course-editor:
+          title: "激流勇进关卡编辑"
+          steps:
+            pass:
+              title: "穿越关卡"
+              lore: ["编辑穿越变体与每局数量"]
+            math:
+              title: "解题关卡"
+              lore: ["编辑解题变体、每局数量与加减法范围"]
+            stopped:
+              title: "停船挑战"
+              lore: ["编辑停船挑战总数及踩色、躲避、侧向的配额分配"]
+              state:
+                title: "停船挑战每局 %quota% 关"
+            rhythm:
+              title: "节奏关卡"
+              lore: ["编辑十一种动态闸门与每局数量，木筏持续前进"]
+            course:
+              title: "赛道设置与预览"
+              lore: ["自动航线与限时；配置随机种子，生成或试玩赛道"]
+              state:
+                title: "限时 %value% 秒"
+            category-state:
+              title: "已启用 %count% 个变体 • 每局 %quota% 关"
+          workshop:
+            title: "施工中 • %name%"
+          stopped:
+            title: "停船挑战 • 子类"
+          side:
+            title: "停船挑战 • 侧向"
+          side-pool:
+            title: "侧向 • 共用穿越建筑池"
+          abandon:
+            title: "放弃未保存的建筑修改？"
+          category:
+            title: "%type%关卡 • 变体与设置"
+          entry:
+            title: "编辑变体 • %name%"
+          add:
+            title: "新增%type%变体 • 复制或空白"
+          choice:
+            title: "%name% • 选择属性"
+          delete:
+            title: "确认删除 • %name%"
+          course:
+            title: "激流勇进 • 赛道设置与预览"
+          preview:
+            title: "激流勇进 • 赛道预览"
+          placement:
+            title: "激流勇进 • 预览关卡"
+          items:
+            copy-source:
+              title: "&#ededed复制 %name%"
+              lore: ["&#a0a0a0复制此变体的建筑及全部属性", "&#a0a0a0新名称：%name%副本；创建后可独立编辑"]
+            stopped-summary:
+              title: "&#ededed停船挑战每局 %quota% 关"
+              lore: ["&#a0a0a0点击设置父类总配额"]
+              material: CLOCK
+            stopped-floor:
+              title: "&#ededed踩色：每局 %quota% 关 • 权重 %weight%"
+              lore: ["&#a0a0a0打开踩色变体与权重设置"]
+              material: LIME_CONCRETE
+            stopped-dodge:
+              title: "&#ededed躲避：每局 %quota% 关 • 权重 %weight%"
+              lore: ["&#a0a0a0打开躲避变体与权重设置"]
+              material: SWEET_BERRIES
+            stopped-side:
+              title: "&#ededed侧向：每局 %quota% 关 • 权重 %weight%"
+              lore: ["&#a0a0a0打开侧向规则、建筑池与权重设置"]
+              material: PISTON
+            stopped-mode:
+              title: "&#ededed配额分配：%value%"
+              lore: ["&#a0a0a0点击切换 WEIGHTED / RANDOM", "&#a0a0a0随机分配由赛道种子固定，可复现"]
+              material: HOPPER
+              states:
+                weighted:
+                  title: "&#55ff55配额分配：按权重"
+                  material: HOPPER
+                random:
+                  title: "&#55aaff配额分配：按权重随机"
+                  material: DISPENSER
+            stopped-child-weight:
+              title: "&#ededed每局 %quota% 关 • 分配权重 %weight%"
+              lore: ["&#a0a0a0点击调整权重；当前分配随模式与预览种子更新"]
+              material: GOLD_NUGGET
+            side-quota:
+              title: "&#ededed侧向每局 %quota% 关"
+              lore: ["&#a0a0a0侧向最多分配2关；其余配额分给踩色或躲避"]
+              material: PISTON
+            side-weight:
+              title: "&#ededed侧向分配权重：%value%"
+              lore: ["&#a0a0a0点击调整；侧向每局最多2关"]
+              material: GOLD_NUGGET
+            side-rules:
+              title: "&#ededed侧向编排"
+              lore: ["&#a0a0a040%航程后可出现，60%后每组三面", "&#a0a0a080%后侧向与解题合为三面侧向解题", "&#a0a0a0每面使用穿越池建筑，来向与镜像独立随机"]
+              material: CLOCK
+            side-pool:
+              title: "&#ededed共用穿越建筑池"
+              lore: ["&#a0a0a0建筑、启停与权重同时用于穿越和侧向"]
+              material: OAK_DOOR
+            unsaved-building:
+              title: "尚未保存建筑"
+              lore: []
+            builtin-building:
+              title: "默认建筑（可进入施工修改）"
+              lore: []
+            authored-building:
+              title: "已保存自定义建筑"
+              lore: []
+            operation:
+              title: "&#ededed题目类型：%value%"
+              lore: ["&#a0a0a0左键：选择本变体使用加法、减法或乘法"]
+              material: "REDSTONE"
+            edit-building:
+              title: "&#ededed编辑建筑"
+              lore: ["&#a0a0a0左键：进入施工区，实际拆放方块", "&#a0a0a0完成后用准备工具打开菜单，保存建筑"]
+              material: "DIAMOND_PICKAXE"
+            automatic-layout:
+              title: "&#ededed航线与限时已自动设定"
+              lore: ["&#a0a0a0起终点同为Y=80，沿正Z方向航行500格", "&#a0a0a0比赛限时固定300秒，无需手动设置"]
+              material: "COMPASS"
+            continue-building:
+              title: "&#ededed继续施工"
+              lore: ["&#a0a0a0左键：关闭菜单并回到建筑旁"]
+              material: "DIAMOND_PICKAXE"
+            save-building:
+              title: "&#ededed保存建筑"
+              lore: ["&#a0a0a0左键：检查并保存施工区内的建筑", "&#a0a0a0保存后可单关试玩；发布地图后用于比赛"]
+              material: "LIME_CONCRETE"
+            discard-building:
+              title: "&#ededed放弃本次修改"
+              lore: ["&#a0a0a0左键：进入确认页；保留上次保存的建筑"]
+              material: "BARRIER"
+            confirm-discard-building:
+              title: "&#ededed确认放弃修改"
+              lore: ["&#a0a0a0左键：放弃未保存的建筑，返回变体页"]
+              material: "RED_CONCRETE"
+            blank-building:
+              title: "&#ededed从空白开始搭建"
+              lore: ["&#a0a0a0左键：创建本类别的新变体并进入施工", "&#a0a0a0解题保留基础判题门；踩色从空甲板开始", "&#a0a0a0保存建筑后启用，之前不参与抽取"]
+              material: "BRICKS"
+            pass-building-help:
+              title: "&#ededed穿越建筑范围"
+              lore: ["&#a0a0a0橙色端线内长%length%格、宽%width%格、高%height%格", "&#a0a0a0甲板用于对齐，仅保存上方障碍与两侧建筑", "&#a0a0a0不校验连续通路与跳跃高差；完成后请试玩"]
+              material: "BOOK"
+            math-building-help:
+              title: "&#ededed解题门建筑范围"
+              lore: ["&#a0a0a0橙色端线内长%length%格、宽%width%格、高%height%格", "&#a0a0a0左右判题通道保留三格净空", "&#a0a0a0中柱与红蓝边柱保留；其余框架、材质和装饰可改"]
+              material: "BOOK"
+            floor-building-help:
+              title: "&#ededed踩色建筑范围"
+              lore: ["&#a0a0a0橙色端线内长%length%格、宽%width%格、高%height%格", "&#a0a0a0甲板逐格布局会保存，七轮使用该布局", "&#a0a0a0至少两种方块，目标方块须分散铺设", "&#a0a0a0上方三格留空；两侧或上方可搭建装饰"]
+              material: "BOOK"
+            finish-building:
+              title: "&#ededed请先保存或放弃当前建筑，再预览或发布地图"
+              lore: []
+              material: "PAPER"
+            building-save-failed:
+              title: "建筑保存失败，施工区仍保留，请重试并检查服务器日志"
+              lore: []
+            opening-building:
+              title: "&#ededed正在打开施工区，请稍候"
+              lore: []
+              material: "PAPER"
+            building-instructions:
+              title: "&#ededed施工范围：长%length%格、宽%width%格、高%height%格；橙色端线与蓝色边框内可搭建，玻璃柱顶为限高。踩色也可修改甲板，用准备工具打开保存/放弃菜单。"
+              lore: []
+              material: "PAPER"
+            building-saved:
+              title: "&#ededed建筑已保存到本变体。可先单关试玩，完成后发布地图。"
+              lore: []
+              material: "PAPER"
+            filler:
+              title: "&#ededed "
+              lore: []
+              material: "GRAY_STAINED_GLASS_PANE"
+            name:
+              title: "&#ededed名称：%value%"
+              lore: ["&#a0a0a0点击输入新名称"]
+              material: "NAME_TAG"
+            variant:
+              title: "&#ededed玩法：%value%"
+              lore: ["&#a0a0a0点击打开玩法列表", "&#a0a0a0选择具体玩法，或保留随机玩法"]
+              material: "CRAFTING_TABLE"
+            enabled:
+              title: "&#ededed参与抽取"
+              lore: ["&#a0a0a0点击切换；停用后保留全部设置"]
+              material: "LIME_DYE"
+              states:
+                on:
+                  title: "&#55ff55已启用"
+                  material: "LIME_DYE"
+                off:
+                  title: "&#aaaaaa已停用"
+                  material: "GRAY_DYE"
+            weight:
+              title: "&#ededed抽取权重：%value%"
+              lore: ["&#a0a0a0点击输入1–100", "&#a0a0a0权重越高越容易抽中；重复抽中后权重递减"]
+              material: "GOLD_NUGGET"
+            max-uses:
+              title: "&#ededed单局出现上限：%value%"
+              lore: ["&#a0a0a0点击输入1–64", "&#a0a0a0限制本变体最多出现的次数，不保证一定出现"]
+              material: "REPEATER"
+            difficulty:
+              title: "&#ededed难度：%value%"
+              lore: ["&#a0a0a0点击选择难度1、2或3", "&#a0a0a0难度决定该变体可出现的赛段"]
+              material: "EXPERIENCE_BOTTLE"
+            duplicate:
+              title: "&#ededed复制变体"
+              lore: ["&#a0a0a0复制建筑及全部属性，打开副本继续编辑"]
+              material: "WRITABLE_BOOK"
+            try-template:
+              title: "&#ededed试玩此变体"
+              lore: ["&#a0a0a0生成单关，3秒后开始，不计成绩", "&#a0a0a0自行跟上木筏；交换副手键（默认F）退出并返回此页"]
+              material: "FEATHER"
+            delete:
+              title: "&#ededed删除变体"
+              lore: ["&#a0a0a0进入确认页；仅删除当前地图的这一项"]
+              material: "BARRIER"
+            option-auto:
+              title: "&#ededed随机玩法"
+              lore: ["&#a0a0a0从本类别的可用玩法中抽取", "&#a0a0a0点击选择"]
+              material: "ENDER_EYE"
+              states:
+                selected:
+                  title: "&#55ff55随机玩法（当前）"
+                  glint: true
+            option-gap:
+              title: "&#ededed偏侧门洞"
+              lore: ["&#a0a0a0穿过随机位于左侧或右侧的门洞", "&#a0a0a0点击选择"]
+              material: "IRON_BARS"
+              states:
+                selected:
+                  title: "&#55ff55偏侧门洞（当前）"
+                  glint: true
+            option-jump:
+              title: "&#ededed单栏跳跃"
+              lore: ["&#a0a0a0跳过横跨航线的低矮障碍", "&#a0a0a0点击选择"]
+              material: "OAK_FENCE"
+              states:
+                selected:
+                  title: "&#55ff55单栏跳跃（当前）"
+                  glint: true
+            option-weave:
+              title: "&#ededed左右折返"
+              lore: ["&#a0a0a0绕过两侧交错障碍；仅安排在中低速段", "&#a0a0a0点击选择"]
+              material: "COBBLESTONE_WALL"
+              states:
+                selected:
+                  title: "&#55ff55左右折返（当前）"
+                  glint: true
+            option-add:
+              title: "&#ededed加法"
+              lore: ["&#a0a0a0随机加法题；数字范围在解题类别页设置", "&#a0a0a0点击选择"]
+              material: "RED_CONCRETE"
+              states:
+                selected:
+                  title: "&#55ff55加法（当前）"
+                  glint: true
+            option-subtract:
+              title: "&#ededed减法"
+              lore: ["&#a0a0a0随机非负减法题；数字范围在解题类别页设置", "&#a0a0a0点击选择"]
+              material: "BLUE_CONCRETE"
+              states:
+                selected:
+                  title: "&#55ff55减法（当前）"
+                  glint: true
+            option-multiply:
+              title: "&#ededed乘法"
+              lore: ["&#a0a0a010–99与2–9相乘，两个数字顺序随机", "&#a0a0a0点击选择"]
+              material: "PURPLE_CONCRETE"
+              states:
+                selected:
+                  title: "&#55ff55乘法（当前）"
+                  glint: true
+            option-double:
+              title: "连续两道解题门"
+              lore: ["第二次加速后开放；各门按阶段出题，两道合计一个解题配额", "点击选择"]
+              material: "COMPARATOR"
+              states:
+                selected:
+                  title: "连续两道解题门（当前）"
+                  glint: true
+            option-observe-count:
+              title: "观察：数颜色"
+              lore: ["数清目标颜色出现的次数，选择正确数量", "上行线索，下行问题与答案，点击选择"]
+              material: "YELLOW_CONCRETE"
+              states:
+                selected:
+                  title: "观察：数颜色（当前）"
+                  glint: true
+            option-observe-order:
+              title: "观察：找第几项"
+              lore: ["按题目要求从左或右找出指定位置的数字", "上行线索，下行问题与答案，点击选择"]
+              material: "SPYGLASS"
+              states:
+                selected:
+                  title: "观察：找第几项（当前）"
+                  glint: true
+            option-observe-extreme:
+              title: "观察：找最大最小"
+              lore: ["找出数列中的最大值或最小值", "上行线索，下行问题与答案，点击选择"]
+              material: "COMPARATOR"
+              states:
+                selected:
+                  title: "观察：找最大最小（当前）"
+                  glint: true
+            option-observe-parity:
+              title: "观察：数奇偶"
+              lore: ["数清数列中的奇数或偶数个数", "上行线索，下行问题与答案，点击选择"]
+              material: "REDSTONE_TORCH"
+              states:
+                selected:
+                  title: "观察：数奇偶（当前）"
+                  glint: true
+            option-observe-unique:
+              title: "观察：找唯一项"
+              lore: ["找出数列中只出现一次的数字", "上行线索，下行问题与答案，点击选择"]
+              material: "ENDER_EYE"
+              states:
+                selected:
+                  title: "观察：找唯一项（当前）"
+                  glint: true
+            option-shutter:
+              title: "节拍闸门"
+              lore: ["木筏持续前进，全门按固定节拍开合", "开放时向前穿过闸门，点击选择"]
+              material: "IRON_TRAPDOOR"
+              states:
+                selected:
+                  title: "节拍闸门（当前）"
+                  glint: true
+            option-alternating:
+              title: "左右交替闸门"
+              lore: ["木筏持续前进，左右半边循环交替开放", "绿灯一侧可通行，点击选择"]
+              material: "PISTON"
+              states:
+                selected:
+                  title: "左右交替闸门（当前）"
+                  glint: true
+            option-double-beat:
+              title: "长短双拍闸门"
+              lore: ["长开、短闭、短开、长闭循环", "木筏持续前进，点击选择"]
+              material: "NOTE_BLOCK"
+              states:
+                selected:
+                  title: "长短双拍闸门（当前）"
+                  glint: true
+            option-center-sides:
+              title: "中间两侧闸门"
+              lore: ["中间三列与两侧通道交替开放", "木筏持续前进，点击选择"]
+              material: "STICKY_PISTON"
+              states:
+                selected:
+                  title: "中间两侧闸门（当前）"
+                  glint: true
+            option-sweep:
+              title: "横移窗口闸门"
+              lore: ["三格窗口按左、中、右、中循环移动", "木筏持续前进，点击选择"]
+              material: "PISTON"
+              states:
+                selected:
+                  title: "横移窗口闸门（当前）"
+                  glint: true
+            option-in-out:
+              title: "收放闸门"
+              lore: ["开口按七、五、三、五格循环收放", "木筏持续前进，点击选择"]
+              material: "STICKY_PISTON"
+              states:
+                selected:
+                  title: "收放闸门（当前）"
+                  glint: true
+            option-cross-beat:
+              title: "交错双拍闸门"
+              lore: ["左开、全开、右开、全关循环", "木筏持续前进，点击选择"]
+              material: "NOTE_BLOCK"
+              states:
+                selected:
+                  title: "交错双拍闸门（当前）"
+                  glint: true
+            option-horizontal-window:
+              title: "横移矮窗"
+              lore: ["三格宽、两格高的矮窗按左、中、右、中移动", "青色窗框显示实际洞口，木筏持续前进，点击选择"]
+              material: "PISTON"
+              states:
+                selected:
+                  title: "横移矮窗（当前）"
+                  glint: true
+            option-vertical-window:
+              title: "升降窗口"
+              lore: ["中央两格高窗口上下移动一格，平走或跳跃通过", "青色窗框显示实际洞口，木筏持续前进，点击选择"]
+              material: "STICKY_PISTON"
+              states:
+                selected:
+                  title: "升降窗口（当前）"
+                  glint: true
+            option-window-shutter:
+              title: "定点开合窗"
+              lore: ["中央三格宽、两格高窗口按节拍开放和封闭", "青色窗框显示实际洞口，木筏持续前进，点击选择"]
+              material: "IRON_TRAPDOOR"
+              states:
+                selected:
+                  title: "定点开合窗（当前）"
+                  glint: true
+            option-staggered-windows:
+              title: "左右高低交替窗"
+              lore: ["左右窗口交替开放，低窗平走、高窗跳跃通过", "青色窗框显示实际洞口，木筏持续前进，点击选择"]
+              material: "CYAN_CONCRETE"
+              states:
+                selected:
+                  title: "左右高低交替窗（当前）"
+                  glint: true
+            new-rhythm:
+              title: "新增节奏机关"
+              lore: ["创建节拍闸门，可切换十一种节奏变体"]
+              material: "IRON_TRAPDOOR"
+            new-dodge:
+              title: "新增躲避变体"
+              lore: ["创建冲刺生物变体，可选择僵尸、尸壳、骷髅、蜘蛛或苦力怕"]
+              material: "SPIDER_EYE"
+            option-zombie:
+              title: "僵尸冲刺"
+              lore: ["直线冲刺，碰撞淘汰", "点击选择"]
+              material: "ZOMBIE_HEAD"
+              states: { selected: { title: "僵尸冲刺（当前）", glint: true } }
+            option-husk:
+              title: "尸壳冲刺"
+              lore: ["直线冲刺，碰撞淘汰", "点击选择"]
+              material: "HUSK_SPAWN_EGG"
+              states: { selected: { title: "尸壳冲刺（当前）", glint: true } }
+            option-skeleton:
+              title: "骷髅冲刺"
+              lore: ["斜向冲刺，碰撞淘汰", "点击选择"]
+              material: "SKELETON_SKULL"
+              states: { selected: { title: "骷髅冲刺（当前）", glint: true } }
+            option-spider:
+              title: "蜘蛛冲刺"
+              lore: ["斜向冲刺，碰撞淘汰", "点击选择"]
+              material: "SPIDER_SPAWN_EGG"
+              states: { selected: { title: "蜘蛛冲刺（当前）", glint: true } }
+            option-creeper:
+              title: "苦力怕冲刺"
+              lore: ["从上方落下，碰撞淘汰", "点击选择"]
+              material: "CREEPER_HEAD"
+              states: { selected: { title: "苦力怕冲刺（当前）", glint: true } }
+            option-ore:
+              title: "矿石"
+              lore: ["辨认不同矿石", "点击选择"]
+              material: "DIAMOND_ORE"
+              states:
+                selected:
+                  title: "矿石（当前）"
+                  glint: true
+            option-log:
+              title: "原木"
+              lore: ["辨认不同树种的原木", "点击选择"]
+              material: "OAK_LOG"
+              states:
+                selected:
+                  title: "原木（当前）"
+                  glint: true
+            option-nether:
+              title: "下界方块"
+              lore: ["辨认下界岩石、砖块和矿石", "点击选择"]
+              material: "NETHERRACK"
+              states:
+                selected:
+                  title: "下界方块（当前）"
+                  glint: true
+            option-copper:
+              title: "&#ededed铜材"
+              lore: ["&#a0a0a0辨认不同状态的铜方块", "&#a0a0a0点击选择"]
+              material: "COPPER_BLOCK"
+              states:
+                selected:
+                  title: "&#55ff55铜材（当前）"
+                  glint: true
+            option-wood:
+              title: "&#ededed木板"
+              lore: ["&#a0a0a0辨认不同树种的木板", "&#a0a0a0点击选择"]
+              material: "OAK_PLANKS"
+              states:
+                selected:
+                  title: "&#55ff55木板（当前）"
+                  glint: true
+            option-terracotta:
+              title: "&#ededed陶瓦"
+              lore: ["&#a0a0a0辨认不同颜色的陶瓦", "&#a0a0a0点击选择"]
+              material: "RED_TERRACOTTA"
+              states:
+                selected:
+                  title: "&#55ff55陶瓦（当前）"
+                  glint: true
+            option-stone:
+              title: "&#ededed石材"
+              lore: ["&#a0a0a0辨认不同种类的石材", "&#a0a0a0点击选择"]
+              material: "STONE"
+              states:
+                selected:
+                  title: "&#55ff55石材（当前）"
+                  glint: true
+            difficulty-1:
+              title: "&#ededed难度 1"
+              lore: ["&#a0a0a0可安排在全程各段；开局仅使用难度1", "&#a0a0a0点击选择"]
+              material: "EXPERIENCE_BOTTLE"
+              states:
+                selected:
+                  title: "&#55ff55难度 1（当前）"
+                  glint: true
+            difficulty-2:
+              title: "&#ededed难度 2"
+              lore: ["&#a0a0a0航程25%之后可出现", "&#a0a0a0点击选择"]
+              material: "EXPERIENCE_BOTTLE"
+              states:
+                selected:
+                  title: "&#55ff55难度 2（当前）"
+                  glint: true
+            difficulty-3:
+              title: "&#ededed难度 3"
+              lore: ["&#a0a0a0航程65%之后可出现", "&#a0a0a0点击选择"]
+              material: "EXPERIENCE_BOTTLE"
+              states:
+                selected:
+                  title: "&#55ff55难度 3（当前）"
+                  glint: true
+            confirm-delete:
+              title: "&#ededed确认删除"
+              lore: ["&#a0a0a0删除后返回当前类别；不能撤销", "&#a0a0a0如只想暂停抽取，可返回并停用"]
+              material: "RED_CONCRETE"
+            cancel:
+              title: "&#ededed取消"
+              lore: ["&#a0a0a0保留变体，返回属性页"]
+              material: "LIME_CONCRETE"
+            course-summary:
+              title: "&#ededed每局关卡组成"
+              lore: ["&#a0a0a0穿越 %pass% 关 • 解题 %math% 关", "&#a0a0a0停船挑战 %stopped% 关 • 节奏 %rhythm% 关", "&#a0a0a0各类数量与设置在对应类别页调整"]
+              material: "BOOK"
+            timer:
+              title: "&#ededed比赛限时：%value% 秒"
+              lore: ["&#a0a0a0点击输入1–3600", "&#a0a0a0完整航线必须能在限时内完成"]
+              material: "CLOCK"
+            preview:
+              title: "&#ededed预览与试玩"
+              lore: ["&#a0a0a0查看随机顺序、具体关卡和预计耗时", "&#a0a0a0可生成建筑，试玩单关或整条赛道"]
+              material: "SPYGLASS"
+            seed:
+              title: "&#ededed预览种子：%value%"
+              lore: ["&#a0a0a0点击输入整数种子", "&#a0a0a0相同配置与生成器版本可复现赛道"]
+              material: "WHEAT_SEEDS"
+            fixed:
+              title: "&#ededed正式对局种子"
+              lore: ["&#a0a0a0点击切换随机或锁定预览种子"]
+              material: "TRIPWIRE_HOOK"
+              states:
+                random:
+                  title: "&#55ff55正式对局：每局随机"
+                  lore: ["&#a0a0a0点击锁定当前预览种子"]
+                fixed:
+                  title: "&#fff566正式对局：锁定 %value%"
+                  lore: ["&#a0a0a0点击恢复每局随机", "&#696969修改预览种子不会改变已锁定的种子"]
+                  glint: true
+            constraints:
+              title: "&#ededed自动编排规则"
+              lore: ["&#a0a0a0首尾安排穿越，不同特殊类型可相邻", "&#a0a0a0连续穿越错开通行位置；停船挑战按区段分布", "&#a0a0a0按船速检查衔接，按实际移动规则检查耗时", "&#a0a0a0可先保存草稿；校验通过后才能发布"]
+              material: "COMPARATOR"
+            back:
+              title: "&#ededed返回上一级"
+              lore: []
+              material: "ARROW"
+            empty:
+              title: "&#ededed尚无%type%变体"
+              lore: ["&#a0a0a0点击下方“新增变体”开始创建", "&#a0a0a0已有变体和设置仅属于当前地图"]
+              material: "GLASS_BOTTLE"
+            quota:
+              title: "&#ededed每局数量：%value%"
+              lore: ["&#a0a0a0点击调整本父类每场关卡数", "&#a0a0a0穿越至少2关"]
+              material: "COMPARATOR"
+            stopped-quota:
+              title: "停船挑战总配额：%value%"
+            floor-weight:
+              title: "踩色分配权重：%value%"
+            dodge-weight:
+              title: "躲避分配权重：%value%"
+            child-weight:
+              title: "子类分配权重：%value%"
+            minimum:
+              title: "&#ededed加减法最小数字：%value%"
+              lore: ["&#a0a0a0点击输入；不得大于最大数字", "&#a0a0a0乘法固定使用10–99与2–9"]
+              material: "REDSTONE"
+            maximum:
+              title: "&#ededed加减法最大数字：%value%"
+              lore: ["&#a0a0a0点击输入；不得小于最小数字", "&#a0a0a0此设置应用于本类全部加减法变体"]
+              material: "GLOWSTONE_DUST"
+            floor-timing:
+              title: "&#ededed阶段停船时长：%value% 秒"
+              lore: ["&#a0a0a0五段依次32/28/24/20/16秒，每关固定七轮", "&#a0a0a0方块种类随阶段为5/6/7/8种；每关七轮，原地停船"]
+              material: "CLOCK"
+            add:
+              title: "&#ededed新增%type%变体"
+              lore: ["&#a0a0a0复制任意已有变体，或从空白开始施工"]
+              material: "EMERALD"
+            category-summary:
+              title: "&#ededed共 %count% 个变体 • 已启用 %enabled% 个"
+              lore: ["&#a0a0a0上方点击具体变体，进入属性页后编辑建筑", "&#a0a0a0下方设置应用于本类别"]
+              material: "BOOK"
+            duration:
+              title: "&#ededed预计全程：%value% 秒"
+              lore: ["&#a0a0a0已包含全部踩色停船时间"]
+              material: "CLOCK"
+            invalid:
+              title: "&#ededed当前配置无法编排"
+              lore: ["&#a0a0a0%error%", "&#a0a0a0返回类别页调整变体或数量后再预览"]
+              material: "BARRIER"
+            reroll:
+              title: "&#ededed换一条赛道"
+              lore: ["&#a0a0a0更换预览种子并查看新的组合"]
+              material: "SUNFLOWER"
+            build:
+              title: "&#ededed生成到地图"
+              lore: ["&#a0a0a0分批生成当前预览赛道", "&#a0a0a0完成后进入地图查看；使用准备工具返回菜单"]
+              material: "BRICKS"
+            play:
+              title: "&#ededed整条试玩"
+              lore: ["&#a0a0a0生成当前预览赛道，3秒后开始", "&#a0a0a0不计成绩；交换副手键（默认F）退出并返回预览页"]
+              material: "FEATHER"
+            seed-info:
+              title: "&#ededed当前预览种子：%value%"
+              lore: ["&#a0a0a0可在上一级“赛道设置与预览”中输入种子"]
+              material: "WHEAT_SEEDS"
+            inspect:
+              title: "&#ededed生成并前往此关"
+              lore: ["&#a0a0a0生成完整预览赛道，传送到本关上方查看", "&#a0a0a0使用准备工具重新打开编辑菜单"]
+              material: "SPYGLASS"
+            try-placement:
+              title: "&#ededed试玩这一关"
+              lore: ["&#a0a0a0使用预览中的玩法和位置进行单关试玩", "&#a0a0a03秒后开始；交换副手键（默认F）退出并返回此页"]
+              material: "FEATHER"
+            busy:
+              title: "&#ededed地图正在生成、试玩或比赛中，请结束后再编辑"
+              lore: []
+              material: "PAPER"
+            expired:
+              title: "&#ededed编辑会话已结束，请重新进入地图编辑"
+              lore: []
+              material: "PAPER"
+            invalid-number:
+              title: "&#ededed请输入有效的整数"
+              lore: []
+              material: "PAPER"
+            range:
+              title: "&#ededed请输入 %min%–%max% 之间的整数"
+              lore: []
+              material: "PAPER"
+            edit-hint:
+              title: "&#ededed点击编辑此变体"
+              lore: []
+              material: "PAPER"
+            building:
+              title: "&#ededed正在生成预览赛道，种子 %value%"
+              lore: []
+              material: "PAPER"
+            build-failed:
+              title: "&#ededed生成未完成，请检查地图配置后重试"
+              lore: []
+              material: "PAPER"
+            built:
+              title: "&#ededed赛道已生成，可使用准备工具返回编辑菜单"
+              lore: []
+              material: "PAPER"
+            previous:
+              title: "&#ededed上一页"
+              lore: ["&#a0a0a0前往第 %page% / %pages% 页"]
+              material: "ARROW"
+            next:
+              title: "&#ededed下一页"
+              lore: ["&#a0a0a0前往第 %page% / %pages% 页"]
+              material: "ARROW"
+            entry:
+              title: "&#ededed%name%"
+              lore: ["&#a0a0a0类别：%type%", "&#a0a0a0难度 %difficulty% • 权重 %weight% • 单局上限 %max%", "&#a0a0a0%building%", "&#a0a0a0%action%"]
+              states:
+                enabled:
+                  title: "&#55ffff%name%"
+                disabled:
+                  title: "&#aaaaaa%name%（已停用）"
+                  material: "GRAY_DYE"
+            placement:
+              title: "&#ededed第 %number% 关 • %name%"
+              lore: ["&#a0a0a0航程位置：%step% 格", "&#a0a0a0点击查看本关，选择查看建筑或单关试玩"]
+        level-type:
+          title: "&#55ffff&l设置第 %number% 关类型"
+          items:
+            math:
+              material: RED_CONCRETE
+              title: "&#ff5555&l解题"
+              lore:
+                - "&#a0a0a0随机加减法、两位数乘一位数，左右选答案"
+                - "&#696969选错答案的玩家会被淘汰"
+              states:
+                selected:
+                  glint: true
+                  title: "&#55ff55&l解题（当前）"
+            pass:
+              material: IRON_BARS
+              title: "&#55ffff&l穿越"
+              lore:
+                - "&#a0a0a0生成跑酷、墙洞等物理障碍"
+                - "&#696969只要求通过，不附加额外判定"
+              states:
+                selected:
+                  glint: true
+                  title: "&#55ff55&l穿越（当前）"
+            pause:
+              material: LIME_CONCRETE
+              title: "&#fff566&l踩色"
+              lore:
+                - "&#a0a0a0木筏停留原地，七轮逐轮加速"
+                - "&#696969每轮限时站到目标方块上，站错即出局"
+              states:
+                selected:
+                  glint: true
+                  title: "&#55ff55&l踩色（当前）"
     tgttos:
       menus:
         area-type:
@@ -562,6 +1314,11 @@ map-editor:
           material: LIME_WOOL
           title: "&#55ff55&l添加点位"
           lore: []
+          states:
+            riptide-level:
+              title: "&#55ff55&l添加自动关卡"
+              lore:
+                - "&#a0a0a0只选择规则类型；位置和障碍由赛道自动生成"
         view:
           slot: 1
           material: BOOK
@@ -619,6 +1376,11 @@ map-editor:
         binding:
           material: IRON_BARS
           states:
+            level-type:
+              material: OAK_SIGN
+              title: "&#ff55ff&l关卡类型：%type%"
+              lore:
+                - "&#a0a0a0点击切换解题、穿越或踩色"
             progress-line:
               material: IRON_BARS
               title: "&#ff55ff&l更改所属进度线"
@@ -728,6 +1490,8 @@ map-editor:
               lore:
                 - 没有更多步骤
         step:
+          material: PAPER
+          title: "&#a0a0a0%number%. &#ededed%title%"
           states:
             confirmed:
               title: 已确认所在世界
@@ -738,13 +1502,15 @@ map-editor:
             unstamped:
               title: 待生成
             set:
-              title: 已设置（
+              title: "&#55ff55已设置"
+            set-list:
+              title: "&#55ff55已设置（%count%个）"
             unset:
-              title: 待设置
+              title: "&#ffaa00待设置"
           lore:
-            - ""
-            - ""
-            - 点击编辑
+            - "&#a0a0a0%description%"
+            - "%state%"
+            - "&#55ffff%action%"
         stand-run:
           lore:
             - 站到目标位置后点击
@@ -921,6 +1687,34 @@ map-editor:
             start-fall-height:
               material: PAPER
               title: "&#fff566起点后的坠落重置高度"
+        riptide-rush:
+          items:
+            start-point:
+              material: OAK_BOAT
+              title: "&#55ff55木筏起点"
+              lore:
+                - "&#a0a0a0站在赛道中心线起点点击"
+            finish-point:
+              material: LIME_CONCRETE
+              title: "&#ffaa00木筏终点"
+              lore:
+                - "&#a0a0a0站在中心线终点点击；须与起点沿X或Z轴对齐"
+            levels:
+              material: OAK_BOAT
+              title: "&#55ffff自动关卡列表"
+              lore:
+                - "&#a0a0a0添加、编辑、删除和排序关卡；实际位置发布时自动生成"
+          validation:
+            geometry:
+              title: "起点和终点须在同一世界、同一高度，沿X或Z轴对齐，且赛道长度足够。"
+            spacing:
+              title: "赛道太短，无法按最小间距自动摆放当前数量的关卡。"
+            movement:
+              title: "木筏速度或加速阶段配置无效。"
+            materials:
+              title: "木筏或障碍材质必须是有效的实体方块。"
+            math:
+              title: "解题的数字范围配置无效。"
         dodgebolt:
           items:
             area:
@@ -3386,6 +4180,7 @@ voting:
           - 20
           - 21
           - 22
+          - 23
         border:
           - 0
           - 1
@@ -3880,6 +4675,78 @@ voting:
                 lore:
                   - "&#696969竞速 • 个人赛"
                   - "&#a0a0a0驾驭鞘翅与三叉戟完成多圈障碍赛道"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          riptide-rush:
+            material: OAK_BOAT
+            title: "&#ededed&l激流勇进"
+            states:
+              available:
+                lore:
+                  - "&#696969生存 • 障碍赛"
+                  - "&#a0a0a0穿越、解题与停船挑战"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 激流勇进"
+                glint: true
+                lore:
+                  - "&#696969生存 • 障碍赛"
+                  - "&#a0a0a0随移动木筏穿过障碍和算术选择门"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 激流勇进"
+                lore:
+                  - "&#696969生存 • 障碍赛"
+                  - "&#a0a0a0随移动木筏穿过障碍和算术选择门"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          frostbite:
+            material: BLUE_ICE
+            title: "&#ededed&l霜冻狂潮"
+            states:
+              available:
+                lore:
+                  - "&#696969冻结 • 四场乱斗"
+                  - "&#a0a0a0每队每图1人，四轮击杀计分"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ff55点击投票"
+              selected:
+                title: "&#55ffff&l✓ 霜冻狂潮"
+                glint: true
+                lore:
+                  - "&#696969冻结 • 四场乱斗"
+                  - "&#a0a0a0冻结对手，抢夺补给，四轮汇总队伍成绩"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 霜冻狂潮"
+                lore:
+                  - "&#696969冻结 • 四场乱斗"
+                  - "&#a0a0a0冻结对手，抢夺补给，四轮汇总队伍成绩"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"

@@ -1,0 +1,128 @@
+riptide-editor:
+  menus:
+    steps:
+      pool:
+        title: 关卡池
+        lore: [新增、复制、编辑、停用或删除穿越、数学、踩色关卡]
+      rules:
+        title: 编排规则
+        lore: [配置三类配额、限时和数学范围]
+      preview:
+        title: 赛道预览与试玩
+        lore: [随机编排、种子复现、单关及整条试玩]
+    pool:
+      title: 激流勇进 • 关卡池
+    entry:
+      title: 激流勇进 • 编辑关卡
+    add:
+      title: 激流勇进 • 选择模板
+    delete:
+      title: 激流勇进 • 确认删除
+    rules:
+      title: 激流勇进 • 编排规则
+    preview:
+      title: 激流勇进 • 赛道预览
+  buttons:
+    add:
+      title: 添加关卡
+      lore: [从穿越、数学、踩色三类模板创建]
+    rules:
+      title: 编排规则
+      lore: []
+    preview:
+      title: 赛道预览
+      lore: []
+    name:
+      title: 名称：%value%
+      lore: [点击重命名]
+    variant:
+      title: 变体：%value%
+      lore: [点击循环选择；随机变体从可用内容中抽取, 折返仅在中低速段使用]
+    enabled:
+      title: 状态：%value%
+      lore: [点击启用或停用；停用保留配置]
+    weight:
+      title: 抽取权重：%value%
+      lore: [点击输入1–100；已抽中次数越多，后续权重越低]
+    max-uses:
+      title: 单局上限：%value%
+      lore: [点击输入1–64；不代表必定出现的次数]
+    difficulty:
+      title: 难度：%value%
+      lore: [点击循环1–3, 前25%仅难度1；中段最高2；65%之后最高3]
+    duplicate:
+      title: 复制关卡
+      lore: [复制设置并创建独立关卡]
+    delete:
+      title: 删除关卡
+      lore: [仅删除本地图的这一项；下一页确认, 删除后请检查配额是否仍能满足]
+    confirm-delete:
+      title: 确认删除
+      lore: [关卡将从本地图池中移除]
+    pass:
+      title: 穿越
+      lore: [门洞、单栏跳跃、左右折返]
+    math:
+      title: 数学
+      lore: [混合或指定加法、减法、乘法]
+    floor:
+      title: 踩色
+      lore: [七轮原地辨认目标方块]
+    pass-count:
+      title: 穿越数量：%value%
+      lore: [点击输入；首尾保留穿越]
+    math-count:
+      title: 数学数量：%value%
+      lore: [点击输入；可设为0]
+    floor-count:
+      title: 踩色数量：%value%
+      lore: [点击输入；按数量均分区段，每段安排一关]
+    timer:
+      title: 比赛限时：%value% 秒
+      lore: [点击输入；完整航线必须能在限时内完成]
+    pause-seconds:
+      title: 每关踩色：%value% 秒
+      lore: [点击输入1–30；七轮按比例缩放]
+    minimum:
+      title: 加减法最小数字：%value%
+      lore: [点击输入；乘法仍为10–99与2–9]
+    maximum:
+      title: 加减法最大数字：%value%
+      lore: [点击输入；乘法仍为10–99与2–9]
+    constraints:
+      title: 自动编排约束
+      lore:
+        - 数学和踩色之间至少隔一关穿越
+        - 相邻穿越变体不同；踩色随机主题每五关不重复
+        - 按船速检查衔接时间，按实际移动规则检查全程耗时
+        - 修改配额后可保存草稿；通过校验才可发布
+    reroll:
+      title: 换一条赛道
+      lore: [更换预览种子，查看新的顺序]
+    seed:
+      title: 预览种子：%value%
+      lore: [输入之前的种子可复现同一配置下的赛道]
+    build:
+      title: 生成到地图中
+      lore: [分批生成预览建筑；保留障碍区域外的景观]
+    play:
+      title: 整条试玩
+      lore: [按当前预览生成赛道，3秒后开始, 自行跟上木筏；潜行退出；不计成绩]
+    fixed:
+      title: 正式对局：%value%
+      lore: [点击锁定当前预览种子；再次点击恢复每局随机, 种子复现需相同地图、关卡池、规则及生成器版本]
+    duration:
+      title: 预计全程：%value% 秒
+      lore: [含全部踩色停船时间]
+    back:
+      title: 返回
+      lore: []
+    previous:
+      title: 上一页
+      lore: []
+    next:
+      title: 下一页
+      lore: []
+    try-template:
+      title: 单关试玩
+      lore: [以当前模板生成一关，3秒后开始, 可用于测试尚未加入正式组合的新关卡]

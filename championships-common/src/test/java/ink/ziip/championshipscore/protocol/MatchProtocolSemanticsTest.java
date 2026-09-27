@@ -12,6 +12,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MatchProtocolSemanticsTest {
     private static final Clock CLOCK = Clock.fixed(Instant.ofEpochMilli(1_800_000_000_000L), ZoneOffset.UTC);
@@ -48,10 +49,28 @@ class MatchProtocolSemanticsTest {
     }
 
     @Test
-    void terminalStateCannotMoveBackwards() {
-        MatchStateMachine machine = new MatchStateMachine();
-        machine.transitionTo(MatchState.ABORTED);
+    void scoreTransactionIdsAreStableButNamespacedBySequence() {
+        UUID first = DeterministicIds.scoreTransaction(new UUID(0, 2), 1, 7, new UUID(0, 1), "cell:0");
+        UUID replay = DeterministicIds.scoreTransaction(new UUID(0, 2), 1, 7, new UUID(0, 1), "cell:0");
+        UUID next = DeterministicIds.scoreTransaction(new UUID(0, 2), 1, 8, new UUID(0, 1), "cell:0");
 
-        assertThrows(IllegalStateException.class, () -> machine.transitionTo(MatchState.PREPARING));
+        assertEquals(first, replay);
+        assertNotEquals(first, next);
+        assertEquals(5, first.version());
+    }
+
+    @Test
+    void lifecycleRejectsBackwardsTransitionsAndCanResumeItsPreviousState() {
+        MatchStateMachine lifecycle = new MatchStateMachine();
+        lifecycle.transitionTo(MatchState.PREPARING);
+        lifecycle.transitionTo(MatchState.READY);
+        lifecycle.transitionTo(MatchState.ROUTING);
+        lifecycle.transitionTo(MatchState.SUSPENDED);
+
+        assertEquals(MatchState.ROUTING, lifecycle.resume().to());
+        assertThrows(IllegalStateException.class, () -> lifecycle.transitionTo(MatchState.READY));
+        lifecycle.transitionTo(MatchState.ABORTED);
+        assertTrue(lifecycle.state().terminal());
+        assertThrows(IllegalStateException.class, () -> lifecycle.transitionTo(MatchState.PREPARING));
     }
 }

@@ -1042,7 +1042,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         int index = 0;
         for (Player player : team.getOnlinePlayers()) {
             if (!isSelectedParticipant(player)) continue;
-            player.teleport(Utils.getLocation(spawns.get(index++ % spawns.size())));
+            int spawnIndex = index++;
+            Location spawn = Utils.getLocation(spawns.get(spawnIndex % spawns.size()));
+            player.teleport(Utils.getCollisionSafeTeleportLocation(spawn, spawnIndex / spawns.size()));
         }
     }
 

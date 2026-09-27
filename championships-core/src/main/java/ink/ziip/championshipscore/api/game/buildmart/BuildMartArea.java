@@ -16,6 +16,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Enchants;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -75,10 +76,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     /** Seconds after a normal build completes before a fresh blueprint is auto-assigned to its plot. */
     private static final int AUTO_REFRESH_SECONDS = 5;
 
-    /** Per-player timestamp of the first golden submit click, for the two-click confirmation. */
-    private final Map<UUID, Long> goldenArmedAt = new HashMap<>();
-    /** Window within which a second golden click confirms the submit. */
-    private static final long GOLDEN_CONFIRM_WINDOW_MILLIS = 5000L;
+    private final GoldenSubmitConfirmation goldenConfirmation = new GoldenSubmitConfirmation();
+    private long goldenGeneration;
 
     /** Live per-team build state, keyed by team. Populated at progress start, cleared on reset. */
     private final Map<ChampionshipTeam, TeamBuildState> teamStates = new HashMap<>();
@@ -147,6 +146,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetArea() {
+        if (startGameProgressTask != null) startGameProgressTask.cancel();
         startGameProgressTask = null;
         if (materialRefillTask != null) materialRefillTask.cancel();
         materialRefillTask = null;
@@ -157,7 +157,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         seatByTeam.clear();
         baseCache.clear();
         currentGolden = null;
-        goldenArmedAt.clear();
+        goldenConfirmation.clear();
+        goldenBlueprintScheduler = null;
     }
 
     /** Restores only this Build Mart map, preserving other map regions in the shared physical world. */
@@ -279,9 +280,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     }
 
     private void beginGameProgress() {
-        goldenBlueprintScheduler = new GoldenBlueprintScheduler(plugin,
+        goldenBlueprintScheduler = new GoldenBlueprintScheduler(getGameConfig().getTimer(),
                 getGameConfig().getGoldenRefreshSeconds(), this::rotateGoldenBlueprint);
-        goldenBlueprintScheduler.start();
         refillMaterialZones();
         if (materialRefillTask != null) materialRefillTask.cancel();
         materialRefillTask = scheduler.runTaskTimer(plugin, this::refillMaterialZones, 2400L, 2400L);
@@ -289,6 +289,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         windVentTask = scheduler.runTaskTimer(plugin, this::applyWindVent, 1L, 1L);
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
+            goldenBlueprintScheduler.tick(seconds);
             updateGameTimerBossBar(bossBarTitle(), timer, getGameConfig().getTimer());
         }, this::endGame);
     }
@@ -463,7 +464,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     public int goldenSecondsRemaining() {
         int period = Math.max(1, getGameConfig().getGoldenRefreshSeconds());
         int elapsed = Math.max(0, getGameConfig().getTimer() - timer);
-        return period - (elapsed % period);
+        return Math.max(0, Math.min(timer, period - (elapsed % period)));
     }
 
     /**
@@ -499,26 +500,28 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         return false;
     }
 
-    /**
-     * Handles a submit-button click routed by the handler: normal plots submit on the first click; the
-     * golden plot needs a second confirming click within {@link #GOLDEN_CONFIRM_WINDOW_MILLIS} (the first
-     * click just arms and prompts).
-     */
+    /** Normal plots submit immediately; golden confirmation is tied to the current order. */
     public void handleSubmitClick(Player player, String slotId) {
-        if (slotId.equals("G")) {
-            UUID id = player.getUniqueId();
-            Long armedAt = goldenArmedAt.get(id);
-            long now = System.currentTimeMillis();
-            if (armedAt != null && now - armedAt < GOLDEN_CONFIRM_WINDOW_MILLIS) {
-                goldenArmedAt.remove(id);
-                submitSlot(player, "G");
-            } else {
-                goldenArmedAt.put(id, now);
-                playerManager.getPlayer(id).sendMessage(MessageConfig.BUILD_MART_GOLDEN_SUBMIT_CONFIRM);
-            }
-        } else {
-            submitSlot(player, slotId);
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || player == null || slotId == null
+                || notAreaPlayer(player)) return;
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        TeamBuildState state = teamStates.get(team);
+        if (state == null) return;
+        if (timer <= 10) {
+            goldenConfirmation.remove(player.getUniqueId());
+            playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_SUBMIT_LOCKED);
+            return;
         }
+        if (slotId.equals("G")) {
+            BuildSlot slot = state.getGoldenSlot();
+            if (slot.getBlueprint() == null || slot.getBuildAnchor() == null) return;
+            if (!goldenConfirmation.confirm(player.getUniqueId(), team, slot, goldenGeneration,
+                    System.nanoTime() / 1_000_000)) {
+                playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_GOLDEN_SUBMIT_CONFIRM);
+                return;
+            }
+        }
+        submitSlot(player, slotId);
     }
 
     /** Whether {@code a} and {@code b} are the same block (same world + block coords). */
@@ -629,7 +632,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         BuildMartBlueprint blueprint = slot.getBlueprint();
         if (blueprint == null || slot.getBuildAnchor() == null) return;
 
-        int matched = blueprint.countMatching(ReferenceBuilder.buildOrigin(slot.getBuildAnchor()));
+        BuildMartBlueprint.Comparison comparison = blueprint.compare(ReferenceBuilder.buildOrigin(slot.getBuildAnchor()));
+        int matched = comparison.matched();
         if (matched >= blueprint.blockCount()) {
             if (golden) {
                 completeGoldenBuild(team, state, slot, blueprint);
@@ -646,6 +650,11 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                     .replace("%blueprint%", blueprint.getDisplayName())
                     .replace("%matched%", String.valueOf(matched))
                     .replace("%total%", String.valueOf(blueprint.blockCount())));
+            playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_SUBMIT_DIFFERENCES
+                    .replace("%missing%", String.valueOf(comparison.missing()))
+                    .replace("%material%", String.valueOf(comparison.wrongMaterial()))
+                    .replace("%state%", String.valueOf(comparison.wrongState()))
+                    .replace("%positions%", String.join("、", comparison.positions())));
         }
     }
 
@@ -681,6 +690,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     private void rotateGoldenBlueprint(boolean announce) {
         if (announce && getGameStageEnum() != GameStageEnum.PROGRESS) return;
+        goldenConfirmation.clear();
+        goldenGeneration++;
         expireCurrentGolden();
 
         BuildMartBlueprint next = plugin.getGameManager().getBuildMartManager().getOrderPool().randomGolden();
@@ -770,13 +781,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         // Normal-plot reference builds.
         for (TeamBuildState state : teamStates.values()) {
             for (BuildSlot slot : state.getNormalSlots()) {
-                if (matchesFootprint(slot.getBlueprint(), slot.getReferenceAnchor(), world, worldX, worldY, worldZ)) {
+                if (matchesReferenceArea(slot.getReferenceAnchor(), world, worldX, worldY, worldZ)) {
                     return true;
                 }
             }
         }
         // The shared golden display build (golden has no per-base reference, only the hub display).
-        return matchesFootprint(currentGolden, getGameConfig().getGoldenDisplayPoint(), world, worldX, worldY, worldZ);
+        return matchesReferenceArea(getGameConfig().getGoldenDisplayPoint(), world, worldX, worldY, worldZ);
     }
 
     /** True when the block lies inside one of the specified team's four fixed 7x7x7 build volumes. */
@@ -791,7 +802,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     /** True when the block lies inside any configured material refill cuboid. */
     public boolean isMaterialZoneBlock(World world, int worldX, int worldY, int worldZ) {
-        if (world == null) return false;
+        if (world == null || !world.getName().equals(getWorldName())) return false;
         for (BuildMartMaterialZone zone : getGameConfig().getMaterialZones()) {
             if (worldX >= zone.minX() && worldX <= zone.maxX()
                     && worldY >= zone.minY() && worldY <= zone.maxY()
@@ -802,9 +813,36 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         return false;
     }
 
-    private static boolean matchesFootprint(BuildMartBlueprint blueprint, Location anchor, World world, int x, int y, int z) {
-        if (blueprint == null || anchor == null || anchor.getWorld() == null || !anchor.getWorld().equals(world)) return false;
-        return ReferenceBuilder.isFootprintBlock(blueprint, anchor, x, y, z);
+    private static boolean matchesReferenceArea(Location anchor, World world, int x, int y, int z) {
+        return anchor != null && (ReferenceBuilder.isBuildAreaBlock(anchor, world, x, y, z)
+                || y == anchor.getBlockY() && ReferenceBuilder.isBuildAreaBlock(anchor, world, x, y + 1, z));
+    }
+
+    /** Natural movement may stay within one plot/material cuboid, never cross into another zone. */
+    public boolean allowsBlockTransfer(org.bukkit.block.Block from, org.bukkit.block.Block to) {
+        if (!from.getWorld().equals(to.getWorld())) return false;
+        for (TeamBuildState state : teamStates.values()) {
+            for (BuildSlot slot : state.getNormalSlots()) {
+                if (sameBuildVolume(slot.getBuildAnchor(), from, to)) return true;
+            }
+            if (sameBuildVolume(state.getGoldenSlot().getBuildAnchor(), from, to)) return true;
+        }
+        if (!from.getWorld().getName().equals(getWorldName())) return false;
+        for (BuildMartMaterialZone zone : getGameConfig().getMaterialZones()) {
+            if (inMaterialVolume(zone, from) && inMaterialVolume(zone, to)) return true;
+        }
+        return false;
+    }
+
+    private static boolean sameBuildVolume(Location anchor, org.bukkit.block.Block from, org.bukkit.block.Block to) {
+        return matchesBuildArea(anchor, from.getWorld(), from.getX(), from.getY(), from.getZ())
+                && matchesBuildArea(anchor, to.getWorld(), to.getX(), to.getY(), to.getZ());
+    }
+
+    private static boolean inMaterialVolume(BuildMartMaterialZone zone, org.bukkit.block.Block block) {
+        return block.getX() >= zone.minX() && block.getX() <= zone.maxX()
+                && block.getY() >= zone.minY() && block.getY() <= zone.maxY()
+                && block.getZ() >= zone.minZ() && block.getZ() <= zone.maxZ();
     }
 
     private static boolean matchesBuildArea(Location anchor, World world, int worldX, int worldY, int worldZ) {
@@ -859,9 +897,10 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             BuildMartBase base = seat == null ? null : baseCache.get(seat);
             Location target = base != null && base.getPortalPoint() != null ? base.getPortalPoint() : hub;
             if (target == null) target = getSpectatorSpawnLocation();
+            int playerIndex = 0;
             for (Player player : team.getOnlinePlayers()) {
                 if (gamePlayers.contains(player.getUniqueId())) {
-                    player.teleport(target);
+                    player.teleport(Utils.getCollisionSafeTeleportLocation(target, playerIndex++));
                 }
             }
         }
@@ -892,7 +931,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
         if (startGameProgressTask != null)
@@ -903,8 +942,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         if (windVentTask != null)
             windVentTask.cancel();
         windVentTask = null;
-        if (goldenBlueprintScheduler != null)
-            goldenBlueprintScheduler.stop();
+        goldenBlueprintScheduler = null;
+        goldenConfirmation.clear();
 
         getGameHandler().clearCooldowns();
         disableFlightForAllGamePlayers();
@@ -963,6 +1002,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
+        goldenConfirmation.remove(event.getPlayer().getUniqueId());
     }
 
     @Override

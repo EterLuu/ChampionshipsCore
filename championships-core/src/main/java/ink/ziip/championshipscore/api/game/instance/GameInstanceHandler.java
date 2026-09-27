@@ -121,6 +121,12 @@ public class GameInstanceHandler extends BaseListener {
             return;
         }
         if (isCountdownMovementFrozen(player)
+                && baseArea.getGameTypeEnum() == ink.ziip.championshipscore.api.object.game.GameTypeEnum.Bingo) {
+            ink.ziip.championshipscore.platform.bukkit.bingo.BingoCountdownMovement.constrain(event);
+            return;
+        }
+        if (isCountdownMovementFrozen(player)
+                && event.getTo() != null
                 && (event.getFrom().getX() != event.getTo().getX()
                 || event.getFrom().getY() != event.getTo().getY()
                 || event.getFrom().getZ() != event.getTo().getZ())) {

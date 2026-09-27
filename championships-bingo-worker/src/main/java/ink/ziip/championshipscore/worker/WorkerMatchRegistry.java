@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.worker;
 
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
@@ -205,8 +206,19 @@ final class WorkerMatchRegistry {
         }
         String reason = "admin-stop:" + sender.getName();
         plugin.getLogger().info("Admin match stop requested by " + sender.getName() + " (" + reason + ")");
-        session.finish(reason);
-        sendConfiguredMessage(sender, "worker.admin.stop.started");
+        WorkerAdminStop.request(task -> scheduler.runGlobal(task), session::state,
+                () -> session.finish(reason), () -> session.abort(reason))
+                .whenComplete((stopped, failure) -> {
+                    if (failure != null) {
+                        plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                                "Admin match stop failed: " + reason, failure);
+                        return;
+                    }
+                    Runnable feedback = () -> sendConfiguredMessage(sender, Boolean.TRUE.equals(stopped)
+                            ? "worker.admin.stop.started" : "worker.admin.stop.no-active-match");
+                    if (sender instanceof Player player) scheduler.runEntity(player, feedback);
+                    else scheduler.runGlobal(feedback);
+                });
     }
 
     private static Set<UUID> parsePlayers(String value) {
@@ -265,12 +277,12 @@ final class WorkerMatchRegistry {
         if (session != null) session.recordEventCount(player, bucket);
     }
 
-    void recordBoatMovement(Player player, double centimeters) {
+    void recordRidingMovement(Player player, org.bukkit.Statistic statistic, double centimeters, BingoRidingTravel.Source source) {
         WorkerMatchSession session;
         synchronized (this) {
             session = active;
         }
-        if (session != null) session.recordBoatMovement(player, centimeters);
+        if (session != null) session.recordRidingMovement(player, statistic, centimeters, source);
     }
 
     Location respawnLocation(Player player) {
@@ -353,6 +365,8 @@ final class WorkerMatchRegistry {
     synchronized boolean canPickupSpectatorCard(UUID playerId) {
         return active != null && active.canPickupSpectatorCard(playerId);
     }
+
+    synchronized boolean isSpectator(UUID playerId) { return active != null && active.isSpectator(playerId); }
 
     synchronized boolean canUseBingoUi(UUID playerId) {
         return active != null && active.canUseBingoUi(playerId);

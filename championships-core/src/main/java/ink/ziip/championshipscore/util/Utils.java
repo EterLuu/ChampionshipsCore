@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.util;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -27,6 +28,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
     private Utils() {
+    }
+
+    public static String dailyMessage(String message) {
+        return MessageConfig.DAILY_PREFIXED.replace("%message%", message)
+                .replace("%prefix%", MessageConfig.DAILY_PREFIX);
     }
 
     /** Translates the preferred {@code &#RRGGBB} syntax and the legacy {@code #RRGGBB} syntax. */
@@ -156,6 +162,35 @@ public class Utils {
                 return candidate;
         }
         return lobby;
+    }
+
+    /**
+     * Returns a deterministic nearby slot for a batch teleport. A shared target is still used as the
+     * anchor, but each player receives a separate square-spiral slot so Bukkit's entity collision
+     * resolution cannot launch a group that was teleported on top of itself.
+     */
+    public static Location getCollisionSafeTeleportLocation(@NotNull Location anchor, int index) {
+        Location result = anchor.clone();
+        if (index <= 0) return result;
+
+        int remaining = index - 1;
+        int ring = 1;
+        while (remaining >= ring * 8) {
+            remaining -= ring * 8;
+            ring++;
+        }
+        int side = remaining / (ring * 2);
+        int offset = remaining % (ring * 2);
+        int x;
+        int z;
+        switch (side) {
+            case 0 -> { x = -ring + offset; z = -ring; }
+            case 1 -> { x = ring; z = -ring + offset; }
+            case 2 -> { x = ring - offset; z = ring; }
+            default -> { x = -ring; z = ring - offset; }
+        }
+        result.add(x * 1.25D, 0D, z * 1.25D);
+        return result;
     }
 
     /** Solid ground with passable feet and head space, so a scattered player neither falls nor suffocates. */

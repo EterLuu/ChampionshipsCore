@@ -106,6 +106,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         handler.unRegister();
         scheduleManager.clearRoundPreparationCountdown();
         plugin.getGameManager().releaseEventSpectatorsForGame(gameTypeEnum);
+        plugin.getGameManager().releaseRoundTransitionHolds(gameTypeEnum);
     }
 
     public void nextRound() {

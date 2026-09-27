@@ -30,7 +30,7 @@ public class BlueprintBlock {
         if (raw == null) return null;
         int eq = raw.indexOf('=');
         if (eq <= 0 || eq == raw.length() - 1) return null;
-        String[] coords = raw.substring(0, eq).split(",");
+        String[] coords = raw.substring(0, eq).split(",", -1);
         if (coords.length != 3) return null;
         try {
             int x = Integer.parseInt(coords[0].trim());

@@ -21,13 +21,21 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 11;
+        return 14;
     }
 
     /** Version 3 onward uses full visual-refresh templates rather than merging individual old panels. */
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) throws IOException {
-        super.loadFromOutdatedConfiguration(new YamlConfiguration());
+        if (outdatedConfiguration.getInt("dont-edit-this.version") >= 12) {
+            if (outdatedConfiguration.getInt("dont-edit-this.version") == 12) {
+                outdatedConfiguration.set("riptide-rush", null);
+                outdatedConfiguration.set("riptide-rush-points", null);
+            }
+            super.loadFromOutdatedConfiguration(outdatedConfiguration);
+        } else {
+            super.loadFromOutdatedConfiguration(new YamlConfiguration());
+        }
     }
 
     @ConfigOption(path = "parkour-tag")
@@ -104,5 +112,13 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "next-round-soon")
     public static List<String> NEXT_ROUND_SOON;
+
+    @ConfigOption(path = "riptide-rush")
+    public static List<String> RIPTIDE_RUSH;
+    @ConfigOption(path = "frostbite") public static List<String> FROSTBITE;
+    @ConfigOption(path = "frostbite-points") public static List<String> FROSTBITE_POINTS;
+
+    @ConfigOption(path = "riptide-rush-points")
+    public static List<String> RIPTIDE_RUSH_POINTS;
 
 }

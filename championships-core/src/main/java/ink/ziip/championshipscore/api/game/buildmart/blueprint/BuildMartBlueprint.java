@@ -6,7 +6,6 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -14,11 +13,17 @@ import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Fence;
 import org.bukkit.block.data.type.Gate;
+import org.bukkit.block.data.type.Leaves;
 import org.bukkit.block.data.type.TrapDoor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Function;
+import org.bukkit.configuration.InvalidConfigurationException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,12 +39,16 @@ public class BuildMartBlueprint {
     private final String displayName;
     private final int stars;
     private final List<BlueprintBlock> blocks;
+    @Getter(lombok.AccessLevel.NONE)
+    private final List<BlockData> comparisonStates;
 
     public BuildMartBlueprint(String id, String displayName, int stars, List<BlueprintBlock> blocks) {
         this.id = id;
         this.displayName = displayName;
         this.stars = stars;
+        validateBlocks(blocks);
         this.blocks = List.copyOf(blocks);
+        this.comparisonStates = blocks.stream().map(b -> normalized(b.getBlockData())).toList();
     }
 
     public int blockCount() {
@@ -48,29 +57,34 @@ public class BuildMartBlueprint {
 
     /**
      * Counts how many of this blueprint's blocks are already correctly placed at {@code anchor} (the
-     * build-zone origin). Matching uses {@link #blockMatches(BlockData, BlockData, boolean)}: strict on
-     * {@link BlockData} except for a few visual-equivalence relaxations (trapdoors, fence gates, and
-     * covered-above grass/dirt or nylium/netherrack swaps). Extra blocks the player placed elsewhere are
-     * ignored.
+     * build-zone origin). Matching uses {@link #blockMatches(BlockData, BlockData)} with the
+     * visual-equivalence rules below. Grass, dirt, nylium and netherrack remain distinct materials,
+     * regardless of neighbouring blocks. Extra blocks the player placed elsewhere are ignored.
      */
     public int countMatching(Location anchor) {
+        return compare(anchor).matched();
+    }
+
+    public record Comparison(int matched, int missing, int wrongMaterial, int wrongState,
+                             List<String> positions) {}
+
+    /** One authoritative world scan; examples use zero-based blueprint coordinates above the floor. */
+    public Comparison compare(Location anchor) {
         World world = anchor.getWorld();
-        if (world == null) return 0;
-        int baseX = anchor.getBlockX();
-        int baseY = anchor.getBlockY();
-        int baseZ = anchor.getBlockZ();
-        int matched = 0;
-        for (BlueprintBlock b : blocks) {
-            int x = baseX + b.getX();
-            int y = baseY + b.getY();
-            int z = baseZ + b.getZ();
-            Block block = world.getBlockAt(x, y, z);
-            boolean covered = world.getBlockAt(x, y + 1, z).getType().isOccluding();
-            if (blockMatches(b.getBlockData(), block.getBlockData(), covered)) {
-                matched++;
-            }
+        int matched = 0, missing = 0, wrongMaterial = 0, wrongState = 0;
+        List<String> positions = new ArrayList<>(3);
+        for (int i = 0; i < blocks.size(); i++) {
+            BlueprintBlock b = blocks.get(i);
+            BlockData placed = world == null ? null : normalized(world.getBlockAt(
+                    anchor.getBlockX() + b.getX(), anchor.getBlockY() + b.getY(), anchor.getBlockZ() + b.getZ()).getBlockData());
+            BlockData reference = comparisonStates.get(i);
+            if (placed == null || isAir(placed)) missing++;
+            else if (reference.getMaterial() != placed.getMaterial()) wrongMaterial++;
+            else if (!normalizedMatches(reference, placed)) wrongState++;
+            else { matched++; continue; }
+            if (positions.size() < 3) positions.add("(" + b.getX() + "," + b.getY() + "," + b.getZ() + ")");
         }
-        return matched;
+        return new Comparison(matched, missing, wrongMaterial, wrongState, List.copyOf(positions));
     }
 
     /**
@@ -85,26 +99,20 @@ public class BuildMartBlueprint {
      *       strict.</li>
      *   <li>Fence gate: 180°-symmetric, so {@code facing} is axis-only ({@code N≡S, E≡W}) in any state;
      *       {@code in_wall}, {@code open} and {@code powered} stay strict.</li>
-     *   <li>Covered ({@code covered=true}, i.e. an occluding block sits above): grass block ↔ dirt, and
-     *       warped/crimson nylium ↔ netherrack, are interchangeable (the occluded top face is the only
-     *       difference; these blocks are stateless). The two nylium colours are not interchangeable.</li>
      *   <li>Ageable blocks ignore their current growth age. All their other block-data properties still
      *       have to match.</li>
      *   <li>Waxed and unwaxed forms of the same copper block are equivalent; oxidation stage and all other
      *       block-data properties remain strict.</li>
      * </ul>
+     * Leaf distance to logs is ignored; leaf species, persistence and waterlogging stay strict.
      * Doors are intentionally left strict.
      */
-    static boolean blockMatches(BlockData reference, BlockData placed, boolean covered) {
-        if (covered && isCoveredSubstitution(reference.getMaterial(), placed.getMaterial())) {
-            return true;
-        }
-        reference = BuildMartCopperPolicy.withoutWax(reference);
-        placed = BuildMartCopperPolicy.withoutWax(placed);
-        if (reference instanceof Ageable && placed instanceof Ageable) {
-            reference = withoutAge(reference);
-            placed = withoutAge(placed);
-        }
+    static boolean blockMatches(BlockData reference, BlockData placed) {
+        return normalizedMatches(normalized(reference), normalized(placed));
+    }
+
+    private static boolean normalizedMatches(BlockData reference, BlockData placed) {
+        if (reference.getMaterial() != placed.getMaterial()) return false;
         if (reference instanceof Fence refFence && placed instanceof Fence placedFence) {
             return reference.getMaterial() == placed.getMaterial()
                     && refFence.isWaterlogged() == placedFence.isWaterlogged();
@@ -132,27 +140,21 @@ public class BuildMartBlueprint {
         return reference.matches(placed);
     }
 
-    /** Returns a detached copy whose growth age is normalised while preserving every other property. */
-    private static BlockData withoutAge(BlockData data) {
-        Ageable copy = (Ageable) data.clone();
-        copy.setAge(0);
-        return copy;
-    }
-
-    /**
-     * Whether {@code reference} and {@code placed} are an allowed covered-above substitution (grass block
-     * ↔ dirt; warped/crimson nylium ↔ netherrack). Same-material pairs return false (handled by the exact
-     * match), and warped ↔ crimson is rejected (different colours).
-     */
-    private static boolean isCoveredSubstitution(Material reference, Material placed) {
-        return isMaterialPair(reference, placed, Material.GRASS_BLOCK, Material.DIRT)
-                || isMaterialPair(reference, placed, Material.WARPED_NYLIUM, Material.NETHERRACK)
-                || isMaterialPair(reference, placed, Material.CRIMSON_NYLIUM, Material.NETHERRACK);
-    }
-
-    /** Whether {@code a} and {@code b} are exactly {x, y} in either order. */
-    private static boolean isMaterialPair(Material a, Material b, Material x, Material y) {
-        return (a == x && b == y) || (a == y && b == x);
+    private static BlockData normalized(BlockData data) {
+        data = BuildMartCopperPolicy.withoutWax(data);
+        if (data instanceof Ageable ageable && ageable.getAge() != 0) {
+            Ageable copy = (Ageable) data.clone();
+            copy.setAge(0);
+            data = copy;
+        }
+        // Leaf distance is computed from surrounding logs and has no visual effect.
+        // Persistent, waterlogged and species remain strict.
+        if (data instanceof Leaves leaves && leaves.getDistance() != 7) {
+            Leaves copy = (Leaves) data.clone();
+            copy.setDistance(7);
+            data = copy;
+        }
+        return data;
     }
 
     /** Whether two horizontal facings share an axis (N≡S, E≡W). */
@@ -178,20 +180,54 @@ public class BuildMartBlueprint {
         String id = file.getName().toLowerCase().endsWith(".yml")
                 ? file.getName().substring(0, file.getName().length() - 4)
                 : file.getName();
-        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
-        String displayName = yaml.getString("name", id);
-        int stars = yaml.getInt("stars", 1);
-        List<BlueprintBlock> blocks = new ArrayList<>();
-        for (String raw : yaml.getStringList("blocks")) {
-            BlueprintBlock block = BlueprintBlock.parse(raw);
-            if (block != null) blocks.add(block);
-        }
-        if (blocks.isEmpty()) {
+        try {
+            YamlConfiguration yaml = new YamlConfiguration();
+            yaml.load(file);
+            return fromYaml(id, yaml, BlueprintBlock::parse);
+        } catch (IOException | InvalidConfigurationException | IllegalArgumentException exception) {
             plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "加载", "蓝图",
-                    "蓝图=" + id + " 没有有效方块，已跳过"));
+                    "文件=" + file.getName() + " 已整张拒绝: " + exception.getMessage()));
             return null;
         }
-        return new BuildMartBlueprint(id, displayName, stars, blocks);
     }
 
+    static BuildMartBlueprint fromYaml(String id, YamlConfiguration yaml, Function<String, BlueprintBlock> parser) {
+        Object rawBlocks = yaml.get("blocks");
+        if (!(rawBlocks instanceof List<?> rows) || rows.isEmpty())
+            throw new IllegalArgumentException("blocks 必须为非空列表");
+        if (yaml.contains("name") && !yaml.isString("name"))
+            throw new IllegalArgumentException("name 必须为文本");
+        if (yaml.contains("stars") && !yaml.isInt("stars"))
+            throw new IllegalArgumentException("stars 必须为整数");
+        List<BlueprintBlock> blocks = new ArrayList<>();
+        for (int index = 0; index < rows.size(); index++) {
+            Object raw = rows.get(index);
+            BlueprintBlock block = raw instanceof String text ? parser.apply(text) : null;
+            if (block == null) throw new IllegalArgumentException("blocks 第 " + (index + 1) + " 项格式/方块状态无效");
+            blocks.add(block);
+        }
+        return new BuildMartBlueprint(id, yaml.getString("name", id), yaml.getInt("stars", 1), blocks);
+    }
+
+    private static boolean isAir(BlockData data) {
+        return switch (data.getMaterial()) {
+            case AIR, CAVE_AIR, VOID_AIR -> true;
+            default -> false;
+        };
+    }
+
+    private static void validateBlocks(List<BlueprintBlock> blocks) {
+        if (blocks.isEmpty()) throw new IllegalArgumentException("blocks 不能为空");
+        Set<Integer> occupied = new HashSet<>();
+        for (int index = 0; index < blocks.size(); index++) {
+            BlueprintBlock b = blocks.get(index);
+            String prefix = "blocks 第 " + (index + 1) + " 项";
+            if (b == null || b.getBlockData() == null || isAir(b.getBlockData()))
+                throw new IllegalArgumentException(prefix + "为空气或无效方块");
+            if (b.getX() < 0 || b.getX() > 6 || b.getY() < 0 || b.getY() > 6 || b.getZ() < 0 || b.getZ() > 6)
+                throw new IllegalArgumentException(prefix + "坐标越界，必须为 0–6");
+            if (!occupied.add(b.getX() * 49 + b.getY() * 7 + b.getZ()))
+                throw new IllegalArgumentException(prefix + "坐标重复");
+        }
+    }
 }

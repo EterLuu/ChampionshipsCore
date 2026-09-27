@@ -48,6 +48,10 @@ public class SchedulePlaceholder extends BasePlaceholder {
         if (params.startsWith("round_hotycodydusky")) {
             return String.valueOf(scheduleManager.getHotyCodyDuskyScheduleManager().getSubRound());
         }
+        if (params.startsWith("round_riptiderush") || params.startsWith("round_raftsurvival")) {
+            return String.valueOf(scheduleManager.getRiptideRushScheduleManager().getSubRound());
+        }
+        if (params.equals("round_frostbite")) return String.valueOf(scheduleManager.getFrostbiteScheduleManager().getSubRound());
         if (params.startsWith("round_points")) {
             return String.valueOf(plugin.getRankManager().getPointMultiple(plugin.getRankManager().getRound() + 1));
         }

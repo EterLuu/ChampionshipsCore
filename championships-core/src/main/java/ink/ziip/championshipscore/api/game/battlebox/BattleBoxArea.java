@@ -178,8 +178,8 @@ public class BattleBoxArea extends BasePairedGameInstance {
 
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
         if (match != null) {
-            match.getRight().teleportAllPlayers(match.getRightSpawn());
-            match.getLeft().teleportAllPlayers(match.getLeftSpawn());
+            teleportTeamToSpawn(match.getRight(), match.getRightSpawn());
+            teleportTeamToSpawn(match.getLeft(), match.getLeftSpawn());
         }
         changeGameModelForAllGamePlayers(GameMode.SURVIVAL);
 
@@ -190,6 +190,13 @@ public class BattleBoxArea extends BasePairedGameInstance {
         startFinalCountdown(MessageConfig.BATTLE_BOX_GAME_START_SOON_TITLE,
                 MessageConfig.BATTLE_BOX_GAME_START_TITLE, MessageConfig.BATTLE_BOX_GAME_START_SUBTITLE,
                 this::beginGameProgress);
+    }
+
+    private void teleportTeamToSpawn(@Nullable ChampionshipTeam team, @Nullable Location spawn) {
+        if (team == null || spawn == null) return;
+        List<Player> players = team.getOnlinePlayers();
+        for (int index = 0; index < players.size(); index++)
+            players.get(index).teleport(Utils.getCollisionSafeTeleportLocation(spawn, index));
     }
 
     private void beginGameProgress() {
@@ -233,7 +240,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
 
     @Override
     public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
         if (startGameProgressTask != null)
@@ -288,9 +295,9 @@ public class BattleBoxArea extends BasePairedGameInstance {
 
         String points = MessageConfig.BATTLE_BOX_SHOW_POINTS
                 .replace("%team%", right.getColoredName())
-                .replace("%team_points%", String.valueOf(getTeamPoints(right)))
+                .replace("%team_points%", Utils.formatPoints(getTeamPoints(right)))
                 .replace("%rival%", left.getColoredName())
-                .replace("%rival_points%", String.valueOf(getTeamPoints(left)));
+                .replace("%rival_points%", Utils.formatPoints(getTeamPoints(left)));
         messageMatch(match, points);
     }
 

@@ -29,6 +29,8 @@ import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
+import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushManager;
+import ink.ziip.championshipscore.api.game.frostbite.FrostbiteManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
@@ -108,6 +110,10 @@ public class GameManager extends BaseManager {
     private final DodgeboltManager dodgeboltManager;
     @Getter
     private final AceRaceManager aceRaceManager;
+    @Getter
+    private final RiptideRushManager riptideRushManager;
+    @Getter
+    private final FrostbiteManager frostbiteManager;
     /**
      * Registry mapping each game type to its area manager. Drives the generic
      * {@code join*} dispatch so adding a game only requires registering it here.
@@ -138,6 +144,8 @@ public class GameManager extends BaseManager {
         buildMartManager = new BuildMartManager(plugin);
         dodgeboltManager = new DodgeboltManager(plugin);
         aceRaceManager = new AceRaceManager(plugin);
+        riptideRushManager = new RiptideRushManager(plugin);
+        frostbiteManager = new FrostbiteManager(plugin);
 
         areaManagers.put(GameTypeEnum.Bingo, bingoManager);
         areaManagers.put(GameTypeEnum.BuildMart, buildMartManager);
@@ -152,6 +160,8 @@ public class GameManager extends BaseManager {
         areaManagers.put(GameTypeEnum.HotyCodyDusky, hotyCodyDuskyManager);
         areaManagers.put(GameTypeEnum.Dodgebolt, dodgeboltManager);
         areaManagers.put(GameTypeEnum.AceRace, aceRaceManager);
+        areaManagers.put(GameTypeEnum.RiptideRush, riptideRushManager);
+        areaManagers.put(GameTypeEnum.FrostbiteFrenzy, frostbiteManager);
 
         bingoExecutionRouter = new BingoExecutionRouter(new LocalBingoExecutionGateway(this::startLocalBingo,
                 ignored -> forceEndLocalAreas(GameTypeEnum.Bingo)));
@@ -1331,6 +1341,17 @@ public class GameManager extends BaseManager {
 
     public boolean isWaitingForNextRound(@NotNull UUID uuid) {
         return roundTransitionHolds.containsKey(uuid);
+    }
+
+    /** Releases round reservations when a schedule stops or its next arena fails to start. */
+    public void releaseRoundTransitionHolds(@NotNull GameTypeEnum game) {
+        for (var entry : List.copyOf(roundTransitionHolds.entrySet())) {
+            RoundTransitionHold hold = entry.getValue();
+            if (hold.instance().getGameTypeEnum() != game) continue;
+            if (!roundTransitionHolds.remove(entry.getKey(), hold)) continue;
+            Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
+            if (player != null) hold.instance().sanitizeParticipantForLobby(player, true);
+        }
     }
 
     /** Restores a reconnected participant's waiting state without moving them. */

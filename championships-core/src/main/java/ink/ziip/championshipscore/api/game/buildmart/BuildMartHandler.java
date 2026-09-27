@@ -18,6 +18,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.*;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
+import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -44,6 +50,10 @@ public class BuildMartHandler extends BaseListener {
 
     protected BuildMartHandler(ChampionshipsCore plugin) {
         super(plugin);
+    }
+
+    protected ChampionshipTeam teamOf(Player player) {
+        return plugin.getTeamManager().getTeamByPlayer(player);
     }
 
     private boolean running() {
@@ -140,14 +150,14 @@ public class BuildMartHandler extends BaseListener {
     private boolean isBuildMartPortal(Player player, Location from) {
         if (from == null || from.getBlock().getType() != Material.NETHER_PORTAL) return false;
         BuildMartConfig config = buildMartArea.getGameConfig();
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam team = teamOf(player);
         Integer seat = team == null ? null : buildMartArea.seatOf(team);
         return config.isInHub(from) || seat != null && config.isInBase(from, seat);
     }
 
     private void routePortal(Player player, Location from) {
         BuildMartConfig config = buildMartArea.getGameConfig();
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam team = teamOf(player);
         Integer seat = team == null ? null : buildMartArea.seatOf(team);
         BuildMartBase base = seat == null ? null : buildMartArea.cachedBaseForSeat(seat);
         if (base == null || onCooldown(player)) return;
@@ -207,12 +217,12 @@ public class BuildMartHandler extends BaseListener {
         if (clicked == null) return;
         Player player = event.getPlayer();
         if (buildMartArea.notAreaPlayer(player)) return;
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam team = teamOf(player);
         if (team == null) return;
         String slotId = buildMartArea.submitSlotIdAt(team, clicked.getLocation());
         if (slotId == null) return;
         event.setCancelled(true);
-        buildMartArea.handleSubmitClick(player, slotId);
+        if (event.getHand() == EquipmentSlot.HAND) buildMartArea.handleSubmitClick(player, slotId);
     }
 
     /** Allows work blocks in a team's base while restricting structural controls outside build volumes. */
@@ -224,7 +234,7 @@ public class BuildMartHandler extends BaseListener {
         if (buildMartArea.notAreaPlayer(player)) return;
         Block clicked = event.getClickedBlock();
         if (clicked == null || !isAnyTeamBase(clicked.getLocation())) return;
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam team = teamOf(player);
         if (team == null || !isOwnTeamBase(team, clicked.getLocation())) {
             denyInteraction(event);
             return;
@@ -272,12 +282,17 @@ public class BuildMartHandler extends BaseListener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent event) {
+        if (protectedReference(event.getBlock()) || event instanceof BlockMultiPlaceEvent multi
+                && multi.getReplacedBlockStates().stream().anyMatch(state -> protectedReference(state.getBlock()))) {
+            event.setCancelled(true);
+            return;
+        }
         if (!running()) return;
         Player player = event.getPlayer();
         if (buildMartArea.notAreaPlayer(player)) return;
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (team == null || !buildMartArea.isBuildZoneBlock(team, event.getBlock().getWorld(),
-                event.getBlock().getX(), event.getBlock().getY(), event.getBlock().getZ())) {
+        ChampionshipTeam team = teamOf(player);
+        if (!canBuild(team, event.getBlock()) || event instanceof BlockMultiPlaceEvent multi
+                && multi.getReplacedBlockStates().stream().anyMatch(state -> !canBuild(team, state.getBlock()))) {
             event.setCancelled(true);
         }
     }
@@ -288,6 +303,7 @@ public class BuildMartHandler extends BaseListener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
+        if (protectedReference(event.getBlock())) { event.setCancelled(true); return; }
         if (!running()) return;
         Player player = event.getPlayer();
         if (buildMartArea.notAreaPlayer(player)) return;
@@ -300,7 +316,7 @@ public class BuildMartHandler extends BaseListener {
             event.setCancelled(true);
             return;
         }
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        ChampionshipTeam team = teamOf(player);
         if (!buildMartArea.isMaterialZoneBlock(block.getWorld(), block.getX(), block.getY(), block.getZ())
                 && (team == null || !buildMartArea.isBuildZoneBlock(team, block.getWorld(), block.getX(), block.getY(), block.getZ()))) {
             event.setCancelled(true);
@@ -314,6 +330,142 @@ public class BuildMartHandler extends BaseListener {
         for (ItemStack drop : drops) {
             player.getInventory().addItem(drop);
         }
+    }
+
+    private boolean protectionActive() {
+        return buildMartArea != null && (running()
+                || buildMartArea.getGameStageEnum() == GameStageEnum.COUNTDOWN);
+    }
+
+    private boolean protectedReference(Block block) {
+        return block != null && protectionActive() && buildMartArea.isProtectedReferenceBlock(
+                block.getWorld(), block.getX(), block.getY(), block.getZ());
+    }
+
+    private boolean inArena(Block block) {
+        return protectionActive() && !buildMartArea.notInArea(block.getLocation());
+    }
+
+    private boolean canBuild(ChampionshipTeam team, Block block) {
+        return team != null && !protectedReference(block) && buildMartArea.isBuildZoneBlock(team,
+                block.getWorld(), block.getX(), block.getY(), block.getZ());
+    }
+
+    /** Includes tools, containers, physical actions and the shared hub display, for either hand. */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onReferenceInteract(PlayerInteractEvent event) {
+        if (protectedReference(event.getClickedBlock())) denyInteraction(event);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBucketEmpty(PlayerBucketEmptyEvent event) {
+        Block target = event.getBlock();
+        if (protectedReference(target)) { event.setCancelled(true); return; }
+        if (running() && !buildMartArea.notAreaPlayer(event.getPlayer())
+                && !canBuild(teamOf(event.getPlayer()), target))
+            event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBucketFill(PlayerBucketFillEvent event) {
+        Block target = event.getBlock();
+        if (protectedReference(target)) { event.setCancelled(true); return; }
+        if (running() && !buildMartArea.notAreaPlayer(event.getPlayer())
+                && !canBuild(teamOf(event.getPlayer()), target)
+                && !buildMartArea.isMaterialZoneBlock(target.getWorld(), target.getX(), target.getY(), target.getZ()))
+            event.setCancelled(true);
+    }
+
+    private boolean deniedTransfer(Block from, Block to) {
+        return protectedReference(from) || protectedReference(to)
+                || (inArena(from) || inArena(to)) && !buildMartArea.allowsBlockTransfer(from, to);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onFluid(BlockFromToEvent event) {
+        if (deniedTransfer(event.getBlock(), event.getToBlock())) event.setCancelled(true);
+    }
+
+    private boolean deniedPiston(Block piston, org.bukkit.block.BlockFace direction, java.util.List<Block> blocks,
+                                 boolean retract) {
+        org.bukkit.block.BlockFace facing = ((org.bukkit.block.data.Directional) piston.getBlockData()).getFacing();
+        if (deniedTransfer(piston, piston.getRelative(facing))) return true;
+        if (retract) direction = facing.getOppositeFace();
+        for (Block block : blocks) {
+            if (deniedTransfer(piston, block) || deniedTransfer(block, block.getRelative(direction))) return true;
+        }
+        return false;
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        if (deniedPiston(event.getBlock(), event.getDirection(), event.getBlocks(), false)) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        if (deniedPiston(event.getBlock(), event.getDirection(), event.getBlocks(), true))
+            event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferencePhysics(BlockPhysicsEvent event) {
+        if (protectedReference(event.getBlock())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferenceGrow(BlockGrowEvent event) {
+        if (protectedReference(event.getBlock())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferenceSpread(BlockSpreadEvent event) {
+        if (deniedTransfer(event.getSource(), event.getBlock())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferenceForm(BlockFormEvent event) {
+        if (protectedReference(event.getBlock())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferenceFade(BlockFadeEvent event) {
+        if (protectedReference(event.getBlock())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferenceDecay(LeavesDecayEvent event) {
+        if (protectedReference(event.getBlock())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferenceBurn(BlockBurnEvent event) {
+        if (protectedReference(event.getBlock())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferenceIgnite(BlockIgniteEvent event) {
+        if (protectedReference(event.getBlock())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferenceEntityChange(EntityChangeBlockEvent event) {
+        if (protectedReference(event.getBlock())) event.setCancelled(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onReferenceRedstone(BlockRedstoneEvent event) {
+        if (protectedReference(event.getBlock())) event.setNewCurrent(event.getOldCurrent());
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onEntityExplosion(EntityExplodeEvent event) {
+        event.blockList().removeIf(this::protectedReference);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockExplosion(BlockExplodeEvent event) {
+        event.blockList().removeIf(this::protectedReference);
     }
 
     /** No PvP / friendly fire in Build Mart: cancel any player-on-player damage. */

@@ -29,8 +29,7 @@ public final class PlaySubCommand extends BaseSubCommand {
         if (args.length == 1 && args[0].equalsIgnoreCase("leave")) {
             if (!plugin.getDailyManager().leavePlay(player.getUniqueId()))
                 player.sendMessage(ink.ziip.championshipscore.util.Utils.translateColorCodes(
-                        ink.ziip.championshipscore.configuration.config.message.MessageConfig.DAILY_PREFIXED
-                                .replace("%message%", ink.ziip.championshipscore.configuration.config.message.MessageConfig.DAILY_NOT_IN_PLAY)));
+                        Utils.dailyMessage(ink.ziip.championshipscore.configuration.config.message.MessageConfig.DAILY_NOT_IN_PLAY)));
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("leaderboard")) {

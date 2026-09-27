@@ -8,11 +8,16 @@ import java.util.Locale;
 
 public enum GameTypeEnum {
     Bingo, ParkourTag, BattleBox, TNTRun, SnowballShowdown, SkyWars, TGTTOS, DragonEggCarnival,
-    ParkourWarrior, HotyCodyDusky, BuildMart, Dodgebolt, AceRace;
+    ParkourWarrior, HotyCodyDusky, BuildMart, Dodgebolt, AceRace, RiptideRush, FrostbiteFrenzy;
 
     /** Canonical command token shared by command parsing and tab completion. */
     public @NotNull String commandName() {
-        return this == SnowballShowdown ? "snowball" : name().toLowerCase(Locale.ROOT);
+        return switch (this) {
+            case SnowballShowdown -> "snowball";
+            case RiptideRush -> "riptide";
+            case FrostbiteFrenzy -> "frostbite";
+            default -> name().toLowerCase(Locale.ROOT);
+        };
     }
 
     /**
@@ -21,6 +26,7 @@ public enum GameTypeEnum {
      */
     public static @Nullable GameTypeEnum fromCommand(@NotNull String raw) {
         String normalized = normalize(raw);
+        if (normalized.equals("raft") || normalized.equals("raftsurvival")) return RiptideRush;
         for (GameTypeEnum game : values()) {
             if (normalize(game.commandName()).equals(normalized) || normalize(game.name()).equals(normalized))
                 return game;
@@ -48,6 +54,8 @@ public enum GameTypeEnum {
             case BuildMart -> MessageConfig.GAME_BUILD_MART;
             case Dodgebolt -> MessageConfig.GAME_DODGEBOLT;
             case AceRace -> MessageConfig.GAME_ACE_RACE;
+            case RiptideRush -> MessageConfig.GAME_RIPTIDE_RUSH;
+            case FrostbiteFrenzy -> MessageConfig.GAME_FROSTBITE;
         };
     }
 }

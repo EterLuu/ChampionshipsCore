@@ -219,7 +219,7 @@ public abstract class BaseGameInstance {
             logGame(Level.WARNING, "积分", "忽略空玩家 UUID 的积分变更=" + formatPointChange(points));
             return;
         }
-        playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0d) + points);
+        playerPoints.merge(uuid, points, Double::sum);
         logGame(Level.INFO, "积分", "玩家=" + plugin.getPlayerManager().getPlayerName(uuid)
                 + " uuid=" + uuid + " 变更=" + formatPointChange(points));
         ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(uuid);
@@ -231,7 +231,7 @@ public abstract class BaseGameInstance {
 
     public void addPlayerPointsToAllTeamMembers(ChampionshipTeam championshipTeam, int points) {
         for (UUID uuid : championshipTeam.getMembers()) {
-            playerPoints.put(uuid, playerPoints.getOrDefault(uuid, 0d) + points);
+            playerPoints.merge(uuid, (double) points, Double::sum);
             logGame(Level.INFO, "积分", "玩家=" + plugin.getPlayerManager().getPlayerName(uuid)
                     + " uuid=" + uuid + " 变更=" + formatPointChange(points));
             Player online = Bukkit.getPlayer(uuid);
@@ -268,15 +268,16 @@ public abstract class BaseGameInstance {
                         UUID.randomUUID(), playerPointEntry.getKey(), null, gameTypeEnum,
                         gameConfig.getAreaName(), "scc", playerPointEntry.getValue()));
         }
-        plugin.getRankManager().addPlayerPointsBatch(submissions).exceptionally(failure -> {
-            logGame(Level.SEVERE, "积分", "批量积分提交失败 | " + failure.getMessage());
-            return false;
+        plugin.getRankManager().addPlayerPointsBatch(submissions).whenComplete((accepted, failure) -> {
+            if (failure != null || !Boolean.TRUE.equals(accepted))
+                logGame(Level.SEVERE, "积分", "批量积分尚未确认持久化，请检查暂存重试日志 | failure="
+                        + failure + " | transactions=" + submissions);
         });
         plugin.getRankManager().refreshAfterPendingPointWrites();
     }
 
-    public int getTeamPoints(ChampionshipTeam championshipTeam) {
-        int points = 0;
+    public double getTeamPoints(ChampionshipTeam championshipTeam) {
+        double points = 0D;
         for (UUID uuid : championshipTeam.getMembers()) {
             points += playerPoints.getOrDefault(uuid, 0d);
         }
@@ -313,6 +314,9 @@ public abstract class BaseGameInstance {
         GameStageEnum previous;
         synchronized (this) {
             previous = this.gameStageEnum;
+            if (previous != gameStageEnum && !allowedStageTransition(previous, gameStageEnum)) {
+                logGame(Level.WARNING, "流程", "异常状态跳转 " + previous + " -> " + gameStageEnum);
+            }
             this.gameStageEnum = gameStageEnum;
         }
         if (plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidateAll();
@@ -320,6 +324,20 @@ public abstract class BaseGameInstance {
                 && plugin.getGameManager() != null) {
             plugin.getGameManager().onInstancePreparationStarted(this);
         }
+    }
+
+    private static boolean allowedStageTransition(GameStageEnum from, GameStageEnum to) {
+        if (from == to) return true;
+        return switch (from) {
+            case WAITING -> to == GameStageEnum.LOADING || to == GameStageEnum.PREPARATION;
+            case LOADING -> to == GameStageEnum.PREPARATION || to == GameStageEnum.END
+                    || to == GameStageEnum.WAITING;
+            case PREPARATION -> to == GameStageEnum.COUNTDOWN || to == GameStageEnum.END;
+            case COUNTDOWN -> to == GameStageEnum.PROGRESS || to == GameStageEnum.END;
+            case PROGRESS -> to == GameStageEnum.STOPPING || to == GameStageEnum.END;
+            case STOPPING -> to == GameStageEnum.COUNTDOWN || to == GameStageEnum.END;
+            case END -> to == GameStageEnum.LOADING || to == GameStageEnum.WAITING;
+        };
     }
 
     public CompletableFuture<Boolean> loadMap(World.Environment environment) {
@@ -1057,7 +1075,13 @@ public abstract class BaseGameInstance {
                 return;
 
             setGameStageEnum(GameStageEnum.PROGRESS);
-            onStart.run();
+            try {
+                onStart.run();
+            } catch (Throwable failure) {
+                logGame(Level.SEVERE, "流程", "开赛回调异常，终止并恢复场地 | " + failure.getMessage());
+                abortAndReset();
+                return;
+            }
             if (getGameStageEnum() == GameStageEnum.PROGRESS) {
                 announceGameStart(startTitle, startSubtitle);
                 playCountdownBit(BIT_C5);
@@ -1435,8 +1459,10 @@ public abstract class BaseGameInstance {
     public void cleanDroppedItems() {
         Vector pos1 = getGameConfig().getAreaPos1();
         Vector pos2 = getGameConfig().getAreaPos2();
-        World world = getSpectatorSpawnLocation().getWorld();
-        if (world != null) {
+        Location spectatorSpawn = getSpectatorSpawnLocation();
+        World world = Bukkit.getWorld(getWorldName());
+        if (world == null && spectatorSpawn != null) world = spectatorSpawn.getWorld();
+        if (world != null && pos1 != null && pos2 != null) {
             world.getNearbyEntities(new BoundingBox(
                             pos1.getX(),
                             pos1.getY(),
@@ -1453,11 +1479,15 @@ public abstract class BaseGameInstance {
     }
 
     public boolean notInArea(Location location) {
-        if (location.getWorld() != null && getSpectatorSpawnLocation().getWorld() != null && location.getWorld().getName().equals(getSpectatorSpawnLocation().getWorld().getName())) {
-            return !location.toVector().isInAABB(getGameConfig().getAreaPos1(), getGameConfig().getAreaPos2());
-        }
-
-        return true;
+        if (location == null) return true;
+        Vector pos1 = getGameConfig().getAreaPos1();
+        Vector pos2 = getGameConfig().getAreaPos2();
+        Location spectatorSpawn = getSpectatorSpawnLocation();
+        World areaWorld = Bukkit.getWorld(getWorldName());
+        if (areaWorld == null && spectatorSpawn != null) areaWorld = spectatorSpawn.getWorld();
+        return location.getWorld() == null || areaWorld == null || pos1 == null || pos2 == null
+                || !location.getWorld().getName().equals(areaWorld.getName())
+                || !location.toVector().isInAABB(pos1, pos2);
     }
 
     /**

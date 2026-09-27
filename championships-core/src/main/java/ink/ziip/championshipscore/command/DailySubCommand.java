@@ -50,7 +50,7 @@ public final class DailySubCommand extends BaseSubCommand {
 
     private void message(CommandSender sender, String value) {
         sender.sendMessage(Utils.translateColorCodes(
-                ink.ziip.championshipscore.configuration.config.message.MessageConfig.DAILY_PREFIXED.replace("%message%", value)));
+                Utils.dailyMessage(value)));
     }
 
     @Override

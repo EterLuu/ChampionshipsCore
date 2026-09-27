@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -37,7 +38,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     }
 
     public boolean tryStartGame(List<ChampionshipTeam> championshipTeams) {
-        if (getGameStageEnum() != GameStageEnum.WAITING)
+        if (getGameStageEnum() != GameStageEnum.WAITING || !validTeams(championshipTeams))
             return false;
         cancelPostGameRoutingBeforeStart();
         setGameStageEnum(GameStageEnum.LOADING);
@@ -53,7 +54,10 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     }
 
     public boolean tryStartGame(List<ChampionshipTeam> championshipTeams, List<UUID> players) {
-        if (getGameStageEnum() != GameStageEnum.WAITING)
+        if (getGameStageEnum() != GameStageEnum.WAITING || !validTeams(championshipTeams)
+                || players == null || players.isEmpty()
+                || players.stream().anyMatch(Objects::isNull)
+                || players.size() != new HashSet<>(players).size())
             return false;
         cancelPostGameRoutingBeforeStart();
         setGameStageEnum(GameStageEnum.LOADING);
@@ -66,12 +70,21 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
         return true;
     }
 
+    private static boolean validTeams(List<ChampionshipTeam> teams) {
+        if (teams == null || teams.isEmpty() || teams.stream().anyMatch(Objects::isNull)) return false;
+        Set<UUID> players = new HashSet<>();
+        for (ChampionshipTeam team : teams) {
+            if (team.getMembers().isEmpty() || !players.addAll(team.getMembers())) return false;
+        }
+        return true;
+    }
+
     public String getTeamPointsRank() {
-        Map<ChampionshipTeam, Integer> teamPoints = new ConcurrentHashMap<>();
+        Map<ChampionshipTeam, Double> teamPoints = new ConcurrentHashMap<>();
         for (ChampionshipTeam championshipTeam : gameTeams) {
             teamPoints.put(championshipTeam, getTeamPoints(championshipTeam));
         }
-        ArrayList<Map.Entry<ChampionshipTeam, Integer>> list;
+        ArrayList<Map.Entry<ChampionshipTeam, Double>> list;
         list = new ArrayList<>(teamPoints.entrySet());
         list.sort(Map.Entry.comparingByValue());
 
@@ -84,13 +97,13 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
                 .append("\n");
 
         int i = 1;
-        for (Map.Entry<ChampionshipTeam, Integer> entry : list) {
+        for (Map.Entry<ChampionshipTeam, Double> entry : list) {
             if (i > 5)
                 break;
             String row = MessageConfig.GAME_BOARD_RWO
                     .replace("%team_rank%", String.valueOf(i))
                     .replace("%team%", entry.getKey().getColoredName())
-                    .replace("%team_point%", String.valueOf(entry.getValue()));
+                    .replace("%team_point%", Utils.formatPoints(entry.getValue()));
 
             stringBuilder.append(row).append("\n");
 
@@ -195,10 +208,11 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
 
     @Override
     public void teleportAllPlayers(Location location) {
-        for (UUID uuid : gamePlayers) {
+        for (int index = 0; index < gamePlayers.size(); index++) {
+            UUID uuid = gamePlayers.get(index);
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
-                player.teleport(location);
+                player.teleport(Utils.getCollisionSafeTeleportLocation(location, index));
         }
     }
 

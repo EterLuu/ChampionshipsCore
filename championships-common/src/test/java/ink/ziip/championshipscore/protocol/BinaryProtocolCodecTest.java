@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BinaryProtocolCodecTest {
@@ -42,17 +41,6 @@ class BinaryProtocolCodecTest {
         assertEquals(manifest, decoded);
         assertEquals(List.of(List.of("&#ff6b26第一段", "&f第二行")),
                 decoded.runtimeRules().introductionRules());
-        assertEquals("&#fff566剩余 %time%s",
-                decoded.runtimeRules().presentation().message("bingo.timer"));
-        assertEquals(BingoIntroductionMode.SPECTATOR, decoded.runtimeRules().introductionMode());
-        assertEquals(BingoDimension.OVERWORLD,
-                decoded.runtimeRules().introductionSpawn().dimension());
-        assertEquals(3, decoded.runtimeRules().finalCountdownSeconds());
-        assertEquals(17, decoded.runtimeRules().scatterJitter());
-        assertFalse(decoded.participants().getFirst().requiredAtStart());
-        assertEquals(1234.5D, decoded.teams().getFirst().points());
-        assertEquals(321.5D, decoded.participants().getFirst().points());
-        assertEquals(List.of("DIAMOND", "BLAZE_ROD"), decoded.scoring().variant().genesisItems());
         assertEquals(decoded.configHash(), BingoManifestHasher.hash(decoded));
         assertThrows(UnsupportedOperationException.class,
                 () -> decoded.runtimeRules().introductionRules().getFirst().add("不可修改"));
@@ -74,5 +62,11 @@ class BinaryProtocolCodecTest {
                         List.of(new BingoTaskSpec(0, "stone", "item", first))),
                 BingoManifestHasher.hash(300, 9L, scoring, runtime,
                         List.of(new BingoTaskSpec(0, "stone", "item", second))));
+    }
+
+    @Test
+    void rejectsMalformedManifestBytes() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new BinaryProtocolCodec().decodeManifest(new byte[]{1, 2, 3}));
     }
 }

@@ -640,6 +640,8 @@ public final class SpectateMenu implements Listener {
         styles.put(GameTypeEnum.BuildMart, new GameStyle(Material.CRAFTING_TABLE, NamedTextColor.GOLD));
         styles.put(GameTypeEnum.Dodgebolt, new GameStyle(Material.ARROW, NamedTextColor.RED));
         styles.put(GameTypeEnum.AceRace, new GameStyle(Material.ELYTRA, NamedTextColor.GREEN));
+        styles.put(GameTypeEnum.RiptideRush, new GameStyle(Material.OAK_BOAT, NamedTextColor.AQUA));
+        styles.put(GameTypeEnum.FrostbiteFrenzy, new GameStyle(Material.BLUE_ICE, NamedTextColor.AQUA));
         return Map.copyOf(styles);
     }
 

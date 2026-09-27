@@ -27,7 +27,7 @@ class LanguageKeyUsageTest {
     void bingoLocalesOnlyContainLiveKeys() throws IOException {
         String sources = javaSources().stream()
                 .map(LanguageKeyUsageTest::read)
-                .reduce("", (left, right) -> left + "\n" + right);
+                .collect(java.util.stream.Collectors.joining("\n"));
         for (String locale : List.of("zh_CN", "en_US")) {
             YamlConfiguration yaml = YamlConfiguration.loadConfiguration(
                     Path.of("src/main/resources/bingo/lang/" + locale + ".yml").toFile());

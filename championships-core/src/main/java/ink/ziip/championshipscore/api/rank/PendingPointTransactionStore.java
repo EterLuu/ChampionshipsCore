@@ -23,19 +23,25 @@ import java.util.logging.Level;
 
 /** Durable write-ahead store for score rows that have not yet been acknowledged by the database. */
 final class PendingPointTransactionStore {
-    private final ChampionshipsCore plugin;
+    private final java.util.logging.Logger logger;
+    private boolean dirty;
     private final Path file;
     private final Map<UUID, PlayerPointEntry> pending = new LinkedHashMap<>();
     private final Map<String, Map<String, Object>> unreadable = new LinkedHashMap<>();
 
     PendingPointTransactionStore(@NotNull ChampionshipsCore plugin) {
-        this.plugin = plugin;
-        this.file = plugin.getDataFolder().toPath().resolve("pending-point-transactions.yml");
+        this(plugin.getDataFolder().toPath().resolve("pending-point-transactions.yml"), plugin.getLogger());
+    }
+
+    PendingPointTransactionStore(Path file, java.util.logging.Logger logger) {
+        this.file = file;
+        this.logger = logger;
     }
 
     synchronized List<PlayerPointEntry> load() {
         pending.clear();
         unreadable.clear();
+        dirty = false;
         if (!Files.isRegularFile(file)) return List.of();
 
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file.toFile());
@@ -67,7 +73,7 @@ final class PendingPointTransactionStore {
                 if (invalidSection != null) {
                     unreadable.put(key, invalidSection.getValues(true));
                 }
-                plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Rank", "暂存事务",
+                logger.log(Level.SEVERE, Utils.formatModuleLog("Rank", "暂存事务",
                         "无法读取事务=" + key + "，该记录保留在暂存文件中"), exception);
             }
         }
@@ -80,18 +86,21 @@ final class PendingPointTransactionStore {
 
     /** Atomically stages a whole settlement and persists the write-ahead file once. */
     synchronized boolean stageAll(@NotNull List<PlayerPointEntry> entries) {
-        Map<UUID, PlayerPointEntry> previous = new LinkedHashMap<>();
+        if (entries.stream().anyMatch(entry -> entry.getTransactionId() == null))
+            throw new IllegalArgumentException("Score transaction id is required");
         for (PlayerPointEntry entry : entries) {
             UUID transactionId = entry.getTransactionId();
-            if (transactionId == null) throw new IllegalArgumentException("Score transaction id is required");
-            previous.put(transactionId, pending.put(transactionId, entry));
+            // A retry must not change frozen ownership or amounts of an existing transaction.
+            pending.putIfAbsent(transactionId, entry);
         }
-        if (save()) return true;
-        previous.forEach((transactionId, entry) -> {
-            if (entry == null) pending.remove(transactionId);
-            else pending.put(transactionId, entry);
-        });
-        return false;
+        dirty = true;
+        return save();
+    }
+
+    /** Retains failed staging in memory and retries persistence before touching the database. */
+    synchronized List<PlayerPointEntry> snapshotForRetry() {
+        if (dirty && !save()) return List.of();
+        return List.copyOf(pending.values());
     }
 
     synchronized void complete(@NotNull UUID transactionId) {
@@ -165,9 +174,11 @@ final class PendingPointTransactionStore {
             } catch (AtomicMoveNotSupportedException exception) {
                 Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
             }
+            dirty = false;
             return true;
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Rank", "暂存事务",
+            dirty = true;
+            logger.log(Level.SEVERE, Utils.formatModuleLog("Rank", "暂存事务",
                     "无法写入积分暂存文件=" + file), exception);
             try {
                 Files.deleteIfExists(temporary);

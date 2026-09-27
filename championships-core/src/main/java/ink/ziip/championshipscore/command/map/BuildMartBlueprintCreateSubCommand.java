@@ -90,6 +90,11 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                 for (int z = min.getBlockZ(); z <= max.getBlockZ(); z++) {
                     Block block = world.getBlockAt(x, y, z);
                     if (block.getType().isAir()) continue;
+                    if (!block.getBlockData().isSupported(block.getLocation())) {
+                        Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED
+                                .replace("%detail%", "方块缺少有效支撑: " + x + "," + y + "," + z));
+                        return true;
+                    }
                     int ox = x - min.getBlockX();
                     int oy = y - min.getBlockY();
                     int oz = z - min.getBlockZ();

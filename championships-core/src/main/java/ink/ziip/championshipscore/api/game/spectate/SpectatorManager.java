@@ -39,6 +39,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCreativeEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
@@ -440,13 +441,27 @@ public final class SpectatorManager extends BaseManager implements Listener {
             event.setCancelled(true);
             if (event.getClickedInventory() == player.getInventory() && event.getRawSlot() == 8
                     && player.getInventory().getItem(8) != null) openControls(player);
+            // A cancelled click can leave a client-side cursor/hotbar ghost for number-key,
+            // double-click and shift-click actions.  Resend the authoritative inventory after the
+            // event so protected compass, feather and Bingo-card slots cannot be copied or swapped.
+            Bukkit.getScheduler().runTask(plugin, player::updateInventory);
         }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onInventoryDrag(@NotNull InventoryDragEvent event) {
-        if (event.getWhoClicked() instanceof Player player && isSpectatorLike(player.getUniqueId()))
+        if (event.getWhoClicked() instanceof Player player && isSpectatorLike(player.getUniqueId())) {
             event.setCancelled(true);
+            Bukkit.getScheduler().runTask(plugin, player::updateInventory);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInventoryCreative(@NotNull InventoryCreativeEvent event) {
+        if (event.getWhoClicked() instanceof Player player && isSpectatorLike(player.getUniqueId())) {
+            event.setCancelled(true);
+            Bukkit.getScheduler().runTask(plugin, player::updateInventory);
+        }
     }
 
     public void leavePresentation(@NotNull Player player) {

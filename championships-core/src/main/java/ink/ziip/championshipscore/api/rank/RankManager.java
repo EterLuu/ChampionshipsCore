@@ -38,7 +38,7 @@ public class RankManager extends BaseManager {
                                   @NotNull String area, @NotNull String round, double points) {
     }
 
-    private record FrozenPointSubmission(UUID transactionId, UUID playerId,
+    private record FrozenPointSubmission(UUID transactionId, UUID playerId, String playerName,
                                          int teamId, String teamName, int rivalId, String rivalName,
                                          GameTypeEnum game, String area, String round, double points) {
     }
@@ -372,16 +372,19 @@ public class RankManager extends BaseManager {
                 gameTypeEnum, area, round, points)));
     }
 
-    /** Freezes team ownership on the server thread, then performs DB lookup and durable IO in rank order. */
+    /** Freezes identity and team ownership on the server thread, then stages and writes in rank order. */
     public CompletionStage<Boolean> addPlayerPointsBatch(@NotNull Collection<PointSubmission> submissions) {
         List<FrozenPointSubmission> frozen = new ArrayList<>();
         for (PointSubmission submission : submissions) {
             if (!isScoringGame(submission.game())) continue;
             ChampionshipTeam team = plugin.getTeamManager().getFormalTeamByPlayer(submission.playerId());
-            if (team == null) return CompletableFuture.completedFuture(false);
+            if (team == null) {
+                plugin.getLogger().severe("积分提交拒绝：玩家没有正式队伍，保留以下事务供恢复：" + submissions);
+                return CompletableFuture.completedFuture(false);
+            }
             ChampionshipTeam rival = submission.rival() == null ? team : submission.rival();
             frozen.add(new FrozenPointSubmission(submission.transactionId(), submission.playerId(),
-                    team.getId(), team.getName(), rival.getId(), rival.getName(), submission.game(),
+                    plugin.getPlayerManager().getPlayerName(submission.playerId()), team.getId(), team.getName(), rival.getId(), rival.getName(), submission.game(),
                     submission.area(), submission.round(), submission.points()));
         }
         if (frozen.isEmpty()) return CompletableFuture.completedFuture(true);
@@ -392,26 +395,22 @@ public class RankManager extends BaseManager {
                 List<PlayerPointEntry> entries = new ArrayList<>(frozen.size());
                 String timestamp = Utils.getCurrentTimeString();
                 for (FrozenPointSubmission submission : frozen) {
-                    PlayerEntry player = playerDao.getPlayer(submission.playerId());
-                    if (player == null) {
-                        accepted.complete(false);
-                        return;
-                    }
                     entries.add(PlayerPointEntry.builder()
-                            .transactionId(submission.transactionId()).uuid(player.getUuid())
-                            .username(player.getName()).teamId(submission.teamId())
+                            .transactionId(submission.transactionId()).uuid(submission.playerId())
+                            .username(submission.playerName()).teamId(submission.teamId())
                             .team(submission.teamName()).rivalId(submission.rivalId())
                             .rival(submission.rivalName()).game(submission.game()).area(submission.area())
                             .round(submission.round()).points(submission.points()).time(timestamp).build());
                 }
                 if (!pendingPointTransactions.stageAll(entries)) {
                     plugin.getLogger().severe(Utils.formatModuleLog("Rank", "暂存事务",
-                            "整批积分未入队：无法持久化事务数=" + entries.size()));
+                            "积分暂存写入失败，事务保留在内存并自动重试；请勿重启，事务数=" + entries.size()));
                     accepted.complete(false);
                     return;
                 }
-                commitPointTransactions(entries);
+                // Acceptance means durably staged, even when the database is temporarily unavailable.
                 accepted.complete(true);
+                commitPointTransactions(pendingPointTransactions.snapshotForRetry());
             } catch (Throwable failure) {
                 accepted.completeExceptionally(failure);
                 if (failure instanceof RuntimeException runtime) throw runtime;
@@ -498,7 +497,7 @@ public class RankManager extends BaseManager {
         teams.stream().sorted(Comparator.comparing(ChampionshipTeam::getName, String.CASE_INSENSITIVE_ORDER))
                 .forEach(team -> team.getTeamMemberEntries().forEach(member -> {
                     Map<GameTypeEnum, Double> scores = playerScores.getOrDefault(member.getUuid(), Map.of());
-                    players.add(new ChampionshipArchiveSnapshot.PlayerScore(member.getUsername(), team.getName(),
+                    players.add(new ChampionshipArchiveSnapshot.PlayerScore(member.getUsername(), member.getUuid().toString(), team.getName(),
                             rounded(scores.values().stream().mapToDouble(Double::doubleValue).sum()), false,
                             archiveGameScores(games, scores)));
                 }));
@@ -624,6 +623,8 @@ public class RankManager extends BaseManager {
             return;
         enqueueRankTask(() -> {
             try {
+                List<PlayerPointEntry> retry = pendingPointTransactions.snapshotForRetry();
+                if (!retry.isEmpty()) commitPointTransactions(retry);
                 refreshRankingsNow();
             } finally {
                 periodicRefreshPending.set(false);

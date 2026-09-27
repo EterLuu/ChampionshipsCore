@@ -47,6 +47,7 @@ public final class AnvilInputGui {
     public static final class Holder implements InventoryHolder {
         final Mode mode;
         final Consumer<String> callback;
+        Runnable onCancel;
         Inventory inventory;
 
         Holder(Mode mode, Consumer<String> callback) {
@@ -108,15 +109,41 @@ public final class AnvilInputGui {
         });
     }
 
+    /** Free text for session-scoped editors; their callbacks validate permission and session ownership. */
+    public static void openText(Player player, String prompt, Consumer<String> onValue) {
+        open(player, Mode.NAME, prompt, text -> { close(player); onValue.accept(text); });
+    }
+
+    /** Prefilled, validated editor input. Invalid input stays open; Esc returns to its parent menu. */
+    public static void openEditorText(Player player, String prompt, String initialValue,
+                                      java.util.function.Function<String, String> validate,
+                                      Consumer<String> onValue, Runnable onCancel) {
+        open(player, Mode.NAME, prompt, initialValue, text -> {
+            String error = validate.apply(text);
+            if (error != null) { Utils.sendAdminError(player, error); return; }
+            close(player);
+            onValue.accept(text);
+        }, onCancel);
+    }
+
     private static void open(@NotNull Player player, @NotNull Mode mode, @NotNull String prompt, @NotNull Consumer<String> callback) {
+        open(player, mode, prompt, prompt, callback, null);
+    }
+
+    private static void open(@NotNull Player player, @NotNull Mode mode, @NotNull String prompt,
+                             @NotNull String initialValue, @NotNull Consumer<String> callback,
+                             @Nullable Runnable onCancel) {
         Holder holder = new Holder(mode, callback);
-        AnvilView view = MenuType.ANVIL.create(player, Component.text(prompt));
-        player.openInventory(view);
+        AnvilView view = MenuType.ANVIL.create(player, ink.ziip.championshipscore.platform.bukkit.text.LegacyText.component(prompt));
         AnvilInventory inv = view.getTopInventory();
         holder.inventory = inv;
-        OPEN_INPUTS.put(player.getUniqueId(), holder);
-        inv.setFirstItem(PrepareKeys.item(Material.PAPER, Component.text(prompt),
+        holder.onCancel = onCancel;
+        // Send the actual value in the initial container contents. Replacing a prompt after opening
+        // can leave the client's rename field initialized from the wrong item name.
+        inv.setFirstItem(PrepareKeys.item(Material.PAPER, Component.text(initialValue),
                 List.of(Component.text(GuiConfig.text("map-editor.menus.input.items.hint.title")).color(NamedTextColor.GRAY))));
+        player.openInventory(view);
+        OPEN_INPUTS.put(player.getUniqueId(), holder);
         view.setMaximumRepairCost(0);
         view.setRepairCost(0);
     }
@@ -131,6 +158,7 @@ public final class AnvilInputGui {
         if (holder != null) {
             holder.inventory.clear();
             OPEN_INPUTS.remove(player.getUniqueId());
+            if (holder.onCancel != null) holder.onCancel.run();
         }
     }
 

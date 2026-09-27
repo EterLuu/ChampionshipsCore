@@ -14,7 +14,7 @@ public record ChampionshipArchiveSnapshot(@NotNull List<TeamScore> teams,
                             @NotNull List<GameScore> gameScores) {
     }
 
-    public record PlayerScore(@NotNull String name, @NotNull String teamName,
+    public record PlayerScore(@NotNull String name, @NotNull String uuid, @NotNull String teamName,
                               double totalScore, boolean isSubstitute,
                               @NotNull List<GameScore> gameScores) {
     }

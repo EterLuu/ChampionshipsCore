@@ -84,6 +84,8 @@ public class PrepareSessionManager extends BaseManager {
         flows.put(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyPrepareFlow());
         flows.put(GameTypeEnum.Dodgebolt, new DodgeboltPrepareFlow());
         flows.put(GameTypeEnum.AceRace, new AceRacePrepareFlow());
+        flows.put(GameTypeEnum.RiptideRush, new RiptideRushPrepareFlow());
+        flows.put(GameTypeEnum.FrostbiteFrenzy, new FrostbitePrepareFlow());
         try {
             Files.createDirectories(sessionsDir);
         } catch (IOException e) {
@@ -95,6 +97,8 @@ public class PrepareSessionManager extends BaseManager {
 
     @Override
     public void unload() {
+        ink.ziip.championshipscore.api.game.riptiderush.RiptideCourseTrial.stopAll();
+        ink.ziip.championshipscore.api.game.riptiderush.RiptideCourseGenerator.cancelAll();
         for (UUID id : new ArrayList<>(sessions.keySet())) {
             PrepareSession session = sessions.get(id);
             if (session != null) session.getFlow().onSessionExit(session);
@@ -199,6 +203,7 @@ public class PrepareSessionManager extends BaseManager {
     }
 
     public void exitSession(@NotNull Player player) {
+        ink.ziip.championshipscore.api.game.riptiderush.RiptideCourseTrial.stop(player);
         PrepareSession session = sessions.remove(player.getUniqueId());
         if (session == null) return;
         session.getFlow().onSessionExit(session);
@@ -214,6 +219,11 @@ public class PrepareSessionManager extends BaseManager {
     // ── click routing (called by PrepareListener) ────────────────────────────────────────────
 
     public void handleStepClick(@NotNull Player player, @NotNull PrepareSession session, @NotNull String stepKey) {
+        if (ink.ziip.championshipscore.api.game.riptiderush.RiptideWorkshop.get(session) != null) {
+            handleActionClick(player, session, "steps"); return;
+        }
+        if (session.getTarget().config() instanceof ink.ziip.championshipscore.api.game.riptiderush.RiptideRushConfig
+                && !ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideCourseEditorGui.available(this, player, session)) return;
         PrepareStep step = session.step(stepKey);
         if (step == null) return;
         if (step.captureType() != StepCaptureType.CONFIRM_WORLD
@@ -243,6 +253,16 @@ public class PrepareSessionManager extends BaseManager {
     }
 
     public void handleActionClick(@NotNull Player player, @NotNull PrepareSession session, @NotNull String action) {
+        var building = ink.ziip.championshipscore.api.game.riptiderush.RiptideWorkshop.get(session);
+        if (building != null) {
+            ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideCourseEditorGui.open(this, player, session,
+                    building.origin().child(ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideEditorPage.Screen.WORKSHOP,
+                            building.origin().id(), null));
+            return;
+        }
+        if (session.getTarget().config() instanceof ink.ziip.championshipscore.api.game.riptiderush.RiptideRushConfig
+                && !action.equals("exit")
+                && !ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideCourseEditorGui.available(this, player, session)) return;
         switch (action) {
             case "teleport" -> teleportToEditorLocation(player, session);
             case "steps" -> StepMenuGui.open(player, session);

@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
@@ -338,19 +339,35 @@ public class BingoHandler extends BaseListener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBoatMove(VehicleMoveEvent event) {
-        if (!running() || !(event.getVehicle() instanceof Boat boat)) return;
-        Location from = event.getFrom();
-        Location to = event.getTo();
-        if (from == null || to == null || from.getWorld() == null || to.getWorld() == null
-                || from.getWorld() != to.getWorld()) return;
-        double distance = Math.hypot(to.getX() - from.getX(), to.getZ() - from.getZ());
-        if (!Double.isFinite(distance) || distance <= 0.0D) return;
-        double centimeters = distance * 100.0D;
-        for (Entity passenger : boat.getPassengers()) {
-            if (passenger instanceof Player player && !bingoArea.notAreaPlayer(player)) {
-                bingoArea.recordBoatMovement(player, centimeters);
-            }
+    public void onRidingMove(org.bukkit.event.player.PlayerMoveEvent event) {
+        if (!running()) return;
+        double centimeters = BingoRidingTravel.distance(event);
+        if (centimeters > 0) bingoArea.recordRidingMovement(event.getPlayer(),
+                BingoRidingTravel.statistic(event.getPlayer().getVehicle()), centimeters, BingoRidingTravel.Source.PLAYER);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onRidingEntityMove(io.papermc.paper.event.entity.EntityMoveEvent event) {
+        if (!running()) return;
+        recordVehicleTravel(event.getEntity(), event.getFrom(), event.getTo());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onVehicleMove(VehicleMoveEvent event) {
+        if (!running()) return;
+        // Living mounts use EntityMoveEvent; keeping these streams disjoint avoids duplicate credit.
+        if (event.getVehicle() instanceof Boat || event.getVehicle() instanceof org.bukkit.entity.Minecart)
+            recordVehicleTravel(event.getVehicle(), event.getFrom(), event.getTo());
+    }
+
+    private void recordVehicleTravel(org.bukkit.entity.Entity vehicle, Location from, Location to) {
+        org.bukkit.Statistic statistic = BingoRidingTravel.statistic(vehicle);
+        if (statistic == null) return;
+        double centimeters = BingoRidingTravel.distance(from, to);
+        if (centimeters <= 0) return;
+        for (org.bukkit.entity.Entity passenger : vehicle.getPassengers()) {
+            if (passenger instanceof Player player)
+                bingoArea.recordRidingMovement(player, statistic, centimeters, BingoRidingTravel.Source.VEHICLE);
         }
     }
 

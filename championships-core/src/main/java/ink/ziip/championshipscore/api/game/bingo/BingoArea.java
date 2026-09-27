@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.daily.DailyRecordType;
@@ -56,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 /**
@@ -264,11 +266,11 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             ensurePermanentEffects(player);
         }
 
-        // Random scatter around the bingo world spawn; the round only begins once everyone is placed.
-        BingoConfig config = getGameConfig();
+        // Scatter participants around the configured Bingo spawn before the final countdown.
         World scatterWorld = activeVariant.remix() == BingoRemix.NETHER
                 ? Bukkit.getWorld(WorldManager.BINGO_NETHER) : world;
         if (scatterWorld == null) scatterWorld = world;
+        BingoConfig config = getGameConfig();
         scatterManager.performScatterAsync(scatterWorld, players,
                 dailyRun ? 180 : config.getScatterRadius(), dailyRun ? 32 : 0,
                 dailyRun ? 40 : config.getScatterMaxTries(),
@@ -427,10 +429,10 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         checkPlayerProgress(player);
     }
 
-    public void recordBoatMovement(Player player, double centimeters) {
+    public void recordRidingMovement(Player player, org.bukkit.Statistic statistic, double centimeters, BingoRidingTravel.Source source) {
         if (getGameStageEnum() != GameStageEnum.PROGRESS || round == null || player == null) return;
         if (notAreaPlayer(player)) return;
-        round.recordBoatMovement(player, centimeters);
+        round.recordRidingMovement(player, statistic, centimeters, source);
         checkPlayerProgress(player);
     }
 
@@ -615,8 +617,10 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         World world = spectatorMapView.getWorld();
         ItemStack card = CardMapItem.createSpectator(spectatorMapView, world,
                 round.cardFor(round.teams().getFirst()).orElse(round.card()), 0, round);
-        if (!player.getInventory().addItem(card).isEmpty())
-            player.getWorld().dropItemNaturally(player.getLocation(), card);
+        // Slot 7 is reserved for the Bingo spectator card.  Using addItem here allowed Bukkit to
+        // place the card in arbitrary slots (including the slot occupied by the common spectator
+        // controls), and every presentation refresh could then move/duplicate it.
+        player.getInventory().setItem(7, card);
         player.updateInventory();
     }
 
@@ -657,7 +661,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
         if (startGameProgressTask != null)
@@ -850,7 +854,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         });
     }
 
-    /** Scatters a single participant into the bingo overworld around its spawn. */
+    /** Scatters a participant with no saved location into the active variant world. */
     private void scatterIntoBingo(Player player) {
         World world = Bukkit.getWorld(activeVariant.remix() == BingoRemix.NETHER
                 ? WorldManager.BINGO_NETHER : getWorldName());

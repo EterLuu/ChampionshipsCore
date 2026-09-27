@@ -63,6 +63,14 @@ class PlayerVisibilityPolicyTest {
                 false, false, null, null, null));
     }
 
+    @Test
+    void selfModeHidesBothTeammatesAndOpponentsButAllowsSpectatorsToWatch() {
+        PlayerVisibilityState self = PlayerVisibilityState.self("riptiderush:test", "solo view");
+        assertFalse(allows(self, false, true, 1, null, null));
+        assertFalse(allows(self, false, false, 2, null, null));
+        assertTrue(allows(self, true, false, 2, null, null));
+    }
+
     private boolean allows(PlayerVisibilityState state, boolean forcedAll, boolean sameTeam,
                            Integer targetTeam, UUID viewerSession, UUID targetSession) {
         return PlayerVisibilityPolicy.allows(state, viewer, target, forcedAll, false, sameTeam,

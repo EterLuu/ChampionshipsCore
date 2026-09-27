@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.event;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +75,7 @@ public final class EventStateStore {
             games.add(new EventGame(type, variantKey, label));
         }
         List<Double> roundMultipliers = yaml.getDoubleList("event.round-multipliers");
-        if (games.isEmpty() || roundMultipliers.size() < games.size()
+        if (games.isEmpty() || roundMultipliers.size() != games.stream().filter(game -> !FinaleGameRegistry.isRegistered(game.type())).count()
                 || roundMultipliers.stream().anyMatch(value -> !Double.isFinite(value) || value < 0D || value > 100D))
             return null;
         return new ActiveEvent(id, slug, title, yaml.getBoolean("event.archived", false),

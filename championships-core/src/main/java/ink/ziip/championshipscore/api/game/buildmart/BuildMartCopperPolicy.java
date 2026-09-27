@@ -22,11 +22,12 @@ public final class BuildMartCopperPolicy {
 
     /** Removes wax while retaining oxidation stage, shape and every BlockData property. */
     public static @NotNull BlockData withoutWax(@NotNull BlockData data) {
-        String normalized = withoutWax(data.getAsString());
-        return normalized.equals(data.getAsString()) ? data : Bukkit.createBlockData(normalized);
+        if (!data.getMaterial().name().startsWith("WAXED_")) return data;
+        return Bukkit.createBlockData(withoutWax(data.getAsString()));
     }
 
     public static @NotNull Material withoutWax(@NotNull Material material) {
+        if (!material.name().startsWith("WAXED_")) return material;
         String normalized = withoutWax(material.getKey().toString());
         Material result = Material.matchMaterial(normalized);
         return result == null ? material : result;

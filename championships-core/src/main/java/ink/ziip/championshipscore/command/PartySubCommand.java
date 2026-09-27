@@ -91,7 +91,7 @@ public final class PartySubCommand extends BaseSubCommand {
     }
 
     private void message(CommandSender sender, String value) {
-        sender.sendMessage(Utils.translateColorCodes(MessageConfig.DAILY_PREFIXED.replace("%message%", value)));
+        sender.sendMessage(Utils.translateColorCodes(Utils.dailyMessage(value)));
     }
 
     @Override

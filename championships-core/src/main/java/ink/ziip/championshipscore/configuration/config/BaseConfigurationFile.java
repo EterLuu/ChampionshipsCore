@@ -26,10 +26,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-/**
- * Modified under <a href="https://github.com/AlessioDP/ADP-Core">ADP-Core</a>
- * @author AlessioDP
- */
 @RequiredArgsConstructor
 public abstract class BaseConfigurationFile {
     @NotNull
@@ -43,11 +39,7 @@ public abstract class BaseConfigurationFile {
     // the template are expected, so "missing field" warnings are suppressed until the real file loads.
     protected boolean loadingDefaults = false;
 
-    /**
-     * Initialize the configuration into the path of plugin folder
-     *
-     * @param pluginFolder the plugin folder path
-     */
+    /** Loads the bundled template and the configuration stored below the plugin folder. */
     public void initializeConfiguration(Path pluginFolder) {
         initializeConfigurationChecked(pluginFolder, true);
     }
@@ -226,7 +218,7 @@ public abstract class BaseConfigurationFile {
                 try {
                     Object value = null;
 
-                    // If are lists, better use direct get
+                    // Read typed lists directly because Bukkit otherwise narrows numeric values.
                     if (field.getType() == List.class && field.getGenericType() instanceof ParameterizedType) {
                         Type type = ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
                         if (type == Integer.class) {
@@ -242,7 +234,7 @@ public abstract class BaseConfigurationFile {
                         }
                     }
 
-                    // Otherwise get it normally
+                    // Read scalar values and other objects through Bukkit's normal conversion.
                     if (value == null) value = yamlConfiguration.get(configOption.path());
 
                     // Locations may be stored as a raw section (world/world_key + x/y/z/yaw/pitch,

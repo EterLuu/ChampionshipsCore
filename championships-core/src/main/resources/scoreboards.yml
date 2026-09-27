@@ -296,3 +296,31 @@ boards:
         - '&f已完赛玩家：#ff6e26%acerace_area_finished_players_[areaName]%'
         - ''
         - '{style.footer}'
+
+    RiptideRush:
+      title: '{style.title}'
+      lines:
+        - '#ff0808当前游戏：#ff7373激流勇进'
+        - '#dfff2b轮次：#f6ffa8%schedule_round_riptiderush%/3'
+        - ''
+        - '#1da4ad场地状态：#f6ffa8{game.status}'
+        - ''
+        - '&f站稳木筏并穿过障碍'
+        - '&f解题门：&c左侧 &7/ &b右侧'
+        - '&f停船挑战：木筏停留后继续'
+        - ''
+        - '{style.footer}'
+
+    FrostbiteFrenzy:
+      title: '{style.title}'
+      lines:
+        - '&b当前游戏：&f霜冻狂潮'
+        - '&e轮次：&f%schedule_round_frostbite%/4'
+        - ''
+        - '&b场地状态：&f{game.status}'
+        - ''
+        - '&f每队每图1人 · 四场同时乱斗'
+        - '&f击杀计分，争夺补给'
+        - '&f营火自救：被冻后按 F'
+        - ''
+        - '{style.footer}'

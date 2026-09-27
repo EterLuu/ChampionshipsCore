@@ -273,7 +273,8 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (spawns.isEmpty()) return;
         int i = 0;
         for (Player escapee : escapees) {
-            escapee.teleport(spawns.get(i % spawns.size()));
+            Location spawn = spawns.get(i % spawns.size());
+            escapee.teleport(Utils.getCollisionSafeTeleportLocation(spawn, i / spawns.size()));
             i++;
         }
     }
@@ -305,7 +306,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
     @Override
     public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
         if (startGameProgressTask != null)
@@ -381,9 +382,9 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
         String message = MessageConfig.PARKOUR_TAG_SHOW_POINTS
                 .replace("%team%", right.getColoredName())
-                .replace("%team_points%", String.valueOf(getTeamPoints(right)))
+                .replace("%team_points%", Utils.formatPoints(getTeamPoints(right)))
                 .replace("%rival%", left.getColoredName())
-                .replace("%rival_points%", String.valueOf(getTeamPoints(left)));
+                .replace("%rival_points%", Utils.formatPoints(getTeamPoints(left)));
         right.sendMessageToAll(message);
         left.sendMessageToAll(message);
         sendMessageToAllSpectators(message);

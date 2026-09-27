@@ -1,0 +1,2221 @@
+{
+  "paper_version": "26.2 build 112",
+  "blueprints": [
+    {
+      "name": "?!植物大战僵尸!?.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "before"
+    },
+    {
+      "name": "inf.yml",
+      "unsupported": [],
+      "blocks": 35,
+      "unstable": [],
+      "initialMatched": 35,
+      "phase": "before"
+    },
+    {
+      "name": "ria.yml",
+      "unsupported": [],
+      "blocks": 33,
+      "unstable": [],
+      "initialMatched": 33,
+      "phase": "before"
+    },
+    {
+      "name": "scc.yml",
+      "unsupported": [],
+      "blocks": 33,
+      "unstable": [],
+      "initialMatched": 33,
+      "phase": "before"
+    },
+    {
+      "name": "三花.yml",
+      "unsupported": [],
+      "blocks": 54,
+      "unstable": [],
+      "initialMatched": 54,
+      "phase": "before"
+    },
+    {
+      "name": "下界之剑.yml",
+      "unsupported": [],
+      "blocks": 29,
+      "unstable": [],
+      "initialMatched": 29,
+      "phase": "before"
+    },
+    {
+      "name": "下界要塞.yml",
+      "unsupported": [],
+      "blocks": 81,
+      "unstable": [],
+      "initialMatched": 81,
+      "phase": "before"
+    },
+    {
+      "name": "丛林神庙.yml",
+      "unsupported": [],
+      "blocks": 35,
+      "unstable": [],
+      "initialMatched": 35,
+      "phase": "before"
+    },
+    {
+      "name": "严肃石头人.yml",
+      "unsupported": [],
+      "blocks": 32,
+      "unstable": [],
+      "initialMatched": 32,
+      "phase": "before"
+    },
+    {
+      "name": "你这瓜保熟吗.yml",
+      "unsupported": [],
+      "blocks": 48,
+      "unstable": [],
+      "initialMatched": 48,
+      "phase": "before"
+    },
+    {
+      "name": "共鸣鸟居.yml",
+      "unsupported": [],
+      "blocks": 35,
+      "unstable": [],
+      "initialMatched": 35,
+      "phase": "before"
+    },
+    {
+      "name": "农场.yml",
+      "unsupported": [],
+      "blocks": 60,
+      "unstable": [],
+      "initialMatched": 60,
+      "phase": "before"
+    },
+    {
+      "name": "农场2.yml",
+      "unsupported": [
+        "1,0,5=minecraft:dirt_path"
+      ],
+      "blocks": 73,
+      "unstable": [],
+      "initialMatched": 73,
+      "phase": "before"
+    },
+    {
+      "name": "农田.yml",
+      "unsupported": [],
+      "blocks": 70,
+      "unstable": [],
+      "initialMatched": 70,
+      "phase": "before"
+    },
+    {
+      "name": "冰淇淋车.yml",
+      "unsupported": [],
+      "blocks": 39,
+      "unstable": [],
+      "initialMatched": 39,
+      "phase": "before"
+    },
+    {
+      "name": "前哨站.yml",
+      "unsupported": [],
+      "blocks": 57,
+      "unstable": [],
+      "initialMatched": 57,
+      "phase": "before"
+    },
+    {
+      "name": "化工厂.yml",
+      "unsupported": [],
+      "blocks": 89,
+      "unstable": [],
+      "initialMatched": 89,
+      "phase": "before"
+    },
+    {
+      "name": "化石.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "before"
+    },
+    {
+      "name": "卧室内饰.yml",
+      "unsupported": [],
+      "blocks": 12,
+      "unstable": [],
+      "initialMatched": 12,
+      "phase": "before"
+    },
+    {
+      "name": "发送小蜜蜂房子.yml",
+      "unsupported": [],
+      "blocks": 69,
+      "unstable": [],
+      "initialMatched": 69,
+      "phase": "before"
+    },
+    {
+      "name": "喷泉.yml",
+      "unsupported": [],
+      "blocks": 31,
+      "unstable": [],
+      "initialMatched": 31,
+      "phase": "before"
+    },
+    {
+      "name": "圣诞树.yml",
+      "unsupported": [],
+      "blocks": 47,
+      "unstable": [],
+      "initialMatched": 47,
+      "phase": "before"
+    },
+    {
+      "name": "堡垒.yml",
+      "unsupported": [],
+      "blocks": 76,
+      "unstable": [],
+      "initialMatched": 76,
+      "phase": "before"
+    },
+    {
+      "name": "塔吊.yml",
+      "unsupported": [],
+      "blocks": 31,
+      "unstable": [],
+      "initialMatched": 31,
+      "phase": "before"
+    },
+    {
+      "name": "墓地.yml",
+      "unsupported": [],
+      "blocks": 28,
+      "unstable": [],
+      "initialMatched": 28,
+      "phase": "before"
+    },
+    {
+      "name": "壁炉.yml",
+      "unsupported": [],
+      "blocks": 39,
+      "unstable": [],
+      "initialMatched": 39,
+      "phase": "before"
+    },
+    {
+      "name": "多媒体教室.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "before"
+    },
+    {
+      "name": "天平.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "before"
+    },
+    {
+      "name": "太阳纹章.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "before"
+    },
+    {
+      "name": "奖杯台.yml",
+      "unsupported": [],
+      "blocks": 22,
+      "unstable": [],
+      "initialMatched": 22,
+      "phase": "before"
+    },
+    {
+      "name": "守卫者.yml",
+      "unsupported": [],
+      "blocks": 36,
+      "unstable": [],
+      "initialMatched": 36,
+      "phase": "before"
+    },
+    {
+      "name": "实验室.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "before"
+    },
+    {
+      "name": "审判之锤.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "before"
+    },
+    {
+      "name": "小屋.yml",
+      "unsupported": [],
+      "blocks": 35,
+      "unstable": [],
+      "initialMatched": 35,
+      "phase": "before"
+    },
+    {
+      "name": "小旗帜.yml",
+      "unsupported": [],
+      "blocks": 8,
+      "unstable": [],
+      "initialMatched": 8,
+      "phase": "before"
+    },
+    {
+      "name": "小火箭.yml",
+      "unsupported": [],
+      "blocks": 46,
+      "unstable": [],
+      "initialMatched": 46,
+      "phase": "before"
+    },
+    {
+      "name": "小狗嚼.yml",
+      "unsupported": [],
+      "blocks": 69,
+      "unstable": [],
+      "initialMatched": 69,
+      "phase": "before"
+    },
+    {
+      "name": "小皇冠.yml",
+      "unsupported": [],
+      "blocks": 23,
+      "unstable": [],
+      "initialMatched": 23,
+      "phase": "before"
+    },
+    {
+      "name": "小神社.yml",
+      "unsupported": [],
+      "blocks": 47,
+      "unstable": [],
+      "initialMatched": 47,
+      "phase": "before"
+    },
+    {
+      "name": "小老鼠.yml",
+      "unsupported": [],
+      "blocks": 22,
+      "unstable": [],
+      "initialMatched": 22,
+      "phase": "before"
+    },
+    {
+      "name": "小船.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "before"
+    },
+    {
+      "name": "小花.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "before"
+    },
+    {
+      "name": "小蛋糕.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "before"
+    },
+    {
+      "name": "小货车.yml",
+      "unsupported": [],
+      "blocks": 55,
+      "unstable": [],
+      "initialMatched": 55,
+      "phase": "before"
+    },
+    {
+      "name": "小雨伞.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "before"
+    },
+    {
+      "name": "小雪人.yml",
+      "unsupported": [],
+      "blocks": 7,
+      "unstable": [],
+      "initialMatched": 7,
+      "phase": "before"
+    },
+    {
+      "name": "小驴.yml",
+      "unsupported": [],
+      "blocks": 65,
+      "unstable": [],
+      "initialMatched": 65,
+      "phase": "before"
+    },
+    {
+      "name": "小鸡.yml",
+      "unsupported": [],
+      "blocks": 38,
+      "unstable": [],
+      "initialMatched": 38,
+      "phase": "before"
+    },
+    {
+      "name": "巨石阵.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "before"
+    },
+    {
+      "name": "帆船.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "before"
+    },
+    {
+      "name": "府衙门.yml",
+      "unsupported": [],
+      "blocks": 45,
+      "unstable": [
+        {
+          "reference": "minecraft:mud_brick_wall[east=none,north=low,south=low,up=true,waterlogged=false,west=none]",
+          "neighbours": "minecraft:mud_brick_wall[east=none,north=low,south=low,up=false,waterlogged=false,west=none]",
+          "position": "2,6,3"
+        }
+      ],
+      "initialMatched": 45,
+      "phase": "before"
+    },
+    {
+      "name": "废弃地狱门.yml",
+      "unsupported": [],
+      "blocks": 67,
+      "unstable": [],
+      "initialMatched": 67,
+      "phase": "before"
+    },
+    {
+      "name": "开放式厨房.yml",
+      "unsupported": [],
+      "blocks": 52,
+      "unstable": [],
+      "initialMatched": 52,
+      "phase": "before"
+    },
+    {
+      "name": "彩虹.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "before"
+    },
+    {
+      "name": "微缩平原村庄.yml",
+      "unsupported": [],
+      "blocks": 83,
+      "unstable": [],
+      "initialMatched": 83,
+      "phase": "before"
+    },
+    {
+      "name": "恐龙化石.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "before"
+    },
+    {
+      "name": "指南针.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "before"
+    },
+    {
+      "name": "摇曳露营！？.yml",
+      "unsupported": [],
+      "blocks": 30,
+      "unstable": [],
+      "initialMatched": 30,
+      "phase": "before"
+    },
+    {
+      "name": "摩托车.yml",
+      "unsupported": [],
+      "blocks": 18,
+      "unstable": [],
+      "initialMatched": 18,
+      "phase": "before"
+    },
+    {
+      "name": "撤硕.yml",
+      "unsupported": [],
+      "blocks": 50,
+      "unstable": [],
+      "initialMatched": 50,
+      "phase": "before"
+    },
+    {
+      "name": "断头台.yml",
+      "unsupported": [],
+      "blocks": 41,
+      "unstable": [],
+      "initialMatched": 41,
+      "phase": "before"
+    },
+    {
+      "name": "时钟.yml",
+      "unsupported": [],
+      "blocks": 69,
+      "unstable": [],
+      "initialMatched": 69,
+      "phase": "before"
+    },
+    {
+      "name": "月牙.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "before"
+    },
+    {
+      "name": "末地外岛.yml",
+      "unsupported": [],
+      "blocks": 65,
+      "unstable": [],
+      "initialMatched": 65,
+      "phase": "before"
+    },
+    {
+      "name": "机器人.yml",
+      "unsupported": [],
+      "blocks": 41,
+      "unstable": [],
+      "initialMatched": 41,
+      "phase": "before"
+    },
+    {
+      "name": "森林.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "before"
+    },
+    {
+      "name": "樱花亭.yml",
+      "unsupported": [],
+      "blocks": 52,
+      "unstable": [],
+      "initialMatched": 52,
+      "phase": "before"
+    },
+    {
+      "name": "橙色汽车.yml",
+      "unsupported": [],
+      "blocks": 36,
+      "unstable": [],
+      "initialMatched": 36,
+      "phase": "before"
+    },
+    {
+      "name": "比宇宙更遥远的地方.yml",
+      "unsupported": [],
+      "blocks": 40,
+      "unstable": [],
+      "initialMatched": 40,
+      "phase": "before"
+    },
+    {
+      "name": "池塘小鸭.yml",
+      "unsupported": [],
+      "blocks": 25,
+      "unstable": [],
+      "initialMatched": 25,
+      "phase": "before"
+    },
+    {
+      "name": "沙滩躺椅.yml",
+      "unsupported": [],
+      "blocks": 36,
+      "unstable": [],
+      "initialMatched": 36,
+      "phase": "before"
+    },
+    {
+      "name": "沙漏.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "before"
+    },
+    {
+      "name": "沙漠枯井.yml",
+      "unsupported": [],
+      "blocks": 91,
+      "unstable": [],
+      "initialMatched": 91,
+      "phase": "before"
+    },
+    {
+      "name": "沙漠神殿.yml",
+      "unsupported": [],
+      "blocks": 24,
+      "unstable": [],
+      "initialMatched": 24,
+      "phase": "before"
+    },
+    {
+      "name": "海岸码头.yml",
+      "unsupported": [],
+      "blocks": 76,
+      "unstable": [],
+      "initialMatched": 76,
+      "phase": "before"
+    },
+    {
+      "name": "海底神殿.yml",
+      "unsupported": [],
+      "blocks": 80,
+      "unstable": [],
+      "initialMatched": 80,
+      "phase": "before"
+    },
+    {
+      "name": "海风湾.yml",
+      "unsupported": [],
+      "blocks": 74,
+      "unstable": [],
+      "initialMatched": 74,
+      "phase": "before"
+    },
+    {
+      "name": "深海潜艇.yml",
+      "unsupported": [
+        "1,1,4=minecraft:polished_blackstone_button[face=wall,facing=north,powered=false]",
+        "5,1,4=minecraft:polished_blackstone_button[face=wall,facing=north,powered=false]"
+      ],
+      "blocks": 31,
+      "unstable": [
+        {
+          "reference": "minecraft:polished_blackstone_button[face=wall,facing=north,powered=false]",
+          "neighbours": "minecraft:air",
+          "position": "1,1,4"
+        },
+        {
+          "reference": "minecraft:polished_blackstone_button[face=wall,facing=north,powered=false]",
+          "neighbours": "minecraft:air",
+          "position": "5,1,4"
+        }
+      ],
+      "initialMatched": 31,
+      "phase": "before"
+    },
+    {
+      "name": "游泳圈.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "before"
+    },
+    {
+      "name": "滑翔机.yml",
+      "unsupported": [],
+      "blocks": 33,
+      "unstable": [],
+      "initialMatched": 33,
+      "phase": "before"
+    },
+    {
+      "name": "潮涌核心.yml",
+      "unsupported": [],
+      "blocks": 43,
+      "unstable": [],
+      "initialMatched": 43,
+      "phase": "before"
+    },
+    {
+      "name": "火车进站.yml",
+      "unsupported": [],
+      "blocks": 69,
+      "unstable": [],
+      "initialMatched": 69,
+      "phase": "before"
+    },
+    {
+      "name": "灯下长椅.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "before"
+    },
+    {
+      "name": "热带风味.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "before"
+    },
+    {
+      "name": "热气球.yml",
+      "unsupported": [],
+      "blocks": 78,
+      "unstable": [],
+      "initialMatched": 78,
+      "phase": "before"
+    },
+    {
+      "name": "熊猫.yml",
+      "unsupported": [],
+      "blocks": 59,
+      "unstable": [],
+      "initialMatched": 59,
+      "phase": "before"
+    },
+    {
+      "name": "玄武岩三角洲.yml",
+      "unsupported": [],
+      "blocks": 66,
+      "unstable": [],
+      "initialMatched": 66,
+      "phase": "before"
+    },
+    {
+      "name": "王八.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "before"
+    },
+    {
+      "name": "甜品车.yml",
+      "unsupported": [],
+      "blocks": 42,
+      "unstable": [],
+      "initialMatched": 42,
+      "phase": "before"
+    },
+    {
+      "name": "眼镜.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "before"
+    },
+    {
+      "name": "石岸灯塔.yml",
+      "unsupported": [],
+      "blocks": 32,
+      "unstable": [],
+      "initialMatched": 32,
+      "phase": "before"
+    },
+    {
+      "name": "矿井.yml",
+      "unsupported": [],
+      "blocks": 70,
+      "unstable": [],
+      "initialMatched": 70,
+      "phase": "before"
+    },
+    {
+      "name": "秋千.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "before"
+    },
+    {
+      "name": "章鱼.yml",
+      "unsupported": [],
+      "blocks": 40,
+      "unstable": [],
+      "initialMatched": 40,
+      "phase": "before"
+    },
+    {
+      "name": "糖果.yml",
+      "unsupported": [],
+      "blocks": 14,
+      "unstable": [],
+      "initialMatched": 14,
+      "phase": "before"
+    },
+    {
+      "name": "红心.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "before"
+    },
+    {
+      "name": "红树林沼泽.yml",
+      "unsupported": [],
+      "blocks": 80,
+      "unstable": [],
+      "initialMatched": 80,
+      "phase": "before"
+    },
+    {
+      "name": "红石器械.yml",
+      "unsupported": [],
+      "blocks": 74,
+      "unstable": [],
+      "initialMatched": 74,
+      "phase": "before"
+    },
+    {
+      "name": "红砖小屋.yml",
+      "unsupported": [],
+      "blocks": 46,
+      "unstable": [],
+      "initialMatched": 46,
+      "phase": "before"
+    },
+    {
+      "name": "纸飞机.yml",
+      "unsupported": [],
+      "blocks": 13,
+      "unstable": [],
+      "initialMatched": 13,
+      "phase": "before"
+    },
+    {
+      "name": "美味静物.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "before"
+    },
+    {
+      "name": "群友牧场.yml",
+      "unsupported": [],
+      "blocks": 63,
+      "unstable": [],
+      "initialMatched": 63,
+      "phase": "before"
+    },
+    {
+      "name": "脚印.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "before"
+    },
+    {
+      "name": "自然餐桌.yml",
+      "unsupported": [],
+      "blocks": 79,
+      "unstable": [],
+      "initialMatched": 79,
+      "phase": "before"
+    },
+    {
+      "name": "花丛.yml",
+      "unsupported": [],
+      "blocks": 46,
+      "unstable": [],
+      "initialMatched": 46,
+      "phase": "before"
+    },
+    {
+      "name": "花摊.yml",
+      "unsupported": [],
+      "blocks": 45,
+      "unstable": [],
+      "initialMatched": 45,
+      "phase": "before"
+    },
+    {
+      "name": "苦力怕.yml",
+      "unsupported": [],
+      "blocks": 25,
+      "unstable": [],
+      "initialMatched": 25,
+      "phase": "before"
+    },
+    {
+      "name": "茶壶.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "before"
+    },
+    {
+      "name": "蘑菇蘑菇.yml",
+      "unsupported": [],
+      "blocks": 76,
+      "unstable": [],
+      "initialMatched": 76,
+      "phase": "before"
+    },
+    {
+      "name": "蚂蚁.yml",
+      "unsupported": [],
+      "blocks": 23,
+      "unstable": [],
+      "initialMatched": 23,
+      "phase": "before"
+    },
+    {
+      "name": "蝴蝶结.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "before"
+    },
+    {
+      "name": "观星台.yml",
+      "unsupported": [],
+      "blocks": 37,
+      "unstable": [],
+      "initialMatched": 37,
+      "phase": "before"
+    },
+    {
+      "name": "诡异森林.yml",
+      "unsupported": [],
+      "blocks": 64,
+      "unstable": [],
+      "initialMatched": 64,
+      "phase": "before"
+    },
+    {
+      "name": "起居室.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "before"
+    },
+    {
+      "name": "跑酷.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "before"
+    },
+    {
+      "name": "路灯.yml",
+      "unsupported": [],
+      "blocks": 12,
+      "unstable": [],
+      "initialMatched": 12,
+      "phase": "before"
+    },
+    {
+      "name": "这上面的风景不错.yml",
+      "unsupported": [],
+      "blocks": 51,
+      "unstable": [],
+      "initialMatched": 51,
+      "phase": "before"
+    },
+    {
+      "name": "远古城市.yml",
+      "unsupported": [],
+      "blocks": 73,
+      "unstable": [],
+      "initialMatched": 73,
+      "phase": "before"
+    },
+    {
+      "name": "迪厅.yml",
+      "unsupported": [],
+      "blocks": 66,
+      "unstable": [],
+      "initialMatched": 66,
+      "phase": "before"
+    },
+    {
+      "name": "邮箱.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "before"
+    },
+    {
+      "name": "野餐篮.yml",
+      "unsupported": [],
+      "blocks": 37,
+      "unstable": [],
+      "initialMatched": 37,
+      "phase": "before"
+    },
+    {
+      "name": "金字塔.yml",
+      "unsupported": [],
+      "blocks": 84,
+      "unstable": [],
+      "initialMatched": 84,
+      "phase": "before"
+    },
+    {
+      "name": "钢琴.yml",
+      "unsupported": [],
+      "blocks": 45,
+      "unstable": [],
+      "initialMatched": 45,
+      "phase": "before"
+    },
+    {
+      "name": "铜齿轮.yml",
+      "unsupported": [],
+      "blocks": 50,
+      "unstable": [],
+      "initialMatched": 50,
+      "phase": "before"
+    },
+    {
+      "name": "闹钟.yml",
+      "unsupported": [],
+      "blocks": 62,
+      "unstable": [],
+      "initialMatched": 62,
+      "phase": "before"
+    },
+    {
+      "name": "雪原村庄.yml",
+      "unsupported": [],
+      "blocks": 83,
+      "unstable": [],
+      "initialMatched": 83,
+      "phase": "before"
+    },
+    {
+      "name": "露营地.yml",
+      "unsupported": [],
+      "blocks": 97,
+      "unstable": [],
+      "initialMatched": 97,
+      "phase": "before"
+    },
+    {
+      "name": "音符盒.yml",
+      "unsupported": [],
+      "blocks": 56,
+      "unstable": [],
+      "initialMatched": 56,
+      "phase": "before"
+    },
+    {
+      "name": "风车原野.yml",
+      "unsupported": [],
+      "blocks": 78,
+      "unstable": [],
+      "initialMatched": 78,
+      "phase": "before"
+    },
+    {
+      "name": "骨头.yml",
+      "unsupported": [],
+      "blocks": 9,
+      "unstable": [],
+      "initialMatched": 9,
+      "phase": "before"
+    },
+    {
+      "name": "魔法书.yml",
+      "unsupported": [],
+      "blocks": 49,
+      "unstable": [],
+      "initialMatched": 49,
+      "phase": "before"
+    },
+    {
+      "name": "鱼子小雕.yml",
+      "unsupported": [],
+      "blocks": 48,
+      "unstable": [],
+      "initialMatched": 48,
+      "phase": "before"
+    },
+    {
+      "name": "麦当劳.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "before"
+    },
+    {
+      "name": "黑石公告牌.yml",
+      "unsupported": [],
+      "blocks": 29,
+      "unstable": [],
+      "initialMatched": 29,
+      "phase": "before"
+    },
+    {
+      "name": "黑石篮球场.yml",
+      "unsupported": [],
+      "blocks": 23,
+      "unstable": [],
+      "initialMatched": 23,
+      "phase": "before"
+    },
+    {
+      "name": "?!植物大战僵尸!?.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "blueprints"
+    },
+    {
+      "name": "inf.yml",
+      "unsupported": [],
+      "blocks": 35,
+      "unstable": [],
+      "initialMatched": 35,
+      "phase": "blueprints"
+    },
+    {
+      "name": "ria.yml",
+      "unsupported": [],
+      "blocks": 33,
+      "unstable": [],
+      "initialMatched": 33,
+      "phase": "blueprints"
+    },
+    {
+      "name": "scc.yml",
+      "unsupported": [],
+      "blocks": 33,
+      "unstable": [],
+      "initialMatched": 33,
+      "phase": "blueprints"
+    },
+    {
+      "name": "三花.yml",
+      "unsupported": [],
+      "blocks": 54,
+      "unstable": [],
+      "initialMatched": 54,
+      "phase": "blueprints"
+    },
+    {
+      "name": "下界之剑.yml",
+      "unsupported": [],
+      "blocks": 29,
+      "unstable": [],
+      "initialMatched": 29,
+      "phase": "blueprints"
+    },
+    {
+      "name": "下界要塞.yml",
+      "unsupported": [],
+      "blocks": 34,
+      "unstable": [],
+      "initialMatched": 34,
+      "phase": "blueprints"
+    },
+    {
+      "name": "丛林神庙.yml",
+      "unsupported": [],
+      "blocks": 35,
+      "unstable": [],
+      "initialMatched": 35,
+      "phase": "blueprints"
+    },
+    {
+      "name": "严肃石头人.yml",
+      "unsupported": [],
+      "blocks": 32,
+      "unstable": [],
+      "initialMatched": 32,
+      "phase": "blueprints"
+    },
+    {
+      "name": "你这瓜保熟吗.yml",
+      "unsupported": [],
+      "blocks": 48,
+      "unstable": [],
+      "initialMatched": 48,
+      "phase": "blueprints"
+    },
+    {
+      "name": "共鸣鸟居.yml",
+      "unsupported": [],
+      "blocks": 35,
+      "unstable": [],
+      "initialMatched": 35,
+      "phase": "blueprints"
+    },
+    {
+      "name": "农场.yml",
+      "unsupported": [],
+      "blocks": 60,
+      "unstable": [],
+      "initialMatched": 60,
+      "phase": "blueprints"
+    },
+    {
+      "name": "农场2.yml",
+      "unsupported": [],
+      "blocks": 24,
+      "unstable": [],
+      "initialMatched": 24,
+      "phase": "blueprints"
+    },
+    {
+      "name": "农田.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "blueprints"
+    },
+    {
+      "name": "冰淇淋车.yml",
+      "unsupported": [],
+      "blocks": 39,
+      "unstable": [],
+      "initialMatched": 39,
+      "phase": "blueprints"
+    },
+    {
+      "name": "前哨站.yml",
+      "unsupported": [],
+      "blocks": 57,
+      "unstable": [],
+      "initialMatched": 57,
+      "phase": "blueprints"
+    },
+    {
+      "name": "化工厂.yml",
+      "unsupported": [],
+      "blocks": 40,
+      "unstable": [],
+      "initialMatched": 40,
+      "phase": "blueprints"
+    },
+    {
+      "name": "化石.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "blueprints"
+    },
+    {
+      "name": "卧室内饰.yml",
+      "unsupported": [],
+      "blocks": 12,
+      "unstable": [],
+      "initialMatched": 12,
+      "phase": "blueprints"
+    },
+    {
+      "name": "发送小蜜蜂房子.yml",
+      "unsupported": [],
+      "blocks": 22,
+      "unstable": [],
+      "initialMatched": 22,
+      "phase": "blueprints"
+    },
+    {
+      "name": "喷泉.yml",
+      "unsupported": [],
+      "blocks": 31,
+      "unstable": [],
+      "initialMatched": 31,
+      "phase": "blueprints"
+    },
+    {
+      "name": "圣诞树.yml",
+      "unsupported": [],
+      "blocks": 47,
+      "unstable": [],
+      "initialMatched": 47,
+      "phase": "blueprints"
+    },
+    {
+      "name": "堡垒.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "blueprints"
+    },
+    {
+      "name": "塔吊.yml",
+      "unsupported": [],
+      "blocks": 31,
+      "unstable": [],
+      "initialMatched": 31,
+      "phase": "blueprints"
+    },
+    {
+      "name": "墓地.yml",
+      "unsupported": [],
+      "blocks": 28,
+      "unstable": [],
+      "initialMatched": 28,
+      "phase": "blueprints"
+    },
+    {
+      "name": "壁炉.yml",
+      "unsupported": [],
+      "blocks": 39,
+      "unstable": [],
+      "initialMatched": 39,
+      "phase": "blueprints"
+    },
+    {
+      "name": "多媒体教室.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "blueprints"
+    },
+    {
+      "name": "天平.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "blueprints"
+    },
+    {
+      "name": "太阳纹章.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "blueprints"
+    },
+    {
+      "name": "奖杯台.yml",
+      "unsupported": [],
+      "blocks": 22,
+      "unstable": [],
+      "initialMatched": 22,
+      "phase": "blueprints"
+    },
+    {
+      "name": "守卫者.yml",
+      "unsupported": [],
+      "blocks": 36,
+      "unstable": [],
+      "initialMatched": 36,
+      "phase": "blueprints"
+    },
+    {
+      "name": "实验室.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "blueprints"
+    },
+    {
+      "name": "审判之锤.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小屋.yml",
+      "unsupported": [],
+      "blocks": 35,
+      "unstable": [],
+      "initialMatched": 35,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小旗帜.yml",
+      "unsupported": [],
+      "blocks": 8,
+      "unstable": [],
+      "initialMatched": 8,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小火箭.yml",
+      "unsupported": [],
+      "blocks": 46,
+      "unstable": [],
+      "initialMatched": 46,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小狗嚼.yml",
+      "unsupported": [],
+      "blocks": 69,
+      "unstable": [],
+      "initialMatched": 69,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小皇冠.yml",
+      "unsupported": [],
+      "blocks": 23,
+      "unstable": [],
+      "initialMatched": 23,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小神社.yml",
+      "unsupported": [],
+      "blocks": 47,
+      "unstable": [],
+      "initialMatched": 47,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小老鼠.yml",
+      "unsupported": [],
+      "blocks": 22,
+      "unstable": [],
+      "initialMatched": 22,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小船.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小花.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小蛋糕.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小货车.yml",
+      "unsupported": [],
+      "blocks": 55,
+      "unstable": [],
+      "initialMatched": 55,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小雨伞.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小雪人.yml",
+      "unsupported": [],
+      "blocks": 7,
+      "unstable": [],
+      "initialMatched": 7,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小驴.yml",
+      "unsupported": [],
+      "blocks": 65,
+      "unstable": [],
+      "initialMatched": 65,
+      "phase": "blueprints"
+    },
+    {
+      "name": "小鸡.yml",
+      "unsupported": [],
+      "blocks": 38,
+      "unstable": [],
+      "initialMatched": 38,
+      "phase": "blueprints"
+    },
+    {
+      "name": "巨石阵.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "blueprints"
+    },
+    {
+      "name": "帆船.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "blueprints"
+    },
+    {
+      "name": "府衙门.yml",
+      "unsupported": [],
+      "blocks": 45,
+      "unstable": [
+        {
+          "reference": "minecraft:mud_brick_wall[east=none,north=low,south=low,up=true,waterlogged=false,west=none]",
+          "neighbours": "minecraft:mud_brick_wall[east=none,north=low,south=low,up=false,waterlogged=false,west=none]",
+          "position": "2,6,3"
+        }
+      ],
+      "initialMatched": 45,
+      "phase": "blueprints"
+    },
+    {
+      "name": "废弃地狱门.yml",
+      "unsupported": [],
+      "blocks": 18,
+      "unstable": [],
+      "initialMatched": 18,
+      "phase": "blueprints"
+    },
+    {
+      "name": "开放式厨房.yml",
+      "unsupported": [],
+      "blocks": 52,
+      "unstable": [],
+      "initialMatched": 52,
+      "phase": "blueprints"
+    },
+    {
+      "name": "彩虹.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "blueprints"
+    },
+    {
+      "name": "微缩平原村庄.yml",
+      "unsupported": [],
+      "blocks": 34,
+      "unstable": [],
+      "initialMatched": 34,
+      "phase": "blueprints"
+    },
+    {
+      "name": "恐龙化石.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "blueprints"
+    },
+    {
+      "name": "指南针.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "blueprints"
+    },
+    {
+      "name": "摇曳露营！？.yml",
+      "unsupported": [],
+      "blocks": 30,
+      "unstable": [],
+      "initialMatched": 30,
+      "phase": "blueprints"
+    },
+    {
+      "name": "摩托车.yml",
+      "unsupported": [],
+      "blocks": 18,
+      "unstable": [],
+      "initialMatched": 18,
+      "phase": "blueprints"
+    },
+    {
+      "name": "撤硕.yml",
+      "unsupported": [],
+      "blocks": 50,
+      "unstable": [],
+      "initialMatched": 50,
+      "phase": "blueprints"
+    },
+    {
+      "name": "断头台.yml",
+      "unsupported": [],
+      "blocks": 41,
+      "unstable": [],
+      "initialMatched": 41,
+      "phase": "blueprints"
+    },
+    {
+      "name": "时钟.yml",
+      "unsupported": [],
+      "blocks": 69,
+      "unstable": [],
+      "initialMatched": 69,
+      "phase": "blueprints"
+    },
+    {
+      "name": "月牙.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "blueprints"
+    },
+    {
+      "name": "末地外岛.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "blueprints"
+    },
+    {
+      "name": "机器人.yml",
+      "unsupported": [],
+      "blocks": 41,
+      "unstable": [],
+      "initialMatched": 41,
+      "phase": "blueprints"
+    },
+    {
+      "name": "森林.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "blueprints"
+    },
+    {
+      "name": "樱花亭.yml",
+      "unsupported": [],
+      "blocks": 52,
+      "unstable": [],
+      "initialMatched": 52,
+      "phase": "blueprints"
+    },
+    {
+      "name": "橙色汽车.yml",
+      "unsupported": [],
+      "blocks": 36,
+      "unstable": [],
+      "initialMatched": 36,
+      "phase": "blueprints"
+    },
+    {
+      "name": "比宇宙更遥远的地方.yml",
+      "unsupported": [],
+      "blocks": 40,
+      "unstable": [],
+      "initialMatched": 40,
+      "phase": "blueprints"
+    },
+    {
+      "name": "池塘小鸭.yml",
+      "unsupported": [],
+      "blocks": 25,
+      "unstable": [],
+      "initialMatched": 25,
+      "phase": "blueprints"
+    },
+    {
+      "name": "沙滩躺椅.yml",
+      "unsupported": [],
+      "blocks": 36,
+      "unstable": [],
+      "initialMatched": 36,
+      "phase": "blueprints"
+    },
+    {
+      "name": "沙漏.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "blueprints"
+    },
+    {
+      "name": "沙漠枯井.yml",
+      "unsupported": [],
+      "blocks": 46,
+      "unstable": [],
+      "initialMatched": 46,
+      "phase": "blueprints"
+    },
+    {
+      "name": "沙漠神殿.yml",
+      "unsupported": [],
+      "blocks": 24,
+      "unstable": [],
+      "initialMatched": 24,
+      "phase": "blueprints"
+    },
+    {
+      "name": "海岸码头.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "blueprints"
+    },
+    {
+      "name": "海底神殿.yml",
+      "unsupported": [],
+      "blocks": 56,
+      "unstable": [],
+      "initialMatched": 56,
+      "phase": "blueprints"
+    },
+    {
+      "name": "海风湾.yml",
+      "unsupported": [],
+      "blocks": 74,
+      "unstable": [],
+      "initialMatched": 74,
+      "phase": "blueprints"
+    },
+    {
+      "name": "深海潜艇.yml",
+      "unsupported": [
+        "1,1,4=minecraft:polished_blackstone_button[face=wall,facing=north,powered=false]",
+        "5,1,4=minecraft:polished_blackstone_button[face=wall,facing=north,powered=false]"
+      ],
+      "blocks": 31,
+      "unstable": [
+        {
+          "reference": "minecraft:polished_blackstone_button[face=wall,facing=north,powered=false]",
+          "neighbours": "minecraft:air",
+          "position": "1,1,4"
+        },
+        {
+          "reference": "minecraft:polished_blackstone_button[face=wall,facing=north,powered=false]",
+          "neighbours": "minecraft:air",
+          "position": "5,1,4"
+        }
+      ],
+      "initialMatched": 31,
+      "phase": "blueprints"
+    },
+    {
+      "name": "游泳圈.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "blueprints"
+    },
+    {
+      "name": "滑翔机.yml",
+      "unsupported": [],
+      "blocks": 33,
+      "unstable": [],
+      "initialMatched": 33,
+      "phase": "blueprints"
+    },
+    {
+      "name": "潮涌核心.yml",
+      "unsupported": [],
+      "blocks": 43,
+      "unstable": [],
+      "initialMatched": 43,
+      "phase": "blueprints"
+    },
+    {
+      "name": "火车进站.yml",
+      "unsupported": [],
+      "blocks": 48,
+      "unstable": [],
+      "initialMatched": 48,
+      "phase": "blueprints"
+    },
+    {
+      "name": "灯下长椅.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "blueprints"
+    },
+    {
+      "name": "热带风味.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "blueprints"
+    },
+    {
+      "name": "热气球.yml",
+      "unsupported": [],
+      "blocks": 29,
+      "unstable": [],
+      "initialMatched": 29,
+      "phase": "blueprints"
+    },
+    {
+      "name": "熊猫.yml",
+      "unsupported": [],
+      "blocks": 39,
+      "unstable": [],
+      "initialMatched": 39,
+      "phase": "blueprints"
+    },
+    {
+      "name": "玄武岩三角洲.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "blueprints"
+    },
+    {
+      "name": "王八.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "blueprints"
+    },
+    {
+      "name": "甜品车.yml",
+      "unsupported": [],
+      "blocks": 42,
+      "unstable": [],
+      "initialMatched": 42,
+      "phase": "blueprints"
+    },
+    {
+      "name": "眼镜.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "blueprints"
+    },
+    {
+      "name": "石岸灯塔.yml",
+      "unsupported": [],
+      "blocks": 32,
+      "unstable": [],
+      "initialMatched": 32,
+      "phase": "blueprints"
+    },
+    {
+      "name": "矿井.yml",
+      "unsupported": [],
+      "blocks": 21,
+      "unstable": [],
+      "initialMatched": 21,
+      "phase": "blueprints"
+    },
+    {
+      "name": "秋千.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "blueprints"
+    },
+    {
+      "name": "章鱼.yml",
+      "unsupported": [],
+      "blocks": 40,
+      "unstable": [],
+      "initialMatched": 40,
+      "phase": "blueprints"
+    },
+    {
+      "name": "糖果.yml",
+      "unsupported": [],
+      "blocks": 14,
+      "unstable": [],
+      "initialMatched": 14,
+      "phase": "blueprints"
+    },
+    {
+      "name": "红心.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "blueprints"
+    },
+    {
+      "name": "红树林沼泽.yml",
+      "unsupported": [],
+      "blocks": 33,
+      "unstable": [],
+      "initialMatched": 33,
+      "phase": "blueprints"
+    },
+    {
+      "name": "红石器械.yml",
+      "unsupported": [],
+      "blocks": 74,
+      "unstable": [],
+      "initialMatched": 74,
+      "phase": "blueprints"
+    },
+    {
+      "name": "红砖小屋.yml",
+      "unsupported": [],
+      "blocks": 46,
+      "unstable": [],
+      "initialMatched": 46,
+      "phase": "blueprints"
+    },
+    {
+      "name": "纸飞机.yml",
+      "unsupported": [],
+      "blocks": 13,
+      "unstable": [],
+      "initialMatched": 13,
+      "phase": "blueprints"
+    },
+    {
+      "name": "美味静物.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "blueprints"
+    },
+    {
+      "name": "群友牧场.yml",
+      "unsupported": [],
+      "blocks": 16,
+      "unstable": [],
+      "initialMatched": 16,
+      "phase": "blueprints"
+    },
+    {
+      "name": "脚印.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "blueprints"
+    },
+    {
+      "name": "自然餐桌.yml",
+      "unsupported": [],
+      "blocks": 46,
+      "unstable": [],
+      "initialMatched": 46,
+      "phase": "blueprints"
+    },
+    {
+      "name": "花丛.yml",
+      "unsupported": [],
+      "blocks": 46,
+      "unstable": [],
+      "initialMatched": 46,
+      "phase": "blueprints"
+    },
+    {
+      "name": "花摊.yml",
+      "unsupported": [],
+      "blocks": 45,
+      "unstable": [],
+      "initialMatched": 45,
+      "phase": "blueprints"
+    },
+    {
+      "name": "苦力怕.yml",
+      "unsupported": [],
+      "blocks": 25,
+      "unstable": [],
+      "initialMatched": 25,
+      "phase": "blueprints"
+    },
+    {
+      "name": "茶壶.yml",
+      "unsupported": [],
+      "blocks": 26,
+      "unstable": [],
+      "initialMatched": 26,
+      "phase": "blueprints"
+    },
+    {
+      "name": "蘑菇蘑菇.yml",
+      "unsupported": [],
+      "blocks": 32,
+      "unstable": [],
+      "initialMatched": 32,
+      "phase": "blueprints"
+    },
+    {
+      "name": "蚂蚁.yml",
+      "unsupported": [],
+      "blocks": 23,
+      "unstable": [],
+      "initialMatched": 23,
+      "phase": "blueprints"
+    },
+    {
+      "name": "蝴蝶结.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "blueprints"
+    },
+    {
+      "name": "观星台.yml",
+      "unsupported": [],
+      "blocks": 37,
+      "unstable": [],
+      "initialMatched": 37,
+      "phase": "blueprints"
+    },
+    {
+      "name": "诡异森林.yml",
+      "unsupported": [],
+      "blocks": 17,
+      "unstable": [],
+      "initialMatched": 17,
+      "phase": "blueprints"
+    },
+    {
+      "name": "起居室.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "blueprints"
+    },
+    {
+      "name": "跑酷.yml",
+      "unsupported": [],
+      "blocks": 15,
+      "unstable": [],
+      "initialMatched": 15,
+      "phase": "blueprints"
+    },
+    {
+      "name": "路灯.yml",
+      "unsupported": [],
+      "blocks": 12,
+      "unstable": [],
+      "initialMatched": 12,
+      "phase": "blueprints"
+    },
+    {
+      "name": "这上面的风景不错.yml",
+      "unsupported": [],
+      "blocks": 51,
+      "unstable": [],
+      "initialMatched": 51,
+      "phase": "blueprints"
+    },
+    {
+      "name": "远古城市.yml",
+      "unsupported": [],
+      "blocks": 24,
+      "unstable": [],
+      "initialMatched": 24,
+      "phase": "blueprints"
+    },
+    {
+      "name": "迪厅.yml",
+      "unsupported": [],
+      "blocks": 66,
+      "unstable": [],
+      "initialMatched": 66,
+      "phase": "blueprints"
+    },
+    {
+      "name": "邮箱.yml",
+      "unsupported": [],
+      "blocks": 19,
+      "unstable": [],
+      "initialMatched": 19,
+      "phase": "blueprints"
+    },
+    {
+      "name": "野餐篮.yml",
+      "unsupported": [],
+      "blocks": 37,
+      "unstable": [],
+      "initialMatched": 37,
+      "phase": "blueprints"
+    },
+    {
+      "name": "金字塔.yml",
+      "unsupported": [],
+      "blocks": 37,
+      "unstable": [],
+      "initialMatched": 37,
+      "phase": "blueprints"
+    },
+    {
+      "name": "钢琴.yml",
+      "unsupported": [],
+      "blocks": 45,
+      "unstable": [],
+      "initialMatched": 45,
+      "phase": "blueprints"
+    },
+    {
+      "name": "铜齿轮.yml",
+      "unsupported": [],
+      "blocks": 50,
+      "unstable": [],
+      "initialMatched": 50,
+      "phase": "blueprints"
+    },
+    {
+      "name": "闹钟.yml",
+      "unsupported": [],
+      "blocks": 62,
+      "unstable": [],
+      "initialMatched": 62,
+      "phase": "blueprints"
+    },
+    {
+      "name": "雪原村庄.yml",
+      "unsupported": [],
+      "blocks": 34,
+      "unstable": [],
+      "initialMatched": 34,
+      "phase": "blueprints"
+    },
+    {
+      "name": "露营地.yml",
+      "unsupported": [],
+      "blocks": 48,
+      "unstable": [],
+      "initialMatched": 48,
+      "phase": "blueprints"
+    },
+    {
+      "name": "音符盒.yml",
+      "unsupported": [],
+      "blocks": 56,
+      "unstable": [],
+      "initialMatched": 56,
+      "phase": "blueprints"
+    },
+    {
+      "name": "风车原野.yml",
+      "unsupported": [],
+      "blocks": 32,
+      "unstable": [],
+      "initialMatched": 32,
+      "phase": "blueprints"
+    },
+    {
+      "name": "骨头.yml",
+      "unsupported": [],
+      "blocks": 9,
+      "unstable": [],
+      "initialMatched": 9,
+      "phase": "blueprints"
+    },
+    {
+      "name": "魔法书.yml",
+      "unsupported": [],
+      "blocks": 49,
+      "unstable": [],
+      "initialMatched": 49,
+      "phase": "blueprints"
+    },
+    {
+      "name": "鱼子小雕.yml",
+      "unsupported": [],
+      "blocks": 48,
+      "unstable": [],
+      "initialMatched": 48,
+      "phase": "blueprints"
+    },
+    {
+      "name": "麦当劳.yml",
+      "unsupported": [],
+      "blocks": 27,
+      "unstable": [],
+      "initialMatched": 27,
+      "phase": "blueprints"
+    },
+    {
+      "name": "黑石公告牌.yml",
+      "unsupported": [],
+      "blocks": 29,
+      "unstable": [],
+      "initialMatched": 29,
+      "phase": "blueprints"
+    },
+    {
+      "name": "黑石篮球场.yml",
+      "unsupported": [],
+      "blocks": 23,
+      "unstable": [],
+      "initialMatched": 23,
+      "phase": "blueprints"
+    }
+  ],
+  "probes": {
+    "cherryMatches": 52,
+    "leaf": "minecraft:cherry_leaves[distance=7,persistent=true,waterlogged=false]",
+    "cherryTotal": 52,
+    "schedulerOrder": [
+      "rotate@2",
+      "rotate@4",
+      "rotate@6",
+      "rotate@8",
+      "rotate@10",
+      "rotate@12",
+      "end@12"
+    ]
+  }
+}

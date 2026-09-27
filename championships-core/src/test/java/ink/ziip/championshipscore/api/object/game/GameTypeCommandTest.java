@@ -12,6 +12,10 @@ class GameTypeCommandTest {
         assertEquals(GameTypeEnum.ParkourWarrior, GameTypeEnum.fromCommand("PARKOUR_WARRIOR"));
         assertEquals(GameTypeEnum.SnowballShowdown, GameTypeEnum.fromCommand("snowball"));
         assertEquals(GameTypeEnum.SnowballShowdown, GameTypeEnum.fromCommand("SnowballShowdown"));
+        assertEquals(GameTypeEnum.RiptideRush, GameTypeEnum.fromCommand("riptide"));
+        assertEquals(GameTypeEnum.RiptideRush, GameTypeEnum.fromCommand("raft"));
+        assertEquals(GameTypeEnum.RiptideRush, GameTypeEnum.fromCommand("RaftSurvival"));
+        assertEquals(GameTypeEnum.RiptideRush, GameTypeEnum.fromCommand("riptide-rush"));
         assertNull(GameTypeEnum.fromCommand("not-a-game"));
     }
 
@@ -20,5 +24,6 @@ class GameTypeCommandTest {
         assertEquals("snowball", GameTypeEnum.SnowballShowdown.commandName());
         assertEquals("acerace", GameTypeEnum.AceRace.commandName());
         assertEquals("dragoneggcarnival", GameTypeEnum.DragonEggCarnival.commandName());
+        assertEquals("riptide", GameTypeEnum.RiptideRush.commandName());
     }
 }

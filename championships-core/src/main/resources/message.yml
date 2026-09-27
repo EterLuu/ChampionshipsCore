@@ -120,7 +120,7 @@ event:
 auth:
   identity-verification-failed: "&c无法验证玩家身份，请确认服务器 UUID 模式与登录代理配置一致。"
 dont-edit-this:
-  version: 40
+  version: 59
 no-permission: "&#bababa[&#ff6b26管理&#bababa]&#ededed 权限不足"
 server-mode-switched: "服务器游玩方式已切换为&#fff566%mode%&#ededed。"
 server-full: 服务器成员数已达上限！
@@ -312,6 +312,8 @@ game:
   bingo: 宾果飞速
   buildmart: 匹配赛建
   dodgebolt: 躲避箭
+  riptiderush: 激流勇进
+  frostbite: 霜冻狂潮
   acerace: 王牌竞速
   preparation-count-down: "&#fff566%game% &#bababa•&#ededed 准备&#ff6b26%time%秒"
   introduction-title: "&#fff566&l%game%"
@@ -483,6 +485,7 @@ buildmart:
   golden-build-completed: "&#bababa[&#fff566匹配赛建&#bababa] %team%&#ff6b26完成黄金建筑&#fff566%blueprint%&#696969（+%points%）"
   golden-refreshed: "&#bababa[&#fff566匹配赛建&#bababa]&#fff566 黄金建筑已刷新 &#bababa•&#ededed 限时2分钟"
   golden-expired: "&#bababa[&#fff566匹配赛建&#bababa]&#696969 黄金建筑已过期"
+  submit-differences: "&#bababa缺失 %missing% • 材质不符 %material% • 方块状态不符 %state%。差异示例 %positions%（以地板最小角上方为 0,0,0）"
   submit-incomplete: "&#bababa[&#ff6b26匹配赛建&#bababa]&#fff566 %blueprint% &#bababa•&#ededed 完成度%matched%/%total%"
   submit-locked: "&#bababa[&#ff6b26匹配赛建&#bababa]&#ededed 结算阶段不能提交"
   golden-submit-failed: "&#bababa[&#ff6b26匹配赛建&#bababa]&#fff566 %blueprint% &#bababa•&#ededed 未完成，黄金区已清空"
@@ -964,3 +967,52 @@ map-editor-parkourtag:
   track-1-chaser-set: 已设置赛道1的A队追击者出生点。
   track-2-boundary-set: 已设置赛道2完整边界。
   track-2-chaser-set: 已设置赛道2的B队追击者出生点。
+riptiderush:
+  sweep-title: "&e侧向来墙！"
+  departure-actionbar: "&e木筏即将前进！"
+  start-preparation: "&#bababa[&#fff566激流勇进&#bababa]&#ededed 登上木筏，准备穿越障碍"
+  start-preparation-title: "&#fff566&l激流勇进"
+  start-preparation-subtitle: "&#ededed保持移动 &#bababa•&#ff6b26 活到最后"
+  game-start-title: "&#ff6b26&l激流勇进"
+  game-start-subtitle: "&#fff566&l木筏出发"
+  game-end-title: "&#fff566&l激流勇进"
+  game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
+  eliminated: "&#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26出局 &#696969•&#ededed %reason%"
+  eliminated-fall: |
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26没站稳，掉下木筏，淘汰
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26落水了，淘汰
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26被木筏甩下，淘汰
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26离开木筏太远，淘汰
+  eliminated-floor: |
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26踩错颜色，淘汰
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26没有站到目标方块，淘汰
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26踩色判断失误，淘汰
+  eliminated-math: |
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26答错了，淘汰
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26选错解题门，淘汰
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26没答对这道题，淘汰
+  eliminated-disconnected: |
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26离开了服务器，淘汰
+    &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26断开连接，淘汰
+  winner: "&#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#fff566存活到最后"
+  speed-shield-break: "&#ff6b26木筏加速！所有玩家的护盾已破碎"
+  speed-boost-title: "&#ff6b26&l速度提升"
+  speed-boost-subtitle: "&#ededed木筏正在加速"
+  final-sprint-title: "&#fff566&l最后冲刺"
+  final-sprint-subtitle: "&#ededed坚持到最后"
+  boss-bar: "&#fff566激流勇进 &#bababa•&#ededed 剩余 &#ff6b26%time%"
+  question-title: "&#fff566%question%"
+  question-subtitle: "&#ff5555← 红门 %left% &#bababa| &#55ffff蓝门 %right% →"
+  math-correct: "&#55ff55答案正确"
+  floor-title: "&#ff6b26%seconds%秒"
+  floor-actionbar: "&#55ffff%block%"
+  dodge-title: "&#ff5555躲避冲刺！"
+  dodge-actionbar: "&#fff566躲避冲刺生物 &#bababa•&#ededed 剩余 &#ff6b26%seconds%秒"
+  reason:
+    disconnected: 离开服务器
+    wrong-answer: 选择了错误答案
+    missed-gate: 未从解题门的通道通过
+    wrong-floor: 未在倒计时结束前站到目标方块上
+    left-behind: 被木筏甩在后方
+    fell: 坠落
+    dodge: 被冲刺生物撞到

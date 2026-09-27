@@ -67,7 +67,7 @@ final class EventCommandSupport {
         for (EventTeamImport.Game configured : imported.event().games()) {
             GameTypeEnum game = configured == null || configured.key() == null
                     ? null : GameTypeEnum.fromCommand(configured.key());
-            if (game == null || FinaleGameRegistry.isRegistered(game) || !eventGames.add(game))
+            if (game == null || !eventGames.add(game))
                 throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_GAME_INVALID
                         .replace("%game%", configured == null ? "null" : configured.key()));
             if (configured.variantKey() == null || !configured.variantKey().matches("[a-z0-9][a-z0-9-]{0,39}")
@@ -76,7 +76,7 @@ final class EventCommandSupport {
                         .replace("%game%", configured.key()));
         }
         if (imported.event().roundMultipliers() == null
-                || imported.event().roundMultipliers().size() < eventGames.size())
+                || imported.event().roundMultipliers().size() != eventGames.stream().filter(game -> !FinaleGameRegistry.isRegistered(game)).count())
             throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_MULTIPLIER_COUNT_INVALID);
         for (Double multiplier : imported.event().roundMultipliers()) {
             if (multiplier == null || !Double.isFinite(multiplier) || multiplier < 0D || multiplier > 100D)

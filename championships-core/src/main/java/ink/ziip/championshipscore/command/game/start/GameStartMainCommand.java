@@ -10,6 +10,7 @@ import ink.ziip.championshipscore.command.game.start.snowball.SnowBallStartMainC
 import ink.ziip.championshipscore.command.game.start.tgttos.TGTTOSStartMainCommand;
 import ink.ziip.championshipscore.command.game.start.tntrun.TNTRunStartMainCommand;
 import ink.ziip.championshipscore.command.game.start.acerace.AceRaceStartMainCommand;
+import ink.ziip.championshipscore.command.game.start.riptiderush.RiptideRushStartMainCommand;
 
 public class GameStartMainCommand extends BaseMainCommand {
 
@@ -26,5 +27,7 @@ public class GameStartMainCommand extends BaseMainCommand {
         addGameSubCommand(GameTypeEnum.ParkourWarrior, new ParkourWarriorStartMainCommand());
         addGameSubCommand(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyStartSubCommand());
         addGameSubCommand(GameTypeEnum.AceRace, new AceRaceStartMainCommand());
+        addGameSubCommand(GameTypeEnum.RiptideRush, new RiptideRushStartMainCommand());
+        addGameSubCommand(GameTypeEnum.FrostbiteFrenzy, new ink.ziip.championshipscore.command.game.start.frostbite.FrostbiteStartMainCommand());
     }
 }

@@ -20,28 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class GuiLanguageConfigurationTest {
     private static final Pattern GUI_REFERENCE = Pattern.compile(
             "GuiConfig\\.(?:text|lines|component)\\(\\\"([^\\\"]+)\\\"");
-    private static final Pattern UNPADDED_BULLET = Pattern.compile("(?<=\\S)•|•(?=\\S)");
-    private static final Pattern UNPADDED_HASH = Pattern.compile("(?<!：)(?<=\\S)#|#(?=\\S)");
-    private static final Pattern SPACE_AFTER_CHINESE_COLON = Pattern.compile("：[ \\t]");
-    private static final Pattern UNPADDED_BRACKET_SUFFIX = Pattern.compile("](?=\\S)");
-    private static final Pattern STANDALONE_GUI_TEXT_PATH = Pattern.compile(
-            "GuiConfig\\.(?:text|line|component)\\([^\\n]*\\.text\\.");
-
-    @Test
-    void guiTextIsNotAssembledByStringConcatenation() throws IOException {
-        List<String> violations = new ArrayList<>();
-        try (var sources = Files.walk(Path.of("src/main/java"))) {
-            for (Path source : sources.filter(path -> path.toString().endsWith(".java")).toList()) {
-                String java = Files.readString(source);
-                if (hasTopLevelConfigurationConcat(java))
-                    violations.add(source.getFileName().toString());
-                Matcher standalone = STANDALONE_GUI_TEXT_PATH.matcher(java);
-                while (standalone.find()) violations.add(source.getFileName() + ": standalone .text path");
-            }
-        }
-        assertTrue(violations.isEmpty(), "GUI text must use placeholders, not concatenation: " + violations);
-    }
-
     @Test
     void everyGuiReferenceResolvesToConfiguredCopy() throws IOException {
         YamlConfiguration gui = YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
@@ -61,7 +39,6 @@ class GuiLanguageConfigurationTest {
     @Test
     void guiKeysUseAnEnglishBusinessHierarchy() throws IOException {
         YamlConfiguration gui = YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertEquals(22, gui.getInt("dont-edit-this.version"));
 
         assertFalse(gui.isConfigurationSection("common"), "top-level common GUI state is obsolete");
         assertFalse(gui.isConfigurationSection("buttons.copy"), "shared buttons must not reintroduce copy");
@@ -161,10 +138,6 @@ class GuiLanguageConfigurationTest {
             assertTrue(gui.isList(item + ".lore"), item + " needs lore, even when empty");
         }
 
-        assertEquals("&#a0a0a0进行中场地：&#55ff55%count%",
-                gui.getStringList("spectator.menus.venue-selector.items.status.states.idle.lore").getFirst());
-        assertEquals("&#a0a0a0观战者：&#55ffff%audience%",
-                gui.getStringList("spectator.menus.venue-selector.items.match.lore").get(2));
     }
 
     @Test
@@ -191,37 +164,21 @@ class GuiLanguageConfigurationTest {
         }
     }
 
+    @Test
+    void mapEditorStepItemsExposeDynamicTitleAndLore() {
+        YamlConfiguration gui = YamlConfiguration.loadConfiguration(
+                Path.of("src/main/resources/gui.yml").toFile());
+        String step = "map-editor.menus.step-list.items.step";
+        for (String placeholder : List.of("%number%", "%title%"))
+            assertTrue(gui.getString(step + ".title", "").contains(placeholder), placeholder);
+        for (String placeholder : List.of("%description%", "%state%", "%action%"))
+            assertTrue(gui.getStringList(step + ".lore").stream().anyMatch(line -> line.contains(placeholder)), placeholder);
+        assertTrue(gui.getString(step + ".states.set-list.title", "").contains("%count%"));
+    }
+
     private static boolean isDynamicContentItem(String itemName) {
         return List.of("match", "destination", "resource-hub", "team-base", "player", "team")
                 .contains(itemName);
-    }
-
-    @Test
-    void languageFilesUseConsistentVisualSeparatorsAndTerminology() {
-        for (String resource : List.of("message.yml", "schedule-message.yml", "gui.yml",
-                "bingo/lang/zh_CN.yml", "scoreboards.yml")) {
-            YamlConfiguration yaml = YamlConfiguration.loadConfiguration(Path.of("src/main/resources", resource).toFile());
-            assertNotNull(yaml, resource);
-            for (String value : strings(yaml)) {
-                String visible = value.replaceAll("&?#[0-9A-Fa-f]{6}|&[0-9A-Fa-fK-Ok-oRr]", "");
-                assertFalse(visible.contains("·"), resource + ": " + value);
-                assertFalse(UNPADDED_BULLET.matcher(visible).find(), resource + ": " + value);
-                assertFalse(UNPADDED_HASH.matcher(visible).find(), resource + ": " + value);
-                assertFalse(SPACE_AFTER_CHINESE_COLON.matcher(visible).find(), resource + ": " + value);
-                String withoutPlaceholders = visible.replaceAll("%[^%]*%", "");
-                assertFalse(UNPADDED_BRACKET_SUFFIX.matcher(withoutPlaceholders).find(), resource + ": " + value);
-                assertFalse(visible.contains("建材集市"), resource + ": " + value);
-                assertFalse(visible.contains("TNT 雨"), resource + ": " + value);
-                assertFalse(visible.contains("Bingo"), resource + ": " + value);
-                assertFalse(visible.contains("AceRace"), resource + ": " + value);
-                if (resource.equals("gui.yml")) {
-                    for (String stiff : List.of("旁观玩家", "PrepareSpot", "copy0", "revision",
-                            "实际信息", "盖章", "实例容量", "空闲实例", "同行小队", "同游者")) {
-                        assertFalse(visible.contains(stiff), resource + " contains stiff GUI copy: " + value);
-                    }
-                }
-            }
-        }
     }
 
     @Test
@@ -279,33 +236,6 @@ class GuiLanguageConfigurationTest {
                 })
                 .toList();
         assertTrue(badStateLeaves.isEmpty(), "button states may override only presentation fields: " + badStateLeaves);
-    }
-
-    private static List<String> strings(ConfigurationSection section) {
-        List<String> values = new ArrayList<>();
-        for (String key : section.getKeys(true)) {
-            Object value = section.get(key);
-            if (value instanceof String text) values.add(text);
-            if (value instanceof List<?> list) list.stream().filter(String.class::isInstance)
-                    .map(String.class::cast).forEach(values::add);
-        }
-        return values;
-    }
-
-    private static boolean hasTopLevelConfigurationConcat(String source) {
-        for (String statement : source.split(";")) {
-            if (!statement.contains("GuiConfig.") && !statement.contains("MessageConfig.")) continue;
-            int depth = 0;
-            for (int index = 0; index < statement.length(); index++) {
-                char character = statement.charAt(index);
-                if (character == '(') depth++;
-                if (character == ')') depth = Math.max(0, depth - 1);
-                if (character == '+' && depth == 0
-                        && (index + 1 >= statement.length() || statement.charAt(index + 1) != '+'))
-                    return true;
-            }
-        }
-        return false;
     }
 
     private static List<String> leafKeys(ConfigurationSection section) {

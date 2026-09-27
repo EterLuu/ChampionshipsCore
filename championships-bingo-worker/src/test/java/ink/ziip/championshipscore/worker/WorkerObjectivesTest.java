@@ -71,14 +71,41 @@ class WorkerObjectivesTest {
     }
 
     @Test
-    void boatMovementCompletesWhenVanillaStatisticDoesNotAdvance() {
+    void horseMovementCompensatesStaleStatisticsWithoutAddingBothSources() {
         WorkerObjectives objectives = new WorkerObjectives(java.util.List.of(
-                new BingoTaskSpec(8, "boat", "statistic",
-                        Map.of("statistic", "BOAT_ONE_CM", "target", "2000"))));
-        Player player = playerWithStatistic(0);
+                new BingoTaskSpec(9, "horse", "statistic",
+                        Map.of("statistic", "HORSE_ONE_CM", "target", "20000"))));
+        Player player = playerWithStatistic(100);
         objectives.captureBaselines(player);
-        objectives.recordBoatMovement(player, 2000.0D);
-        assertEquals(java.util.List.of(8), objectives.matching(player, cell -> true));
+        objectives.recordRidingMovement(player, org.bukkit.Statistic.HORSE_ONE_CM, 19999, ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel.Source.PLAYER);
+        assertEquals(java.util.List.of(), objectives.matching(player, cell -> true));
+        objectives.recordRidingMovement(player, org.bukkit.Statistic.HORSE_ONE_CM, 1, ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel.Source.PLAYER);
+        assertEquals(java.util.List.of(9), objectives.matching(player, cell -> true));
+        assertEquals(java.util.List.of(), objectives.matching(player, cell -> false));
+        objectives.replace(java.util.List.of(new BingoTaskSpec(9, "horse", "statistic",
+                Map.of("statistic", "HORSE_ONE_CM", "target", "20000"))));
+        assertEquals(java.util.List.of(), objectives.matching(player, cell -> true));
+    }
+
+    @Test
+    void everyRidingTaskCompletesFromVehicleOrPlayerObservationsWithStaleVanillaStats() {
+        for (org.bukkit.Statistic statistic : new org.bukkit.Statistic[]{
+                org.bukkit.Statistic.HORSE_ONE_CM, org.bukkit.Statistic.BOAT_ONE_CM,
+                org.bukkit.Statistic.MINECART_ONE_CM, org.bukkit.Statistic.PIG_ONE_CM,
+                org.bukkit.Statistic.STRIDER_ONE_CM, org.bukkit.Statistic.HAPPY_GHAST_ONE_CM,
+                org.bukkit.Statistic.NAUTILUS_ONE_CM}) {
+            for (var source : ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel.Source.values()) {
+                WorkerObjectives objectives = new WorkerObjectives(java.util.List.of(
+                        new BingoTaskSpec(0, "riding", "statistic",
+                                Map.of("statistic", statistic.name(), "target", "10000"))));
+                Player player = playerWithStatistic(123);
+                objectives.captureBaselines(player);
+                objectives.recordRidingMovement(player, statistic, 9999, source);
+                assertEquals(java.util.List.of(), objectives.matching(player, cell -> true));
+                objectives.recordRidingMovement(player, statistic, 1, source);
+                assertEquals(java.util.List.of(0), objectives.matching(player, cell -> true), statistic.name());
+            }
+        }
     }
 
     private static Player playerWithStatistic(int value) {

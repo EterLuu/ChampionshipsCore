@@ -18,16 +18,13 @@ import java.util.List;
 
 public final class EventExportSubCommand extends BaseSubCommand {
     public EventExportSubCommand() {
-        super("export", "导出当前正式比赛的完整积分 JSON", "/cc event export");
+        super("export", "导出当前正式比赛的完整积分 JSON", "/cc event export [冠军队伍]");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
-        if (args.length != 0) {
-            sendUsage(sender);
-            return true;
-        }
+        String champion = args.length == 0 ? null : String.join(" ", args);
         EventStateStore.ActiveEvent active = new EventStateStore(plugin).load();
         if (active == null) {
             Utils.sendAdminError(sender, MessageConfig.EVENT_EXPORT_NO_EVENT);
@@ -47,15 +44,15 @@ public final class EventExportSubCommand extends BaseSubCommand {
                 error(sender, failure.getMessage());
                 return;
             }
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> write(sender, active, snapshot));
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> write(sender, active, snapshot, champion));
         });
         return true;
     }
 
     private void write(CommandSender sender, EventStateStore.ActiveEvent active,
-                       ChampionshipArchiveSnapshot snapshot) {
+                       ChampionshipArchiveSnapshot snapshot, String champion) {
         try {
-            Path exported = ChampionshipResultsExporter.export(plugin.getDataFolder().toPath(), active.slug(), snapshot);
+            Path exported = ChampionshipResultsExporter.export(plugin.getDataFolder().toPath(), active, snapshot, champion);
             Bukkit.getScheduler().runTask(plugin, () -> Utils.sendAdminSuccess(sender,
                     MessageConfig.EVENT_EXPORT_COMPLETED
                             .replace("%event%", active.title())
@@ -76,6 +73,7 @@ public final class EventExportSubCommand extends BaseSubCommand {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                                  @NotNull String label, @NotNull String[] args) {
-        return Collections.emptyList();
+        return plugin.getTeamManager().getTeamList().stream().map(team -> team.getName())
+                .filter(name -> name.toLowerCase(java.util.Locale.ROOT).startsWith(String.join(" ", args).toLowerCase(java.util.Locale.ROOT))).toList();
     }
 }

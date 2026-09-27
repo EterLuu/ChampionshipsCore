@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.worker;
 
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
 import io.papermc.paper.event.entity.EntityCompostItemEvent;
 import io.papermc.paper.event.entity.EntityInsideBlockEvent;
@@ -189,6 +190,16 @@ final class WorkerListener implements Listener {
             }
             registry.requestObserve(player);
         }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onSpectatorInventoryClick(InventoryClickEvent event) {
+        if (event.getWhoClicked() instanceof Player player && registry.isSpectator(player.getUniqueId())) { event.setCancelled(true); player.updateInventory(); }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onSpectatorInventoryDrag(InventoryDragEvent event) {
+        if (event.getWhoClicked() instanceof Player player && registry.isSpectator(player.getUniqueId())) { event.setCancelled(true); player.updateInventory(); }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -509,17 +520,32 @@ final class WorkerListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBoatMove(VehicleMoveEvent event) {
-        if (!(event.getVehicle() instanceof Boat boat)) return;
-        Location from = event.getFrom();
-        Location to = event.getTo();
-        if (from == null || to == null || from.getWorld() == null || to.getWorld() == null
-                || from.getWorld() != to.getWorld()) return;
-        double distance = Math.hypot(to.getX() - from.getX(), to.getZ() - from.getZ());
-        if (!Double.isFinite(distance) || distance <= 0.0D) return;
-        double centimeters = distance * 100.0D;
-        for (org.bukkit.entity.Entity passenger : boat.getPassengers()) {
-            if (passenger instanceof Player player) registry.recordBoatMovement(player, centimeters);
+    public void onRidingMove(org.bukkit.event.player.PlayerMoveEvent event) {
+        double centimeters = BingoRidingTravel.distance(event);
+        if (centimeters > 0) registry.recordRidingMovement(event.getPlayer(),
+                BingoRidingTravel.statistic(event.getPlayer().getVehicle()), centimeters, BingoRidingTravel.Source.PLAYER);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onRidingEntityMove(io.papermc.paper.event.entity.EntityMoveEvent event) {
+        recordVehicleTravel(event.getEntity(), event.getFrom(), event.getTo());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onVehicleMove(VehicleMoveEvent event) {
+        // Living mounts use EntityMoveEvent; keeping these streams disjoint avoids duplicate credit.
+        if (event.getVehicle() instanceof Boat || event.getVehicle() instanceof org.bukkit.entity.Minecart)
+            recordVehicleTravel(event.getVehicle(), event.getFrom(), event.getTo());
+    }
+
+    private void recordVehicleTravel(org.bukkit.entity.Entity vehicle, Location from, Location to) {
+        org.bukkit.Statistic statistic = BingoRidingTravel.statistic(vehicle);
+        if (statistic == null) return;
+        double centimeters = BingoRidingTravel.distance(from, to);
+        if (centimeters <= 0) return;
+        for (org.bukkit.entity.Entity passenger : vehicle.getPassengers()) {
+            if (passenger instanceof Player player)
+                registry.recordRidingMovement(player, statistic, centimeters, BingoRidingTravel.Source.VEHICLE);
         }
     }
 
@@ -584,10 +610,7 @@ final class WorkerListener implements Listener {
     public void onFinalCountdownMove(PlayerMoveEvent event) {
         Location to = event.getTo();
         if (to == null || !registry.isFinalCountdownPlayer(event.getPlayer().getUniqueId())) return;
-        Location from = event.getFrom();
-        if (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
-            event.setCancelled(true);
-        }
+        ink.ziip.championshipscore.platform.bukkit.bingo.BingoCountdownMovement.constrain(event);
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)

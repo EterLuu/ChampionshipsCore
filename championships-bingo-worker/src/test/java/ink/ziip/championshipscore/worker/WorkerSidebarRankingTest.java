@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorkerSidebarRankingTest {
@@ -42,7 +41,6 @@ class WorkerSidebarRankingTest {
 
         assertEquals(8, rows.size());
         assertTrue(rows.stream().noneMatch(WorkerSidebarRanking.Entry::viewerTeam));
-        assertFalse(rows.isEmpty());
     }
 
     private static Map<Integer, TeamSnapshot> teams(int count) {

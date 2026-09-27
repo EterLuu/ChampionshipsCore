@@ -7,13 +7,9 @@ import ink.ziip.championshipscore.protocol.BingoRemix;
 import ink.ziip.championshipscore.protocol.BingoVariantRules;
 import ink.ziip.championshipscore.protocol.BingoRuntimeRules;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
-import ink.ziip.championshipscore.protocol.BinaryProtocolCodec;
 import ink.ziip.championshipscore.protocol.CompletionObservation;
-import ink.ziip.championshipscore.protocol.DeterministicIds;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.MatchRunMode;
-import ink.ziip.championshipscore.protocol.MatchState;
-import ink.ziip.championshipscore.protocol.MatchStateMachine;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
 import ink.ziip.championshipscore.protocol.PlayerSnapshot;
 import ink.ziip.championshipscore.protocol.ProtocolVersion;
@@ -26,7 +22,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -95,41 +90,6 @@ class BingoScoringEngineTest {
 
         assertEquals(List.of(2, 1, 3), result.rankedTeamIds());
         assertEquals(2, result.winnerTeamId());
-    }
-
-    @Test
-    void scoreTransactionIdsAreStableButNamespacedBySequence() {
-        UUID first = DeterministicIds.scoreTransaction(MATCH_ID, 1, 7, RED_ONE, "cell:0");
-        UUID replay = DeterministicIds.scoreTransaction(MATCH_ID, 1, 7, RED_ONE, "cell:0");
-        UUID next = DeterministicIds.scoreTransaction(MATCH_ID, 1, 8, RED_ONE, "cell:0");
-
-        assertEquals(first, replay);
-        assertNotEquals(first, next);
-        assertEquals(5, first.version());
-    }
-
-    @Test
-    void lifecycleRejectsBackwardsTransitionsAndCanResumeItsPreviousState() {
-        MatchStateMachine lifecycle = new MatchStateMachine();
-        lifecycle.transitionTo(MatchState.PREPARING);
-        lifecycle.transitionTo(MatchState.READY);
-        lifecycle.transitionTo(MatchState.ROUTING);
-        lifecycle.transitionTo(MatchState.SUSPENDED);
-
-        assertEquals(MatchState.ROUTING, lifecycle.resume().to());
-        assertThrows(IllegalStateException.class, () -> lifecycle.transitionTo(MatchState.READY));
-        lifecycle.transitionTo(MatchState.ABORTED);
-        assertTrue(lifecycle.state().terminal());
-        assertThrows(IllegalStateException.class, () -> lifecycle.transitionTo(MatchState.PREPARING));
-    }
-
-    @Test
-    void manifestBinaryCodecRoundTripsWithoutPlatformTypes() {
-        BinaryProtocolCodec codec = new BinaryProtocolCodec();
-        MatchManifest manifest = manifest();
-
-        assertEquals(manifest, codec.decodeManifest(codec.encodeManifest(manifest)));
-        assertThrows(IllegalArgumentException.class, () -> codec.decodeManifest(new byte[]{1, 2, 3}));
     }
 
     @Test

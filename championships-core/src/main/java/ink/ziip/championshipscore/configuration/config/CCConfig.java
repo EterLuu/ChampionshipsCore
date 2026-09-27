@@ -27,7 +27,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 23;
+        return 24;
     }
 
     private static final Map<GameTypeEnum, List<String>> DEFAULT_FORMAL_EVENT_MAPS;
@@ -49,6 +49,8 @@ public class CCConfig extends BaseConfigurationFile {
         defaults.put(GameTypeEnum.BuildMart, List.of("area"));
         defaults.put(GameTypeEnum.Dodgebolt, List.of("dodgebolt"));
         defaults.put(GameTypeEnum.AceRace, List.of("clouds2"));
+        defaults.put(GameTypeEnum.RiptideRush, List.of());
+        defaults.put(GameTypeEnum.FrostbiteFrenzy, List.of("glacial_keep"));
         DEFAULT_FORMAL_EVENT_MAPS = Collections.unmodifiableMap(defaults);
     }
 
@@ -83,12 +85,21 @@ public class CCConfig extends BaseConfigurationFile {
 
     /** Returns the configured registration names used by the formal event schedulers. */
     public @NotNull List<String> formalEventMaps(@NotNull GameTypeEnum game) {
+        return formalEventMaps(configuration, game);
+    }
+
+    static @NotNull List<String> formalEventMaps(@org.jetbrains.annotations.Nullable YamlConfiguration source,
+                                                  @NotNull GameTypeEnum game) {
         String path = "formal-events." + game.name() + ".maps";
-        if (configuration != null && configuration.contains(path)) {
-            return configuration.getStringList(path).stream()
-                    .map(String::trim)
-                    .filter(name -> !name.isEmpty())
-                    .toList();
+        if (source != null && source.contains(path)) {
+            List<String> configured = source.getStringList(path).stream()
+                    .map(String::trim).filter(name -> !name.isEmpty()).toList();
+            if (!configured.isEmpty()) return configured;
+        }
+        if (source != null && game == GameTypeEnum.RiptideRush
+                && source.contains("formal-events.RaftSurvival.maps")) {
+            return source.getStringList("formal-events.RaftSurvival.maps").stream()
+                    .map(String::trim).filter(name -> !name.isEmpty()).toList();
         }
         return DEFAULT_FORMAL_EVENT_MAPS.getOrDefault(game, List.of());
     }

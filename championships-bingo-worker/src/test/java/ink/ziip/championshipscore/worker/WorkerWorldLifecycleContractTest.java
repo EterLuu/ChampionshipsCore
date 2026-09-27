@@ -65,6 +65,18 @@ class WorkerWorldLifecycleContractTest {
         assertTrue(session.contains("lastQuitLocations.remove(playerId)"));
     }
 
+    @Test
+    void returnWaitsForSpectatorCleanupAndLobbyHasAFlightFallback() throws IOException {
+        String session = source("WorkerMatchSession.java");
+        String handler = Files.readString(Path.of("../championships-core/src/main/java/ink/ziip/"
+                + "championshipscore/api/game/manager/GameManagerHandler.java"));
+
+        assertTrue(session.contains("CompletableFuture<Void> cleared = scheduler.runEntityFuture(player"));
+        assertTrue(session.contains("cleared.whenComplete((ignored, failure)"));
+        assertTrue(session.contains("returnRouter.request(player.getUniqueId())"));
+        assertTrue(handler.contains("PlayerStateService.disableFlight(player);"));
+    }
+
     private static String source(String name) throws IOException {
         return Files.readString(Path.of("src/main/java/ink/ziip/championshipscore/worker", name));
     }

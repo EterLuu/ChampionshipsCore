@@ -31,7 +31,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -40,13 +41,14 @@ import java.util.function.Consumer;
 /** One Core-owned Redis lifecycle for database invalidation and remote-game transports. */
 public final class RedisManager extends BaseManager {
     private static final int DEDUPLICATION_LIMIT = 4096;
+    private static final int PENDING_PUBLICATION_LIMIT = 10_000;
     private final Map<UUID, Boolean> processedEvents = java.util.Collections.synchronizedMap(
             new LinkedHashMap<>(DEDUPLICATION_LIMIT, .75F, true) {
                 @Override protected boolean removeEldestEntry(Map.Entry<UUID, Boolean> eldest) {
                     return size() > DEDUPLICATION_LIMIT;
                 }
             });
-    private final ConcurrentLinkedQueue<DatabaseSyncEvent> pendingPublications = new ConcurrentLinkedQueue<>();
+    private final BlockingQueue<DatabaseSyncEvent> pendingPublications = new ArrayBlockingQueue<>(PENDING_PUBLICATION_LIMIT);
     private final Map<String, RedisMatchTransport> matchTransports = new ConcurrentHashMap<>();
     private final Set<RedisMatchConsumer> matchConsumers = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean ready = new AtomicBoolean();
@@ -218,7 +220,7 @@ public final class RedisManager extends BaseManager {
         DatabaseSyncEvent event = new DatabaseSyncEvent(UUID.randomUUID(),
                 instanceId == null ? "starting" : instanceId, System.currentTimeMillis(), domains, reason);
         if (!ready.get() || publisher == null) {
-            if (configuredEnabled) pendingPublications.add(event);
+            if (configuredEnabled) enqueuePendingPublication(event);
             return;
         }
         publish(event);
@@ -316,10 +318,16 @@ public final class RedisManager extends BaseManager {
 
     private void publish(DatabaseSyncEvent event) {
         publisher.append(dataSyncStream(), event.fields()).exceptionally(failure -> {
-            pendingPublications.add(event);
+            enqueuePendingPublication(event);
             plugin.getLogger().log(Level.WARNING, "Unable to publish database sync event " + event.eventId(), failure);
             return null;
         });
+    }
+
+    private void enqueuePendingPublication(DatabaseSyncEvent event) {
+        if (pendingPublications.offer(event)) return;
+        pendingPublications.poll();
+        pendingPublications.offer(event);
     }
 
     private String dataSyncStream() { return connectionConfig.key("core:data-sync"); }

@@ -11,10 +11,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Modified under <a href="https://github.com/AlessioDP/ADP-Core">ADP-Core</a>
- * @author AlessioDP
- */
 @Getter
 public abstract class BaseConfigurationManager extends BaseManager {
     private final List<BaseConfigurationFile> configs = new ArrayList<>();

@@ -45,6 +45,13 @@ public class MainCommand implements TabExecutor, TabCompleter {
             if (entry.getKey().equalsIgnoreCase(name))
                 return entry.getValue();
         }
+        GameTypeEnum requestedGame = GameTypeEnum.fromCommand(name);
+        if (requestedGame != null) {
+            for (Map.Entry<String, BaseMainCommand> entry : subCommandMap.entrySet()) {
+                if (GameTypeEnum.fromCommand(entry.getKey()) == requestedGame)
+                    return entry.getValue();
+            }
+        }
         return null;
     }
 

@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Instrument;
 import org.bukkit.GameMode;
@@ -40,7 +41,11 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
     }
 
     public boolean tryStartGame(ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam) {
-        if (getGameStageEnum() != GameStageEnum.WAITING)
+        if (getGameStageEnum() != GameStageEnum.WAITING
+                || rightChampionshipTeam == null || leftChampionshipTeam == null
+                || rightChampionshipTeam.equals(leftChampionshipTeam)
+                || rightChampionshipTeam.getMembers().isEmpty() || leftChampionshipTeam.getMembers().isEmpty()
+                || !Collections.disjoint(rightChampionshipTeam.getMembers(), leftChampionshipTeam.getMembers()))
             return false;
         cancelPostGameRoutingBeforeStart();
         setGameStageEnum(GameStageEnum.LOADING);
@@ -153,10 +158,15 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
 
     @Override
     public void teleportAllPlayers(Location location) {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.teleportAllPlayers(location);
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.teleportAllPlayers(location);
+        int index = 0;
+        if (rightChampionshipTeam != null) {
+            for (Player player : rightChampionshipTeam.getOnlinePlayers())
+                player.teleport(Utils.getCollisionSafeTeleportLocation(location, index++));
+        }
+        if (leftChampionshipTeam != null) {
+            for (Player player : leftChampionshipTeam.getOnlinePlayers())
+                player.teleport(Utils.getCollisionSafeTeleportLocation(location, index++));
+        }
     }
 
     @Override

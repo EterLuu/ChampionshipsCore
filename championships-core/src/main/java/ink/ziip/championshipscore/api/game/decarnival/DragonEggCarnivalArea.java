@@ -598,7 +598,9 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         if (team == null) return;
         prepareSpawnPlatform(team.equals(rightChampionshipTeam));
         Location spawn = platformSpawn(team.equals(rightChampionshipTeam));
-        for (Player player : team.getOnlinePlayers()) player.teleport(spawn);
+        List<Player> players = team.getOnlinePlayers();
+        for (int index = 0; index < players.size(); index++)
+            players.get(index).teleport(Utils.getCollisionSafeTeleportLocation(spawn, index));
     }
 
     private void teleportPlayerToTeamPlatform(@NotNull Player player) {

@@ -133,6 +133,10 @@ public class GameManagerHandler extends BaseListener {
         // spectators are dispatched above and never reach here, so active game state is never touched.
         player.getInventory().clear();
         PlayerStateService.clearEffects(player);
+        // A Bingo worker may have routed the player before its entity-scheduled spectator cleanup
+        // ran.  The lobby is the authoritative fallback, so never carry flight permission across
+        // a server transfer even when the remote side lost that race.
+        PlayerStateService.disableFlight(player);
 
         World world = player.getWorld();
         if (!lobbyAvailable()) {

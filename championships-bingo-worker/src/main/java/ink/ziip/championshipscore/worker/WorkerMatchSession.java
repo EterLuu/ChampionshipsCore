@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.worker;
 
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.bingo.engine.BingoResult;
 import ink.ziip.championshipscore.bingo.engine.BingoScoringEngine;
 import ink.ziip.championshipscore.bingo.engine.ScoringDecision;
@@ -207,6 +208,8 @@ final class WorkerMatchSession {
                 && player.role() == ParticipantRole.PLAYER;
     }
 
+    synchronized boolean isSpectator(UUID playerId) { return participants.get(playerId) != null && participants.get(playerId).role() == ParticipantRole.SPECTATOR && !lifecycle.state().terminal(); }
+
     String resolveChampionshipPlaceholder(UUID playerId, String params) {
         PlayerSnapshot participant = participants.get(playerId);
         TeamSnapshot team = participant == null || participant.teamId() == null
@@ -384,14 +387,14 @@ final class WorkerMatchSession {
                     return;
                 }
                 prepareParticipantForRound(player, snapshot, false);
-                World world = plugin.getServer().getWorld(config.overworld());
+                World world = plugin.getServer().getWorld(manifest.scoring().variant().remix() == BingoRemix.NETHER
+                        ? config.nether() : config.overworld());
                 if (world == null) {
                     result.complete(false);
                     return;
                 }
                 scatter.performScatterAsync(world, List.of(player), manifest.runtimeRules().scatterRadius(),
-                        manifest.runtimeRules().scatterJitter(),
-                        manifest.runtimeRules().scatterMaxTries(),
+                        manifest.runtimeRules().scatterJitter(), manifest.runtimeRules().scatterMaxTries(),
                         () -> recordArrival(snapshot, result, null));
                 return;
             }
@@ -475,6 +478,7 @@ final class WorkerMatchSession {
     }
 
     private void finalCountdown(int remaining) {
+        if (state() != MatchState.COUNTDOWN) return;
         if (remaining <= 0) {
             beginRunning();
             return;
@@ -566,7 +570,6 @@ final class WorkerMatchSession {
         world.setTime(BingoWorldRules.START_TIME);
         roundPrepared = true;
         updateSidebar();
-        List<Player> players = new ArrayList<>();
         List<CompletableFuture<Void>> preparations = new ArrayList<>();
         for (PlayerSnapshot snapshot : participants.values()) {
             Player player = plugin.getServer().getPlayer(snapshot.uuid());
@@ -574,7 +577,6 @@ final class WorkerMatchSession {
             if (snapshot.role() == ParticipantRole.SPECTATOR) {
                 preparations.add(scheduler.runEntityFuture(player, () -> applySpectatorState(player)));
             } else {
-                players.add(player);
                 bulkScatterPlayers.add(snapshot.uuid());
                 preparations.add(scheduler.runEntityFuture(player,
                         () -> {
@@ -586,13 +588,18 @@ final class WorkerMatchSession {
         }
         CompletableFuture.allOf(preparations.toArray(CompletableFuture[]::new))
                 .whenComplete((ignored, failure) -> scheduler.runGlobal(() -> {
+                    if (state() != MatchState.COUNTDOWN) return;
                     if (failure != null) {
                         abort("participant-prepare-failed");
                         return;
                     }
+                    List<Player> players = participants.values().stream()
+                            .filter(snapshot -> snapshot.role() == ParticipantRole.PLAYER)
+                            .map(snapshot -> plugin.getServer().getPlayer(snapshot.uuid()))
+                            .filter(java.util.Objects::nonNull)
+                            .toList();
                     scatter.performScatterAsync(world, players, manifest.runtimeRules().scatterRadius(),
-                            manifest.runtimeRules().scatterJitter(),
-                            manifest.runtimeRules().scatterMaxTries(),
+                            manifest.runtimeRules().scatterJitter(), manifest.runtimeRules().scatterMaxTries(),
                             () -> scheduler.runGlobal(() -> {
                                 bulkScatterPlayers.clear();
                                 finalCountdown(manifest.runtimeRules().finalCountdownSeconds());
@@ -713,9 +720,9 @@ final class WorkerMatchSession {
         observe(player);
     }
 
-    void recordBoatMovement(Player player, double centimeters) {
+    void recordRidingMovement(Player player, org.bukkit.Statistic statistic, double centimeters, BingoRidingTravel.Source source) {
         if (!isRunningPlayer(player.getUniqueId())) return;
-        objectivesFor(player.getUniqueId()).recordBoatMovement(player, centimeters);
+        objectivesFor(player.getUniqueId()).recordRidingMovement(player, statistic, centimeters, source);
         observe(player);
     }
 
@@ -1030,12 +1037,7 @@ final class WorkerMatchSession {
         for (UUID playerId : playerIds) {
             Player player = plugin.getServer().getPlayer(playerId);
             if (player == null) continue;
-            scheduler.runEntity(player, () -> {
-                sidebar.hide(player);
-                PlayerStateService.resetVitals(player);
-                player.getInventory().clear();
-                returnRouter.request(player);
-            });
+            clearStateAndReturn(player);
         }
         boolean empty;
         MatchState current;
@@ -1274,8 +1276,10 @@ final class WorkerMatchSession {
     private void ensureSpectatorCards(Player player) {
         removeBoundCards(player);
         ItemStack card = spectatorCardItem();
-        if (card != null && !player.getInventory().addItem(card).isEmpty())
-            player.getWorld().dropItemNaturally(player.getLocation(), card);
+        // Keep the read-only card in its dedicated slot.  addItem() may choose the spectator
+        // controls slot (or any other hotbar slot), so repeated presentation refreshes could
+        // overwrite controls and appear to duplicate cards.
+        if (card != null) player.getInventory().setItem(1, card);
         player.updateInventory();
     }
 
@@ -1334,12 +1338,11 @@ final class WorkerMatchSession {
             restoreQuitLocation(player, lastQuitLocation);
             return;
         }
-        World world = plugin.getServer().getWorld(config.overworld());
-        if (world != null) {
-            scatter.performScatterAsync(world, List.of(player), manifest.runtimeRules().scatterRadius(),
-                    manifest.runtimeRules().scatterJitter(),
-                    manifest.runtimeRules().scatterMaxTries(), null);
-        }
+        World world = plugin.getServer().getWorld(manifest.scoring().variant().remix() == BingoRemix.NETHER
+                ? config.nether() : config.overworld());
+        if (world != null) scatter.performScatterAsync(world, List.of(player),
+                manifest.runtimeRules().scatterRadius(), manifest.runtimeRules().scatterJitter(),
+                manifest.runtimeRules().scatterMaxTries(), null);
         restoreQuitLocation(player, lastQuitLocation);
     }
 
@@ -1442,13 +1445,11 @@ final class WorkerMatchSession {
     }
 
     private void applySpectatorControls(Player player) {
-        // Slot 1 is reserved for the Bingo card. Keep all spectator controls elsewhere.
+        // Slot 1 is reserved for the Bingo card.
         player.getInventory().setItem(0, spectatorControl(Material.COMPASS, "teleport",
                 message("spectator.teleport.name").color(NamedTextColor.GREEN)
                         .decorate(TextDecoration.BOLD),
                 List.of(message("spectator.teleport.hint").color(NamedTextColor.GRAY))));
-        player.getInventory().setItem(2, null);
-        player.getInventory().setItem(3, null);
         player.getInventory().setItem(7, spectatorControl(Material.FEATHER, "speed",
                 message("spectator.speed.name", "%speed%", spectatorSpeed(player))
                         .color(NamedTextColor.YELLOW)
@@ -1492,14 +1493,7 @@ final class WorkerMatchSession {
         updateSidebar();
         Player player = plugin.getServer().getPlayer(playerId);
         if (player != null) {
-            scheduler.runEntity(player, () -> {
-                sidebar.hide(player);
-                player.getInventory().clear();
-                BingoSpectatorService.clear(player);
-                PlayerStateService.clearEffects(player);
-                player.setGameMode(GameMode.ADVENTURE);
-            });
-            returnRouter.request(player);
+            clearStateAndReturn(player);
         }
         return emit(MatchEventType.SPECTATOR_REMOVED, Map.of("playerId", playerId.toString()))
                 .thenApply(ignored -> true);
@@ -1544,17 +1538,35 @@ final class WorkerMatchSession {
         for (PlayerSnapshot participant : routingParticipants) {
             Player player = plugin.getServer().getPlayer(participant.uuid());
             if (player != null) {
-                scheduler.runEntity(player, () -> {
-                    sidebar.hide(player);
-                    player.getInventory().clear();
-                    BingoSpectatorService.clear(player);
-                    PlayerStateService.clearEffects(player);
-                    player.setGameMode(GameMode.ADVENTURE);
-                });
+                clearStateAndReturn(player);
             }
-            returnRouter.request(participant.uuid());
+            else returnRouter.request(participant.uuid());
         }
         worldReset.run();
+    }
+
+    /**
+     * Clears the worker-side presentation before asking the proxy to transfer the player. Folia
+     * entity tasks are asynchronous from this match coordinator; issuing both operations back to
+     * back allowed the transfer to win occasionally, leaving flight enabled when the player reached
+     * the lobby. The return request is therefore chained to the completed entity cleanup.
+     */
+    private void clearStateAndReturn(Player player) {
+        CompletableFuture<Void> cleared = scheduler.runEntityFuture(player, () -> {
+            sidebar.hide(player);
+            player.getInventory().clear();
+            BingoSpectatorService.clear(player);
+            PlayerStateService.clearEffects(player);
+            PlayerStateService.resetVitals(player);
+            player.setGameMode(GameMode.ADVENTURE);
+        });
+        cleared.whenComplete((ignored, failure) -> {
+            if (failure != null) {
+                plugin.getLogger().log(java.util.logging.Level.WARNING,
+                        "Unable to clear Bingo player state before return " + player.getUniqueId(), failure);
+            }
+            returnRouter.request(player.getUniqueId());
+        });
     }
 
     private void createNativeTeams() {
@@ -1633,6 +1645,7 @@ final class WorkerMatchSession {
     }
 
     private void cancelTasks() {
+        scatter.cancelPending();
         if (endTask != null) endTask.cancel();
         if (timerTask != null) timerTask.cancel();
         if (heartbeatTask != null) heartbeatTask.cancel();

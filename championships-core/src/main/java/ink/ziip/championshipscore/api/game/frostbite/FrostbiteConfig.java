@@ -1,0 +1,68 @@
+package ink.ziip.championshipscore.api.game.frostbite;
+
+import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.configuration.ConfigOption;
+import lombok.Getter;
+import lombok.Setter;
+import org.bukkit.*;
+import org.bukkit.util.Vector;
+import java.util.*;
+
+@Getter @Setter
+public final class FrostbiteConfig extends BaseGameConfig {
+    private final String resourceName = "frostbite/area.yml";
+    private final String folderName = "frostbite/";
+    @ConfigOption(path="name") private String areaName;
+    @ConfigOption(path="world-name") private String worldName;
+    @ConfigOption(path="timer") private int timer = 150;
+    @ConfigOption(path="freeze-seconds") private int freezeSeconds = 5;
+    @ConfigOption(path="heat-seconds") private int heatSeconds = 3;
+    @ConfigOption(path="item-respawn-seconds") private int itemRespawnSeconds = 6;
+    @ConfigOption(path="points-per-kill") private int pointsPerKill = 25;
+    @ConfigOption(path="copy-spacing") private int copySpacing = 256;
+    @ConfigOption(path="arena-min") private Vector arenaMin;
+    @ConfigOption(path="arena-max") private Vector arenaMax;
+    @ConfigOption(path="spawn-points") private List<String> spawnPoints = List.of();
+    @ConfigOption(path="item-points") private List<String> itemPoints = List.of();
+    @ConfigOption(path="spectator-spawn", nullable=true) private Location spectatorSpawnPoint;
+    public FrostbiteConfig(ChampionshipsCore plugin, String name) { super(plugin, name); }
+    @Override public int getLatestVersion() { return 1; }
+    @Override public Vector getAreaPos1() { return arenaMin; }
+    @Override public Vector getAreaPos2() { return arenaMax == null ? null : arenaMax.clone().add(new Vector(copySpacing, 0, copySpacing)); }
+    public Vector offset(int arena) { return new Vector((arena % 2) * copySpacing, 0, (arena / 2) * copySpacing); }
+    public Location point(String text, int arena) {
+        String[] fields = text.trim().split("\\s+");
+        if (text.contains(":")) {
+            String[] serialized = text.split(":");
+            if (serialized.length != 6) throw new IllegalArgumentException("坐标格式无效");
+            fields = Arrays.copyOfRange(serialized, 1, 5);
+        }
+        if (fields.length < 3 || fields.length > 4) throw new IllegalArgumentException("坐标应为 x y z [yaw]");
+        Location location = new Location(Bukkit.getWorld(worldName), Double.parseDouble(fields[0]),
+                Double.parseDouble(fields[1]), Double.parseDouble(fields[2]), fields.length == 4 ? Float.parseFloat(fields[3]) : 0, 0);
+        return location.add(offset(arena));
+    }
+    public List<Location> spawns(int arena) { return spawnPoints.stream().map(p -> point(p, arena)).toList(); }
+    public boolean contains(Location location, int arena) {
+        if (location.getWorld() == null || !location.getWorld().getName().equals(worldName)) return false;
+        Vector p = location.toVector().subtract(offset(arena));
+        return p.isInAABB(arenaMin, arenaMax);
+    }
+    public void validate() {
+        if (timer < 30 || timer > 600 || freezeSeconds < 1 || freezeSeconds > 15 || heatSeconds < 1 || heatSeconds > 10
+                || itemRespawnSeconds < 1 || itemRespawnSeconds > 60 || pointsPerKill < 0 || pointsPerKill > 1000)
+            throw new IllegalArgumentException("时长、冻结、保温、补给或击杀积分超出范围");
+        if (arenaMin == null || arenaMax == null || copySpacing < 64 || copySpacing > 4096
+                || arenaMin.getX() >= arenaMax.getX() || arenaMin.getY() >= arenaMax.getY() || arenaMin.getZ() >= arenaMax.getZ()
+                || arenaMax.getX() - arenaMin.getX() >= copySpacing || arenaMax.getZ() - arenaMin.getZ() >= copySpacing)
+            throw new IllegalArgumentException("四张地图边界缺失或互相重叠");
+        if (spawnPoints.size() < 16 || spawnPoints.size() > 128 || itemPoints.isEmpty() || itemPoints.size() > 128)
+            throw new IllegalArgumentException("需要 16–128 个重生点和 1–128 个补给点");
+        for (String p : java.util.stream.Stream.concat(spawnPoints.stream(), itemPoints.stream()).toList()) {
+            Location l = point(p, 0);
+            if (!Double.isFinite(l.getX()) || !Double.isFinite(l.getY()) || !Double.isFinite(l.getZ()) || !Float.isFinite(l.getYaw())
+                    || !l.toVector().isInAABB(arenaMin, arenaMax)) throw new IllegalArgumentException("坐标无效或超出地图：" + p);
+        }
+    }
+}

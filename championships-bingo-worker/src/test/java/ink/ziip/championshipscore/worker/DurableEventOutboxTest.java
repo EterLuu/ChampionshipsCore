@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DurableEventOutboxTest {
     private static final UUID MATCH_ID = UUID.fromString("40000000-0000-0000-0000-000000000001");
@@ -30,24 +31,25 @@ class DurableEventOutboxTest {
     @Test
     void laterEventsAreStagedWhileFirstRedisPublicationIsBlocked(@TempDir Path directory) throws Exception {
         BlockingPublisher publisher = new BlockingPublisher();
-        DurableEventOutbox outbox = new DurableEventOutbox(publisher, directory);
-        outbox.initialize();
-        MatchEvent first = MatchMessages.event(MATCH_ID, 1, 1, MatchEventType.READY, Map.of(), CLOCK);
-        MatchEvent second = MatchMessages.event(MATCH_ID, 1, 2, MatchEventType.STARTED, Map.of(), CLOCK);
+        try (DurableEventOutbox outbox = new DurableEventOutbox(publisher, directory)) {
+            outbox.initialize();
+            MatchEvent first = MatchMessages.event(MATCH_ID, 1, 1, MatchEventType.READY, Map.of(), CLOCK);
+            MatchEvent second = MatchMessages.event(MATCH_ID, 1, 2, MatchEventType.STARTED, Map.of(), CLOCK);
 
-        CompletionStage<DeliveryReceipt> firstResult = outbox.publishEvent(first);
-        CompletionStage<DeliveryReceipt> secondResult = outbox.publishEvent(second);
+            CompletionStage<DeliveryReceipt> firstResult = outbox.publishEvent(first);
+            CompletionStage<DeliveryReceipt> secondResult = outbox.publishEvent(second);
 
-        await(() -> eventFileCount(directory) == 2);
-        assertEquals(2, eventFileCount(directory));
-        assertEquals(1, publisher.calls.get());
-        publisher.first.complete(receipt(first));
-        await(() -> publisher.calls.get() == 2);
-        publisher.second.complete(receipt(second));
-        firstResult.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        secondResult.toCompletableFuture().get(1, TimeUnit.SECONDS);
-        assertEquals(0, eventFileCount(directory));
-        outbox.close();
+            await(() -> eventFileCount(directory) == 2);
+            assertEquals(2, eventFileCount(directory));
+            assertEquals(first, publisher.firstEntered.get(2, TimeUnit.SECONDS));
+            assertEquals(1, publisher.calls.get());
+            publisher.first.complete(receipt(first));
+            assertEquals(second, publisher.secondEntered.get(2, TimeUnit.SECONDS));
+            publisher.second.complete(receipt(second));
+            firstResult.toCompletableFuture().get(1, TimeUnit.SECONDS);
+            secondResult.toCompletableFuture().get(1, TimeUnit.SECONDS);
+            assertEquals(0, eventFileCount(directory));
+        }
     }
 
     @Test
@@ -55,14 +57,14 @@ class DurableEventOutboxTest {
         MatchEvent event = MatchMessages.event(MATCH_ID, 2, 1, MatchEventType.HEARTBEAT, Map.of(), CLOCK);
         Files.write(directory.resolve(event.messageId() + ".tmp"), new BinaryProtocolCodec().encodeEvent(event));
         ImmediatePublisher publisher = new ImmediatePublisher();
-        DurableEventOutbox outbox = new DurableEventOutbox(publisher, directory);
+        try (DurableEventOutbox outbox = new DurableEventOutbox(publisher, directory)) {
 
-        outbox.initialize();
-        assertEquals(1, eventFileCount(directory));
-        assertEquals(1, outbox.replay().toCompletableFuture().get(1, TimeUnit.SECONDS));
-        assertEquals(1, publisher.calls.get());
-        assertEquals(0, eventFileCount(directory));
-        outbox.close();
+            outbox.initialize();
+            assertEquals(1, eventFileCount(directory));
+            assertEquals(1, outbox.replay().toCompletableFuture().get(1, TimeUnit.SECONDS));
+            assertEquals(1, publisher.calls.get());
+            assertEquals(0, eventFileCount(directory));
+        }
     }
 
     private static DeliveryReceipt receipt(MatchEvent event) {
@@ -80,16 +82,24 @@ class DurableEventOutboxTest {
     private static void await(java.util.function.BooleanSupplier condition) throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
         while (!condition.getAsBoolean() && System.nanoTime() < deadline) Thread.sleep(10L);
+        assertTrue(condition.getAsBoolean(), "Timed out waiting for both events to be staged");
     }
 
     private static final class BlockingPublisher implements MatchEventPublisher {
         private final AtomicInteger calls = new AtomicInteger();
         private final CompletableFuture<DeliveryReceipt> first = new CompletableFuture<>();
         private final CompletableFuture<DeliveryReceipt> second = new CompletableFuture<>();
+        private final CompletableFuture<MatchEvent> firstEntered = new CompletableFuture<>();
+        private final CompletableFuture<MatchEvent> secondEntered = new CompletableFuture<>();
 
         @Override
         public CompletionStage<DeliveryReceipt> publishEvent(MatchEvent event) {
-            return calls.incrementAndGet() == 1 ? first : second;
+            if (calls.incrementAndGet() == 1) {
+                firstEntered.complete(event);
+                return first;
+            }
+            secondEntered.complete(event);
+            return second;
         }
     }
 

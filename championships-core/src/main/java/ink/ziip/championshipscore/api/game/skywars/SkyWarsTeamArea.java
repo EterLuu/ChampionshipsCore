@@ -41,6 +41,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
 public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
@@ -67,6 +68,8 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     private final SkyWarsVariantRegistry variantRegistry;
     private SkyWarsVariant resolvedVariant;
     private SkyWarsMapGeometry mapGeometry;
+    /** Bounds asynchronous visual work without ever routing particle sends through the server thread. */
+    private final Semaphore particleTaskSlots = new Semaphore(256);
 
     @Override
     public void resetArea() {
@@ -403,12 +406,12 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                     double distance = Math.hypot(center.getX() - location.getX(), center.getZ() - location.getZ());
 
                     if (radius - 10 < distance && distance < radius + 10) {
-                        setParticles(player, !(radius <= 20));
+                        setParticles(player, center.clone(), location.clone(), radius, !(radius <= 20));
                     }
 
                     if (location.getY() > height - 10 || location.getY() < low + 10) {
-                        setHeightParticles(player, height);
-                        setHeightParticles(player, low);
+                        setHeightParticles(player, location.clone(), height);
+                        setHeightParticles(player, location.clone(), low);
                     }
 
                     if (distance >= radius || location.getY() > height || location.getY() < low) {
@@ -434,13 +437,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         }, 0, 20L);
     }
 
-    private void setParticles(Player player, boolean byAngle) {
-        // Intentionally asynchronous: with 64 players this visual-only path can produce more than
-        // twenty thousand one-particle sends per second. It has been exercised in formal events and
-        // must not consume the authoritative game thread; damage and border state remain synchronous.
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            Location center = mapGeometry().getBoundaryCenter();
-            Location location = player.getLocation();
+    private void setParticles(Player player, Location center, Location location,
+                              double radiusSnapshot, boolean byAngle) {
+        submitAsyncParticleTask(player, () -> {
             World world = location.getWorld();
 
             double x = center.getX();
@@ -464,8 +463,8 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                         increment = 1;
                     }
                     for (; beta <= endBeta; beta += increment) {
-                        double x2 = center.getX() + radius * Math.cos(beta);
-                        double z2 = center.getZ() + radius * Math.sin(beta);
+                        double x2 = center.getX() + radiusSnapshot * Math.cos(beta);
+                        double z2 = center.getZ() + radiusSnapshot * Math.sin(beta);
                         Location particleLoc = new Location(center.getWorld(), x2, h, z2);
                         player.spawnParticle(Particle.DUST, particleLoc, 1,
                                 new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
@@ -475,10 +474,8 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         });
     }
 
-    private void setHeightParticles(Player player, double y) {
-        // Same intentional visual-only exception as setParticles; see the 64-player note above.
-        scheduler.runTaskAsynchronously(plugin, () -> {
-            Location location = player.getLocation();
+    private void setHeightParticles(Player player, Location location, double y) {
+        submitAsyncParticleTask(player, () -> {
             World world = location.getWorld();
             if (world != null) {
                 for (int radius = 1; radius < 5; radius++) {
@@ -494,9 +491,24 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         });
     }
 
+    private void submitAsyncParticleTask(Player player, Runnable task) {
+        if (!particleTaskSlots.tryAcquire()) return;
+        try {
+            scheduler.runTaskAsynchronously(plugin, () -> {
+                try {
+                    task.run();
+                } finally {
+                    particleTaskSlots.release();
+                }
+            });
+        } catch (RuntimeException rejected) {
+            particleTaskSlots.release();
+        }
+    }
+
     @Override
     public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
@@ -789,7 +801,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             }
 
             world.getBlockAt(location).setType(Material.CHEST);
-            world.spawnParticle(Particle.DUST, location.clone().add(0.5, 0.5, 0.5), 100, new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
+            Location tombParticleLocation = location.clone().add(0.5, 0.5, 0.5);
+            submitAsyncParticleTask(player, () -> world.spawnParticle(Particle.DUST, tombParticleLocation, 100,
+                    new Particle.DustOptions(Color.fromRGB(0xff0000), 1)));
 
             Chest chest = (Chest) world.getBlockAt(location).getState();
             for (ItemStack item : items) {

@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltConfig;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyConfig;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagConfig;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorConfig;
+import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsConfig;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownConfig;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSConfig;
@@ -45,6 +46,7 @@ public final class GameSpawnResolver {
             case ParkourWarriorConfig c -> c.getPlayerSpawnPoint();
             case HotyCodyDuskyConfig c -> c.getPlayerSpawnPoint();
             case AceRaceConfig c -> c.getStartSpawnPoint();
+            case RiptideRushConfig c -> c.getStartPoint();
             case SnowballShowdownConfig c -> firstSectionLocation(c.getPlayerSpawnPoints());
             case DragonEggCarnivalConfig c -> dragonEggCarnivalSpawn(c);
             case DodgeboltConfig c -> firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());

@@ -329,9 +329,8 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
             }
         }, this::endGame);
 
-        // Intentional performance exception: this proven 64-player path keeps repeated foot-block
-        // probing away from the game thread. Delayed world mutation remains on the server thread and
-        // pendingBlockRemovals is concurrent so duplicate probes cannot create duplicate tasks.
+        // This validated high-player-count path keeps repeated foot-block probing off the game
+        // thread; delayed world mutation remains on the server thread.
         final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
         handlePlayerMoveTask = scheduler.runTaskTimerAsynchronously(plugin, () -> gamePlayersCopy.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
@@ -466,7 +465,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
         if (startGameProgressTask != null)

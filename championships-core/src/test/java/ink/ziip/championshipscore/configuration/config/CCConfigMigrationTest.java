@@ -112,6 +112,22 @@ class CCConfigMigrationTest {
     }
 
     @Test
+    void keepsLegacyRaftSurvivalMapsWhenCanonicalListWasAddedEmpty() throws Exception {
+        YamlConfiguration configuration = new YamlConfiguration();
+        configuration.loadFromString("""
+                formal-events:
+                  RiptideRush:
+                    maps: []
+                  RaftSurvival:
+                    maps: [legacy-one, legacy-two]
+                """);
+
+        assertEquals(java.util.List.of("legacy-one", "legacy-two"),
+                CCConfig.formalEventMaps(configuration,
+                        ink.ziip.championshipscore.api.object.game.GameTypeEnum.RiptideRush));
+    }
+
+    @Test
     void migratesLegacyWeightedScoreSwitchAndKeepsExistingBehavior() throws Exception {
         YamlConfiguration old = new YamlConfiguration();
         old.loadFromString("weighted-score: true\n");

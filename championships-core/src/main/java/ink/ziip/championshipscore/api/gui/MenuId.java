@@ -44,6 +44,7 @@ public enum MenuId {
     // Map editor — game-specific sub-menus
     ACE_RACE_EQUIPMENT("map-editor.games.ace-race.menus.equipment"),
     ACE_RACE_RESPAWN_BINDING("map-editor.games.ace-race.menus.respawn-binding"),
+    RIPTIDE_RUSH_EDITOR("map-editor.games.riptide-rush.menus.course-editor"),
     TGTTOS_AREA_TYPE("map-editor.games.tgttos.menus.area-type"),
     BUILD_MART_MATERIAL_ZONES("map-editor.games.build-mart.menus.material-zones"),
 

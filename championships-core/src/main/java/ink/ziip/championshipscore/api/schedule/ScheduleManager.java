@@ -17,6 +17,9 @@ import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskySchedu
 import ink.ziip.championshipscore.api.schedule.parkourtag.ParkourTagScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleManager;
+import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.frostbite.*;
+import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleManager;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleManager;
 import ink.ziip.championshipscore.api.schedule.snowball.SnowballScheduleHandler;
@@ -81,6 +84,9 @@ public class ScheduleManager extends BaseManager {
     private AceRaceScheduleManager aceRaceScheduleManager;
     @Getter
     private BuildMartScheduleManager buildMartScheduleManager;
+    @Getter
+    private RiptideRushScheduleManager riptideRushScheduleManager;
+    @Getter private FrostbiteScheduleManager frostbiteScheduleManager;
     private BukkitTask dodgeboltTransitionTask;
     private BukkitTask dragonEggCarnivalTransitionTask;
     private GameTypeEnum pendingFinaleRequest;
@@ -107,6 +113,8 @@ public class ScheduleManager extends BaseManager {
         bingoScheduleManager = new BingoScheduleManager(plugin, new BingoScheduleHandler(plugin));
         aceRaceScheduleManager = new AceRaceScheduleManager(plugin, new AceRaceScheduleHandler(plugin));
         buildMartScheduleManager = new BuildMartScheduleManager(plugin, new BuildMartScheduleHandler(plugin));
+        riptideRushScheduleManager = new RiptideRushScheduleManager(plugin, new RiptideRushScheduleHandler(plugin));
+        frostbiteScheduleManager = new FrostbiteScheduleManager(plugin, new FrostbiteScheduleHandler(plugin));
 
         snowballScheduleManager.load();
         skyWarsScheduleManager.load();
@@ -119,6 +127,8 @@ public class ScheduleManager extends BaseManager {
         bingoScheduleManager.load();
         aceRaceScheduleManager.load();
         buildMartScheduleManager.load();
+        riptideRushScheduleManager.load();
+        frostbiteScheduleManager.load();
     }
 
     @Override
@@ -141,6 +151,8 @@ public class ScheduleManager extends BaseManager {
         bingoScheduleManager.unload();
         aceRaceScheduleManager.unload();
         buildMartScheduleManager.unload();
+        riptideRushScheduleManager.unload();
+        frostbiteScheduleManager.unload();
     }
 
     public void addRound(GameTypeEnum gameTypeEnum) {
@@ -155,7 +167,8 @@ public class ScheduleManager extends BaseManager {
     public boolean supportsFormalEvent(@NotNull GameTypeEnum gameTypeEnum) {
         return switch (gameTypeEnum) {
             case SnowballShowdown, SkyWars, TNTRun, TGTTOS, ParkourWarrior, BattleBox,
-                    ParkourTag, HotyCodyDusky, Bingo, DragonEggCarnival, Dodgebolt, AceRace, BuildMart -> true;
+                    ParkourTag, HotyCodyDusky, Bingo, DragonEggCarnival, Dodgebolt, AceRace, BuildMart,
+                    RiptideRush, FrostbiteFrenzy -> true;
             default -> false;
         };
     }
@@ -190,6 +203,8 @@ public class ScheduleManager extends BaseManager {
             case Bingo -> bingoScheduleManager.startGame();
             case AceRace -> aceRaceScheduleManager.startGame();
             case BuildMart -> buildMartScheduleManager.startGame();
+            case RiptideRush -> riptideRushScheduleManager.startGame();
+            case FrostbiteFrenzy -> frostbiteScheduleManager.startGame();
             default -> {
                 return EventAction.UNSUPPORTED;
             }
@@ -226,6 +241,8 @@ public class ScheduleManager extends BaseManager {
             case Bingo -> bingoScheduleManager.isEnabled();
             case AceRace -> aceRaceScheduleManager.isEnabled();
             case BuildMart -> buildMartScheduleManager.isEnabled();
+            case RiptideRush -> riptideRushScheduleManager.isEnabled();
+            case FrostbiteFrenzy -> frostbiteScheduleManager.isEnabled();
             case DragonEggCarnival -> dragonEggCarnivalTransitionTask != null;
             case Dodgebolt -> dodgeboltTransitionTask != null;
             default -> false;
@@ -283,6 +300,8 @@ public class ScheduleManager extends BaseManager {
             case ParkourTag -> parkourTagScheduleManager.hasNextRound();
             case HotyCodyDusky -> hotyCodyDuskyScheduleManager.hasNextRound();
             case BuildMart -> buildMartScheduleManager.hasNextRound();
+            case RiptideRush -> riptideRushScheduleManager.hasNextRound();
+            case FrostbiteFrenzy -> frostbiteScheduleManager.hasNextRound();
             default -> false;
         };
     }
@@ -333,7 +352,7 @@ public class ScheduleManager extends BaseManager {
         // ranking output is scheduled independently below.
         Runnable release = () -> scheduler.runTaskLater(plugin, () -> {
             for (BaseGameInstance instance : instances)
-                instance.completePostGame(hasNextRound);
+                instance.completePostGame(hasNextRound && isFormalEventRunning(gameType));
             afterSettlement.run();
         }, RESULT_DISPLAY_TICKS);
 
@@ -400,6 +419,8 @@ public class ScheduleManager extends BaseManager {
             case Bingo -> { if (bingoScheduleManager.isEnabled()) bingoScheduleManager.endSchedule(); }
             case AceRace -> { if (aceRaceScheduleManager.isEnabled()) aceRaceScheduleManager.endSchedule(); }
             case BuildMart -> { if (buildMartScheduleManager.isEnabled()) buildMartScheduleManager.endSchedule(); }
+            case RiptideRush -> { if (riptideRushScheduleManager.isEnabled()) riptideRushScheduleManager.endSchedule(); }
+            case FrostbiteFrenzy -> { if (frostbiteScheduleManager.isEnabled()) frostbiteScheduleManager.endSchedule(); }
             case Dodgebolt -> {
                 if (dodgeboltTransitionTask != null) dodgeboltTransitionTask.cancel();
                 dodgeboltTransitionTask = null;
@@ -641,7 +662,10 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.ACE_RACE);
         if (gameTypeEnum == GameTypeEnum.BuildMart)
             return Utils.getMessage(ScheduleMessageConfig.BUILD_MART);
+        if (gameTypeEnum == GameTypeEnum.RiptideRush)
+            return Utils.getMessage(ScheduleMessageConfig.RIPTIDE_RUSH);
 
+        if (gameTypeEnum == GameTypeEnum.FrostbiteFrenzy) return Utils.getMessage(ScheduleMessageConfig.FROSTBITE);
         return "";
     }
 
@@ -662,7 +686,10 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.ACE_RACE_POINTS);
         if (gameTypeEnum == GameTypeEnum.BuildMart)
             return Utils.getMessage(ScheduleMessageConfig.BUILD_MART_POINTS);
+        if (gameTypeEnum == GameTypeEnum.RiptideRush)
+            return Utils.getMessage(ScheduleMessageConfig.RIPTIDE_RUSH_POINTS);
 
+        if (gameTypeEnum == GameTypeEnum.FrostbiteFrenzy) return Utils.getMessage(ScheduleMessageConfig.FROSTBITE_POINTS);
         return "";
     }
 }

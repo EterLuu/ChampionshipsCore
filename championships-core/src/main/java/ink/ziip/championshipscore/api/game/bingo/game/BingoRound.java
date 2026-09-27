@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo.game;
 
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.api.game.bingo.card.BingoCard;
 import ink.ziip.championshipscore.api.game.bingo.card.CardSize;
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
@@ -78,8 +79,8 @@ public final class BingoRound {
     /** statistic baselines: player -> (statistic -> value at the moment tracking began). */
     private final Map<UUID, Map<StatisticHandle, Integer>> statBaselines = new HashMap<>();
 
-    /** Explicit boat travel measured from VehicleMoveEvent, used when the vanilla statistic is stale. */
-    private final Map<UUID, Double> boatTravelCentimeters = new HashMap<>();
+    /** Shared riding compensation for stale vanilla statistics. */
+    private final BingoRidingTravel ridingTravel = new BingoRidingTravel();
 
     /** Per-round state for cumulative/distinct EventTask objectives. */
     private final EventProgressTracker eventTracker = new EventProgressTracker();
@@ -363,10 +364,10 @@ public final class BingoRound {
         return eventTracker;
     }
 
-    /** Records boat movement for a participant in centimetres. */
-    public void recordBoatMovement(Player player, double centimeters) {
+    /** Records riding movement for a participant in centimetres. */
+    public void recordRidingMovement(Player player, org.bukkit.Statistic statistic, double centimeters, BingoRidingTravel.Source source) {
         if (player == null || !Double.isFinite(centimeters) || centimeters <= 0.0D) return;
-        boatTravelCentimeters.merge(player.getUniqueId(), centimeters, Double::sum);
+        ridingTravel.record(player.getUniqueId(), statistic, centimeters, source);
     }
 
     /** True once every cell on the board has been claimed by at least one team. */
@@ -687,10 +688,7 @@ public final class BingoRound {
 
     private int statisticDelta(Player player, StatisticHandle handle) {
         int vanillaDelta = readStatistic(player, handle) - baseline(player.getUniqueId(), handle);
-        if (handle.statisticType() != org.bukkit.Statistic.BOAT_ONE_CM) return vanillaDelta;
-        double tracked = boatTravelCentimeters.getOrDefault(player.getUniqueId(), 0.0D);
-        int trackedDelta = tracked >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) Math.floor(tracked);
-        return Math.max(vanillaDelta, trackedDelta);
+        return ridingTravel.delta(player.getUniqueId(), handle.statisticType(), vanillaDelta);
     }
 
     /** Checks every state/tracked EventTask for the player's team. */

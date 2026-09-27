@@ -185,7 +185,7 @@ public class SnowballShowdownTeamArea extends BaseMultiTeamGameInstance {
     }
 
     public void endGame() {
-        if (getGameStageEnum() == GameStageEnum.WAITING)
+        if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
         if (startGameProgressTask != null)

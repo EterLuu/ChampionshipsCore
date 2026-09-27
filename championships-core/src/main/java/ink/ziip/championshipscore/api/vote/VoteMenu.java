@@ -165,6 +165,8 @@ final class VoteMenu implements Listener {
             case HotyCodyDusky -> "hoty-cody-dusky";
             case BuildMart -> "build-mart";
             case AceRace -> "ace-race";
+            case RiptideRush -> "riptide-rush";
+            case FrostbiteFrenzy -> "frostbite";
             default -> "unknown";
         };
     }
@@ -182,6 +184,8 @@ final class VoteMenu implements Listener {
             case HotyCodyDusky -> Material.COD;
             case BuildMart -> Material.CRAFTING_TABLE;
             case AceRace -> Material.ELYTRA;
+            case RiptideRush -> Material.OAK_BOAT;
+            case FrostbiteFrenzy -> Material.BLUE_ICE;
             default -> Material.PAPER;
         };
     }

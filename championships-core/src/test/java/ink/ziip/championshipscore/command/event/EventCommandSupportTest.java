@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.command.event;
 
+import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import ink.ziip.championshipscore.api.event.EventTeamImport;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -13,6 +16,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ExtendWith(ConfigurationStateExtension.class)
 class EventCommandSupportTest {
     @BeforeAll
     static void stubValidationReminders() {
@@ -88,5 +92,21 @@ class EventCommandSupportTest {
     private static EventTeamImport.Event event(String title) {
         return new EventTeamImport.Event(UUID.randomUUID().toString(), "s4cc", title, "READY",
                 List.of(new EventTeamImport.Game("Bingo", "default", "宾果")), List.of(1D));
+    }
+    @Test
+    void importsAFinaleWithoutRequiringAnExtraScoringMultiplier() {
+        int previous = CCConfig.TEAM_MAX_MEMBERS;
+        try {
+            CCConfig.TEAM_MAX_MEMBERS = 4;
+            EventTeamImport imported = new EventTeamImport(new EventTeamImport.Event(
+                    "00000000-0000-4000-8000-000000000001", "s4cc", "Test", "READY",
+                    List.of(new EventTeamImport.Game("Bingo", "s3cc", "Bingo"),
+                            new EventTeamImport.Game("Dodgebolt", "s3cc", "Dodgebolt")), List.of(1D)),
+                    List.of(new EventTeamImport.Team("Red", "red", "#B02E26", List.of(
+                            new EventTeamImport.Member("PlayerOne", "00000000-0000-4000-8000-000000000002")))));
+            assertEquals(1, EventCommandSupport.validateImport(imported).size());
+        } finally {
+            CCConfig.TEAM_MAX_MEMBERS = previous;
+        }
     }
 }

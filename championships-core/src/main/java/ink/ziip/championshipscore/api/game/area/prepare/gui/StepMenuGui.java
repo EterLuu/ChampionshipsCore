@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
+import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -145,21 +146,26 @@ public final class StepMenuGui {
 
     private static ItemStack stepItem(@NotNull PrepareSession session, @NotNull PrepareStep step, int number) {
         boolean set = step.isSet(session);
+        int count = step.captureType() == StepCaptureType.LIST ? step.listCount(session) : 0;
         String stateKey = switch (step.captureType()) {
             case CONFIRM_WORLD -> session.isWorldConfirmed() ? "confirmed" : "unconfirmed";
             case STAMP -> session.isStamped() ? "stamped" : "unstamped";
-            case LIST -> set ? "set" : "unset";
+            case LIST -> set ? "set-list" : "unset";
             default -> set ? "set" : "unset";
         };
         String state = step.stateText(session) != null
                 ? step.stateText(session)
-                : GuiConfig.text(MENU_PATH + ".items.step.states." + stateKey + ".title");
+                : GuiConfig.text(MENU_PATH + ".items.step.states." + stateKey + ".title",
+                        Map.of("count", count));
         String action = GuiConfig.text(MENU_PATH + ".items.step.lore.2");
         ItemStack fallback = PrepareKeys.item(step.icon(), Component.empty(), List.of());
-        ItemStack item = ConfiguredGui.item(MENU_PATH + ".items.step", stateKey, Map.of(
+        // The step state is rendered in the lore. Passing it to ConfiguredGui would replace the complete
+        // title with the state's short label and hide the step number/name.
+        ItemStack item = ConfiguredGui.item(MENU_PATH + ".items.step", null, Map.of(
                         "number", number,
                         "title", PlainTextComponentSerializer.plainText().serialize(step.displayName()),
                         "description", PlainTextComponentSerializer.plainText().serialize(step.description()),
+                        "count", count,
                         "state", state,
                         "action", action), fallback);
         PrepareKeys.setStep(item, step.key());

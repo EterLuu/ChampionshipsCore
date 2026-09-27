@@ -21,18 +21,51 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 39;
+        return 59;
     }
 
-    /** Replace every player-facing section so v30's terminology and spacing stay consistent at runtime. */
+    /** Preserve current custom messages while filling the versioned Riptide presentation additions. */
     @Override
     public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) throws IOException {
+        if (outdatedConfiguration.getInt("dont-edit-this.version") >= 40) {
+            preserveCurrentMessages(outdatedConfiguration, configuration);
+            configuration.save(configurationPath.toFile());
+            return;
+        }
         for (String section : List.of("command", "chat", "team", "member", "reason", "area", "rank", "spectator", "game",
                 "battlebox", "parkourtag", "skywars", "tgttos", "bingo", "buildmart", "tntrun",
-                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky", "acerace", "daily", "vote"))
+                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky", "acerace",
+                "riptiderush", "daily", "vote"))
             outdatedConfiguration.set(section, null);
         outdatedConfiguration.set("no-permission", null);
         super.loadFromOutdatedConfiguration(outdatedConfiguration);
+    }
+
+    static void preserveCurrentMessages(YamlConfiguration existing, YamlConfiguration defaults) {
+        for (String key : existing.getKeys(true)) {
+            if (key.startsWith("riptiderush.rhythm.") || key.equals("riptiderush.reason.rhythm")) continue;
+            if (key.startsWith("map-editor-raft.") || key.equals("riptiderush.reason.side-wall")) continue;
+            if (key.equals("riptiderush.sweep-actionbar")) {
+                if (!existing.isSet("riptiderush.sweep-title") && !existing.getString(key, "").equals(
+                        "&e侧墙 %beat%/2 &f%side% &7• %time% &b%action%"))
+                    defaults.set("riptiderush.sweep-title", existing.get(key));
+                continue;
+            }
+            if (key.equals("riptiderush.floor-actionbar") && existing.getString(key, "").equals(
+                    "&#fff566彩色地板 %round%/%rounds% &#bababa• &#ededed每轮前移一格，站到手中方块上：&#55ffff%block%")) continue;
+            if (key.equals("riptiderush.floor-title") && existing.getString(key, "").equals(
+                    "&#fff566&l彩色地板 %round%/5 &#ff6b26%seconds%秒")) continue;
+            if (key.equals("riptiderush.floor-subtitle")) continue;
+            if (key.equals("riptiderush.question-subtitle") && existing.getString(key, "").equals(
+                    "&#ff5555左 %left% &#bababa| &#55ffff右 %right%")) continue;
+            if (key.equals("riptiderush.question-bar") || key.equals("riptiderush.pause-bar")
+                    || key.equals("riptiderush.pause-title") || key.equals("riptiderush.pause-subtitle")) continue;
+            if (key.equals("riptiderush.boss-bar") && existing.getString(key, "").equals(
+                    "&#fff566激流勇进 &#bababa•&#ededed 存活&#ff6b26%alive%/%total% &#bababa•&#ededed %time%秒 &#bababa•&#ededed %speed%格/秒")) continue;
+            if (!key.equals("dont-edit-this.version") && !existing.isConfigurationSection(key))
+                defaults.set(key, key.startsWith("riptiderush.") && existing.get(key) instanceof String text
+                        ? text.replace("彩色地板", "踩色").replace("数学", "解题").replace("算错了", "答错了") : existing.get(key));
+        }
     }
 
     // Player
@@ -1183,6 +1216,11 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.acerace", nullable = true)
     public static String GAME_ACE_RACE;
 
+    @ConfigOption(path = "game.riptiderush")
+    public static String GAME_RIPTIDE_RUSH;
+
+    @ConfigOption(path = "game.frostbite") public static String GAME_FROSTBITE;
+
     @ConfigOption(path = "game.preparation-count-down")
     public static String GAME_PREPARATION_COUNT_DOWN;
 
@@ -1626,6 +1664,9 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "buildmart.golden-expired", nullable = true)
     public static String BUILD_MART_GOLDEN_EXPIRED;
+
+    @ConfigOption(path = "buildmart.submit-differences")
+    public static String BUILD_MART_SUBMIT_DIFFERENCES;
 
     @ConfigOption(path = "buildmart.submit-incomplete", nullable = true)
     public static String BUILD_MART_SUBMIT_INCOMPLETE;
@@ -2185,6 +2226,42 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "admin.world.list-unloaded") public static String ADMIN_WORLD_LIST_UNLOADED;
     @ConfigOption(path = "admin.world.none") public static String ADMIN_WORLD_NONE;
     @ConfigOption(path = "admin.world.unloaded-names") public static String ADMIN_WORLD_UNLOADED_NAMES;
+
+    @ConfigOption(path = "riptiderush.start-preparation") public static String RIPTIDE_RUSH_START_PREPARATION;
+    @ConfigOption(path = "riptiderush.start-preparation-title") public static String RIPTIDE_RUSH_START_PREPARATION_TITLE;
+    @ConfigOption(path = "riptiderush.start-preparation-subtitle") public static String RIPTIDE_RUSH_START_PREPARATION_SUBTITLE;
+    @ConfigOption(path = "riptiderush.game-start-title") public static String RIPTIDE_RUSH_GAME_START_TITLE;
+    @ConfigOption(path = "riptiderush.game-start-subtitle") public static String RIPTIDE_RUSH_GAME_START_SUBTITLE;
+    @ConfigOption(path = "riptiderush.game-end-title") public static String RIPTIDE_RUSH_GAME_END_TITLE;
+    @ConfigOption(path = "riptiderush.game-end-subtitle") public static String RIPTIDE_RUSH_GAME_END_SUBTITLE;
+    @ConfigOption(path = "riptiderush.eliminated") public static String RIPTIDE_RUSH_ELIMINATED;
+    @ConfigOption(path = "riptiderush.eliminated-fall") public static String RIPTIDE_RUSH_ELIMINATED_FALL;
+    @ConfigOption(path = "riptiderush.eliminated-floor") public static String RIPTIDE_RUSH_ELIMINATED_FLOOR;
+    @ConfigOption(path = "riptiderush.eliminated-math") public static String RIPTIDE_RUSH_ELIMINATED_MATH;
+    @ConfigOption(path = "riptiderush.eliminated-disconnected") public static String RIPTIDE_RUSH_ELIMINATED_DISCONNECTED;
+    @ConfigOption(path = "riptiderush.winner") public static String RIPTIDE_RUSH_WINNER;
+    @ConfigOption(path = "riptiderush.speed-shield-break") public static String RIPTIDE_RUSH_SPEED_SHIELD_BREAK;
+    @ConfigOption(path = "riptiderush.speed-boost-title") public static String RIPTIDE_RUSH_SPEED_BOOST_TITLE;
+    @ConfigOption(path = "riptiderush.speed-boost-subtitle") public static String RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE;
+    @ConfigOption(path = "riptiderush.final-sprint-title") public static String RIPTIDE_RUSH_FINAL_SPRINT_TITLE;
+    @ConfigOption(path = "riptiderush.final-sprint-subtitle") public static String RIPTIDE_RUSH_FINAL_SPRINT_SUBTITLE;
+    @ConfigOption(path = "riptiderush.boss-bar") public static String RIPTIDE_RUSH_BOSS_BAR;
+    @ConfigOption(path = "riptiderush.question-title") public static String RIPTIDE_RUSH_QUESTION_TITLE;
+    @ConfigOption(path = "riptiderush.question-subtitle") public static String RIPTIDE_RUSH_QUESTION_SUBTITLE;
+    @ConfigOption(path = "riptiderush.math-correct") public static String RIPTIDE_RUSH_MATH_CORRECT;
+    @ConfigOption(path = "riptiderush.floor-title") public static String RIPTIDE_RUSH_FLOOR_TITLE;
+    @ConfigOption(path = "riptiderush.floor-actionbar") public static String RIPTIDE_RUSH_FLOOR_ACTIONBAR;
+    @ConfigOption(path = "riptiderush.dodge-title") public static String RIPTIDE_RUSH_DODGE_TITLE;
+    @ConfigOption(path = "riptiderush.dodge-actionbar") public static String RIPTIDE_RUSH_DODGE_ACTIONBAR;
+    @ConfigOption(path = "riptiderush.reason.wrong-floor") public static String RIPTIDE_RUSH_REASON_WRONG_FLOOR;
+    @ConfigOption(path = "riptiderush.reason.disconnected") public static String RIPTIDE_RUSH_REASON_DISCONNECTED;
+    @ConfigOption(path = "riptiderush.reason.wrong-answer") public static String RIPTIDE_RUSH_REASON_WRONG_ANSWER;
+    @ConfigOption(path = "riptiderush.reason.missed-gate") public static String RIPTIDE_RUSH_REASON_MISSED_GATE;
+    @ConfigOption(path = "riptiderush.reason.left-behind") public static String RIPTIDE_RUSH_REASON_LEFT_BEHIND;
+    @ConfigOption(path = "riptiderush.departure-actionbar") public static String RIPTIDE_RUSH_DEPARTURE_ACTIONBAR;
+    @ConfigOption(path = "riptiderush.sweep-title") public static String RIPTIDE_RUSH_SWEEP_TITLE;
+    @ConfigOption(path = "riptiderush.reason.fell") public static String RIPTIDE_RUSH_REASON_FELL;
+    @ConfigOption(path = "riptiderush.reason.dodge") public static String RIPTIDE_RUSH_REASON_DODGE;
 
     @ConfigOption(path = "server-mode-switched") public static String SERVER_MODE_SWITCHED;
     @ConfigOption(path = "spectator.display.remote") public static String SPECTATOR_DISPLAY_REMOTE;

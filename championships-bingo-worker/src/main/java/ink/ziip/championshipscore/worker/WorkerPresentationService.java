@@ -31,6 +31,7 @@ final class WorkerPresentationService {
         for (int index = 0; index + 1 < replacements.length; index += 2) {
             text = text.replace(replacements[index], replacements[index + 1]);
         }
+        text = text.replace("%prefix%", presentation.messages().getOrDefault("prefix", ""));
         return component(text);
     }
 
