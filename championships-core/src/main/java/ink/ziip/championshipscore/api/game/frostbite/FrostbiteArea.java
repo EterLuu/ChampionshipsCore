@@ -75,8 +75,9 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         return super.tryStartGame(teams, players);
     }
     private boolean validRoster(List<ChampionshipTeam> teams) {
-        if (teams == null || teams.size() < 2 || teams.size() > 16 || teams.stream().anyMatch(t -> t == null || t.getMembers().size() != 4)) {
-            logGame(Level.WARNING, "参赛", "霜冻狂潮需要2–16支队伍，每队恰好4人"); return false;
+        if (teams == null || teams.size() < 2 || teams.size() > 16
+                || teams.stream().anyMatch(t -> t == null || t.getMembers().isEmpty() || t.getMembers().size() > 4)) {
+            logGame(Level.WARNING, "参赛", "霜冻狂潮需要2–16支队伍，每队需要1–4人"); return false;
         }
         return true;
     }

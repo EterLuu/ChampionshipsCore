@@ -18,8 +18,9 @@ public final class FrostbiteRound {
         Map<UUID, Seat> result = new LinkedHashMap<>();
         for (int team = 0; team < teams.size(); team++) {
             var members = teams.get(team).stream().sorted().toList();
-            if (members.size() != 4) throw new IllegalArgumentException("每队必须恰好有 4 名参赛者");
-            for (int member = 0; member < 4; member++) {
+            if (members.isEmpty() || members.size() > 4)
+                throw new IllegalArgumentException("每队需要 1–4 名参赛者");
+            for (int member = 0; member < members.size(); member++) {
                 UUID id = Objects.requireNonNull(members.get(member));
                 // GF(4) yields every opposing pairing once over four rounds for four teams.
                 int arena = member ^ multiply(team % 4, round);

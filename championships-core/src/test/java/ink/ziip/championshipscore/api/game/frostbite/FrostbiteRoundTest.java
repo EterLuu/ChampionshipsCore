@@ -31,11 +31,19 @@ class FrostbiteRoundTest {
         var roster=teams(4);var reordered=roster.stream().map(t->{var l=new ArrayList<>(t);Collections.reverse(l);return (List<UUID>)l;}).toList();
         assertEquals(new FrostbiteRound(roster,2).seats(),new FrostbiteRound(reordered,2).seats());
     }
+    @Test void shortTeamsLeaveTheirUnusedArenaSeatsEmpty() {
+        var roster=new ArrayList<>(teams(4));roster.set(0,roster.get(0).subList(0,2));
+        var game=new FrostbiteRound(roster,0);
+        assertEquals(14,game.seats().size());
+        assertEquals(2,game.seats().values().stream().filter(seat -> seat.team()==0).count());
+    }
     @Test void rejectsIncompleteOversizedDuplicateAndSoloRosters() {
         assertThrows(IllegalArgumentException.class,()->new FrostbiteRound(teams(1),0));
         assertThrows(IllegalArgumentException.class,()->new FrostbiteRound(teams(17),0));
-        var incomplete=new ArrayList<>(teams(4));incomplete.set(0,incomplete.get(0).subList(0,3));
+        var incomplete=new ArrayList<>(teams(4));incomplete.set(0,List.of());
         assertThrows(IllegalArgumentException.class,()->new FrostbiteRound(incomplete,0));
+        var oversized=new ArrayList<>(teams(4));oversized.set(0,List.of(UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID(),UUID.randomUUID()));
+        assertThrows(IllegalArgumentException.class,()->new FrostbiteRound(oversized,0));
         var duplicate=new ArrayList<>(teams(4));duplicate.set(1,duplicate.get(0));
         assertThrows(IllegalArgumentException.class,()->new FrostbiteRound(duplicate,0));
         assertThrows(IllegalArgumentException.class,()->new FrostbiteRound(teams(4),4));
