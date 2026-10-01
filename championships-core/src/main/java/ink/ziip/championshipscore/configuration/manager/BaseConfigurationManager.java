@@ -33,9 +33,8 @@ public abstract class BaseConfigurationManager extends BaseManager {
         for (BaseConfigurationFile configurationFile : configs)
             snapshots.put(configurationFile, configurationFile.captureRuntimeConfiguration());
 
-        // Each file is migrated before any of its disk values are validated or exposed to runtime.
         for (BaseConfigurationFile baseConfigurationFile : configs) {
-            if (baseConfigurationFile.initializeConfigurationChecked(plugin.getFolder(), isAutoUpgradeEnabled()))
+            if (baseConfigurationFile.initializeConfigurationChecked(plugin.getFolder()))
                 continue;
             snapshots.forEach(BaseConfigurationFile::restoreRuntimeConfiguration);
             return false;
@@ -43,10 +42,4 @@ public abstract class BaseConfigurationManager extends BaseManager {
         return true;
     }
 
-    /**
-     * Is the automatic upgrade of configs enabled?
-     *
-     * @return true if enabled
-     */
-    protected abstract boolean isAutoUpgradeEnabled();
 }

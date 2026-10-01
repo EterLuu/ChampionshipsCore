@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -8,8 +9,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -134,14 +133,14 @@ public final class AnvilInputGui {
                              @NotNull String initialValue, @NotNull Consumer<String> callback,
                              @Nullable Runnable onCancel) {
         Holder holder = new Holder(mode, callback);
-        AnvilView view = MenuType.ANVIL.create(player, ink.ziip.championshipscore.platform.bukkit.text.LegacyText.component(prompt));
+        AnvilView view = MenuType.ANVIL.create(player, LegacyText.plainComponent(prompt));
         AnvilInventory inv = view.getTopInventory();
         holder.inventory = inv;
         holder.onCancel = onCancel;
         // Send the actual value in the initial container contents. Replacing a prompt after opening
         // can leave the client's rename field initialized from the wrong item name.
-        inv.setFirstItem(PrepareKeys.item(Material.PAPER, Component.text(initialValue),
-                List.of(Component.text(GuiConfig.text("map-editor.menus.input.items.hint.title")).color(NamedTextColor.GRAY))));
+        inv.setFirstItem(PrepareKeys.item(Material.PAPER, LegacyText.plainComponent(initialValue),
+                List.of(LegacyText.plainComponent(GuiConfig.text("map-editor.menus.input.items.hint.title")))));
         player.openInventory(view);
         OPEN_INPUTS.put(player.getUniqueId(), holder);
         view.setMaximumRepairCost(0);

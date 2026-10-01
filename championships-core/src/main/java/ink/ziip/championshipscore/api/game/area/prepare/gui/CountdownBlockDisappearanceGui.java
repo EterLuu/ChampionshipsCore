@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -41,7 +43,7 @@ public final class CountdownBlockDisappearanceGui {
     private CountdownBlockDisappearanceGui() {
     }
 
-    public static final class Holder implements InventoryHolder {
+    public static final class Holder implements MenuInventory {
         final PrepareSession session;
         final CountdownBlockDisappearanceStep step;
         Inventory inventory;
@@ -130,7 +132,7 @@ public final class CountdownBlockDisappearanceGui {
 
     private static ItemStack configured(@NotNull String item, String state, @NotNull Map<String, ?> placeholders) {
         return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders,
-                Material.BARRIER, Component.text(item), List.of(), false);
+                Material.BARRIER, LegacyText.component(item), List.of(), false);
     }
 
     private static ItemStack modeItem(@NotNull CountdownBlockDisappearanceStep.Mode mode,
@@ -151,9 +153,9 @@ public final class CountdownBlockDisappearanceGui {
         ItemStack item = new ItemStack(material);
         List<Component> lines = new ArrayList<>();
         for (String line : lore)
-            lines.add(Component.text(line).color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            lines.add(LegacyText.component(line).colorIfAbsent(NamedTextColor.GRAY).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
         item.editMeta(meta -> {
-            meta.displayName(Component.text(name).color(color).decoration(TextDecoration.ITALIC, false));
+            meta.displayName(LegacyText.component(name).colorIfAbsent(color).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
             meta.lore(lines);
         });
         return item;

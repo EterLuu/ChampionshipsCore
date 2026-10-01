@@ -1,0 +1,33 @@
+dont-edit-this:
+  version: 5
+world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
+timer: 90
+# Total arenas including the hand-built copy 0; set by the editor's generation step.
+copy-count: 1
+# Filled from arena.schem: source minimum corner, chunk-aligned row spacing and template dimensions.
+copy-layout: {}
+area-pos1:
+area-pos2:
+left-spawn-point:
+right-spawn-point:
+spectator-spawn-point:
+supply-points: []
+shield-hits: 1
+scoring:
+  kill: 15
+  win: 40
+  draw: 15
+potion-spawn-points: []
+name: area
+introduction-spawn-point:
+rules: []

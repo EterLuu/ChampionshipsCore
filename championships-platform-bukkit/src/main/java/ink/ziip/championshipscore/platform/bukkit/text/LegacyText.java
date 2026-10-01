@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.platform.bukkit.text;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -15,7 +17,8 @@ public final class LegacyText {
     private static final String COLOR_CODE_CHARS = "0123456789AaBbCcDdEeFfKkLlMmNnOoRrXx";
     private static final char SECTION = '§';
     private static final LegacyComponentSerializer SECTION_SERIALIZER =
-            LegacyComponentSerializer.legacySection();
+            LegacyComponentSerializer.builder().character(SECTION).hexColors()
+                    .useUnusualXRepeatedCharacterHexFormat().build();
 
     private LegacyText() {
     }
@@ -38,6 +41,25 @@ public final class LegacyText {
     public static Component component(String text) {
         if (text == null || text.isEmpty()) return Component.empty();
         return SECTION_SERIALIZER.deserialize(translateColorCodes(text));
+    }
+
+    /** Configured colours take precedence over the renderer's default colour. */
+    public static Component component(String text, TextColor fallbackColor) {
+        return component(text).colorIfAbsent(fallbackColor);
+    }
+
+    /** Plain text for editable fields: remove both ampersand and section-sign formatting. */
+    public static String plainText(String text) {
+        return PlainTextComponentSerializer.plainText().serialize(component(text));
+    }
+
+    public static Component plainComponent(String text) {
+        return Component.text(plainText(text));
+    }
+
+    /** Retains exact colours when a component is inserted into a legacy text template. */
+    public static String serialize(Component component) {
+        return SECTION_SERIALIZER.serialize(component);
     }
 
     /** Rounds scoreboard points exactly as the Core placeholders do. */

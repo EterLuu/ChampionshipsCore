@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -10,7 +11,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -22,8 +22,8 @@ public final class AceRaceLineStep extends PrepareStep {
 
     public AceRaceLineStep(boolean start) {
         super(start ? "start_line" : "finish_line",
-                Component.text(start ? GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.start-line.title") : GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.finish-line.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.start-line.lore", 0)
+                LegacyText.component(start ? GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.start-line.title") : GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.finish-line.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.start-line.lore", 0)
                         + (start ? GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.start-line.lore", 1) : GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.finish-line.lore", 1))),
                 start ? Material.LIME_WOOL : Material.ORANGE_WOOL, StepCaptureType.WE_SELECTION);
         this.start = start;

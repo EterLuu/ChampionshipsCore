@@ -332,6 +332,20 @@ public class BuildMartHandler extends BaseListener {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMaterialBreak(BlockBreakEvent event) {
+        if (!event.isCancelled()) recordMaterialHarvest(event.getPlayer(), event.getBlock());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMaterialBucketFill(PlayerBucketFillEvent event) {
+        if (!event.isCancelled()) recordMaterialHarvest(event.getPlayer(), event.getBlock());
+    }
+
+    private void recordMaterialHarvest(Player player, Block block) {
+        if (running() && !buildMartArea.notAreaPlayer(player)) buildMartArea.onMaterialHarvest(block);
+    }
+
     private boolean protectionActive() {
         return buildMartArea != null && (running()
                 || buildMartArea.getGameStageEnum() == GameStageEnum.COUNTDOWN);

@@ -58,6 +58,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     private int timer;
     private BukkitTask startGameProgressTask;
     private BukkitTask borderCheckTask;
+    private BukkitTask happyGhastSpeedTask;
     private boolean lastTeamEndCheckScheduled;
     private double radius;
     private double shrink;
@@ -76,14 +77,19 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         deathPlayer.clear();
         teamDeathPlayers.clear();
         teamSpawnLocations.clear();
-        teamHappyGhasts.clear();
-        happyGhastKillCredits.clear();
+        cleanupHappyGhasts();
 
         startGameProgressTask = null;
         borderCheckTask = null;
         lastTeamEndCheckScheduled = false;
 
         preloadMap();
+    }
+
+    @Override
+    public void dispose() {
+        cleanupHappyGhasts();
+        super.dispose();
     }
 
     @Override
@@ -515,7 +521,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         if (borderCheckTask != null)
             borderCheckTask.cancel();
 
-        removeSpawnedHappyGhasts();
+        cleanupHappyGhasts();
         teamSpawnLocations.clear();
 
         if (isSettlementAllowed()) calculatePoints();
@@ -867,16 +873,10 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         player.teleport(getPreparationTeleportLocation(fallback));
     }
 
-    /**
-     * Spawn a stationary, no-AI happy ghast wearing the team-colored harness at
-     * each team's spawn point. Triggered at the configured time (default: 2
-     * minutes into the game). No AI is enough to keep it at the spawn point:
-     * the happy ghast hovers via its FloatGoal (an AI goal, disabled by NoAI),
-     * and gravity is only applied inside travel(), which NoAI skips - so it
-     * neither falls nor drifts away. 50 HP.
-     */
+    /** Spawns each team's 50-HP happy ghast; area2 restores vanilla flight with slower unridden movement. */
     private int spawnTeamHappyGhasts() {
         int spawned = 0;
+        boolean vanillaFlight = "area2".equalsIgnoreCase(getGameConfig().getAreaName());
         for (Map.Entry<ChampionshipTeam, Location> entry : teamSpawnLocations.entrySet()) {
             ChampionshipTeam team = entry.getKey();
             if (teamDeathPlayers.getOrDefault(team, 0) >= team.getMembers().size()) {
@@ -897,9 +897,15 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                 continue;
             }
 
-            happyGhast.setAI(false);
-            happyGhast.setPersistent(false);
+            happyGhast.setAI(vanillaFlight);
+            // Keep team mounts until the game's end/reset/dispose cleanup removes them.
+            happyGhast.setPersistent(true);
+            happyGhast.setRemoveWhenFarAway(false);
             happyGhast.setAdult();
+            if (vanillaFlight) {
+                happyGhast.setGravity(true);
+                SkyWarsHappyGhastSpeed.update(happyGhast);
+            }
 
             // Team-colored harness in the BODY slot (same slot as llama carpet / wolf armor).
             Material harnessMaterial = Material.getMaterial(team.getColorName() + "_HARNESS");
@@ -927,6 +933,15 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
             logGame(Level.INFO, "实体", "队伍=" + team.getName() + " 已生成快乐恶魂，挽具=" + team.getColorName());
             spawned++;
+        }
+        if (vanillaFlight && spawned > 0) {
+            if (happyGhastSpeedTask != null) happyGhastSpeedTask.cancel();
+            happyGhastSpeedTask = scheduler.runTaskTimer(plugin, () -> {
+                if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
+                for (HappyGhast ghast : teamHappyGhasts.values()) {
+                    if (ghast.isValid() && !ghast.isDead()) SkyWarsHappyGhastSpeed.update(ghast);
+                }
+            }, 1L, 1L);
         }
         return spawned;
     }
@@ -1010,13 +1025,19 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         }
     }
 
-    private void removeSpawnedHappyGhasts() {
+    /** Shared cleanup for match end, map reset and instance disposal. */
+    private void cleanupHappyGhasts() {
+        if (happyGhastSpeedTask != null) {
+            happyGhastSpeedTask.cancel();
+            happyGhastSpeedTask = null;
+        }
         for (HappyGhast happyGhast : teamHappyGhasts.values()) {
             if (happyGhast != null && !happyGhast.isDead()) {
                 happyGhast.remove();
             }
         }
         teamHappyGhasts.clear();
+        happyGhastKillCredits.clear();
     }
 
     private void damageAllPlayers() {

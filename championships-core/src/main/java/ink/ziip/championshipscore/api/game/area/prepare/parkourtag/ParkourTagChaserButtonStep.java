@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.parkourtag;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -147,9 +148,9 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         Sign sign = (Sign) label.getState();
         var front = sign.getSide(Side.FRONT);
         front.line(0, Component.empty());
-        front.line(1, Component.text(MessageConfig.MAP_EDITOR_TAG_SIGN_CLICK, NamedTextColor.YELLOW)
+        front.line(1, LegacyText.component(MessageConfig.MAP_EDITOR_TAG_SIGN_CLICK, NamedTextColor.YELLOW)
                 .decorate(TextDecoration.BOLD));
-        front.line(2, Component.text(MessageConfig.MAP_EDITOR_TAG_SIGN_BECOME, NamedTextColor.LIGHT_PURPLE)
+        front.line(2, LegacyText.component(MessageConfig.MAP_EDITOR_TAG_SIGN_BECOME, NamedTextColor.LIGHT_PURPLE)
                 .decorate(TextDecoration.BOLD));
         front.line(3, Component.empty());
         front.setColor(DyeColor.PURPLE);

@@ -116,10 +116,10 @@ final class RiptideWallGroups {
         for(var level:out)uses.merge(level.template().usageKey(),1,Integer::sum);
         for(int i=0;i<out.size() && sweeps<sideSweepQuota;i++) {
             var l=out.get(i);
-            if(l.type()!=RiptideLevelType.COLOR_FLOOR || l.step()<g.totalSteps()*.4)continue;
+            if(l.type()!=RiptideLevelType.COLOR_FLOOR || g.stoppedStep(l.step())<g.totalSteps()*.4)continue;
             var trialUses=new HashMap<>(uses);
             trialUses.merge(l.template().usageKey(),-1,Integer::sum);
-            var walls=selectSideWalls(c,g,l.step(),trialUses,random);
+            var walls=selectSideWalls(c,g,g.stoppedStep(l.step()),trialUses,random);
             if(walls.isEmpty())continue;
             var candidate=new RiptideCoursePlan.Level(l.number(),l.step(),l.template(),l.variant(),l.opening(),
                     l.mirrored(),l.contentSeed(),0,0,"SIDE",walls.getFirst().direction(),walls);

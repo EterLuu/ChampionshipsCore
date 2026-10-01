@@ -7,9 +7,6 @@ import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 public final class RiptideRushManager extends BaseGameInstanceManager<RiptideRushArea> {
@@ -20,7 +17,6 @@ public final class RiptideRushManager extends BaseGameInstanceManager<RiptideRus
     @Override
     public void load() {
         File folder = new File(plugin.getDataFolder(), "riptiderush");
-        migrateLegacyFolder(folder);
         folder.mkdirs();
         plugin.getServer().getScheduler().runTask(plugin, ignored -> {
             String[] files = folder.list((directory, name) -> name.toLowerCase().endsWith(".yml"));
@@ -37,28 +33,6 @@ public final class RiptideRushManager extends BaseGameInstanceManager<RiptideRus
         });
     }
 
-    private void migrateLegacyFolder(File target) {
-        File legacy = new File(plugin.getDataFolder(), "raftsurvival");
-        if (!legacy.isDirectory()) return;
-        File[] files = legacy.listFiles((directory, name) -> name.toLowerCase().endsWith(".yml"));
-        if (files == null) return;
-        for (File source : files) {
-            File destination = new File(target, source.getName());
-            if (destination.exists()) continue;
-            try {
-                target.mkdirs();
-                Files.move(source.toPath(), destination.toPath(), StandardCopyOption.ATOMIC_MOVE);
-                plugin.getLogger().info("激流勇进地图配置已从旧目录迁移：" + source.getName());
-            } catch (IOException atomicFailure) {
-                try {
-                    Files.move(source.toPath(), destination.toPath());
-                    plugin.getLogger().info("激流勇进地图配置已从旧目录迁移：" + source.getName());
-                } catch (IOException failure) {
-                    plugin.getLogger().warning("无法迁移旧激流勇进地图配置 " + source.getName() + " | " + failure.getMessage());
-                }
-            }
-        }
-    }
 
     @Override
     public void unload() {

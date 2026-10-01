@@ -5,7 +5,6 @@ import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,10 +23,8 @@ public final class RiptideRushStartAllSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        List<java.util.UUID> commandPlayers = sender instanceof Player player
-                ? List.of(player.getUniqueId()) : List.of();
         String message = plugin.getGameManager().joinSingleTeamAreaForAllTeams(
-                        GameTypeEnum.RiptideRush, args[0], commandPlayers)
+                        GameTypeEnum.RiptideRush, args[0])
                 ? MessageConfig.GAME_SINGLE_GAME_START_SUCCESSFUL : MessageConfig.GAME_SINGLE_GAME_START_FAILED;
         sender.sendMessage(message.replace("%game%", GameTypeEnum.RiptideRush.toString())
                 .replace("%area%", args[0]));

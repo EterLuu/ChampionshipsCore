@@ -73,6 +73,18 @@ public final class RiptideCourseGeometry {
                 start.getYaw(), start.getPitch());
     }
 
+    /** All stopped decks end one block before their gold entrance. */
+    int stoppedStep(int entranceStep) { return entranceStep - halfLength - 1; }
+
+    /** The stopped deck and its entrance occupy the same longitudinal span for every child type. */
+    int occupiedStart(RiptideCoursePlan.Level level) {
+        return level.stopsRaft() ? stoppedStep(level.step()) - halfLength : level.step() - level.extent();
+    }
+
+    int occupiedEnd(RiptideCoursePlan.Level level) {
+        return level.stopsRaft() ? level.step() : level.step() + level.extent();
+    }
+
     public int blockX(int forwardStep, int lateralOffset) {
         return start.getBlockX() + stepX * forwardStep + crossX * lateralOffset;
     }

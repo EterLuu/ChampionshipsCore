@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.daily;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import org.bukkit.Bukkit;
@@ -13,7 +14,6 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -33,74 +33,53 @@ final class DailyListener extends BaseListener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onMenu(InventoryClickEvent event) {
         Object holder = event.getView().getTopInventory().getHolder();
+        if (!DailyManager.isDailyMenuHolder(holder)) {
+            if (DailyLobbyItem.is(event.getCurrentItem()) || DailyLobbyItem.is(event.getCursor()))
+                event.setCancelled(true);
+            return;
+        }
+        Player player = MenuInventory.clickedPlayer(event);
+        if (player == null) return;
+        int slot = event.getRawSlot();
         if (holder instanceof DailyBingoVoteController.VoteHolder vote) {
-            event.setCancelled(true);
-            if (event.getWhoClicked() instanceof Player player
-                    && event.getClickedInventory() == event.getView().getTopInventory())
-                daily.bingoVote().click(player, event.getRawSlot(), vote);
+            daily.bingoVote().click(player, slot, vote);
             return;
         }
         if (holder instanceof DailyLobbyMenu.LobbyHolder lobby) {
-            event.setCancelled(true);
-            if (event.getWhoClicked() instanceof Player player
-                    && event.getClickedInventory() == event.getView().getTopInventory())
-                daily.lobbyMenu().click(player, event.getRawSlot(), lobby);
+            daily.lobbyMenu().click(player, slot, lobby);
             return;
         }
         if (holder instanceof DailyGameMenu.MenuHolder match) {
-            event.setCancelled(true);
-            if (event.getWhoClicked() instanceof Player player
-                    && event.getClickedInventory() == event.getView().getTopInventory()) {
-                if (event.isRightClick()
-                        && daily.matchMenu().isBingoSlot(match, event.getRawSlot())
-                        && daily.reopenBingoVote(player)) {
-                    return;
-                }
-                daily.matchMenu().click(player, event.getRawSlot(), match);
+            if (event.isRightClick()
+                    && daily.matchMenu().isBingoSlot(match, slot)
+                    && daily.reopenBingoVote(player)) {
+                return;
             }
+            daily.matchMenu().click(player, slot, match);
             return;
         }
         if (holder instanceof DailyStatsMenu.StatsHolder stats) {
-            event.setCancelled(true);
-            if (event.getWhoClicked() instanceof Player player
-                    && event.getClickedInventory() == event.getView().getTopInventory())
-                daily.statsMenu().click(player, event.getRawSlot(), stats);
+            daily.statsMenu().click(player, slot, stats);
             return;
         }
         if (holder instanceof DailyStatsMenu.DetailHolder detail) {
-            event.setCancelled(true);
-            if (event.getWhoClicked() instanceof Player player
-                    && event.getClickedInventory() == event.getView().getTopInventory())
-                daily.statsMenu().click(player, event.getRawSlot(), detail);
+            daily.statsMenu().click(player, slot, detail);
             return;
         }
         if (holder instanceof DailyPartyMenu.PartyHolder party) {
-            event.setCancelled(true);
-            if (event.getWhoClicked() instanceof Player player
-                    && event.getClickedInventory() == event.getView().getTopInventory())
-                daily.partyMenu().click(player, event.getRawSlot(), party);
+            daily.partyMenu().click(player, slot, party);
             return;
         }
         if (holder instanceof DailyLeaderboardMenu.LeaderboardHolder leaderboard) {
-            event.setCancelled(true);
-            if (event.getWhoClicked() instanceof Player player
-                    && event.getClickedInventory() == event.getView().getTopInventory())
-                daily.leaderboardMenu().click(player, event.getRawSlot(), leaderboard);
+            daily.leaderboardMenu().click(player, slot, leaderboard);
             return;
         }
-        if (DailyLobbyItem.is(event.getCurrentItem()) || DailyLobbyItem.is(event.getCursor())) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onMenuDrag(InventoryDragEvent event) {
         Object holder = event.getView().getTopInventory().getHolder();
-        if (holder instanceof DailyLobbyMenu.LobbyHolder
-                || holder instanceof DailyBingoVoteController.VoteHolder
-                || holder instanceof DailyGameMenu.MenuHolder
-                || holder instanceof DailyStatsMenu.StatsHolder
-                || holder instanceof DailyStatsMenu.DetailHolder
-                || holder instanceof DailyPartyMenu.PartyHolder
-                || holder instanceof DailyLeaderboardMenu.LeaderboardHolder
+        if (DailyManager.isDailyMenuHolder(holder)
                 || DailyLobbyItem.is(event.getOldCursor())
                 || event.getNewItems().values().stream().anyMatch(DailyLobbyItem::is))
             event.setCancelled(true);

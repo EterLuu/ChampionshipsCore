@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
  * Single source of truth for every GUI screen defined under gui.yml.
  *
  * <p>Each constant owns the absolute configuration prefix of its menu. Derived paths such as
- * {@code <menu>.items.<item>} or {@code <menu>.text.<key>} are built through helper methods so
+ * {@code <menu>.items.<item>} are built through helper methods so
  * callers never concatenate raw strings by hand.</p>
  */
 public enum MenuId {
@@ -47,6 +47,7 @@ public enum MenuId {
     RIPTIDE_RUSH_EDITOR("map-editor.games.riptide-rush.menus.course-editor"),
     TGTTOS_AREA_TYPE("map-editor.games.tgttos.menus.area-type"),
     BUILD_MART_MATERIAL_ZONES("map-editor.games.build-mart.menus.material-zones"),
+    BUILD_MART_BLUEPRINTS("map-editor.games.build-mart.menus.blueprints"),
 
     // Team management — hardcoded sub-screens
     TEAMS_ADD_PLAYER("teams.menus.add-player"),
@@ -74,11 +75,6 @@ public enum MenuId {
     /** Path of a fixed/configured item, e.g. {@code <menu>.items.close}. */
     public @NotNull String item(@NotNull String item) {
         return path + ".items." + item;
-    }
-
-    /** Path of a localised text entry inside this menu's {@code copy} block. */
-    public @NotNull String copy(@NotNull String key) {
-        return path + ".text." + key;
     }
 
     /** Path of a value under this menu's {@code layout} block. */

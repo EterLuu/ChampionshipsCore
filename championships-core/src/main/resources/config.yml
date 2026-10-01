@@ -1,11 +1,14 @@
 dont-edit-this:
-  version: 24
+  version: 25
 mode: "CHAMPIONSHIP"
 # Registration names used by formal event schedules. These are map identities, not physical world names.
 # Keep this section synchronized through /cc map rename; do not add map IDs in ScheduleManager code.
 formal-events:
   FrostbiteFrenzy:
-    maps: [glacial_keep]
+    maps: [glacial_keep, frosty_fjord]
+  LaserBox:
+    # 空列表自动选择已注册、已发布且不在编辑中的地图；也可填写地图注册名。
+    maps: []
   Bingo:
     maps: [bingo]
   ParkourTag:
@@ -30,6 +33,8 @@ formal-events:
     maps: [area]
   Dodgebolt:
     maps: [dodgebolt]
+  SulfurSoccer:
+    maps: []
   AceRace:
     maps: [clouds2]
   RiptideRush:
@@ -101,7 +106,7 @@ strict-spectator-rule: false
 # 启用的游戏列表：只有列出的游戏会加载场地世界、可被指令操作并出现在 tab 补全中。
 # 可选值: Bingo, ParkourTag, BattleBox, TNTRun, SnowballShowdown, SkyWars, TGTTOS,
 #         DragonEggCarnival, ParkourWarrior, HotyCodyDusky, BuildMart, Dodgebolt, AceRace,
-#         RiptideRush（命令名 riptide，大小写不敏感）
+#         RiptideRush（命令名 riptide，大小写不敏感）, LaserBox, SulfurSoccer
 # 改为 [] 则不启用任何游戏。
 enabled-games:
   - "Bingo"
@@ -119,6 +124,8 @@ enabled-games:
   - "AceRace"
   - "RiptideRush"
   - "FrostbiteFrenzy"
+  - "LaserBox"
+  - "SulfurSoccer"
 chat:
   # Player identity is rendered with the same [prefix] coloured-name contract as TAB.
   daily: "%s &#696969» &#ededed%s"

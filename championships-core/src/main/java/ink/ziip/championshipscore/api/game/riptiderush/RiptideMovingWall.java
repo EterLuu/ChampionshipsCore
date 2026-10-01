@@ -58,11 +58,18 @@ final class RiptideMovingWall {
                 add(result,transform,BlockVector3.at(cell.lateral(),cell.y(),cell.forward()),
                         BukkitAdapter.adapt(cell.material().createBlockData()).toBaseBlock());
         }
-        if(result.isEmpty())throw new IllegalArgumentException("侧墙建筑不能为空");
+        result = new ArrayList<>(fitStoppedDeck(g, result));
+        if(result.isEmpty())throw new IllegalArgumentException("侧墙建筑在停船甲板范围内不能为空");
         // Animate the leading cells first: a trailing cell's temporary piston must not erase
         // a moving entity that was already created for a cell in front of it.
         result.sort(leadingFirst(-wall.direction()*g.stepZ(),wall.direction()*g.stepX()));
         return List.copyOf(result);
+    }
+
+    /** Rotation may make a saved 15-block wall longer than the stopped deck. */
+    static List<Cell> fitStoppedDeck(RiptideCourseGeometry geometry, List<Cell> cells) {
+        return cells.stream().filter(cell -> Math.abs(cell.x() * geometry.stepX() + cell.z() * geometry.stepZ())
+                <= geometry.halfLength()).toList();
     }
 
     static Comparator<Cell> leadingFirst(int dx, int dz) {

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -37,7 +39,7 @@ public final class AreaListGui {
     private AreaListGui() {
     }
 
-    public static final class Holder implements InventoryHolder {
+    public static final class Holder implements MenuInventory {
         private final GameTypeEnum gameType;
         private final Map<Integer, String> slotToArea = new HashMap<>();
         private String deleteConfirmation;
@@ -119,8 +121,8 @@ public final class AreaListGui {
                         || holder.deleteConfirmationExpiresAt < System.currentTimeMillis()) {
                     holder.deleteConfirmation = areaName;
                     holder.deleteConfirmationExpiresAt = System.currentTimeMillis() + 30_000L;
-                    player.sendMessage(Component.text(MessageConfig.MAP_EDITOR_AREA_DELETE_CONFIRMATION)
-                            .color(NamedTextColor.RED));
+                    player.sendMessage(LegacyText.component(MessageConfig.MAP_EDITOR_AREA_DELETE_CONFIRMATION)
+                            .colorIfAbsent(NamedTextColor.RED));
                     return;
                 }
                 if (manager.deleteArea(player, holder.gameType, areaName)) {

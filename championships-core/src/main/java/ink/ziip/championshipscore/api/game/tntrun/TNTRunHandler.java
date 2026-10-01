@@ -40,20 +40,21 @@ public class TNTRunHandler extends BaseListener {
 
         Location location = player.getLocation();
         GameStageEnum stage = tntRunTeamArea.getGameStageEnum();
-        if (tntRunTeamArea.notInArea(location)) {
+        if (stage == GameStageEnum.PROGRESS && tntRunTeamArea.isManagedSpectator(player)) {
+            if (tntRunTeamArea.notInArea(location) && location.getY() < -64) {
+                player.teleport(tntRunTeamArea.getSpectatorSpawnLocation());
+            }
+            return;
+        }
+        boolean outside = stage == GameStageEnum.PROGRESS
+                ? tntRunTeamArea.notInPlayerArea(location) : tntRunTeamArea.notInArea(location);
+        if (outside) {
             if (stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN) {
                 tntRunTeamArea.teleportPlayerToSpawnPoint(player);
                 player.setFallDistance(0f);
                 return;
             }
             if (stage == GameStageEnum.PROGRESS) {
-                if (tntRunTeamArea.isManagedSpectator(player)) {
-                    if (location.getY() < -64) {
-                        player.teleport(getTntRunTeamArea().getSpectatorSpawnLocation());
-                    }
-                    return;
-                }
-
                 tntRunTeamArea.addDeathPlayer(player);
                 ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
                 championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
@@ -80,7 +81,7 @@ public class TNTRunHandler extends BaseListener {
             }
 
             Location location = player.getLocation();
-            if (tntRunTeamArea.notInArea(location)) {
+            if (tntRunTeamArea.notInPlayerArea(location)) {
                 return;
             }
 

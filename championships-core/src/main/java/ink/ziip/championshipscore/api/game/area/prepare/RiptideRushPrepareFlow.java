@@ -45,6 +45,18 @@ public final class RiptideRushPrepareFlow extends SnapshotMapPrepareFlow {
 
     @Override
     public @NotNull List<String> validate(@NotNull PrepareSession session) {
+        List<String> errors = new ArrayList<>(validateForDisplay(session));
+        if (!errors.isEmpty()) return errors;
+        var config = cfg(session.getTarget());
+        try {
+            RiptideCoursePlanner.plan(config, config.getPreviewSeed());
+        } catch (RuntimeException exception) { errors.add(exception.getMessage()); }
+        return errors;
+    }
+
+    /** Sidebar refreshes must never run the backtracking course search. */
+    @Override
+    public @NotNull List<String> validateForDisplay(@NotNull PrepareSession session) {
         List<String> errors = new ArrayList<>(super.validate(session));
         if (ink.ziip.championshipscore.api.game.riptiderush.RiptideWorkshop.get(session) != null)
             errors.add(GuiConfig.text("map-editor.games.riptide-rush.menus.course-editor.items.finish-building.title"));
@@ -73,7 +85,7 @@ public final class RiptideRushPrepareFlow extends SnapshotMapPrepareFlow {
             errors.add(GuiConfig.text("map-editor.menus.step-list.games.riptide-rush.validation.math.title"));
         try {
             config.nextCourseSeed(); // Reject malformed explicitly fixed seeds during publication.
-            RiptideCoursePlanner.plan(config, config.getPreviewSeed());
+            RiptideCoursePlanner.validateInputs(config, config.getPreviewSeed());
         } catch (RuntimeException exception) { errors.add(exception.getMessage()); }
         return errors;
     }

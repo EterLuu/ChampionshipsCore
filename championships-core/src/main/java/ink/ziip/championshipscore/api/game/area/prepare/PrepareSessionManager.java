@@ -69,6 +69,10 @@ public class PrepareSessionManager extends BaseManager {
         return !sessions.isEmpty();
     }
 
+    java.util.List<ink.ziip.championshipscore.api.game.area.prepare.buildmart.BuildMartBlueprintWorkshop> blueprintWorkshops() {
+        return sessions.values().stream().map(PrepareSession::getBlueprintWorkshop).filter(java.util.Objects::nonNull).toList();
+    }
+
     @Override
     public void load() {
         flows.put(GameTypeEnum.Bingo, new ink.ziip.championshipscore.api.game.area.prepare.bingo.BingoPrepareFlow());
@@ -83,9 +87,11 @@ public class PrepareSessionManager extends BaseManager {
         flows.put(GameTypeEnum.ParkourWarrior, new ParkourWarriorPrepareFlow());
         flows.put(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyPrepareFlow());
         flows.put(GameTypeEnum.Dodgebolt, new DodgeboltPrepareFlow());
+        flows.put(GameTypeEnum.SulfurSoccer, new SulfurSoccerPrepareFlow());
         flows.put(GameTypeEnum.AceRace, new AceRacePrepareFlow());
         flows.put(GameTypeEnum.RiptideRush, new RiptideRushPrepareFlow());
         flows.put(GameTypeEnum.FrostbiteFrenzy, new FrostbitePrepareFlow());
+        flows.put(GameTypeEnum.LaserBox, new LaserBoxPrepareFlow());
         try {
             Files.createDirectories(sessionsDir);
         } catch (IOException e) {
@@ -219,6 +225,10 @@ public class PrepareSessionManager extends BaseManager {
     // ── click routing (called by PrepareListener) ────────────────────────────────────────────
 
     public void handleStepClick(@NotNull Player player, @NotNull PrepareSession session, @NotNull String stepKey) {
+        if (session.getBlueprintWorkshop() != null) {
+            session.getBlueprintWorkshop().handleAction(player, "steps");
+            return;
+        }
         if (ink.ziip.championshipscore.api.game.riptiderush.RiptideWorkshop.get(session) != null) {
             handleActionClick(player, session, "steps"); return;
         }
@@ -253,6 +263,10 @@ public class PrepareSessionManager extends BaseManager {
     }
 
     public void handleActionClick(@NotNull Player player, @NotNull PrepareSession session, @NotNull String action) {
+        if (session.getBlueprintWorkshop() != null) {
+            session.getBlueprintWorkshop().handleAction(player, action);
+            return;
+        }
         var building = ink.ziip.championshipscore.api.game.riptiderush.RiptideWorkshop.get(session);
         if (building != null) {
             ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideCourseEditorGui.open(this, player, session,
@@ -359,10 +373,18 @@ public class PrepareSessionManager extends BaseManager {
 
     /** Game-start guard: a locked, dirty, or explicitly unpublished map cannot be selected. */
     public boolean canStart(@NotNull GameTypeEnum gameType, @NotNull String mapName) {
-        if (mapLocks.containsKey(lockKey(gameType, mapName))) return false;
+        return getStartFailureReason(gameType, mapName) == null;
+    }
+
+    /** Explains the actual map state instead of describing every rejected map as unpublished. */
+    public @Nullable String getStartFailureReason(@NotNull GameTypeEnum gameType, @NotNull String mapName) {
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
         var target = mgr == null ? null : mgr.getSetupTarget(gameType, mapName);
-        return target != null && target.config().isPrepareReady();
+        if (target == null) return "不存在或尚未加载";
+        if (!target.config().isPreparePublished()) return "尚未发布";
+        if (target.config().isPrepareDirty()) return "有尚未发布的修改，请重新发布";
+        if (mapLocks.containsKey(lockKey(gameType, mapName))) return "正在编辑，请先退出地图编辑模式";
+        return null;
     }
 
     private boolean validate(Player player, PrepareSession session, boolean forPublish) {

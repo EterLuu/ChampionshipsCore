@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.platform.bukkit.text;
 
 import org.junit.jupiter.api.Test;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -26,10 +28,30 @@ class ChampionshipTabTextTest {
     }
 
     @Test
-    void sharesTheWholeTabIdentityWithChatAndJoinMessages() {
+    void sharesTheWholeTabIdentityWithJoinMessages() {
         assertEquals("§8[§x§f§f§5§5§5§5红队§8]§r §x§f§f§5§5§5§5Player§r",
                 ChampionshipTabText.playerIdentity("&#ff5555红队", "&#ff5555", true, "Player"));
         assertEquals("§8[§a大厅§8]§r §fPlayer§r",
                 ChampionshipTabText.playerIdentity("&a大厅", "&#ff5555", false, "Player"));
+    }
+
+    @Test
+    void chatShowsPlayerNameBeforeTeamAndPreservesMessageStyle() {
+        Component message = Component.text("hello", net.kyori.adventure.text.format.NamedTextColor.GREEN);
+        Component chat = ChampionshipTabText.chatLine("&#ff5555红队", "&#ff5555", true, "Player", message);
+        assertEquals("Player <红队> » hello", PlainTextComponentSerializer.plainText().serialize(chat));
+        assertEquals(message, chat.children().getLast());
+        assertEquals("Viewer <旁观> » hello", PlainTextComponentSerializer.plainText().serialize(
+                ChampionshipTabText.chatLine("旁观", null, false, "Viewer", message)));
+    }
+
+    @Test
+    void dailyChatKeepsItsLabelBeforeThePlayerName() {
+        Component message = Component.text("hello", net.kyori.adventure.text.format.NamedTextColor.GREEN);
+        for (String label : java.util.List.of("红队", "大厅", "激光方盒")) {
+            Component chat = new PlayerPresentation(label, "&c", true, true).chatLine("Player", message);
+            assertEquals("[" + label + "] Player » hello", PlainTextComponentSerializer.plainText().serialize(chat));
+            assertEquals(message, chat.children().getLast());
+        }
     }
 }

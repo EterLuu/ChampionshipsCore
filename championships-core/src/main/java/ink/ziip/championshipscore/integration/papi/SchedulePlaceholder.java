@@ -39,6 +39,9 @@ public class SchedulePlaceholder extends BasePlaceholder {
         if (params.startsWith("round_battlebox")) {
             return String.valueOf(scheduleManager.getBattleBoxScheduleManager().getSubRound());
         }
+        if (params.startsWith("round_laserbox")) {
+            return String.valueOf(scheduleManager.getLaserBoxScheduleManager().getSubRound());
+        }
         if (params.startsWith("round_parkourtag")) {
             return String.valueOf(scheduleManager.getParkourTagScheduleManager().getSubRound());
         }

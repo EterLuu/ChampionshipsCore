@@ -1,0 +1,52 @@
+dont-edit-this:
+  version: 2
+name: area
+world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
+area-pos1:
+area-pos2:
+right-area-pos1:
+right-area-pos2:
+left-area-pos1:
+left-area-pos2:
+# Select the empty space inside each goal, including its depth. A ball's center entering it scores.
+# Penalties need a goal at least 3 blocks wide and 2 blocks high above the pitch surface,
+# with 8 clear pitch blocks in front and one empty block row outside the mouth for glass panes.
+right-goal-pos1:
+right-goal-pos2:
+left-goal-pos1:
+left-goal-pos2:
+# Four reference points in each half. At runtime the first three define the midfield row;
+# its lateral span is redistributed evenly into three points. The fourth player starts on
+# the isolated quartz or white concrete marker in front of that side's goal.
+right-spawn-points: []
+left-spawn-points: []
+ball-spawn-point:
+spectator-spawn-point:
+goals-to-win: 5
+kickoff-countdown: 5
+introduction-spawn-point:
+# Integer x:y:z coordinates of concrete accents; each match uses that side's team colour.
+right-team-color-blocks: []
+left-team-color-blocks: []
+rules:
+  - - "&e&l硫方足球决赛"
+    - "&f正式比赛前有 3 分钟试踢，不计分；正式比赛限时 12 分钟，先达到目标球数或时间结束时领先获胜。"
+    - "&f每队三人从中场均匀分布的点位出发，一人从球门前的独立白色标记上出发。"
+  - - "&e击球与防守"
+    - "&f空手击打吸收白桦木板的硫方怪推动足球，可以进入对方半场争球。"
+    - "&f禁止攻击玩家，也不能用桶、剪刀或其他物品改变足球。"
+    - "&f开局时末影珍珠即冷却 8 秒，此后每 8 秒可用一次；无落地伤害，球场外或高于地面 2 格的落点会被拒绝。"
+  - - "&e进球与开球"
+    - "&f足球中心进入对方门框内得一球；乌龙球计入对方比分。"
+    - "&f进球后双方回到出生点重新开球；足球出界则回中圈，不计分。"
+    - "&f选手掉线时比赛自动暂停，全部选手重连后继续。决赛进球不增加总榜积分。"
+  - - "&e点球大战"
+    - "&f12 分钟结束仍平局时，双方交替各射 4 球，每人轮流射门和守门；仍平局则按顺序继续各射一球直到分出胜负。"
+    - "&f射手被限制在离足球一格之外，只能攻击击球一次，不能接触推动足球；准备 3 秒后须在 15 秒内射门。"
+    - "&f守门员站在球门内不能击球，用快捷栏前三格的物品选择玻璃板挡左、中、右；点球期间不能使用珍珠。"

@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiText;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -11,7 +12,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -84,21 +84,21 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
     private static WeSelectionStep selection(String key, String name, Material icon,
                                               java.util.function.Predicate<SetupTarget> set,
                                               java.util.function.BiConsumer<SetupTarget, Vector[]> setter) {
-        return new WeSelectionStep(key, Component.text(name), Component.text(GuiConfig.line("map-editor.menus.step-list.games.dodgebolt.items."+key+".lore", 0)),
+        return new WeSelectionStep(key, LegacyText.component(name), LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.dodgebolt.items."+key+".lore", 0)),
                 icon, set, setter, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_DODGEBOLT_STEP_SET.replace("%name%", name)));
     }
 
     private static StandAndRunStep location(String key, String name, Material icon,
                                             java.util.function.Predicate<SetupTarget> set,
                                             java.util.function.BiConsumer<SetupTarget, Location> setter) {
-        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.line("map-editor.menus.step-list.items.stand-run.lore", 0)),
+        return new StandAndRunStep(key, LegacyText.component(name), LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.stand-run.lore", 0)),
                 icon, set, setter, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_DODGEBOLT_STEP_SET.replace("%name%", name)));
     }
 
     private static ListStep list(String key, String name, Material icon,
                                  java.util.function.Function<SetupTarget, List<String>> getter,
                                  java.util.function.BiConsumer<SetupTarget, List<String>> setter) {
-        return new ListStep(key, Component.text(name), Component.text(GuiConfig.line("map-editor.menus.step-list.games.dodgebolt.items."+key+".lore", 0)), icon,
+        return new ListStep(key, LegacyText.component(name), LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.dodgebolt.items."+key+".lore", 0)), icon,
                 t -> values(getter.apply(t)), setter,
                 t -> values(getter.apply(t)).isEmpty(),
                 (t, value) -> { List<String> list = values(getter.apply(t)); list.add(value); setter.accept(t, list); },

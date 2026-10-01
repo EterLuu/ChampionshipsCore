@@ -12,8 +12,8 @@ countdown-block-disappearance:
   pos1:
   pos2:
   mode: RANDOM
-# Round duration in seconds. Default 12 minutes.
-timer: 720
+# Round duration in seconds. Default 15 minutes.
+timer: 900
 # Preparation countdown before the round starts, in seconds.
 prepare-time: 10
 # Number of playable team bases stamped from the single base template. Copy 0 stays as the editable template;
@@ -43,8 +43,8 @@ hub-pos2:
 # Landing point used when players enter a team-base Nether portal. Set this beside the resource-hub portal,
 # not inside its purple portal block.
 hub-portal-point:
-# Optional wind vent cuboids. Non-gliding players above any selection are rapidly lifted toward absolute Y=200.
-wind-zones: []
+# Jump pad surface selections. Grounded contact triggers an upward launch toward Y=180 with a small forward impulse.
+jump-pads: []
 # Anchor where the current golden blueprint is pasted in the hub for players to observe.
 golden-display-point:
 # Portal debounce (ms) so players don't bounce back and forth after a manual cross-map teleport.
@@ -59,12 +59,12 @@ portal-cooldown-millis: 1000
 # portal captures your standing position.
 base: {}
 # How often (seconds) the golden blueprint is swapped; it stays live for this whole window.
-golden-refresh-seconds: 120
+golden-refresh-seconds: 180
 
 # 24 个材料岛的中心。材料区按水平距离自动归入最近的岛；新地图需先生成或填写完整中心。
 material-islands: []
 
-# 可选材料区。每项保存一个 WorldEdit 方块快照，比赛中每 2 分钟按选区原样恢复。
+# 可选材料区。每项保存一个 WorldEdit 方块快照；被采集后连续 20 秒无人再次采集，才按选区原样补货。
 material-zones: []
 
 # ── 规则介绍阶段（introduction）────────────────────────────
@@ -75,7 +75,7 @@ material-zones: []
 introduction-spawn-point:
 rules:
   - - "&#696969==========&r &#ff6b26[&e匹配赛建&#ff6b26] &#696969==========&r"
-    - "&#fff566建筑师们，限时 12 分钟的速建大赛开工啦！"
+    - "&#fff566建筑师们，限时 15 分钟的速建大赛开工啦！"
     - "&#ededed一局定胜负，所有队伍同在一个世界"
     - "&#ededed各队基地有 3 个普通建筑区、1 个黄金建筑区"
     - "&#ededed和工具作业区，传送门通往共享的资源仓库"
@@ -83,13 +83,15 @@ rules:
     - "&#ededed只能在采集区/建筑区破坏，只能在建筑区放置"
   - - "&#696969==========&r &#fff566积分规则 &#696969==========&r"
     - "&#ededed复原得分 = 难度星级 × 时段倍率："
-    - "&#ededed0-4 分钟每星 &#fff56610 分&#ededed / 4-8 分钟 &#fff56615 分&#ededed / 8-12 分钟 &#fff56620 分"
+    - "&#ededed0-5 分钟每星 &#fff56610 分&#ededed / 5-10 分钟 &#fff56615 分&#ededed / 10-15 分钟 &#fff56620 分"
     - "&#ededed最后 10 秒无法提交；未完建筑按比例给分"
     - "&#ededed数量最多/总星最多/平均星最高三项评比，"
     - "&#ededed前三队伍每人 &#fff566+25 / +15 / +5 分"
   - - "&#696969==========&r &#fff566小提示 &#696969==========&r"
+    - "&#ededed正式开赛后每 10 秒补充 1 个飞行时间为 3 的烟花火箭"
+    - "&#ededed建材区被采集后，连续 20 秒无人再次采集就会补货"
     - "&#fff566普通蓝图 1-5 星随机刷新，交满才清空刷新"
     - "&#ededed黄金蓝图从 3 星建筑中抽取，完成按 7 星计分"
     - "&#ededed黄金提交需连点两次，失败直接清空重头来"
-    - "&#ededed黄金蓝图每 2 分钟刷新，只认当前这一张"
+    - "&#ededed黄金蓝图每 3 分钟刷新，只认当前这一张"
     - "&#ededed材料不返还，采集前先规划好用量"

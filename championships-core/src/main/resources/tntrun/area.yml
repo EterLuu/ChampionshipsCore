@@ -14,12 +14,16 @@ countdown-block-disappearance:
   mode: RANDOM
 timer: 180
 spectator-spawn-point:
-# Aggregate play-area box for maps that do not define per-copy boxes. Prepared maps derive one tight box
-# per copy from copy-size + the copy grid, so each sub-arena bounds its own players.
+# Written from the saved arena.schem selection; there is no separate boundary selection step.
+# Prepared maps derive each copy's horizontal/top bounds from copy-size + the copy grid.
 area-pos1:
 area-pos2:
+# Absolute world Y: a participant is eliminated when their position is below this value.
+# Set in the map editor; empty on existing maps preserves the original lower boundary.
+elimination-y:
 # Prepare/template model: use /cc map edit TNTRun to capture one arena schematic,
-# configure its copy layout and publish the map. The saved selection minimum is copy 0's layout origin.
+# set the elimination height, configure its copy layout and publish the map.
+# The saved selection minimum is copy 0's layout origin.
 # Copy 0 remains the hand-built source; stamping only creates
 # copies 1..N-1 in a row and records copies + copy-size below. Then stand in copy 0 and set
 # copy-spawn. copies = how many arena copies players are split across; copy-spawn = the spawn inside copy 0;

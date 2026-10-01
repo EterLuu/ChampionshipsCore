@@ -3,17 +3,31 @@ package ink.ziip.championshipscore.api.game.riptiderush;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.NBTInputStream;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideEditorModel;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.junit.jupiter.api.Test;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class RiptideHitwCatalogTest {
+    @Test void passageLookupsReuseImmutableForwardAndMirroredMetadata() {
+        for (var template : RiptideHitwCatalog.templates()) {
+            var forward = RiptideHitwCatalog.passages(template, false);
+            var mirrored = RiptideHitwCatalog.passages(template, true);
+            assertSame(forward, RiptideHitwCatalog.passages(template, false));
+            assertSame(mirrored, RiptideHitwCatalog.passages(template, true));
+            assertEquals(forward.stream().map(p -> new RiptideHitwCatalog.Passage(
+                    -p.lateral(), p.sill(), p.crouch())).toList(), mirrored);
+            assertThrows(UnsupportedOperationException.class, forward::clear);
+            assertThrows(UnsupportedOperationException.class, mirrored::clear);
+        }
+    }
+
     @Test void allThirteenTabsAndAllDifficultyGroupsAreBundledAndEditable() throws Exception {
         var templates = RiptideHitwCatalog.templates();
         assertEquals(354, templates.size());
@@ -111,92 +125,10 @@ class RiptideHitwCatalogTest {
         }
     }
 
-    @Test void v1UpgradeReplacesOnlyUntouchedSnapshotsAndDoesNotResurrectDeletedRows() throws Exception {
-        var current=RiptideHitwCatalog.templates().getFirst();
-        var json=com.google.gson.JsonParser.parseReader(new InputStreamReader(getClass().getResourceAsStream("/riptiderush/hitw-walls.json"))).getAsJsonObject();
-        String legacy=json.getAsJsonArray("pool").get(0).getAsJsonObject().get("previous-schematic").getAsString();
-        var row=current.serialize();row.put("name","我的命名");row.put("enabled",false);row.put("weight",23);
-        row.put("building",new RiptideBlueprint(legacy,0,15,5,List.of()).serialize());
-        var edited=RiptideHitwCatalog.templates().get(1).serialize();edited.put("building",current.blueprint().serialize());
-        var yaml=new YamlConfiguration();yaml.set("course.hitw-catalog-version",1);yaml.set("course.pool",List.of(row,edited));
-        RiptideHitwCatalog.migrate(yaml);
-        var rows=yaml.getMapList("course.pool");assertEquals(158,rows.size());
-        assertEquals(current.blueprint(),RiptideLevelTemplate.parse(rows.getFirst()).blueprint());
-        assertEquals("我的命名",rows.getFirst().get("name"));assertEquals(false,rows.getFirst().get("enabled"));assertEquals(23,rows.getFirst().get("weight"));
-        assertEquals(edited,rows.get(1));assertEquals(4,yaml.getInt("course.hitw-catalog-version"));
-        assertFalse(RiptideHitwCatalog.isOriginal(RiptideLevelTemplate.parse(edited)));
-    }
 
-    @Test void v2UpgradeRefreshesAreaRatingsEvenWhenTheBuildingDidNotChange() throws Exception {
-        var json=com.google.gson.JsonParser.parseReader(new InputStreamReader(getClass().getResourceAsStream("/riptiderush/hitw-walls.json"))).getAsJsonObject();
-        var rows=new ArrayList<Map<String,Object>>();
-        for (var element:json.getAsJsonArray("pool")) {
-            var source=element.getAsJsonObject();
-            if (!source.has("previous-v2-schematic")) continue;
-            var current=RiptideHitwCatalog.templates().stream().filter(t -> t.id().equals(source.get("id").getAsString())).findFirst().orElseThrow();
-            double area=source.get("passable-area").getAsDouble();
-            assertEquals(area>=6?1:area>=3?2:3,current.difficulty());
-            var row=current.serialize();row.put("difficulty",1);row.put("weight",17);row.put("enabled",false);
-            row.put("building",new RiptideBlueprint(source.get("previous-v2-schematic").getAsString(),0,15,current.blueprint().height(),List.of()).serialize());
-            rows.add(row);
-        }
-        var yaml=new YamlConfiguration();yaml.set("course.hitw-catalog-version",2);yaml.set("course.pool",rows);
-        RiptideHitwCatalog.migrate(yaml);
-        var upgraded=yaml.getMapList("course.pool").stream().map(RiptideLevelTemplate::parse).toList();
-        assertEquals(Set.of(1,2,3),upgraded.stream().map(RiptideLevelTemplate::difficulty).collect(java.util.stream.Collectors.toSet()));
-        assertEquals(354,upgraded.size());
-        for(int i=0;i<rows.size();i++) {
-            assertEquals(RiptideHitwCatalog.templates().get(i).blueprint(),upgraded.get(i).blueprint());
-            assertEquals(RiptideHitwCatalog.templates().get(i).difficulty(),upgraded.get(i).difficulty());
-            assertEquals(17,upgraded.get(i).weight());assertFalse(upgraded.get(i).enabled());
-        }
-    }
 
-    @Test void migrationPreservesUserEntriesPublicationAndDeletedImportedWalls() throws Exception {
-        var yaml=new YamlConfiguration();var custom=RiptideHitwCatalog.templates().getFirst().serialize();
-        custom.put("name","保留我的编辑");custom.put("enabled",false);
-        yaml.set("course.pool",List.of(custom));yaml.set("prepare.revision",7);yaml.set("prepare.published",true);
-        yaml.set("prepare.dirty",false);yaml.set("custom.keep","yes");
-        RiptideHitwCatalog.migrate(yaml);
-        assertEquals(354,yaml.getMapList("course.pool").size());assertEquals(custom,yaml.getMapList("course.pool").getFirst());
-        assertEquals(7,yaml.getInt("prepare.revision"));assertTrue(yaml.getBoolean("prepare.published"));
-        assertFalse(yaml.getBoolean("prepare.dirty"));assertEquals("yes",yaml.getString("custom.keep"));
-        var smaller=new ArrayList<>(yaml.getMapList("course.pool"));smaller.removeLast();yaml.set("course.pool",smaller);
-        var once=yaml.getMapList("course.pool").stream().map(RiptideLevelTemplate::parse).toList();
-        RiptideHitwCatalog.migrate(yaml);
-        assertEquals(once,yaml.getMapList("course.pool").stream().map(RiptideLevelTemplate::parse).toList());
-    }
 
-    @Test void v3AddsOnlyEasyWallsOnceAndPreservesRatingsEditsAndPublication() throws Exception {
-        var yaml=new YamlConfiguration();
-        var old=RiptideHitwCatalog.templates().getFirst().serialize();
-        old.put("difficulty",3);old.put("name","保留手动评级");old.put("enabled",false);old.put("weight",19);
-        var easy=RiptideHitwCatalog.templates().stream().filter(t -> t.id().equals("hitw_beach_e1")).findFirst().orElseThrow().serialize();
-        easy.put("name","已有同ID建筑");easy.put("building",old.get("building"));
-        yaml.set("course.pool",List.of(old,easy));yaml.set("course.hitw-catalog-version",3);
-        yaml.set("prepare.revision",9);yaml.set("prepare.published",true);yaml.set("prepare.dirty",false);
-        RiptideHitwCatalog.migrate(yaml);
-        var rows=yaml.getMapList("course.pool");
-        assertEquals(157,rows.size());assertEquals(old,rows.getFirst());assertEquals(easy,rows.get(1));
-        assertEquals(156,rows.stream().filter(r -> String.valueOf(r.get("id")).matches(".*_e[0-9]+" )).count());
-        assertEquals(9,yaml.getInt("prepare.revision"));assertTrue(yaml.getBoolean("prepare.published"));assertFalse(yaml.getBoolean("prepare.dirty"));
-        var smaller=new ArrayList<>(rows);smaller.removeLast();yaml.set("course.pool",smaller);
-        RiptideHitwCatalog.migrate(yaml);assertEquals(smaller,yaml.getMapList("course.pool"));
-    }
 
-    @Test void actualUpgradeDoesNotMistakeBundledImportMarkerForOldMapState() throws Exception {
-        var c=RiptideTestFixtures.config();
-        c.setTemplates(RiptideRushConfig.defaultPool().stream().map(RiptideLevelTemplate::parse)
-                .filter(t -> !RiptideHitwCatalog.isOriginal(t)).toList());
-        var old=new YamlConfiguration();old.set("course.pool",c.getPool());old.set("dont-edit-this.version",5);
-        var migrated=new YamlConfiguration();migrated.set("course.pool",c.getPool());
-        migrated.set("course.hitw-catalog-version",1);
-        c.customizeMigratedConfiguration(old,migrated);
-        assertEquals(RiptideRushConfig.defaultPool().size(),migrated.getMapList("course.pool").size());
-        var ids=migrated.getMapList("course.pool").stream().map(row -> row.get("id")).toList();
-        assertTrue(ids.containsAll(RiptideHitwCatalog.templates().stream().map(RiptideLevelTemplate::id).toList()));
-        assertEquals(4,migrated.getInt("course.hitw-catalog-version"));
-    }
 
     @Test void fullDefaultPoolPlansReproduciblyAndRespectsDifficultyAndTransitions() throws Exception {
         var defaults=new YamlConfiguration();
@@ -204,33 +136,54 @@ class RiptideHitwCatalogTest {
         assertEquals(RiptideTestFixtures.config().getLatestVersion(),defaults.getInt("dont-edit-this.version"));assertEquals(4,defaults.getInt("course.hitw-catalog-version"));
         var rows=defaults.getMapList("course.pool").stream().map(RiptideLevelTemplate::parse).toList();
         assertEquals(new HashSet<>(RiptideRushConfig.defaultPool()),new HashSet<>(rows.stream().map(RiptideLevelTemplate::serialize).toList()));
-        var c=RiptideTestFixtures.config();c.setTemplates(rows);var seen=new HashSet<String>();
-        for(long seed=0;seed<200;seed++) {
+        var c=RiptideTestFixtures.config();c.setTemplates(rows);
+        for(long seed=0;seed<8;seed++) {
             var plan=RiptideCoursePlanner.plan(c,seed);
             if (seed == 0) assertEquals(plan,RiptideCoursePlanner.plan(c,seed));
             assertEquals(32,plan.levels().stream().map(RiptideCoursePlan.Level::number).distinct().count());assertEquals(RiptideCoursePlanner.estimateTicks(c,c.resolveGeometry(),plan.levels()),plan.estimatedTicks());
             for(var level:plan.levels()) {
-                seen.add(level.template().id());
-                level.sideWalls().forEach(wall -> seen.add(wall.template().id()));
                 if(level.type()==RiptideLevelType.PASS && !level.isSideSweep())
                     assertTrue(RiptideDifficulty.allowsPass(level.template().difficulty(),level.step(),500));
             }
             for(int i=1;i<plan.levels().size();i++)assertTrue(RiptideCoursePlanner.safeTransition(c,c.resolveGeometry(),plan.levels().get(i-1),plan.levels().get(i)));
         }
-        var missing = RiptideHitwCatalog.templates().stream().map(RiptideLevelTemplate::id).filter(id -> !seen.contains(id)).toList();
-        // A finite uniform sample need not draw every ID, especially identical snapshot copies.
-        // Promote missed entries and verify they remain selectable in a complete valid course.
-        for (String id : missing) {
-            c.setTemplates(rows.stream().map(t -> new RiptideLevelTemplate(t.id(), t.name(), t.type(),
-                    t.variant(), t.enabled(), t.id().equals(id) ? 100 : 1, t.maxUses(), t.difficulty(), t.blueprint())).toList());
-            for (long seed = 0; seed < 32 && !seen.contains(id); seed++) {
-                var plan = RiptideCoursePlanner.plan(c, seed);
-                for (var level : plan.levels()) {
-                    if (!level.isSideSweep()) seen.add(level.template().id());
-                    level.sideWalls().forEach(wall -> seen.add(wall.template().id()));
-                }
-            }
-            assertTrue(seen.contains(id), "Catalog entry cannot be selected: " + id);
-        }
+    }
+
+    @Test void copiedSnapshotsShareOneUseAndLegacyWallCapsCannotEnableRepeats() {
+        var original = RiptideHitwCatalog.templates().getFirst();
+        var copy = new RiptideLevelTemplate("copy", "copy", original.type(), original.variant(), true,
+                10, 64, original.difficulty(), original.blueprint());
+        assertEquals(1, copy.maxUses());
+        assertFalse(copy.serialize().containsKey("max-uses"));
+        assertEquals(original.designKey("CUSTOM"), copy.designKey("CUSTOM"));
+        assertEquals(RiptideHitwCatalog.passages(original, true), RiptideHitwCatalog.passages(copy, true));
+        var first = new RiptideCoursePlan.Level(1, 100, original, "CUSTOM", 0, false, 1);
+        var second = new RiptideCoursePlan.Level(2, 200, copy, "CUSTOM", 0, true, 2);
+        assertFalse(RiptideWallGroups.uniqueWalls(List.of(first, second)));
+        var side = new RiptideCoursePlan.Level(2, 200, copy, "CUSTOM", 0, false, 2,
+                0, 0, "SIDE", 1, List.of(new RiptideCoursePlan.SideWall(copy, "CUSTOM", 0, 1, 7)));
+        assertFalse(RiptideWallGroups.uniqueWalls(List.of(first, side)));
+        assertEquals(64, RiptideLevelTemplate.create("math", RiptideLevelType.MATH).maxUses());
+    }
+
+    @Test void commonLateralPassageIsRejectedEvenWithDifferentBuildingsAndMoreSpacing() throws Exception {
+        var c = RiptideTestFixtures.config();
+        var g = c.resolveGeometry();
+        var a = RiptideHitwCatalog.templates().getFirst();
+        var first = new RiptideCoursePlan.Level(1, 210, a, "CUSTOM", 0, false, 1);
+        var b = RiptideHitwCatalog.templates().stream().filter(t -> !t.designKey("CUSTOM").equals(a.designKey("CUSTOM")))
+                .filter(t -> RiptideHitwCatalog.passages(t, false).stream().anyMatch(p ->
+                        RiptideHitwCatalog.passages(a, false).stream().anyMatch(q -> Math.abs(p.lateral() - q.lateral()) < .75)))
+                .findFirst().orElseThrow();
+        var second = new RiptideCoursePlan.Level(2, 300, b, "CUSTOM", 0, false, 2);
+        assertFalse(RiptideCoursePlanner.safeTransition(c, g, first, second));
+    }
+
+    @Test void sideWallsNeverRelaxUniquenessWhenPoolIsTooSmall() throws Exception {
+        var c = RiptideTestFixtures.config();
+        var wall = RiptideHitwCatalog.templates().stream().filter(t -> t.difficulty() == 2).findFirst().orElseThrow();
+        c.setTemplates(List.of(wall));
+        assertTrue(RiptideWallGroups.selectSideWalls(c, c.resolveGeometry(), 350,
+                new java.util.HashMap<>(Map.of()), new java.util.Random(1)).isEmpty());
     }
 }

@@ -15,11 +15,13 @@ public final class FrostbiteConfig extends BaseGameConfig {
     private final String folderName = "frostbite/";
     @ConfigOption(path="name") private String areaName;
     @ConfigOption(path="world-name") private String worldName;
-    @ConfigOption(path="timer") private int timer = 150;
+    @ConfigOption(path="timer") private int timer = 300;
     @ConfigOption(path="freeze-seconds") private int freezeSeconds = 5;
     @ConfigOption(path="heat-seconds") private int heatSeconds = 3;
-    @ConfigOption(path="item-respawn-seconds") private int itemRespawnSeconds = 6;
-    @ConfigOption(path="points-per-kill") private int pointsPerKill = 25;
+    @ConfigOption(path="item-respawn-seconds") private int itemRespawnSeconds = 30;
+    @ConfigOption(path="points-per-kill") private int pointsPerKill = 6;
+    @ConfigOption(path="rank-points-per-player") private List<Integer> rankPointsPerPlayer =
+            List.of(60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10);
     @ConfigOption(path="copy-spacing") private int copySpacing = 256;
     @ConfigOption(path="arena-min") private Vector arenaMin;
     @ConfigOption(path="arena-max") private Vector arenaMax;
@@ -53,6 +55,9 @@ public final class FrostbiteConfig extends BaseGameConfig {
         if (timer < 30 || timer > 600 || freezeSeconds < 1 || freezeSeconds > 15 || heatSeconds < 1 || heatSeconds > 10
                 || itemRespawnSeconds < 1 || itemRespawnSeconds > 60 || pointsPerKill < 0 || pointsPerKill > 1000)
             throw new IllegalArgumentException("时长、冻结、保温、补给或击杀积分超出范围");
+        if (rankPointsPerPlayer == null || rankPointsPerPlayer.size() > 16
+                || rankPointsPerPlayer.stream().anyMatch(points -> points == null || points < 0 || points > 1000))
+            throw new IllegalArgumentException("排名奖励需要最多16项，每项积分须为0–1000");
         if (arenaMin == null || arenaMax == null || copySpacing < 64 || copySpacing > 4096
                 || arenaMin.getX() >= arenaMax.getX() || arenaMin.getY() >= arenaMax.getY() || arenaMin.getZ() >= arenaMax.getZ()
                 || arenaMax.getX() - arenaMin.getX() >= copySpacing || arenaMax.getZ() - arenaMin.getZ() >= copySpacing)

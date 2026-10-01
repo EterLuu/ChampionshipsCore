@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -49,7 +50,7 @@ public final class BuildMartMaterialZoneGui {
     private BuildMartMaterialZoneGui() {
     }
 
-    public static final class Holder implements InventoryHolder {
+    public static final class Holder implements MenuInventory {
         final PrepareSession session;
         final String stepKey;
         @Nullable BuildMartMaterialIsland island;
@@ -71,7 +72,7 @@ public final class BuildMartMaterialZoneGui {
                             @NotNull PrepareSession session, @NotNull PrepareStep step) {
         Holder holder = new Holder(session, step);
         holder.inventory = Bukkit.createInventory(holder, 54,
-                Component.text(GuiConfig.text("map-editor.menus.step-list.items.material-zone.title")).decoration(TextDecoration.ITALIC, false));
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.material-zone.title")).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -342,15 +343,15 @@ public final class BuildMartMaterialZoneGui {
     }
 
     private static ItemStack item(Material material, String name, List<String> lore, NamedTextColor color) {
-        return item(material, Component.text(name), lore, color);
+        return item(material, LegacyText.component(name), lore, color);
     }
 
     private static ItemStack itemComponents(Material material, Component name, List<Component> lore, NamedTextColor color) {
         ItemStack stack = new ItemStack(material);
         stack.editMeta(meta -> {
-            meta.displayName(name.color(color).decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream().map(line -> line.color(NamedTextColor.GRAY)
-                    .decoration(TextDecoration.ITALIC, false)).toList());
+            meta.displayName(name.colorIfAbsent(color).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+            meta.lore(lore.stream().map(line -> line.colorIfAbsent(NamedTextColor.GRAY)
+                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
         });
         return stack;
     }
@@ -358,9 +359,9 @@ public final class BuildMartMaterialZoneGui {
     private static ItemStack item(Material material, Component name, List<String> lore, NamedTextColor color) {
         ItemStack stack = new ItemStack(material);
         stack.editMeta(meta -> {
-            meta.displayName(name.color(color).decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream().map(line -> Component.text(line).color(NamedTextColor.GRAY)
-                    .decoration(TextDecoration.ITALIC, false)).toList());
+            meta.displayName(name.colorIfAbsent(color).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+            meta.lore(lore.stream().map(line -> LegacyText.component(line).colorIfAbsent(NamedTextColor.GRAY)
+                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
         });
         return stack;
     }

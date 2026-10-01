@@ -6,9 +6,7 @@ import ink.ziip.championshipscore.configuration.ConfigOption;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -74,20 +72,4 @@ public final class DodgeboltConfig extends BaseGameConfig {
     @ConfigOption(path = "max-shrink-levels")
     private int maxShrinkLevels;
 
-    @Override
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
-        migrateArrowSpawn(oldConfiguration, migratedConfiguration,
-                "right-arrow-spawn-points", "right-arrow-spawn-point");
-        migrateArrowSpawn(oldConfiguration, migratedConfiguration,
-                "left-arrow-spawn-points", "left-arrow-spawn-point");
-    }
-
-    private static void migrateArrowSpawn(@NotNull YamlConfiguration oldConfiguration,
-                                          @NotNull YamlConfiguration migratedConfiguration,
-                                          @NotNull String oldPath, @NotNull String newPath) {
-        if (migratedConfiguration.getString(newPath) != null) return;
-        List<String> legacyPoints = oldConfiguration.getStringList(oldPath);
-        if (!legacyPoints.isEmpty()) migratedConfiguration.set(newPath, legacyPoints.get(0));
-    }
 }

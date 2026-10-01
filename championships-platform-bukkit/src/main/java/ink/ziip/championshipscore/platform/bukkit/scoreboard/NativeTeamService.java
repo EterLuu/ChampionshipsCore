@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.platform.bukkit.scoreboard;
 
-import net.kyori.adventure.text.Component;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
@@ -85,7 +85,7 @@ public final class NativeTeamService {
                           Team.OptionStatus collisionRule) {
         Objects.requireNonNull(team, "team");
         NamedTextColor color = resolveNamedColor(colorName, colorCode);
-        team.displayName(Component.text(Objects.requireNonNull(displayName, "displayName"), color));
+        team.displayName(LegacyText.component(Objects.requireNonNull(displayName, "displayName"), color));
         team.color(color);
         team.setOption(Team.Option.COLLISION_RULE,
                 Objects.requireNonNull(collisionRule, "collisionRule"));

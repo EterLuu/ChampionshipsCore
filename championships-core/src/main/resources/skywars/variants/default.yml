@@ -19,7 +19,8 @@ mechanics:
       - 90:60:30:86
       - 60:10:0:76
   disable-health-regain-at-remaining-seconds: 20
-  spawn-happy-ghast-at-remaining-seconds: 840
+  # Spawn 4 minutes after the start of the 16-minute round (12:00 remaining).
+  spawn-happy-ghast-at-remaining-seconds: 720
 scoring:
   kill: 40
   survive: 50

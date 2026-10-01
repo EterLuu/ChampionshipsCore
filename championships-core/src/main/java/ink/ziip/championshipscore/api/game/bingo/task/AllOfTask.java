@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo.task;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoComponents;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
@@ -70,7 +71,7 @@ public record AllOfTask(Set<Material> items, Material display, String label, int
         }
         String familyKey = "task.family." + token;
         Component name = msg.has(familyKey)
-                ? Component.text(msg.tr(familyKey))
+                ? LegacyText.component(msg.tr(familyKey))
                 : BingoComponents.itemName(display);
         return Component.text().color(NamedTextColor.YELLOW)
                 .append(msg.component("task.all_of_prefix"))

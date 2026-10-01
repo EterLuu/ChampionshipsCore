@@ -31,6 +31,9 @@ import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
 import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushManager;
 import ink.ziip.championshipscore.api.game.frostbite.FrostbiteManager;
+import ink.ziip.championshipscore.api.game.laserbox.LaserBoxManager;
+import ink.ziip.championshipscore.api.game.laserbox.LaserBoxArea;
+import ink.ziip.championshipscore.api.game.sulfursoccer.SulfurSoccerManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
@@ -55,6 +58,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class GameManager extends BaseManager {
     public enum GameStopResult {
@@ -114,6 +118,10 @@ public class GameManager extends BaseManager {
     private final RiptideRushManager riptideRushManager;
     @Getter
     private final FrostbiteManager frostbiteManager;
+    @Getter
+    private final LaserBoxManager laserBoxManager;
+    @Getter
+    private final SulfurSoccerManager sulfurSoccerManager;
     /**
      * Registry mapping each game type to its area manager. Drives the generic
      * {@code join*} dispatch so adding a game only requires registering it here.
@@ -146,6 +154,8 @@ public class GameManager extends BaseManager {
         aceRaceManager = new AceRaceManager(plugin);
         riptideRushManager = new RiptideRushManager(plugin);
         frostbiteManager = new FrostbiteManager(plugin);
+        laserBoxManager = new LaserBoxManager(plugin);
+        sulfurSoccerManager = new SulfurSoccerManager(plugin);
 
         areaManagers.put(GameTypeEnum.Bingo, bingoManager);
         areaManagers.put(GameTypeEnum.BuildMart, buildMartManager);
@@ -162,6 +172,8 @@ public class GameManager extends BaseManager {
         areaManagers.put(GameTypeEnum.AceRace, aceRaceManager);
         areaManagers.put(GameTypeEnum.RiptideRush, riptideRushManager);
         areaManagers.put(GameTypeEnum.FrostbiteFrenzy, frostbiteManager);
+        areaManagers.put(GameTypeEnum.LaserBox, laserBoxManager);
+        areaManagers.put(GameTypeEnum.SulfurSoccer, sulfurSoccerManager);
 
         bingoExecutionRouter = new BingoExecutionRouter(new LocalBingoExecutionGateway(this::startLocalBingo,
                 ignored -> forceEndLocalAreas(GameTypeEnum.Bingo)));
@@ -712,8 +724,15 @@ public class GameManager extends BaseManager {
         BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
         if (manager == null)
             return false;
-        if (!(manager.getArea(area) instanceof BasePairedGameInstance teamArea))
-            return false;
+        BasePairedGameInstance teamArea;
+        if (gameTypeEnum == GameTypeEnum.LaserBox && manager instanceof LaserBoxManager laserBoxManager) {
+            teamArea = laserBoxManager.getMapInstances(area).stream()
+                    .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
+                    .findFirst().orElse(null);
+        } else {
+            teamArea = manager.getArea(area) instanceof BasePairedGameInstance paired ? paired : null;
+        }
+        if (teamArea == null) return false;
 
         teamArea.prepareRunMode(runMode);
         teamArea.setIntroductionEnabledForNextStart(showIntroduction);
@@ -895,20 +914,13 @@ public class GameManager extends BaseManager {
         return joinSingleTeamAreaForAllTeams(gameTypeEnum, area, false);
     }
 
-    /**
-     * Direct-command variant that also admits explicit players, such as an administrator testing a
-     * map without a formal championship team. Explicit players remain unscored in GAME mode and are
-     * released through the same instance lifecycle as team members.
-     */
-    public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
+    /** Compatibility overload: explicit identities must already belong to the participating teams. */
+    public synchronized boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
                                                   @NotNull Collection<UUID> additionalPlayers) {
-        if (gameTypeEnum == GameTypeEnum.Bingo) {
-            return additionalPlayers.isEmpty() && bingoExecutionRouter.mode() == BingoExecutionMode.LOCAL
-                    && bingoExecutionRouter.start(new BingoStartRequest(area, false, GameRunMode.GAME))
-                    .toCompletableFuture().getNow(false);
-        }
-        return joinSingleTeamAreaForAllTeamsLocal(
-                gameTypeEnum, area, false, GameRunMode.GAME, additionalPlayers);
+        Set<UUID> roster = plugin.getTeamManager().getTeamList().stream()
+                .flatMap(team -> team.getMembers().stream()).collect(Collectors.toSet());
+        if (!roster.containsAll(additionalPlayers)) return false;
+        return joinSingleTeamAreaForAllTeams(gameTypeEnum, area);
     }
 
     public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
@@ -961,55 +973,6 @@ public class GameManager extends BaseManager {
             for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
                 teamStatus.put(championshipTeam, singleTeamArea);
                 addPlayerStatusByTeam(championshipTeam, singleTeamArea);
-            }
-            focusSpectatorsOn(singleTeamArea);
-            return true;
-        }
-
-        singleTeamArea.prepareRunMode(GameRunMode.GAME);
-        singleTeamArea.setIntroductionEnabledForNextStart(false);
-        return false;
-    }
-
-    private boolean joinSingleTeamAreaForAllTeamsLocal(
-            @NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-            boolean showIntroduction, @NotNull GameRunMode runMode,
-            @NotNull Collection<UUID> additionalPlayers) {
-        if (!isGameEnabled(gameTypeEnum))
-            return false;
-        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
-            return false;
-
-        List<ChampionshipTeam> teams = plugin.getTeamManager().getTeamList();
-        LinkedHashSet<UUID> participants = new LinkedHashSet<>();
-        for (ChampionshipTeam championshipTeam : teams) {
-            participants.addAll(championshipTeam.getMembers());
-            if (teamStatus.containsKey(championshipTeam))
-                return false;
-        }
-        participants.addAll(additionalPlayers);
-        if (participants.isEmpty()) return false;
-        for (UUID uuid : participants)
-            if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode)) return false;
-
-        BaseMultiTeamGameInstance singleTeamArea = findAvailableMultiTeamInstance(gameTypeEnum, area);
-        if (singleTeamArea == null) return false;
-
-        for (UUID uuid : participants) removeSpectator(uuid);
-
-        singleTeamArea.prepareRunMode(runMode);
-        singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
-        if (singleTeamArea.tryStartGame(teams, List.copyOf(participants))) {
-            for (ChampionshipTeam championshipTeam : teams) {
-                teamStatus.put(championshipTeam, singleTeamArea);
-            }
-            for (UUID uuid : participants) {
-                playerStatus.put(uuid, singleTeamArea);
-                roundTransitionHolds.remove(uuid);
-                plugin.getVisibilityManager().reconcilePlayer(uuid);
-                Player player = Bukkit.getPlayer(uuid);
-                if (player != null && plugin.getSidebarManager() != null)
-                    plugin.getSidebarManager().invalidate(player);
             }
             focusSpectatorsOn(singleTeamArea);
             return true;
@@ -1126,6 +1089,66 @@ public class GameManager extends BaseManager {
             plugin.getScheduleManager().abortFormalEvent(GameTypeEnum.Bingo,
                     "远端执行中止，已释放 Core 侧队伍与玩家占用");
         }
+    }
+
+    /** Starts all LaserBox pairings behind one preload gate, retaining the exact instances for settlement. */
+    public synchronized @Nullable List<LaserBoxArea> joinLaserBoxInstances(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction,
+            @NotNull GameRunMode runMode) {
+        GameTypeEnum game = GameTypeEnum.LaserBox;
+        if (!isGameEnabled(game) || !plugin.getPrepareSessionManager().canStart(game, area) || pairs.isEmpty())
+            return null;
+        Set<ChampionshipTeam> teams = new LinkedHashSet<>();
+        Set<UUID> participants = new HashSet<>();
+        for (TwoVTwoVector pair : pairs) {
+            if (pair == null || pair.getTeamOne() == null || pair.getTeamTwo() == null
+                    || !teams.add(pair.getTeamOne()) || !teams.add(pair.getTeamTwo())) return null;
+        }
+        for (ChampionshipTeam team : teams) {
+            if (teamStatus.containsKey(team) || team.getMembers().isEmpty()) return null;
+            for (UUID id : team.getMembers()) {
+                // LaserBox starts from the complete team roster, including offline members.
+                if (!participants.add(id)) return null;
+            }
+        }
+        var selected = laserBoxManager.getMapInstances(area).stream()
+                .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
+                .limit(pairs.size()).toList();
+        if (selected.size() != pairs.size()) return null;
+        try {
+            for (var instance : selected) instance.getGameConfig().validate();
+        } catch (RuntimeException failure) {
+            plugin.getLogger().warning(Utils.formatGameLog(game, area, "调度", "启动", failure.getMessage()));
+            return null;
+        }
+        CompletableFuture<Void> gate = new CompletableFuture<>();
+        selected.forEach(instance -> instance.coordinateStartWith(gate));
+        for (UUID id : participants) removeSpectator(id);
+        List<LaserBoxArea> started = new ArrayList<>();
+        for (int i = 0; i < pairs.size(); i++) {
+            var instance = selected.get(i);
+            var pair = pairs.get(i);
+            instance.prepareRunMode(runMode);
+            instance.setIntroductionEnabledForNextStart(showIntroduction);
+            if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
+                started.forEach(BaseGameInstance::abortAndReset);
+                instance.prepareRunMode(GameRunMode.GAME);
+                instance.setIntroductionEnabledForNextStart(false);
+                gate.complete(null);
+                return null;
+            }
+            started.add(instance);
+            teamStatus.put(pair.getTeamOne(), instance);
+            teamStatus.put(pair.getTeamTwo(), instance);
+            addPlayerStatusByTeam(pair.getTeamOne(), instance);
+            addPlayerStatusByTeam(pair.getTeamTwo(), instance);
+        }
+        CompletableFuture.allOf(selected.stream().map(BaseGameInstance::getStartPreloadFuture)
+                        .toArray(CompletableFuture[]::new))
+                .whenComplete((unused, failure) -> plugin.getServer().getScheduler()
+                        .runTask(plugin, () -> gate.complete(null)));
+        focusSpectatorsOn(selected.getFirst());
+        return selected;
     }
 
     /** Starts one or more independent Battle Box instances from a shared map definition. */

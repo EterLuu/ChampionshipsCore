@@ -13,7 +13,7 @@ public final class FrostbiteScheduleManager extends BaseSingleGameSchedule {
         if (!enabled) {
             roundMaps = roundMaps(FormalEventMapResolver.maps(plugin, gameTypeEnum));
             if (roundMaps.isEmpty()) {
-                plugin.getLogger().warning("霜冻狂潮正式比赛未启动：没有可用地图");
+                plugin.getLogger().warning("霜冻决斗正式比赛未启动：没有可用地图");
                 return;
             }
         }
@@ -22,7 +22,7 @@ public final class FrostbiteScheduleManager extends BaseSingleGameSchedule {
 
     static java.util.List<String> roundMaps(java.util.List<String> maps) {
         if (maps.isEmpty()) return java.util.List.of();
-        return java.util.stream.IntStream.range(0, 4).mapToObj(i -> maps.get(i % maps.size())).toList();
+        return java.util.stream.IntStream.range(0, 3).mapToObj(i -> maps.get(i % maps.size())).toList();
     }
 
     public FrostbiteScheduleManager(ChampionshipsCore plugin, FrostbiteScheduleHandler handler) {
@@ -37,6 +37,6 @@ public final class FrostbiteScheduleManager extends BaseSingleGameSchedule {
 
     @Override
     public int getTotalRounds() {
-        return 4;
+        return 3;
     }
 }

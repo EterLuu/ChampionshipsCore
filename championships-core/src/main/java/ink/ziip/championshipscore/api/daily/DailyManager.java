@@ -573,8 +573,9 @@ public final class DailyManager extends BaseManager {
         }
     }
 
-    private static boolean isDailyMenuHolder(Object holder) {
+    static boolean isDailyMenuHolder(Object holder) {
         return holder instanceof DailyLobbyMenu.LobbyHolder
+                || holder instanceof DailyBingoVoteController.VoteHolder
                 || holder instanceof DailyGameMenu.MenuHolder
                 || holder instanceof DailyStatsMenu.StatsHolder
                 || holder instanceof DailyStatsMenu.DetailHolder

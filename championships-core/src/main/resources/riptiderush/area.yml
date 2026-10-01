@@ -1,13 +1,12 @@
 dont-edit-this:
-  version: 26
+  version: 28
 name: "default"
 world-name: ""
-timer: 300
-# Automatic: (.5,80,-110.5) to (.5,80,389.5), timer 300. Values are normalized when loaded/bound.
+timer: 330
+# Automatic: (.5,80,-110.5) to (.5,80,389.5), timer 330. Values are written when loaded/bound.
 start-point: null
 finish-point: null
-# Legacy list; runtime uses course.pool and a per-round immutable plan.
-levels: []
+# Runtime uses course.pool and a per-round immutable plan.
 course:
   hitw-catalog-version: 4
   wall-groups: true
@@ -51,6 +50,21 @@ course:
     - {"id": "rhythm_vertical_window", "name": "升降窗口", "type": "RHYTHM", "variant": "VERTICAL_WINDOW", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
     - {"id": "rhythm_window_shutter", "name": "定点开合窗", "type": "RHYTHM", "variant": "WINDOW_SHUTTER", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
     - {"id": "rhythm_staggered_windows", "name": "左右高低交替窗", "type": "RHYTHM", "variant": "STAGGERED_WINDOWS", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {id: rhythm_triple_pulse, name: 三拍脉冲, type: RHYTHM, variant: TRIPLE_PULSE, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_left_right_center, name: 左-右-中接力, type: RHYTHM, variant: LEFT_RIGHT_CENTER, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_edge_swap, name: 边缘换气, type: RHYTHM, variant: EDGE_SWAP, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_pinball, name: 弹珠回弹, type: RHYTHM, variant: PINBALL, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_snake, name: 蛇形追拍, type: RHYTHM, variant: SNAKE, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_center_pulse, name: 中心脉冲, type: RHYTHM, variant: CENTER_PULSE, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_edge_pulse, name: 边缘脉冲, type: RHYTHM, variant: EDGE_PULSE, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_fold, name: 折叠开口, type: RHYTHM, variant: FOLD, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_split_merge, name: 分流合流, type: RHYTHM, variant: SPLIT_MERGE, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_rest_accent, name: 反拍留白, type: RHYTHM, variant: REST_ACCENT, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_mirror_chase, name: 镜像追逐, type: RHYTHM, variant: MIRROR_CHASE, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_diagonal, name: 斜线节拍, type: RHYTHM, variant: DIAGONAL, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_double_window, name: 双窗交替, type: RHYTHM, variant: DOUBLE_WINDOW, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_backbeat, name: 后拍回收, type: RHYTHM, variant: BACKBEAT, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {id: rhythm_quick_turn, name: 急转弯拍, type: RHYTHM, variant: QUICK_TURN, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
     - {"id": "math_double", "name": "连续两道解题门", "type": "MATH", "variant": "DOUBLE", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
     - {"id": "color_floor_ore", "name": "矿石", "type": "COLOR_FLOOR", "variant": "ORE", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
     - {"id": "color_floor_log", "name": "原木", "type": "COLOR_FLOOR", "variant": "LOG", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
@@ -427,18 +441,15 @@ generation:
   obstacle-margin: 5
   clear-height: 12
   minimum-level-spacing: 14
-  # Legacy duration key, retained for compatibility. Gameplay uses 30/30/27/25/25 seconds by acceleration stage.
+  # Gameplay duration is derived from the acceleration stage.
   # Other total durations scale proportionally to ticks; rounding keeps durations non-increasing.
   raft-material: OAK_PLANKS
   obstacle-material: POLISHED_ANDESITE
 movement:
   base-speed: 2.2
-  # Legacy boost fields are ignored. Acceleration occurs at 20%, 40%, 60%, 80%.
-  boost-speed: 2.8
+  # Acceleration occurs at 20%, 40%, 60%, 80%.
   # 5.2 blocks/s remains below a player's normal sprint speed (~5.6 blocks/s).
   final-speed: 5.2
-  boost-progress: 0.45
-  final-progress: 0.78
   # Airborne edge margin; physical support uses the full player footprint.
   # Falls below the deck by >0.5 blocks, unsupported exits and liquid need 20 continuous ticks.
   horizontal-padding: 0.65
@@ -464,12 +475,13 @@ countdown-block-disappearance:
   pos2: null
   mode: RANDOM
 rules:
-  - - "&#ededed窗口节奏门：横移矮窗左右移动；升降窗口与左右高低交替窗须平走或跳上一格；定点窗口按节拍开关，观察两格高洞口及时穿过。"
+  - - "&#ededed节奏门共26种：基础闸门、四种青色窗口，以及三拍脉冲、左-右-中接力、边缘换气、弹珠回弹、蛇形追拍、中心/边缘脉冲、折叠、分流合流、反拍留白、镜像追逐、斜线、双窗、后拍回收和急转弯拍。"
+    - "&#ededed所有节奏门统一使用铁块墙体、红绿顶灯和音符提示；新增组合按四拍切换，每拍至少开放0.8秒。"
   - - "&#ededed所有关卡初始为统一尺寸的完整去皮云杉木墙，船头靠近至10格时显现原貌；侧墙关卡的占位木墙同时撤去，移动侧墙保持原貌。"
   - - "&#ededed解题包含算术和观察题：数颜色、左右找第几项、找最大最小、数奇偶、找唯一项；上行显示线索，下行显示问题和左右答案。"
   - - "&#ededed观察题随五段航程增加线索数量，后段使用相似两位数；找第几项的两个答案均来自数列。"
     - "&#ededed穿越墙体整场不重复，连续墙的通行位置错开；侧墙会推动身体碰到的玩家，及时换位穿洞避让。"
-  - - "&#ededed节奏闸门：木筏持续前进，按开合节拍穿过，闭合会将墙内玩家挤出；包含全门、左右交替、长短双拍、中间两侧、横移窗口、收放、交错双拍，离筏或掉落出局。"
+  - - "&#ededed节奏闸门：木筏持续前进，按开合节拍穿过，闭合会将墙内玩家挤出；基础七种与新增十五种组合均可抽取，离筏或掉落出局。"
   - - "&#696969━━━━━━━━ &#fff566&l激流勇进 &#696969━━━━━━━━"
     - "&#ededed每局随机编排赛道；请自行移动跟上木筏并穿过障碍，限时五分钟。"
   - - "&#ededed穿越、解题和节奏在第一次加速后开放双连续，第二次加速后开放三连续；留意下一面墙。"
@@ -477,7 +489,7 @@ rules:
   - - "&#ededed加减法或两位数乘一位数，选择&#ff5555左侧红门&#ededed或&#55ffff右侧淡蓝门&#ededed；错误即出局。"
     - "&#ededed题目中央显示最多4秒，穿门即锁定答案；所有人从木筏中央出发，参赛时不显示其他玩家。"
   - - "&#ededed踩色五段依次32/28/24/20/16秒，方块种类依次5/6/7/8/8种；每关七轮。"
-  - - "&#ededed躲避关木筏停留原地，连续三波生物从四边向内冲刺，碰撞即淘汰；变体包括僵尸、尸壳、骷髅、蜘蛛和苦力怕。"
+  - - "&#ededed躲避关木筏停留原地，固定9秒停船，前1秒提示；同一关固定一个来向，随后逐只随机刷新，碰撞即淘汰；提示显示前方、后方、左方、右方或上方，僵尸、骷髅、尸壳刷新高度降低一格。"
     - "&#ededed大字仅显示倒计时，动作栏仅显示目标方块；站到与背包及副手相同的方块上。"
     - "&#fff566离开木筏或坠落也会出局；存活到最后获胜。"
     - "&#ededed正式赛三轮独立计分；同批出局互不加分且并列排名，未出场不计分。"

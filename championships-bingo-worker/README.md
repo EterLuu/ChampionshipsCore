@@ -49,6 +49,29 @@ Core 是 manifest、赛程、正式积分与数据库的唯一 owner。Worker �
 | `proxy.return-server` | 比赛结束、拒绝直连或失去 ownership 时返回的 Core 服务名 |
 | `worlds.*` | 一个比赛 slot 的主世界、下界和末地名称 |
 | `allow-reuse-without-reset` | 生产保持 `false`；本地开发可跳过世界重置流程 |
+| `worlds.seed-filter.*` | 新世界创建前的内置群系 seed 筛选；默认启用，不依赖外部程序 |
+
+Worker JAR 内置了 SeedLab 26.2 的 Overworld 群系预测器和数据，不需要安装
+`mc-worldgen-seed-lab`、`mcquery`、Python 或网络服务。筛选器会在出生点 2000 格内按
+默认 32 格间隔采样，最多处理 128 个随机候选，并将群系种类数最高的 seed 写入
+`.bingo-seed`。14 秒默认时间窗通常可以完成约 45 个候选；时间到达后保留已完成候选的
+最佳结果。Worker 会把同一个 seed 传给三个维度；内置预测器加载失败时，
+`required: false` 会回退到随机 seed，`required: true` 会拒绝启动。
+
+参数示例：
+
+```bash
+worlds:
+  seed-filter:
+    enabled: true
+    required: false
+    radius-blocks: 2000
+    candidates: 128
+    sample-step-blocks: 32
+    timeout-ms: 14000
+```
+
+第三方来源与 MIT 许可证文本见 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)。
 
 倒计时、散布、任务、计分、PvP、常驻效果、语言、Sidebar 和队伍展示由 Core 在开局时冻结进 manifest。改动 Core 的 Bingo 配置后，新比赛立即使用新规则，正在运行的比赛继续使用开局时的 manifest。`worker-id` 参与聊天 consumer group 命名，多个 Worker 使用不同 ID，让每个实例都收到完整公共聊天。
 

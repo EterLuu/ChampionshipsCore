@@ -16,10 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -31,8 +28,6 @@ public abstract class BaseConfigurationFile {
     @NotNull
     protected final ChampionshipsCore plugin;
     @Getter
-    private boolean outdated = false;
-    @Getter
     protected YamlConfiguration configuration;
     protected Path configurationPath;
     // True while loading the bundled resource template (see loadDefaultOptions); null placeholders in
@@ -41,26 +36,19 @@ public abstract class BaseConfigurationFile {
 
     /** Loads the bundled template and the configuration stored below the plugin folder. */
     public void initializeConfiguration(Path pluginFolder) {
-        initializeConfigurationChecked(pluginFolder, true);
-    }
-
-    /**
-     * Loads bundled defaults, upgrades the raw on-disk file, and only then binds runtime fields:
-     * validating before the upgrade makes every option the upgrade introduces look missing on first boot.
-     */
-    public void initializeConfiguration(Path pluginFolder, boolean autoUpgrade) {
-        initializeConfigurationChecked(pluginFolder, autoUpgrade);
+        if (!initializeConfigurationChecked(pluginFolder))
+            throw new IllegalStateException("Configuration initialization failed: " + getFileName());
     }
 
     /** Same initialization contract with an explicit success result for atomic runtime reloads. */
-    public boolean initializeConfigurationChecked(Path pluginFolder, boolean autoUpgrade) {
+    public boolean initializeConfigurationChecked(Path pluginFolder) {
         try {
             loadDefaultOptions();
             configurationPath = saveDefaultConfigurationFile(pluginFolder);
             configuration = new YamlConfiguration();
             configuration.options().indent(2);
             configuration.load(configurationPath.toFile());
-            checkVersion(autoUpgrade);
+            validateVersion(configuration.getInt("dont-edit-this.version", -1), getLatestVersion(), getFileName());
             loadFileOptions();
             return true;
         } catch (Exception exception) {
@@ -216,26 +204,7 @@ public abstract class BaseConfigurationFile {
             ConfigOption configOption = field.getAnnotation(ConfigOption.class);
             if (configOption != null) {
                 try {
-                    Object value = null;
-
-                    // Read typed lists directly because Bukkit otherwise narrows numeric values.
-                    if (field.getType() == List.class && field.getGenericType() instanceof ParameterizedType) {
-                        Type type = ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
-                        if (type == Integer.class) {
-                            value = yamlConfiguration.getIntegerList(configOption.path());
-                        } else if (type == Double.class) {
-                            value = yamlConfiguration.getDoubleList(configOption.path());
-                        } else if (type == Float.class) {
-                            value = yamlConfiguration.getFloatList(configOption.path());
-                        } else if (type == Short.class) {
-                            value = yamlConfiguration.getShortList(configOption.path());
-                        } else if (type == String.class) {
-                            value = yamlConfiguration.getStringList(configOption.path());
-                        }
-                    }
-
-                    // Read scalar values and other objects through Bukkit's normal conversion.
-                    if (value == null) value = yamlConfiguration.get(configOption.path());
+                    Object value = ConfigurationValueReader.read(yamlConfiguration, configOption.path(), field);
 
                     // Locations may be stored as a raw section (world/world_key + x/y/z/yaw/pitch,
                     // without the '==' marker); rebuild them so field.set doesn't throw.
@@ -308,46 +277,10 @@ public abstract class BaseConfigurationFile {
         return value;
     }
 
-    /**
-     * Check the version of the configuration and upgrade it if outdated
-     *
-     * @param autoUpgrade true to auto upgrade configuration file if outdated
-     */
-    public void checkVersion(boolean autoUpgrade) {
-        outdated = configuration.getInt("dont-edit-this.version", -1) < getLatestVersion();
-        if (outdated && autoUpgrade) {
-            plugin.getLogger().info(Utils.formatModuleLog("Config", "迁移",
-                    String.format("配置文件=%s 版本=%d -> %d", getFileName(),
-                            configuration.getInt("dont-edit-this.version", -1), getLatestVersion())));
-
-            YamlConfiguration previousConfiguration = configuration;
-            try (InputStream resource = plugin.getResource(getResourceName())) {
-                if (resource == null)
-                    throw new IOException("Missing configuration resource " + getResourceName());
-                configuration = YamlConfiguration.loadConfiguration(
-                        new InputStreamReader(resource, java.nio.charset.StandardCharsets.UTF_8));
-                configuration.options().indent(2);
-                loadFromOutdatedConfiguration(previousConfiguration);
-                outdated = false;
-                plugin.getLogger().info(Utils.formatModuleLog("Config", "迁移",
-                        "配置文件=" + getFileName() + " 已原位更新完成"));
-            } catch (Exception exception) {
-                configuration = previousConfiguration;
-                plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("Config", "迁移",
-                        "配置文件=" + getFileName() + " 原位更新失败"), exception);
-            }
-        }
-    }
-
-    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) throws IOException {
-        Field[] fields = getClass().getFields();
-        for (Field field : fields) {
-            ConfigOption co = field.getAnnotation(ConfigOption.class);
-            if (co != null && yamlConfiguration.get(co.path()) != null) {
-                configuration.set(co.path(), yamlConfiguration.get(co.path()));
-            }
-        }
-        configuration.save(configurationPath.toFile());
+    public static void validateVersion(int actual, int expected, String fileName) {
+        if (actual != expected)
+            throw new IllegalArgumentException("配置文件 " + fileName + " 版本 " + actual
+                    + " 与当前版本 " + expected + " 不一致；请直接更新配置文件");
     }
 
     /**

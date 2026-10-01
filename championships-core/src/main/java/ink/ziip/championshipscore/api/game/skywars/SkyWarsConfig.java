@@ -103,17 +103,4 @@ public class SkyWarsConfig extends BaseGameConfig {
         return SkyWarsMapGeometry.from(this);
     }
 
-    @Override
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
-        if (!oldConfiguration.contains("boundary-center-point") && oldConfiguration.contains("pre-spawn-point"))
-            migratedConfiguration.set("boundary-center-point", oldConfiguration.get("pre-spawn-point"));
-
-        // An absent schedule historically meant "do not shrink". It must not inherit the bundled
-        // large-map schedule merely because a newer template introduced that default.
-        if (!oldConfiguration.contains("shrink-time"))
-            migratedConfiguration.set("shrink-time", List.of());
-        if (!oldConfiguration.contains("time.spawn-happy-ghast"))
-            migratedConfiguration.set("time.spawn-happy-ghast", null);
-    }
 }

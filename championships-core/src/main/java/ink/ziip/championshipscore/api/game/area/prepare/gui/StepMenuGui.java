@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -11,9 +12,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -24,6 +23,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /** A paged, six-row step picker. It keeps large prepare flows usable without excessive page hopping. */
@@ -39,7 +39,7 @@ public final class StepMenuGui {
     private StepMenuGui() {
     }
 
-    public static final class Holder implements InventoryHolder {
+    public static final class Holder implements MenuInventory {
         final PrepareSession session;
         int page;
         Inventory inventory;
@@ -157,14 +157,15 @@ public final class StepMenuGui {
                 ? step.stateText(session)
                 : GuiConfig.text(MENU_PATH + ".items.step.states." + stateKey + ".title",
                         Map.of("count", count));
-        String action = GuiConfig.text(MENU_PATH + ".items.step.lore.2");
+        String action = GuiConfig.text(MENU_PATH + ".items.step.actions."
+                + step.captureType().name().toLowerCase(Locale.ROOT).replace('_', '-') + ".title");
         ItemStack fallback = PrepareKeys.item(step.icon(), Component.empty(), List.of());
         // The step state is rendered in the lore. Passing it to ConfiguredGui would replace the complete
         // title with the state's short label and hide the step number/name.
         ItemStack item = ConfiguredGui.item(MENU_PATH + ".items.step", null, Map.of(
                         "number", number,
-                        "title", PlainTextComponentSerializer.plainText().serialize(step.displayName()),
-                        "description", PlainTextComponentSerializer.plainText().serialize(step.description()),
+                        "title", step.displayName(),
+                        "description", step.description(),
                         "count", count,
                         "state", state,
                         "action", action), fallback);

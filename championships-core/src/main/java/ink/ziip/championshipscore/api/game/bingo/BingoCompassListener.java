@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -12,7 +13,6 @@ import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
@@ -98,7 +98,7 @@ public final class BingoCompassListener extends BaseListener {
             teammates.add(target);
         }
         if (teammates.isEmpty()) {
-            player.sendMessage(Component.text(MessageConfig.MAP_EDITOR_BINGO_NO_TEAMMATES).color(NamedTextColor.YELLOW));
+            player.sendMessage(LegacyText.component(MessageConfig.MAP_EDITOR_BINGO_NO_TEAMMATES).colorIfAbsent(NamedTextColor.YELLOW));
             return;
         }
         teammates.sort(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER));
@@ -121,9 +121,9 @@ public final class BingoCompassListener extends BaseListener {
         ItemStack item = new ItemStack(Material.ENDER_PEARL);
         item.editMeta(meta -> {
             meta.displayName(Utils.toComponent(Utils.formatPlayerName(target))
-                    .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.teammate.lore", 0)).color(NamedTextColor.GRAY)
-                    .decoration(TextDecoration.ITALIC, false)));
+                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+            meta.lore(List.of(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.teammate.lore", 0)).colorIfAbsent(NamedTextColor.GRAY)
+                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)));
             if (TARGET_KEY != null) {
                 meta.getPersistentDataContainer().set(TARGET_KEY, PersistentDataType.STRING,
                         target.getUniqueId().toString());
@@ -152,13 +152,13 @@ public final class BingoCompassListener extends BaseListener {
         }
         Player target = Bukkit.getPlayer(targetId);
         if (target == null || !target.isOnline() || area.notAreaPlayer(target)) {
-            player.sendMessage(Component.text(MessageConfig.MAP_EDITOR_BINGO_UNREACHABLE).color(NamedTextColor.YELLOW));
+            player.sendMessage(LegacyText.component(MessageConfig.MAP_EDITOR_BINGO_UNREACHABLE).colorIfAbsent(NamedTextColor.YELLOW));
             player.closeInventory();
             return;
         }
         player.closeInventory();
         player.teleportAsync(target.getLocation());
-        player.sendMessage(Component.text(MessageConfig.MAP_EDITOR_BINGO_SENT_TO, NamedTextColor.AQUA)
+        player.sendMessage(LegacyText.component(MessageConfig.MAP_EDITOR_BINGO_SENT_TO, NamedTextColor.AQUA)
                 .append(Utils.toComponent(Utils.formatPlayerName(target))));
     }
 

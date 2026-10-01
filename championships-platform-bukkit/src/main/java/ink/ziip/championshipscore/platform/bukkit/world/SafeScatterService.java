@@ -47,6 +47,31 @@ public final class SafeScatterService {
         cancelled = true;
     }
 
+    /** Finds a safe column within inclusive bounds, without falling back to the shared world spawn. */
+    public CompletableFuture<Location> findSafeLocationAsync(
+            World world, int minX, int maxX, int minZ, int maxZ, int maxTries) {
+        if (world == null || minX > maxX || minZ > maxZ) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException("Invalid scatter search bounds"));
+        }
+        return findBoundedSpotAsync(world, minX, maxX, minZ, maxZ, Math.max(8, maxTries));
+    }
+
+    private CompletableFuture<Location> findBoundedSpotAsync(
+            World world, int minX, int maxX, int minZ, int maxZ, int triesLeft) {
+        if (cancelled) return CompletableFuture.failedFuture(new java.util.concurrent.CancellationException());
+        if (triesLeft <= 0) return CompletableFuture.failedFuture(
+                new IllegalStateException("No safe Bingo location within [" + minX + "," + maxX
+                        + "] x [" + minZ + "," + maxZ + "] in " + world.getName()));
+        Random random = ThreadLocalRandom.current();
+        int x = random.nextInt(minX, maxX + 1);
+        int z = random.nextInt(minZ, maxZ + 1);
+        Location region = new Location(world, x, 0, z);
+        return world.getChunkAtAsync(region)
+                .thenCompose(chunk -> scheduler.supplyAt(region, () -> cancelled ? null : toTopSafe(world, x, z)))
+                .thenCompose(location -> location != null ? CompletableFuture.completedFuture(location)
+                        : findBoundedSpotAsync(world, minX, maxX, minZ, maxZ, triesLeft - 1));
+    }
+
     public void performScatterAsync(
             World world, List<Player> players, int radius, int maxTries, Runnable onComplete) {
         performScatterAsync(world, players, radius, 0, maxTries, onComplete);

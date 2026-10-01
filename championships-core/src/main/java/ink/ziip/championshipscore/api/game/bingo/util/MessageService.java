@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.util;
 
 import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -85,7 +86,7 @@ public final class MessageService {
      * the text keeps the lang string's own styling rather than the vanilla default for custom items.
      */
     public Component component(String key, Object... args) {
-        return LEGACY.deserialize(tr(key, args)).decoration(TextDecoration.ITALIC, false);
+        return LEGACY.deserialize(tr(key, args)).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
 
     public void broadcast(String key, Object... args) {
@@ -108,12 +109,12 @@ public final class MessageService {
         return value == null ? "" : Utils.translateColorCodes(value);
     }
 
-    private String format(String raw, Object... args) {
-        String out = color(raw);
+    static String format(String raw, Object... args) {
+        String out = raw;
         for (int i = 0; args != null && i < args.length; i++) {
             out = out.replace("{" + i + "}", String.valueOf(args[i]));
         }
-        return out;
+        return color(out);
     }
 
     private String getRaw(String key) {
@@ -123,18 +124,13 @@ public final class MessageService {
     }
 
     private YamlConfiguration load(String locale) {
-        // The bundled jar resource is the base; on-disk values win for any key present in both, and any
-        // key that exists only in the jar (e.g. one added in a newer jar that the on-disk file predates,
-        // or one the server owner deleted) is filled in. ensureBundled already persists new keys to disk,
-        // but this overlay also covers the in-memory case so a missing key never resolves to its raw path.
         YamlConfiguration base = loadResource("bingo/lang/" + locale + ".yml");
         File file = new File(plugin.getDataFolder(), "bingo/lang/" + locale + ".yml");
         if (file.exists()) {
             YamlConfiguration disk = YamlConfiguration.loadConfiguration(file);
-            for (String key : disk.getKeys(true)) {
-                if (disk.isConfigurationSection(key)) continue;
-                base.set(key, disk.get(key));
-            }
+            BaseConfigurationFile.validateVersion(disk.getInt("dont-edit-this.version", -1),
+                    base.getInt("dont-edit-this.version", -1), file.getName());
+            return disk;
         }
         return base;
     }
@@ -146,40 +142,13 @@ public final class MessageService {
         ensureBundled("bingo/lang/en_US.yml", new File(dir, "en_US.yml"));
     }
 
-    /**
-     * Makes sure {@code dest} exists and carries every bundled key. A language schema bump replaces the
-     * previous copy so deliberate terminology/style migrations reach running servers; within the same
-     * schema version, administrator overrides win and only missing keys are filled in.
-     */
     private void ensureBundled(String resourcePath, File dest) {
-        YamlConfiguration bundled = loadResource(resourcePath);
-        if (dest.exists()) {
-            YamlConfiguration disk = YamlConfiguration.loadConfiguration(dest);
-            int bundledVersion = bundled.getInt("dont-edit-this.version", 0);
-            int diskVersion = disk.getInt("dont-edit-this.version", -1);
-            if (diskVersion < bundledVersion) {
-                try {
-                    bundled.save(dest);
-                } catch (IOException e) {
-                    log.warning("[BingoLang] Failed to upgrade " + dest.getName() + ": " + e.getMessage());
-                }
-                return;
-            }
-            int before = countLeaves(disk);
-            mergeDefaults(bundled, disk);
-            if (countLeaves(disk) == before) return; // no new keys - leave the file untouched
-            try {
-                disk.save(dest);
-            } catch (IOException e) {
-                log.warning("[BingoLang] Failed to write " + dest.getName() + ": " + e.getMessage());
-            }
-        } else {
-            try {
-                dest.getParentFile().mkdirs();
-                bundled.save(dest);
-            } catch (IOException e) {
-                log.warning("[BingoLang] Failed to write " + dest.getName() + ": " + e.getMessage());
-            }
+        if (dest.exists()) return;
+        try {
+            dest.getParentFile().mkdirs();
+            loadResource(resourcePath).save(dest);
+        } catch (IOException e) {
+            log.warning("[BingoLang] Failed to write " + dest.getName() + ": " + e.getMessage());
         }
     }
 
@@ -195,21 +164,4 @@ public final class MessageService {
         return yaml;
     }
 
-    /** Fills {@code dest} with any leaf key missing from it, recursing through nested sections. */
-    private static void mergeDefaults(YamlConfiguration defaults, YamlConfiguration dest) {
-        for (String key : defaults.getKeys(true)) {
-            if (defaults.isConfigurationSection(key)) continue;
-            if (!dest.contains(key)) {
-                dest.set(key, defaults.get(key));
-            }
-        }
-    }
-
-    private static int countLeaves(YamlConfiguration yaml) {
-        int count = 0;
-        for (String key : yaml.getKeys(true)) {
-            if (!yaml.isConfigurationSection(key)) count++;
-        }
-        return count;
-    }
 }

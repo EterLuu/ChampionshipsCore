@@ -47,6 +47,19 @@ public class TNTRunConfig extends BaseGameConfig {
     @ConfigOption(path = "area-pos2")
     private Vector areaPos2;
 
+    /** Absolute world Y below which participants are eliminated; null preserves the old lower boundary. */
+    @ConfigOption(path = "elimination-y", nullable = true)
+    private Double eliminationY;
+
+    @Override
+    public void loadFromConfiguration(@NotNull YamlConfiguration configuration) {
+        eliminationY = null;
+        super.loadFromConfiguration(configuration);
+        if (eliminationY != null && !Double.isFinite(eliminationY)) {
+            throw new IllegalArgumentException("elimination-y must be finite");
+        }
+    }
+
     @ConfigOption(path = "spectator-spawn-point")
     private Location spectatorSpawnPoint;
 
@@ -97,6 +110,33 @@ public class TNTRunConfig extends BaseGameConfig {
         return ArenaPreparer.copyBoxes(getCopyGrid(), copies, copySize);
     }
 
+    /** Suggested value for the editor; existing maps keep their original boundary until explicitly set. */
+    public double getDefaultEliminationY() {
+        List<BoundingBox> boxes = getCopyBoxes();
+        if (!boxes.isEmpty()) return boxes.stream().mapToDouble(BoundingBox::getMinY).min().orElseThrow();
+        if (areaPos1 != null && areaPos2 != null) return Math.min(areaPos1.getY(), areaPos2.getY());
+        return getCopyGrid().origin(0).getY();
+    }
+
+    /** Keeps the template's horizontal/top limits, replacing only its lower limit when configured. */
+    public boolean isInsidePlayerBounds(Vector point) {
+        if (point == null) return false;
+        List<BoundingBox> boxes = getCopyBoxes();
+        for (BoundingBox box : boxes) {
+            double lowerY = eliminationY == null ? box.getMinY() : eliminationY;
+            if (point.getX() >= box.getMinX() && point.getX() < box.getMaxX()
+                    && point.getZ() >= box.getMinZ() && point.getZ() < box.getMaxZ()
+                    && point.getY() >= lowerY && point.getY() < box.getMaxY()) return true;
+        }
+        if (!boxes.isEmpty() || areaPos1 == null || areaPos2 == null) return false;
+        Vector min = Vector.getMinimum(areaPos1, areaPos2);
+        Vector max = Vector.getMaximum(areaPos1, areaPos2);
+        double lowerY = eliminationY == null ? min.getY() : eliminationY;
+        return point.getX() >= min.getX() && point.getX() <= max.getX()
+                && point.getZ() >= min.getZ() && point.getZ() <= max.getZ()
+                && point.getY() >= lowerY && point.getY() <= max.getY();
+    }
+
     /**
      * Effective per-copy spawn points the game spreads players across. When the prepare/template fields
      * ({@link #copySpawn} + {@link #copies}) are set they are derived from the grid; otherwise explicit
@@ -113,38 +153,5 @@ public class TNTRunConfig extends BaseGameConfig {
         return spawnPoints;
     }
 
-    @Override
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
-        // A copy-based map is runtime-complete when it already persists the explicit grid, schematic
-        // dimensions and copy-0 spawn. The WorldEdit selection is prepare-only metadata in that case;
-        // requiring it would incorrectly lock previously published maps whose runtime layout is sound.
-        if (requiresCopyLayoutRepublish(oldConfiguration)) {
-            migratedConfiguration.set("prepare.published", false);
-            migratedConfiguration.set("prepare.dirty", true);
-        }
 
-        // Version 5 introduced prepare metadata and marked legacy, single-arena maps dirty even when
-        // their original aggregate bounds and explicit spawn points are still complete. Those maps are
-        // already valid published maps; keep newly stamped/copy-based drafts locked instead.
-        if (oldConfiguration.getBoolean("prepare.published", false)
-                && oldConfiguration.getBoolean("prepare.dirty", false)
-                && oldConfiguration.getInt("copies", 0) <= 0
-                && oldConfiguration.getBoolean("prepare.world-built", false)
-                && oldConfiguration.contains("area-pos1")
-                && oldConfiguration.contains("area-pos2")
-                && !oldConfiguration.getStringList("spawn-points").isEmpty()) {
-            migratedConfiguration.set("prepare.dirty", false);
-        }
-    }
-
-    static boolean requiresCopyLayoutRepublish(@NotNull YamlConfiguration configuration) {
-        boolean hasCompleteCopyLayout = configuration.getVector("copy-layout.origin") != null
-                && configuration.getVector("copy-layout.step") != null
-                && configuration.getVector("copy-size") != null
-                && configuration.get("copy-spawn") != null;
-        return configuration.getInt("copies", 0) > 0
-                && !hasCompleteCopyLayout
-                && (!configuration.contains("area-pos1") || !configuration.contains("area-pos2"));
-    }
 }

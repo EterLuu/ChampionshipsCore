@@ -16,7 +16,8 @@ record WorkerConfig(
         String overworld,
         String nether,
         String end,
-        boolean allowWorldReuseWithoutReset
+        boolean allowWorldReuseWithoutReset,
+        SeedFilterConfig seedFilter
 ) {
     static WorkerConfig load(FileConfiguration config) {
         String workerId = text(config, "worker-id");
@@ -30,10 +31,11 @@ record WorkerConfig(
                 Duration.ofMillis(positive(config, "redis.block-timeout-ms", 2_000)),
                 Duration.ofMillis(positive(config, "redis.reclaim-idle-ms", 15_000)),
                 positive(config, "redis.max-deliveries", 8));
+        SeedFilterConfig seedFilter = SeedFilterConfig.load(config);
         return new WorkerConfig(config.getBoolean("enabled", false), workerId, redis, consumer,
                 text(config, "proxy.channel"), text(config, "proxy.return-server"),
                 text(config, "worlds.overworld"), text(config, "worlds.nether"),
-                text(config, "worlds.the-end"), config.getBoolean("worlds.allow-reuse-without-reset", false));
+                text(config, "worlds.the-end"), config.getBoolean("worlds.allow-reuse-without-reset", false), seedFilter);
     }
 
     private static int positive(FileConfiguration config, String path, int fallback) {
@@ -47,4 +49,32 @@ record WorkerConfig(
         if (value == null || value.isBlank()) throw new IllegalArgumentException(path + " must not be blank");
         return value.trim();
     }
+
+    record SeedFilterConfig(
+            boolean enabled,
+            boolean required,
+            String seedFile,
+            int radiusBlocks,
+            int candidates,
+            int sampleStepBlocks,
+            Duration timeout
+    ) {
+        static SeedFilterConfig load(FileConfiguration config) {
+            String path = "worlds.seed-filter";
+            boolean enabled = config.getBoolean(path + ".enabled", false);
+            boolean required = config.getBoolean(path + ".required", false);
+            String seedFile = config.getString(path + ".seed-file", ".bingo-seed");
+            if (seedFile == null || seedFile.isBlank()) throw new IllegalArgumentException(path + ".seed-file must not be blank");
+            int radius = positive(config, path + ".radius-blocks", 2_000);
+            int candidates = positive(config, path + ".candidates", 128);
+            int step = positive(config, path + ".sample-step-blocks", 32);
+            if (radius % 4 != 0 || step % 4 != 0) {
+                throw new IllegalArgumentException(path + ".radius-blocks and sample-step-blocks must be divisible by 4");
+            }
+            int timeoutMs = positive(config, path + ".timeout-ms", 14_000);
+            return new SeedFilterConfig(enabled, required, seedFile, radius, candidates, step,
+                    Duration.ofMillis(timeoutMs));
+        }
+    }
+
 }

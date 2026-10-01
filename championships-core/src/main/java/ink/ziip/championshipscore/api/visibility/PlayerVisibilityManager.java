@@ -217,7 +217,7 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
         result.add("原因=" + state.reason());
         result.add("身份=" + (spectator != null ? "观战者" : participant != null ? "游戏玩家" : "未加入游戏")
                 + (forcedAll ? "（最终规则：始终可见全部）" : ""));
-        result.add("全局规则=游戏玩家看不到本场观战者；观战者与未加入游戏者始终可见全部");
+        result.add("全局规则=参赛者看不到本场旁观者；旁观者看得到参赛者但彼此不可见");
         if (!state.teamIds().isEmpty()) result.add("允许队伍ID=" + state.teamIds());
         if (!state.playerIds().isEmpty()) result.add("允许玩家UUID=" + state.playerIds());
         UUID session = sessionByPlayer.get(playerId);
@@ -248,17 +248,28 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
         ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(viewerId);
         ChampionshipTeam targetTeam = plugin.getTeamManager().getTeamByPlayer(targetId);
         PlayerVisibilityFilter spectatorFilter = spectatorFilters.get(viewerId);
-        if (spectatorFilter != null)
-            return spectatorFilter.allows(targetId, targetTeam == null ? null : targetTeam.getId());
         BaseGameInstance targetSpectatorArea = plugin.getGameManager().getPlayerSpectatorStatus(targetId);
         BaseGameInstance targetParticipantArea = plugin.getGameManager().getBasePlayerArea(targetId);
+        boolean viewerIsSpectator = plugin.getGameManager().getSpectatorManager().isSpectatorLike(viewerId)
+                || plugin.getGameManager().getPlayerSpectatorStatus(viewerId) != null
+                || viewer != null && viewer.getGameMode() == GameMode.SPECTATOR;
+        boolean targetIsSpectator = plugin.getGameManager().getSpectatorManager().isSpectatorLike(targetId)
+                || targetSpectatorArea != null
+                || target != null && target.getGameMode() == GameMode.SPECTATOR;
+        // Manual target filters are intentionally unable to re-enable another spectator. This keeps
+        // the spectator-only isolation contract stable while still allowing participant filters.
+        if (viewerIsSpectator && targetIsSpectator) return false;
+        if (!viewerIsSpectator && targetIsSpectator && !viewerAlwaysSeesAll) return false;
+        if (spectatorFilter != null)
+            return spectatorFilter.allows(targetId, targetTeam == null ? null : targetTeam.getId());
         boolean targetIsCorrespondingSpectator = participant != null && (targetSpectatorArea == participant
                 || targetParticipantArea == participant
                 && plugin.getGameManager().getSpectatorManager().isSpectatorLike(targetId));
         boolean sameTeam = viewerTeam != null && viewerTeam.equals(targetTeam);
         Integer targetTeamId = targetTeam == null ? null : targetTeam.getId();
         return PlayerVisibilityPolicy.allows(states.getOrDefault(viewerId, DEFAULT_STATE), viewerId, targetId,
-                viewerAlwaysSeesAll, targetIsCorrespondingSpectator, sameTeam, targetTeamId,
+                viewerAlwaysSeesAll, viewerIsSpectator, targetIsSpectator, targetIsCorrespondingSpectator,
+                sameTeam, targetTeamId,
                 sessionByPlayer.get(viewerId), sessionByPlayer.get(targetId));
     }
 

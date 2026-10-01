@@ -1,11 +1,11 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.step.SchematicStep;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
-import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -17,8 +17,8 @@ final class BuildMartBaseSchematicStep extends SchematicStep {
     private final File schematic;
 
     BuildMartBaseSchematicStep(@NotNull File schematic) {
-        super("base_schematic", plugin -> schematic, Component.text(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.base-schematic.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-schematic.lore", 0)));
+        super("base_schematic", plugin -> schematic, LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.base-schematic.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-schematic.lore", 0)));
         this.schematic = schematic;
     }
 

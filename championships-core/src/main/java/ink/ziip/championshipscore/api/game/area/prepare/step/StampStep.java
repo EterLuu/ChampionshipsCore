@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -11,7 +12,6 @@ import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -65,8 +65,8 @@ public class StampStep extends PrepareStep {
                       BiConsumer<PrepareSession, World> preStampCleaner,
                       int maxCount, boolean keepSourceCopy, boolean ignored) {
         super("stamp",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.items.stamp.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.items.stamp.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.stamp.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.stamp.lore", 0)),
                 Material.DISPENSER,
                 StepCaptureType.STAMP);
         this.fileResolver = fileResolver;

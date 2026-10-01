@@ -37,12 +37,4 @@ public class DragonEggCarnivalConfig extends BaseGameConfig {
     @ConfigOption(path = "spectator-spawn-point")
     private Location spectatorSpawnPoint;
 
-    @Override
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
-        for (String removed : new String[]{"right-spawn-point", "left-spawn-point", "right-spawn-points",
-                "left-spawn-points", "dragon-spawn-point", "dragon-egg-spawn-point", "kits"}) {
-            migratedConfiguration.set(removed, null);
-        }
-    }
 }

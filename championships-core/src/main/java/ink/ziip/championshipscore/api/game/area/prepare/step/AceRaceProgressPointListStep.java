@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiText;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -30,8 +31,8 @@ import java.util.Map;
 /** Adds and safely edits ordered WorldEdit progress gates and their following segment rules. */
 public final class AceRaceProgressPointListStep extends PrepareStep {
     public AceRaceProgressPointListStep() {
-        super("progress_points", Component.text(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-points.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-points.lore", 0)),
+        super("progress_points", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-points.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-points.lore", 0)),
                 Material.LIME_CONCRETE, StepCaptureType.LIST);
     }
 
@@ -258,12 +259,12 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
 
     @Override
     public @NotNull Component listAddLabel() {
-        return Component.text(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-add.title"));
+        return LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.progress-add.title"));
     }
 
     @Override
     public @NotNull Component listAddHint() {
-        return Component.text(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-add.lore", 0));
+        return LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.progress-add.lore", 0));
     }
 
     private record Gate(@NotNull Vector pos1, @NotNull Vector pos2) {

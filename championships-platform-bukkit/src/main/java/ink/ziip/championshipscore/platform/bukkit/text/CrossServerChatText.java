@@ -20,13 +20,13 @@ public final class CrossServerChatText {
         Objects.requireNonNull(presentation, "presentation");
         return new CrossServerChatMessage(UUID.randomUUID(), sourceInstance, senderId, senderName,
                 presentation.label(), presentation.teamColorCode(), presentation.activePlayer(),
-                SERIALIZER.serialize(Objects.requireNonNull(content, "content")), createdAt);
+                SERIALIZER.serialize(Objects.requireNonNull(content, "content")), createdAt, presentation.daily());
     }
 
     public static Component render(CrossServerChatMessage message) {
         Objects.requireNonNull(message, "message");
         Component content = SERIALIZER.deserialize(message.messageJson());
-        return new PlayerPresentation(message.label(), message.teamColorCode(), message.activePlayer())
+        return new PlayerPresentation(message.label(), message.teamColorCode(), message.activePlayer(), message.daily())
                 .chatLine(message.senderName(), content);
     }
 }

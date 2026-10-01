@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -103,7 +104,7 @@ final class DailyLobbyMenu {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
-    static final class LobbyHolder implements InventoryHolder {
+    static final class LobbyHolder implements MenuInventory {
         private final UUID viewer;
         private Inventory inventory;
 

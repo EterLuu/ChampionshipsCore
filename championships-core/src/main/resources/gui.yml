@@ -30,6 +30,40 @@ map-editor:
               title: "补给与重生点列表"
               lore:
                 - "只编辑第一张地图坐标，自动应用到其余三张地图"
+    laserbox:
+      menus:
+        prepare:
+          items:
+            save-template:
+              material: STRUCTURE_BLOCK
+              title: "保存场地模板"
+              lore:
+                - "用 WorldEdit 选取完整的 0 号场地后点击，保存为 arena.schem"
+            boundary:
+              material: BEDROCK
+              title: "0 号竞技场边界"
+              lore:
+                - "使用 WorldEdit 选区设置原场地范围，副本边界自动平移"
+            right-spawn:
+              material: YELLOW_WOOL
+              title: "黄队出生点"
+              lore:
+                - "站在黄队出生位置点击设置"
+            left-spawn:
+              material: PURPLE_WOOL
+              title: "紫队出生点"
+              lore:
+                - "站在紫队出生位置点击设置"
+            spectator:
+              material: ENDER_EYE
+              title: "观战出生点"
+              lore:
+                - "站在安全的观战位置点击设置"
+            supply-points:
+              material: CHEST
+              title: "补给点"
+              lore:
+                - "站在补给位置，点击添加"
     ace-race:
       menus:
         equipment:
@@ -257,7 +291,7 @@ map-editor:
               material: "DIAMOND_PICKAXE"
             automatic-layout:
               title: "&#ededed航线与限时已自动设定"
-              lore: ["&#a0a0a0起终点同为Y=80，沿正Z方向航行500格", "&#a0a0a0比赛限时固定300秒，无需手动设置"]
+              lore: ["&#a0a0a0起终点同为Y=80，沿正Z方向航行500格", "&#a0a0a0比赛限时固定330秒，无需手动设置"]
               material: "COMPASS"
             continue-building:
               title: "&#ededed继续施工"
@@ -519,7 +553,7 @@ map-editor:
                   glint: true
             option-horizontal-window:
               title: "横移矮窗"
-              lore: ["三格宽、两格高的矮窗按左、中、右、中移动", "青色窗框显示实际洞口，木筏持续前进，点击选择"]
+              lore: ["三格宽、两格高的矮窗按左、中、右、中移动", "铁块窗框显示实际洞口，木筏持续前进，点击选择"]
               material: "PISTON"
               states:
                 selected:
@@ -527,7 +561,7 @@ map-editor:
                   glint: true
             option-vertical-window:
               title: "升降窗口"
-              lore: ["中央两格高窗口上下移动一格，平走或跳跃通过", "青色窗框显示实际洞口，木筏持续前进，点击选择"]
+              lore: ["中央两格高窗口上下移动一格，平走或跳跃通过", "铁块窗框显示实际洞口，木筏持续前进，点击选择"]
               material: "STICKY_PISTON"
               states:
                 selected:
@@ -535,7 +569,7 @@ map-editor:
                   glint: true
             option-window-shutter:
               title: "定点开合窗"
-              lore: ["中央三格宽、两格高窗口按节拍开放和封闭", "青色窗框显示实际洞口，木筏持续前进，点击选择"]
+              lore: ["中央三格宽、两格高窗口按节拍开放和封闭", "铁块窗框显示实际洞口，木筏持续前进，点击选择"]
               material: "IRON_TRAPDOOR"
               states:
                 selected:
@@ -543,15 +577,90 @@ map-editor:
                   glint: true
             option-staggered-windows:
               title: "左右高低交替窗"
-              lore: ["左右窗口交替开放，低窗平走、高窗跳跃通过", "青色窗框显示实际洞口，木筏持续前进，点击选择"]
-              material: "CYAN_CONCRETE"
+              lore: ["左右窗口交替开放，低窗平走、高窗跳跃通过", "铁块窗框显示实际洞口，木筏持续前进，点击选择"]
+              material: "IRON_BLOCK"
               states:
                 selected:
                   title: "左右高低交替窗（当前）"
                   glint: true
+            option-triple-pulse:
+              title: "三拍脉冲"
+              lore: ["三拍开合后留一拍空窗，抓住节奏穿越", "点击选择"]
+              material: "NOTE_BLOCK"
+              states: { selected: { title: "三拍脉冲（当前）", glint: true } }
+            option-left-right-center:
+              title: "左-右-中接力"
+              lore: ["左侧、右侧、中央依次接力开放", "点击选择"]
+              material: "IRON_BLOCK"
+              states: { selected: { title: "左-右-中接力（当前）", glint: true } }
+            option-edge-swap:
+              title: "边缘换气"
+              lore: ["边缘通道与中央通道交替换气", "点击选择"]
+              material: "LIGHT_BLUE_CONCRETE"
+              states: { selected: { title: "边缘换气（当前）", glint: true } }
+            option-pinball:
+              title: "弹珠回弹"
+              lore: ["开口像弹珠一样从左弹到右再回中", "点击选择"]
+              material: "SLIME_BLOCK"
+              states: { selected: { title: "弹珠回弹（当前）", glint: true } }
+            option-snake:
+              title: "蛇形追拍"
+              lore: ["三格窗口沿蛇形轨迹追拍移动", "点击选择"]
+              material: "LIME_CONCRETE"
+              states: { selected: { title: "蛇形追拍（当前）", glint: true } }
+            option-center-pulse:
+              title: "中心脉冲"
+              lore: ["中心与两侧交替脉冲，保持换位", "点击选择"]
+              material: "TARGET"
+              states: { selected: { title: "中心脉冲（当前）", glint: true } }
+            option-edge-pulse:
+              title: "边缘脉冲"
+              lore: ["边缘与内圈交替开放，节拍更紧", "点击选择"]
+              material: "REDSTONE_BLOCK"
+              states: { selected: { title: "边缘脉冲（当前）", glint: true } }
+            option-fold:
+              title: "折叠开口"
+              lore: ["开口由中心折向两边，再折回中心", "点击选择"]
+              material: "PISTON"
+              states: { selected: { title: "折叠开口（当前）", glint: true } }
+            option-split-merge:
+              title: "分流合流"
+              lore: ["两侧分流后回到中央，观察合流拍点", "点击选择"]
+              material: "HONEY_BLOCK"
+              states: { selected: { title: "分流合流（当前）", glint: true } }
+            option-rest-accent:
+              title: "反拍留白"
+              lore: ["开、开、空、开，第三拍刻意留白", "点击选择"]
+              material: "BLACK_CONCRETE"
+              states: { selected: { title: "反拍留白（当前）", glint: true } }
+            option-mirror-chase:
+              title: "镜像追逐"
+              lore: ["左右半边轮流追逐，镜像后仍保持节拍", "点击选择"]
+              material: "AMETHYST_BLOCK"
+              states: { selected: { title: "镜像追逐（当前）", glint: true } }
+            option-diagonal:
+              title: "斜线节拍"
+              lore: ["开口沿斜线方向切换，提前预判落点", "点击选择"]
+              material: "PURPLE_CONCRETE"
+              states: { selected: { title: "斜线节拍（当前）", glint: true } }
+            option-double-window:
+              title: "双窗交替"
+              lore: ["中央窄窗与两侧宽窗交替出现", "点击选择"]
+              material: "GLASS"
+              states: { selected: { title: "双窗交替（当前）", glint: true } }
+            option-backbeat:
+              title: "后拍回收"
+              lore: ["前三拍保持开放，最后一拍突然收回", "点击选择"]
+              material: "BELL"
+              states: { selected: { title: "后拍回收（当前）", glint: true } }
+            option-quick-turn:
+              title: "急转弯拍"
+              lore: ["左右急转后回到中线，适合连续换边", "点击选择"]
+              material: "COMPASS"
+              states: { selected: { title: "急转弯拍（当前）", glint: true } }
             new-rhythm:
               title: "新增节奏机关"
-              lore: ["创建节拍闸门，可切换十一种节奏变体"]
+              lore: ["创建节拍闸门，可切换二十六种节奏变体"]
               material: "IRON_TRAPDOOR"
             new-dodge:
               title: "新增躲避变体"
@@ -979,6 +1088,55 @@ map-editor:
                       - "&#a0a0a0点击选择"
     build-mart:
       menus:
+        blueprints:
+          steps:
+            title: "小建筑修改与新建"
+            lore:
+              - "选择小建筑，在队伍基地场地0中修改并提交"
+          title: "&#55ffff小建筑 • 第 %page% / %pages% 页"
+          input:
+            title: "输入新小建筑名称"
+          items:
+            filler:
+              material: GRAY_STAINED_GLASS_PANE
+              title: " "
+              lore: []
+            blueprint:
+              material: BRICKS
+              title: "&#fff566%name%"
+              lore:
+                - "&#a0a0a0%stars%星 • %blocks%个方块"
+                - "&#a0a0a0点击前往场地0修改"
+            new:
+              material: LIME_CONCRETE
+              title: "&#55ff55新建小建筑"
+              lore:
+                - "&#a0a0a0输入名称后前往场地0建造"
+                - "&#a0a0a0提交时自动评星"
+            submit:
+              material: EMERALD_BLOCK
+              title: "&#55ff55提交 %name%"
+              lore:
+                - "&#a0a0a0检查材料及六面遮挡方块后保存"
+                - "&#a0a0a0也可点击建筑区的实体提交按钮"
+            cancel:
+              material: BARRIER
+              title: "&#ff5555取消修改 %name%"
+              lore:
+                - "&#a0a0a0放弃本次修改，返回主大厅传送门"
+            back:
+              material: ARROW
+              title: "&#ededed返回"
+              lore:
+                - "&#a0a0a0返回编辑步骤；修改中则继续建造"
+            previous:
+              material: ARROW
+              title: "&#ededed上一页"
+              lore: []
+            next:
+              material: ARROW
+              title: "&#ededed下一页"
+              lore: []
         material-zones:
           title: "&#55ffff材料补给区"
           items:
@@ -1492,6 +1650,23 @@ map-editor:
         step:
           material: PAPER
           title: "&#a0a0a0%number%. &#ededed%title%"
+          actions:
+            confirm-world:
+              title: 点击确认或绑定当前世界
+            schematic:
+              title: 点击保存当前WorldEdit选区为模板
+            stamp:
+              title: 点击输入场地总数
+            stand-and-run:
+              title: 点击设置此步骤
+            toggle:
+              title: 点击切换选项
+            select:
+              title: 点击打开选择菜单
+            we-selection:
+              title: 点击记录当前WorldEdit选区
+            list:
+              title: 点击管理列表
           states:
             confirmed:
               title: 已确认所在世界
@@ -1915,22 +2090,22 @@ map-editor:
               title: "&#ffaa00生成队伍基地"
               lore:
                 - "&#a0a0a0输入参赛队伍上限；0号保留为模板，实际基地从1号开始"
-            wind-zones:
-              material: OAK_DOOR
-              title: "&#55ffff上升气流区"
+            jump-pads:
+              material: ORANGE_WOOL
+              title: "&#55ffff跳板区"
               lore:
-                - "&#a0a0a0用WorldEdit添加一个或多个区域；每个区域上方都会产生上升气流"
-            wind-add:
+                - "&#a0a0a0选取跳板表面；踩上后向上弹射并略微前推"
+            jump-pad-add:
               material: LIME_WOOL
-              title: "&#55ff55添加吹风口区域"
+              title: "&#55ff55添加跳板区"
               lore:
                 - "&#a0a0a0用WorldEdit选取区域后点击"
-            wind-entry:
+            jump-pad-entry:
               material: PAPER
-              title: "&#ededed第 %number% 个吹风口"
+              title: "&#ededed第 %number% 个跳板区"
               lore:
                 - "&#a0a0a0区域：%range%"
-                - "&#a0a0a0上升范围：Y=%top%至200"
+                - "&#a0a0a0弹射起点：Y=%top%，目标约Y=180"
             material-zone-step:
               material: CHEST
               title: "&#55ffff材料补给区"
@@ -2032,12 +2207,17 @@ map-editor:
               material: STRUCTURE_BLOCK
               title: "&#55ffff保存0号赛道模板"
               lore:
-                - "&#a0a0a0用WorldEdit框选完整赛道，并保存为arena.schem"
-            track-boundary:
+                - "&#a0a0a0用WorldEdit框选完整赛道并保存；场地范围与模板选区一致"
+            elimination-height:
               material: BEDROCK
-              title: "&#55ffff模板赛道（0号）完整边界"
+              title: "&#55ffff设置淘汰高度"
               lore:
-                - "&#a0a0a0框选完整的0号模板赛道；选区最小角将作为副本粘贴基准点"
+                - "&#a0a0a0输入绝对Y坐标；玩家低于此高度时出局，支持负数和小数"
+              states:
+                set:
+                  title: "&#55ff55淘汰高度：Y=%height%"
+                unset:
+                  title: "&#aaaaaa未设置（沿用原边界底部：Y=%height%）"
             spawn:
               material: ELYTRA
               title: "&#55ffff模板赛道（0号）玩家出生点"
@@ -2608,12 +2788,61 @@ teams:
       size: 54
       layout:
         content:
-          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
-          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
         border:
-          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
-          - 48, 49, 50, 51, 52, 53
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+          - 45
+          - 46
+          - 47
+          - 48
+          - 49
+          - 50
+          - 51
+          - 52
+          - 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
@@ -2676,12 +2905,61 @@ teams:
       size: 54
       layout:
         content:
-          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
-          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
         border:
-          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
-          - 48, 49, 50, 51, 52, 53
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+          - 45
+          - 46
+          - 47
+          - 48
+          - 49
+          - 50
+          - 51
+          - 52
+          - 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
@@ -2766,12 +3044,61 @@ teams:
       size: 54
       layout:
         content:
-          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
-          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
         border:
-          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
-          - 48, 49, 50, 51, 52, 53
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+          - 45
+          - 46
+          - 47
+          - 48
+          - 49
+          - 50
+          - 51
+          - 52
+          - 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
@@ -2812,9 +3139,25 @@ teams:
       size: 36
       layout:
         content:
-          - 10, 11, 12, 13, 14, 15, 16
-          - 19, 20, 21, 22, 23, 24, 25
-          - 28, 29, 30, 31, 32
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
       items:
         color:
           title: "&#ededed&l%label%"
@@ -2855,12 +3198,61 @@ teams:
       size: 54
       layout:
         content:
-          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
-          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
         border:
-          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
-          - 48, 49, 50, 51, 52, 53
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+          - 45
+          - 46
+          - 47
+          - 48
+          - 49
+          - 50
+          - 51
+          - 52
+          - 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
@@ -2905,12 +3297,61 @@ teams:
       size: 54
       layout:
         content:
-          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
-          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
         border:
-          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
-          - 48, 49, 50, 51, 52, 53
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+          - 45
+          - 46
+          - 47
+          - 48
+          - 49
+          - 50
+          - 51
+          - 52
+          - 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
@@ -2964,12 +3405,61 @@ teams:
       size: 54
       layout:
         content:
-          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-          - 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
-          - 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+          - 15
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
+          - 27
+          - 28
+          - 29
+          - 30
+          - 31
+          - 32
+          - 33
+          - 34
+          - 35
         border:
-          - 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
-          - 48, 49, 50, 51, 52, 53
+          - 36
+          - 37
+          - 38
+          - 39
+          - 40
+          - 41
+          - 42
+          - 43
+          - 44
+          - 45
+          - 46
+          - 47
+          - 48
+          - 49
+          - 50
+          - 51
+          - 52
+          - 53
       items:
         border:
           material: BLACK_STAINED_GLASS_PANE
@@ -3018,7 +3508,30 @@ teams:
       size: 27
       layout:
         border:
-          - 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+          - 7
+          - 8
+          - 9
+          - 10
+          - 12
+          - 14
+          - 16
+          - 17
+          - 18
+          - 19
+          - 20
+          - 21
+          - 22
+          - 23
+          - 24
+          - 25
+          - 26
       items:
         action:
           lore:
@@ -4719,23 +5232,23 @@ voting:
                   - "&#fff566点击投给这个游戏"
           frostbite:
             material: BLUE_ICE
-            title: "&#ededed&l霜冻狂潮"
+            title: "&#ededed&l霜冻决斗"
             states:
               available:
                 lore:
                   - "&#696969冻结 • 四场乱斗"
-                  - "&#a0a0a0每队每图1人，四轮击杀计分"
+                  - "&#a0a0a0每队每图1人，三轮击杀计分"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"
                   - ""
                   - "&#55ff55点击投票"
               selected:
-                title: "&#55ffff&l✓ 霜冻狂潮"
+                title: "&#55ffff&l✓ 霜冻决斗"
                 glint: true
                 lore:
                   - "&#696969冻结 • 四场乱斗"
-                  - "&#a0a0a0冻结对手，抢夺补给，四轮汇总队伍成绩"
+                  - "&#a0a0a0冻结对手，抢夺补给，三轮汇总队伍成绩"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"
@@ -4743,10 +5256,45 @@ voting:
                   - "&#55ffff&l✓ 我的选择"
                   - "&#696969点击其他游戏即可改票"
               leading:
-                title: "&#ffaa00&l★ 霜冻狂潮"
+                title: "&#ffaa00&l★ 霜冻决斗"
                 lore:
                   - "&#696969冻结 • 四场乱斗"
-                  - "&#a0a0a0冻结对手，抢夺补给，四轮汇总队伍成绩"
+                  - "&#a0a0a0冻结对手，抢夺补给，三轮汇总队伍成绩"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#ffaa00&l★ 当前领跑"
+                  - "&#fff566点击投给这个游戏"
+          laserbox:
+            material: CROSSBOW
+            title: "&#ededed&l激光方盒"
+            lore:
+              - "&#696969射击 • 团队战"
+              - "&#a0a0a0使用激光武器交战，争夺补给"
+              - ""
+              - "%bar%"
+              - "&#ededed%votes%票 &#696969• %percentage%%"
+              - ""
+              - "&#55ff55点击投票"
+            states:
+              selected:
+                title: "&#55ffff&l✓ 激光方盒"
+                glint: true
+                lore:
+                  - "&#696969射击 • 团队战"
+                  - "&#a0a0a0使用激光武器交战，争夺补给"
+                  - ""
+                  - "%bar%"
+                  - "&#ededed%votes%票 &#696969• %percentage%%"
+                  - ""
+                  - "&#55ffff&l✓ 我的选择"
+                  - "&#696969点击其他游戏即可改票"
+              leading:
+                title: "&#ffaa00&l★ 激光方盒"
+                lore:
+                  - "&#696969射击 • 团队战"
+                  - "&#a0a0a0使用激光武器交战，争夺补给"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"

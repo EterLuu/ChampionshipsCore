@@ -27,7 +27,7 @@ public class CCConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 24;
+        return 25;
     }
 
     private static final Map<GameTypeEnum, List<String>> DEFAULT_FORMAL_EVENT_MAPS;
@@ -50,38 +50,13 @@ public class CCConfig extends BaseConfigurationFile {
         defaults.put(GameTypeEnum.Dodgebolt, List.of("dodgebolt"));
         defaults.put(GameTypeEnum.AceRace, List.of("clouds2"));
         defaults.put(GameTypeEnum.RiptideRush, List.of());
-        defaults.put(GameTypeEnum.FrostbiteFrenzy, List.of("glacial_keep"));
+        defaults.put(GameTypeEnum.FrostbiteFrenzy, List.of("glacial_keep", "frosty_fjord"));
+        defaults.put(GameTypeEnum.LaserBox, List.of());
         DEFAULT_FORMAL_EVENT_MAPS = Collections.unmodifiableMap(defaults);
     }
 
-    /** Migrates the Bingo-owned Redis connection into the shared Core infrastructure section. */
-    @Override
-    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdated) throws IOException {
-        migrateLegacyRedisConfiguration(outdated);
-        migrateIdentityConfiguration(outdated);
-        migrateWeightedScoreConfiguration(outdated);
-        super.loadFromOutdatedConfiguration(outdated);
-        copyFormalEventMaps(outdated);
-    }
 
-    private void copyFormalEventMaps(@NotNull YamlConfiguration outdated) throws IOException {
-        if (copyFormalEventMaps(configuration, outdated)) configuration.save(configurationPath.toFile());
-    }
 
-    /** Retains administrator-selected formal-event maps while adding newly bundled defaults. */
-    static boolean copyFormalEventMaps(@NotNull YamlConfiguration target,
-                                       @NotNull YamlConfiguration source) {
-        ConfigurationSection section = source.getConfigurationSection("formal-events");
-        if (section == null) return false;
-
-        boolean changed = false;
-        for (Map.Entry<String, Object> entry : section.getValues(true).entrySet()) {
-            if (entry.getValue() instanceof ConfigurationSection) continue;
-            target.set("formal-events." + entry.getKey(), entry.getValue());
-            changed = true;
-        }
-        return changed;
-    }
 
     /** Returns the configured registration names used by the formal event schedulers. */
     public @NotNull List<String> formalEventMaps(@NotNull GameTypeEnum game) {
@@ -96,11 +71,6 @@ public class CCConfig extends BaseConfigurationFile {
                     .map(String::trim).filter(name -> !name.isEmpty()).toList();
             if (!configured.isEmpty()) return configured;
         }
-        if (source != null && game == GameTypeEnum.RiptideRush
-                && source.contains("formal-events.RaftSurvival.maps")) {
-            return source.getStringList("formal-events.RaftSurvival.maps").stream()
-                    .map(String::trim).filter(name -> !name.isEmpty()).toList();
-        }
         return DEFAULT_FORMAL_EVENT_MAPS.getOrDefault(game, List.of());
     }
 
@@ -110,51 +80,8 @@ public class CCConfig extends BaseConfigurationFile {
         return round < 1 || round > maps.size() ? null : maps.get(round - 1);
     }
 
-    static void migrateIdentityConfiguration(@NotNull YamlConfiguration outdated) {
-        String legacyMode = outdated.getString("identity.mode", "");
-        String legacySource = outdated.getString("identity.server-uuid-source", "OFFLINE");
-        if (legacyMode.isBlank() || "SERVER_UUID".equalsIgnoreCase(legacyMode)
-                || "CUSTOM_UUID".equalsIgnoreCase(legacyMode)) {
-            outdated.set("identity.mode", "PROFILE_API".equalsIgnoreCase(legacySource)
-                    ? "PROFILE_UUID" : "OFFLINE");
-        } else if ("ONLINE".equalsIgnoreCase(legacyMode) || "PROFILE_API".equalsIgnoreCase(legacyMode)) {
-            outdated.set("identity.mode", "PROFILE_UUID");
-        }
-        if (!outdated.contains("identity.profile-api-base-url")) {
-            String legacyBaseUrl = outdated.getString(
-                    "identity.server-profile-api-base-url", "https://api.mojang.com");
-            outdated.set("identity.profile-api-base-url", legacyBaseUrl);
-        }
-        outdated.set("identity.server-uuid-source", null);
-        outdated.set("identity.server-profile-api-base-url", null);
-        outdated.set("identity.custom-profile-api-base-url", null);
-    }
 
-    static void migrateLegacyRedisConfiguration(@NotNull YamlConfiguration outdated) {
-        if (!outdated.contains("redis.uri") && outdated.contains("bingo.redis.uri")) {
-            outdated.set("redis.enabled", "REMOTE".equalsIgnoreCase(
-                    outdated.getString("bingo.execution-mode", "LOCAL")));
-            outdated.set("redis.instance-id", "auto");
-            outdated.set("redis.uri", outdated.get("bingo.redis.uri"));
-            outdated.set("redis.namespace", outdated.get("bingo.redis.namespace"));
-            outdated.set("redis.consumer-group-prefix", outdated.get("bingo.redis.consumer-group"));
-            outdated.set("redis.stream-max-length", outdated.get("bingo.redis.stream-max-length"));
-            outdated.set("redis.block-timeout-ms", outdated.get("bingo.redis.block-timeout-ms"));
-            outdated.set("redis.reclaim-idle-ms", outdated.get("bingo.redis.reclaim-idle-ms"));
-            outdated.set("redis.max-deliveries", outdated.get("bingo.redis.max-deliveries"));
-            outdated.set("redis.reconciliation-seconds", 30);
-        }
-        outdated.set("bingo.redis", null);
-    }
 
-    /** Converts the legacy scalar switch while preserving its enabled state. */
-    static void migrateWeightedScoreConfiguration(@NotNull YamlConfiguration outdated) {
-        Object legacy = outdated.get("weighted-score");
-        if (!(legacy instanceof Boolean enabled)) return;
-        outdated.set("weighted-score", null);
-        outdated.set("weighted-score.enabled", enabled);
-        outdated.set("weighted-score.round-multipliers", DEFAULT_ROUND_MULTIPLIERS);
-    }
 
     @Override
     protected void loadCustomFileOptions() {

@@ -2,7 +2,6 @@ package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
-import ink.ziip.championshipscore.api.event.EventStateStore;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.event.EventTeamImport;
 import ink.ziip.championshipscore.api.event.WebEventApiClient;
@@ -30,17 +29,14 @@ final class EventCommandSupport {
     }
 
     static boolean canSchedule(@NotNull GameTypeEnum game) {
-        return !FinaleGameRegistry.isRegistered(game)
-                && ChampionshipsCore.getInstance().getScheduleManager().supportsFormalEvent(game);
+        return ChampionshipsCore.getInstance().getScheduleManager().supportsFormalEvent(game);
     }
 
     static @NotNull List<String> enabledFormalGames() {
         List<String> names = new ArrayList<>();
         ChampionshipsCore plugin = ChampionshipsCore.getInstance();
-        EventStateStore.ActiveEvent active = new EventStateStore(plugin).load();
-        if (active == null || active.archived()) return names;
         for (GameTypeEnum game : GameTypeEnum.values()) {
-            if (active.allows(game) && plugin.getGameManager().isGameEnabled(game) && canSchedule(game))
+            if (plugin.getGameManager().isGameEnabled(game) && canSchedule(game))
                 names.add(game.commandName());
         }
         return names;

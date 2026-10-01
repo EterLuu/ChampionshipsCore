@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.platform.bukkit.text.CrossServerChatText;
+import ink.ziip.championshipscore.platform.bukkit.text.ChatMessageText;
 import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
 import ink.ziip.championshipscore.protocol.CrossServerChatMessage;
 import ink.ziip.championshipscore.redis.RedisChatTransport;
@@ -50,7 +51,7 @@ final class WorkerChatService implements AutoCloseable {
     void publish(Player player, Component content) {
         PlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
         CrossServerChatMessage message = CrossServerChatText.message(config.workerId(), player.getUniqueId(),
-                player.getName(), presentation, content, System.currentTimeMillis());
+                player.getName(), presentation, ChatMessageText.format(player, content), System.currentTimeMillis());
         transport.publish(message).exceptionally(failure -> {
             plugin.getLogger().log(Level.WARNING,
                     "Unable to publish cross-server chat message " + message.messageId(), failure);

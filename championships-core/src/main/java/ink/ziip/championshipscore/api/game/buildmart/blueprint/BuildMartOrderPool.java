@@ -67,6 +67,25 @@ public class BuildMartOrderPool {
         return byId.get(id);
     }
 
+    /** Publish one already parsed submission without rescanning files or mutating an active pool. */
+    public BuildMartOrderPool withBlueprint(BuildMartBlueprint blueprint) {
+        BuildMartOrderPool updated = new BuildMartOrderPool();
+        for (BuildMartBlueprint existing : all) {
+            if (!existing.getId().equals(blueprint.getId())) updated.add(existing);
+        }
+        updated.add(blueprint);
+        return updated;
+    }
+
+    private void add(BuildMartBlueprint blueprint) {
+        all.add(blueprint);
+        byId.put(blueprint.getId(), blueprint);
+        if (isNormalRating(blueprint.getStars())) {
+            normal.add(blueprint);
+            if (isGoldenSourceRating(blueprint.getStars())) golden.add(blueprint);
+        }
+    }
+
     /**
      * Draws up to {@code count} distinct normal blueprints, weighted toward lower star ratings (a
      * 1-star order is more likely to surface than a 5-star). Returns fewer than {@code count} only when

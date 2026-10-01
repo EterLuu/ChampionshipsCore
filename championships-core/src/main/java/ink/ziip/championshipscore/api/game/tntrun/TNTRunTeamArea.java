@@ -666,6 +666,13 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         return true;
     }
 
+    /** Participant fall checks may extend below the schematic without changing its terrain bounds. */
+    public boolean notInPlayerArea(Location location) {
+        return location == null || location.getWorld() == null
+                || !location.getWorld().getName().equals(getWorldName())
+                || !getGameConfig().isInsidePlayerBounds(location.toVector());
+    }
+
     @Override
     public TNTRunConfig getGameConfig() {
         return (TNTRunConfig) gameConfig;

@@ -12,10 +12,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Creeper;
 import org.bukkit.event.*;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -59,9 +55,7 @@ public final class RiptideCourseTrial implements Listener {
     private int dodgeIndex;
     private int dodgeTicks;
     private RiptideDodgeRun dodgeRun;
-    private final List<LivingEntity> dodgeEntities = new ArrayList<>();
-    private final Map<UUID, RiptideDodgeRun.Direction> dodgeDirections = new HashMap<>();
-    private final Map<UUID, Double> dodgeSpeeds = new HashMap<>();
+    private RiptideDodgeEntities dodgeEntities;
     private double budget;
     private RiptideColorFloorRun floor;
     private RiptideColorFloorPlatform platform;
@@ -161,6 +155,7 @@ public final class RiptideCourseTrial implements Listener {
             if (!sideAnswers.isEmpty()) player.sendActionBar(LegacyText.component(MessageConfig.RIPTIDE_RUSH_MATH_CORRECT));
             if (!passRun.active()) departure.begin();
         } else if (floor != null) {
+            boolean preparing = floor.preparing();
             if (floor.tick()) {
                 if (!floor.matches(player.getLocation(), geometry, step)) { finish("试玩结束：踩色站错方块"); return; }
                 if (floor.advance()) paintFloor();
@@ -168,15 +163,16 @@ public final class RiptideCourseTrial implements Listener {
                     player.getInventory().setStorageContents(new ItemStack[player.getInventory().getStorageContents().length]);
                     player.getInventory().setItemInOffHand(null); player.resetTitle(); departure.begin(); }
             }
-            if (floor != null && elapsed % 5 == 0) showFloor();
+            if (floor != null && !floor.preparing() && (preparing || elapsed % 5 == 0)) showFloor();
         } else if (dodgeTicks > 0) {
             tickDodge();
+            if (stopped) return;
         } else {
             budget += RiptideCoursePlanner.speedAt(config, geometry, step) / 20D;
             while (budget >= 1 && step < end) {
                 RiptideRaftBlocks.move(geometry, step, step + 1, trail()); step++; budget--;
                 courseReveal.tick(step);
-                if (floorIndex < floors.size() && step + geometry.halfLength() >= floors.get(floorIndex).step()) {
+                if (floorIndex < floors.size() && step >= geometry.stoppedStep(floors.get(floorIndex).step())) {
                     var stage = floors.get(floorIndex++);
                     platform = new RiptideColorFloorPlatform(geometry, step);
                     List<Material> authored = stage.template().blueprint() == null ? List.of() : stage.template().blueprint().floorMaterials();
@@ -185,7 +181,7 @@ public final class RiptideCourseTrial implements Listener {
                             RiptideDifficulty.floorMaterials(step, geometry.totalSteps()));
                     player.resetTitle(); paintFloor(); break;
                 }
-                if (dodgeIndex < dodges.size() && step + geometry.halfLength() >= dodges.get(dodgeIndex).step()) {
+                if (dodgeIndex < dodges.size() && step >= geometry.stoppedStep(dodges.get(dodgeIndex).step())) {
                     beginDodge(dodges.get(dodgeIndex++)); break;
                 }
                 if (passRun.beginReached(step)) break;
@@ -220,67 +216,40 @@ public final class RiptideCourseTrial implements Listener {
         RiptideColorFloorInventory.show(player.getInventory(), new ItemStack(floor.target(), 64)); showFloor();
     }
     private void showFloor() {
-        player.showTitle(Title.title(LegacyText.component(MessageConfig.RIPTIDE_RUSH_FLOOR_TITLE
-                        .replace("%seconds%", String.format(Locale.ROOT, "%.1f", floor.remainingTicks() / 20D))), Component.empty(),
-                Title.Times.times(Duration.ZERO, Duration.ofMillis(350), Duration.ZERO)));
+        player.showTitle(Title.title(LegacyText.component(floor.preparing() ? MessageConfig.RIPTIDE_RUSH_FLOOR_INTRO_TITLE
+                : MessageConfig.RIPTIDE_RUSH_FLOOR_TITLE.replace("%seconds%", String.format(Locale.ROOT, "%.1f", floor.remainingTicks() / 20D))),
+                Component.empty(), Title.Times.times(Duration.ZERO, Duration.ofMillis(floor.preparing() ? 1500 : 350), Duration.ZERO)));
         player.sendActionBar(LegacyText.component(MessageConfig.RIPTIDE_RUSH_FLOOR_ACTIONBAR
                         .replace("%round%", Integer.toString(floor.roundNumber())).replace("%rounds%", Integer.toString(floor.roundCount())))
                 .replaceText(b -> b.matchLiteral("%block%").replacement(Component.translatable(floor.target().translationKey()))));
     }
 
     private void beginDodge(RiptideCoursePlan.Level stage) {
-        dodgeRun = new RiptideDodgeRun(stage.variant(), stage.contentSeed(), geometry.raftWidth(), geometry.raftLength());
+        dodgeRun = new RiptideDodgeRun(stage.variant(), stage.contentSeed(), geometry.raftWidth(), geometry.raftLength(),
+                RiptideDifficulty.stage(step, geometry.totalSteps()));
+        dodgeEntities = new RiptideDodgeEntities(geometry, step);
         dodgeTicks = RiptideDodgeRun.DURATION_TICKS;
         player.resetTitle();
-        player.sendTitle(MessageConfig.RIPTIDE_RUSH_DODGE_TITLE, "", 0, 20, 0);
+        player.sendTitle(MessageConfig.RIPTIDE_RUSH_DODGE_TITLE.replace("%direction%", dodgeRun.direction().arrivalSide()), "", 0, 20, 0);
     }
 
     private void tickDodge() {
         if (dodgeRun == null) { dodgeTicks = 0; return; }
-        for (var spawn : dodgeRun.tick()) spawnDodge(spawn);
-        for (LivingEntity entity : List.copyOf(dodgeEntities)) {
-            if (!entity.isValid() || entity.isDead()) { dodgeEntities.remove(entity); continue; }
-            var direction = dodgeDirections.get(entity.getUniqueId());
-            if (direction != null) advanceDodgeEntity(entity, direction);
-            if (entity.getBoundingBox().overlaps(player.getBoundingBox())) { finish("试玩结束：被冲刺生物撞到"); return; }
+        for (var collision : dodgeEntities.tick(dodgeRun)) {
+            if (collision.overlaps(player.getBoundingBox())) { finish("试玩结束：被冲刺生物撞到"); return; }
         }
-        dodgeTicks--;
-        if (dodgeRun.complete() || dodgeTicks <= 0) { clearDodge(); departure.begin(); }
-        else if (elapsed % 10 == 0) player.sendActionBar(LegacyText.component(MessageConfig.RIPTIDE_RUSH_DODGE_ACTIONBAR.replace("%seconds%", String.format(Locale.ROOT, "%.1f", dodgeTicks / 20D))));
+        dodgeTicks = RiptideDodgeRun.DURATION_TICKS - dodgeRun.tickNumber();
+        if (dodgeRun.complete()) { clearDodge(); departure.begin(); }
+        else if (elapsed % 10 == 0) player.sendActionBar(LegacyText.component(MessageConfig.RIPTIDE_RUSH_DODGE_ACTIONBAR
+                .replace("%seconds%", String.format(Locale.ROOT, "%.1f", dodgeTicks / 20D))));
     }
 
-    private void spawnDodge(RiptideDodgeRun.Spawn spawn) {
-        var world = player.getWorld();
-        Location center = geometry.centerAt(step).clone();
-        double side = Math.max(2D, geometry.raftWidth() / 2D + 3D), length = Math.max(2D, geometry.raftLength() / 2D + 3D);
-        Location location = center.clone().add(0D, 1.2D, 0D);
-        switch (spawn.direction()) {
-            case EAST -> location.add(-side, 0D, spawn.lateral()); case WEST -> location.add(side, 0D, spawn.lateral());
-            case NORTH -> location.add(spawn.lateral(), 0D, length); case SOUTH -> location.add(spawn.lateral(), 0D, -length);
-            case NORTHEAST -> location.add(-side, 0D, length); case SOUTHWEST -> location.add(side, 0D, -length);
-            case DOWN -> location.add(spawn.lateral(), 7D, 0D);
-        }
-        EntityType type = switch (spawn.mob()) { case ZOMBIE -> EntityType.ZOMBIE; case HUSK -> EntityType.HUSK; case SKELETON -> EntityType.SKELETON; case SPIDER -> EntityType.SPIDER; case CREEPER -> EntityType.CREEPER; };
-        Entity raw = world.spawnEntity(location, type); if (!(raw instanceof LivingEntity entity)) { raw.remove(); return; }
-        entity.setAI(false); entity.setGravity(false); entity.setInvulnerable(true); entity.setSilent(true); entity.setCollidable(false);
-        if (entity instanceof Creeper creeper) creeper.setExplosionRadius(0);
-        dodgeDirections.put(entity.getUniqueId(), spawn.direction());
-        dodgeSpeeds.put(entity.getUniqueId(), RiptideDodgeRun.speed(spawn.mob(), Math.min(2, spawn.tick() / RiptideDodgeRun.WAVE_TICKS)));
-        faceDodgeEntity(entity, spawn.direction()); dodgeEntities.add(entity);
+    private void clearDodge() {
+        if (dodgeEntities != null) dodgeEntities.clear();
+        dodgeEntities = null;
+        dodgeRun = null;
+        dodgeTicks = 0;
     }
-    private static RiptideDodgeRun.Mob entityType(LivingEntity e) { return switch (e.getType()) { case HUSK -> RiptideDodgeRun.Mob.HUSK; case SKELETON -> RiptideDodgeRun.Mob.SKELETON; case SPIDER -> RiptideDodgeRun.Mob.SPIDER; case CREEPER -> RiptideDodgeRun.Mob.CREEPER; default -> RiptideDodgeRun.Mob.ZOMBIE; }; }
-    private static org.bukkit.util.Vector dodgeDirection(RiptideDodgeRun.Direction d) { return switch (d) { case EAST -> new org.bukkit.util.Vector(1,0,0); case WEST -> new org.bukkit.util.Vector(-1,0,0); case NORTH -> new org.bukkit.util.Vector(0,0,-1); case SOUTH -> new org.bukkit.util.Vector(0,0,1); case NORTHEAST -> new org.bukkit.util.Vector(1,0,-1).normalize(); case SOUTHWEST -> new org.bukkit.util.Vector(-1,0,1).normalize(); case DOWN -> new org.bukkit.util.Vector(0,-1,0); }; }
-    private void advanceDodgeEntity(LivingEntity entity, RiptideDodgeRun.Direction direction) {
-        var movement = dodgeDirection(direction).multiply(dodgeSpeeds.getOrDefault(entity.getUniqueId(), RiptideDodgeRun.speed(entityType(entity))));
-        if (movement.lengthSquared() <= 0D) return;
-        var next = entity.getLocation().clone().add(movement); next.setDirection(movement);
-        entity.teleport(next); entity.setRotation(next.getYaw(), next.getPitch()); entity.setVelocity(new org.bukkit.util.Vector());
-    }
-    private static void faceDodgeEntity(LivingEntity entity, RiptideDodgeRun.Direction direction) {
-        var facing = entity.getLocation().clone(); facing.setDirection(dodgeDirection(direction));
-        entity.setRotation(facing.getYaw(), facing.getPitch());
-    }
-    private void clearDodge() { for (var entity : List.copyOf(dodgeEntities)) if (entity.isValid()) entity.remove(); dodgeEntities.clear(); dodgeDirections.clear(); dodgeSpeeds.clear(); dodgeRun = null; dodgeTicks = 0; }
     private void finish(String reason) {
         if (stopped) return;
         stopped = true; ACTIVE.remove(player.getUniqueId()); HandlerList.unregisterAll(this);

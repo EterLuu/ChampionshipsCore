@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -30,7 +32,7 @@ public final class AceRaceEquipmentGui {
     private AceRaceEquipmentGui() {
     }
 
-    public static final class Holder implements InventoryHolder {
+    public static final class Holder implements MenuInventory {
         final PrepareSession session;
         final Consumer<AceRaceEquipment> callback;
         Inventory inventory;
@@ -89,10 +91,10 @@ public final class AceRaceEquipmentGui {
         ItemStack fallback = new ItemStack(material);
         fallback.editMeta(meta -> {
             meta.displayName(Component.text(equipment.displayName()).color(NamedTextColor.AQUA)
-                    .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(Component.text(equipment == current ? GuiConfig.line("map-editor.menus.step-list.items.option.states.selected.lore", 0) : GuiConfig.line("map-editor.menus.step-list.items.option.lore", 0))
-                    .color(equipment == current ? NamedTextColor.GREEN : NamedTextColor.GRAY)
-                    .decoration(TextDecoration.ITALIC, false)));
+                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+            meta.lore(List.of(LegacyText.component(equipment == current ? GuiConfig.line("map-editor.menus.step-list.items.option.states.selected.lore", 0) : GuiConfig.line("map-editor.menus.step-list.items.option.lore", 0))
+                    .colorIfAbsent(equipment == current ? NamedTextColor.GREEN : NamedTextColor.GRAY)
+                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)));
         });
         return ConfiguredGui.item(MENU_PATH + ".items." + itemKey, null, java.util.Map.of(), fallback);
     }

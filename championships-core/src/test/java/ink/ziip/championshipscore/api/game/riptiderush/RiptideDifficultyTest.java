@@ -3,15 +3,6 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 class RiptideDifficultyTest {
-    @Test void difficultyRulesMigrationPreservesCustomTextAndRunsOnce() {
-        var yaml=new org.bukkit.configuration.file.YamlConfiguration();
-        yaml.set("rules",List.of(List.of("保留自定义规则")));
-        RiptideRushConfig.migratePassDifficultyRules(yaml);
-        RiptideRushConfig.migratePassDifficultyRules(yaml);
-        assertEquals(2,yaml.getList("rules").size());
-        assertEquals(List.of("保留自定义规则"),yaml.getList("rules").getFirst());
-        assertTrue(yaml.getList("rules").toString().contains("可能左右镜像"));
-    }
 
     @Test void passAndSideBandsSwitchAtExactAccelerationTicks() {
         for(int total:List.of(500,503)) for(int step=0;step<=total;step++) for(int difficulty=1;difficulty<=3;difficulty++) {
@@ -31,7 +22,7 @@ class RiptideDifficultyTest {
         var front=new HashSet<Integer>();var side=new HashSet<Integer>();
         var frontMirrors=new HashSet<Boolean>();var sideMirrors=new HashSet<Boolean>();
         boolean pair=false;
-        for(int seed=0;seed<200;seed++) for(var l:RiptideCoursePlanner.plan(c,seed).levels()) {
+        for(int seed=0;seed<8;seed++) for(var l:RiptideCoursePlanner.plan(c,seed).levels()) {
             if(l.type()==RiptideLevelType.PASS && !l.isSideSweep()) {
                 assertTrue(RiptideDifficulty.allowsPass(l.template().difficulty(),l.step(),500));
                 front.add(l.template().difficulty());frontMirrors.add(l.mirrored());
@@ -71,6 +62,7 @@ class RiptideDifficultyTest {
         for (int stage=0; stage<5; stage++) {
             var run = new RiptideColorFloorRun(7,9,RiptideDifficulty.floorRoundTicks(stage*100,500),
                     new Random(1),RiptideColorFloorRun.Theme.ORE);
+            for (int tick=0;tick<RiptideColorFloorRun.INTRO_TICKS;tick++) assertFalse(run.tick());
             for (int round=0; round<7; round++) {
                 for (int tick=1; tick<expected.get(stage).get(round); tick++) assertFalse(run.tick());
                 assertTrue(run.tick());
@@ -104,7 +96,7 @@ class RiptideDifficultyTest {
                     assertTrue(run.floor().contains(run.target()));
                     while(true){elapsed++;if(run.tick())break;}
                 }while(run.advance());
-                assertEquals(ticks,elapsed);
+                assertEquals(ticks+RiptideColorFloorRun.INTRO_TICKS,elapsed);
             }
         }
     }

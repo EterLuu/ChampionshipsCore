@@ -31,6 +31,27 @@ values:
     spectator: "&7观战者"
   match:
     undecided: "&7待定"
+  riptide:
+    challenge:
+      waiting: "&7等待开始"
+      ended: "&7已结束"
+      moving: "行进"
+      pass: "穿越"
+      math: "解题"
+      rhythm: "节奏"
+      side-sweep: "侧向"
+      side-math: "侧向+解题"
+      color-floor: "踩色 {round}"
+      dodge: "躲避"
+      departing: "准备启程"
+  frostbite:
+    state:
+      waiting: "&7等待开始"
+      ended: "&7已结束"
+      spectator: "&7旁观"
+      active: "&a行动中"
+      frozen: "&b被冻结"
+      heated: "&6保温中"
   ranking:
     none: "&7暂无排行"
     bingo-daily-row: "{rank.team-color}{rank.position}. {rank.team} &7({rank.tasks} 项)"
@@ -305,22 +326,47 @@ boards:
         - ''
         - '#1da4ad场地状态：#f6ffa8{game.status}'
         - ''
-        - '&f站稳木筏并穿过障碍'
-        - '&f解题门：&c左侧 &7/ &b右侧'
-        - '&f停船挑战：木筏停留后继续'
+        - '&f航线进度：#ff6e26{riptide.progress}'
+        - '&f剩余参赛：#ff6e26{riptide.alive}'
+        - '&f当前挑战：#ff6e26{riptide.challenge}'
         - ''
         - '{style.footer}'
 
     FrostbiteFrenzy:
       title: '{style.title}'
       lines:
-        - '&b当前游戏：&f霜冻狂潮'
-        - '&e轮次：&f%schedule_round_frostbite%/4'
+        - '#ff0808当前游戏：#ff7373霜冻决斗'
+        - '#dfff2b轮次：#f6ffa8%schedule_round_frostbite%/3'
         - ''
-        - '&b场地状态：&f{game.status}'
+        - '#1da4ad场地状态：#f6ffa8{game.status}'
         - ''
-        - '&f每队每图1人 · 四场同时乱斗'
-        - '&f击杀计分，争夺补给'
-        - '&f营火自救：被冻后按 F'
+        - '&f本局击杀：#ff6e26{frostbite.kills}'
+        - '&f玩家状态：#ff6e26{frostbite.state}'
+        - ''
+        - '{style.footer}'
+
+    LaserBox:
+      title: '{style.title}'
+      lines:
+        - '#ff0808当前游戏：#ff7373激光方盒'
+        - '#dfff2b轮次：#f6ffa8%schedule_round_laserbox%/9'
+        - '#1da4ad场地状态：#f6ffa8{game.status}'
+        - ''
+        - '&f对阵：{match.right} &7vs {match.left}'
+        - '&f比分：#ff6e26{laserbox.right-progress} &7: #ff6e26{laserbox.left-progress}'
+        - '&f本局击杀：#ff6e26{laserbox.kills}'
+        - ''
+        - '{style.footer}'
+
+    SulfurSoccer:
+      title: '{style.title}'
+      lines:
+        - '&f最终对决：#f6ffa8硫方足球'
+        - '#1da4ad场地状态：#f6ffa8{game.status}'
+        - ''
+        - '&f对阵：{match.right} &7vs {match.left}'
+        - '&f比分：#ff6e26{sulfursoccer.right-goals} &7: #ff6e26{sulfursoccer.left-goals}'
+        - '&f先到 #ff6e26{sulfursoccer.target} &f球获胜'
+        - '&f{sulfursoccer.state}'
         - ''
         - '{style.footer}'

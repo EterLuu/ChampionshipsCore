@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.worker;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.PlayerSnapshot;
@@ -49,14 +50,14 @@ final class WorkerMenuService {
         var presentation = manifest.runtimeRules().presentation();
         Inventory inventory = Bukkit.createInventory(holder, rows * 9,
                 WorkerPresentationService.message(presentation, "card.title")
-                        .decoration(TextDecoration.ITALIC, false));
+                        .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
         holder.inventory = inventory;
         ItemStack info = new ItemStack(Material.MAP);
         info.editMeta(meta -> {
             meta.displayName(WorkerPresentationService.message(presentation, "card.title")
-                    .decoration(TextDecoration.ITALIC, false));
+                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
             meta.lore(List.of(WorkerPresentationService.message(presentation, "card.win_hint")
-                    .decoration(TextDecoration.ITALIC, false)));
+                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)));
         });
         inventory.setItem(0, info);
         int left = (9 - width) / 2;
@@ -78,7 +79,7 @@ final class WorkerMenuService {
     private static ItemStack blockedItem() {
         ItemStack item = new ItemStack(Material.BEDROCK);
         item.editMeta(meta -> meta.displayName(Component.text("?", NamedTextColor.DARK_GRAY)
-                .decoration(TextDecoration.ITALIC, false)));
+                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)));
         return item;
     }
 
@@ -102,7 +103,7 @@ final class WorkerMenuService {
         TeamHolder holder = new TeamHolder();
         Inventory inventory = Bukkit.createInventory(holder, rows * 9,
                 WorkerPresentationService.message(presentation, "compass.menu_title")
-                        .decoration(TextDecoration.ITALIC, false));
+                        .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
         holder.inventory = inventory;
         for (int slot = 0; slot < teammates.size() && slot < inventory.getSize(); slot++) {
             PlayerSnapshot teammate = teammates.get(slot);
@@ -110,9 +111,9 @@ final class WorkerMenuService {
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
                 meta.displayName(Component.text(teammate.username(), teamColor(team))
-                        .decoration(TextDecoration.ITALIC, false));
+                        .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
                 meta.lore(List.of(WorkerPresentationService.message(presentation, "compass.teammate_hint")
-                        .decoration(TextDecoration.ITALIC, false)));
+                        .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)));
                 item.setItemMeta(meta);
             }
             inventory.setItem(slot, item);
@@ -140,7 +141,7 @@ final class WorkerMenuService {
         TargetHolder holder = new TargetHolder();
         Inventory inventory = Bukkit.createInventory(holder, rows * 9,
                 WorkerPresentationService.message(presentation, "spectator.teleport.menu_title")
-                        .decoration(TextDecoration.ITALIC, false));
+                        .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
         holder.inventory = inventory;
         for (int slot = 0; slot < targets.size() && slot < inventory.getSize(); slot++) {
             PlayerSnapshot target = targets.get(slot);
@@ -148,13 +149,13 @@ final class WorkerMenuService {
             item.editMeta(meta -> {
                 TeamSnapshot team = manifest.teamsById().get(target.teamId());
                 meta.displayName(Component.text(target.username(), teamColor(team))
-                        .decoration(TextDecoration.ITALIC, false));
+                        .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
                 Component teamLabel = team == null
                         ? WorkerPresentationService.message(presentation, "spectator.teleport.player")
                         : WorkerPresentationService.message(presentation, "spectator.teleport.team", "{0}", team.name());
-                meta.lore(List.of(teamLabel.decoration(TextDecoration.ITALIC, false),
+                meta.lore(List.of(teamLabel.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE),
                         WorkerPresentationService.message(presentation, "spectator.teleport.click")
-                                .decoration(TextDecoration.ITALIC, false)));
+                                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)));
             });
             inventory.setItem(slot, item);
             holder.targets.put(slot, target.uuid());
@@ -189,7 +190,7 @@ final class WorkerMenuService {
         if (meta == null) return item;
         Component name = displayName(task);
         if (own) name = name.color(NamedTextColor.GRAY).decorate(TextDecoration.STRIKETHROUGH);
-        meta.displayName(name.decoration(TextDecoration.ITALIC, false));
+        meta.displayName(name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
         List<Component> lore = new ArrayList<>();
         if (!own) lore.addAll(taskDescription(task));
         var presentation = manifest.runtimeRules().presentation();
@@ -199,7 +200,7 @@ final class WorkerMenuService {
             for (int index = 0; index < teams.size(); index++) {
                 TeamSnapshot team = manifest.teamsById().get(teams.get(index));
                 if (index > 0) completed = completed.append(Component.text(", ", NamedTextColor.GRAY));
-                if (team != null) completed = completed.append(Component.text(team.name(), teamColor(team)));
+                if (team != null) completed = completed.append(LegacyText.component(team.name(), teamColor(team)));
             }
             lore.add(completed);
         }

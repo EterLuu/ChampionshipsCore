@@ -39,7 +39,12 @@ public abstract class PrepareFlowDefinition {
     public void onSessionExit(@NotNull PrepareSession session) {
     }
 
-    /** Required-step validation shared by preview, validate and publish. */
+    /** Periodic UI status. Flows with expensive validation must override this with bounded checks. */
+    public @NotNull List<String> validateForDisplay(@NotNull PrepareSession session) {
+        return validate(session);
+    }
+
+    /** Full validation for explicit checks and publication. */
     public @NotNull List<String> validate(@NotNull PrepareSession session) {
         List<String> errors = new ArrayList<>();
         if (session.getTarget().config().isWorldBindingPending() || !session.isWorldConfirmed())

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Riptide 躲避模拟回放</title>
+<style>
+body{font:16px system-ui;background:#101a25;color:#eaf1f5;max-width:960px;margin:24px auto;padding:0 20px}
+canvas{width:100%;max-width:760px;background:#182634;border:1px solid #465563;border-radius:12px}
+select,button{padding:8px;border-radius:6px;background:#263a4d;color:#fff;border:1px solid #526879}
+.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0}
+input{width:100%}p{line-height:1.6}small{color:#bac7d2}
+</style>
+<h1>Riptide 躲避模拟回放</h1>
+<p>红色方块是当前可碰撞的怪物，灰色是尚未落到身体高度的苦力怕。彩色圆点与轨迹为不同移动模型；半透明方框表示玩家与怪物碰撞所需的间距。</p>
+<div class="controls"><select id="cases"></select><button id="play">播放</button><span id="time"></span></div>
+<canvas id="arena" width="760" height="640"></canvas>
+<input id="seek" type="range" min="0" max="179" value="0">
+<p id="outcomes"></p>
+<small>标准模型每0.6秒观察甲板、每1.6秒观察上方，反应延迟0.3秒；另有全场即时观察的对照模型。模型只知道已刷新的怪物。模拟没有完整的第一人称视野、网络延迟和移动惯性，结果不能等同真人通过率。回放同时包含成功与失败样例。</small>
+<script>
+const data = /* REPLAY_DATA */;
+const canvas=document.getElementById('arena'),ctx=canvas.getContext('2d'),select=document.getElementById('cases'),seek=document.getElementById('seek');
+const names={ZOMBIE:'僵尸',HUSK:'尸壳',SKELETON:'骷髅',SPIDER:'蜘蛛',CREEPER:'苦力怕'},players={stationary:'站立',cautious:'慢速反应',walking:'标准移动',responsive:'快速反应',omnivision:'全场即时观察'};
+const colors=['#c6d0d8','#ffcf6e','#54d8ee','#bc99ff','#88e6a0'];
+data.cases.forEach((c,i)=>select.add(new Option(`${names[c.mob]} · 阶段 ${(c.stage??0)+1} · 种子 ${c.seed}`,i)));
+let playing=false,last=0;
+function draw(){
+ const c=data.cases[+select.value],tick=+seek.value,s=29,cx=380,cz=320;
+ const xy=(x,z)=>[cx+x*s,cz+z*s];
+ ctx.clearRect(0,0,760,640);ctx.fillStyle='#394d44';ctx.fillRect(cx-data.width*s/2,cz-data.length*s/2,data.width*s,data.length*s);
+ ctx.strokeStyle='#647d6e';ctx.lineWidth=1;
+ for(let x=-data.width/2;x<=data.width/2;x++) {ctx.beginPath();ctx.moveTo(cx+x*s,cz-data.length*s/2);ctx.lineTo(cx+x*s,cz+data.length*s/2);ctx.stroke();}
+ for(let z=-data.length/2;z<=data.length/2;z++) {ctx.beginPath();ctx.moveTo(cx-data.width*s/2,cz+z*s);ctx.lineTo(cx+data.width*s/2,cz+z*s);ctx.stroke();}
+ let active=0;
+ for(const a of c.spawns){if(tick<a.tick||tick>=a.end)continue;active++;const age=tick-a.tick+1,x=a.x+a.vx*age,z=a.z+a.vz*age,y=a.y+a.vy*age,p=xy(x,z);const dangerous=y<1.8&&y+(c.mob==='CREEPER'?1.7:c.mob==='SPIDER'?.9:1.95)>0;
+ ctx.fillStyle=dangerous?'#f66f6f':'#a0a8b4';ctx.fillRect(p[0]-.4*s,p[1]-.4*s,.8*s,.8*s);ctx.strokeStyle=dangerous?'#f66f6f55':'#a0a8b455';ctx.strokeRect(p[0]-.7*s,p[1]-.7*s,1.4*s,1.4*s);
+ ctx.beginPath();ctx.moveTo(...p);ctx.lineTo(p[0]+a.vx*s*4,p[1]+a.vz*s*4);ctx.stroke();
+ if(a.vy) {ctx.fillStyle='#eaf1f5';ctx.font='10px system-ui';ctx.fillText(y.toFixed(1),p[0]+14,p[1]);}}
+ c.players.forEach((p,i)=>{const end=Math.min(tick,p.trace.length-1);ctx.strokeStyle=colors[i]+'a0';ctx.lineWidth=2;ctx.beginPath();for(let t=0;t<=end;t++){let v=xy(...p.trace[t]);if(!t)ctx.moveTo(...v);else ctx.lineTo(...v);}ctx.stroke();let v=xy(...p.trace[end]);ctx.fillStyle=colors[i];ctx.beginPath();ctx.arc(...v,.3*s,0,Math.PI*2);ctx.fill();if(!p.survived&&tick>=p.trace.length-1){ctx.strokeStyle=colors[i];ctx.beginPath();ctx.moveTo(v[0]-7,v[1]-7);ctx.lineTo(v[0]+7,v[1]+7);ctx.moveTo(v[0]-7,v[1]+7);ctx.lineTo(v[0]+7,v[1]-7);ctx.stroke();}});
+ document.getElementById('time').textContent=`${(tick/20).toFixed(2)} / 9.00 秒 · 场上 ${active} 只`;
+ document.getElementById('outcomes').innerHTML=c.players.map((p,i)=>`<span style="color:${colors[i]}">${players[p.name]}：${p.survived?'通过':`在 ${(p.trace.length/20).toFixed(2)} 秒碰撞`}，移动 ${p.distance.toFixed(1)} 格</span>`).join('<br>');
+}
+seek.oninput=draw;select.onchange=()=>{seek.value=0;draw()};document.getElementById('play').onclick=()=>{playing=!playing;document.getElementById('play').textContent=playing?'暂停':'播放';if(playing&&+seek.value===179)seek.value=0};
+function animate(now){if(playing&&now-last>=50){last=now;seek.value=Math.min(179,+seek.value+1);if(+seek.value===179){playing=false;document.getElementById('play').textContent='播放';}draw();}requestAnimationFrame(animate)}draw();requestAnimationFrame(animate);
+</script>
+</html>

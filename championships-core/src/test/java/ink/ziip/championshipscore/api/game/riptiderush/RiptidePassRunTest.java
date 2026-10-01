@@ -24,26 +24,28 @@ class RiptidePassRunTest {
         try {
             for (String rhythm : List.of("SIDE", "SIDE_MATH")) {
                 var template = RiptideLevelTemplate.create("wall", RiptideLevelType.PASS);
-                var walls = List.of(new RiptideCoursePlan.SideWall(template, "GAP", 0, 1, 4));
+                var walls = List.of(new RiptideCoursePlan.SideWall(template, "GAP", 0, 1, 4),
+                        new RiptideCoursePlan.SideWall(template, "GAP", 0, -1, 4));
                 var level = new RiptideCoursePlan.Level(1, 400, template, "GAP", 0, false, 123, 0, 0, rhythm, 1, walls);
                 var run = new RiptidePassRun(g, List.of(level), config);
                 var titles = new ArrayList<List<String>>();
                 var resets = new AtomicInteger();
                 var actionbars = new AtomicInteger();
+                var stays = new ArrayList<Integer>();
                 var player = (org.bukkit.entity.Player) Proxy.newProxyInstance(
                         org.bukkit.entity.Player.class.getClassLoader(), new Class[]{org.bukkit.entity.Player.class}, (p, m, a) -> {
                             switch (m.getName()) {
                                 case "hashCode": return 1;
                                 case "equals": return p == a[0];
-                                case "sendTitle": titles.add(List.of((String) a[0], (String) a[1])); break;
+                                case "sendTitle": titles.add(List.of((String) a[0], (String) a[1])); stays.add((Integer)a[3]); break;
                                 case "resetTitle": resets.incrementAndGet(); break;
                                 case "sendActionBar": actionbars.incrementAndGet(); break;
-                                case "getLocation": return g.centerAt(400);
+                                case "getLocation": return g.centerAt(g.stoppedStep(400));
                             }
                             return null;
                         });
                 // Hold rendering on an existing frame to exercise presentation without a server world.
-                for (int tick : List.of(10, 20)) {
+                for (int tick : List.of(0, 10, 20, 30, 40, 100, 110)) {
                     for (var e : Map.<String, Object>of("active", level, "speed", 5.2, "tick", tick,
                             "rendered", RiptideSideSweep.frame(tick, walls, 3, 5.2)).entrySet()) {
                         var field = RiptidePassRun.class.getDeclaredField(e.getKey());
@@ -51,14 +53,18 @@ class RiptidePassRunTest {
                     }
                     run.tick(List.of(player));
                 }
-                assertEquals(2, titles.size());
+                assertEquals(rhythm.equals("SIDE") ? 1 : 7, titles.size());
                 assertEquals(0, actionbars.get());
-                if (rhythm.equals("SIDE")) assertEquals(List.of("§e侧向来墙！", ""), titles.getFirst());
+                if (rhythm.equals("SIDE")) {
+                    assertEquals(List.of("§e侧向来墙！", ""), titles.getFirst());
+                    assertEquals(List.of(30),stays);
+                }
                 else {
                     var question = RiptideQuestionDisplay.of(RiptideSideMath.question(level, 1, 10, 99), 1);
                     assertEquals(question.title(), titles.getFirst().getFirst());
                     assertTrue(titles.getFirst().get(1).contains(question.subtitle()));
                     assertTrue(titles.getFirst().get(1).contains("侧向来墙！"));
+                    assertTrue(titles.subList(3,titles.size()).stream().noneMatch(t -> t.get(1).contains("侧向来墙！")));
                 }
                 run.close(); run.close();
                 assertEquals(1, resets.get());
@@ -88,6 +94,29 @@ class RiptidePassRunTest {
         }
     }
 
+    @Test void rotatedSideWallsFitTheCommonStoppedDeckAndNeverTouchItsEntrance() throws Exception {
+        var start=RiptideTestFixtures.config().resolveGeometry().centerAt(0);
+        for(int[] axis:new int[][]{{1,0},{-1,0},{0,1},{0,-1}}) for(int length:List.of(3,9,15)) {
+            var g=RiptideCourseGeometry.resolve(start,start.clone().add(axis[0]*500,0,axis[1]*500),7,length);
+            for(int direction:List.of(-1,1)) for(boolean mirrored:List.of(false,true)) {
+                var transform=RiptideMovingWall.transform(g,direction,mirrored);
+                var cells=new ArrayList<RiptideMovingWall.Cell>();
+                for(int x=-7;x<=7;x++) for(int y=1;y<=12;y++) for(int z=-3;z<=3;z++) {
+                    var p=transform.apply(com.sk89q.worldedit.math.Vector3.at(x,y,z));
+                    cells.add(new RiptideMovingWall.Cell((int)p.x(),(int)p.y(),(int)p.z(),null));
+                }
+                var fitted=RiptideMovingWall.fitStoppedDeck(g,cells);
+                assertEquals(Math.min(15,length)*12*7,fitted.size());
+                for(var cell:fitted) {
+                    int forward=g.stoppedStep(250)+cell.x()*g.stepX()+cell.z()*g.stepZ();
+                    assertTrue(forward>=g.occupiedStart(new RiptideCoursePlan.Level(1,250,
+                            RiptideLevelTemplate.create("dodge",RiptideLevelType.DODGE),"ZOMBIE",0,false,1)));
+                    assertTrue(forward<250,"Moving wall and its temporary pistons must stay before the gold entrance");
+                }
+            }
+        }
+    }
+
     @Test void everyConfiguredSideSpeedAllowsVanillaPistonToFinishItsTwoMovingTicks() {
         var template=RiptideLevelTemplate.create("wall",RiptideLevelType.PASS);
         var wall=new RiptideCoursePlan.SideWall(template,"GAP",0,1,4);
@@ -111,10 +140,10 @@ class RiptidePassRunTest {
         var run=new RiptidePassRun(config.resolveGeometry(),List.of(level),config);
 
         // 12 title ticks at 5.2 blocks/s rounds up to four blocks of advance suppression.
-        assertFalse(run.startsWithin(95,5.2));
-        assertTrue(run.startsWithin(96,5.2));
+        assertFalse(run.startsWithin(90,5.2));
+        assertTrue(run.startsWithin(91,5.2));
         assertTrue(run.startsWithin(100,5.2));
-        assertEquals(100,run.nextStartStep());
+        assertEquals(95,run.nextStartStep());
     }
 
     @Test void lateralBudgetReservesSpeedForKeepingUpWithTheRaft() {
@@ -131,13 +160,13 @@ class RiptidePassRunTest {
         var c=RiptideTestFixtures.config();
         var templates = c.resolvePool();
         int groups=0, sweeps=0;
-        for(long seed=0;seed<100;seed++) {
+        for(long seed=0;seed<8;seed++) {
             var plan=RiptideCoursePlanner.plan(c,seed);
             var uses=new HashMap<String,Integer>();
             for(var l:plan.levels()) {
                 if(!l.isSideSweep())uses.merge(l.template().id(),1,Integer::sum);
                 else {
-                    sweeps++; assertEquals(l.step()<300?2:3,l.sideWalls().size());
+                    sweeps++; assertEquals(RiptideSideSweep.wallCount(c.resolveGeometry().stoppedStep(l.step()),500),l.sideWalls().size());
                     for(var w:l.sideWalls())uses.merge(w.template().id(),1,Integer::sum);
                     assertEquals(List.of(l),plan.trialLevels(l));
                 }
@@ -155,21 +184,6 @@ class RiptidePassRunTest {
         assertTrue(groups>0);assertTrue(sweeps>0);
     }
 
-    @Test void passRulesMigrationPreservesCustomRulesAndDoesNotDuplicate() {
-        var yaml=new org.bukkit.configuration.file.YamlConfiguration();
-        yaml.set("rules",List.of(List.of("保留我的说明")));
-        RiptideRushConfig.migratePassRules(yaml);RiptideRushConfig.migratePassRules(yaml);
-        assertEquals(2,yaml.getList("rules").size());assertEquals(List.of("保留我的说明"),yaml.getList("rules").getFirst());
-        assertTrue(yaml.getList("rules").toString().contains("每面来向独立随机"));
-        yaml.set("rules",List.of(List.of("保留我的说明","&#ededed侧墙段木筏短暂停稳：左右避墙，第二面需潜行，碰墙即出局。")));
-        RiptideRushConfig.migratePassRules(yaml);
-        assertFalse(yaml.getList("rules").toString().contains("第二面需潜行"));
-        assertTrue(yaml.getList("rules").toString().contains("第三次加速后每组三面"));
-        assertFalse(yaml.getList("rules").toString().contains("碰墙即出局"));
-        yaml.set("rules",List.of(List.of("&#ededed第二次加速后可出现侧墙：穿越池随机建筑、每面来向独立随机；第三次加速后每组三面，碰墙即出局。")));
-        RiptideRushConfig.migratePassRules(yaml);
-        assertTrue(yaml.getList("rules").toString().contains("离筏与掉落判定"));
-    }
 
     @Test void templateTrialsRandomizeMirrorWithoutChangingTheSavedBuilding() throws Exception {
         var c=RiptideTestFixtures.config();

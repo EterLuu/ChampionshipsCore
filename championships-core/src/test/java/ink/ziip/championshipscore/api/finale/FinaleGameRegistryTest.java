@@ -13,6 +13,7 @@ class FinaleGameRegistryTest {
     void dodgeboltAndDragonEggCarnivalAreRegisteredFinaleGames() {
         assertTrue(FinaleGameRegistry.isRegistered(GameTypeEnum.Dodgebolt));
         assertTrue(FinaleGameRegistry.isRegistered(GameTypeEnum.DragonEggCarnival));
+        assertTrue(FinaleGameRegistry.isRegistered(GameTypeEnum.SulfurSoccer));
         assertFalse(FinaleGameRegistry.isRegistered(GameTypeEnum.AceRace));
     }
 
@@ -22,5 +23,7 @@ class FinaleGameRegistryTest {
         assertNotNull(dragonEgg);
         assertEquals(GameTypeEnum.DragonEggCarnival, dragonEgg.gameType());
         assertEquals(GameTypeEnum.Dodgebolt, FinaleGameRegistry.parse("DODGEBOLT").gameType());
+        assertEquals(GameTypeEnum.SulfurSoccer, FinaleGameRegistry.parse("Sulfur-Soccer").gameType());
+        assertFalse(FinaleGameRegistry.parse("sulfursoccer").supportsPartialRoster());
     }
 }

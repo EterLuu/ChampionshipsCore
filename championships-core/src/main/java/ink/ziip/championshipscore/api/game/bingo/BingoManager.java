@@ -17,6 +17,7 @@ import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.util.Utils;
@@ -212,31 +213,13 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         try {
             YamlConfiguration config = new YamlConfiguration();
             config.load(configFile);
-            migrateGlobalConfig(config, configFile);
+            BaseConfigurationFile.validateVersion(config.getInt("config-version", -1), 3, "bingo/config.yml");
             return config;
         } catch (Exception failure) {
             plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "配置",
                     "无法解析 bingo/config.yml"), failure);
             return null;
         }
-    }
-
-    private void migrateGlobalConfig(YamlConfiguration config, File file) throws java.io.IOException {
-        int version = config.getInt("config-version", 1);
-        if (version >= 3) return;
-        if (version < 2) {
-            // v1 shipped dim:the_end as an unconditional default. Difficulty voting now owns that rule;
-            // only the untouched legacy singleton is removed, while every custom filter list is preserved.
-            if (config.getStringList("filters.exclude").equals(List.of("dim:the_end")))
-                config.set("filters.exclude", List.of());
-            if (!config.contains("remix.enabled")) config.set("remix.enabled", true);
-            if (!config.contains("remix.chance")) config.set("remix.chance", 0.05D);
-        }
-        // The paginated DAILY ballot is one vote with multiple views, rather than three timed phases.
-        // Do not carry the old per-phase value forward: the whole ballot defaults to 20 seconds.
-        if (!config.contains("daily-vote.seconds")) config.set("daily-vote.seconds", 20);
-        config.set("config-version", 3);
-        config.save(file);
     }
 
     /**

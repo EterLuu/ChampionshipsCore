@@ -1,14 +1,15 @@
 package ink.ziip.championshipscore.platform.bukkit.bingo;
 
-import org.bukkit.Material;
-import org.junit.jupiter.api.Test;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import org.bukkit.Material;
+import org.bukkit.entity.EntityType;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BingoObjectiveProgressTrackerTest {
@@ -66,5 +67,20 @@ class BingoObjectiveProgressTrackerTest {
                 () -> new BingoEventObjectiveRule(" ", "", 1, Set.of(), Set.of()));
         assertThrows(IllegalArgumentException.class,
                 () -> new BingoEventObjectiveRule("wear", "", 0, Set.of(), Set.of()));
+    }
+
+    @Test
+    void recognizesSupportedSpecialNamesCaseInsensitively() {
+        assertEquals("SHEEP_JEB", BingoNameTagObjective.match(EntityType.SHEEP, "jeb_"));
+        assertEquals("IRON_GOLEM_DINNERBONE",
+                BingoNameTagObjective.match(EntityType.IRON_GOLEM, "Dinnerbone"));
+        assertEquals("GHAST_DINNERBONE", BingoNameTagObjective.match(EntityType.GHAST, "GRUMM"));
+    }
+
+    @Test
+    void rejectsUnsupportedEntityAndNameCombinations() {
+        assertNull(BingoNameTagObjective.match(EntityType.SHEEP, "Dinnerbone"));
+        assertNull(BingoNameTagObjective.match(EntityType.GHAST, "jeb_"));
+        assertNull(BingoNameTagObjective.match(EntityType.COW, "jeb_"));
     }
 }

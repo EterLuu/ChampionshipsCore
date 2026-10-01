@@ -67,7 +67,7 @@ class MapAssetRenameTest {
     @Test
     void movesSchematicDirectoriesForOtherGames() throws Exception {
         for (GameTypeEnum game : new GameTypeEnum[]{GameTypeEnum.ParkourTag,
-                GameTypeEnum.BattleBox, GameTypeEnum.TNTRun}) {
+                GameTypeEnum.BattleBox, GameTypeEnum.TNTRun, GameTypeEnum.LaserBox}) {
             Path source = pluginFolder.resolve(gameFolder(game) + "/schematics/old-map/arena.schem");
             Files.createDirectories(source.getParent());
             Files.write(source, game.name().getBytes());
@@ -124,6 +124,7 @@ class MapAssetRenameTest {
             case ParkourTag -> "parkourtag";
             case BattleBox -> "battlebox";
             case TNTRun -> "tntrun";
+            case LaserBox -> "laserbox";
             default -> throw new AssertionError(game);
         };
     }

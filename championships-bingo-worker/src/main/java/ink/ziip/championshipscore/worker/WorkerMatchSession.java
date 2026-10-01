@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.worker;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoFireworkSupply;
 import ink.ziip.championshipscore.bingo.engine.BingoResult;
 import ink.ziip.championshipscore.bingo.engine.BingoScoringEngine;
 import ink.ziip.championshipscore.bingo.engine.ScoringDecision;
@@ -15,7 +17,6 @@ import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamOverlay;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.SharedSidebar;
 import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
-import ink.ziip.championshipscore.platform.bukkit.world.SafeScatterService;
 import ink.ziip.championshipscore.protocol.CompletionObservation;
 import ink.ziip.championshipscore.protocol.BingoManifestHasher;
 import ink.ziip.championshipscore.protocol.BingoIntroductionMode;
@@ -91,7 +92,7 @@ final class WorkerMatchSession {
     private final PlatformScheduler scheduler;
     private final NamespacedKey cardKey;
     private final NamespacedKey spectatorControlKey;
-    private final SafeScatterService scatter;
+    private final WorkerTeamScatterService scatter;
     private final MatchStateMachine lifecycle = new MatchStateMachine();
     private final BingoScoringEngine scoring;
     private final WorkerObjectives objectives;
@@ -101,6 +102,7 @@ final class WorkerMatchSession {
     private final Map<UUID, List<BingoTaskSpec>> differentialTasks = new HashMap<>();
     private final SharedSidebar sidebar;
     private final List<PotionEffect> permanentEffects;
+    private final BingoFireworkSupply fireworkSupply = new BingoFireworkSupply();
     private final Map<UUID, PlayerSnapshot> participants = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<Integer, TeamSnapshot> teams;
     private final Map<Integer, Team> nativeScoreboardTeams = new HashMap<>();
@@ -111,7 +113,6 @@ final class WorkerMatchSession {
     /** Last live position for a participant who disconnected during the match. */
     private final Map<UUID, Location> lastQuitLocations = new HashMap<>();
     private final Set<UUID> preparedPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
-    private final Set<UUID> bulkScatterPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<TeamCell> completedTeamCells = ConcurrentHashMap.newKeySet();
     private final Map<Integer, List<Integer>> completionTeamsByCell = new HashMap<>();
     private final Map<Integer, MapView> cardViews = new HashMap<>();
@@ -156,7 +157,7 @@ final class WorkerMatchSession {
         this.scheduler = new PlatformScheduler(plugin);
         this.cardKey = new NamespacedKey(plugin, "bingo_card");
         this.spectatorControlKey = new NamespacedKey(plugin, "spectator_control");
-        this.scatter = new SafeScatterService(plugin);
+        this.scatter = new WorkerTeamScatterService(plugin);
         this.scoring = new BingoScoringEngine(manifest);
         this.objectives = new WorkerObjectives(manifest.tasks());
         this.activeTasks = List.copyOf(manifest.tasks());
@@ -228,7 +229,8 @@ final class WorkerMatchSession {
                 ? manifest.runMode() == MatchRunMode.DAILY ? "&6" + gameName() : spectator
                 : team.colorCode() + team.name();
         boolean activePlayer = participant != null && participant.role() == ParticipantRole.PLAYER && team != null;
-        return new PlayerPresentation(label, team == null ? null : team.colorCode(), activePlayer);
+        return new PlayerPresentation(label, team == null ? null : team.colorCode(), activePlayer,
+                manifest.runMode() == MatchRunMode.DAILY);
     }
 
     boolean sendTeamMessage(Player sender, Component message) {
@@ -387,15 +389,8 @@ final class WorkerMatchSession {
                     return;
                 }
                 prepareParticipantForRound(player, snapshot, false);
-                World world = plugin.getServer().getWorld(manifest.scoring().variant().remix() == BingoRemix.NETHER
-                        ? config.nether() : config.overworld());
-                if (world == null) {
-                    result.complete(false);
-                    return;
-                }
-                scatter.performScatterAsync(world, List.of(player), manifest.runtimeRules().scatterRadius(),
-                        manifest.runtimeRules().scatterJitter(), manifest.runtimeRules().scatterMaxTries(),
-                        () -> recordArrival(snapshot, result, null));
+                scatter.teleportAsync(player, snapshot.teamId())
+                        .whenComplete((ignored, failure) -> recordArrival(snapshot, result, failure));
                 return;
             }
             player.getInventory().clear();
@@ -568,16 +563,21 @@ final class WorkerMatchSession {
             return;
         }
         world.setTime(BingoWorldRules.START_TIME);
+        List<Integer> playingTeams = participants.values().stream()
+                .filter(snapshot -> snapshot.role() == ParticipantRole.PLAYER)
+                .map(PlayerSnapshot::teamId).distinct().toList();
+        CompletableFuture<Void> locations = scatter.prepareAsync(world, playingTeams,
+                manifest.runtimeRules().scatterMaxTries());
         roundPrepared = true;
         updateSidebar();
         List<CompletableFuture<Void>> preparations = new ArrayList<>();
+        preparations.add(locations);
         for (PlayerSnapshot snapshot : participants.values()) {
             Player player = plugin.getServer().getPlayer(snapshot.uuid());
             if (player == null) continue;
             if (snapshot.role() == ParticipantRole.SPECTATOR) {
                 preparations.add(scheduler.runEntityFuture(player, () -> applySpectatorState(player)));
             } else {
-                bulkScatterPlayers.add(snapshot.uuid());
                 preparations.add(scheduler.runEntityFuture(player,
                         () -> {
                             if (!preparedPlayers.contains(snapshot.uuid())) {
@@ -590,18 +590,24 @@ final class WorkerMatchSession {
                 .whenComplete((ignored, failure) -> scheduler.runGlobal(() -> {
                     if (state() != MatchState.COUNTDOWN) return;
                     if (failure != null) {
-                        abort("participant-prepare-failed");
+                        plugin.getLogger().log(Level.SEVERE, "Unable to prepare Bingo team spawns", failure);
+                        abort("team-scatter-prepare-failed");
                         return;
                     }
-                    List<Player> players = participants.values().stream()
-                            .filter(snapshot -> snapshot.role() == ParticipantRole.PLAYER)
-                            .map(snapshot -> plugin.getServer().getPlayer(snapshot.uuid()))
-                            .filter(java.util.Objects::nonNull)
-                            .toList();
-                    scatter.performScatterAsync(world, players, manifest.runtimeRules().scatterRadius(),
-                            manifest.runtimeRules().scatterJitter(), manifest.runtimeRules().scatterMaxTries(),
-                            () -> scheduler.runGlobal(() -> {
-                                bulkScatterPlayers.clear();
+                    List<CompletableFuture<Void>> teleports = new ArrayList<>();
+                    for (PlayerSnapshot snapshot : participants.values()) {
+                        if (snapshot.role() != ParticipantRole.PLAYER) continue;
+                        Player player = plugin.getServer().getPlayer(snapshot.uuid());
+                        if (player != null) teleports.add(scatter.teleportAsync(player, snapshot.teamId()));
+                    }
+                    CompletableFuture.allOf(teleports.toArray(CompletableFuture[]::new))
+                            .whenComplete((placed, teleportFailure) -> scheduler.runGlobal(() -> {
+                                if (state() != MatchState.COUNTDOWN) return;
+                                if (teleportFailure != null) {
+                                    plugin.getLogger().log(Level.SEVERE, "Unable to scatter Bingo teams", teleportFailure);
+                                    abort("team-scatter-teleport-failed");
+                                    return;
+                                }
                                 finalCountdown(manifest.runtimeRules().finalCountdownSeconds());
                             }));
                 }));
@@ -768,7 +774,14 @@ final class WorkerMatchSession {
         completion = completion.replaceText(builder -> builder.matchLiteral("%player%").replacement(playerName))
                 .replaceText(builder -> builder.matchLiteral("%task%").replacement(taskName));
         Component finalCompletion = completion;
-        forEachOnlinePlayer(audience -> audience.sendMessage(finalCompletion));
+        forEachOnlineParticipant((audience, participant) -> {
+            audience.sendMessage(finalCompletion);
+            if (participant.role() == ParticipantRole.PLAYER
+                    && player.teamId().equals(participant.teamId())) {
+                audience.sendActionBar(finalCompletion);
+                audience.playSound(audience.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1F, 1.5F);
+            }
+        });
         requestSidebarUpdate();
         if (scoring.hasWon(player.teamId())) {
             winnerTeamId = player.teamId();
@@ -964,7 +977,7 @@ final class WorkerMatchSession {
                 : message("bingo.game-winner", "%points%",
                 Integer.toString(result.teamScores().getOrDefault(winner.id(), 0)))
                 .replaceText(builder -> builder.matchLiteral("%team%")
-                        .replacement(Component.text(winner.name(), teamColor(winner))));
+                        .replacement(LegacyText.component(winner.name(), teamColor(winner))));
         Component endTitle = message("game.completion-title");
         Component endSubtitle = message("bingo.game-end-subtitle");
         // Spectators are part of the frozen participant roster, so they receive the same authoritative
@@ -1030,7 +1043,6 @@ final class WorkerMatchSession {
                 arrived.remove(playerId);
                 lastQuitLocations.remove(playerId);
                 preparedPlayers.remove(playerId);
-                bulkScatterPlayers.remove(playerId);
             }
         }
         playerIds.forEach(this::releaseVisibilityForTarget);
@@ -1320,30 +1332,33 @@ final class WorkerMatchSession {
         }
         if (preparedPlayers.contains(snapshot.uuid())) {
             prepareParticipantForRound(player, snapshot, true);
-            restoreQuitLocation(player, lastQuitLocation);
+            restoreRoundLocation(player, snapshot, lastQuitLocation);
             return;
         }
         if (lastQuitLocation != null) {
             // A disconnect proves this is an existing participant even if the initial preparation
             // task had not yet marked the UUID. Reissue only the missing presentation and statistic
-            // baselines; never revoke advancements, clear inventory, or scatter them again.
+            // baselines. If the opening scatter was interrupted, finish it at this team's spawn.
             prepareParticipantForRound(player, snapshot, true);
             objectivesFor(snapshot.uuid()).captureBaselines(player);
             preparedPlayers.add(snapshot.uuid());
-            restoreQuitLocation(player, lastQuitLocation);
+            restoreRoundLocation(player, snapshot, lastQuitLocation);
             return;
         }
         prepareParticipantForRound(player, snapshot, false);
-        if (bulkScatterPlayers.contains(snapshot.uuid())) {
+        restoreRoundLocation(player, snapshot, lastQuitLocation);
+    }
+
+    private void restoreRoundLocation(Player player, PlayerSnapshot snapshot, Location lastQuitLocation) {
+        if (scatter.hasPlacedPlayer(snapshot.uuid())) {
             restoreQuitLocation(player, lastQuitLocation);
             return;
         }
-        World world = plugin.getServer().getWorld(manifest.scoring().variant().remix() == BingoRemix.NETHER
-                ? config.nether() : config.overworld());
-        if (world != null) scatter.performScatterAsync(world, List.of(player),
-                manifest.runtimeRules().scatterRadius(), manifest.runtimeRules().scatterJitter(),
-                manifest.runtimeRules().scatterMaxTries(), null);
-        restoreQuitLocation(player, lastQuitLocation);
+        scatter.teleportAsync(player, snapshot.teamId()).whenComplete((ignored, failure) -> {
+            if (failure == null) return;
+            plugin.getLogger().log(Level.WARNING, "Unable to place returning Bingo player at team spawn", failure);
+            scheduler.runGlobal(() -> abort("team-scatter-teleport-failed"));
+        });
     }
 
     private void restoreQuitLocation(Player player, Location location) {
@@ -1462,8 +1477,8 @@ final class WorkerMatchSession {
                                        List<Component> lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(name.decoration(TextDecoration.ITALIC, false));
-        meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
+        meta.displayName(name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+        meta.lore(lore.stream().map(line -> line.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
         meta.getPersistentDataContainer().set(spectatorControlKey,
                 PersistentDataType.STRING, action);
         item.setItemMeta(meta);
@@ -1678,7 +1693,9 @@ final class WorkerMatchSession {
                 Player target = targetEntry.getKey();
                 if (viewer.equals(target)) continue;
                 boolean targetIsSpectator = targetEntry.getValue().role() == ParticipantRole.SPECTATOR;
-                boolean visible = viewerIsSpectator || !targetIsSpectator;
+                // Spectators can watch active players; participants must not see spectators, and
+                // the custom Adventure-mode presentation hides spectator entities in both directions.
+                boolean visible = !targetIsSpectator;
                 scheduler.runEntity(viewer, () -> {
                     if (visible) viewer.showEntity(plugin, target);
                     else viewer.hideEntity(plugin, target);
@@ -1713,8 +1730,16 @@ final class WorkerMatchSession {
     }
 
     private void updateRunningTimer() {
+        if (state() != MatchState.RUNNING) return;
         int remaining = Math.max(0, manifest.durationSeconds()
                 - (int) ((System.currentTimeMillis() - startedAtMillis) / 1000L));
+        int elapsed = manifest.durationSeconds() - remaining;
+        if (manifest.runMode() != MatchRunMode.DAILY && remaining > 0 && fireworkSupply.shouldRefill(elapsed)) {
+            forEachOnlineParticipant((player, snapshot) -> {
+                if (state() == MatchState.RUNNING && snapshot.role() == ParticipantRole.PLAYER)
+                    BingoFireworkSupply.give(player);
+            });
+        }
         int graceRemaining = Math.max(0, manifest.runtimeRules().pvpGraceSeconds()
                 - (manifest.durationSeconds() - remaining));
         Component title = message("bingo.timer", "%time%", DurationText.minutesSeconds(remaining)).append(
@@ -1782,7 +1807,7 @@ final class WorkerMatchSession {
         for (WorkerSidebarRanking.Entry entry : WorkerSidebarRanking.select(result, teams, viewerTeamId)) {
             TeamSnapshot team = entry.team();
             String key = entry.viewerTeam() ? "board.own_team_score" : "board.team_score";
-            Component teamName = Component.text(team.name(), teamColor(team));
+            Component teamName = LegacyText.component(team.name(), teamColor(team));
             if (entry.viewerTeam()) teamName = teamName.decorate(TextDecoration.BOLD);
             Component row = message(key,
                     "{0}", Integer.toString(entry.rank()),

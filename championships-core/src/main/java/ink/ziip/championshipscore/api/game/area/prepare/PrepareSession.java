@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -7,10 +8,10 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ToggleStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.CountdownBlockDisappearanceStep;
+import ink.ziip.championshipscore.api.game.area.prepare.buildmart.BuildMartBlueprintWorkshop;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.GameMode;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +35,15 @@ public class PrepareSession {
     private final List<PrepareStep> steps;
     private boolean worldConfirmed;
     private boolean stamped;
+    private BuildMartBlueprintWorkshop blueprintWorkshop;
+
+    public BuildMartBlueprintWorkshop getBlueprintWorkshop() {
+        return blueprintWorkshop;
+    }
+
+    public void setBlueprintWorkshop(BuildMartBlueprintWorkshop workshop) {
+        this.blueprintWorkshop = workshop;
+    }
 
     public PrepareSession(@NotNull ChampionshipsCore plugin, @NotNull GameTypeEnum gameType,
                           @NotNull String areaName, @NotNull SetupTarget target, @NotNull PrepareFlowDefinition flow) {
@@ -53,8 +63,8 @@ public class PrepareSession {
 
         PrepareStep introductionSpawn = new StandAndRunStep(
                 "introduction_spawn",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.items.introduction-spawn.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.items.introduction-spawn.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.introduction-spawn.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.introduction-spawn.lore", 0)),
                 Material.BOOK,
                 setup -> setup.config().getIntroductionSpawnPoint() != null
                         || setup.config().getSpectatorSpawnPoint() != null,
@@ -72,8 +82,8 @@ public class PrepareSession {
 
         PrepareStep introductionMode = new ToggleStep(
                 "introduction_game_mode",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.items.introduction-mode.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.introduction-mode.lore", 0)),
                 Material.RECOVERY_COMPASS,
                 setup -> setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
                         ? GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.states.spectator.title") : GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.states.adventure.title"),

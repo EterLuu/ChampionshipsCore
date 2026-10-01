@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.game.GameRunMode;
 import ink.ziip.championshipscore.api.schedule.battlebox.BattleBoxScheduleManager;
+import ink.ziip.championshipscore.api.schedule.laserbox.LaserBoxScheduleManager;
 import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleManager;
 import ink.ziip.championshipscore.api.schedule.buildmart.BuildMartScheduleHandler;
@@ -87,8 +88,10 @@ public class ScheduleManager extends BaseManager {
     @Getter
     private RiptideRushScheduleManager riptideRushScheduleManager;
     @Getter private FrostbiteScheduleManager frostbiteScheduleManager;
+    @Getter private LaserBoxScheduleManager laserBoxScheduleManager;
     private BukkitTask dodgeboltTransitionTask;
     private BukkitTask dragonEggCarnivalTransitionTask;
+    private BukkitTask sulfurSoccerTransitionTask;
     private GameTypeEnum pendingFinaleRequest;
     private long finaleRequestGeneration;
     private BossBar roundPreparationBar;
@@ -115,6 +118,7 @@ public class ScheduleManager extends BaseManager {
         buildMartScheduleManager = new BuildMartScheduleManager(plugin, new BuildMartScheduleHandler(plugin));
         riptideRushScheduleManager = new RiptideRushScheduleManager(plugin, new RiptideRushScheduleHandler(plugin));
         frostbiteScheduleManager = new FrostbiteScheduleManager(plugin, new FrostbiteScheduleHandler(plugin));
+        laserBoxScheduleManager = new LaserBoxScheduleManager(plugin);
 
         snowballScheduleManager.load();
         skyWarsScheduleManager.load();
@@ -129,12 +133,15 @@ public class ScheduleManager extends BaseManager {
         buildMartScheduleManager.load();
         riptideRushScheduleManager.load();
         frostbiteScheduleManager.load();
+        laserBoxScheduleManager.load();
     }
 
     @Override
     public void unload() {
         if (dodgeboltTransitionTask != null) dodgeboltTransitionTask.cancel();
         if (dragonEggCarnivalTransitionTask != null) dragonEggCarnivalTransitionTask.cancel();
+        if (sulfurSoccerTransitionTask != null) sulfurSoccerTransitionTask.cancel();
+        sulfurSoccerTransitionTask = null;
         dodgeboltTransitionTask = null;
         dragonEggCarnivalTransitionTask = null;
         pendingFinaleRequest = null;
@@ -153,6 +160,7 @@ public class ScheduleManager extends BaseManager {
         buildMartScheduleManager.unload();
         riptideRushScheduleManager.unload();
         frostbiteScheduleManager.unload();
+        laserBoxScheduleManager.unload();
     }
 
     public void addRound(GameTypeEnum gameTypeEnum) {
@@ -168,7 +176,7 @@ public class ScheduleManager extends BaseManager {
         return switch (gameTypeEnum) {
             case SnowballShowdown, SkyWars, TNTRun, TGTTOS, ParkourWarrior, BattleBox,
                     ParkourTag, HotyCodyDusky, Bingo, DragonEggCarnival, Dodgebolt, AceRace, BuildMart,
-                    RiptideRush, FrostbiteFrenzy -> true;
+                    RiptideRush, FrostbiteFrenzy, LaserBox, SulfurSoccer -> true;
             default -> false;
         };
     }
@@ -205,6 +213,9 @@ public class ScheduleManager extends BaseManager {
             case BuildMart -> buildMartScheduleManager.startGame();
             case RiptideRush -> riptideRushScheduleManager.startGame();
             case FrostbiteFrenzy -> frostbiteScheduleManager.startGame();
+            case LaserBox -> {
+                if (!laserBoxScheduleManager.startGame()) return EventAction.UNAVAILABLE;
+            }
             default -> {
                 return EventAction.UNSUPPORTED;
             }
@@ -212,8 +223,15 @@ public class ScheduleManager extends BaseManager {
         return EventAction.STARTED;
     }
 
+    /** Returns the concrete preflight rejection when a game exposes one. */
+    public @Nullable String getFormalEventStartFailure(GameTypeEnum game) {
+        return game == GameTypeEnum.LaserBox && laserBoxScheduleManager != null
+                ? laserBoxScheduleManager.getLastStartFailureReason() : null;
+    }
+
     /** Stops the formal schedule and force-ends any actively running game instance. */
     public boolean stopFormalEvent(@NotNull GameTypeEnum gameTypeEnum) {
+        if (FinaleGameRegistry.isRegistered(gameTypeEnum)) return stopFinale(gameTypeEnum);
         if (!supportsFormalEvent(gameTypeEnum) || !isFormalEventRunning(gameTypeEnum)) return false;
         endGameSchedule(gameTypeEnum);
         plugin.getGameManager().forceEndEventAreas(gameTypeEnum);
@@ -229,6 +247,7 @@ public class ScheduleManager extends BaseManager {
     }
 
     public boolean isFormalEventRunning(@NotNull GameTypeEnum gameTypeEnum) {
+        if (FinaleGameRegistry.isRegistered(gameTypeEnum)) return isFinaleRunning(gameTypeEnum);
         return switch (gameTypeEnum) {
             case SnowballShowdown -> snowballScheduleManager.isEnabled();
             case SkyWars -> skyWarsScheduleManager.isEnabled();
@@ -243,7 +262,9 @@ public class ScheduleManager extends BaseManager {
             case BuildMart -> buildMartScheduleManager.isEnabled();
             case RiptideRush -> riptideRushScheduleManager.isEnabled();
             case FrostbiteFrenzy -> frostbiteScheduleManager.isEnabled();
+            case LaserBox -> laserBoxScheduleManager.isEnabled();
             case DragonEggCarnival -> dragonEggCarnivalTransitionTask != null;
+            case SulfurSoccer -> sulfurSoccerTransitionTask != null;
             case Dodgebolt -> dodgeboltTransitionTask != null;
             default -> false;
         };
@@ -262,6 +283,7 @@ public class ScheduleManager extends BaseManager {
         boolean transitioning = switch (gameType) {
             case Dodgebolt -> dodgeboltTransitionTask != null;
             case DragonEggCarnival -> dragonEggCarnivalTransitionTask != null;
+            case SulfurSoccer -> sulfurSoccerTransitionTask != null;
             default -> false;
         };
         return transitioning || plugin.getGameManager().hasActiveEventAreas(gameType);
@@ -302,6 +324,7 @@ public class ScheduleManager extends BaseManager {
             case BuildMart -> buildMartScheduleManager.hasNextRound();
             case RiptideRush -> riptideRushScheduleManager.hasNextRound();
             case FrostbiteFrenzy -> frostbiteScheduleManager.hasNextRound();
+            case LaserBox -> laserBoxScheduleManager.hasNextRound();
             default -> false;
         };
     }
@@ -421,9 +444,14 @@ public class ScheduleManager extends BaseManager {
             case BuildMart -> { if (buildMartScheduleManager.isEnabled()) buildMartScheduleManager.endSchedule(); }
             case RiptideRush -> { if (riptideRushScheduleManager.isEnabled()) riptideRushScheduleManager.endSchedule(); }
             case FrostbiteFrenzy -> { if (frostbiteScheduleManager.isEnabled()) frostbiteScheduleManager.endSchedule(); }
+            case LaserBox -> { if (laserBoxScheduleManager.isEnabled()) laserBoxScheduleManager.endSchedule(); }
             case Dodgebolt -> {
                 if (dodgeboltTransitionTask != null) dodgeboltTransitionTask.cancel();
                 dodgeboltTransitionTask = null;
+            }
+            case SulfurSoccer -> {
+                if (sulfurSoccerTransitionTask != null) sulfurSoccerTransitionTask.cancel();
+                sulfurSoccerTransitionTask = null;
             }
             case DragonEggCarnival -> {
                 if (dragonEggCarnivalTransitionTask != null) dragonEggCarnivalTransitionTask.cancel();
@@ -511,6 +539,8 @@ public class ScheduleManager extends BaseManager {
                     startDodgeboltTransition(area, (DodgeboltArea) instance,
                             finalists.right(), finalists.left(), higherSeed, requester, forcePartialRoster);
                 }
+                case SulfurSoccer -> startSulfurSoccerTransition(area, instance,
+                        finalists.right(), finalists.left(), requester);
                 case DragonEggCarnival -> startDragonEggCarnivalTransition(
                         area, (DragonEggCarnivalArea) instance,
                         finalists.right(), finalists.left(), requester);
@@ -634,6 +664,33 @@ public class ScheduleManager extends BaseManager {
         }, 0L, 20L);
     }
 
+    private void startSulfurSoccerTransition(String area, BaseGameInstance instance,
+                                            ChampionshipTeam right, ChampionshipTeam left,
+                                            CommandSender requester) {
+        final int[] remaining = {10};
+        Utils.sendAdminSuccess(requester, MessageConfig.SULFUR_SOCCER_SCHEDULED
+                .replace("%right%", right.getColoredName()).replace("%left%", left.getColoredName())
+                .replace("%map%", area));
+        Utils.sendMessageToAllPlayers(MessageConfig.SULFUR_SOCCER_FINALISTS
+                .replace("%right%", right.getColoredName()).replace("%left%", left.getColoredName()));
+        sulfurSoccerTransitionTask = scheduler.runTaskTimer(plugin, () -> {
+            showRoundPreparationCountdown(GameTypeEnum.SulfurSoccer, 1, remaining[0]);
+            if (remaining[0] == 0) {
+                sulfurSoccerTransitionTask.cancel();
+                sulfurSoccerTransitionTask = null;
+                if (plugin.getGameManager().joinTeamArea(GameTypeEnum.SulfurSoccer, area,
+                        right, left, true, GameRunMode.EVENT)) {
+                    plugin.getGameManager().spectateFinale(instance, right, left);
+                } else {
+                    clearRoundPreparationCountdown();
+                    Utils.sendAdminError(requester, MessageConfig.SULFUR_SOCCER_START_FAILED);
+                }
+                return;
+            }
+            remaining[0]--;
+        }, 0L, 20L);
+    }
+
     private static double pointsOf(List<Map.Entry<ChampionshipTeam, Double>> leaderboard,
                                    ChampionshipTeam team) {
         for (Map.Entry<ChampionshipTeam, Double> entry : leaderboard) {
@@ -666,6 +723,7 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.RIPTIDE_RUSH);
 
         if (gameTypeEnum == GameTypeEnum.FrostbiteFrenzy) return Utils.getMessage(ScheduleMessageConfig.FROSTBITE);
+        if (gameTypeEnum == GameTypeEnum.LaserBox) return Utils.getMessage(ScheduleMessageConfig.LASER_BOX);
         return "";
     }
 
@@ -690,6 +748,7 @@ public class ScheduleManager extends BaseManager {
             return Utils.getMessage(ScheduleMessageConfig.RIPTIDE_RUSH_POINTS);
 
         if (gameTypeEnum == GameTypeEnum.FrostbiteFrenzy) return Utils.getMessage(ScheduleMessageConfig.FROSTBITE_POINTS);
+        if (gameTypeEnum == GameTypeEnum.LaserBox) return Utils.getMessage(ScheduleMessageConfig.LASER_BOX_POINTS);
         return "";
     }
 }

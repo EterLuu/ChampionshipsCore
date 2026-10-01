@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -9,7 +11,6 @@ import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceRespawnPointListStep;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
@@ -36,7 +37,7 @@ public final class AceRaceRespawnPointBindingGui {
     private AceRaceRespawnPointBindingGui() {
     }
 
-    public static final class Holder implements InventoryHolder {
+    public static final class Holder implements MenuInventory {
         final PrepareSession session;
         final int respawnIndex;
         int page;
@@ -147,7 +148,7 @@ public final class AceRaceRespawnPointBindingGui {
 
     private static ItemStack configured(@NotNull String item, String state, @NotNull Map<String, ?> placeholders) {
         return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders,
-                Material.BARRIER, Component.text(item), List.of(), false);
+                Material.BARRIER, LegacyText.component(item), List.of(), false);
     }
 
     private static int pageCount(int size) {
@@ -158,9 +159,9 @@ public final class AceRaceRespawnPointBindingGui {
                                   @NotNull NamedTextColor color, String... lore) {
         ItemStack item = new ItemStack(material);
         item.editMeta(meta -> {
-            meta.displayName(Component.text(name).color(color).decoration(TextDecoration.ITALIC, false));
-            meta.lore(java.util.Arrays.stream(lore).map(line -> Component.text(line)
-                    .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)).toList());
+            meta.displayName(LegacyText.component(name).colorIfAbsent(color).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+            meta.lore(java.util.Arrays.stream(lore).map(line -> LegacyText.component(line)
+                    .colorIfAbsent(NamedTextColor.GRAY).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
         });
         return item;
     }

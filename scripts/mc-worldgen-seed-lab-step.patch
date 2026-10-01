@@ -1,0 +1,53 @@
+diff --git a/tools/mcquery.c b/tools/mcquery.c
+index 67027bf..ade1113 100644
+--- a/tools/mcquery.c
++++ b/tools/mcquery.c
+@@ -1,5 +1,5 @@
+ /* mcquery — CLI для проверки движка: биомы/климат по сетке квартов (1 кварт = 4 блока).
+- *   mcquery <версия 26.1|26.2|26.3> <ow|nether|end> [--preset normal|amplified|large_biomes] <seed> <qx0> <qz0> <nx> <nz> <qy> [--climate]
++ *   mcquery <версия 26.1|26.2|26.3> <ow|nether|end> [--preset normal|amplified|large_biomes] <seed> <qx0> <qz0> <nx> <nz> <qy> [--step N] [--climate]
+  * Вывод: по строке на точку:  qx qz имя_биома   (или  qx qz t h c e d w  для --climate)
+  */
+ #include "../engine/mc_data.h"
+@@ -11,14 +11,21 @@ int main(int argc, char **argv) {
+     if (!strcmp(argv[ai], "--preset")) { const char *p = argv[ai + 1]; preset = !strcmp(p, "normal") ? "overworld" : p; ai += 2; }
+     long long seed = strtoll(argv[ai++], NULL, 10);
+     int qx0 = atoi(argv[ai++]), qz0 = atoi(argv[ai++]), nx = atoi(argv[ai++]), nz = atoi(argv[ai++]), qy = atoi(argv[ai++]);
+-    if (ai < argc && !strcmp(argv[ai], "--climate")) climate = 1;
++    int step = 1;
++    while (ai < argc) {
++        if (!strcmp(argv[ai], "--step") && ai + 1 < argc) step = atoi(argv[++ai]);
++        else if (!strcmp(argv[ai], "--climate")) climate = 1;
++        else { fprintf(stderr, "unknown option: %s\n", argv[ai]); return 2; }
++        ai++;
++    }
++    if (step < 1) { fprintf(stderr, "step must be positive\n"); return 2; }
+     static McVersionData V; if (mc_load_version(&V, ver)) return 1;
+     if (!strcmp(dim, "ow")) {
+         McClimateSpec *S = mc_preset(&V, preset); if (!S) { fprintf(stderr, "no preset\n"); return 1; }
+         McBiomeTree *T = mc_load_biome_tree(ver, "overworld");
+         static McClimate cl; mc_climate_init_overworld(&cl, S, seed);
+         for (int z = 0; z < nz; z++) for (int x = 0; x < nx; x++) {
+-            int qx = qx0 + x, qz = qz0 + z; float raw[6];
++            int qx = qx0 + x * step, qz = qz0 + z * step; float raw[6];
+             mc_climate_overworld_raw(&cl, S, qx * 4, qy * 4, qz * 4, raw);
+             McTarget t = mc_target_from_raw(raw);
+             if (climate) printf("%d %d %lld %lld %lld %lld %lld %lld\n", qx, qz, (long long)t.t, (long long)t.h, (long long)t.c, (long long)t.e, (long long)t.d, (long long)t.w);
+@@ -29,7 +36,7 @@ int main(int argc, char **argv) {
+         static McNormal nt, nv; McLcg r0 = lcg_new(seed), r1 = lcg_new(seed + 1);
+         normal_init_legacy(&nt, &V.nether_temp, &r0); normal_init_legacy(&nv, &V.nether_veg, &r1);
+         for (int z = 0; z < nz; z++) for (int x = 0; x < nx; x++) {
+-            int qx = qx0 + x, qz = qz0 + z; int bx = qx * 4, bz = qz * 4, by = qy * 4;
++            int qx = qx0 + x * step, qz = qz0 + z * step; int bx = qx * 4, bz = qz * 4, by = qy * 4;
+             float t, h;
+             if (ver >= MC_26_3) {
+                 t = normal_get_f(&nt, &V.nether_temp, bx * 0.25, by * 0.0, bz * 0.25);
+@@ -46,7 +53,7 @@ int main(int argc, char **argv) {
+         static McEnd E; mc_end_init(&E, seed); int mode = (ver >= MC_26_3) ? MC_NOISE_FLOAT : MC_NOISE_DOUBLE;
+         static const char *EN[5] = {"the_end", "end_highlands", "end_midlands", "small_end_islands", "end_barrens"};
+         for (int z = 0; z < nz; z++) for (int x = 0; x < nx; x++) {
+-            int qx = qx0 + x, qz = qz0 + z;
++            int qx = qx0 + x * step, qz = qz0 + z * step;
+             printf("%d %d minecraft:%s\n", qx, qz, EN[mc_end_biome(&E, mode, qx, qz)]);
+         }
+     }

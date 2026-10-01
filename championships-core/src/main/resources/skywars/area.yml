@@ -40,7 +40,8 @@ shrink-time:
 time:
   enable-boundary-shrink: 660
   disable-health-regain: 20
-  spawn-happy-ghast: 840
+  # Spawn 4 minutes after the start of the 16-minute round (12:00 remaining).
+  spawn-happy-ghast: 720
 scoring:
   kill: 40
   survive: 50
@@ -58,7 +59,8 @@ rules:
     - "&#fff566咻——欢迎来到空岛，千万别往下看！"
     - "&#ededed一局定胜负，所有队伍同场竞技（16分钟）"
     - "&#ededed各队出生在各自的小岛上，向外收集资源"
-    - "&#ededed开局2分钟后，每队出生岛会生成专属的&#fff566乐魂"
+    - "&#ededed开局4分钟后，每队出生岛会生成专属的&#fff566乐魂"
+    - "&#ededed乐魂无人骑乘时以原速的5%移动，骑乘后恢复正常速度"
     - "&#ededed只有本队队员可以骑乘；全队出局后乐魂也会死亡"
     - "&#ededed开局5分钟后安全空域开始收缩，出圈持续掉血"
     - "&#ededed合成、酿造、附魔，武装自己击落对手！"

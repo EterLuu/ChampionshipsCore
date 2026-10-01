@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 
 public final class FrostbiteStartMainCommand extends BaseMainCommand {
     public FrostbiteStartMainCommand() {
-        super("frostbite", "霜冻狂潮");
+        super("frostbite", "霜冻决斗");
         addSubCommand(new FrostbiteStartAllSubCommand());
     }
 }

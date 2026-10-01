@@ -38,6 +38,24 @@ class PlayerVisibilityPolicyTest {
     }
 
     @Test
+    void participantCannotSeeASpectatorEvenWhenPolicyIsAll() {
+        PlayerVisibilityState all = PlayerVisibilityState.all("test", "all");
+
+        assertFalse(PlayerVisibilityPolicy.allows(all, viewer, target, false,
+                false, true, false, false, null, null, null));
+    }
+
+    @Test
+    void spectatorsCannotSeeEachOtherButCanSeePlayers() {
+        PlayerVisibilityState self = PlayerVisibilityState.self("test", "restricted");
+
+        assertFalse(PlayerVisibilityPolicy.allows(self, viewer, target, true,
+                true, true, false, false, null, null, null));
+        assertTrue(PlayerVisibilityPolicy.allows(self, viewer, target, true,
+                true, false, false, false, null, null, null));
+    }
+
+    @Test
     void explicitTeamAndPlayerSetsAreApplied() {
         assertTrue(allows(PlayerVisibilityState.teams(Set.of(2, 3), "test", "teams"),
                 false, false, 2, null, null));

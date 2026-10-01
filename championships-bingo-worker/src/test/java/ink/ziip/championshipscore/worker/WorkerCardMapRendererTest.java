@@ -1,6 +1,14 @@
 package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
+import ink.ziip.championshipscore.platform.bukkit.bingo.map.MapColorMatcher;
+import ink.ziip.championshipscore.protocol.BingoRuntimeRules;
+import ink.ziip.championshipscore.protocol.BingoScoringRules;
+import ink.ziip.championshipscore.protocol.BingoTaskSpec;
+import ink.ziip.championshipscore.protocol.MatchManifest;
+import ink.ziip.championshipscore.protocol.MatchRunMode;
+import ink.ziip.championshipscore.protocol.ProtocolVersion;
+import ink.ziip.championshipscore.protocol.TeamSnapshot;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
@@ -9,17 +17,123 @@ import org.bukkit.map.MapCanvas;
 import org.junit.jupiter.api.Test;
 
 import java.awt.image.BufferedImage;
+import java.awt.Color;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorkerCardMapRendererTest {
+    @Test
+    void eventAndDailyCardsShowOtherBordersUntilOwnCompletion() throws Exception {
+        var draw = WorkerCardMapRenderer.class.getDeclaredMethod("drawBorders",
+                MapCanvas.class, int.class, int.class, List.class);
+        draw.setAccessible(true);
+        for (MatchRunMode mode : new MatchRunMode[]{MatchRunMode.EVENT, MatchRunMode.DAILY}) {
+            WorkerCardMapRenderer renderer = new WorkerCardMapRenderer(manifest(mode), 5, null);
+            PixelCanvas pixels = new PixelCanvas();
+            draw.invoke(renderer, pixels.canvas, 1, 1, List.of());
+            assertTrue(pixels.colors.isEmpty());
+            draw.invoke(renderer, pixels.canvas, 1, 1, List.of(1, 2));
+            assertEquals(Set.of(palette(255, 0, 0), palette(0, 0, 255)), new HashSet<>(pixels.colors.values()));
+
+            draw.invoke(renderer, pixels.canvas, 1, 1, List.of(1, 2, 3, 4, 5));
+            assertEquals(160, pixels.colors.size());
+            assertEquals(Set.of(palette(0, 255, 0)), new HashSet<>(pixels.colors.values()));
+
+            PixelCanvas spectatorPixels = new PixelCanvas();
+            draw.invoke(new WorkerCardMapRenderer(manifest(mode), null), spectatorPixels.canvas, 1, 1, List.of(1, 2));
+            assertEquals(Set.of(palette(255, 0, 0), palette(0, 0, 255)),
+                    new HashSet<>(spectatorPixels.colors.values()));
+        }
+    }
+
+    @Test
+    void playerAndSpectatorBordersShowAtMostSixTeams() throws Exception {
+        var draw = WorkerCardMapRenderer.class.getDeclaredMethod("drawBorders",
+                MapCanvas.class, int.class, int.class, List.class);
+        draw.setAccessible(true);
+        Set<Color> expected = Set.of(palette(255, 0, 0), palette(0, 0, 255), palette(255, 255, 0),
+                palette(255, 255, 255), palette(0, 255, 0), palette(0, 255, 255));
+        for (MatchRunMode mode : new MatchRunMode[]{MatchRunMode.EVENT, MatchRunMode.DAILY}) {
+            for (Integer viewer : new Integer[]{8, null}) {
+                WorkerCardMapRenderer renderer = new WorkerCardMapRenderer(manifest(mode), viewer, null, null);
+                PixelCanvas pixels = new PixelCanvas();
+                draw.invoke(renderer, pixels.canvas, 1, 1, List.of(1, 2, 3, 4, 5, 6));
+                assertEquals(expected, new HashSet<>(pixels.colors.values()));
+                draw.invoke(renderer, pixels.canvas, 1, 1, List.of(1, 2, 3, 4, 5, 6, 7));
+                assertEquals(expected, new HashSet<>(pixels.colors.values()));
+                draw.invoke(renderer, pixels.canvas, 1, 1, List.of(1, 2, 3, 4, 5, 6, 7, 8));
+                assertEquals(viewer == null ? expected : Set.of(palette(170, 0, 170)),
+                        new HashSet<>(pixels.colors.values()));
+            }
+        }
+    }
+
+    @Test
+    void rowsColumnsAndBothDiagonalsRequireOwnCompletion() throws Exception {
+        var draw = WorkerCardMapRenderer.class.getDeclaredMethod("drawCompletedLines",
+                MapCanvas.class, Map.class, int.class, int.class, int.class);
+        draw.setAccessible(true);
+        WorkerCardMapRenderer renderer = new WorkerCardMapRenderer(manifest(MatchRunMode.EVENT), 5, null);
+        int[][] lines = {{0, 1, 2}, {0, 3, 6}, {0, 4, 8}, {2, 4, 6}};
+        int[][] gaps = {{51, 40}, {40, 51}, {52, 52}, {76, 52}};
+        for (int index = 0; index < lines.length; index++) {
+            Map<Integer, List<Integer>> completions = new HashMap<>();
+            for (int cell : lines[index]) completions.put(cell, List.of(1));
+            completions.put(lines[index][0], List.of(1, 5));
+            completions.put(lines[index][1], List.of(1, 5));
+            PixelCanvas pixels = new PixelCanvas();
+            draw.invoke(renderer, pixels.canvas, completions, 3, 1, 5);
+            assertTrue(pixels.colors.isEmpty());
+            completions.put(lines[index][2], List.of(1, 5));
+            draw.invoke(renderer, pixels.canvas, completions, 3, 1, 5);
+            assertEquals(palette(0, 255, 0), pixels.colors.get(gaps[index][1] * 128 + gaps[index][0]));
+        }
+    }
+
+    private static MatchManifest manifest(MatchRunMode mode) {
+        List<BingoTaskSpec> tasks = new ArrayList<>();
+        for (int cell = 0; cell < 9; cell++) {
+            tasks.add(new BingoTaskSpec(cell, "task-" + cell, "item", Map.of("material", "STONE")));
+        }
+        return new MatchManifest(ProtocolVersion.CURRENT, UUID.randomUUID(), 1, 1, "worker", mode,
+                600, 1, "config", new BingoScoringRules(3, List.of(60, 50, 40, 30, 20), 50, 2, 20),
+                new BingoRuntimeRules(5, 100, 10, 0, List.of()), tasks, List.of(
+                new TeamSnapshot(1, "Red", "red", "#ff0000", List.of()),
+                new TeamSnapshot(2, "Blue", "blue", "#0000ff", List.of()),
+                new TeamSnapshot(3, "Yellow", "yellow", "#ffff00", List.of()),
+                new TeamSnapshot(4, "White", "white", "#ffffff", List.of()),
+                new TeamSnapshot(5, "Green", "green", "#00ff00", List.of()),
+                new TeamSnapshot(6, "Aqua", "aqua", "#00ffff", List.of()),
+                new TeamSnapshot(7, "Black", "black", "#000000", List.of()),
+                new TeamSnapshot(8, "Purple", "purple", "#aa00aa", List.of())), List.of());
+    }
+
+    private static Color palette(int red, int green, int blue) {
+        return MapColorMatcher.color(MapColorMatcher.matchColor(red, green, blue));
+    }
+
+    private static final class PixelCanvas {
+        final Map<Integer, Color> colors = new HashMap<>();
+        final MapCanvas canvas = (MapCanvas) Proxy.newProxyInstance(MapCanvas.class.getClassLoader(),
+                new Class<?>[]{MapCanvas.class}, (proxy, method, args) -> {
+                    if (method.getName().equals("setPixelColor")) {
+                        colors.put((int) args[1] * 128 + (int) args[0], (Color) args[2]);
+                        return null;
+                    }
+                    throw new UnsupportedOperationException(method.getName());
+                });
+    }
+
     @Test
     void amountCoordinatesMatchLocalRendererForItemsAndStatistics() {
         List<TextDraw> text = new ArrayList<>();

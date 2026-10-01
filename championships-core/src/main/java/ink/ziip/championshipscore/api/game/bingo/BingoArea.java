@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoFireworkSupply;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.daily.DailyRecordType;
@@ -81,6 +82,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     private ChampionshipTeam winningTeam;
 
     private BukkitTask startGameProgressTask;
+    private BingoFireworkSupply fireworkSupply;
     /** Scheduled re-enable of world PvP after the 3-minute grace; cancelled if the round ends early. */
     private BukkitTask pvpEnableTask;
     private BukkitTask remixTask;
@@ -125,6 +127,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         // wipes any dropped items, so no explicit cleanup is needed here.
         round = null;
         startGameProgressTask = null;
+        fireworkSupply = null;
         if (pvpEnableTask != null) {
             pvpEnableTask.cancel();
             pvpEnableTask = null;
@@ -288,6 +291,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
 
     private void beginGameProgress() {
         roundStartMillis = System.currentTimeMillis();
+        fireworkSupply = new BingoFireworkSupply();
 
         // PvP grace (design doc: first 3 minutes PvP off, then on). Enforced at the world level via the
         // PVP gamerule - one toggle covers melee + projectiles, so no per-event cancellation is needed.
@@ -322,9 +326,12 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             if (timer == 0)
                 return;
 
+            boolean refillFireworks = getRunMode() != ink.ziip.championshipscore.api.object.game.GameRunMode.DAILY
+                    && fireworkSupply.shouldRefill(elapsed);
             for (UUID uuid : gamePlayers) {
                 Player player = Bukkit.getPlayer(uuid);
                 if (player == null) continue;
+                if (refillFireworks) BingoFireworkSupply.give(player);
                 // Self-heal permanent effects (death/reconnect/temp-potion-overwrite all drop them).
                 ensurePermanentEffects(player);
                 checkPlayerProgress(player);
@@ -527,6 +534,12 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         for (UUID audienceId : audienceIds) {
             Player audience = Bukkit.getPlayer(audienceId);
             if (audience != null) audience.sendMessage(message);
+        }
+        if (team != null) {
+            for (Player teammate : team.getOnlinePlayers()) {
+                teammate.sendActionBar(message);
+                teammate.playSound(teammate.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1F, 1.5F);
+            }
         }
         if (team != null && round.hasWon(team)) {
             winningTeam = team;

@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.configuration;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -18,7 +19,7 @@ public final class ConfigurationStateExtension implements BeforeAllCallback, Aft
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
-        for (Class<?> type : new Class<?>[]{CCConfig.class, MessageConfig.class, GuiConfig.class}) {
+        for (Class<?> type : new Class<?>[]{CCConfig.class, MessageConfig.class, GuiConfig.class, ScheduleMessageConfig.class}) {
             for (Field field : type.getDeclaredFields()) {
                 if (!Modifier.isStatic(field.getModifiers()) || Modifier.isFinal(field.getModifiers())) continue;
                 field.setAccessible(true);

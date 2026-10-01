@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.riptiderush;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -45,6 +46,8 @@ final class RiptideChallengeGroups {
         int first = original.step() - (count - 1) * gap / 2;
         var result = new ArrayList<RiptideCoursePlan.Level>();
         var random = new Random(original.contentSeed());
+        var rhythmVariants = original.type() == RiptideLevelType.RHYTHM
+                ? distinctRhythmVariants(original.variant(), count, random) : List.<String>of();
         for (int beat = 1; beat <= count; beat++) {
             int step = first + (beat - 1) * gap;
             String variant = original.variant();
@@ -52,12 +55,31 @@ final class RiptideChallengeGroups {
                 var choices = RiptideQuestion.variants().stream()
                         .filter(v -> RiptideDifficulty.allowsMath(v, step, g.totalSteps())).toList();
                 variant = choices.get(random.nextInt(choices.size()));
+            } else if (original.type() == RiptideLevelType.RHYTHM) {
+                variant = rhythmVariants.get(beat - 1);
             }
             result.add(new RiptideCoursePlan.Level(original.number(), step, original.template(), variant,
                     original.opening(), original.mirrored(), random.nextLong(), -original.number(), beat,
                     original.type().name() + (count == 3 ? "_TRIPLE" : "_DOUBLE"), 0));
         }
         return result;
+    }
+
+    /** Keep every physical gate in a rhythm group mechanically distinct. */
+    static List<String> distinctRhythmVariants(String preferred, int count, Random random) {
+        var available = new ArrayList<>(RiptideLevelTemplate.variants(RiptideLevelType.RHYTHM)
+                .subList(1, RiptideLevelTemplate.variants(RiptideLevelType.RHYTHM).size()));
+        var result = new ArrayList<String>(count);
+        if (!preferred.equals("AUTO")) {
+            result.add(preferred);
+            available.remove(preferred);
+        }
+        Collections.shuffle(available, random);
+        for (String variant : available) {
+            if (result.size() == count) break;
+            result.add(variant);
+        }
+        return List.copyOf(result);
     }
 
     private static boolean retime(RiptideRushConfig c, RiptideCourseGeometry g,

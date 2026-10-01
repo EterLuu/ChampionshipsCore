@@ -46,7 +46,10 @@ public record RiptideLevelTemplate(String id, String name, RiptideLevelType type
             case COLOR_FLOOR -> List.of("AUTO", "COPPER", "WOOD", "TERRACOTTA", "STONE", "ORE", "LOG", "NETHER");
             case DODGE -> List.of("AUTO", "ZOMBIE", "HUSK", "SKELETON", "SPIDER", "CREEPER");
             case RHYTHM -> List.of("AUTO", "SHUTTER", "ALTERNATING", "DOUBLE_BEAT", "CENTER_SIDES", "SWEEP", "IN_OUT", "CROSS_BEAT",
-                    "HORIZONTAL_WINDOW", "VERTICAL_WINDOW", "WINDOW_SHUTTER", "STAGGERED_WINDOWS");
+                    "HORIZONTAL_WINDOW", "VERTICAL_WINDOW", "WINDOW_SHUTTER", "STAGGERED_WINDOWS",
+                    "TRIPLE_PULSE", "LEFT_RIGHT_CENTER", "EDGE_SWAP", "PINBALL", "SNAKE", "CENTER_PULSE",
+                    "EDGE_PULSE", "FOLD", "SPLIT_MERGE", "REST_ACCENT", "MIRROR_CHASE", "DIAGONAL",
+                    "DOUBLE_WINDOW", "BACKBEAT", "QUICK_TURN");
         };
     }
 
@@ -77,6 +80,21 @@ public record RiptideLevelTemplate(String id, String name, RiptideLevelType type
             case "VERTICAL_WINDOW" -> "升降窗口";
             case "WINDOW_SHUTTER" -> "定点开合窗";
             case "STAGGERED_WINDOWS" -> "左右高低交替窗";
+            case "TRIPLE_PULSE" -> "三拍脉冲";
+            case "LEFT_RIGHT_CENTER" -> "左-右-中接力";
+            case "EDGE_SWAP" -> "边缘换气";
+            case "PINBALL" -> "弹珠回弹";
+            case "SNAKE" -> "蛇形追拍";
+            case "CENTER_PULSE" -> "中心脉冲";
+            case "EDGE_PULSE" -> "边缘脉冲";
+            case "FOLD" -> "折叠开口";
+            case "SPLIT_MERGE" -> "分流合流";
+            case "REST_ACCENT" -> "反拍留白";
+            case "MIRROR_CHASE" -> "镜像追逐";
+            case "DIAGONAL" -> "斜线节拍";
+            case "DOUBLE_WINDOW" -> "双窗交替";
+            case "BACKBEAT" -> "后拍回收";
+            case "QUICK_TURN" -> "急转弯拍";
             case "ORE" -> "矿石";
             case "LOG" -> "原木";
             case "NETHER" -> "下界方块";

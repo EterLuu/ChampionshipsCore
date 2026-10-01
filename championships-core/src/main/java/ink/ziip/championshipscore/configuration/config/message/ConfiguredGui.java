@@ -73,6 +73,6 @@ public final class ConfiguredGui {
     }
 
     public static int slot(@NotNull String itemPath, int fallback) {
-        return GuiConfig.integer(itemPath + ".slot", fallback);
+        return GuiConfig.slot(itemPath + ".slot", fallback);
     }
 }

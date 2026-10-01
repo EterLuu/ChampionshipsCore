@@ -47,9 +47,11 @@ public final class GameSpawnResolver {
             case HotyCodyDuskyConfig c -> c.getPlayerSpawnPoint();
             case AceRaceConfig c -> c.getStartSpawnPoint();
             case RiptideRushConfig c -> c.getStartPoint();
+            case ink.ziip.championshipscore.api.game.laserbox.LaserBoxConfig c -> first(c.getRightSpawnPoint(), c.getLeftSpawnPoint());
             case SnowballShowdownConfig c -> firstSectionLocation(c.getPlayerSpawnPoints());
             case DragonEggCarnivalConfig c -> dragonEggCarnivalSpawn(c);
             case DodgeboltConfig c -> firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());
+            case ink.ziip.championshipscore.api.game.sulfursoccer.SulfurSoccerConfig c -> firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());
             default -> null;
     };
         Location fallback = location != null ? location : spectator(config);

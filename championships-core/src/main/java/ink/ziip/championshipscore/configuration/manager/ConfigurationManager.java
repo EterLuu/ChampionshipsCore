@@ -17,11 +17,6 @@ public class ConfigurationManager extends BaseConfigurationManager {
         getConfigs().add(new GuiConfig(plugin));
     }
 
-    @Override
-    protected boolean isAutoUpgradeEnabled() {
-        return true;
-    }
-
     public CCConfig getCCConfig() {
         for (BaseConfigurationFile configurationFile : getConfigs()) {
             if (configurationFile instanceof CCConfig)

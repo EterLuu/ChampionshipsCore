@@ -64,9 +64,10 @@ final class RiptideRhythmRun implements AutoCloseable {
             for (int y = 1; y <= 4; y++) {
                 var block = world.getBlockAt(geometry.blockX(level.step(), lateral), geometry.floorY() + y,
                         geometry.blockZ(level.step(), lateral));
+                // Every rhythm gate uses the same iron body and the same red/green
+                // status cap; only the opening mask changes between variants.
                 Material material = y == 4 ? passable ? Material.LIME_CONCRETE : Material.RED_CONCRETE
-                        : openings[y] ? Material.AIR
-                        : RiptideRhythmGate.window(level.variant()) ? Material.CYAN_CONCRETE : Material.IRON_BLOCK;
+                        : openings[y] ? Material.AIR : Material.IRON_BLOCK;
                 if (block.getType() != material) block.setType(material, false);
                 if (material != Material.AIR) closed.add(new BoundingBox(block.getX(), block.getY(), block.getZ(),
                         block.getX() + 1, block.getY() + 1, block.getZ() + 1));

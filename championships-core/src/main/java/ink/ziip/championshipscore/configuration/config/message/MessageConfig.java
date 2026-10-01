@@ -14,6 +14,7 @@ import java.util.List;
 public class MessageConfig extends BaseConfigurationFile {
     private final String fileName = "message.yml";
     private final String resourceName = "message.yml";
+    private String defaultEventStartUnavailable;
 
     public MessageConfig(ChampionshipsCore plugin) {
         super(plugin);
@@ -21,52 +22,24 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 59;
+        return 62;
     }
 
-    /** Preserve current custom messages while filling the versioned Riptide presentation additions. */
     @Override
-    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration outdatedConfiguration) throws IOException {
-        if (outdatedConfiguration.getInt("dont-edit-this.version") >= 40) {
-            preserveCurrentMessages(outdatedConfiguration, configuration);
-            configuration.save(configurationPath.toFile());
-            return;
-        }
-        for (String section : List.of("command", "chat", "team", "member", "reason", "area", "rank", "spectator", "game",
-                "battlebox", "parkourtag", "skywars", "tgttos", "bingo", "buildmart", "tntrun",
-                "dragoneggcarnival", "snowball", "parkourwarrior", "hotycodydusky", "acerace",
-                "riptiderush", "daily", "vote"))
-            outdatedConfiguration.set(section, null);
-        outdatedConfiguration.set("no-permission", null);
-        super.loadFromOutdatedConfiguration(outdatedConfiguration);
+    protected void loadCustomDefaultOptions() {
+        defaultEventStartUnavailable = EVENT_START_UNAVAILABLE;
     }
 
-    static void preserveCurrentMessages(YamlConfiguration existing, YamlConfiguration defaults) {
-        for (String key : existing.getKeys(true)) {
-            if (key.startsWith("riptiderush.rhythm.") || key.equals("riptiderush.reason.rhythm")) continue;
-            if (key.startsWith("map-editor-raft.") || key.equals("riptiderush.reason.side-wall")) continue;
-            if (key.equals("riptiderush.sweep-actionbar")) {
-                if (!existing.isSet("riptiderush.sweep-title") && !existing.getString(key, "").equals(
-                        "&e侧墙 %beat%/2 &f%side% &7• %time% &b%action%"))
-                    defaults.set("riptiderush.sweep-title", existing.get(key));
-                continue;
-            }
-            if (key.equals("riptiderush.floor-actionbar") && existing.getString(key, "").equals(
-                    "&#fff566彩色地板 %round%/%rounds% &#bababa• &#ededed每轮前移一格，站到手中方块上：&#55ffff%block%")) continue;
-            if (key.equals("riptiderush.floor-title") && existing.getString(key, "").equals(
-                    "&#fff566&l彩色地板 %round%/5 &#ff6b26%seconds%秒")) continue;
-            if (key.equals("riptiderush.floor-subtitle")) continue;
-            if (key.equals("riptiderush.question-subtitle") && existing.getString(key, "").equals(
-                    "&#ff5555左 %left% &#bababa| &#55ffff右 %right%")) continue;
-            if (key.equals("riptiderush.question-bar") || key.equals("riptiderush.pause-bar")
-                    || key.equals("riptiderush.pause-title") || key.equals("riptiderush.pause-subtitle")) continue;
-            if (key.equals("riptiderush.boss-bar") && existing.getString(key, "").equals(
-                    "&#fff566激流勇进 &#bababa•&#ededed 存活&#ff6b26%alive%/%total% &#bababa•&#ededed %time%秒 &#bababa•&#ededed %speed%格/秒")) continue;
-            if (!key.equals("dont-edit-this.version") && !existing.isConfigurationSection(key))
-                defaults.set(key, key.startsWith("riptiderush.") && existing.get(key) instanceof String text
-                        ? text.replace("彩色地板", "踩色").replace("数学", "解题").replace("算错了", "答错了") : existing.get(key));
+    @Override
+    protected void loadCustomFileOptions() {
+        // Replace the old shared Bingo-only default while preserving customized administrator text.
+        if ("宾果执行端尚未就绪、已有比赛运行，或参赛者当前不可用。".equals(EVENT_START_UNAVAILABLE)) {
+            EVENT_START_UNAVAILABLE = defaultEventStartUnavailable;
+            configuration.set("event.start.unavailable", defaultEventStartUnavailable);
         }
     }
+
+
 
     // Player
     @ConfigOption(path = "server-full")
@@ -90,6 +63,30 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "command.daily-stats")
     public static String COMMAND_DAILY_STATS;
 
+    // Public chat moderation. Optional keys keep existing message.yml files compatible with defaults.
+    @ConfigOption(path = "admin.mute.default-reason", nullable = true)
+    public static String MUTE_DEFAULT_REASON;
+    @ConfigOption(path = "admin.mute.set", nullable = true)
+    public static String ADMIN_MUTE_SET;
+    @ConfigOption(path = "admin.mute.temporary-set", nullable = true)
+    public static String ADMIN_TEMP_MUTE_SET;
+    @ConfigOption(path = "admin.mute.unmuted", nullable = true)
+    public static String ADMIN_UNMUTE_SET;
+    @ConfigOption(path = "admin.mute.not-muted", nullable = true)
+    public static String ADMIN_MUTE_NOT_MUTED;
+    @ConfigOption(path = "admin.mute.invalid-duration", nullable = true)
+    public static String ADMIN_MUTE_INVALID_DURATION;
+    @ConfigOption(path = "admin.mute.lookup-failed", nullable = true)
+    public static String ADMIN_MUTE_LOOKUP_FAILED;
+    @ConfigOption(path = "admin.mute.save-failed", nullable = true)
+    public static String ADMIN_MUTE_SAVE_FAILED;
+    @ConfigOption(path = "chat.muted-permanent", nullable = true)
+    public static String CHAT_MUTED_PERMANENT;
+    @ConfigOption(path = "chat.muted-temporary", nullable = true)
+    public static String CHAT_MUTED_TEMPORARY;
+    @ConfigOption(path = "chat.unmuted", nullable = true)
+    public static String CHAT_UNMUTED;
+
     // Spawn feedback
     @ConfigOption(path = "spawn.in-game-or-spectating")
     public static String SPAWN_IN_GAME_OR_SPECTATING;
@@ -98,8 +95,11 @@ public class MessageConfig extends BaseConfigurationFile {
     public static String SPAWN_MISSING;
 
     // TNT Run preparation
-    @ConfigOption(path = "map-editor-tntrun.track-boundary-set")
-    public static String MAP_EDITOR_TNT_TRACK_BOUNDARY_SET;
+    @ConfigOption(path = "map-editor-tntrun.elimination-height-set")
+    public static String MAP_EDITOR_TNT_ELIMINATION_HEIGHT_SET;
+
+    @ConfigOption(path = "map-editor-tntrun.elimination-height-invalid")
+    public static String MAP_EDITOR_TNT_ELIMINATION_HEIGHT_INVALID;
 
     @ConfigOption(path = "map-editor-tntrun.spawn-set")
     public static String MAP_EDITOR_TNT_SPAWN_SET;
@@ -339,20 +339,20 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "map-editor-buildmart.portal-set")
     public static String MAP_EDITOR_BUILD_PORTAL_SET;
 
-    @ConfigOption(path = "map-editor-buildmart.wind-select-first")
-    public static String MAP_EDITOR_BUILD_WIND_SELECT_FIRST;
+    @ConfigOption(path = "map-editor-buildmart.jump-pad-select-first")
+    public static String MAP_EDITOR_BUILD_JUMP_PAD_SELECT_FIRST;
 
-    @ConfigOption(path = "map-editor-buildmart.wind-added")
-    public static String MAP_EDITOR_BUILD_WIND_ADDED;
+    @ConfigOption(path = "map-editor-buildmart.jump-pad-added")
+    public static String MAP_EDITOR_BUILD_JUMP_PAD_ADDED;
 
-    @ConfigOption(path = "map-editor-buildmart.wind-cleared")
-    public static String MAP_EDITOR_BUILD_WIND_CLEARED;
+    @ConfigOption(path = "map-editor-buildmart.jump-pad-cleared")
+    public static String MAP_EDITOR_BUILD_JUMP_PAD_CLEARED;
 
-    @ConfigOption(path = "map-editor-buildmart.wind-updated")
-    public static String MAP_EDITOR_BUILD_WIND_UPDATED;
+    @ConfigOption(path = "map-editor-buildmart.jump-pad-updated")
+    public static String MAP_EDITOR_BUILD_JUMP_PAD_UPDATED;
 
-    @ConfigOption(path = "map-editor-buildmart.wind-adjusted")
-    public static String MAP_EDITOR_BUILD_WIND_ADJUSTED;
+    @ConfigOption(path = "map-editor-buildmart.jump-pad-adjusted")
+    public static String MAP_EDITOR_BUILD_JUMP_PAD_ADJUSTED;
 
     // Ace Race preparation
     @ConfigOption(path = "map-editor-acerace.line-select-first")
@@ -819,6 +819,32 @@ public class MessageConfig extends BaseConfigurationFile {
     public static String BUILD_MART_BLUEPRINT_COVERAGE_UNCOVERED;
     @ConfigOption(path = "buildmart-blueprint.audit-warning")
     public static String BUILD_MART_BLUEPRINT_AUDIT_WARNING;
+    @ConfigOption(path = "buildmart-blueprint-editor.invalid-name")
+    public static String BUILD_MART_EDITOR_INVALID_NAME;
+    @ConfigOption(path = "buildmart-blueprint-editor.finish-first")
+    public static String BUILD_MART_EDITOR_FINISH_FIRST;
+    @ConfigOption(path = "buildmart-blueprint-editor.setup-missing")
+    public static String BUILD_MART_EDITOR_SETUP_MISSING;
+    @ConfigOption(path = "buildmart-blueprint-editor.conflict")
+    public static String BUILD_MART_EDITOR_CONFLICT;
+    @ConfigOption(path = "buildmart-blueprint-editor.started")
+    public static String BUILD_MART_EDITOR_STARTED;
+    @ConfigOption(path = "buildmart-blueprint-editor.busy")
+    public static String BUILD_MART_EDITOR_BUSY;
+    @ConfigOption(path = "buildmart-blueprint-editor.unsupported")
+    public static String BUILD_MART_EDITOR_UNSUPPORTED;
+    @ConfigOption(path = "buildmart-blueprint-editor.reviewing")
+    public static String BUILD_MART_EDITOR_REVIEWING;
+    @ConfigOption(path = "buildmart-blueprint-editor.manifest-missing")
+    public static String BUILD_MART_EDITOR_MANIFEST_MISSING;
+    @ConfigOption(path = "buildmart-blueprint-editor.materials-rejected")
+    public static String BUILD_MART_EDITOR_MATERIALS_REJECTED;
+    @ConfigOption(path = "buildmart-blueprint-editor.invisible-warning")
+    public static String BUILD_MART_EDITOR_INVISIBLE_WARNING;
+    @ConfigOption(path = "buildmart-blueprint-editor.saved")
+    public static String BUILD_MART_EDITOR_SAVED;
+    @ConfigOption(path = "buildmart-blueprint-editor.cancelled")
+    public static String BUILD_MART_EDITOR_CANCELLED;
 
     // Team management feedback
     @ConfigOption(path = "team-gui.add-member-database-error")
@@ -1220,6 +1246,36 @@ public class MessageConfig extends BaseConfigurationFile {
     public static String GAME_RIPTIDE_RUSH;
 
     @ConfigOption(path = "game.frostbite") public static String GAME_FROSTBITE;
+
+    @ConfigOption(path = "game.laserbox") public static String GAME_LASER_BOX;
+    @ConfigOption(path = "game.sulfursoccer") public static String GAME_SULFUR_SOCCER;
+    @ConfigOption(path = "sulfursoccer.score") public static String SULFUR_SOCCER_SCORE;
+    @ConfigOption(path = "sulfursoccer.goal") public static String SULFUR_SOCCER_GOAL;
+    @ConfigOption(path = "sulfursoccer.goal-title") public static String SULFUR_SOCCER_GOAL_TITLE;
+    @ConfigOption(path = "sulfursoccer.goal-subtitle") public static String SULFUR_SOCCER_GOAL_SUBTITLE;
+    @ConfigOption(path = "sulfursoccer.upcoming-title", nullable = true) public static String SULFUR_SOCCER_UPCOMING_TITLE;
+    @ConfigOption(path = "sulfursoccer.opening-title", nullable = true) public static String SULFUR_SOCCER_OPENING_TITLE;
+    @ConfigOption(path = "sulfursoccer.restart-title", nullable = true) public static String SULFUR_SOCCER_RESTART_TITLE;
+    @ConfigOption(path = "sulfursoccer.warmup-start", nullable = true) public static String SULFUR_SOCCER_WARMUP_START;
+    @ConfigOption(path = "sulfursoccer.warmup-time", nullable = true) public static String SULFUR_SOCCER_WARMUP_TIME;
+    @ConfigOption(path = "sulfursoccer.time-up", nullable = true) public static String SULFUR_SOCCER_TIME_UP;
+    @ConfigOption(path = "sulfursoccer.shootout-start", nullable = true) public static String SULFUR_SOCCER_SHOOTOUT_START;
+    @ConfigOption(path = "sulfursoccer.penalty-turn", nullable = true) public static String SULFUR_SOCCER_PENALTY_TURN;
+    @ConfigOption(path = "sulfursoccer.penalty-goal", nullable = true) public static String SULFUR_SOCCER_PENALTY_GOAL;
+    @ConfigOption(path = "sulfursoccer.penalty-miss", nullable = true) public static String SULFUR_SOCCER_PENALTY_MISS;
+    @ConfigOption(path = "sulfursoccer.penalty-score", nullable = true) public static String SULFUR_SOCCER_PENALTY_SCORE;
+    @ConfigOption(path = "sulfursoccer.pearl-rejected", nullable = true) public static String SULFUR_SOCCER_PEARL_REJECTED;
+    @ConfigOption(path = "sulfursoccer.ball-reset") public static String SULFUR_SOCCER_BALL_RESET;
+    @ConfigOption(path = "sulfursoccer.paused") public static String SULFUR_SOCCER_PAUSED;
+    @ConfigOption(path = "sulfursoccer.resumed") public static String SULFUR_SOCCER_RESUMED;
+    @ConfigOption(path = "sulfursoccer.champion") public static String SULFUR_SOCCER_CHAMPION;
+    @ConfigOption(path = "sulfursoccer.champion-subtitle") public static String SULFUR_SOCCER_CHAMPION_SUBTITLE;
+    @ConfigOption(path = "sulfursoccer.stopped") public static String SULFUR_SOCCER_STOPPED;
+    @ConfigOption(path = "sulfursoccer.end-title") public static String SULFUR_SOCCER_END_TITLE;
+    @ConfigOption(path = "sulfursoccer.scheduled") public static String SULFUR_SOCCER_SCHEDULED;
+    @ConfigOption(path = "sulfursoccer.finalists") public static String SULFUR_SOCCER_FINALISTS;
+    @ConfigOption(path = "sulfursoccer.start-failed") public static String SULFUR_SOCCER_START_FAILED;
+
 
     @ConfigOption(path = "game.preparation-count-down")
     public static String GAME_PREPARATION_COUNT_DOWN;
@@ -2250,6 +2306,7 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "riptiderush.question-subtitle") public static String RIPTIDE_RUSH_QUESTION_SUBTITLE;
     @ConfigOption(path = "riptiderush.math-correct") public static String RIPTIDE_RUSH_MATH_CORRECT;
     @ConfigOption(path = "riptiderush.floor-title") public static String RIPTIDE_RUSH_FLOOR_TITLE;
+    @ConfigOption(path = "riptiderush.floor-intro-title") public static String RIPTIDE_RUSH_FLOOR_INTRO_TITLE;
     @ConfigOption(path = "riptiderush.floor-actionbar") public static String RIPTIDE_RUSH_FLOOR_ACTIONBAR;
     @ConfigOption(path = "riptiderush.dodge-title") public static String RIPTIDE_RUSH_DODGE_TITLE;
     @ConfigOption(path = "riptiderush.dodge-actionbar") public static String RIPTIDE_RUSH_DODGE_ACTIONBAR;

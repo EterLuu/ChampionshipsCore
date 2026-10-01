@@ -15,8 +15,16 @@ public record CrossServerChatMessage(
         String teamColorCode,
         boolean activePlayer,
         String messageJson,
-        long createdAt
+        long createdAt,
+        boolean daily
 ) {
+    public CrossServerChatMessage(UUID messageId, String sourceInstance, UUID senderId, String senderName,
+                                  String label, String teamColorCode, boolean activePlayer,
+                                  String messageJson, long createdAt) {
+        this(messageId, sourceInstance, senderId, senderName, label, teamColorCode, activePlayer,
+                messageJson, createdAt, false);
+    }
+
     public CrossServerChatMessage {
         Objects.requireNonNull(messageId, "messageId");
         sourceInstance = text(sourceInstance, "sourceInstance", 128);
@@ -37,6 +45,7 @@ public record CrossServerChatMessage(
         fields.put("label", label);
         fields.put("teamColorCode", teamColorCode == null ? "" : teamColorCode);
         fields.put("activePlayer", Boolean.toString(activePlayer));
+        fields.put("daily", Boolean.toString(daily));
         fields.put("messageJson", messageJson);
         fields.put("createdAt", Long.toString(createdAt));
         return Map.copyOf(fields);
@@ -49,6 +58,10 @@ public record CrossServerChatMessage(
             throw new IllegalArgumentException("activePlayer must be true or false");
         }
         String color = fields.get("teamColorCode");
+        String daily = fields.getOrDefault("daily", "false");
+        if (!daily.equals("true") && !daily.equals("false")) {
+            throw new IllegalArgumentException("daily must be true or false");
+        }
         return new CrossServerChatMessage(
                 UUID.fromString(required(fields, "messageId")),
                 required(fields, "sourceInstance"),
@@ -58,7 +71,7 @@ public record CrossServerChatMessage(
                 color == null || color.isBlank() ? null : color,
                 Boolean.parseBoolean(active),
                 required(fields, "messageJson"),
-                Long.parseLong(required(fields, "createdAt")));
+                Long.parseLong(required(fields, "createdAt")), Boolean.parseBoolean(daily));
     }
 
     private static String required(Map<String, String> fields, String key) {

@@ -9,11 +9,14 @@ import ink.ziip.championshipscore.api.game.battlebox.BattleBoxMatch;
 import ink.ziip.championshipscore.api.game.bingo.BingoArea;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.frostbite.FrostbiteArea;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.laserbox.LaserBoxArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagMatch;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorTeamArea;
+import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushArea;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownTeamArea;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.game.GameRunMode;
@@ -201,6 +204,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             ParkourTagMatch match = area.currentMatch();
             putMatchup(config, values, match == null ? null : match.getRight(), match == null ? null : match.getLeft());
         }
+        putGameValues(config, values, instance, player.getUniqueId(), spectator);
 
         List<String> lines = new ArrayList<>();
         for (String raw : template.lines()) {
@@ -228,6 +232,32 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         String undecided = config.value("match.undecided", "&7待定");
         values.put("match.right", right == null ? undecided : right.getColoredName());
         values.put("match.left", left == null ? undecided : left.getColoredName());
+    }
+
+    static void putGameValues(SidebarConfiguration config, Map<String, String> values,
+                              BaseGameInstance instance, UUID viewer, boolean spectator) {
+        if (instance instanceof RiptideRushArea area) {
+            values.put("riptide.progress", area.getCourseProgressPercent() + "%");
+            values.put("riptide.alive", Integer.toString(area.getSurvivedPlayerNums()));
+            String key = area.getCurrentChallengeKey();
+            values.put("riptide.challenge", config.value("riptide.challenge." + key, "-")
+                    .replace("{round}", area.getColorFloorRoundProgress()));
+        } else if (instance instanceof FrostbiteArea area) {
+            values.put("frostbite.kills", spectator ? "-" : Integer.toString(area.getPlayerKills(viewer)));
+            String key = spectator ? "spectator" : area.getPlayerStateKey(viewer);
+            values.put("frostbite.state", config.value("frostbite.state." + key, "-"));
+        } else if (instance instanceof ink.ziip.championshipscore.api.game.sulfursoccer.SulfurSoccerArea area) {
+            putMatchup(config, values, area.getRightChampionshipTeam(), area.getLeftChampionshipTeam());
+            values.put("sulfursoccer.right-goals", Integer.toString(area.getRightGoals()));
+            values.put("sulfursoccer.left-goals", Integer.toString(area.getLeftGoals()));
+            values.put("sulfursoccer.target", Integer.toString(area.getGameConfig().getGoalsToWin()));
+            values.put("sulfursoccer.state", area.getStateText());
+        } else if (instance instanceof LaserBoxArea area) {
+            putMatchup(config, values, area.getRightChampionshipTeam(), area.getLeftChampionshipTeam());
+            values.put("laserbox.right-progress", Integer.toString(area.getRightProgress()));
+            values.put("laserbox.left-progress", Integer.toString(area.getLeftProgress()));
+            values.put("laserbox.kills", spectator ? "-" : Integer.toString(area.getPlayerKills(viewer)));
+        }
     }
 
     private List<String> renderLocalBingoRanking(SidebarConfiguration config, BingoArea bingo,
@@ -278,7 +308,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     }
 
     private RenderedSidebar renderEdit(Player player, PrepareSession session, SidebarConfiguration config) {
-        List<String> errors = session.getFlow().validate(session);
+        List<String> errors = session.getFlow().validateForDisplay(session);
         BaseGameConfig map = session.getTarget().config();
         boolean correctWorld = session.getFlow().isInCorrectWorld(player, session.getTarget());
         boolean complete = errors.isEmpty();

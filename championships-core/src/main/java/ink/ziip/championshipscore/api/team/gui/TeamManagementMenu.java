@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.team.gui;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -114,29 +115,29 @@ public final class TeamManagementMenu implements Listener {
         }
         if (teams.isEmpty()) {
             inventory.setItem(22, configured(OVERVIEW_PATH, "empty", null, Map.of(), item(Material.GRAY_DYE,
-                    Component.text(GuiConfig.text("teams.menus.overview.items.empty.title"), NamedTextColor.GRAY),
-                    List.of(Component.text(loreLine("teams.menus.overview.items.empty", 0), NamedTextColor.DARK_GRAY)), false)));
+                    LegacyText.component(GuiConfig.text("teams.menus.overview.items.empty.title"), NamedTextColor.GRAY),
+                    List.of(LegacyText.component(loreLine("teams.menus.overview.items.empty", 0), NamedTextColor.DARK_GRAY)), false)));
         }
 
         fillFooter(inventory, OVERVIEW_PATH);
         inventory.setItem(CREATE_SLOT, configured(OVERVIEW_PATH, "create", null, Map.of(), item(Material.EMERALD,
-                Component.text(GuiConfig.text("teams.menus.overview.items.create.title"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
-                List.of(Component.text(loreLine("teams.menus.overview.items.create", 0), NamedTextColor.GRAY)), false)));
+                LegacyText.component(GuiConfig.text("teams.menus.overview.items.create.title"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
+                List.of(LegacyText.component(loreLine("teams.menus.overview.items.create", 0), NamedTextColor.GRAY)), false)));
         inventory.setItem(QUICK_ASSIGN_SLOT, configured(OVERVIEW_PATH, "quick-assign", null, Map.of(), item(Material.PLAYER_HEAD,
-                Component.text(GuiConfig.text("teams.menus.overview.items.quick-assign.title"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
-                List.of(Component.text(loreLine("teams.menus.overview.items.quick-assign", 0), NamedTextColor.GRAY),
-                        Component.text(loreLine("teams.menus.overview.items.quick-assign", 1), NamedTextColor.DARK_GRAY)), false)));
+                LegacyText.component(GuiConfig.text("teams.menus.overview.items.quick-assign.title"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD),
+                List.of(LegacyText.component(loreLine("teams.menus.overview.items.quick-assign", 0), NamedTextColor.GRAY),
+                        LegacyText.component(loreLine("teams.menus.overview.items.quick-assign", 1), NamedTextColor.DARK_GRAY)), false)));
         inventory.setItem(REFRESH_SLOT, configured(OVERVIEW_PATH, "refresh", null, Map.of(), item(Material.SUNFLOWER,
-                Component.text(GuiConfig.text("teams.menus.overview.items.refresh.title"), NamedTextColor.YELLOW), List.of(), false)));
+                LegacyText.component(GuiConfig.text("teams.menus.overview.items.refresh.title"), NamedTextColor.YELLOW), List.of(), false)));
         inventory.setItem(PAGE_SLOT, configured(OVERVIEW_PATH, "page", null,
                 Map.of("page", holder.page + 1, "pages", pages, "count", teams.size()),
                 pageItem(holder.page, pages, teams.size())));
         if (holder.page > 0) inventory.setItem(PREVIOUS_SLOT, configured(OVERVIEW_PATH, "previous", null, Map.of(), navigationItem(GuiConfig.text("buttons.previous.title"))));
         if (holder.page + 1 < pages) inventory.setItem(NEXT_SLOT, configured(OVERVIEW_PATH, "next", null, Map.of(), navigationItem(GuiConfig.text("buttons.next.title"))));
         inventory.setItem(TELEPORT_ALL_SLOT, configured(OVERVIEW_PATH, "teleport-all", null, Map.of(), item(Material.ENDER_EYE,
-                Component.text(GuiConfig.text("teams.menus.overview.items.teleport-all.title"), NamedTextColor.LIGHT_PURPLE),
-                List.of(Component.text(loreLine("teams.menus.overview.items.teleport-all", 0), NamedTextColor.GRAY),
-                        Component.empty(), Component.text(loreLine("teams.menus.overview.items.teleport-all", 2), NamedTextColor.YELLOW)), false)));
+                LegacyText.component(GuiConfig.text("teams.menus.overview.items.teleport-all.title"), NamedTextColor.LIGHT_PURPLE),
+                List.of(LegacyText.component(loreLine("teams.menus.overview.items.teleport-all", 0), NamedTextColor.GRAY),
+                        Component.empty(), LegacyText.component(loreLine("teams.menus.overview.items.teleport-all", 2), NamedTextColor.YELLOW)), false)));
         inventory.setItem(CLOSE_SLOT, configured(OVERVIEW_PATH, "close", null, Map.of(), closeItem()));
     }
 
@@ -177,8 +178,8 @@ public final class TeamManagementMenu implements Listener {
         }
         if (members.isEmpty()) {
             inventory.setItem(22, configured(TEAM_PATH, "empty", null, Map.of(), item(Material.PLAYER_HEAD,
-                    Component.text(GuiConfig.text("teams.menus.members.items.empty.title"), NamedTextColor.GRAY),
-                    List.of(Component.text(loreLine("teams.menus.members.items.empty", 0), NamedTextColor.DARK_GRAY)), false)));
+                    LegacyText.component(GuiConfig.text("teams.menus.members.items.empty.title"), NamedTextColor.GRAY),
+                    List.of(LegacyText.component(loreLine("teams.menus.members.items.empty", 0), NamedTextColor.DARK_GRAY)), false)));
         }
 
         fillFooter(inventory, TEAM_PATH);
@@ -186,36 +187,36 @@ public final class TeamManagementMenu implements Listener {
         if (full) {
             inventory.setItem(ADD_ONLINE_SLOT, configured(TEAM_PATH, "add-player", "full",
                     Map.of("members", members.size(), "max", CCConfig.TEAM_MAX_MEMBERS), item(Material.RED_DYE,
-                    Component.text(GuiConfig.text("teams.menus.members.items.add-player.states.full.title"), NamedTextColor.RED).decorate(TextDecoration.BOLD),
-                    List.of(Component.text(GuiConfig.line("teams.menus.members.items.add-player.states.full.lore", 0,
+                    LegacyText.component(GuiConfig.text("teams.menus.members.items.add-player.states.full.title"), NamedTextColor.RED).decorate(TextDecoration.BOLD),
+                    List.of(LegacyText.component(GuiConfig.line("teams.menus.members.items.add-player.states.full.lore", 0,
                                     Map.of("members", members.size(), "max", CCConfig.TEAM_MAX_MEMBERS)), NamedTextColor.GRAY),
-                            Component.text(loreLine("teams.menus.members.items.add-player.states.full", 1), NamedTextColor.DARK_GRAY)), false)));
+                            LegacyText.component(loreLine("teams.menus.members.items.add-player.states.full", 1), NamedTextColor.DARK_GRAY)), false)));
         } else {
             inventory.setItem(ADD_ONLINE_SLOT, configured(TEAM_PATH, "add-player", "available", Map.of(), item(Material.LIME_DYE,
-                    Component.text(GuiConfig.text("teams.menus.members.items.add-player.states.available.title"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
-                    List.of(Component.text(loreLine("teams.menus.members.items.add-player.states.available", 0), NamedTextColor.GRAY)), false)));
+                    LegacyText.component(GuiConfig.text("teams.menus.members.items.add-player.states.available.title"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD),
+                    List.of(LegacyText.component(loreLine("teams.menus.members.items.add-player.states.available", 0), NamedTextColor.GRAY)), false)));
             inventory.setItem(ADD_HISTORY_SLOT, configured(TEAM_PATH, "history", null, Map.of(), item(Material.BOOK,
-                    Component.text(GuiConfig.text("teams.menus.members.items.history.title"), NamedTextColor.AQUA),
-                    List.of(Component.text(loreLine("teams.menus.members.items.history", 0), NamedTextColor.GRAY),
-                            Component.text(loreLine("teams.menus.members.items.history", 1), NamedTextColor.DARK_GRAY)), false)));
+                    LegacyText.component(GuiConfig.text("teams.menus.members.items.history.title"), NamedTextColor.AQUA),
+                    List.of(LegacyText.component(loreLine("teams.menus.members.items.history", 0), NamedTextColor.GRAY),
+                            LegacyText.component(loreLine("teams.menus.members.items.history", 1), NamedTextColor.DARK_GRAY)), false)));
         }
         inventory.setItem(PREVIOUS_SLOT, configured(TEAM_PATH, holder.page > 0 ? "previous" : "back", null, Map.of(),
                 holder.page > 0 ? navigationItem(GuiConfig.text("buttons.previous.title"))
-                        : item(Material.ARROW, Component.text(GuiConfig.text("teams.menus.members.items.back.title"), NamedTextColor.WHITE), List.of(), false)));
+                        : item(Material.ARROW, LegacyText.component(GuiConfig.text("teams.menus.members.items.back.title"), NamedTextColor.WHITE), List.of(), false)));
         inventory.setItem(REFRESH_SLOT, configured(TEAM_PATH, "refresh", null, Map.of(), item(Material.SUNFLOWER,
-                Component.text(GuiConfig.text("teams.menus.overview.items.refresh.title"), NamedTextColor.YELLOW), List.of(), false)));
+                LegacyText.component(GuiConfig.text("teams.menus.overview.items.refresh.title"), NamedTextColor.YELLOW), List.of(), false)));
         inventory.setItem(PAGE_SLOT, configured(TEAM_PATH, "page", null,
                 Map.of("page", holder.page + 1, "pages", pages, "count", members.size()),
                 pageItem(holder.page, pages, members.size())));
         if (holder.page + 1 < pages) inventory.setItem(NEXT_SLOT, configured(TEAM_PATH, "next", null, Map.of(), navigationItem(GuiConfig.text("buttons.next.title"))));
         inventory.setItem(TELEPORT_TEAM_SLOT, configured(TEAM_PATH, "teleport", null, Map.of("online", team.getOnlinePlayers().size()), item(Material.ENDER_PEARL,
-                Component.text(GuiConfig.text("teams.menus.members.items.teleport.title"), NamedTextColor.LIGHT_PURPLE),
-                List.of(Component.text(GuiConfig.line("teams.menus.members.items.teleport.lore", 0,
+                LegacyText.component(GuiConfig.text("teams.menus.members.items.teleport.title"), NamedTextColor.LIGHT_PURPLE),
+                List.of(LegacyText.component(GuiConfig.line("teams.menus.members.items.teleport.lore", 0,
                         Map.of("online", team.getOnlinePlayers().size())), NamedTextColor.GRAY)), false)));
         inventory.setItem(DELETE_TEAM_SLOT, configured(TEAM_PATH, "delete", null, Map.of(), item(Material.TNT,
-                Component.text(GuiConfig.text("teams.menus.members.items.delete.title"), NamedTextColor.RED),
-                List.of(Component.text(loreLine("teams.menus.members.items.delete", 0), NamedTextColor.GRAY),
-                        Component.empty(), Component.text(loreLine("teams.menus.overview.items.teleport-all", 2), NamedTextColor.YELLOW)), false)));
+                LegacyText.component(GuiConfig.text("teams.menus.members.items.delete.title"), NamedTextColor.RED),
+                List.of(LegacyText.component(loreLine("teams.menus.members.items.delete", 0), NamedTextColor.GRAY),
+                        Component.empty(), LegacyText.component(loreLine("teams.menus.overview.items.teleport-all", 2), NamedTextColor.YELLOW)), false)));
         inventory.setItem(CLOSE_SLOT, configured(TEAM_PATH, "close", null, Map.of(), closeItem()));
     }
 
@@ -246,7 +247,7 @@ public final class TeamManagementMenu implements Listener {
             Player candidate = candidates.get(index);
             int slot = index - from;
             ItemStack fallback = playerHead(candidate.getUniqueId(), candidate.getName(),
-                    Component.text(candidate.getName(), NamedTextColor.GREEN),
+                    LegacyText.component(candidate.getName(), NamedTextColor.GREEN),
                     List.of(Component.text(" ", teamColor(team))));
             inventory.setItem(slot, ConfiguredGui.item("teams.menus.add-player.items.candidate", "candidate",
                     Map.of("player", candidate.getName(), "team", team.getName()), fallback));
@@ -254,11 +255,11 @@ public final class TeamManagementMenu implements Listener {
         }
         if (candidates.isEmpty()) {
             inventory.setItem(22, item(Material.GRAY_DYE,
-                    Component.text(GuiConfig.text("teams.menus.add-player.items.empty.title"), NamedTextColor.GRAY),
-                    List.of(Component.text(loreLine("teams.menus.add-player.items.empty", 0), NamedTextColor.DARK_GRAY)), false));
+                    LegacyText.component(GuiConfig.text("teams.menus.add-player.items.empty.title"), NamedTextColor.GRAY),
+                    List.of(LegacyText.component(loreLine("teams.menus.add-player.items.empty", 0), NamedTextColor.DARK_GRAY)), false));
         }
         fillFooter(inventory);
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, Component.text(GuiConfig.text("teams.menus.add-player.items.back.title"), NamedTextColor.WHITE), List.of(), false));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, LegacyText.component(GuiConfig.text("teams.menus.add-player.items.back.title"), NamedTextColor.WHITE), List.of(), false));
         if (page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem(GuiConfig.text("buttons.previous.title")));
         inventory.setItem(PAGE_SLOT, pageItem(page, pages, candidates.size()));
         if (page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("buttons.next.title")));
@@ -286,12 +287,12 @@ public final class TeamManagementMenu implements Listener {
             int slot = COLOR_SLOTS.get(index);
             inventory.setItem(slot, ConfiguredGui.item("teams.menus.color-picker.items.color", color, placeholders,
                     item(usedBy == null ? material : Material.GRAY_DYE,
-                            Component.text(COLOR_LABELS.get(color), usedBy == null ? color(color) : NamedTextColor.DARK_GRAY)
+                            LegacyText.component(COLOR_LABELS.get(color), usedBy == null ? color(color) : NamedTextColor.DARK_GRAY)
                                     .decorate(TextDecoration.BOLD),
-                            List.of(Component.text(availability, usedBy == null ? NamedTextColor.GREEN : NamedTextColor.RED)), false)));
+                            List.of(LegacyText.component(availability, usedBy == null ? NamedTextColor.GREEN : NamedTextColor.RED)), false)));
             if (usedBy == null) holder.targets.put(slot, color);
         }
-        inventory.setItem(31, item(Material.ARROW, Component.text(GuiConfig.text("teams.menus.members.items.back.title"), NamedTextColor.WHITE), List.of(), false));
+        inventory.setItem(31, item(Material.ARROW, LegacyText.component(GuiConfig.text("teams.menus.members.items.back.title"), NamedTextColor.WHITE), List.of(), false));
         player.openInventory(inventory);
     }
 
@@ -313,14 +314,14 @@ public final class TeamManagementMenu implements Listener {
                     "player", candidate.getName(), "team", current == null ? "" : current.getName());
             int slot = index - from;
             ItemStack fallback = playerHead(candidate.getUniqueId(), candidate.getName(),
-                    Component.text(candidate.getName(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD), List.of());
+                    LegacyText.component(candidate.getName(), NamedTextColor.GREEN).decorate(TextDecoration.BOLD), List.of());
             inventory.setItem(slot, ConfiguredGui.item("teams.menus.quick-assign.items.player",
                     current == null ? "unassigned" : "assigned", placeholders, fallback));
             holder.playerTargets.put(slot, candidate.getUniqueId());
             holder.targets.put(slot, candidate.getName());
         }
         fillFooter(inventory);
-        inventory.setItem(BACK_SLOT, item(Material.ARROW, Component.text(GuiConfig.text("teams.menus.members.items.back.title"), NamedTextColor.WHITE), List.of(), false));
+        inventory.setItem(BACK_SLOT, item(Material.ARROW, LegacyText.component(GuiConfig.text("teams.menus.members.items.back.title"), NamedTextColor.WHITE), List.of(), false));
         if (page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem(GuiConfig.text("buttons.previous.title")));
         inventory.setItem(PAGE_SLOT, pageItem(page, pages, players.size()));
         if (page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("buttons.next.title")));
@@ -348,7 +349,7 @@ public final class TeamManagementMenu implements Listener {
             String state = same ? "current" : full ? "full" : current == null ? "join" : "move";
             Material wool = material(team.getColorName() + "_WOOL", Material.WHITE_WOOL);
             ItemStack fallback = item(wool,
-                    Component.text(team.getName(), same || full ? NamedTextColor.DARK_GRAY : teamColor(team))
+                    LegacyText.component(team.getName(), same || full ? NamedTextColor.DARK_GRAY : teamColor(team))
                             .decorate(TextDecoration.BOLD), List.of(), same);
             inventory.setItem(index, ConfiguredGui.item("teams.menus.target-team.items.team", state, placeholders, fallback));
             if (!same && !full) holder.targets.put(index, team.getName());
@@ -365,7 +366,7 @@ public final class TeamManagementMenu implements Listener {
         inventory.setItem(49, ConfiguredGui.item("teams.menus.target-team.items.selected-player",
                 current == null ? "unassigned" : "assigned", selectedPlaceholders,
                 playerHead(selectedUuid, selectedName,
-                        Component.text(selectedName, NamedTextColor.AQUA).decorate(TextDecoration.BOLD), List.of())));
+                        LegacyText.component(selectedName, NamedTextColor.AQUA).decorate(TextDecoration.BOLD), List.of())));
         inventory.setItem(CLOSE_SLOT, closeItem());
         player.openInventory(inventory);
     }
@@ -416,21 +417,21 @@ public final class TeamManagementMenu implements Listener {
             Map<String, String> placeholders = Map.of(
                     "player", candidate.getName(), "team", team.getName());
             ItemStack fallback = playerHead(candidate.getUuid(), candidate.getName(),
-                    Component.text(candidate.getName(), NamedTextColor.GRAY).decorate(TextDecoration.BOLD), List.of());
+                    LegacyText.component(candidate.getName(), NamedTextColor.GRAY).decorate(TextDecoration.BOLD), List.of());
             inventory.setItem(slot, ConfiguredGui.item("teams.menus.known-player.items.candidate", "candidate",
                     placeholders, fallback));
             holder.playerTargets.put(slot, candidate.getUuid());
             holder.targets.put(slot, candidate.getName());
         }
         if (candidates.isEmpty()) {
-            inventory.setItem(22, item(Material.GRAY_DYE, Component.text(GuiConfig.text("teams.menus.known-player.items.empty.title"), NamedTextColor.GRAY),
-                    List.of(Component.text(loreLine("teams.menus.known-player.items.empty", 0), NamedTextColor.DARK_GRAY)), false));
+            inventory.setItem(22, item(Material.GRAY_DYE, LegacyText.component(GuiConfig.text("teams.menus.known-player.items.empty.title"), NamedTextColor.GRAY),
+                    List.of(LegacyText.component(loreLine("teams.menus.known-player.items.empty", 0), NamedTextColor.DARK_GRAY)), false));
         }
         fillFooter(inventory);
-        inventory.setItem(MANUAL_INPUT_SLOT, item(Material.NAME_TAG, Component.text(GuiConfig.text("teams.menus.known-player.items.manual-input.title"), NamedTextColor.AQUA),
-                List.of(Component.text(loreLine("teams.menus.known-player.items.manual-input", 0), NamedTextColor.GRAY),
-                        Component.text(loreLine("teams.menus.known-player.items.manual-input", 1), NamedTextColor.YELLOW)), false));
-        inventory.setItem(HISTORY_BACK_SLOT, item(Material.ARROW, Component.text(GuiConfig.text("teams.menus.add-player.items.back.title"), NamedTextColor.WHITE), List.of(), false));
+        inventory.setItem(MANUAL_INPUT_SLOT, item(Material.NAME_TAG, LegacyText.component(GuiConfig.text("teams.menus.known-player.items.manual-input.title"), NamedTextColor.AQUA),
+                List.of(LegacyText.component(loreLine("teams.menus.known-player.items.manual-input", 0), NamedTextColor.GRAY),
+                        LegacyText.component(loreLine("teams.menus.known-player.items.manual-input", 1), NamedTextColor.YELLOW)), false));
+        inventory.setItem(HISTORY_BACK_SLOT, item(Material.ARROW, LegacyText.component(GuiConfig.text("teams.menus.add-player.items.back.title"), NamedTextColor.WHITE), List.of(), false));
         if (page > 0) inventory.setItem(PREVIOUS_SLOT, navigationItem(GuiConfig.text("buttons.previous.title")));
         inventory.setItem(PAGE_SLOT, pageItem(page, pages, candidates.size()));
         if (page + 1 < pages) inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("buttons.next.title")));
@@ -463,11 +464,11 @@ public final class TeamManagementMenu implements Listener {
                 "team", teamName == null ? "" : teamName);
         inventory.setItem(13, ConfiguredGui.item("teams.menus.confirm.items.action", state, placeholders,
                 item(subjectMaterial, Component.text(" ", NamedTextColor.RED).decorate(TextDecoration.BOLD),
-                        List.of(Component.text(GuiConfig.line("teams.menus.confirm.items.action.lore", 0), NamedTextColor.GRAY)), false)));
+                        List.of(LegacyText.component(GuiConfig.line("teams.menus.confirm.items.action.lore", 0), NamedTextColor.GRAY)), false)));
         inventory.setItem(CONFIRM_SLOT, item(Material.LIME_CONCRETE,
-                Component.text(GuiConfig.text("teams.menus.confirm.items.confirm.title"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD), List.of(), false));
+                LegacyText.component(GuiConfig.text("teams.menus.confirm.items.confirm.title"), NamedTextColor.GREEN).decorate(TextDecoration.BOLD), List.of(), false));
         inventory.setItem(CANCEL_SLOT, item(Material.RED_CONCRETE,
-                Component.text(GuiConfig.text("teams.menus.confirm.items.cancel.title"), NamedTextColor.RED), List.of(), false));
+                LegacyText.component(GuiConfig.text("teams.menus.confirm.items.cancel.title"), NamedTextColor.RED), List.of(), false));
         player.openInventory(inventory);
     }
 
@@ -475,13 +476,13 @@ public final class TeamManagementMenu implements Listener {
         String prompt = purpose == InputPurpose.CREATE_TEAM ? GuiConfig.text("teams.menus.input.items.team-name.title") : GuiConfig.text("teams.menus.input.items.player-name.title");
         InputSession previous = inputs.remove(player.getUniqueId());
         if (previous != null) previous.inventory.clear();
-        AnvilView view = MenuType.ANVIL.create(player, title(prompt, NamedTextColor.GOLD));
-        player.openInventory(view);
+        AnvilView view = MenuType.ANVIL.create(player, LegacyText.plainComponent(prompt));
         AnvilInventory inventory = view.getTopInventory();
         InputSession session = new InputSession(purpose, teamName, inventory);
         inputs.put(player.getUniqueId(), session);
-        inventory.setFirstItem(item(Material.PAPER, Component.text(prompt, NamedTextColor.YELLOW),
-                List.of(Component.text(GuiConfig.text("teams.menus.input.items.hint.title"), NamedTextColor.GRAY)), false));
+        inventory.setFirstItem(item(Material.PAPER, LegacyText.plainComponent(prompt),
+                List.of(LegacyText.plainComponent(GuiConfig.text("teams.menus.input.items.hint.title"))), false));
+        player.openInventory(view);
         view.setMaximumRepairCost(0);
         view.setRepairCost(0);
     }
@@ -931,17 +932,17 @@ public final class TeamManagementMenu implements Listener {
                 Map.of("id", team.getId(), "color", COLOR_LABELS.getOrDefault(
                         team.getColorName().toLowerCase(Locale.ROOT), team.getColorName())))));
         lore.add(Component.empty());
-        lore.add(Component.text(loreLine("teams.menus.overview.items.team", 2), NamedTextColor.YELLOW));
+        lore.add(LegacyText.component(loreLine("teams.menus.overview.items.team", 2), NamedTextColor.YELLOW));
         return item(material(team.getColorName() + "_WOOL", Material.WHITE_WOOL),
-                Component.text(team.getName(), teamColor(team)).decorate(TextDecoration.BOLD), lore, false);
+                LegacyText.component(team.getName(), teamColor(team)).decorate(TextDecoration.BOLD), lore, false);
     }
 
     private ItemStack memberItem(@NotNull MemberView member) {
         NamedTextColor status = member.online ? NamedTextColor.GREEN : NamedTextColor.GRAY;
         return playerHead(member.uuid, member.name,
-                Component.text(member.name, status).decorate(TextDecoration.BOLD),
-                List.of(Component.text(member.online ? loreLine("teams.menus.members.items.member.states.online", 0) : loreLine("teams.menus.members.items.member.states.offline", 0), status),
-                        Component.empty(), Component.text(loreLine("teams.menus.members.items.member.states.online", 0), NamedTextColor.RED)));
+                LegacyText.component(member.name, status).decorate(TextDecoration.BOLD),
+                List.of(LegacyText.component(member.online ? loreLine("teams.menus.members.items.member.states.online", 0) : loreLine("teams.menus.members.items.member.states.offline", 0), status),
+                        Component.empty(), LegacyText.component(loreLine("teams.menus.members.items.member.states.online", 0), NamedTextColor.RED)));
     }
 
     private static ItemStack playerHead(@NotNull UUID uuid, @NotNull String profileName,
@@ -993,11 +994,11 @@ public final class TeamManagementMenu implements Listener {
     }
 
     private static ItemStack navigationItem(@NotNull String label) {
-        return item(Material.ARROW, Component.text(label, NamedTextColor.WHITE), List.of(), false);
+        return item(Material.ARROW, LegacyText.component(label, NamedTextColor.WHITE), List.of(), false);
     }
 
     private static ItemStack closeItem() {
-        return item(Material.BARRIER, Component.text(GuiConfig.text("buttons.close.title"), NamedTextColor.RED), List.of(), false);
+        return item(Material.BARRIER, LegacyText.component(GuiConfig.text("buttons.close.title"), NamedTextColor.RED), List.of(), false);
     }
 
     private static ItemStack item(@NotNull Material material, @NotNull Component name,
@@ -1006,14 +1007,14 @@ public final class TeamManagementMenu implements Listener {
     }
 
     private static Component title(@NotNull String text, @NotNull TextColor color) {
-        return Component.text(text, color).decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false);
+        return LegacyText.component(text, color).decorate(TextDecoration.BOLD).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
 
     private static Component teamTitle(@NotNull ChampionshipTeam team, @NotNull String suffix) {
-        return Component.text(team.getName(), teamColor(team))
-                .append(Component.text(GuiText.SEPARATOR, NamedTextColor.WHITE))
-                .append(Component.text(suffix, NamedTextColor.WHITE))
-                .decorate(TextDecoration.BOLD).decoration(TextDecoration.ITALIC, false);
+        return LegacyText.component(team.getName(), teamColor(team))
+                .append(LegacyText.component(GuiText.SEPARATOR, NamedTextColor.WHITE))
+                .append(LegacyText.component(suffix, NamedTextColor.WHITE))
+                .decorate(TextDecoration.BOLD).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
 
     private static TextColor teamColor(@NotNull ChampionshipTeam team) {
@@ -1084,7 +1085,7 @@ public final class TeamManagementMenu implements Listener {
     private record InputSession(InputPurpose purpose, String teamName, AnvilInventory inventory) {
     }
 
-    private static final class MenuHolder implements InventoryHolder {
+    private static final class MenuHolder implements MenuInventory {
         private final UUID viewer;
         private final Screen screen;
         private final String teamName;

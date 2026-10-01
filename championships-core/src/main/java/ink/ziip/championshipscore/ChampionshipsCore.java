@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.daily.DailyManager;
 import ink.ziip.championshipscore.api.daily.DailyStatsManager;
 import ink.ziip.championshipscore.api.daily.WebLeaderboardManager;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.chat.PublicChatMuteManager;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
@@ -53,6 +54,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private boolean loaded;
     private TeamManager teamManager;
     private PlayerManager playerManager;
+    private PublicChatMuteManager publicChatMuteManager;
     private ListenerManager listenerManager;
     private ConfigurationManager configurationManager;
     private DatabaseManager databaseManager;
@@ -126,6 +128,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         redisManager = new RedisManager(this);
         playerManager = new PlayerManager(this);
+        publicChatMuteManager = new PublicChatMuteManager(this);
         listenerManager = new ListenerManager(this);
         commandManager = new CommandManager(this);
         teamManager = new TeamManager(this);
@@ -179,6 +182,7 @@ public final class ChampionshipsCore extends JavaPlugin {
 
     private void finishManagerBootstrap() {
         // Plugin startup logic
+        loadManager(publicChatMuteManager);
         loadManager(listenerManager);
         loadManager(worldManager);
 
@@ -237,6 +241,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         unloadManager(rankManager);
 
         unloadManager(listenerManager);
+        unloadManager(publicChatMuteManager);
         unloadManager(playerManager);
         unloadManager(teamManager);
         unloadManager(commandManager);

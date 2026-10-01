@@ -21,6 +21,8 @@ public final class FinaleGameRegistry {
                 GameTypeEnum.Dodgebolt, "dodgebolt", "dodgebolt", true));
         register(definitions, new FinaleGameDefinition(
                 GameTypeEnum.DragonEggCarnival, "dragoneggcarnival", "area1", false));
+        register(definitions, new FinaleGameDefinition(
+                GameTypeEnum.SulfurSoccer, "sulfursoccer", "sulfursoccer", false));
         DEFINITIONS = Collections.unmodifiableMap(definitions);
     }
 

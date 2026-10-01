@@ -11,8 +11,8 @@ countdown-block-disappearance:
   pos1:
   pos2:
   mode: RANDOM
-# Round duration in seconds (10 minutes per the bingo design doc).
-timer: 600
+# Match duration in seconds. Default 12 minutes.
+timer: 720
 # Preparation countdown before the round starts, in seconds.
 prepare-time: 10
 # Card width (3 or 5). A 5-wide card has 12 lines (5 rows + 5 cols + 2 diagonals).
@@ -30,7 +30,6 @@ scatter-max-tries: 32
 # 可省略(默认 I)。效果名为 vanilla PotionEffectType 键(night_vision, jump_boost, speed, haste, ...)。
 permanent-effects:
   - "night_vision:1"
-  - "jump_boost:8"
 # Points by completion rank: 1st team to complete a cell=60, 2nd=50, 3rd=40, 4th=30, 5th=20,
 # and the last value is the floor for the 6th team and beyond (=10). The completing player earns these.
 points-per-rank: [ 60, 50, 40, 30, 20, 10 ]
@@ -50,7 +49,7 @@ introduction-spawn-point:
 rules:
   - - "&#696969==========&r &#ff6b26[&d宾果飞速&#ff6b26] &#696969==========&r"
     - "&#fff566鞘翅就位！飞速收集，宾果飞速时间到！"
-    - "&#ededed一局定胜负，所有队伍同在一个世界（10 分钟）"
+    - "&#ededed一局定胜负，所有队伍同在一个世界（12 分钟）"
     - "&#ededed开局人手一张宾果卡，目标全员相同"
     - "&#ededed收集卡片上的物品、成就与数据目标"
     - "&#ededed卡片默认为地图样式，右键可切换菜单样式"
@@ -65,6 +64,7 @@ rules:
     - "&#fff566初始装备：皮套面包、鞘翅、效率3石工具"
     - "&#ededed铁剑（锋利2）与指南针"
     - "&#ededed左键指南针打开菜单，可传送至队友"
-    - "&#ededed永久夜视、跳跃提升；皮靴附魔摔落缓冲 IV"
+    - "&#ededed永久夜视；皮靴附魔摔落缓冲 IV"
+    - "&#ededed每 20 秒补充 1 个飞行时间为 2 的烟花火箭"
     - "&#ededed世界为原版普通难度，死亡不掉落"
     - "&#ededed开局时间 9000，昼夜会正常流逝"

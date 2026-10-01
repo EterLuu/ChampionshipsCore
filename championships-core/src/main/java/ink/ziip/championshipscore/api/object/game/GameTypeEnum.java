@@ -8,7 +8,7 @@ import java.util.Locale;
 
 public enum GameTypeEnum {
     Bingo, ParkourTag, BattleBox, TNTRun, SnowballShowdown, SkyWars, TGTTOS, DragonEggCarnival,
-    ParkourWarrior, HotyCodyDusky, BuildMart, Dodgebolt, AceRace, RiptideRush, FrostbiteFrenzy;
+    ParkourWarrior, HotyCodyDusky, BuildMart, Dodgebolt, AceRace, RiptideRush, FrostbiteFrenzy, LaserBox, SulfurSoccer;
 
     /** Canonical command token shared by command parsing and tab completion. */
     public @NotNull String commandName() {
@@ -56,6 +56,8 @@ public enum GameTypeEnum {
             case AceRace -> MessageConfig.GAME_ACE_RACE;
             case RiptideRush -> MessageConfig.GAME_RIPTIDE_RUSH;
             case FrostbiteFrenzy -> MessageConfig.GAME_FROSTBITE;
+            case LaserBox -> MessageConfig.GAME_LASER_BOX;
+            case SulfurSoccer -> MessageConfig.GAME_SULFUR_SOCCER;
         };
     }
 }

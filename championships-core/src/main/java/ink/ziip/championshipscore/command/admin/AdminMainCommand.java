@@ -14,5 +14,8 @@ public class AdminMainCommand extends BaseMainCommand {
         addSubCommand(new AdminReloadSubCommand());
         addSubCommand(new AdminVisibilitySubCommand());
         addSubCommand(new AdminWorldMainCommand());
+        addSubCommand(new AdminMuteSubCommand(AdminMuteSubCommand.Action.MUTE));
+        addSubCommand(new AdminMuteSubCommand(AdminMuteSubCommand.Action.TEMPMUTE));
+        addSubCommand(new AdminMuteSubCommand(AdminMuteSubCommand.Action.UNMUTE));
     }
 }

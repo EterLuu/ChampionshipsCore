@@ -28,7 +28,7 @@ import java.util.UUID;
  * InventoryHolder} inner holder) and inherit the viewer/pagination state plus the common item,
  * border and slot helpers.</p>
  */
-public abstract class GuiMenu implements InventoryHolder {
+public abstract class GuiMenu implements MenuInventory {
     protected final UUID viewer;
     protected Inventory inventory;
     protected int page;
@@ -102,7 +102,7 @@ public abstract class GuiMenu implements InventoryHolder {
     private static void fillFooterItem(@NotNull Inventory inventory, @NotNull MenuId id,
                                        @NotNull ButtonId button, @NotNull Map<String, Object> placeholders,
                                        @NotNull Material fallbackMaterial) {
-        int slot = GuiConfig.integer(id.layout("footer." + button.id()), -1);
+        int slot = GuiConfig.slot(id.layout("footer." + button.id()), -1);
         if (slot < 0 || slot >= inventory.getSize()) return;
         GuiConfig.ItemSpec fallback = GuiConfig.button(button, placeholders,
                 new GuiConfig.ItemSpec(-1, fallbackMaterial, Component.text(button.id()), List.of(), false));
@@ -130,8 +130,8 @@ public abstract class GuiMenu implements InventoryHolder {
         ItemStack stack = new ItemStack(material, amount);
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
-            meta.displayName(name.decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
+            meta.displayName(name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+            meta.lore(lore.stream().map(line -> line.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
             meta.setEnchantmentGlintOverride(glint);
             stack.setItemMeta(meta);
         }
@@ -145,8 +145,8 @@ public abstract class GuiMenu implements InventoryHolder {
         SkullMeta meta = (SkullMeta) stack.getItemMeta();
         if (meta != null) {
             meta.setOwningPlayer(Bukkit.getOfflinePlayer(owner));
-            meta.displayName(name.decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
+            meta.displayName(name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+            meta.lore(lore.stream().map(line -> line.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
             meta.setEnchantmentGlintOverride(glint);
             stack.setItemMeta(meta);
         }

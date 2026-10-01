@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -7,7 +8,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -29,8 +29,8 @@ public class ConfirmWorldStep extends PrepareStep {
     public ConfirmWorldStep(@NotNull Predicate<Player> inCorrectWorld, @NotNull String worldName,
                             boolean allowRebind) {
         super("confirm_world",
-                Component.text(allowRebind ? GuiConfig.text("map-editor.menus.step-list.items.confirm-world.states.rebind.title") : GuiConfig.text("map-editor.menus.step-list.items.confirm-world.title")),
-                Component.text(allowRebind ? GuiConfig.line("map-editor.menus.step-list.items.confirm-world.states.rebind.lore", 0)
+                LegacyText.component(allowRebind ? GuiConfig.text("map-editor.menus.step-list.items.confirm-world.states.rebind.title") : GuiConfig.text("map-editor.menus.step-list.items.confirm-world.title")),
+                LegacyText.component(allowRebind ? GuiConfig.line("map-editor.menus.step-list.items.confirm-world.states.rebind.lore", 0)
                         : MessageConfig.MAP_EDITOR_STEP_WORLD_CONFIRM_PROMPT.replace("%world%", worldName)),
                 Material.COMPASS,
                 StepCaptureType.CONFIRM_WORLD);

@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.config;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
+import ink.ziip.championshipscore.configuration.config.ConfigurationValueReader;
 import ink.ziip.championshipscore.util.Utils;
 import lombok.Getter;
 import org.bukkit.Location;
@@ -15,12 +16,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Files;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,22 +48,10 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         this.configName = configName;
     }
 
-    /**
-     * Game map configs load through this method rather than {@code BaseConfigurationManager}, so the
-     * version check would never run for them. Migrate outdated files here by updating the current file
-     * in place from the latest bundled template while preserving user-owned values.
-     */
-    @Override
-    public void initializeConfiguration(Path pluginFolder) {
-        normalizeSerializedLocations(pluginFolder.resolve(getFileName()));
-        super.initializeConfiguration(pluginFolder);
-    }
-
     /** Reloads this live map config atomically while leaving its world and listeners untouched. */
     public boolean reloadConfigurationChecked(Path pluginFolder) {
         String previous = captureRuntimeConfiguration();
-        normalizeSerializedLocations(pluginFolder.resolve(getFileName()));
-        if (super.initializeConfigurationChecked(pluginFolder, true)) return true;
+        if (super.initializeConfigurationChecked(pluginFolder)) return true;
         if (previous != null) restoreRuntimeConfiguration(previous);
         return false;
     }
@@ -190,19 +175,6 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         }
     }
 
-    /** Converts Bukkit's eager Location serializer into a raw section that also loads before its world. */
-    private void normalizeSerializedLocations(@NotNull Path file) {
-        try {
-            if (!Files.isRegularFile(file)) return;
-            String original = Files.readString(file, StandardCharsets.UTF_8);
-            String normalized = original.replaceAll("(?m)^[\\t ]*==: org\\.bukkit\\.Location\\R", "");
-            if (!normalized.equals(original)) Files.writeString(file, normalized, StandardCharsets.UTF_8);
-        } catch (Exception exception) {
-            plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("GameConfig", "迁移",
-                    "配置文件=" + getFileName() + " 无法规范化 Location 格式"), exception);
-        }
-    }
-
     private void saveRawLocation(@NotNull String path, Location location) {
         configuration.set(path, null);
         if (location == null) return;
@@ -227,33 +199,10 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
             ConfigOption configOption = field.getDeclaredAnnotation(ConfigOption.class);
             if (configOption != null) {
                 try {
-                    Object value = null;
-
-                    // If are lists, better use direct get
-                    if (field.getType() == List.class && field.getGenericType() instanceof ParameterizedType) {
-                        Type type = ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
-                        if (type == Integer.class) {
-                            value = yamlConfiguration.getIntegerList(configOption.path());
-                        } else if (type == Double.class) {
-                            value = yamlConfiguration.getDoubleList(configOption.path());
-                        } else if (type == Float.class) {
-                            value = yamlConfiguration.getFloatList(configOption.path());
-                        } else if (type == Short.class) {
-                            value = yamlConfiguration.getShortList(configOption.path());
-                        } else if (type == String.class) {
-                            value = yamlConfiguration.getStringList(configOption.path());
-                        } else if (type instanceof ParameterizedType nestedType && nestedType.getRawType() == List.class) {
-                            // Nested lists (e.g. List<List<String>> rule sections): Bukkit hands them back as-is.
-                            value = yamlConfiguration.getList(configOption.path());
-                        }
-                    }
-
-                    // Otherwise get it normally
-                    if (value == null) value = yamlConfiguration.get(configOption.path());
+                    Object value = ConfigurationValueReader.read(yamlConfiguration, configOption.path(), field);
 
                     // Locations may be stored as a raw section (no '==' marker); rebuild them.
                     value = coerceLocationSection(value, field);
-                    value = coerceNumericValue(value, field.getType());
 
                     if (value != null) {
                         if (value instanceof String)
@@ -270,40 +219,6 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                 }
             }
         }
-    }
-
-    /** Bukkit YAML chooses the narrowest numeric wrapper; reflection requires the declared wrapper exactly. */
-    private static Object coerceNumericValue(Object value, Class<?> targetType) {
-        if (!(value instanceof Number number)) return value;
-        if (targetType == byte.class || targetType == Byte.class) return number.byteValue();
-        if (targetType == short.class || targetType == Short.class) return number.shortValue();
-        if (targetType == int.class || targetType == Integer.class) return number.intValue();
-        if (targetType == long.class || targetType == Long.class) return number.longValue();
-        if (targetType == float.class || targetType == Float.class) return number.floatValue();
-        if (targetType == double.class || targetType == Double.class) return number.doubleValue();
-        return value;
-    }
-
-    @Override
-    public void loadFromOutdatedConfiguration(@NotNull YamlConfiguration yamlConfiguration) throws IOException {
-        // Preserve every user-owned leaf, including game-specific custom sections which are not
-        // represented by @ConfigOption fields (for example Build Mart's base template). Paths the
-        // file lacks are supplied by the bundled template, whose version marker wins.
-        for (String path : yamlConfiguration.getKeys(true)) {
-            if ("dont-edit-this.version".equals(path)) continue;
-            Object value = yamlConfiguration.get(path);
-            if (!(value instanceof ConfigurationSection)) {
-                configuration.set(path, value);
-            }
-        }
-
-        customizeMigratedConfiguration(yamlConfiguration, configuration);
-        configuration.save(configurationPath.toFile());
-    }
-
-    /** Per-game hook for version-specific defaults that cannot safely come from a shared map template. */
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
     }
 
     /**

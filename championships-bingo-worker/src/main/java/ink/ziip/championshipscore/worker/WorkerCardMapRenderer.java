@@ -23,6 +23,7 @@ import java.util.Map;
 
 /** Live map-card renderer backed only by the frozen wire task model and worker replay state. */
 final class WorkerCardMapRenderer extends MapRenderer {
+    private static final int MAX_COMPLETION_TEAMS = 6;
     private final MatchManifest manifest;
     private final Integer viewerTeam;
     private final WorkerMatchSession session;
@@ -153,7 +154,10 @@ final class WorkerCardMapRenderer extends MapRenderer {
     }
 
     private void drawBorders(MapCanvas canvas, int gridX, int gridY, List<Integer> completedTeams) {
-        int filled = Math.min(completedTeams.size(), 4);
+        if (viewerTeam != null && completedTeams.contains(viewerTeam)) {
+            completedTeams = List.of(viewerTeam);
+        }
+        int filled = Math.min(completedTeams.size(), MAX_COMPLETION_TEAMS);
         if (filled == 0) return;
         int segments = Math.max(filled, 1);
         final int ox = gridX * 24 + 4, oy = gridY * 24 + 4, size = 24;

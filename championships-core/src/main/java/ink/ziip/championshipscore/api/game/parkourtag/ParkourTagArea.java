@@ -21,7 +21,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.potion.PotionEffect;
+// import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+// import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
@@ -47,13 +47,14 @@ import java.util.logging.Level;
 public class ParkourTagArea extends BasePairedGameInstance {
     @Getter
     private int timer;
+    private BukkitTask startGamePreparationTask;
     private BukkitTask startGameProgressTask;
 
     @Getter
     private final int copyIndex;
     private ParkourTagMatch match;
-    // Teams that have spent their once-per-round wind charge this round; cleared on each preparation.
-    private final Set<ChampionshipTeam> windChargeUsedTeams = ConcurrentHashMap.newKeySet();
+    // Disabled wind charge: keep the once-per-round state for restoring the item later.
+    // private final Set<ChampionshipTeam> windChargeUsedTeams = ConcurrentHashMap.newKeySet();
     /** Chasers currently revealed by an Ender Eye; each entry owns its expiry task. */
     private final Map<UUID, BukkitTask> temporaryChaserGlowTasks = new HashMap<>();
     private boolean parkourTagGlowsActive;
@@ -158,15 +159,17 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
     @Override
     public void resetArea() {
+        cancelChaserSelection();
         clearParkourTagGlows();
         cleanDroppedItems();
         match = null;
-        windChargeUsedTeams.clear();
+        // windChargeUsedTeams.clear();
         startGameProgressTask = null;
     }
 
     @Override
     public void dispose() {
+        cancelChaserSelection();
         clearParkourTagGlows();
         super.dispose();
     }
@@ -180,19 +183,41 @@ public class ParkourTagArea extends BasePairedGameInstance {
         startGameIntroduction(this::startFormalPreparation);
     }
 
-    /** Normal preparation: arena reset + announcement, then immediate cage assignment and countdown. */
+    /** Teams choose their chasers at their preparation spots for 20 seconds before cage assignment. */
     private void startFormalPreparation() {
 
-        windChargeUsedTeams.clear();
+        // windChargeUsedTeams.clear();
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+        if (match != null) {
+            match.getRight().teleportAllPlayers(match.getRightPrepareSpot());
+            match.getLeft().teleportAllPlayers(match.getLeftPrepareSpot());
+        }
 
         resetPlayerHealthFoodEffectLevelInventory();
 
         announceGamePreparation(MessageConfig.PARKOUR_TAG_START_PREPARATION,
                 MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE, MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
 
-        startGameProgress();
+        timer = 20;
+        startGamePreparationTask = scheduler.runTaskTimer(plugin, () -> {
+            if (getGameStageEnum() != GameStageEnum.PREPARATION) {
+                cancelChaserSelection();
+                return;
+            }
+            showPreparationCountdown(timer);
+            if (timer == 0) {
+                cancelChaserSelection();
+                startGameProgress();
+                return;
+            }
+            timer--;
+        }, 0L, 20L);
+    }
+
+    private void cancelChaserSelection() {
+        if (startGamePreparationTask != null) startGamePreparationTask.cancel();
+        startGamePreparationTask = null;
     }
 
     protected void startGameProgress() {
@@ -309,6 +334,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
+        cancelChaserSelection();
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
 
@@ -419,6 +445,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
             enderEye.setItemMeta(enderEyeMeta);
         }
 
+        /* Disabled wind charge: keep item creation for restoring the item later.
         ItemStack windCharge = new ItemStack(Material.WIND_CHARGE);
         ItemMeta windChargeMeta = windCharge.getItemMeta();
         if (windChargeMeta != null) {
@@ -426,14 +453,15 @@ public class ParkourTagArea extends BasePairedGameInstance {
                     .decoration(TextDecoration.ITALIC, false));
             windCharge.setItemMeta(windChargeMeta);
         }
+        */
 
         for (Player player : match.getRightAreaEscapees()) {
             player.getInventory().setItem(0, enderEye.clone());
-            player.getInventory().setItem(1, windCharge.clone());
+            // player.getInventory().setItem(1, windCharge.clone());
         }
         for (Player player : match.getLeftAreaEscapees()) {
             player.getInventory().setItem(0, enderEye.clone());
-            player.getInventory().setItem(1, windCharge.clone());
+            // player.getInventory().setItem(1, windCharge.clone());
         }
         parkourTagGlowsActive = true;
         syncAllParkourTagGlows();
@@ -602,6 +630,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
     /** Prep-time chaser pick from the configured wall button; validates quota and records the choice. */
     public void chooseChaser(@NotNull Player player) {
+        if (getGameStageEnum() != GameStageEnum.PREPARATION || isIntroductionPhase()) return;
         UUID uuid = player.getUniqueId();
         ParkourTagMatch match = matchOf(player);
         if (match == null) return;
@@ -654,7 +683,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         plugin.getGameManager().getParkourTagManager().setEnderEyeUsedTimes(team);
     }
 
-    /** Wind charge use: levitates the opposing chaser for 1.5s. Once per team per round. */
+    /* Disabled wind charge: levitates the opposing chaser for 1.5s. Once per team per round.
     public void useWindCharge(@NotNull Player player) {
         ParkourTagMatch match = matchOf(player);
         if (match == null) return;
@@ -687,6 +716,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         }
         windChargeUsedTeams.add(team);
     }
+    */
 
     /** Resolves player-vs-player damage. Returns true if the event should be cancelled. */
     public boolean handleChaserDamage(@NotNull Player victim, @NotNull Player assailant) {
@@ -840,13 +870,12 @@ public class ParkourTagArea extends BasePairedGameInstance {
         // Recreate target/viewer entity-id relationships after the reconnecting client has spawned.
         scheduler.runTaskLater(plugin, this::syncAllParkourTagGlows, 2L);
 
-        if (getGameStageEnum() == GameStageEnum.PREPARATION && isIntroductionPhase()) {
-            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
+        if (getGameStageEnum() == GameStageEnum.PREPARATION) {
+            teleportPlayerToPrepareSpotLocation(player);
             return;
         }
 
-        if ((getGameStageEnum() == GameStageEnum.COUNTDOWN || getGameStageEnum() == GameStageEnum.PREPARATION)
-                && match != null) {
+        if (getGameStageEnum() == GameStageEnum.COUNTDOWN && match != null) {
             if (match.isChaser(player)) {
                 player.teleport(player.getUniqueId().equals(match.getRightAreaChaser())
                         ? match.getRightAreaChaserSpawn() : match.getLeftAreaChaserSpawn());
@@ -899,6 +928,25 @@ public class ParkourTagArea extends BasePairedGameInstance {
     @Override
     public ParkourTagConfig getGameConfig() {
         return (ParkourTagConfig) gameConfig;
+    }
+
+    private void teleportPlayerToPrepareSpotLocation(Player player) {
+        if (isIntroductionPhase()) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
+            return;
+        }
+        ParkourTagMatch current = matchOf(player);
+        if (current != null) {
+            Location target = current.getRight().getMembers().contains(player.getUniqueId())
+                    ? current.getRightPrepareSpot() : current.getLeftPrepareSpot();
+            if (target != null) {
+                player.teleport(target);
+                player.setGameMode(GameMode.ADVENTURE);
+                return;
+            }
+        }
+        player.teleport(getSpectatorSpawnLocation());
+        player.setGameMode(GameMode.SPECTATOR);
     }
 
     @Override

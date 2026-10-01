@@ -7,6 +7,7 @@ public class ListenerManager extends BaseManager {
     private PlayerListener playerListener;
     private ProtectionListener protectionListener;
     private PortalGuardListener portalGuardListener;
+    private PublicChatMuteListener publicChatMuteListener;
 
     public ListenerManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -20,10 +21,16 @@ public class ListenerManager extends BaseManager {
         playerListener.register();
         protectionListener.register();
         portalGuardListener.register();
+        publicChatMuteListener = new PublicChatMuteListener(plugin);
+        publicChatMuteListener.register();
     }
 
     @Override
     public void unload() {
+        if (publicChatMuteListener != null) {
+            publicChatMuteListener.unRegister();
+            publicChatMuteListener = null;
+        }
         if (playerListener != null) {
             playerListener.detachChatReceiver();
             playerListener.unRegister();

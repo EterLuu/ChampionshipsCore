@@ -33,8 +33,8 @@ class RiptideDepartureTest {
                 new RiptideCoursePlan.SideWall(wall, "GAP", 0, -1, 2),
                 new RiptideCoursePlan.SideWall(wall, "GAP", 0, 1, 3));
         var side = new RiptideCoursePlan.Level(2, 320, wall, "GAP", 0, false, 1, 0, 0, "SIDE", 1, walls);
-        int floorTime = RiptideDifficulty.floorTicks(150 - g.halfLength(), g.totalSteps());
-        int sideTime = RiptideSideSweep.totalTicks(g.halfWidth(), RiptideCoursePlanner.speedAt(config, g, 320), walls);
+        int floorTime = RiptideColorFloorRun.INTRO_TICKS + RiptideDifficulty.floorTicks(g.stoppedStep(150), g.totalSteps());
+        int sideTime = RiptideSideSweep.totalTicks(g.halfWidth(), RiptideCoursePlanner.speedAt(config, g, g.stoppedStep(320)), walls);
         assertEquals(travel + floorTime + 40, RiptideCoursePlanner.estimateTicks(config, g, List.of(floor)));
         assertEquals(travel + sideTime + 40, RiptideCoursePlanner.estimateTicks(config, g, List.of(side)));
         assertEquals(travel + floorTime + sideTime + 80, RiptideCoursePlanner.estimateTicks(config, g, List.of(floor, side)));

@@ -6,7 +6,6 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.util.SideEffectSet;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -35,10 +34,11 @@ final class RiptidePassRun implements AutoCloseable {
     }
 
     boolean active(){return active!=null;}
+    boolean sideMathActive() { return active != null && active.sideMath(); }
 
     /** The next forward step at which a side sweep starts, or {@code Integer.MAX_VALUE}. */
     int nextStartStep() {
-        return active != null || next >= sweeps.size() ? Integer.MAX_VALUE : sweeps.get(next).step();
+        return active != null || next >= sweeps.size() ? Integer.MAX_VALUE : geometry.stoppedStep(sweeps.get(next).step());
     }
 
     /** Suppress a normal math preview while its title could overlap the upcoming side sweep. */
@@ -52,15 +52,15 @@ final class RiptidePassRun implements AutoCloseable {
 
     boolean beginReached(int step) {
         if(active!=null)return true;
-        if(next>=sweeps.size() || step<sweeps.get(next).step())return false;
+        if(next>=sweeps.size() || step<geometry.stoppedStep(sweeps.get(next).step()))return false;
         active=sweeps.get(next++);tick=0;
-        speed=RiptideCoursePlanner.speedAt(config,geometry,active.step());
+        speed=RiptideCoursePlanner.speedAt(config,geometry,geometry.stoppedStep(active.step()));
         Material obstacle=Material.matchMaterial(config.getObstacleMaterial());
         if(obstacle==null || !obstacle.isBlock() || obstacle.isAir())throw new IllegalArgumentException("invalid obstacle material");
         buildings=active.sideWalls().stream().map(w -> RiptideMovingWall.compile(geometry,w,obstacle)).toList();
         RiptideNativePiston.prepare();
         if (active.sideMath()) {
-            answerFloor = new RiptideColorFloorPlatform(geometry, active.step());
+            answerFloor = new RiptideColorFloorPlatform(geometry, geometry.stoppedStep(active.step()));
             answerFloor.paint(RiptideSideMath.floor(geometry));
         }
         render(RiptideSideSweep.frame(0,active.sideWalls(),geometry.halfWidth(),speed));
@@ -74,25 +74,26 @@ final class RiptidePassRun implements AutoCloseable {
         var frame=RiptideSideSweep.frame(tick,active.sideWalls(),geometry.halfWidth(),speed);
         render(frame);
         var question = active.sideMath() ? RiptideSideMath.question(active, frame.beat(), config.getMinimumOperand(), config.getMaximumOperand()) : null;
-        if(frame.localTick()%10==0) {
+        if(question != null ? frame.localTick()%10==0 : tick==0) {
             String warning = Utils.translateColorCodes(MessageConfig.RIPTIDE_RUSH_SWEEP_TITLE);
             String title = warning, subtitle = "";
             if (question != null) {
                 var display = RiptideQuestionDisplay.of(question, active.number());
                 int remaining = RiptideSideSweep.beatTicks(geometry.halfWidth(), speed, active.sideWalls().get(frame.beat()-1)) - frame.localTick();
                 title = display.title();
-                subtitle = warning + " §f• " + display.subtitle()
+                subtitle = (tick < RiptideSideSweep.WARNING_TICKS ? warning + " §f• " : "") + display.subtitle()
                         + " §f• " + String.format(Locale.ROOT, "%.1f秒后判题", remaining / 20D);
             }
             for(var player:players) {
                 titleRecipients.add(player);
-                player.sendTitle(title, subtitle, 0, 11, 0);
-                if(frame.localTick()==0)player.playSound(player.getLocation(),Sound.BLOCK_NOTE_BLOCK_HAT,1F,frame.beat()==1?1F:1.5F);
+                player.sendTitle(title, subtitle, 0, question == null ? RiptideSideSweep.WARNING_TICKS : 11, 0);
             }
         }
+        if(frame.localTick()==0) for(var player:players)
+            player.playSound(player.getLocation(),"block.note_block.hat",1F,frame.beat()==1?1F:1.5F);
         if (question != null && frame.localTick() + 1 == RiptideSideSweep.beatTicks(geometry.halfWidth(), speed, active.sideWalls().get(frame.beat()-1))) {
             for (var player : players) answers.add(new Answer(player.getUniqueId(), active.number(), frame.beat(), question,
-                    RiptideSideMath.matches(player.getLocation(), geometry, active.step(), question)));
+                    RiptideSideMath.matches(player.getLocation(), geometry, geometry.stoppedStep(active.step()), question)));
         }
         tick++;
         if(tick==RiptideSideSweep.totalTicks(geometry.halfWidth(),speed,active.sideWalls())){
@@ -110,9 +111,9 @@ final class RiptidePassRun implements AutoCloseable {
         var adapted=BukkitAdapter.adapt(world);
         try {
             for(var cell:buildings.get(frame.beat()-1)) {
-                int x=geometry.blockX(active.step(),frame.lateral())+cell.x();
+                int x=geometry.blockX(geometry.stoppedStep(active.step()),frame.lateral())+cell.x();
                 int y=geometry.floorY()+cell.y();
-                int z=geometry.blockZ(active.step(),frame.lateral())+cell.z();
+                int z=geometry.blockZ(geometry.stoppedStep(active.step()),frame.lateral())+cell.z();
                 var block=world.getBlockAt(x,y,z);
                 blocks.add(block.getState());
                 if (facing != null) {

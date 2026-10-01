@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo.task;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoComponents;
 import ink.ziip.championshipscore.api.game.bingo.util.Materials;
@@ -273,28 +274,28 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
 
     private @Nullable Component paramComponent(MessageService msg) {
         return switch (trigger) {
-            case "wear" -> Component.text(wearLabel(param));
+            case "wear" -> LegacyText.component(wearLabel(param));
             case "wear_dyed", "wear_duration", "kill_family", "kill_unique",
-                    "visit_biomes", "eat_all", "name" -> Component.text(specialLabelOr(param));
+                    "visit_biomes", "eat_all", "name" -> LegacyText.component(specialLabelOr(param));
             case "break_item" -> {
                 String special = specialLabel(param);
-                yield special != null ? Component.text(special) : materialComponent(param);
+                yield special != null ? LegacyText.component(special) : materialComponent(param);
             }
-            case "effect" -> Component.text(effectLabel(param));
-            case "reach_level" -> Component.text(param);
-            case "reach" -> Component.text(reachLabel(param));
+            case "effect" -> LegacyText.component(effectLabel(param));
+            case "reach_level" -> LegacyText.component(param);
+            case "reach" -> LegacyText.component(reachLabel(param));
             case "eat", "drink" -> consumeLabel(param);
-            case "die" -> Component.text(dieLabel(param));
+            case "die" -> LegacyText.component(dieLabel(param));
             case "tame", "breed", "spy", "leash", "enrage" -> entityComponent(param);
             case "place", "use" -> {
                 // Params like HANGING_SIGN are family labels, not Material enum values: prefer a
                 // localized label before falling back to the raw material name.
                 String special = specialLabel(param);
-                yield special != null ? Component.text(special) : materialComponent(param);
+                yield special != null ? LegacyText.component(special) : materialComponent(param);
             }
             case "unique_collect", "all_collect" -> {
                 String special = specialLabel(param);
-                yield special != null ? Component.text(special) : materialComponent(param);
+                yield special != null ? LegacyText.component(special) : materialComponent(param);
             }
             // Standalone triggers (wear_full_enchanted / hunger_empty / effect_at_once / …) have no param.
             default -> null;
@@ -328,14 +329,14 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
         try {
             return BingoComponents.itemName(Material.valueOf(param));
         } catch (IllegalArgumentException e) {
-            return Component.text(param);
+            return LegacyText.component(param);
         }
     }
 
     /** Eat/drink param: prefer the item name, fall back to a label (e.g. WATER_BOTTLE isn't a material). */
     private static Component consumeLabel(String param) {
         String special = specialLabel(param);
-        return special != null ? Component.text(special) : materialComponent(param);
+        return special != null ? LegacyText.component(special) : materialComponent(param);
     }
 
     /** Death-cause param (DROWNING, IRON_GOLEM, FALLING_STALACTITE, …) -> localized label. */
@@ -356,7 +357,7 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
         try {
             return BingoComponents.entityName(EntityType.valueOf(param));
         } catch (IllegalArgumentException e) {
-            return Component.text(param);
+            return LegacyText.component(param);
         }
     }
 

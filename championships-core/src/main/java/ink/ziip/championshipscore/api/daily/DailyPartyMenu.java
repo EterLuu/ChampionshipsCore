@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -162,7 +164,7 @@ final class DailyPartyMenu {
                 members.add(Component.text(member.equals(party.leader())
                         ? GuiText.LEADER_MARK : GuiText.MEMBER_MARK,
                         member.equals(party.leader()) ? NamedTextColor.GOLD : NamedTextColor.GRAY)
-                        .append(Component.text(playerName(member))));
+                        .append(LegacyText.component(playerName(member))));
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
                 List<Component> lore = new ArrayList<>(meta.lore() == null ? List.of() : meta.lore());
@@ -208,7 +210,7 @@ final class DailyPartyMenu {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
-    static final class PartyHolder implements InventoryHolder {
+    static final class PartyHolder implements MenuInventory {
         private final UUID viewer;
         private final Map<Integer, UUID> targetsBySlot = new HashMap<>();
         private Inventory inventory;

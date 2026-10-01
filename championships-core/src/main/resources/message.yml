@@ -1,4 +1,13 @@
 admin:
+  mute:
+    default-reason: 管理员未填写原因
+    set: "已永久禁言玩家&#fff566%player%&#ededed的公共聊天&#696969 •&#ededed 原因：%reason%"
+    temporary-set: "已禁言玩家&#fff566%player%&#ededed的公共聊天&#fff566%duration%&#696969 •&#ededed 原因：%reason%"
+    unmuted: "已解除玩家&#fff566%player%&#ededed的公共聊天禁言。"
+    not-muted: "玩家&#fff566%player%&#ededed当前未被禁言。"
+    invalid-duration: "时长必须为正数并带单位 s/m/h/d/w，例如 30m、2h、1d 或 1h30m。"
+    lookup-failed: "无法确认玩家&#fff566%player%&#ededed的身份，请检查玩家名或身份查询服务。"
+    save-failed: "禁言操作保存失败，原禁言状态保留；请查看控制台。"
   team-missing: "队伍不存在：&#fff566%team%&#ededed。"
   teleported-players: "已将&#fff566%count%&#ededed名在线玩家传送到你的位置。"
   max-players-positive-integer: 人数必须是正整数。
@@ -99,7 +108,7 @@ event:
     game-not-in-event: "该游戏不在当前赛事“%event%”的游戏列表中：%game%&#ededed。"
     started: "正式比赛已开始准备：&#fff566%game%&#ededed。"
     emergency-stopped: "已通过重复start紧急停止正式比赛：&#fff566%game%&#ededed。"
-    unavailable: 宾果执行端尚未就绪、已有比赛运行，或参赛者当前不可用。
+    unavailable: "%game%无法启动：%detail%&#ededed。"
     no-schedule: 该游戏没有可用的正式比赛赛程。
   export:
     no-event: 没有通过cc-web阵容链接导入的当前赛事。
@@ -120,7 +129,7 @@ event:
 auth:
   identity-verification-failed: "&c无法验证玩家身份，请确认服务器 UUID 模式与登录代理配置一致。"
 dont-edit-this:
-  version: 59
+  version: 62
 no-permission: "&#bababa[&#ff6b26管理&#bababa]&#ededed 权限不足"
 server-mode-switched: "服务器游玩方式已切换为&#fff566%mode%&#ededed。"
 server-full: 服务器成员数已达上限！
@@ -137,6 +146,9 @@ command:
   catalog-admin: "&#ff6b26赛事与管理"
   catalog-row: "&#bababa•&#ededed %usage%&#696969 —&#bababa %description%"
 chat:
+  muted-permanent: "&#ff6b26你的公共聊天已被永久禁言&#696969 •&#ededed 原因：%reason%"
+  muted-temporary: "&#ff6b26你的公共聊天已被禁言，剩余 %remaining%&#696969 •&#ededed 原因：%reason%"
+  unmuted: "&#55ff55你的公共聊天禁言已解除。"
   team:
     prefix: "&#bababa[&#24abff队伍&#bababa]&r "
     usage: "&#bababa[&#ff6b26队伍&#bababa]&#ededed 用法 &#696969•&#ededed /teammsg <消息>"
@@ -313,7 +325,9 @@ game:
   buildmart: 匹配赛建
   dodgebolt: 躲避箭
   riptiderush: 激流勇进
-  frostbite: 霜冻狂潮
+  frostbite: 霜冻决斗
+  laserbox: 激光方盒
+  sulfursoccer: 硫方足球
   acerace: 王牌竞速
   preparation-count-down: "&#fff566%game% &#bababa•&#ededed 准备&#ff6b26%time%秒"
   introduction-title: "&#fff566&l%game%"
@@ -483,9 +497,9 @@ buildmart:
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
   build-completed: "&#bababa[&#fff566匹配赛建&#bababa] %team%&#ff6b26完成&#fff566%blueprint%&#696969（%stars%★ +%points%）"
   golden-build-completed: "&#bababa[&#fff566匹配赛建&#bababa] %team%&#ff6b26完成黄金建筑&#fff566%blueprint%&#696969（+%points%）"
-  golden-refreshed: "&#bababa[&#fff566匹配赛建&#bababa]&#fff566 黄金建筑已刷新 &#bababa•&#ededed 限时2分钟"
+  golden-refreshed: "&#bababa[&#fff566匹配赛建&#bababa]&#fff566 黄金建筑已刷新 &#bababa•&#ededed 限时3分钟"
   golden-expired: "&#bababa[&#fff566匹配赛建&#bababa]&#696969 黄金建筑已过期"
-  submit-differences: "&#bababa缺失 %missing% • 材质不符 %material% • 方块状态不符 %state%。差异示例 %positions%（以地板最小角上方为 0,0,0）"
+  submit-differences: "&#bababa缺失 %missing% • 材质不符 %material% • 方块状态不符 %state%。"
   submit-incomplete: "&#bababa[&#ff6b26匹配赛建&#bababa]&#fff566 %blueprint% &#bababa•&#ededed 完成度%matched%/%total%"
   submit-locked: "&#bababa[&#ff6b26匹配赛建&#bababa]&#ededed 结算阶段不能提交"
   golden-submit-failed: "&#bababa[&#ff6b26匹配赛建&#bababa]&#fff566 %blueprint% &#bababa•&#ededed 未完成，黄金区已清空"
@@ -724,6 +738,20 @@ map-editor-command:
   loading-disabled: 该游戏当前未启用，正在仅为地图编辑加载其配置……
   loading-for-rename: 该游戏当前未启用，正在加载地图管理器……
   manager-load-failed: 该游戏的地图管理器无法加载。
+buildmart-blueprint-editor:
+  invalid-name: "名称须为1–64个字符，不能以点开头或包含斜线、控制字符及首尾空格。"
+  finish-first: "请先提交或取消正在修改的小建筑。"
+  setup-missing: "请先设置场地0的第一个普通建筑区、提交按钮及主大厅传送门出生点。"
+  conflict: "蓝图名称已存在或文件在编辑期间发生变化，请重新选择小建筑。"
+  started: "正在修改小建筑&#fff566%name%&#ededed。请在7×7×7建筑区内建造，完成后点击提交按钮；工具栏保存按钮也可提交。"
+  busy: "正在读取或审查小建筑，请稍候。"
+  unsupported: "方块&#fff566%position%&#ededed缺少必要支撑，请修正后提交。"
+  reviewing: "正在审查小建筑的材料与六面遮挡情况。"
+  manifest-missing: "材料清单缺失或已过期，请先在地图编辑器中保存材料区后再提交。"
+  materials-rejected: "提交被拒绝：材料区无法提供或加工得到&#fff566%materials%&#ededed。修改现场已保留。"
+  invisible-warning: "提醒：小建筑含&#fff566%count%&#ededed个六面被完整不透明面遮挡的方块，坐标&#fff566%positions%&#ededed（相对建筑区原点，最多显示8个）；已允许保存。"
+  saved: "已提交小建筑&#fff566%name%&#696969 •&#ededed %stars%星&#696969 •&#ededed %blocks%个方块，已返回主大厅传送门出生点。"
+  cancelled: "已取消小建筑修改，原蓝图未改动。"
 buildmart-blueprint:
   stars-range: "覆盖星级必须在&#fff5661–5&#ededed之间。"
   selection-read-failed: 无法读取WorldEdit选区，请先选择蓝图区域。
@@ -923,11 +951,11 @@ map-editor-buildmart:
   floor-invalid: 选区必须恰好为7x1x7地板。
   floor-recorded: 已记录地板最低边角。
   portal-set: 已设置资源大厅传送门落点。
-  wind-select-first: 请先用WorldEdit选取吹风口区域。
-  wind-added: 已添加吹风口区域，当前共%count%个。
-  wind-cleared: 已清空吹风口区域列表。
-  wind-updated: 已更新第 %index% 个吹风口区域。
-  wind-adjusted: 已将吹风口调整为第 %order% 项。
+  jump-pad-select-first: 请先用WorldEdit选取跳板表面区域。
+  jump-pad-added: 已添加跳板区，当前共%count%个。
+  jump-pad-cleared: 已清空跳板区列表。
+  jump-pad-updated: 已更新第 %index% 个跳板区。
+  jump-pad-adjusted: 已将跳板区调整为第 %order% 项。
 map-editor-battlebox:
   spawn-right-set: 已设置右侧队伍出生点。
   spawn-left-set: 已设置左侧队伍出生点。
@@ -935,7 +963,8 @@ map-editor-battlebox:
   prepare-left-set: 左队预备点已设置。
   wool-set: 已设置羊毛区域。
 map-editor-tntrun:
-  track-boundary-set: 已设置0号赛道完整边界。
+  elimination-height-set: "已设置淘汰高度：Y=%height%；玩家低于此高度时出局。"
+  elimination-height-invalid: 请输入有效的Y坐标，支持负数和小数。
   spawn-set: 已设置0号赛道出生点。
 map-editor-skywars:
   map-boundaries-set: 已设置地图边界。
@@ -1005,8 +1034,9 @@ riptiderush:
   question-subtitle: "&#ff5555← 红门 %left% &#bababa| &#55ffff蓝门 %right% →"
   math-correct: "&#55ff55答案正确"
   floor-title: "&#ff6b26%seconds%秒"
+  floor-intro-title: "&#fff566踩在对应方块上！"
   floor-actionbar: "&#55ffff%block%"
-  dodge-title: "&#ff5555躲避冲刺！"
+  dodge-title: "&#ff5555注意%direction%！"
   dodge-actionbar: "&#fff566躲避冲刺生物 &#bababa•&#ededed 剩余 &#ff6b26%seconds%秒"
   reason:
     disconnected: 离开服务器
@@ -1016,3 +1046,31 @@ riptiderush:
     left-behind: 被木筏甩在后方
     fell: 坠落
     dodge: 被冲刺生物撞到
+
+sulfursoccer:
+  upcoming-title: "&e&l硫方足球即将开始"
+  opening-title: "&e&l开球"
+  restart-title: "&e&l开始"
+  warmup-start: "&e开始 3 分钟试踢，不计分；试踢结束后进入正式比赛。"
+  warmup-time: "&e试踢剩余 %time% &7| 不计分 &f| 末影珍珠冷却 8 秒"
+  pearl-rejected: "&c无法使用末影珍珠传送：比赛未进行、已暂停，或落点在球场外／高于球场地面 2 格。"
+  score: "&f%right% &e%right_goals% &7: &e%left_goals% &f%left% &7| 剩余 %time% | 先到 %target% 球获胜"
+  time-up: "&e12 分钟比赛时间结束，比分 &e%right_goals% &7: &e%left_goals%，领先队伍获胜。"
+  shootout-start: "&e12 分钟结束时平局，进入点球大战！双方轮流射门，各射 4 球，每人按顺序射门及守门；仍平局则继续双方各射一球，直到分出胜负。"
+  penalty-turn: "&e点球第 %round% 轮：&f%shooter% &e射门，&f%keeper% &e守门。3 秒后可射门，15 秒内只能攻击击球一次；守门员用快捷栏 1/2/3 选择挡左/中/右。"
+  penalty-goal: "&a点球进球！&f%shooter% &a射门得分。"
+  penalty-miss: "&e点球未进：&f%shooter% &e的射门被挡、出界或超时。"
+  penalty-score: "&f%right% &7点球 &e%right_penalties% &7: &e%left_penalties% &f%left%"
+  goal: "&e进球！%team% &f得分，当前比分 &e%right_goals% &7: &e%left_goals%"
+  goal-title: "&e&l进球！"
+  goal-subtitle: "%team% &f得分 &e%right_goals% &7: &e%left_goals%"
+  ball-reset: "&e足球出界或失效，回到中圈重新开球，不计分。"
+  paused: "&e比赛暂停：等待全部选手重连"
+  resumed: "&a全部选手已重连，比赛继续！"
+  champion: "&6&l硫方足球冠军：%team% &f| 最终比分 &e%right_goals% &7: &e%left_goals%"
+  champion-subtitle: "%team% &6获胜 &e%right_goals% &7: &e%left_goals%"
+  stopped: "&e硫方足球决赛已结束。"
+  end-title: "&e&l硫方足球比赛结束"
+  scheduled: "硫方足球决赛将在 10 秒后准备：%right% vs %left%，场地 %map%"
+  finalists: "&6&l硫方足球最终决赛 &f%right% &7vs &f%left%"
+  start-failed: "硫方足球决赛启动失败：请确认场地已发布、双方各有 1–4 名队员且全部在线。"

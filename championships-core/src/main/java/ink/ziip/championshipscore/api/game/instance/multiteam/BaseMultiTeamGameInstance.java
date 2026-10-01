@@ -57,7 +57,9 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
         if (getGameStageEnum() != GameStageEnum.WAITING || !validTeams(championshipTeams)
                 || players == null || players.isEmpty()
                 || players.stream().anyMatch(Objects::isNull)
-                || players.size() != new HashSet<>(players).size())
+                || players.size() != new HashSet<>(players).size()
+                || players.stream().anyMatch(player -> championshipTeams.stream()
+                        .noneMatch(team -> team.getMembers().contains(player))))
             return false;
         cancelPostGameRoutingBeforeStart();
         setGameStageEnum(GameStageEnum.LOADING);

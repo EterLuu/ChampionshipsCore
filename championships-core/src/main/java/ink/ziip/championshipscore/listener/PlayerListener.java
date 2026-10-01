@@ -2,7 +2,6 @@ package ink.ziip.championshipscore.listener;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -10,6 +9,7 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.platform.bukkit.text.CrossServerChatText;
+import ink.ziip.championshipscore.platform.bukkit.text.ChatMessageText;
 import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
 import ink.ziip.championshipscore.platform.bukkit.text.TeamChatCommandParser;
 import ink.ziip.championshipscore.protocol.CrossServerChatMessage;
@@ -17,7 +17,6 @@ import ink.ziip.championshipscore.util.Utils;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
@@ -55,11 +54,8 @@ public class PlayerListener extends BaseListener {
     public void onPlayerChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
         PlayerPresentation presentation = presentation(player);
-        Component messageOverride = refereeMessage(player, event.message());
-
         event.renderer((source, sourceDisplayName, message, viewer) -> {
-            Component actualMessage = messageOverride != null ? messageOverride : message;
-            return presentation.chatLine(player.getName(), actualMessage);
+            return presentation.chatLine(player.getName(), ChatMessageText.format(player, message));
         });
     }
 
@@ -70,8 +66,7 @@ public class PlayerListener extends BaseListener {
         if (sourceInstance == null || sourceInstance.isBlank()) return;
         Player player = event.getPlayer();
         PlayerPresentation presentation = presentation(player);
-        Component override = refereeMessage(player, event.message());
-        Component message = override == null ? event.message() : override;
+        Component message = ChatMessageText.format(player, event.message());
         plugin.getRedisManager().publishChat(CrossServerChatText.message(sourceInstance,
                 player.getUniqueId(), player.getName(), presentation, message, System.currentTimeMillis()));
     }
@@ -97,14 +92,8 @@ public class PlayerListener extends BaseListener {
         team.getOnlinePlayers().forEach(player -> player.sendMessage(line));
     }
 
-    private Component refereeMessage(Player player, Component message) {
-        if (!player.hasPermission(ChampionshipPermissions.REFEREE)) return null;
-        // Referees may colour their own message; identity still follows the same contract as TAB.
-        String typed = PlainTextComponentSerializer.plainText().serialize(message);
-        return Utils.toComponent("&f" + typed);
-    }
-
     private void receiveCrossServerChat(CrossServerChatMessage message) {
+        if (plugin.getPublicChatMuteManager().activeMute(message.senderId()) != null) return;
         final Component line;
         try {
             line = CrossServerChatText.render(message);
@@ -114,6 +103,7 @@ public class PlayerListener extends BaseListener {
             return;
         }
         Bukkit.getScheduler().runTask(plugin, () -> {
+            if (plugin.getPublicChatMuteManager().activeMute(message.senderId()) != null) return;
             plugin.getServer().getOnlinePlayers().forEach(player -> player.sendMessage(line));
             plugin.getServer().getConsoleSender().sendMessage(line);
         });
@@ -189,7 +179,7 @@ public class PlayerListener extends BaseListener {
         boolean daily = plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby();
         if (daily) {
             if (plugin.getTeamManager().isTransientTeam(team)) {
-                return new PlayerPresentation(team.getColoredName(), team.getColorCode(), playerArea != null);
+                return new PlayerPresentation(team.getColoredName(), team.getColorCode(), playerArea != null, true);
             }
             BaseGameInstance shownArea = playerArea;
             if (shownArea == null)
@@ -197,7 +187,7 @@ public class PlayerListener extends BaseListener {
             String label = shownArea == null ? MessageConfig.PRESENTATION_DAILY_LOBBY
                     : MessageConfig.PRESENTATION_DAILY_GAME.replace("%game%", shownArea.getGameTypeEnum().toString());
             return new PlayerPresentation(label, team == null ? null : team.getColorCode(),
-                    playerArea != null && team != null);
+                    playerArea != null && team != null, true);
         }
         String label = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
         return new PlayerPresentation(label, team == null ? null : team.getColorCode(),

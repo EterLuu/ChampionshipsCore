@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo.task;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoComponents;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
@@ -63,7 +64,7 @@ public record StatisticTask(StatisticHandle statistic, int count, Dimension dime
             MessageService msg = MessageService.global();
             return Component.text().color(NamedTextColor.LIGHT_PURPLE)
                     .append(Component.text("*"))
-                    .append(Component.text(msg.tr("task.fish_caught_name")))
+                    .append(LegacyText.component(msg.tr("task.fish_caught_name")))
                     .append(Component.text(": "))
                     .append(Component.text(count))
                     .append(Component.text("*"))
@@ -102,7 +103,7 @@ public record StatisticTask(StatisticHandle statistic, int count, Dimension dime
                     .append(Component.text(": "))
                     .append(Component.text(count * 10))
                     .append(Component.text(" "))
-                    .append(Component.text(MessageService.global().tr("task.blocks_unit")));
+                    .append(LegacyText.component(MessageService.global().tr("task.blocks_unit")));
             default -> builder.append(BingoComponents.statistic(statistic))
                     .append(Component.text(": "))
                     .append(amount);

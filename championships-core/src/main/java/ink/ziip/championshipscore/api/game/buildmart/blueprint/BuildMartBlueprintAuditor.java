@@ -285,6 +285,7 @@ public final class BuildMartBlueprintAuditor {
             }
         }
         Map<String, String> fallback = Map.ofEntries(
+                Map.entry("stone", "cobblestone"),
                 Map.entry("smooth_quartz", "quartz_block"), Map.entry("smooth_red_sandstone", "red_sand"),
                 Map.entry("red_sandstone", "red_sand"), Map.entry("smooth_sandstone", "sand"),
                 Map.entry("sandstone", "sand"), Map.entry("polished_blackstone_bricks", "blackstone"),

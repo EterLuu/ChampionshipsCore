@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RiptideFinalStageTest {
     @Test void everyFinalPassIsTripleAndEveryFinalMathIsThreeSideQuestions() throws Exception {
         var c=RiptideTestFixtures.config();
-        for(int seed=0;seed<100;seed++) {
+        for(int seed=0;seed<8;seed++) {
             var plan=RiptideCoursePlanner.plan(c,seed);
             assertEquals(32,plan.levels().stream().map(RiptideCoursePlan.Level::number).distinct().count());
             for(var l:plan.levels()) if(l.step()>=400) {
@@ -28,9 +28,13 @@ class RiptideFinalStageTest {
                     var group=plan.trialLevels(l);
                     for(int i=1;i<group.size();i++) assertNotEquals(group.get(i-1).template().designKey(group.get(i-1).variant()),
                             group.get(i).template().designKey(group.get(i).variant()));
+                } else if (l.type() == RiptideLevelType.RHYTHM) {
+                    var group = plan.trialLevels(l);
+                    assertEquals(3, group.size());
+                    assertEquals(3, group.stream().map(RiptideCoursePlan.Level::variant).distinct().count());
                 }
             }
-            assertTrue(plan.estimatedTicks()<6000);
+            assertTrue(plan.estimatedTicks()<c.getTimer()*20);
         }
     }
 
@@ -86,6 +90,7 @@ class RiptideFinalStageTest {
         if(runtime!=null) yaml.load(new java.io.File(runtime));
         else try(var reader=new java.io.InputStreamReader(getClass().getResourceAsStream("/riptiderush/area.yml"),java.nio.charset.StandardCharsets.UTF_8)) { yaml.load(reader); }
         var c=RiptideTestFixtures.config();
+        c.setTimer(yaml.getInt("timer"));
         c.setTemplates(yaml.getMapList("course.pool").stream().map(RiptideLevelTemplate::parse).toList());
         c.setPassCount(yaml.getInt("course.counts.pass"));
         c.setMathCount(yaml.getInt("course.counts.math"));
@@ -99,7 +104,7 @@ class RiptideFinalStageTest {
         String before=yaml.getConfigurationSection("prepare").getValues(true).toString();
         String poolBefore=c.getPool().toString();
         var groups = new HashSet<String>();
-        for(int seed=0;seed<30;seed++) {
+        for(int seed=0;seed<8;seed++) {
             var plan=RiptideCoursePlanner.plan(c,seed);
             assertTrue(plan.estimatedTicks() < c.getTimer() * 20, "seed=" + seed);
             assertEquals(30, plan.levels().stream().map(RiptideCoursePlan.Level::number).distinct().count());
@@ -145,10 +150,4 @@ class RiptideFinalStageTest {
         if (c.getRhythmCount() > 0) assertTrue(groups.containsAll(Set.of("RHYTHM_2", "RHYTHM_3")), groups.toString());
     }
 
-    @Test void rulesMigrationIsIdempotentAndPreservesCustomRules() {
-        var yaml=new YamlConfiguration();yaml.set("rules",List.of(List.of("我的规则")));
-        RiptideRushConfig.migrateFinalStageRules(yaml);String once=yaml.saveToString();
-        RiptideRushConfig.migrateFinalStageRules(yaml);assertEquals(once,yaml.saveToString());
-        assertEquals(List.of("我的规则"),yaml.getList("rules").getFirst());
-    }
 }

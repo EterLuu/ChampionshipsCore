@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.bingo;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -12,7 +13,6 @@ import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -56,8 +56,8 @@ public class BingoPrepareFlow extends PrepareFlowDefinition {
 
         StandAndRunStep spectator = new StandAndRunStep(
                 "spectator_spawn",
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.bingo.items.spectator-spawn.title", 0)),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.bingo.items.spectator-spawn.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.bingo.items.spectator-spawn.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.bingo.items.spectator-spawn.lore", 0)),
                 Material.ENDER_EYE,
                 t -> ((BingoConfig) t.config()).getSpectatorSpawnPoint() != null,
                 (t, loc) -> ((BingoConfig) t.config()).setSpectatorSpawnPoint(loc),

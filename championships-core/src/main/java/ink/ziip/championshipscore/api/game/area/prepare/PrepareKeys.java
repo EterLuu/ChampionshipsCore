@@ -74,9 +74,9 @@ public final class PrepareKeys {
     public static @NotNull ItemStack item(@NotNull Material material, @NotNull Component name, @Nullable List<Component> lore) {
         ItemStack item = new ItemStack(material);
         item.editMeta(meta -> {
-            meta.displayName(name.decoration(TextDecoration.ITALIC, false));
+            meta.displayName(name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
             if (lore != null && !lore.isEmpty()) {
-                meta.lore(lore.stream().map(c -> c.decoration(TextDecoration.ITALIC, false)).toList());
+                meta.lore(lore.stream().map(c -> c.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
             }
         });
         return item;

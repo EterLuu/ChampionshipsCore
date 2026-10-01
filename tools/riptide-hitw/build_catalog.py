@@ -150,9 +150,11 @@ def main():
         cells,mask,mapping,removed,changes,passages=adapt(s);payload,height=schematic(cells)
         id='hitw_'+s['map'].lower().replace('(','').replace(')','')+'_'+s['group'].lower()+str(s['number'])
         name=NAMES[s['map']]+' · '+s['group']+str(s['number']).zfill(2)
-        entry=dict(id=id,name=name,type='PASS',variant='CUSTOM',enabled=True,weight=10,difficulty=difficulty(measure({(x-6,y,0):blockstate(v) for y,row in enumerate(cells) for x,v in enumerate(row)})),
+        snapshot={(x-6,y,0):blockstate(state) for y,row in enumerate(cells) for x,state in enumerate(row)}
+        passable_area=measure(snapshot)
+        entry=dict(id=id,name=name,type='PASS',variant='CUSTOM',enabled=True,weight=10,difficulty=difficulty(passable_area),
                    building=dict(schematic=payload,extent=0,width=15,height=height,floor=[]),routes=passages,
-                   **{'passable-area':measure({(x-6,y,0):blockstate(v) for y,row in enumerate(cells) for x,v in enumerate(row)})})
+                   **{'passable-area':passable_area})
         if id in legacy:entry['previous-schematic']=legacy[id]
         if id in legacy2:entry['previous-v2-schematic']=legacy2[id]
         result.append(entry);audit.append(dict(id=id,name=name,source=s['url'],map=s['map'],group=s['group'],cells=cells,mask=mask,offset=-6,**{'source-columns':mapping,'removed-columns':removed},changes=changes,routes=passages))

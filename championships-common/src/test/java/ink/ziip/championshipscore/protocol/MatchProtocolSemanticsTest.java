@@ -1,13 +1,12 @@
 package ink.ziip.championshipscore.protocol;
 
-import org.junit.jupiter.api.Test;
-
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -72,5 +71,42 @@ class MatchProtocolSemanticsTest {
         lifecycle.transitionTo(MatchState.ABORTED);
         assertTrue(lifecycle.state().terminal());
         assertThrows(IllegalStateException.class, () -> lifecycle.transitionTo(MatchState.PREPARING));
+    }
+
+    @Test
+    void difficultyDurationsMatchMineBingo() {
+        assertEquals(900, BingoDifficulty.EASY.durationSeconds());
+        assertEquals(1800, BingoDifficulty.LITE.durationSeconds());
+        assertEquals(2700, BingoDifficulty.NORMAL.durationSeconds());
+        assertEquals(3600, BingoDifficulty.HARD.durationSeconds());
+        assertEquals(5400, BingoDifficulty.EXTREME.durationSeconds());
+    }
+
+    @Test
+    void cardChangingRemixAddsTenMinutesOnce() {
+        BingoVariantRules rules = new BingoVariantRules(
+                BingoMode.DOMINATION, BingoDifficulty.NORMAL, 1, BingoRemix.SCALE);
+        assertEquals(3300, rules.durationSeconds(600));
+    }
+
+    @Test
+    void roundTripsRedisFields() {
+        CrossServerChatMessage message = new CrossServerChatMessage(UUID.randomUUID(), "core-a",
+                UUID.randomUUID(), "Alice", "&cRed", "#ff5555", true,
+                "{\"text\":\"hello\"}", 123L);
+        assertEquals(message, CrossServerChatMessage.parse(message.fields()));
+    }
+
+    @Test
+    void rejectsMissingAndInvalidFields() {
+        CrossServerChatMessage message = new CrossServerChatMessage(UUID.randomUUID(), "core-a",
+                UUID.randomUUID(), "Alice", "&cRed", null, false,
+                "{\"text\":\"hello\"}", 123L);
+        java.util.Map<String, String> missing = new java.util.HashMap<>(message.fields());
+        missing.remove("senderName");
+        assertThrows(IllegalArgumentException.class, () -> CrossServerChatMessage.parse(missing));
+        var invalid = new java.util.HashMap<>(message.fields());
+        invalid.put("daily", "invalid");
+        assertThrows(IllegalArgumentException.class, () -> CrossServerChatMessage.parse(invalid));
     }
 }

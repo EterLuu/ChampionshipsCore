@@ -27,6 +27,8 @@ final class WorkerWorldController {
 
     void configureAndFreeze(World world) {
         BingoWorldRules.configure(world);
+        world.getWorldBorder().setCenter(0, 0);
+        world.getWorldBorder().setSize(WorkerScatterPlan.WORLD_SIZE);
         apply(world, Phase.WAITING);
     }
 

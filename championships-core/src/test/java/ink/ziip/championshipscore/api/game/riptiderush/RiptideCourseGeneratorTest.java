@@ -17,6 +17,31 @@ import static org.junit.jupiter.api.Assertions.*;
 import static ink.ziip.championshipscore.api.game.riptiderush.RiptideTestFixtures.*;
 
 class RiptideCourseGeneratorTest {
+    @Test void everyStoppedChildBuildsTheSameGoldEntranceInsteadOfPastingAFloorBuilding() throws Exception {
+        for (int[] axis : new int[][]{{1,0},{-1,0},{0,1},{0,-1}}) {
+            var world=new TestWorld(); var c=config(world,axis); var g=c.resolveGeometry();
+            var floor=RiptideLevelTemplate.create("floor",RiptideLevelType.COLOR_FLOOR);
+            var authored=new RiptideBlueprint(java.util.Base64.getEncoder().encodeToString("opaque floor payload".getBytes(java.nio.charset.StandardCharsets.UTF_8)),0,7,4,
+                    java.util.stream.IntStream.range(0,63).mapToObj(i -> i%2==0 ? "IRON_ORE" : "COAL_ORE").toList());
+            var pass=RiptideLevelTemplate.create("wall",RiptideLevelType.PASS);
+            var levels=List.of(
+                    new RiptideCoursePlan.Level(1,30,floor.withBlueprint(authored),"ORE",0,false,1),
+                    new RiptideCoursePlan.Level(2,60,RiptideLevelTemplate.create("dodge",RiptideLevelType.DODGE),"ZOMBIE",0,false,1),
+                    new RiptideCoursePlan.Level(3,90,floor,"ORE",0,false,1,0,0,"SIDE",1,
+                            List.of(new RiptideCoursePlan.SideWall(pass,"GAP",0,1,7))));
+            RiptideCourseGenerator.build(world.world,g,new RiptideCoursePlan(1,28,0,levels),Material.OAK_PLANKS,Material.STONE);
+            for(var level:levels) {
+                for(int y=1;y<=3;y++) {
+                    assertEquals(Material.GOLD_BLOCK,world.at(g,level.step(),-g.halfWidth()-1,y));
+                    assertEquals(Material.GOLD_BLOCK,world.at(g,level.step(),g.halfWidth()+1,y));
+                    for(int lateral=-g.halfWidth();lateral<=g.halfWidth();lateral++)
+                        assertEquals(Material.AIR,world.at(g,level.step(),lateral,y));
+                }
+                assertEquals(Material.YELLOW_CONCRETE,world.at(g,level.step(),0,4));
+            }
+        }
+    }
+
     @Test void doubleMathBuildsTwoDoorsAtExactlyTheJudgedPlanes() throws Exception {
         var world = new TestWorld(); var c = config(world, new int[]{0,1}); var g = c.resolveGeometry();
         var template = new RiptideLevelTemplate("pair", "连续两道", RiptideLevelType.MATH, "DOUBLE", true, 10, 64, 1);
@@ -39,11 +64,17 @@ class RiptideCourseGeneratorTest {
         for (int[] axis : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
             var world = new TestWorld();
             var c = config(world, axis);
+            // This fixture lays out every built-in variant, not a normal quota-limited course.
+            // Keep the growing catalogue inside the region cleared between the two generations.
+            long builtinCount = c.resolvePool().stream().filter(t -> t.blueprint() == null).count();
+            int length = Math.max(500, 40 + Math.toIntExact(builtinCount) * 15);
+            c.setFinishPoint(c.getStartPoint().clone().add(axis[0] * length, 0, axis[1] * length));
             var g = c.resolveGeometry();
             var outside = new Pos(g.blockX(90, 9), g.floorY(), g.blockZ(90, 9));
             world.blocks.put(outside, Material.DIAMOND_BLOCK);
             for (int seed : new int[]{13, 94}) {
                 var plan = builtinPlan(c, seed);
+                assertTrue(plan.levels().stream().allMatch(l -> l.step() + l.extent() < g.totalSteps()));
                 clear(world, c);
                 RiptideCourseGenerator.build(world.world, g, plan, Material.OAK_PLANKS, Material.STONE);
                 assertEquals(Material.DIAMOND_BLOCK, world.blocks.get(outside));

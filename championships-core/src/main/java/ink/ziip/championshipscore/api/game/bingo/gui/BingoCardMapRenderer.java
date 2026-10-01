@@ -33,12 +33,13 @@ import java.util.List;
  * {@link TaskImageAtlas}. Only redraws when the card state changes.
  */
 public final class BingoCardMapRenderer extends MapRenderer {
+    private static final int MAX_COMPLETION_TEAMS = 6;
     private static final Key OMINOUS_BANNER_ICON_KEY = Key.key("minecraft", "ominous_banner");
     private static final Key HEALING_POTION_ICON_KEY = Key.key("minecraft", "healing_potion");
     private final BingoCard card;
     private final @Nullable String teamId;
     private final @Nullable TextColor teamColor;
-    /** Fixed number of border segments (0 = dynamic, one per completing team; 2 or 4 = points-mode tiers). */
+    /** Fixed number of border segments (0 = dynamic, one per completing team). */
     private final int tierSegments;
     /** Set when the round ends so this renderer paints the win-state overlay. Null while running. */
     private final @Nullable BingoRound round;
@@ -63,7 +64,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
         this.card = card;
         this.teamId = teamId;
         this.teamColor = teamColor;
-        this.tierSegments = Math.clamp(tierSegments, 0, 4);
+        this.tierSegments = Math.clamp(tierSegments, 0, MAX_COMPLETION_TEAMS);
         this.round = round;
         this.viewerTeam = viewerTeam;
     }
@@ -190,12 +191,24 @@ public final class BingoCardMapRenderer extends MapRenderer {
         int amount = task.data.getRequiredAmount();
         if (amount > 1 || isStatistic) drawAmount(canvas, gridX, gridY, amount, isStatistic || isEvent);
 
-        drawCompletionBorder(canvas, gridX, gridY, completionColors(task), tierSegments);
+        boolean ownCompletion = teamId != null && task.isCompletedByTeam(teamId);
+        drawCompletionBorder(canvas, gridX, gridY, completionColors(task), ownCompletion ? 1 : tierSegments);
     }
 
     private List<TextColor> completionColors(GameTask task) {
-        List<TextColor> colors = new ArrayList<>(4);
-        int limit = tierSegments > 0 ? tierSegments : 4;
+        if (teamId != null && task.isCompletedByTeam(teamId)) {
+            TextColor color = teamColor;
+            if (color == null) {
+                color = task.allCompletions().stream()
+                        .filter(completion -> teamId.equals(completion.teamId()))
+                        .map(GameTask.Completion::teamColor)
+                        .filter(java.util.Objects::nonNull)
+                        .findFirst().orElse(null);
+            }
+            return color == null ? List.of() : List.of(color);
+        }
+        List<TextColor> colors = new ArrayList<>(MAX_COMPLETION_TEAMS);
+        int limit = tierSegments > 0 ? tierSegments : MAX_COMPLETION_TEAMS;
         for (GameTask.Completion c : task.allCompletions()) {
             if (colors.size() >= limit) break;
             if (c.teamColor() != null) colors.add(c.teamColor());
@@ -205,7 +218,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
 
     private static void drawCompletionBorder(MapCanvas canvas, int gridX, int gridY,
                                              List<TextColor> teams, int forceSegments) {
-        int filled = Math.min(teams.size(), 4);
+        int filled = Math.min(teams.size(), MAX_COMPLETION_TEAMS);
         int segments = forceSegments > 0 ? forceSegments : Math.max(filled, 1);
         if (filled == 0) return;
         final int ox = gridX * 24 + 4, oy = gridY * 24 + 4, size = 24;

@@ -81,4 +81,25 @@ public final class FrostbiteRound {
     }
     public int kills(UUID id) { return kills.getOrDefault(id, 0); }
     public Map<UUID, Integer> kills() { return Map.copyOf(kills); }
+
+    /** Per-player rewards for this round's team kill totals; ties share a rank and skip occupied places. */
+    public Map<UUID, Integer> rankingRewards(List<Integer> pointsPerRank) {
+        Map<Integer, Integer> teamKills = new TreeMap<>();
+        seats.forEach((id, seat) -> teamKills.merge(seat.team(), kills(id), Integer::sum));
+        var ranking = new ArrayList<>(teamKills.entrySet());
+        ranking.sort(Map.Entry.<Integer, Integer>comparingByValue().reversed());
+
+        Map<Integer, Integer> rewards = new HashMap<>();
+        int rank = 0;
+        int previousKills = -1;
+        for (int index = 0; index < ranking.size(); index++) {
+            var team = ranking.get(index);
+            if (team.getValue() != previousKills) rank = index;
+            previousKills = team.getValue();
+            rewards.put(team.getKey(), rank < pointsPerRank.size() ? pointsPerRank.get(rank) : 0);
+        }
+        Map<UUID, Integer> playerRewards = new HashMap<>();
+        seats.forEach((id, seat) -> playerRewards.put(id, rewards.get(seat.team())));
+        return Map.copyOf(playerRewards);
+    }
 }

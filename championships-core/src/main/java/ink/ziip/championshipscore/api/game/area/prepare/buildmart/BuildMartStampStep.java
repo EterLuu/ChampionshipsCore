@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -9,7 +10,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -24,8 +24,8 @@ final class BuildMartStampStep extends PrepareStep {
     private final File base;
 
     BuildMartStampStep(File base) {
-        super("stamp", Component.text(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.stamp.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.stamp.lore", 0)), Material.DISPENSER,
+        super("stamp", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.stamp.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.stamp.lore", 0)), Material.DISPENSER,
                 StepCaptureType.STAMP);
         this.base = base;
     }

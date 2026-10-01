@@ -11,7 +11,7 @@ import java.util.Arrays;
 
 /** Bounded, deterministic planning. No world mutation or player state is consulted. */
 public final class RiptideCoursePlanner {
-    public static final int VERSION = 25;
+    public static final int VERSION = 28;
     private RiptideCoursePlanner() { }
 
     /** A template can be tried before the entire pool's quotas have been made satisfiable. */
@@ -39,9 +39,20 @@ public final class RiptideCoursePlanner {
     public static RiptideCoursePlan plan(RiptideRushConfig config, long seed) {
         var geometry = config.resolveGeometry();
         var stoppedAllocation = config.stoppedAllocation(seed);
+        List<RiptideLevelTemplate> pool = validateInputs(config, geometry, stoppedAllocation);
+        int count = Arrays.stream(RiptideLevelType.values()).mapToInt(type -> quota(config, type, stoppedAllocation)).sum();
+        return plan(config, seed, geometry, stoppedAllocation, pool, count);
+    }
+
+    /** Checks configuration and pool capacity without attempting a course arrangement. */
+    public static void validateInputs(RiptideRushConfig config, long seed) {
+        validateInputs(config, config.resolveGeometry(), config.stoppedAllocation(seed));
+    }
+
+    private static List<RiptideLevelTemplate> validateInputs(RiptideRushConfig config,
+            RiptideCourseGeometry geometry, RiptideStoppedAllocation stoppedAllocation) {
         validateSettings(config, geometry);
         List<RiptideLevelTemplate> pool = config.resolvePool();
-        int count = Arrays.stream(RiptideLevelType.values()).mapToInt(type -> quota(config, type, stoppedAllocation)).sum();
         for (var template : pool) {
             if (!template.enabled() || template.blueprint() == null) continue;
             var building = template.blueprint();
@@ -60,6 +71,12 @@ public final class RiptideCoursePlanner {
             if (available < needed) throw new IllegalArgumentException(type.displayName()
                     + "关卡池不足：需要 " + needed + " 次，启用关卡最多提供 " + available + " 次");
         }
+        return pool;
+    }
+
+    private static RiptideCoursePlan plan(RiptideRushConfig config, long seed,
+            RiptideCourseGeometry geometry, RiptideStoppedAllocation stoppedAllocation,
+            List<RiptideLevelTemplate> pool, int count) {
         Random random = new Random(seed);
         // Extra departure time can reject otherwise valid courses. Only extend the search
         // after such a rejection; structurally impossible pools must still fail quickly.
@@ -267,18 +284,13 @@ public final class RiptideCoursePlanner {
 
     static boolean safeTransition(RiptideRushConfig c, RiptideCourseGeometry g,
                                   RiptideCoursePlan.Level first, RiptideCoursePlan.Level second) {
-        int gap = second.step() - second.extent() - first.step() - first.extent();
+        int gap = g.occupiedStart(second) - g.occupiedEnd(first);
         if (!RiptideWallGroups.distinctPassages(first, second, g)) return false;
         if (first.type() == RiptideLevelType.PASS && second.type() == RiptideLevelType.PASS
                 && !first.isSideSweep() && !second.isSideSweep()
                 && first.template().designKey(first.variant()).equals(second.template().designKey(second.variant()))) return false;
-        // A side wall is absent during travel. Its extent already reserves its whole forward
-        // footprint; leave two clear blocks plus room for the stopped raft, not another raft length.
-        if ((first.isSideSweep() || second.isSideSweep())
-                && !first.colorFloor() && !second.colorFloor())
-            return gap >= 2 && second.step() - first.step()
-                    - (!first.isSideSweep() ? first.extent() : 0)
-                    - (!second.isSideSweep() ? second.extent() : 0) >= g.halfLength() + 2;
+        // Every stopped child reserves its deck plus entrance and gives its own instructions.
+        if (first.stopsRaft() || second.stopsRaft()) return gap >= 2;
         if (first.rhythm().equals("FINAL_TRIPLE") && second.rhythm().equals("FINAL_TRIPLE"))
             return gap >= 2 && gap / speedAt(c, g, second.step()) >= RiptideFinalStage.transitionSeconds(first, second, g);
         if (first.wallGroup() < 0 && first.wallGroup() == second.wallGroup())
@@ -290,12 +302,6 @@ public final class RiptideCoursePlanner {
                     && gap / speedAt(c,g,second.step()) >= RiptideWallGroups.requiredSeconds(first,second,
                             speedAt(c,g,second.step()),first.step()>=g.totalSteps()*.8);
         if (gap <= g.halfLength() + 2) return false;
-        if ((second.type() == RiptideLevelType.COLOR_FLOOR || second.type() == RiptideLevelType.DODGE) && gap <= g.raftLength()) return false;
-        // A stationary floor gives time to choose the next entrance; arriving on its deck
-        // starts its own timed instruction. Keep full raft/building clearance at either end.
-        if (second.step() >= g.totalSteps() * .8 && (stationary(first.type()) || stationary(second.type()))) return true;
-        // Side walls are absent during travel and give their own warning while the raft is stopped.
-        if(first.isSideSweep() || second.isSideSweep())return true;
         double seconds = gap / speedAt(c, g, second.step() + second.extent());
         double lateral = first.template().blueprint() == null && second.template().blueprint() == null
                 && first.variant().equals("GAP") && second.variant().equals("GAP")
@@ -307,19 +313,20 @@ public final class RiptideCoursePlanner {
         return c.speedAtProgress(step / (double) g.totalSteps());
     }
 
-    private static boolean stationary(RiptideLevelType type) {
-        return type == RiptideLevelType.COLOR_FLOOR || type == RiptideLevelType.DODGE;
-    }
-
     /** Mirrors tickCourse: budget is retained across stops, and the arrival tick does not consume pause time. */
     static int estimateTicks(RiptideRushConfig c, RiptideCourseGeometry g, List<RiptideCoursePlan.Level> levels) {
         var stops = new HashMap<Integer, Integer>();
-        levels.stream().filter(RiptideCoursePlan.Level::colorFloor)
-                .forEach(l -> stops.put(l.step() - g.halfLength(), RiptideDifficulty.floorTicks(l.step() - g.halfLength(), g.totalSteps())));
-        levels.stream().filter(l -> l.type() == RiptideLevelType.DODGE)
-                .forEach(l -> stops.put(l.step() - g.halfLength(), RiptideDodgeRun.DURATION_TICKS));
-        var sweeps = new HashMap<Integer, Integer>();
-        levels.stream().filter(RiptideCoursePlan.Level::isSideSweep).forEach(l -> sweeps.put(l.step(), RiptideSideSweep.totalTicks(g.halfWidth(),speedAt(c,g,l.step()),l.sideWalls())));
+        for (var level : levels) {
+            if (!level.stopsRaft()) continue;
+            int stoppedStep = g.stoppedStep(level.step());
+            int duration = switch (level.kind()) {
+                case COLOR_FLOOR -> RiptideColorFloorRun.INTRO_TICKS + RiptideDifficulty.floorTicks(stoppedStep, g.totalSteps());
+                case DODGE -> RiptideDodgeRun.DURATION_TICKS;
+                case SIDE_SWEEP -> RiptideSideSweep.totalTicks(g.halfWidth(), speedAt(c, g, stoppedStep), level.sideWalls());
+                default -> throw new IllegalStateException("unsupported stopped stage");
+            };
+            stops.put(stoppedStep, duration);
+        }
         int step = 0, paused = 0, tick = 0;
         double movement = 0;
         while (step < g.totalSteps() || paused > 0) {
@@ -329,7 +336,6 @@ public final class RiptideCoursePlanner {
             while (movement >= 1 && step < g.totalSteps()) {
                 step++; movement--;
                 if (stops.containsKey(step)) { paused = stops.get(step) + RiptideDeparture.WAIT_TICKS; break; }
-                if (sweeps.containsKey(step)) { paused = sweeps.get(step) + RiptideDeparture.WAIT_TICKS; break; }
             }
         }
         return tick;

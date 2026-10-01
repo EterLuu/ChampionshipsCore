@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -8,7 +9,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -16,8 +16,8 @@ import org.jetbrains.annotations.NotNull;
 /** Session-only Ace Race course preview showing respawn crystals and progress-line particles. */
 public final class AceRaceMapPreviewStep extends PrepareStep {
     public AceRaceMapPreviewStep() {
-        super("map_preview", Component.text(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.map-preview.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.map-preview.lore", 0)),
+        super("map_preview", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.map-preview.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.map-preview.lore", 0)),
                 Material.END_CRYSTAL, StepCaptureType.TOGGLE);
     }
 

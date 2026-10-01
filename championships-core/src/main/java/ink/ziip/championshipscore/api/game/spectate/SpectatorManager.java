@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.spectate;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -99,6 +101,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
     private final Map<UUID, SpectatorSession> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, InventorySnapshot> snapshots = new ConcurrentHashMap<>();
     private final Map<UUID, ItemStack> participantControlItems = new ConcurrentHashMap<>();
+    /** Original physics flag for internally eliminated participants. */
+    private final Map<UUID, Boolean> participantNoPhysics = new ConcurrentHashMap<>();
     private BukkitTask presentationTask;
 
     public SpectatorManager(@NotNull ChampionshipsCore plugin, @NotNull GameManager gameManager) {
@@ -129,6 +133,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         sessions.clear();
         snapshots.clear();
         participantControlItems.clear();
+        participantNoPhysics.clear();
         HandlerList.unregisterAll(this);
     }
 
@@ -159,6 +164,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         UUID uuid = player.getUniqueId();
         ItemStack controlSlot = player.getInventory().getItem(8);
         if (controlSlot != null) participantControlItems.putIfAbsent(uuid, controlSlot.clone());
+        participantNoPhysics.putIfAbsent(uuid, player.hasNoPhysics());
         sessions.computeIfAbsent(uuid, ignored -> new SpectatorSession(uuid, area, false));
         plugin.getVisibilityManager().reconcilePlayer(uuid);
     }
@@ -173,6 +179,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
             if (player != null) clearPresentation(player, session.external());
             snapshots.remove(session.uuid());
             participantControlItems.remove(session.uuid());
+            participantNoPhysics.remove(session.uuid());
             plugin.getVisibilityManager().clearManualOverrides(session.uuid());
         }
     }
@@ -488,6 +495,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (session == null || session.external() || session.area() != area) return;
         if (!sessions.remove(uuid, session)) return;
         clearPassiveState(player);
+        Boolean previousNoPhysics = participantNoPhysics.remove(uuid);
+        if (previousNoPhysics != null) player.setNoPhysics(previousNoPhysics);
         player.getInventory().setItem(8, participantControlItems.remove(uuid));
         snapshots.remove(uuid);
         plugin.getVisibilityManager().clearManualOverrides(uuid);
@@ -499,6 +508,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         sessions.remove(uuid);
         snapshots.remove(uuid);
         participantControlItems.remove(uuid);
+        participantNoPhysics.remove(uuid);
         plugin.getVisibilityManager().clearManualOverrides(uuid);
     }
 
@@ -524,6 +534,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
         else {
             player.getInventory().clear();
             player.setGameMode(GameMode.ADVENTURE);
+            Boolean previousNoPhysics = participantNoPhysics.remove(player.getUniqueId());
+            if (previousNoPhysics != null) player.setNoPhysics(previousNoPhysics);
         }
     }
 
@@ -532,6 +544,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         player.setAllowFlight(false);
         player.setInvulnerable(false);
         player.setCollidable(true);
+        player.setNoPhysics(false);
         player.setAffectsSpawning(true);
         player.setCanPickupItems(true);
         player.setSleepingIgnored(false);
@@ -549,11 +562,15 @@ public final class SpectatorManager extends BaseManager implements Listener {
     }
 
     private void enforcePassiveState(@NotNull Player player, SpectatorSession session) {
+        // A spectator must never become a passenger or stand on an entity. setCollidable(false)
+        // only affects entity pushing; noPhysics also bypasses movement collision resolution.
+        if (player.isInsideVehicle()) player.leaveVehicle();
         if (player.getGameMode() != GameMode.ADVENTURE) player.setGameMode(GameMode.ADVENTURE);
         player.setAllowFlight(true);
         player.setFlying(true);
         player.setInvulnerable(true);
         player.setCollidable(false);
+        player.setNoPhysics(true);
         player.setAffectsSpawning(false);
         player.setCanPickupItems(false);
         player.setSleepingIgnored(true);
@@ -614,7 +631,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
 
     private static void feedback(@NotNull Player player, @NotNull String message,
                                  @NotNull NamedTextColor color, float pitch) {
-        player.sendActionBar(Component.text(message, color).decorate(TextDecoration.BOLD));
+        player.sendActionBar(LegacyText.component(message, color).decorate(TextDecoration.BOLD));
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
@@ -804,7 +821,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
 
     private enum ControlScreen { VISIBILITY, PLAYER_TELEPORT, PLAYER_VISIBILITY, TEAM_VISIBILITY }
 
-    private static final class ControlHolder implements InventoryHolder {
+    private static final class ControlHolder implements MenuInventory {
         private final UUID viewer;
         private ControlScreen screen;
         private int page;
@@ -827,13 +844,13 @@ public final class SpectatorManager extends BaseManager implements Listener {
 
     private record InventorySnapshot(ItemStack[] contents, ItemStack[] armor, ItemStack[] extra,
                                      GameMode mode, boolean allowFlight, boolean flying, boolean invulnerable,
-                                     boolean collidable, boolean affectsSpawning, boolean canPickupItems,
+                                     boolean collidable, boolean noPhysics, boolean affectsSpawning, boolean canPickupItems,
                                      boolean sleepingIgnored, float flySpeed, float walkSpeed, List<PotionEffect> effects) {
         private static InventorySnapshot capture(Player player) {
             PlayerInventory inventory = player.getInventory();
             return new InventorySnapshot(cloneItems(inventory.getContents()), cloneItems(inventory.getArmorContents()),
                     cloneItems(inventory.getExtraContents()), player.getGameMode(), player.getAllowFlight(), player.isFlying(),
-                    player.isInvulnerable(), player.isCollidable(), player.getAffectsSpawning(), player.getCanPickupItems(),
+                    player.isInvulnerable(), player.isCollidable(), player.hasNoPhysics(), player.getAffectsSpawning(), player.getCanPickupItems(),
                     player.isSleepingIgnored(), player.getFlySpeed(), player.getWalkSpeed(),
                     new ArrayList<>(player.getActivePotionEffects()));
         }
@@ -843,7 +860,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
             inventory.setExtraContents(cloneItems(extra));
             player.setGameMode(mode == GameMode.SPECTATOR ? GameMode.ADVENTURE : mode);
             player.setAllowFlight(allowFlight); player.setFlying(allowFlight && flying);
-            player.setInvulnerable(invulnerable); player.setCollidable(collidable);
+            player.setInvulnerable(invulnerable); player.setCollidable(collidable); player.setNoPhysics(noPhysics);
             player.setAffectsSpawning(affectsSpawning); player.setCanPickupItems(canPickupItems);
             player.setSleepingIgnored(sleepingIgnored);
             player.setFlySpeed(flySpeed); player.setWalkSpeed(walkSpeed);

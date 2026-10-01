@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.riptiderush.*;
@@ -34,7 +35,10 @@ public final class RiptideCourseEditorGui {
     private RiptideCourseEditorGui() { }
 
     static int[] choiceSlots(int count) {
-        if (count < 1 || count > 18) throw new IllegalArgumentException("choice count must fit two inventory rows");
+        if (count < 1 || count > 26) throw new IllegalArgumentException("choice count must fit the chooser");
+        // The 27th slot is reserved for Back. A rhythm pool can contain 26
+        // concrete variants, so use the first 26 cells when it outgrows two rows.
+        if (count > 18) return java.util.stream.IntStream.range(0, count).toArray();
         if (count > 9) {
             int first = (count + 1) / 2, second = count - first;
             return java.util.stream.IntStream.concat(
@@ -45,7 +49,7 @@ public final class RiptideCourseEditorGui {
         return java.util.stream.IntStream.range(start, start + count).toArray();
     }
 
-    public static final class Holder implements InventoryHolder {
+    public static final class Holder implements MenuInventory {
         final PrepareSession session;
         RiptideEditorPage page;
         List<RiptideLevelTemplate> rows = List.of();
@@ -484,8 +488,10 @@ public final class RiptideCourseEditorGui {
 
     private static void generate(PrepareSessionManager manager, Player player, Holder h, RiptideCoursePlan plan,
                                   boolean play, RiptideCoursePlan.Level level) {
-        changed(h); player.closeInventory(); Utils.sendAdminInfo(player, text("building", Map.of("value", plan.seed())));
-        var builtPlan = play && level != null ? new RiptideCoursePlan(plan.seed(), plan.algorithmVersion(), 0, plan.trialLevels(level)) : plan;
+        player.closeInventory(); Utils.sendAdminInfo(player, text("building", Map.of("value", plan.seed())));
+        // A single-level trial must generate and run the exact same immutable group. This
+        // includes continuous math, side sweeps, and any other grouped challenge.
+        var builtPlan = play && level != null ? trialPlan(plan, level) : plan;
         RiptideCourseGenerator.generateAsync(h.session.getPlugin(), config(h.session), builtPlan,
                 () -> manager.getSession(player) == h.session && player.hasPermission("cc.admin") && h.session.getTarget().canSaveMap())
                 .whenComplete((built, error) -> {
@@ -493,7 +499,11 @@ public final class RiptideCourseEditorGui {
                     if (error != null || !Boolean.TRUE.equals(built)) {
                         Utils.sendAdminError(player, text("build-failed")); later(manager, player, h, true); return;
                     }
-                    if (play) RiptideCourseTrial.start(manager, player, h.session, plan, level, () -> later(manager, player, h, true));
+                    if (play) {
+                        RiptideCoursePlan.Level trialLevel = level == null ? null : builtPlan.levels().getFirst();
+                        RiptideCourseTrial.start(manager, player, h.session, builtPlan, trialLevel,
+                                () -> later(manager, player, h, true));
+                    }
                     else {
                         var g = config(h.session).resolveGeometry();
                         player.teleport(g.centerAt(level == null ? 0 : Math.max(0, level.step() - 8)).add(0, 6, 0));
@@ -501,6 +511,10 @@ public final class RiptideCourseEditorGui {
                         Utils.sendAdminSuccess(player, text("built"));
                     }
                 });
+    }
+
+    static RiptideCoursePlan trialPlan(RiptideCoursePlan plan, RiptideCoursePlan.Level level) {
+        return new RiptideCoursePlan(plan.seed(), plan.algorithmVersion(), 0, plan.trialLevels(level));
     }
     private static void pages(Holder h, int count, int size) {
         int pages = Math.max(1, (count + size - 1) / size);

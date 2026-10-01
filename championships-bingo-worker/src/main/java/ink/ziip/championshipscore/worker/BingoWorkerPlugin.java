@@ -13,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.OptionalLong;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -103,14 +104,22 @@ public final class BingoWorkerPlugin extends JavaPlugin {
     }
 
     private boolean loadWorlds() {
-        return loadWorld(workerConfig.overworld(), World.Environment.NORMAL)
-                && loadWorld(workerConfig.nether(), World.Environment.NETHER)
-                && loadWorld(workerConfig.end(), World.Environment.THE_END);
+        boolean freshWorldRequired = getServer().getWorld(workerConfig.overworld()) == null
+                || getServer().getWorld(workerConfig.nether()) == null
+                || getServer().getWorld(workerConfig.end()) == null;
+        OptionalLong seed = new WorkerSeedFilter(this, workerConfig.seedFilter()).selectSeed(freshWorldRequired);
+        return loadWorld(workerConfig.overworld(), World.Environment.NORMAL, seed)
+                && loadWorld(workerConfig.nether(), World.Environment.NETHER, seed)
+                && loadWorld(workerConfig.end(), World.Environment.THE_END, seed);
     }
 
-    private boolean loadWorld(String name, World.Environment environment) {
+    private boolean loadWorld(String name, World.Environment environment, OptionalLong seed) {
         World world = getServer().getWorld(name);
-        if (world == null) world = new WorldCreator(name).environment(environment).createWorld();
+        if (world == null) {
+            WorldCreator creator = new WorldCreator(name).environment(environment);
+            seed.ifPresent(creator::seed);
+            world = creator.createWorld();
+        }
         if (world == null) return false;
         worlds.configureAndFreeze(world);
         return true;

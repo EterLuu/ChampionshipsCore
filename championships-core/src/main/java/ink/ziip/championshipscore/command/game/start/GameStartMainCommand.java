@@ -29,5 +29,6 @@ public class GameStartMainCommand extends BaseMainCommand {
         addGameSubCommand(GameTypeEnum.AceRace, new AceRaceStartMainCommand());
         addGameSubCommand(GameTypeEnum.RiptideRush, new RiptideRushStartMainCommand());
         addGameSubCommand(GameTypeEnum.FrostbiteFrenzy, new ink.ziip.championshipscore.command.game.start.frostbite.FrostbiteStartMainCommand());
+        addGameSubCommand(GameTypeEnum.LaserBox, new LaserBoxStartSubCommand());
     }
 }

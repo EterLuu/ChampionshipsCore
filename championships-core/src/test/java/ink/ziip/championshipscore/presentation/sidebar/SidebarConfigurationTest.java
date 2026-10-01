@@ -59,6 +59,28 @@ class SidebarConfigurationTest {
         assertTrue(snowball.base().lines().stream().noneMatch(line -> line.contains("snowball_area_rank_")));
     }
 
+    @Test
+    void focusedGameSidebarsUseOnlyTheRequestedLiveFields() throws URISyntaxException {
+        SidebarConfiguration configuration = SidebarConfiguration.load(new File(requireResource().toURI()));
+
+        var riptide = configuration.game(GameTypeEnum.RiptideRush).base().lines();
+        assertTrue(riptide.stream().anyMatch(line -> line.contains("{riptide.progress}")));
+        assertTrue(riptide.stream().anyMatch(line -> line.contains("{riptide.alive}")));
+        assertTrue(riptide.stream().anyMatch(line -> line.contains("{riptide.challenge}")));
+        assertFalse(riptide.stream().anyMatch(line -> line.contains("剩余时间") || line.contains("timer")));
+
+        var frostbite = configuration.game(GameTypeEnum.FrostbiteFrenzy).base().lines();
+        assertTrue(frostbite.stream().anyMatch(line -> line.contains("{frostbite.kills}")));
+        assertTrue(frostbite.stream().anyMatch(line -> line.contains("{frostbite.state}")));
+        assertFalse(frostbite.stream().anyMatch(line -> line.contains("当前道具") || line.contains("当前场地")
+                || line.contains("剩余时间") || line.contains("timer")));
+
+        var laserBox = configuration.game(GameTypeEnum.LaserBox).base().lines();
+        assertTrue(laserBox.stream().anyMatch(line -> line.contains("{laserbox.kills}")));
+        assertFalse(laserBox.stream().anyMatch(line -> line.contains("护盾") || line.contains("重生倒计时")
+                || line.contains("剩余时间") || line.contains("timer")));
+    }
+
     private static java.net.URL requireResource() {
         java.net.URL resource = SidebarConfigurationTest.class.getClassLoader().getResource("scoreboards.yml");
         if (resource == null) throw new AssertionError("missing scoreboards.yml test resource");

@@ -22,7 +22,7 @@ final class WorkerChampionshipPlaceholderValues {
         String none = presentation.message("papi.none");
         String spectator = presentation.message("papi.spectator");
         if (params.equals("tab_prefix")) {
-            if (player != null && player.role() == ParticipantRole.PLAYER) {
+            if (daily && player != null && player.role() == ParticipantRole.PLAYER) {
                 return ChampionshipTabText.gamePrefix(
                         presentation.message("game.name"));
             }

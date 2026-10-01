@@ -19,10 +19,6 @@ public final class RiptideCourseGenerator {
     private RiptideCourseGenerator() {
     }
 
-    public static void generate(@NotNull RiptideRushConfig config) {
-        generate(config, RiptideCoursePlanner.plan(config, config.getPreviewSeed()));
-    }
-
     public static boolean isGenerating(World world) {
         return world != null && BUILDING.containsKey(world.getUID());
     }
@@ -118,7 +114,10 @@ public final class RiptideCourseGenerator {
 
     private static void buildLevel(World world, RiptideCourseGeometry geometry,
                                     RiptideCoursePlan.Level level, Material obstacle) {
-        if (level.isSideSweep()) return; // Animated sweep is owned by the shared round/trial controller.
+        if (level.stopsRaft()) {
+            buildChallengeMarker(world, geometry, level.step());
+            return; // Saved floor layouts and side walls are owned by the stopped-stage controller.
+        }
         if (level.template().blueprint() != null) {
             level.template().blueprint().paste(geometry, level.step(),
                     level.type() == RiptideLevelType.PASS && level.mirrored(), level.type() == RiptideLevelType.MATH); return;

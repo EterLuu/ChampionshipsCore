@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.tntrun;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -10,15 +11,12 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.SchematicStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StampStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
-import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunConfig;
 import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
-import ink.ziip.championshipscore.api.game.tntrun.TNTRunLayout;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -56,30 +54,18 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                 "tntrun"), "schematics"), target.name()), "arena.schem");
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
-                new SchematicStep(plugin -> schematic, Component.text(GuiConfig.text("map-editor.menus.step-list.games.tnt-run.items.save-template.title")),
-                        Component.text(GuiConfig.line("map-editor.menus.step-list.games.tnt-run.items.save-template.lore", 0))) {
+                new SchematicStep(plugin -> schematic, LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.tnt-run.items.save-template.title")),
+                        LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.tnt-run.items.save-template.lore", 0))) {
                     @Override
-                    public String capture(@NotNull PrepareSession session, @NotNull Player player) {
-                        String result = super.capture(session, player);
-                        try {
-                            Vector[] selection = session.getPlugin().getWorldEditManager()
-                                    .getPlayerSelection(player, true);
-                            cfg(session.getTarget()).setAreaPos1(selection[0]);
-                            cfg(session.getTarget()).setAreaPos2(selection[1]);
-                        } catch (Exception ignored) {
-                            // The parent capture already returns the useful WorldEdit selection error.
-                        }
-                        return result;
+                    protected void onSchematicSaved(@NotNull PrepareSession session, @NotNull Player player,
+                                                    @NotNull File file) {
+                        Vector[] selection = session.getPlugin().getWorldEditManager()
+                                .getPlayerSelection(player, true);
+                        cfg(session.getTarget()).setAreaPos1(selection[0]);
+                        cfg(session.getTarget()).setAreaPos2(selection[1]);
                     }
                 },
-                new WeSelectionStep("copy_zero_bounds", Component.text(GuiConfig.text("map-editor.menus.step-list.games.tnt-run.items.track-boundary.title")),
-                        Component.text(GuiConfig.line("map-editor.menus.step-list.games.tnt-run.items.track-boundary.lore", 0)),
-                        Material.BEDROCK,
-                        t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                        (t, selection) -> {
-                            cfg(t).setAreaPos1(selection[0]);
-                            cfg(t).setAreaPos2(selection[1]);
-                        }, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TNT_TRACK_BOUNDARY_SET)),
+                new TNTRunEliminationHeightStep(),
                 StampStep.adaptiveKeepingSource(plugin -> schematic,
                         (t, size) -> cfg(t).prepareCopyGrid(size),
                         (t, count) -> cfg(t).setCopies(count),
@@ -88,12 +74,12 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                             ArenaPreparer.clearAdditionalCopies(session.getPlugin(), world,
                                     previous.getCopyGrid(), previous.getCopies(), previous.getCopySize());
                         }),
-                new StandAndRunStep("copy_spawn", Component.text(GuiConfig.text("map-editor.menus.step-list.games.tnt-run.items.spawn.title")),
-                        Component.text(GuiConfig.line("map-editor.menus.step-list.games.tnt-run.items.spawn.lore", 0)), Material.ELYTRA,
+                new StandAndRunStep("copy_spawn", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.tnt-run.items.spawn.title")),
+                        LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.tnt-run.items.spawn.lore", 0)), Material.ELYTRA,
                         t -> cfg(t).getCopySpawn() != null, (t, loc) -> cfg(t).setCopySpawn(loc),
                         Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TNT_SPAWN_SET)),
-                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")),
-                        Component.text(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)), Material.ENDER_EYE,
+                new StandAndRunStep("spectator_spawn", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")),
+                        LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)), Material.ENDER_EYE,
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, loc) -> cfg(t).setSpectatorSpawnPoint(loc),
                         Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET))

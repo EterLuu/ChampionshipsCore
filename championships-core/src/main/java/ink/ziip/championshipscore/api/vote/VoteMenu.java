@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.vote;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
@@ -132,9 +133,10 @@ final class VoteMenu implements Listener {
         int percentage = totalVotes == 0 ? 0 : (int) Math.round(votes * 100D / totalVotes);
         boolean leading = highestVotes > 0 && votes == highestVotes;
         String state = selected ? "selected" : leading ? "leading" : "available";
-        return configured("games." + gameId(gameType), state, Map.of(
+        return ConfiguredGui.item(MENU_PATH + ".items.games." + gameId(gameType), state, Map.of(
                 "game", gameType.toString(), "votes", votes, "percentage", percentage,
-                "bar", voteBar(votes, Math.max(1, totalVotes))), styleMaterial(gameType));
+                "bar", voteBar(votes, Math.max(1, totalVotes))), styleMaterial(gameType),
+                Component.text(gameType.toString()), List.of(), selected);
     }
 
     private ItemStack overviewItem(List<GameTypeEnum> candidates, int totalVotes, int highestVotes) {
@@ -167,6 +169,7 @@ final class VoteMenu implements Listener {
             case AceRace -> "ace-race";
             case RiptideRush -> "riptide-rush";
             case FrostbiteFrenzy -> "frostbite";
+            case LaserBox -> "laserbox";
             default -> "unknown";
         };
     }
@@ -186,6 +189,7 @@ final class VoteMenu implements Listener {
             case AceRace -> Material.ELYTRA;
             case RiptideRush -> Material.OAK_BOAT;
             case FrostbiteFrenzy -> Material.BLUE_ICE;
+            case LaserBox -> Material.CROSSBOW;
             default -> Material.PAPER;
         };
     }
@@ -216,7 +220,7 @@ final class VoteMenu implements Listener {
         return slots;
     }
 
-    private static final class Holder implements InventoryHolder {
+    private static final class Holder implements MenuInventory {
         private final java.util.UUID viewer;
         private final Map<Integer, GameTypeEnum> gamesBySlot = new HashMap<>();
         private Inventory inventory;

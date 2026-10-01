@@ -55,6 +55,16 @@ public final class PrepareModeInventory {
         if (session.requiresWorldEdit()) inv.setItem(slot("wand", 5), wandItem());
         inv.setItem(slot("save-draft", 6), saveDraftItem());
         inv.setItem(slot("exit", 8), exitItem());
+        var workshop = session.getBlueprintWorkshop();
+        if (workshop != null) {
+            String path = MenuId.BUILD_MART_BLUEPRINTS.path() + ".items.";
+            ItemStack submit = ConfiguredGui.item(path + "submit", null, Map.of("name", workshop.name()), new ItemStack(Material.EMERALD_BLOCK));
+            PrepareKeys.setAction(submit, "save-draft");
+            inv.setItem(slot("save-draft", 6), submit);
+            ItemStack cancel = ConfiguredGui.item(path + "cancel", null, Map.of("name", workshop.name()), new ItemStack(Material.BARRIER));
+            PrepareKeys.setAction(cancel, "exit");
+            inv.setItem(slot("exit", 8), cancel);
+        }
     }
 
     /** Slots reserved for prepare controls and therefore never valid creative pick-block targets. */

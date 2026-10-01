@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.tgttos;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -10,7 +11,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.TGTTOSAreaTypeGui;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSConfig;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -31,8 +31,8 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
     );
 
     public TGTTOSAreaTypeStep() {
-        super("area_type", Component.text(GuiConfig.text("map-editor.menus.step-list.games.tgttos.items.area-type.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.tgttos.items.area-type.lore", 0)), Material.CHEST, StepCaptureType.SELECT);
+        super("area_type", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.tgttos.items.area-type.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.tgttos.items.area-type.lore", 0)), Material.CHEST, StepCaptureType.SELECT);
     }
 
     public static List<Option> options() {

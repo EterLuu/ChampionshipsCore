@@ -5,7 +5,6 @@ import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,7 +13,7 @@ import java.util.List;
 
 public final class FrostbiteStartAllSubCommand extends BaseSubCommand {
     public FrostbiteStartAllSubCommand() {
-        super("all", "所有队伍开始霜冻狂潮", "/cc game start frostbite all <场地>");
+        super("all", "所有队伍开始霜冻决斗", "/cc game start frostbite all <场地>");
     }
 
     @Override
@@ -24,10 +23,8 @@ public final class FrostbiteStartAllSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        List<java.util.UUID> commandPlayers = sender instanceof Player player
-                ? List.of(player.getUniqueId()) : List.of();
         String message = plugin.getGameManager().joinSingleTeamAreaForAllTeams(
-                        GameTypeEnum.FrostbiteFrenzy, args[0], commandPlayers)
+                        GameTypeEnum.FrostbiteFrenzy, args[0])
                 ? MessageConfig.GAME_SINGLE_GAME_START_SUCCESSFUL : MessageConfig.GAME_SINGLE_GAME_START_FAILED;
         sender.sendMessage(message.replace("%game%", GameTypeEnum.FrostbiteFrenzy.toString())
                 .replace("%area%", args[0]));

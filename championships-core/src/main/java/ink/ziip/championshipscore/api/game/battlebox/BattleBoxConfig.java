@@ -98,21 +98,4 @@ public class BattleBoxConfig extends BaseGameConfig {
     @ConfigOption(path = "potion-spawn-points")
     private List<String> potionSpawnPoints;
 
-    @Override
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
-        if (!oldConfiguration.contains("right-prepare-spot") && oldConfiguration.contains("right-pre-spawn-point"))
-            migratedConfiguration.set("right-prepare-spot", oldConfiguration.get("right-pre-spawn-point"));
-        if (!oldConfiguration.contains("left-prepare-spot") && oldConfiguration.contains("left-pre-spawn-point"))
-            migratedConfiguration.set("left-prepare-spot", oldConfiguration.get("left-pre-spawn-point"));
-
-        if (oldConfiguration.getString("world-name", "").isBlank())
-            migratedConfiguration.set("world-name", "battlebox");
-
-        if (oldConfiguration.getInt("copy-count", 0) > 0
-                && (!oldConfiguration.contains("area-pos1") || !oldConfiguration.contains("area-pos2"))) {
-            migratedConfiguration.set("prepare.published", false);
-            migratedConfiguration.set("prepare.dirty", true);
-        }
-    }
 }

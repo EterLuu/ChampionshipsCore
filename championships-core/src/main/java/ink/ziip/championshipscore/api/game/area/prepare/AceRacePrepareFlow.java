@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -15,7 +16,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -40,14 +40,14 @@ public final class AceRacePrepareFlow extends PrepareFlowDefinition {
     @Override public @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target) {
         return List.of(
                 new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()),
-                new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.menus.step-list.items.track-boundary.title")),
-                        Component.text(GuiConfig.line("map-editor.menus.step-list.items.track-boundary.lore", 0)), Material.BEDROCK,
+                new WeSelectionStep("area_pos", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.track-boundary.title")),
+                        LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.track-boundary.lore", 0)), Material.BEDROCK,
                         t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
                         (t, value) -> {
                             cfg(t).setAreaPos1(value[0]);
                             cfg(t).setAreaPos2(value[1]);
                         }, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_TRACK_BOUNDARY_SET)),
-                new StandAndRunStep("spectator_spawn", Component.text(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")), Component.text(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)),
+                new StandAndRunStep("spectator_spawn", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")), LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)),
                         Material.ENDER_EYE, t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, value) -> cfg(t).setSpectatorSpawnPoint(value), Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)),
                 new AceRaceLineStep(true),

@@ -13,19 +13,6 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RiptideColorFloorRunTest {
-    @Test void migrationRemovesObsoleteDurationEvenForCustomValues() throws Exception {
-        var c = RiptideTestFixtures.config();
-        for (double seconds : List.of(25D, 18.5D, 27.1D)) {
-            var old = new org.bukkit.configuration.file.YamlConfiguration();
-            old.set("course.pool", c.getPool());
-            old.set("generation.pause-seconds", seconds);
-            var migrated = new org.bukkit.configuration.file.YamlConfiguration();
-            migrated.set("course.pool", c.getPool());
-            migrated.set("generation.pause-seconds", seconds);
-            c.customizeMigratedConfiguration(old, migrated);
-            assertFalse(migrated.contains("generation.pause-seconds"));
-        }
-    }
     private static final List<Material> COLORS = RiptideColorFloorRun.materials(RiptideColorFloorRun.Theme.ORE).subList(0, 6);
     private static final World WORLD = world();
 
@@ -34,6 +21,17 @@ class RiptideColorFloorRunTest {
         var run = run(7, 9, RiptideColorFloorRun.Theme.ORE, 5);
         assertEquals(List.of(120, 100, 100, 80, 80, 80, 80), run.durations());
         int ticks = 0;
+        Material firstTarget=run.target();
+        var firstFloor=run.floor();
+        for (int tick=0;tick<30;tick++) {
+            assertTrue(run.preparing());
+            assertFalse(run.tick());
+            assertEquals(120,run.remainingTicks());
+            assertEquals(firstTarget,run.target());
+            assertEquals(firstFloor,run.floor());
+            ticks++;
+        }
+        assertFalse(run.preparing());
         Material previous = null;
         for (int round = 1; round <= 7; round++) {
             assertEquals(round, run.roundNumber());
@@ -48,7 +46,7 @@ class RiptideColorFloorRunTest {
             assertFalse(run.tick(), "a deadline cannot eliminate players twice");
             assertEquals(round < 7, run.advance());
         }
-        assertEquals(640, ticks);
+        assertEquals(670, ticks);
     }
 
     @Test

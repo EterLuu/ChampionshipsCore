@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.gui.GuiMenu;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -15,7 +16,6 @@ import ink.ziip.championshipscore.api.game.bingo.task.pool.TagFilters;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSource;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import ink.ziip.championshipscore.configuration.config.message.GuiText;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -308,10 +308,10 @@ final class DailyBingoVoteController {
             for (UUID voter : voters) {
                 Player player = Bukkit.getPlayer(voter);
                 if (player != null) player.showTitle(Title.title(
-                        Component.text(remixMessages.tr("genesis.title"), NamedTextColor.LIGHT_PURPLE),
-                        Component.text(remixName, NamedTextColor.GRAY)
-                                .append(Component.text(GuiText.SEPARATOR, NamedTextColor.GRAY))
-                                .append(Component.text(remixDescription, NamedTextColor.GRAY))));
+                        LegacyText.component(remixMessages.tr("genesis.title"), NamedTextColor.LIGHT_PURPLE),
+                        LegacyText.component(remixName, NamedTextColor.GRAY)
+                                .append(LegacyText.component(GuiText.SEPARATOR, NamedTextColor.GRAY))
+                                .append(LegacyText.component(remixDescription, NamedTextColor.GRAY))));
             }
         }
         if (remix == BingoRemix.GENESIS) {
@@ -386,7 +386,7 @@ final class DailyBingoVoteController {
             case GENESIS -> "genesis.menu_title";
         });
         Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE,
-                LEGACY.deserialize(title));
+                LegacyText.component(title));
         ItemStack border = item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of(), NamedTextColor.GRAY, false);
         for (int slot = 0; slot < inventory.getSize(); slot++) inventory.setItem(slot, border);
         holder.setInventory(inventory);
@@ -520,10 +520,10 @@ final class DailyBingoVoteController {
     private ItemStack item(Material material, String name, List<String> lore, NamedTextColor color, boolean glow) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(LEGACY.deserialize(name == null ? "" : name)
-                .colorIfAbsent(color).decoration(TextDecoration.ITALIC, false));
-        meta.lore(lore.stream().map(line -> LEGACY.deserialize(line == null ? "" : line)
-                .colorIfAbsent(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)).toList());
+        meta.displayName(LegacyText.component(name == null ? "" : name)
+                .colorIfAbsent(color).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+        meta.lore(lore.stream().map(line -> LegacyText.component(line == null ? "" : line)
+                .colorIfAbsent(NamedTextColor.GRAY).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
         if (glow) meta.setEnchantmentGlintOverride(true);
         item.setItemMeta(meta);
         return item;
@@ -584,7 +584,7 @@ final class DailyBingoVoteController {
         if (result == null || result.isDone() || phase == null) return;
         MessageService messages = MessageService.global();
         String title = messages.tr("vote.bossbar", secondsLeft);
-        String legacyTitle = LEGACY.serialize(LEGACY.deserialize(title));
+        String legacyTitle = LEGACY.serialize(LegacyText.component(title));
         if (bossBar == null) bossBar = Bukkit.createBossBar(legacyTitle, BarColor.PURPLE, BarStyle.SOLID);
         else bossBar.setTitle(legacyTitle);
         bossBar.setProgress(Math.max(0.0, Math.min(1.0,

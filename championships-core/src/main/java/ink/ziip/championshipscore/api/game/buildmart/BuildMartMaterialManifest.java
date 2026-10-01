@@ -199,6 +199,34 @@ public final class BuildMartMaterialManifest {
                                  @NotNull Map<Material, Set<BuildMartMaterialIsland>> islandsByMaterial) {
     }
 
+    /** Submission is fail-closed when the manifest no longer describes this map's saved resource zones. */
+    public static @NotNull AuditInventory readSubmissionInventory(@NotNull BuildMartConfig config) {
+        Map<UUID, ZoneInventory> cached = readCachedInventories(config);
+        if (config.getMaterialZones().isEmpty() || cached.size() != config.getMaterialZones().size()) {
+            return new AuditInventory(false, Map.of(), Map.of());
+        }
+        Map<Material, Long> materials = new LinkedHashMap<>();
+        Map<Material, Set<BuildMartMaterialIsland>> islands = new LinkedHashMap<>();
+        for (BuildMartMaterialZone zone : config.getMaterialZones()) {
+            ZoneInventory inventory = cached.get(zone.snapshotId());
+            if (inventory == null || !inventory.matches(zone, config.getMaterialZoneSnapshotFile(zone))) {
+                return new AuditInventory(false, Map.of(), Map.of());
+            }
+            BuildMartMaterialIsland island = config.classifyMaterialZone(zone);
+            inventory.materials().forEach((key, count) -> {
+                Material material = Material.matchMaterial(key);
+                if (material == null || material == Material.AIR || material == Material.CAVE_AIR
+                        || material == Material.VOID_AIR || count <= 0) return;
+                material = BuildMartCopperPolicy.withoutWax(material);
+                materials.merge(material, count, Long::sum);
+                if (island != null) islands.computeIfAbsent(material, ignored -> new java.util.LinkedHashSet<>()).add(island);
+            });
+        }
+        Map<Material, Set<BuildMartMaterialIsland>> immutableIslands = new LinkedHashMap<>();
+        islands.forEach((material, values) -> immutableIslands.put(material, Set.copyOf(values)));
+        return new AuditInventory(true, Map.copyOf(materials), Map.copyOf(immutableIslands));
+    }
+
     private static @NotNull ZoneInventory scanSnapshot(@NotNull ChampionshipsCore plugin,
                                                         @NotNull BuildMartMaterialZone zone,
                                                         @NotNull File snapshot) throws Exception {

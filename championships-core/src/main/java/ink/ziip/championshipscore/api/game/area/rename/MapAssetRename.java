@@ -173,6 +173,7 @@ final class MapAssetRename {
             case BattleBox -> "battlebox";
             case ParkourTag -> "parkourtag";
             case TNTRun -> "tntrun";
+            case LaserBox -> "laserbox";
             default -> null;
         };
         if (folder == null) return List.of();

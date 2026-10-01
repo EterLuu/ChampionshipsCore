@@ -63,9 +63,10 @@ final class RiptideFinalStage {
                             original.number(), beat, "FINAL_TRIPLE", 0));
                 }
             } else if (original.type() == RiptideLevelType.RHYTHM) {
+                var variants = RiptideChallengeGroups.distinctRhythmVariants(original.variant(), 3, random);
                 for (int beat = 1; beat <= 3; beat++)
                     group.add(new RiptideCoursePlan.Level(original.number(), boundary, original.template(),
-                            original.variant(), original.opening(), original.mirrored(), original.contentSeed() + beat,
+                            variants.get(beat - 1), original.opening(), original.mirrored(), original.contentSeed() + beat,
                             -original.number(), beat, "RHYTHM_TRIPLE", 0));
             } else group.add(original);
             for (var l : group) {
@@ -77,8 +78,7 @@ final class RiptideFinalStage {
                     placed = new RiptideCoursePlan.Level(l.number(), step, l.template(), l.variant(), l.opening(),
                             l.mirrored(), l.contentSeed(), l.wallGroup(), l.beat(), l.rhythm(), l.sweep(), l.sideWalls());
                     if (step + placed.extent() >= g.totalSteps() - g.halfLength()) return null;
-                    // The floor starts when the bow reaches it, so it must stop in the final band too.
-                    if (placed.type() == RiptideLevelType.COLOR_FLOOR && step - g.halfLength() < boundary) { step++; continue; }
+                    if (placed.stopsRaft() && g.stoppedStep(step) < boundary) { step++; continue; }
                     if (out.isEmpty() || RiptideCoursePlanner.safeTransition(c, g, out.getLast(), placed)) break;
                     step++;
                 } while (true);
@@ -123,4 +123,5 @@ final class RiptideFinalStage {
         }
         return candidates.getLast();
     }
+
 }

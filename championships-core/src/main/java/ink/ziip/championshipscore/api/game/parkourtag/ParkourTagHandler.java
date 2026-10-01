@@ -159,6 +159,7 @@ public class ParkourTagHandler extends BaseListener {
         event.setCancelled(true);
     }
 
+    /* Disabled wind charge: keep the interaction handler for restoring the item later.
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerUseWindCharge(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -189,6 +190,7 @@ public class ParkourTagHandler extends BaseListener {
 
         event.setCancelled(true);
     }
+    */
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamagedByPlayer(EntityDamageByEntityEvent event) {

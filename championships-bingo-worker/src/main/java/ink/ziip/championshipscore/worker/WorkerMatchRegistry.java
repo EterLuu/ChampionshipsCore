@@ -44,6 +44,7 @@ final class WorkerMatchRegistry {
     private final Set<UUID> pendingObservations = ConcurrentHashMap.newKeySet();
     private WorkerMatchSession active;
     private BingoPresentation latestPresentation;
+    private boolean latestDaily;
     private boolean worldSlotConsumed;
 
     WorkerMatchRegistry(Plugin plugin, WorkerConfig config, DurableEventOutbox events,
@@ -87,6 +88,7 @@ final class WorkerMatchRegistry {
         }
         manifests.put(manifest.matchId(), manifest);
         latestPresentation = manifest.runtimeRules().presentation();
+        latestDaily = manifest.runMode() == ink.ziip.championshipscore.protocol.MatchRunMode.DAILY;
         return true;
     }
 
@@ -321,8 +323,8 @@ final class WorkerMatchRegistry {
 
     synchronized PlayerPresentation playerPresentation(UUID playerId) {
         return active == null
-                ? PlayerPresentation.spectator(latestPresentation == null
-                        ? "" : latestPresentation.message("papi.spectator"))
+                ? new PlayerPresentation(latestPresentation == null
+                        ? "" : latestPresentation.message("papi.spectator"), null, false, latestDaily)
                 : active.playerPresentation(playerId);
     }
 

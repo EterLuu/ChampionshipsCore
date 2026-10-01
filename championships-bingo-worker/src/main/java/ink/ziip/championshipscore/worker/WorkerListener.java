@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.platform.bukkit.bingo.BingoNameTagObjective;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
+import ink.ziip.championshipscore.platform.bukkit.text.ChatMessageText;
 import ink.ziip.championshipscore.platform.bukkit.text.TeamChatCommandParser;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
@@ -151,7 +152,7 @@ final class WorkerListener implements Listener {
         Player player = event.getPlayer();
         PlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
         event.renderer((source, sourceDisplayName, message, viewer) ->
-                presentation.chatLine(player.getName(), message));
+                presentation.chatLine(player.getName(), ChatMessageText.format(player, message)));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

@@ -21,10 +21,6 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Creeper;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.inventory.ItemStack;
@@ -33,6 +29,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
+import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -80,10 +77,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     private int nextDodgeStage;
     private int dodgeTicksRemaining;
     private RiptideDodgeRun dodgeRun;
-    private RiptideCoursePlan.Level activeDodgeStage;
-    private final List<LivingEntity> dodgeEntities = new ArrayList<>();
-    private final Map<UUID, RiptideDodgeRun.Direction> dodgeDirections = new java.util.HashMap<>();
-    private final Map<UUID, Double> dodgeSpeeds = new java.util.HashMap<>();
+    private RiptideDodgeEntities dodgeEntities;
     private RiptideCoursePlan coursePlan;
     private long generationEpoch;
     private int onlinePlayersAtStart;
@@ -283,6 +277,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 }
             }
             eliminateBatch(wrong, MessageConfig.RIPTIDE_RUSH_REASON_WRONG_ANSWER, true);
+            if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
             if (!passRun.active()) departure.begin();
         } else if (colorFloorTicksRemaining > 0) {
             tickColorFloor();
@@ -420,11 +415,11 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
 
     private boolean beginReachedColorFloor() {
         if (nextColorFloorStage >= colorFloorSteps.size()
-                || completedSteps + geometry.halfLength() < colorFloorSteps.get(nextColorFloorStage)) return false;
+                || completedSteps < geometry.stoppedStep(colorFloorSteps.get(nextColorFloorStage))) return false;
         protectedFloorPlayers.clear();
         nextColorFloorStage++;
         clearMathTitle();
-        colorFloorTicksRemaining = RiptideDifficulty.floorTicks(completedSteps, geometry.totalSteps());
+        colorFloorTicksRemaining = RiptideColorFloorRun.INTRO_TICKS + RiptideDifficulty.floorTicks(completedSteps, geometry.totalSteps());
         colorFloorPlatform = new RiptideColorFloorPlatform(geometry, completedSteps);
         var stage = floorStages.get(nextColorFloorStage - 1);
         List<Material> authored = stage.template().blueprint() == null ? List.of() : stage.template().blueprint().floorMaterials();
@@ -457,7 +452,13 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
 
     private void tickColorFloor() {
         colorFloorTicksRemaining--;
-        if (colorFloorRun.tick()) {
+        boolean preparing = colorFloorRun.preparing();
+        boolean deadline = colorFloorRun.tick();
+        if (preparing) {
+            if (!colorFloorRun.preparing()) refreshColorFloorPresentation();
+            return;
+        }
+        if (deadline) {
             // Sample the same deadline for all players before elimination can finish the game.
             List<UUID> wrong = new ArrayList<>();
             for (UUID uuid : gamePlayers) {
@@ -488,107 +489,37 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
 
     private boolean beginReachedDodge() {
         if (nextDodgeStage >= dodgeStages.size()
-                || completedSteps + geometry.halfLength() < dodgeStages.get(nextDodgeStage).step()) return false;
+                || completedSteps < geometry.stoppedStep(dodgeStages.get(nextDodgeStage).step())) return false;
         var stage = dodgeStages.get(nextDodgeStage++);
-        activeDodgeStage = stage;
         clearMathTitle();
-        dodgeRun = new RiptideDodgeRun(stage.variant(), stage.contentSeed(), geometry.raftWidth(), geometry.raftLength());
+        int phase = RiptideDifficulty.stage(completedSteps, geometry.totalSteps());
+        dodgeRun = new RiptideDodgeRun(stage.variant(), stage.contentSeed(), geometry.raftWidth(), geometry.raftLength(), phase);
+        dodgeEntities = new RiptideDodgeEntities(geometry, completedSteps);
+        logGame(Level.INFO, "躲避", "phase=" + phase + " variant=" + stage.variant() + " seed=" + stage.contentSeed()
+                + " count=" + dodgeRun.spawns().size() + " speed=" + dodgeRun.spawns().getFirst().speed());
         dodgeTicksRemaining = RiptideDodgeRun.DURATION_TICKS;
-        sendTitleToAllGamePlayers(MessageConfig.RIPTIDE_RUSH_DODGE_TITLE, "");
+        sendTitleToAllGamePlayers(MessageConfig.RIPTIDE_RUSH_DODGE_TITLE.replace("%direction%", dodgeRun.direction().arrivalSide()), "");
         refreshDodgePresentation();
         return true;
     }
 
     private void tickDodge() {
         if (dodgeRun == null) { dodgeTicksRemaining = 0; return; }
-        for (RiptideDodgeRun.Spawn spawn : dodgeRun.tick()) spawnDodgeEntity(spawn);
-        for (LivingEntity entity : List.copyOf(dodgeEntities)) {
-            if (!entity.isValid() || entity.isDead()) { dodgeEntities.remove(entity); continue; }
-            RiptideDodgeRun.Direction direction = dodgeDirections.get(entity.getUniqueId());
-            if (direction != null) advanceDodgeEntity(entity, direction);
-            // Use the actual entity and player collision boxes. Do not inflate
-            // the test: the visible mob must be the complete hazard.
+        Set<UUID> hit = new java.util.HashSet<>();
+        for (BoundingBox collision : dodgeEntities.tick(dodgeRun)) {
             for (UUID uuid : List.copyOf(gamePlayers)) {
                 Player player = Bukkit.getPlayer(uuid);
-                if (player == null || eliminatedPlayers.contains(uuid)) continue;
-                if (entity.getBoundingBox().overlaps(player.getBoundingBox()))
-                    eliminateBatch(List.of(uuid), MessageConfig.RIPTIDE_RUSH_REASON_DODGE, true);
+                if (player != null && !eliminatedPlayers.contains(uuid)
+                        && collision.overlaps(player.getBoundingBox())) hit.add(uuid);
             }
         }
-        dodgeTicksRemaining--;
-        if (dodgeRun.complete() || dodgeTicksRemaining <= 0) {
+        if (!hit.isEmpty()) eliminateBatch(new ArrayList<>(hit), MessageConfig.RIPTIDE_RUSH_REASON_DODGE, true);
+        if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
+        dodgeTicksRemaining = RiptideDodgeRun.DURATION_TICKS - dodgeRun.tickNumber();
+        if (dodgeRun.complete()) {
             clearDodgeRun();
             departure.begin();
         }
-    }
-
-    private void spawnDodgeEntity(RiptideDodgeRun.Spawn spawn) {
-        World world = Bukkit.getWorld(getWorldName());
-        if (world == null) return;
-        Location center = geometry.centerAt(completedSteps).clone();
-        double side = Math.max(2D, geometry.raftWidth() / 2D + 3D);
-        double length = Math.max(2D, geometry.raftLength() / 2D + 3D);
-        Location location = center.clone().add(0D, 1.2D, 0D);
-        switch (spawn.direction()) {
-            case EAST -> location.add(-side, 0D, spawn.lateral());
-            case WEST -> location.add(side, 0D, spawn.lateral());
-            case NORTH -> location.add(spawn.lateral(), 0D, length);
-            case SOUTH -> location.add(spawn.lateral(), 0D, -length);
-            case NORTHEAST -> location.add(-side, 0D, length);
-            case SOUTHWEST -> location.add(side, 0D, -length);
-            case DOWN -> location.add(spawn.lateral(), 7D, 0D);
-        }
-        EntityType type = switch (spawn.mob()) {
-            case ZOMBIE -> EntityType.ZOMBIE; case HUSK -> EntityType.HUSK;
-            case SKELETON -> EntityType.SKELETON; case SPIDER -> EntityType.SPIDER;
-            case CREEPER -> EntityType.CREEPER;
-        };
-        Entity raw = world.spawnEntity(location, type);
-        if (!(raw instanceof LivingEntity entity)) { raw.remove(); return; }
-        entity.setAI(false); entity.setGravity(false); entity.setInvulnerable(true); entity.setSilent(true); entity.setCollidable(false);
-        if (entity instanceof Creeper creeper) creeper.setExplosionRadius(0);
-        dodgeDirections.put(entity.getUniqueId(), spawn.direction());
-        dodgeSpeeds.put(entity.getUniqueId(), RiptideDodgeRun.speed(spawn.mob(), Math.min(2, spawn.tick() / RiptideDodgeRun.WAVE_TICKS)));
-        faceDodgeEntity(entity, spawn.direction());
-        dodgeEntities.add(entity);
-    }
-
-    private void advanceDodgeEntity(LivingEntity entity, RiptideDodgeRun.Direction direction) {
-        Vector movement = dodgeDirection(direction).multiply(dodgeSpeeds.getOrDefault(entity.getUniqueId(), RiptideDodgeRun.speed(entityMob(entity))));
-        if (movement.lengthSquared() <= 0D) return;
-        Location next = entity.getLocation().clone().add(movement);
-        next.setDirection(movement);
-        entity.teleport(next);
-        entity.setRotation(next.getYaw(), next.getPitch());
-        entity.setVelocity(new Vector());
-    }
-
-    private static void faceDodgeEntity(LivingEntity entity, RiptideDodgeRun.Direction direction) {
-        Vector movement = dodgeDirection(direction);
-        if (movement.lengthSquared() <= 0D) return;
-        Location facing = entity.getLocation().clone();
-        facing.setDirection(movement);
-        entity.setRotation(facing.getYaw(), facing.getPitch());
-    }
-
-    private static RiptideDodgeRun.Mob entityMob(LivingEntity entity) {
-        return switch (entity.getType()) {
-            case HUSK -> RiptideDodgeRun.Mob.HUSK;
-            case SKELETON -> RiptideDodgeRun.Mob.SKELETON;
-            case SPIDER -> RiptideDodgeRun.Mob.SPIDER;
-            case CREEPER -> RiptideDodgeRun.Mob.CREEPER;
-            default -> RiptideDodgeRun.Mob.ZOMBIE;
-        };
-    }
-
-    private static Vector dodgeDirection(RiptideDodgeRun.Direction direction) {
-        if (direction == null) return new Vector();
-        return switch (direction) {
-            case EAST -> new Vector(1, 0, 0); case WEST -> new Vector(-1, 0, 0);
-            case NORTH -> new Vector(0, 0, -1); case SOUTH -> new Vector(0, 0, 1);
-            case NORTHEAST -> new Vector(1, 0, -1).normalize(); case SOUTHWEST -> new Vector(-1, 0, 1).normalize();
-            case DOWN -> new Vector(0, -1, 0);
-        };
     }
 
     private void refreshDodgePresentation() {
@@ -598,20 +529,23 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     }
 
     private void clearDodgeRun() {
-        for (LivingEntity entity : List.copyOf(dodgeEntities)) if (entity.isValid()) entity.remove();
-        dodgeEntities.clear(); dodgeDirections.clear(); dodgeSpeeds.clear(); dodgeRun = null; activeDodgeStage = null; dodgeTicksRemaining = 0;
+        if (dodgeEntities != null) dodgeEntities.clear();
+        dodgeEntities = null;
+        dodgeRun = null;
+        dodgeTicksRemaining = 0;
     }
 
     private void refreshColorFloorPresentation() {
         String seconds = String.format(java.util.Locale.ROOT, "%.1f", colorFloorRun.remainingTicks() / 20D);
-        Component title = LegacyText.component(MessageConfig.RIPTIDE_RUSH_FLOOR_TITLE.replace("%seconds%", seconds));
+        Component title = LegacyText.component(colorFloorRun.preparing() ? MessageConfig.RIPTIDE_RUSH_FLOOR_INTRO_TITLE
+                : MessageConfig.RIPTIDE_RUSH_FLOOR_TITLE.replace("%seconds%", seconds));
         Component actionbar = LegacyText.component(MessageConfig.RIPTIDE_RUSH_FLOOR_ACTIONBAR
                 .replace("%round%", String.valueOf(colorFloorRun.roundNumber()))
                 .replace("%rounds%", String.valueOf(colorFloorRun.roundCount())))
                 .replaceText(builder -> builder.matchLiteral("%block%")
                         .replacement(Component.translatable(colorFloorRun.target().translationKey())));
         Title display = Title.title(title, Component.empty(),
-                Title.Times.times(Duration.ZERO, Duration.ofMillis(350), Duration.ZERO));
+                Title.Times.times(Duration.ZERO, Duration.ofMillis(colorFloorRun.preparing() ? 1500 : 350), Duration.ZERO));
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && !eliminatedPlayers.contains(uuid)) {
@@ -1059,6 +993,34 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
 
     public int getSurvivedPlayerNums() {
         return gamePlayers.size() - eliminatedPlayers.size();
+    }
+
+    public int getCourseProgressPercent() {
+        return geometry == null ? 0 : (int) Math.clamp(100D * completedSteps / geometry.totalSteps(), 0D, 100D);
+    }
+
+    public String getColorFloorRoundProgress() {
+        return colorFloorRun == null ? "-" : colorFloorRun.roundNumber() + "/" + colorFloorRun.roundCount();
+    }
+
+    /** Reads the existing runtime state; sidebar refreshes must never regenerate or validate a course. */
+    public String getCurrentChallengeKey() {
+        if (getGameStageEnum() == GameStageEnum.END) return "ended";
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || geometry == null) return "waiting";
+        if (departure.active()) return "departing";
+        if (passRun != null && passRun.active()) return passRun.sideMathActive() ? "side-math" : "side-sweep";
+        if (colorFloorRun != null) return "color-floor";
+        if (dodgeTicksRemaining > 0) return "dodge";
+        if (!mathTitles.isEmpty()) return "math";
+        if (coursePlan != null) {
+            for (var level : coursePlan.levels()) {
+                if (!level.stopsRaft() && completedSteps + geometry.halfLength() >= level.step()
+                        && completedSteps <= level.step() + level.extent() + geometry.halfLength()) {
+                    return level.kind().name().toLowerCase(java.util.Locale.ROOT).replace('_', '-');
+                }
+            }
+        }
+        return "moving";
     }
 
     @Override

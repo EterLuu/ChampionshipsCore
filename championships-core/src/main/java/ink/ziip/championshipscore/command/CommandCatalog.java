@@ -42,6 +42,9 @@ public final class CommandCatalog {
             new Entry("/cc map blueprint audit <名称|all> [地图] [页码]", "审查蓝图难度和材料覆盖"),
             new Entry("/cc map blueprint preview <名称|all> [地图] [页码]", "预览单张或全库蓝图审查"),
             new Entry("/cc admin vote|world ...", "投票与世界管理"),
+            new Entry("/cc admin mute <玩家> [原因...]", "永久禁言公共聊天"),
+            new Entry("/cc admin tempmute <玩家> <时长> [原因...]", "限时禁言公共聊天"),
+            new Entry("/cc admin unmute <玩家>", "解除公共聊天禁言"),
             new Entry("/cc admin reload|sudo|teleport|set-max-player ...", "系统维护与现场管理")
     );
 

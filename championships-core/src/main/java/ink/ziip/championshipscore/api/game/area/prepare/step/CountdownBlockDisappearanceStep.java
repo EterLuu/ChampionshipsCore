@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -11,7 +12,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.gui.CountdownBlockDisapp
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.instance.CountdownBlockDisappearance;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -52,8 +52,8 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
     }
 
     public CountdownBlockDisappearanceStep() {
-        super("countdown_block_disappearance", Component.text(GuiConfig.text("map-editor.menus.step-list.items.countdown-blocks.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.items.countdown-blocks.lore", 0)),
+        super("countdown_block_disappearance", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.countdown-blocks.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.countdown-blocks.lore", 0)),
                 Material.CLOCK, StepCaptureType.SELECT);
     }
 

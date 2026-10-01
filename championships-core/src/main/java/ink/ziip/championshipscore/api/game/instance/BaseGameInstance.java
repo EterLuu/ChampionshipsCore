@@ -1059,9 +1059,8 @@ public abstract class BaseGameInstance {
         finalCountdownTask = scheduler.runTaskTimer(plugin, () -> {
             int seconds = remaining[0];
             if (seconds > 0) {
-                String title = MessageConfig.GAME_START_COUNT_DOWN_TITLE
-                        .replace("%time%", String.valueOf(seconds));
-                String subtitle = getFinalCountdownSubtitle(gameTitle);
+                String title = getFinalCountdownTitle(seconds);
+                String subtitle = getFinalCountdownSubtitle(gameTitle, seconds);
                 sendTitleToAllGamePlayers(title, subtitle);
                 playCountdownBit(BIT_C4);
                 remaining[0]--;
@@ -1132,6 +1131,14 @@ public abstract class BaseGameInstance {
 
     protected String getFinalCountdownSubtitle(String gameTitle) {
         return MessageConfig.GAME_START_COUNT_DOWN_SUBTITLE.replace("%game%", gameTitle);
+    }
+
+    protected String getFinalCountdownTitle(int seconds) {
+        return MessageConfig.GAME_START_COUNT_DOWN_TITLE.replace("%time%", String.valueOf(seconds));
+    }
+
+    protected String getFinalCountdownSubtitle(String gameTitle, int seconds) {
+        return getFinalCountdownSubtitle(gameTitle);
     }
 
     private void playCountdownBit(Note note) {
@@ -1274,6 +1281,7 @@ public abstract class BaseGameInstance {
         player.setFlying(true);
         player.setInvulnerable(true);
         player.setCollidable(false);
+        player.setNoPhysics(true);
     }
 
     /** Spectator-mode entry point invoked by the spectator manager on behalf of area-level requests. */
@@ -1287,6 +1295,7 @@ public abstract class BaseGameInstance {
         player.setAllowFlight(false);
         player.setInvulnerable(false);
         player.setCollidable(true);
+        player.setNoPhysics(false);
     }
 
     public void removeAllSpectator() {

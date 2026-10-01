@@ -35,9 +35,9 @@ public class BingoConfig extends BaseGameConfig {
     @ConfigOption(path = "name")
     private String areaName;
 
-    /** Round duration in seconds (10 minutes per the bingo design doc). */
+    /** Match duration in seconds. Default 12 minutes. */
     @ConfigOption(path = "timer")
-    private int timer = 600;
+    private int timer = 720;
 
     /** Preparation countdown before the round starts, in seconds. */
     @ConfigOption(path = "prepare-time")
@@ -87,16 +87,8 @@ public class BingoConfig extends BaseGameConfig {
      * speed, haste, …). See {@link BingoPermanentEffects}.
      */
     @ConfigOption(path = "permanent-effects")
-    private List<String> permanentEffects = List.of("night_vision:1", "jump_boost:8");
+    private List<String> permanentEffects = List.of("night_vision:1");
 
-    @Override
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
-        List<String> effects = migratedConfiguration.getStringList("permanent-effects");
-        effects.removeIf(effect -> effect != null
-                && effect.trim().split(":", 2)[0].trim().equalsIgnoreCase("slow_falling"));
-        migratedConfiguration.set("permanent-effects", effects);
-    }
 
     /**
      * Points awarded by claim rank: index 0 = first team to complete a cell, 1 = second, etc. The last

@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
@@ -227,7 +228,7 @@ public final class DailyGameMenu {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
-    static final class MenuHolder implements InventoryHolder {
+    static final class MenuHolder implements MenuInventory {
         private final UUID viewer;
         private final Map<Integer, GameTypeEnum> gamesBySlot = new HashMap<>();
         private Inventory inventory;

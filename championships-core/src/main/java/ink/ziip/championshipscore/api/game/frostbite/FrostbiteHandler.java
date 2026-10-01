@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.frostbite;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import lombok.Setter;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.block.*;
@@ -38,10 +39,11 @@ public final class FrostbiteHandler extends BaseListener {
     @EventHandler public void interactEntity(PlayerInteractEntityEvent e){if(area.participant(e.getPlayer()) || area.prop(e.getRightClicked()))e.setCancelled(true);}
     @EventHandler public void manipulate(PlayerArmorStandManipulateEvent e){if(area.participant(e.getPlayer()) || area.prop(e.getRightClicked()))e.setCancelled(true);}
     @EventHandler public void hit(ProjectileHitEvent e){area.hit(e);}
+    @EventHandler public void areaEffectCloud(AreaEffectCloudApplyEvent e){area.areaEffectCloud(e);}
     @EventHandler(ignoreCancelled=true) public void shoot(EntityShootBowEvent e){area.shoot(e);}
     @EventHandler public void teleport(PlayerTeleportEvent e){area.teleportEvent(e);}
     @EventHandler public void respawn(PlayerRespawnEvent e){area.respawnEvent(e);}
-    @EventHandler public void swap(PlayerSwapHandItemsEvent e){if(area.participant(e.getPlayer())){e.setCancelled(true);area.returnCamp(e.getPlayer());}}
+    @EventHandler public void swap(PlayerSwapHandItemsEvent e){if(area.participant(e.getPlayer()))e.setCancelled(true);}
     @EventHandler public void drop(PlayerDropItemEvent e){if(area.participant(e.getPlayer()))e.setCancelled(true);}
     @EventHandler public void pickup(EntityPickupItemEvent e){if(e.getEntity() instanceof Player p && area.participant(p))e.setCancelled(true);}
     @EventHandler public void arrow(PlayerPickupArrowEvent e){if(area.participant(e.getPlayer()))e.setCancelled(true);}
@@ -52,4 +54,16 @@ public final class FrostbiteHandler extends BaseListener {
     @EventHandler public void blockBreak(BlockBreakEvent e){if(area.participant(e.getPlayer()))e.setCancelled(true);}
     @EventHandler public void bucket(PlayerBucketEmptyEvent e){if(area.participant(e.getPlayer()))e.setCancelled(true);}
     @EventHandler public void bucketFill(PlayerBucketFillEvent e){if(area.participant(e.getPlayer()))e.setCancelled(true);}
+    // World rules also apply while waiting and during map editing.
+    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
+    public void iceForm(BlockFormEvent e){
+        if(!e.getBlock().getWorld().getName().equals(area.getWorldName()))return;
+        if(e.getBlock().getType()==Material.WATER && e.getNewState().getType()==Material.ICE)e.setCancelled(true);
+    }
+    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
+    public void iceFade(BlockFadeEvent e){
+        if(!e.getBlock().getWorld().getName().equals(area.getWorldName()))return;
+        Material material=e.getBlock().getType();
+        if(material==Material.ICE || material==Material.FROSTED_ICE)e.setCancelled(true);
+    }
 }

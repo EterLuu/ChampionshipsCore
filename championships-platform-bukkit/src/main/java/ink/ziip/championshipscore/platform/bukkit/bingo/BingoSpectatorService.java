@@ -14,10 +14,12 @@ public final class BingoSpectatorService {
     }
 
     public static void apply(Player player) {
+        if (player.isInsideVehicle()) player.leaveVehicle();
         player.setGameMode(GameMode.ADVENTURE);
         player.setAllowFlight(true);
         player.setFlying(true);
         player.setCollidable(false);
+        player.setNoPhysics(true);
         player.setInvulnerable(true);
         player.setAffectsSpawning(false);
         player.setCanPickupItems(false);
@@ -30,6 +32,7 @@ public final class BingoSpectatorService {
         player.setFlying(false);
         player.setAllowFlight(false);
         player.setCollidable(true);
+        player.setNoPhysics(false);
         player.setInvulnerable(false);
         player.setAffectsSpawning(true);
         player.setCanPickupItems(true);

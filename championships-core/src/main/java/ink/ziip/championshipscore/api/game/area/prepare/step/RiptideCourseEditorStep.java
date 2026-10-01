@@ -1,12 +1,12 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.api.game.area.prepare.*;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideCourseEditorGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideEditorPage;
 import ink.ziip.championshipscore.api.game.riptiderush.*;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import java.util.Map;
@@ -18,7 +18,7 @@ public final class RiptideCourseEditorStep extends PrepareStep {
     public RiptideCourseEditorStep(Category category) {
         super("course_" + (category == Category.COURSE ? "settings" : category.name().toLowerCase(java.util.Locale.ROOT)),
                 GuiConfig.component(path(category, "title")),
-                Component.text(GuiConfig.line(path(category, "lore"), 0)),
+                LegacyText.component(GuiConfig.line(path(category, "lore"), 0)),
                 category == Category.COURSE ? Material.COMPARATOR : category == Category.STOPPED ? Material.CLOCK
                         : levelType(category).icon(), StepCaptureType.SELECT);
         this.category = category;

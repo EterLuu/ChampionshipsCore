@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -26,7 +27,7 @@ final class BuildMartFloorSelectionStep extends PrepareStep {
     BuildMartFloorSelectionStep(@NotNull String key, @NotNull Component name,
                                 @NotNull Material icon, @NotNull Predicate<SetupTarget> setPredicate,
                                 @NotNull BiConsumer<SetupTarget, Location> setter) {
-        super(key, name, Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-floor.lore", 0)), icon,
+        super(key, name, LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-floor.lore", 0)), icon,
                 StepCaptureType.WE_SELECTION);
         this.setPredicate = setPredicate;
         this.setter = setter;

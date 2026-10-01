@@ -66,22 +66,4 @@ public class TGTTOSConfig extends BaseGameConfig {
     @ConfigOption(path = "player-spawn-pitch", nullable = true)
     private Float playerSpawnPitch;
 
-    @Override
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
-        boolean hadLegacySpawnPoints = oldConfiguration.contains("chicken-spawn-points")
-                || oldConfiguration.contains("player-spawn-points");
-        if (!hadLegacySpawnPoints) return;
-
-        // Point lists cannot safely be converted to random spawn planes: the rectangle between those
-        // points may contain track blocks or hazards. Keep them for the editor and require reconfiguration.
-        migratedConfiguration.set("legacy-chicken-spawn-points",
-                oldConfiguration.getStringList("chicken-spawn-points"));
-        migratedConfiguration.set("legacy-player-spawn-points",
-                oldConfiguration.getStringList("player-spawn-points"));
-        migratedConfiguration.set("chicken-spawn-points", null);
-        migratedConfiguration.set("player-spawn-points", null);
-        migratedConfiguration.set("prepare.published", false);
-        migratedConfiguration.set("prepare.dirty", true);
-    }
 }

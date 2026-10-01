@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -28,6 +29,9 @@ import java.util.Map;
 
 /** Build Mart flow: a hand-built resource hub plus a replicated, editable base template. */
 public class BuildMartPrepareFlow extends PrepareFlowDefinition {
+    @Override public void onSessionExit(@NotNull ink.ziip.championshipscore.api.game.area.prepare.PrepareSession session) {
+        if (session.getBlueprintWorkshop() != null) session.getBlueprintWorkshop().close();
+    }
     @Override public @NotNull String worldName(@NotNull SetupTarget target) { return target.worldName(); }
 
     @Override public boolean isInCorrectWorld(@NotNull Player player, @NotNull SetupTarget target) {
@@ -58,15 +62,16 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
         steps.add(new BuildMartBaseSchematicStep(base));
         steps.add(new BuildMartStampStep(base));
 
-        steps.add(new BuildMartWindZoneListStep());
+        steps.add(new BuildMartJumpPadListStep());
         steps.add(new BuildMartMaterialZoneStep());
+        steps.add(new BuildMartBlueprintStep());
         steps.add(point("spectator_spawn", GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title"), Material.ENDER_EYE,
                 t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l)));
-        steps.add(new StandAndRunStep("hub_portal", Component.text(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.hub-portal.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.hub-portal.lore", 0)), Material.OBSIDIAN,
+        steps.add(new StandAndRunStep("hub_portal", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.hub-portal.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.hub-portal.lore", 0)), Material.OBSIDIAN,
                 t -> cfg(t).getHubPortalPoint() != null,
                 (t, l) -> cfg(t).setHubPortalPoint(l), Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_PORTAL_SET)));
-        steps.add(new BuildMartFloorSelectionStep("golden_display", Component.text(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.golden-display.title")),
+        steps.add(new BuildMartFloorSelectionStep("golden_display", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.golden-display.title")),
                 Material.GOLD_BLOCK, t -> cfg(t).getGoldenDisplayPoint() != null,
                 (t, l) -> cfg(t).setGoldenDisplayPoint(l)));
 
@@ -84,30 +89,30 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
     private static PrepareStep selection(String key, String name, Material icon,
             java.util.function.Predicate<SetupTarget> predicate,
             java.util.function.BiConsumer<SetupTarget, org.bukkit.util.Vector[]> setter) {
-        return new WeSelectionStep(key, Component.text(name), Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.hub.lore", 0)),
+        return new WeSelectionStep(key, LegacyText.component(name), LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.hub.lore", 0)),
                 icon, predicate, setter, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SET.replace("%name%", name)));
     }
 
     private static PrepareStep point(String key, String name, Material icon,
             java.util.function.Predicate<SetupTarget> predicate,
             java.util.function.BiConsumer<SetupTarget, Location> setter) {
-        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.line("map-editor.menus.step-list.items.stand-run.lore", 0)),
+        return new StandAndRunStep(key, LegacyText.component(name), LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.stand-run.lore", 0)),
                 icon, predicate, setter, Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SET.replace("%name%", name)));
     }
 
     private static PrepareStep basePoint(String key, boolean selectedBlock) {
         String display = GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.base-floor.title", Map.of("key", key));
         if (selectedBlock) {
-            return new SelectedBlockStep("base_" + key, Component.text(display),
-                    Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-submit.lore", 0)), Material.STONE_BUTTON,
+            return new SelectedBlockStep("base_" + key, LegacyText.component(display),
+                    LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-submit.lore", 0)), Material.STONE_BUTTON,
                     t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l));
         }
         if (!key.equals("portal")) {
-            return new BuildMartFloorSelectionStep("base_" + key, Component.text(display), Material.BRICKS,
+            return new BuildMartFloorSelectionStep("base_" + key, LegacyText.component(display), Material.BRICKS,
                     t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l));
         }
-        Component description = Component.text(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-portal.lore", 0));
-        return new StandAndRunStep("base_" + key, Component.text(display), description, Material.BRICKS,
+        Component description = LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-portal.lore", 0));
+        return new StandAndRunStep("base_" + key, LegacyText.component(display), description, Material.BRICKS,
                 t -> cfg(t).hasBaseLocation(key), (t, l) -> cfg(t).setBaseLocation(key, l),
                 Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SET.replace("%name%", display)));
     }

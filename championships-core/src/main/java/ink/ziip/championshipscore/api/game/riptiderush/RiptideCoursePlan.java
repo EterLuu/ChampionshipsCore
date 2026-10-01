@@ -99,7 +99,12 @@ public record RiptideCoursePlan(long seed, int algorithmVersion, int estimatedTi
                     .map(w -> w.direction() > 0 ? "左" : "右").collect(java.util.stream.Collectors.joining("→")) + "）"
                     : template.name() + (wallGroup == 0 ? "" : (type() == RiptideLevelType.MATH ? " • 第" + beat + "道" : " • 连墙第" + beat + "面"));
         }
-        public int extent() { return sweep == 0 && variant.equals("DOUBLE") ? 6 + (template.blueprint() == null ? 0 : template.blueprint().extent()) : sweep != 0 ? sideWalls.stream().mapToInt(SideWall::forwardExtent).max().orElse(0) : template.blueprint() != null ? template.blueprint().extent() : variant.equals("WEAVE") ? 3 : 0; }
+        public int extent() {
+            // Stopped stages have a single entrance; geometry reserves the common stopped deck.
+            if (stopsRaft()) return 0;
+            return variant.equals("DOUBLE") ? 6 + (template.blueprint() == null ? 0 : template.blueprint().extent())
+                    : template.blueprint() != null ? template.blueprint().extent() : variant.equals("WEAVE") ? 3 : 0;
+        }
         public RiptideQuestion question(int minimum, int maximum) {
             return question(minimum, maximum, 0);
         }

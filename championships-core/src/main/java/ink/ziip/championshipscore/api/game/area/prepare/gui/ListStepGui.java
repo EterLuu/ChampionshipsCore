@@ -1,9 +1,11 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
@@ -15,7 +17,6 @@ import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -46,7 +47,7 @@ public final class ListStepGui {
     private ListStepGui() {
     }
 
-    public static final class Holder implements InventoryHolder {
+    public static final class Holder implements MenuInventory {
         final String stepKey;
         Inventory inventory;
 
@@ -60,7 +61,7 @@ public final class ListStepGui {
         }
     }
 
-    public static final class EntryHolder implements InventoryHolder {
+    public static final class EntryHolder implements MenuInventory {
         final PrepareSession session;
         final String stepKey;
         int page;
@@ -77,7 +78,7 @@ public final class ListStepGui {
         }
     }
 
-    public static final class EditHolder implements InventoryHolder {
+    public static final class EditHolder implements MenuInventory {
         final PrepareSession session;
         final String stepKey;
         final int index;
@@ -99,7 +100,7 @@ public final class ListStepGui {
                             @NotNull PrepareSession session, @NotNull PrepareStep step) {
         Holder holder = new Holder(step.key());
         Inventory inv = Bukkit.createInventory(holder, 9, GuiConfig.component(MENU_PATH + ".title",
-                java.util.Map.of("step", PlainTextComponentSerializer.plainText().serialize(step.displayName()))));
+                java.util.Map.of("step", step.displayName())));
         holder.inventory = inv;
         refresh(inv, session, step);
         player.openInventory(inv);
@@ -158,7 +159,7 @@ public final class ListStepGui {
                                     @NotNull PrepareStep step) {
         EntryHolder holder = new EntryHolder(session, step.key());
         holder.inventory = Bukkit.createInventory(holder, 54, GuiConfig.component(MENU_PATH + ".title",
-                java.util.Map.of("step", PlainTextComponentSerializer.plainText().serialize(step.displayName()))));
+                java.util.Map.of("step", step.displayName())));
         refreshEntries(holder, step);
         player.openInventory(holder.inventory);
     }
@@ -175,9 +176,10 @@ public final class ListStepGui {
             if (index < entries.size()) {
                 PrepareStep.ListEntry entry = entries.get(index);
                 List<Component> lore = new ArrayList<>();
-                for (String detail : entry.details()) lore.add(Component.text(detail).color(NamedTextColor.GRAY));
-                lore.add(GuiConfig.component(MENU_PATH + ".items.entry.lore.0"));
-                inv.setItem(slot, item(Material.PAPER, Component.text(entry.title()), NamedTextColor.WHITE, lore));
+                for (String detail : entry.details()) lore.add(LegacyText.component(detail).colorIfAbsent(NamedTextColor.GRAY));
+                for (String line : GuiConfig.lines(MENU_PATH + ".items.entry.lore"))
+                    lore.add(LegacyText.component(line));
+                inv.setItem(slot, item(Material.PAPER, LegacyText.component(entry.title()), NamedTextColor.WHITE, lore));
             } else {
                 inv.setItem(slot, filler());
             }
@@ -301,8 +303,8 @@ public final class ListStepGui {
                                   @NotNull NamedTextColor color, @NotNull List<Component> lore) {
         ItemStack stack = new ItemStack(mat);
         stack.editMeta(meta -> {
-            meta.displayName(name.color(color).decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore.stream().map(c -> c.decoration(TextDecoration.ITALIC, false)).toList());
+            meta.displayName(name.colorIfAbsent(color).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+            meta.lore(lore.stream().map(c -> c.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
         });
         return stack;
     }

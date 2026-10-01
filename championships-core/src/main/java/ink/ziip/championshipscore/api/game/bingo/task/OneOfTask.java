@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo.task;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoComponents;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
@@ -130,7 +131,7 @@ public record OneOfTask(Set<Material> items, Material display, String name, int 
     @Override
     public Component getName() {
         if (name != null) {
-            return Component.text().color(NamedTextColor.YELLOW).append(Component.text(name)).build();
+            return Component.text().color(NamedTextColor.YELLOW).append(LegacyText.component(name)).build();
         }
         MessageService msg = MessageService.global();
         String token = familyToken();
@@ -138,12 +139,12 @@ public record OneOfTask(Set<Material> items, Material display, String name, int 
         if (!token.isEmpty() && msg.has(familyKey)) {
             // Name the family, not one variant: "任意羊毛" / "Any Wool".
             return Component.text().color(NamedTextColor.YELLOW)
-                    .append(Component.text(msg.tr("task.one_of_family", msg.tr(familyKey))))
+                    .append(LegacyText.component(msg.tr("task.one_of_family", msg.tr(familyKey))))
                     .build();
         }
         // Irregular set with no family label: fall back to "Any: <representative item>".
         return Component.text().color(NamedTextColor.YELLOW)
-                .append(Component.text(msg.tr("task.one_of_prefix")))
+                .append(LegacyText.component(msg.tr("task.one_of_prefix")))
                 .append(BingoComponents.itemName(display))
                 .build();
     }

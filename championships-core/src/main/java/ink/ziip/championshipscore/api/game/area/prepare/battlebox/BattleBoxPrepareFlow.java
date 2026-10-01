@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.battlebox;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -18,7 +19,6 @@ import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -67,8 +67,8 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
 
         steps.add(new SchematicStep(plugin -> schematic,
-                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.save-template.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.save-template.lore", 0))) {
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.save-template.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.save-template.lore", 0))) {
             @Override
             public String capture(@NotNull ink.ziip.championshipscore.api.game.area.prepare.PrepareSession session,
                                   @NotNull Player player) {
@@ -94,64 +94,64 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                 }));
 
         steps.add(new WeSelectionStep("area_pos",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.arena-boundary.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.arena-boundary.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.arena-boundary.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.arena-boundary.lore", 0)),
                 Material.BEDROCK,
                 a -> cfg(a).getAreaPos1() != null && cfg(a).getAreaPos2() != null,
                 (a, sel) -> { cfg(a).setAreaPos1(sel[0]); cfg(a).setAreaPos2(sel[1]); },
                 Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_GENERAL_SITE_BOUNDARY_SET)));
 
         steps.add(new StandAndRunStep("spectator_spawn",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.spectator-spawn.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.spectator-spawn.lore", 0)),
                 Material.ENDER_EYE,
                 a -> cfg(a).getSpectatorSpawnPoint() != null,
                 (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
                 Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
 
         steps.add(new StandAndRunStep("right_spawn",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.spawn-right.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.spawn-right.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.spawn-right.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.spawn-right.lore", 0)),
                 Material.GREEN_WOOL,
                 a -> cfg(a).getRightSpawnPoint() != null,
                 (a, loc) -> cfg(a).setRightSpawnPoint(loc),
                 Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_SPAWN_RIGHT_SET)));
 
         steps.add(new StandAndRunStep("left_spawn",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.spawn-left.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.spawn-left.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.spawn-left.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.spawn-left.lore", 0)),
                 Material.RED_WOOL,
                 a -> cfg(a).getLeftSpawnPoint() != null,
                 (a, loc) -> cfg(a).setLeftSpawnPoint(loc),
                 Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_SPAWN_LEFT_SET)));
 
         steps.add(new StandAndRunStep("right_prepare_spot",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.prepare-right.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.prepare-right.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.prepare-right.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.prepare-right.lore", 0)),
                 Material.GREEN_STAINED_GLASS,
                 a -> cfg(a).getRightPrepareSpot() != null,
                 (a, loc) -> cfg(a).setRightPrepareSpot(loc),
                 Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_PREPARE_RIGHT_SET)));
 
         steps.add(new StandAndRunStep("left_prepare_spot",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.prepare-left.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.prepare-left.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.prepare-left.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.prepare-left.lore", 0)),
                 Material.RED_STAINED_GLASS,
                 a -> cfg(a).getLeftPrepareSpot() != null,
                 (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
                 Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_PREPARE_LEFT_SET)));
 
         steps.add(new WeSelectionStep("wool_pos",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.wool-area.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.wool-area.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.wool-area.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.wool-area.lore", 0)),
                 Material.YELLOW_WOOL,
                 a -> cfg(a).getWoolPos1() != null && cfg(a).getWoolPos2() != null,
                 (a, sel) -> { cfg(a).setWoolPos1(sel[0]); cfg(a).setWoolPos2(sel[1]); },
                 Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_WOOL_SET)));
 
         steps.add(new ListStep("potion_spawn_points",
-                Component.text(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.potion-spawn.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.potion-spawn.lore", 0)),
+                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.battle-box.items.potion-spawn.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.battle-box.items.potion-spawn.lore", 0)),
                 Material.LIME_WOOL,
                 a -> cfg(a).getPotionSpawnPoints(),
                 (a, values) -> cfg(a).setPotionSpawnPoints(values),

@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.spectate;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiText;
 
@@ -561,7 +562,7 @@ public final class SpectateMenu implements Listener {
 
     private static Component teamName(ChampionshipTeam team) {
         if (team == null) return GuiConfig.component("spectator.menus.venue-selector.items.match.states.undecided.title");
-        return Component.text(team.getName(), teamColor(team));
+        return LegacyText.component(team.getName(), teamColor(team));
     }
 
     private static TextColor teamColor(@NotNull ChampionshipTeam team) {
@@ -639,6 +640,7 @@ public final class SpectateMenu implements Listener {
         styles.put(GameTypeEnum.HotyCodyDusky, new GameStyle(Material.COD, NamedTextColor.AQUA));
         styles.put(GameTypeEnum.BuildMart, new GameStyle(Material.CRAFTING_TABLE, NamedTextColor.GOLD));
         styles.put(GameTypeEnum.Dodgebolt, new GameStyle(Material.ARROW, NamedTextColor.RED));
+        styles.put(GameTypeEnum.SulfurSoccer, new GameStyle(Material.SLIME_BALL, NamedTextColor.YELLOW));
         styles.put(GameTypeEnum.AceRace, new GameStyle(Material.ELYTRA, NamedTextColor.GREEN));
         styles.put(GameTypeEnum.RiptideRush, new GameStyle(Material.OAK_BOAT, NamedTextColor.AQUA));
         styles.put(GameTypeEnum.FrostbiteFrenzy, new GameStyle(Material.BLUE_ICE, NamedTextColor.AQUA));
@@ -648,7 +650,7 @@ public final class SpectateMenu implements Listener {
     private record GameStyle(Material material, NamedTextColor color) {
     }
 
-    private static final class Holder implements InventoryHolder {
+    private static final class Holder implements MenuInventory {
         private final UUID viewer;
         private final Map<Integer, BaseGameInstance> instancesBySlot = new HashMap<>();
         private Inventory inventory;
@@ -669,7 +671,7 @@ public final class SpectateMenu implements Listener {
                                         Location location, List<Component> lore) {
     }
 
-    private static final class BuildMartHolder implements InventoryHolder {
+    private static final class BuildMartHolder implements MenuInventory {
         private final UUID viewer;
         private final BuildMartArea area;
         private final Map<Integer, BuildMartDestination> destinationsBySlot = new HashMap<>();
@@ -691,7 +693,7 @@ public final class SpectateMenu implements Listener {
     private record SubArenaDestination(String label, Material material, Location location) {
     }
 
-    private static final class SubArenaHolder implements InventoryHolder {
+    private static final class SubArenaHolder implements MenuInventory {
         private final UUID viewer;
         private final BaseGameInstance area;
         private final Map<Integer, SubArenaDestination> destinationsBySlot = new HashMap<>();

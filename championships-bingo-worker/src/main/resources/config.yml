@@ -15,9 +15,19 @@ worlds:
   overworld: "bingo"
   nether: "bingo_nether"
   the-end: "bingo_the_end"
+  seed-filter:
+    # SeedLab 26.2 is embedded in the Worker JAR; no external command is required.
+    enabled: true
+    required: false
+    seed-file: ".bingo-seed"
+    radius-blocks: 2000
+    candidates: 128
+    sample-step-blocks: 32
+    timeout-ms: 14000
   # Keep false for production: after all players return to Core, Folia moves this level aside and
   # starts a replacement process with a fresh world; the retired level is deleted in the background.
   allow-reuse-without-reset: false
-# All gameplay and presentation settings (phases, spawn coordinates, tasks, scoring, PvP, effects,
+# Worker worlds have a 16000-block border; opening team scatter reserves a 3000-block edge buffer.
+# Other gameplay and presentation settings (phases, waiting spawns, tasks, scoring, PvP, effects,
 # language text and scoreboard labels) are frozen by SCC in each match manifest. This file contains
 # only worker infrastructure and physical world-slot names.

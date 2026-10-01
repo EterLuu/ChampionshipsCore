@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -18,8 +19,8 @@ import java.util.List;
 /** Edits course-ordered markers which are bound to Ace Race progress segments at load time. */
 public final class AceRaceRespawnPointListStep extends ListStep {
     public AceRaceRespawnPointListStep() {
-        super("respawn_points", Component.text(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-points.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.respawn-points.lore", 0)),
+        super("respawn_points", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-points.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.respawn-points.lore", 0)),
                 Material.RECOVERY_COMPASS,
                 target -> cfg(target).ensureRespawnPoints(),
                 (target, values) -> cfg(target).setRespawnPoints(values),
@@ -126,11 +127,11 @@ public final class AceRaceRespawnPointListStep extends ListStep {
 
     @Override
     public @NotNull Component listAddLabel() {
-        return Component.text(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-add.title"));
+        return LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-add.title"));
     }
 
     @Override
     public @NotNull Component listAddHint() {
-        return Component.text(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.respawn-add.lore", 0));
+        return LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.respawn-add.lore", 0));
     }
 }

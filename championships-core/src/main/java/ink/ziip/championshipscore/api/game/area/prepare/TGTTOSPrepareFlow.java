@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -14,7 +15,6 @@ import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.util.Utils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -41,7 +41,7 @@ public final class TGTTOSPrepareFlow extends PrepareFlowDefinition {
         List<PrepareStep> steps = new ArrayList<>();
         steps.add(new ConfirmWorldStep(player -> isInCorrectWorld(player, target), target.worldName()));
         steps.add(new TGTTOSAreaTypeStep());
-        steps.add(new WeSelectionStep("area_pos", Component.text(GuiConfig.text("map-editor.menus.step-list.items.track-boundary.title")), Component.text(GuiConfig.line("map-editor.menus.step-list.items.track-boundary.lore", 0)),
+        steps.add(new WeSelectionStep("area_pos", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.track-boundary.title")), LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.track-boundary.lore", 0)),
                 Material.BEDROCK, t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
                 (t, v) -> { cfg(t).setAreaPos1(v[0]); cfg(t).setAreaPos2(v[1]); },
                 Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_TRACK_BOUNDARY_SET)));
@@ -49,24 +49,24 @@ public final class TGTTOSPrepareFlow extends PrepareFlowDefinition {
                 t -> cfg(t).getSpectatorSpawnPoint() != null, (t, l) -> cfg(t).setSpectatorSpawnPoint(l), MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET));
         steps.add(optionalList("monster_spawn_points", GuiConfig.text("map-editor.menus.step-list.games.tgttos.items.monster-spawn.title"), GuiConfig.line("map-editor.menus.step-list.games.tgttos.items.monster-spawn.lore", 0), Material.ZOMBIE_HEAD,
                 t -> cfg(t).getMonsterSpawnPoints(), (t, l) -> cfg(t).setMonsterSpawnPoints(l)));
-        steps.add(new TGTTOSSpawnAreaStep("chicken_spawn_area", Component.text(GuiConfig.text("map-editor.menus.step-list.games.tgttos.items.chicken-spawn-area.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.tgttos.items.chicken-spawn-area.lore", 0)),
+        steps.add(new TGTTOSSpawnAreaStep("chicken_spawn_area", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.tgttos.items.chicken-spawn-area.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.tgttos.items.chicken-spawn-area.lore", 0)),
                 Material.EGG, TGTTOSSpawnAreaStep.SpawnType.CHICKEN));
-        steps.add(new TGTTOSSpawnAreaStep("player_spawn_area", Component.text(GuiConfig.text("map-editor.menus.step-list.games.tgttos.items.player-spawn-area.title")),
-                Component.text(GuiConfig.line("map-editor.menus.step-list.games.tgttos.items.player-spawn-area.lore", 0)),
+        steps.add(new TGTTOSSpawnAreaStep("player_spawn_area", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.tgttos.items.player-spawn-area.title")),
+                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.tgttos.items.player-spawn-area.lore", 0)),
                 Material.PLAYER_HEAD, TGTTOSSpawnAreaStep.SpawnType.PLAYER));
         return steps;
     }
     private static TGTTOSConfig cfg(SetupTarget target) { return (TGTTOSConfig) target.config(); }
     private static PrepareStep location(String key, String name, Material icon, java.util.function.Predicate<SetupTarget> set,
                                         java.util.function.BiConsumer<SetupTarget, Location> setter, String done) {
-        return new StandAndRunStep(key, Component.text(name), Component.text(GuiConfig.line("map-editor.menus.step-list.items.stand-run.lore", 0)), icon, set, setter,
+        return new StandAndRunStep(key, LegacyText.component(name), LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.stand-run.lore", 0)), icon, set, setter,
                 Utils.formatAdminSuccess(done));
     }
     private static PrepareStep optionalList(String key, String name, String desc, Material icon,
                                             java.util.function.Function<SetupTarget, List<String>> getter,
                                             java.util.function.BiConsumer<SetupTarget, List<String>> setter) {
-        return new ListStep(key, Component.text(name), Component.text(desc), icon,
+        return new ListStep(key, LegacyText.component(name), LegacyText.component(desc), icon,
                 t -> values(getter.apply(t)), setter,
                 t -> values(getter.apply(t)).isEmpty(),
                 (t, value) -> { List<String> l = values(getter.apply(t)); l.add(value); setter.accept(t, l); },

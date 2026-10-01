@@ -40,10 +40,10 @@ public class Utils {
         return LegacyText.translateColorCodes(message);
     }
 
-    /** Strips section-sign colour/format codes (incl. {@code §x} hex) from a string, for plain-text logging. */
+    /** Strips configured colour/format codes, including ampersand and hex forms. */
     public static String stripColorCodes(String message) {
         if (message == null) return null;
-        return message.replaceAll("(?i)§[0-9A-FK-ORX]", "");
+        return LegacyText.plainText(message);
     }
 
     /** Colour-translates a legacy string and parses it into an Adventure component. */
@@ -218,10 +218,12 @@ public class Utils {
 
     public static Color hex2rgb(String hexColor) {
         try {
-            return Color.fromBGR(
-                    Integer.valueOf(hexColor.substring(5, 7), 16),
-                    Integer.valueOf(hexColor.substring(3, 5), 16),
-                    Integer.valueOf(hexColor.substring(1, 3), 16));
+            String value = hexColor.startsWith("#") ? hexColor.substring(1) : hexColor;
+            if (value.length() != 6) throw new IllegalArgumentException("颜色必须为六位十六进制值");
+            return Color.fromRGB(
+                    Integer.parseInt(value.substring(0, 2), 16),
+                    Integer.parseInt(value.substring(2, 4), 16),
+                    Integer.parseInt(value.substring(4, 6), 16));
         } catch (Exception ignored) {
             return Color.fromBGR(0, 0, 0);
         }

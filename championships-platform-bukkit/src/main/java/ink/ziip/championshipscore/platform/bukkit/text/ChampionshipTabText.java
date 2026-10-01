@@ -44,7 +44,7 @@ public final class ChampionshipTabText {
         return LegacyText.translateColorCodes(teamColorCode);
     }
 
-    /** The exact identity shown by TAB, reusable by chat and join/quit messages. */
+    /** The exact identity shown by TAB, reusable by DAILY chat and join/quit messages. */
     public static String playerIdentity(String coloredLabel, String teamColorCode,
                                         boolean activePlayer, String playerName) {
         return bracketedPrefix(coloredLabel) + playerNameColor(teamColorCode, activePlayer)
@@ -58,6 +58,14 @@ public final class ChampionshipTabText {
 
     public static Component chatLine(String coloredLabel, String teamColorCode, boolean activePlayer,
                                      String playerName, Component message) {
+        return LegacyText.component(playerNameColor(teamColorCode, activePlayer) + playerName
+                        + "&r &8<" + coloredLabel + "&8>&r")
+                .append(Component.text(" » ", TextColor.color(0x696969)))
+                .append(message.colorIfAbsent(TextColor.color(0xededed)));
+    }
+
+    public static Component dailyChatLine(String coloredLabel, String teamColorCode, boolean activePlayer,
+                                          String playerName, Component message) {
         return playerIdentityComponent(coloredLabel, teamColorCode, activePlayer, playerName)
                 .append(Component.text(" » ", TextColor.color(0x696969)))
                 .append(message.colorIfAbsent(TextColor.color(0xededed)));

@@ -12,6 +12,7 @@ public final class FinaleMainCommand extends BaseMainCommand {
             addGameSubCommand(definition.gameType(), switch (definition.gameType()) {
                 case Dodgebolt -> new FinaleDodgeboltMainCommand(definition);
                 case DragonEggCarnival -> new FinaleDragonEggCarnivalMainCommand(definition);
+                case SulfurSoccer -> new FinaleSulfurSoccerMainCommand(definition);
                 default -> throw new IllegalStateException("未实现决赛命令：" + definition.gameType());
             });
         }

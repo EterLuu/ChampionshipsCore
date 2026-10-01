@@ -54,9 +54,9 @@ public class BuildMartConfig extends BaseGameConfig {
     @ConfigOption(path = "world-name", nullable = true)
     private String worldName;
 
-    /** Round duration in seconds. Default 12 minutes. */
+    /** Round duration in seconds. Default 15 minutes. */
     @ConfigOption(path = "timer")
-    private int timer = 720;
+    private int timer = 900;
 
     /** Number of playable team bases physically stamped into this map (copies 1..N). */
     @ConfigOption(path = "base-count")
@@ -134,7 +134,7 @@ public class BuildMartConfig extends BaseGameConfig {
         double max = baseOrigin.getX() + baseSize.getBlockX();
         max = maxX(max, areaPos1, areaPos2, hubPos1, hubPos2);
         max = maxX(max, spectatorSpawnPoint, hubPortalPoint, goldenDisplayPoint, getIntroductionSpawnPoint());
-        for (WindZone zone : windZones) max = maxX(max, zone.pos1(), zone.pos2());
+        for (JumpPadZone zone : jumpPads) max = maxX(max, zone.pos1(), zone.pos2());
         for (BuildMartMaterialZone zone : getMaterialZones()) max = Math.max(max, zone.maxX());
         for (Vector center : materialIslandCenters.values()) max = Math.max(max, center.getX());
         return max;
@@ -159,11 +159,6 @@ public class BuildMartConfig extends BaseGameConfig {
         saveOptions();
     }
 
-    /** Legacy fallback for callers that do not have schematic metadata yet. */
-    public @NotNull ArenaGrid prepareBaseGrid(@NotNull Vector baseSize) {
-        return prepareBaseGrid(hubGridCenter(), baseSize);
-    }
-
     private @NotNull Vector hubGridCenter() {
         if (hubPos1 == null || hubPos2 == null) return BuildMartLayout.HUB.clone();
         Vector min = Vector.getMinimum(hubPos1, hubPos2);
@@ -180,7 +175,6 @@ public class BuildMartConfig extends BaseGameConfig {
         return max.subtract(min).add(new Vector(1, 1, 1));
     }
 
-    /** Legacy whole-map boundary fields, parsed for old configurations but unused by gameplay. */
     @ConfigOption(path = "area-pos1", nullable = true)
     private Vector areaPos1;
 
@@ -201,18 +195,14 @@ public class BuildMartConfig extends BaseGameConfig {
     @ConfigOption(path = "hub-portal-point", nullable = true)
     private Location hubPortalPoint;
 
-    /** Legacy single wind-vent fields, read only to migrate old maps to {@link #windZones}. */
-    private Vector windZonePos1;
-    private Vector windZonePos2;
-
-    /** Horizontal/vertical cuboids occupied by wind-vent blocks. Players above any are lifted toward Y=200. */
-    private List<WindZone> windZones = List.of();
+    /** WorldEdit selections of the surfaces that act as jump pads. */
+    private List<JumpPadZone> jumpPads = List.of();
 
     /** Persisted centres of the 24 physical material islands, keyed by their stable semantic identity. */
     private Map<BuildMartMaterialIsland, Vector> materialIslandCenters = Map.of();
 
-    public record WindZone(@NotNull Vector pos1, @NotNull Vector pos2) {
-        public WindZone {
+    public record JumpPadZone(@NotNull Vector pos1, @NotNull Vector pos2) {
+        public JumpPadZone {
             pos1 = pos1.clone();
             pos2 = pos2.clone();
         }
@@ -229,21 +219,16 @@ public class BuildMartConfig extends BaseGameConfig {
     }
 
     /** Returns an immutable snapshot so callers cannot mutate the loaded geometry in place. */
-    public @NotNull List<WindZone> getWindZones() {
-        return List.copyOf(windZones);
+    public @NotNull List<JumpPadZone> getJumpPads() {
+        return List.copyOf(jumpPads);
     }
 
-    public void setWindZones(@Nullable List<WindZone> zones) {
+    public void setJumpPads(@Nullable List<JumpPadZone> zones) {
         if (zones == null || zones.isEmpty()) {
-            windZones = List.of();
-            windZonePos1 = null;
-            windZonePos2 = null;
+            jumpPads = List.of();
             return;
         }
-        windZones = List.copyOf(zones);
-        WindZone first = windZones.get(0);
-        windZonePos1 = first.pos1();
-        windZonePos2 = first.pos2();
+        jumpPads = List.copyOf(zones);
     }
 
     /** Anchor where the current golden blueprint is pasted in the hub for players to observe. */
@@ -252,7 +237,7 @@ public class BuildMartConfig extends BaseGameConfig {
 
     /** How often (seconds) the golden blueprint is swapped; it stays live for this whole window. */
     @ConfigOption(path = "golden-refresh-seconds")
-    private int goldenRefreshSeconds = 120;
+    private int goldenRefreshSeconds = 180;
 
     /** Cooldown (ms) on portal triggers to stop the player bouncing back and forth. */
     @ConfigOption(path = "portal-cooldown-millis")
@@ -298,7 +283,7 @@ public class BuildMartConfig extends BaseGameConfig {
                 || !location.getWorld().getName().equals(getConfiguredWorld())) {
             return false;
         }
-        if (isInWindColumn(location)) return true;
+        if (isInJumpPadFlightPath(location)) return true;
         if (isInHub(location)) return true;
 
         Vector size = baseSchematicSize;
@@ -321,30 +306,19 @@ public class BuildMartConfig extends BaseGameConfig {
         return false;
     }
 
-    /** True when a player is horizontally above the configured wind vent and has cleared its top face. */
-    public boolean isAboveWindZone(@NotNull Location location) {
-        if (!isInWindColumn(location)) return false;
-        for (WindZone zone : windZones) {
-            Vector min = Vector.getMinimum(zone.pos1(), zone.pos2());
-            Vector max = Vector.getMaximum(zone.pos1(), zone.pos2());
-            if (location.getX() >= min.getX() && location.getX() <= max.getX() + 1.0
-                    && location.getZ() >= min.getZ() && location.getZ() <= max.getZ() + 1.0
-                    && location.getY() >= max.getY() + 1.0) return true;
-        }
-        return false;
-    }
-
-    /** True when a location is in the vent's vertical column, including the lift path up to Y=200. */
-    private boolean isInWindColumn(@NotNull Location location) {
-        if (windZones.isEmpty() || location.getWorld() == null
+    /** Keeps the mostly vertical trajectory and its small forward displacement inside the arena. */
+    private boolean isInJumpPadFlightPath(@NotNull Location location) {
+        if (jumpPads.isEmpty() || location.getWorld() == null
                 || !location.getWorld().getName().equals(getConfiguredWorld())) return false;
-        for (WindZone zone : windZones) {
+        for (JumpPadZone zone : jumpPads) {
             Vector min = Vector.getMinimum(zone.pos1(), zone.pos2());
             Vector max = Vector.getMaximum(zone.pos1(), zone.pos2());
-            if (location.getX() >= min.getX() && location.getX() <= max.getX() + 1.0
-                    && location.getZ() >= min.getZ() && location.getZ() <= max.getZ() + 1.0
+            if (location.getX() >= min.getX() - BuildMartJumpPads.FLIGHT_MARGIN
+                    && location.getX() <= max.getX() + 1.0 + BuildMartJumpPads.FLIGHT_MARGIN
+                    && location.getZ() >= min.getZ() - BuildMartJumpPads.FLIGHT_MARGIN
+                    && location.getZ() <= max.getZ() + 1.0 + BuildMartJumpPads.FLIGHT_MARGIN
                     && location.getY() >= min.getY()
-                    && location.getY() <= BuildMartWindVentPolicy.TOP_Y + 1.0) return true;
+                    && location.getY() <= BuildMartJumpPads.TARGET_Y + 1.0) return true;
         }
         return false;
     }
@@ -592,20 +566,16 @@ public class BuildMartConfig extends BaseGameConfig {
 
     @Override
     protected void loadCustomFileOptions() {
-        List<WindZone> zones = new ArrayList<>();
-        for (Map<?, ?> row : configuration.getMapList("wind-zones")) {
+        List<JumpPadZone> zones = new ArrayList<>();
+        // Read old selections once for compatibility; every save writes only the renamed key.
+        String path = configuration.contains("jump-pads") ? "jump-pads" : "wind-zones";
+        for (Map<?, ?> row : configuration.getMapList(path)) {
             Vector pos1 = vector(row.get("pos1"));
             Vector pos2 = vector(row.get("pos2"));
-            if (pos1 != null && pos2 != null) zones.add(new WindZone(pos1, pos2));
+            if (pos1 != null && pos2 != null) zones.add(new JumpPadZone(pos1, pos2));
         }
 
-        // Maps written before v12 have one pair of fields. Keep them usable until the next save.
-        if (zones.isEmpty()) {
-            Vector legacyPos1 = configuration.getVector("wind-zone-pos1");
-            Vector legacyPos2 = configuration.getVector("wind-zone-pos2");
-            if (legacyPos1 != null && legacyPos2 != null) zones.add(new WindZone(legacyPos1, legacyPos2));
-        }
-        setWindZones(zones);
+        setJumpPads(zones);
 
         Map<BuildMartMaterialIsland, Vector> centers = new EnumMap<>(BuildMartMaterialIsland.class);
         for (Map<?, ?> row : configuration.getMapList("material-islands")) {
@@ -621,70 +591,18 @@ public class BuildMartConfig extends BaseGameConfig {
     protected void saveCustomOptions() {
         if (configuration == null) return;
         List<Map<String, Object>> rows = new ArrayList<>();
-        for (WindZone zone : windZones) {
+        for (JumpPadZone zone : jumpPads) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("pos1", vectorMap(zone.pos1()));
             row.put("pos2", vectorMap(zone.pos2()));
             rows.add(row);
         }
-        configuration.set("wind-zones", rows);
-        configuration.set("wind-zone-pos1", null);
-        configuration.set("wind-zone-pos2", null);
+        configuration.set("jump-pads", rows);
+        configuration.set("wind-zones", null);
 
         configuration.set("material-islands", materialIslandRows(materialIslandCenters));
     }
 
-    @Override
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
-        migratedConfiguration.set("base.golden-ref", null);
-        if (oldConfiguration.getString("world-name", "").isBlank())
-            migratedConfiguration.set("world-name", "buildmart");
-        if (oldConfiguration.getInt("dont-edit-this.version", 0) < 10) {
-            // v10 changes both the physical copy numbering and the portal contract. An old published map
-            // must be stamped and reviewed through the new flow before it can be selected for a game.
-            migratedConfiguration.set("copy-layout.hub-size", null);
-            migratedConfiguration.set("hub-spawn-point", null);
-            migratedConfiguration.set("hub-return-pos1", null);
-            migratedConfiguration.set("hub-return-pos2", null);
-            migratedConfiguration.set("prepare.published", false);
-            migratedConfiguration.set("prepare.dirty", true);
-            migratedConfiguration.set("prepare.world-built", false);
-        }
-        if (oldConfiguration.getInt("dont-edit-this.version", 0) < 12
-                && oldConfiguration.getMapList("wind-zones").isEmpty()) {
-            Vector pos1 = oldConfiguration.getVector("wind-zone-pos1");
-            Vector pos2 = oldConfiguration.getVector("wind-zone-pos2");
-            if (pos1 != null && pos2 != null) {
-                Map<String, Object> row = new LinkedHashMap<>();
-                row.put("pos1", vectorMap(pos1));
-                row.put("pos2", vectorMap(pos2));
-                migratedConfiguration.set("wind-zones", List.of(row));
-            } else {
-                migratedConfiguration.set("wind-zones", List.of());
-            }
-        }
-        migratedConfiguration.set("wind-zone-pos1", null);
-        migratedConfiguration.set("wind-zone-pos2", null);
-        if (oldConfiguration.getInt("dont-edit-this.version", 0) < 14) {
-            migratedConfiguration.set("copy-layout.source-origin", null);
-            migratedConfiguration.set("prepare.published", false);
-            migratedConfiguration.set("prepare.dirty", true);
-            migratedConfiguration.set("prepare.world-built", false);
-        }
-        if (oldConfiguration.getInt("dont-edit-this.version", 0) < 16
-                && oldConfiguration.getMapList("material-islands").isEmpty()
-                && "area".equalsIgnoreCase(oldConfiguration.getString("name", ""))) {
-            migratedConfiguration.set("material-islands", materialIslandRows(legacyAreaMaterialIslandCenters()));
-        }
-        if (oldConfiguration.getInt("dont-edit-this.version", 0) < 17) {
-            // A configuration upgrade must never reinterpret an old physical ring as a row. Such maps must
-            // be rebuilt and published through the normal prepare flow before their anchors can change.
-            migratedConfiguration.set("copy-layout.type", "RING");
-            migratedConfiguration.set("copy-layout.generated-origin", null);
-            migratedConfiguration.set("copy-layout.step", null);
-        }
-    }
 
     private static @NotNull List<Map<String, Object>> materialIslandRows(
             @NotNull Map<BuildMartMaterialIsland, Vector> centers) {
@@ -700,33 +618,4 @@ public class BuildMartConfig extends BaseGameConfig {
         return rows;
     }
 
-    /** One-time v16 recovery for the server's established Build Mart resource-hub geometry. */
-    private static @NotNull Map<BuildMartMaterialIsland, Vector> legacyAreaMaterialIslandCenters() {
-        Map<BuildMartMaterialIsland, Vector> centers = new EnumMap<>(BuildMartMaterialIsland.class);
-        centers.put(BuildMartMaterialIsland.WHITE, new Vector(190.0, 132.0, 64.0));
-        centers.put(BuildMartMaterialIsland.ORANGE, new Vector(240.0, 142.0, 78.0));
-        centers.put(BuildMartMaterialIsland.MAGENTA, new Vector(281.0, 148.0, 102.0));
-        centers.put(BuildMartMaterialIsland.LIGHT_BLUE, new Vector(310.0, 140.0, 145.0));
-        centers.put(BuildMartMaterialIsland.YELLOW, new Vector(316.0, 136.0, 191.0));
-        centers.put(BuildMartMaterialIsland.LIME, new Vector(306.0, 131.0, 241.0));
-        centers.put(BuildMartMaterialIsland.PINK, new Vector(279.0, 134.0, 276.0));
-        centers.put(BuildMartMaterialIsland.GRAY, new Vector(239.0, 138.0, 308.0));
-        centers.put(BuildMartMaterialIsland.LIGHT_GRAY, new Vector(191.0, 146.0, 317.0));
-        centers.put(BuildMartMaterialIsland.CYAN, new Vector(144.0, 141.0, 308.0));
-        centers.put(BuildMartMaterialIsland.PURPLE, new Vector(105.0, 134.0, 281.0));
-        centers.put(BuildMartMaterialIsland.BLUE, new Vector(75.0, 140.0, 240.0));
-        centers.put(BuildMartMaterialIsland.BROWN, new Vector(65.0, 135.0, 192.0));
-        centers.put(BuildMartMaterialIsland.GREEN, new Vector(74.0, 147.0, 146.0));
-        centers.put(BuildMartMaterialIsland.RED, new Vector(103.0, 147.0, 103.0));
-        centers.put(BuildMartMaterialIsland.BLACK, new Vector(142.0, 140.0, 75.0));
-        centers.put(BuildMartMaterialIsland.PLANTS, new Vector(151.0, 166.16, 387.36));
-        centers.put(BuildMartMaterialIsland.NETHER, new Vector(2.737, 166.842, 153.079));
-        centers.put(BuildMartMaterialIsland.TREES, new Vector(230.0, 167.0, 0.955));
-        centers.put(BuildMartMaterialIsland.BRICKS, new Vector(80.0, 167.0, 31.875));
-        centers.put(BuildMartMaterialIsland.STONE, new Vector(382.3, 167.05, 229.2));
-        centers.put(BuildMartMaterialIsland.MINERALS, new Vector(24.289, 166.474, 298.526));
-        centers.put(BuildMartMaterialIsland.SAND_GRAVEL, new Vector(335.75, 167.0, 85.0));
-        centers.put(BuildMartMaterialIsland.COPPER, new Vector(303.4, 167.0, 340.5));
-        return Map.copyOf(centers);
-    }
 }

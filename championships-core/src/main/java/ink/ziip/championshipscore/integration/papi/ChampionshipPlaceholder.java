@@ -85,11 +85,11 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
     }
 
     private String tabPrefix(OfflinePlayer player) {
-        BaseGameInstance activeGame = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
-        if (activeGame != null) {
-            return ChampionshipTabText.gamePrefix(activeGame.getGameTypeEnum().toString());
-        }
         if (isDaily()) {
+            BaseGameInstance activeGame = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
+            if (activeGame != null) {
+                return ChampionshipTabText.gamePrefix(activeGame.getGameTypeEnum().toString());
+            }
             ChampionshipTeam team = visibleTeam(player);
             if (team != null) return ChampionshipTabText.bracketedPrefix(team.getColoredName());
             BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());

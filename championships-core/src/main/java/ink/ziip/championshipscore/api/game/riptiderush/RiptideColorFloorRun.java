@@ -11,6 +11,7 @@ import java.util.TreeSet;
 
 /** A color floor stage's seven deadlines and layouts, independent of Bukkit scheduling and world mutation. */
 final class RiptideColorFloorRun {
+    static final int INTRO_TICKS = 30;
     enum Theme { COPPER, WOOD, TERRACOTTA, STONE, ORE, LOG, NETHER }
     enum Pattern { RINGS, PATCHES, RANDOM, HORIZONTAL, VERTICAL }
     private static final List<String> COLORS = List.of("WHITE", "ORANGE", "MAGENTA", "LIGHT_BLUE",
@@ -29,6 +30,7 @@ final class RiptideColorFloorRun {
     private Pattern pattern;
     private int round;
     private int remainingTicks;
+    private int introRemaining = INTRO_TICKS;
 
     RiptideColorFloorRun(int width, int length, List<Integer> roundTicks, Random random, Theme theme) {
         this(width, length, roundTicks, random, theme, List.of(), theme == Theme.COPPER ? 8 : 6);
@@ -94,8 +96,11 @@ final class RiptideColorFloorRun {
 
     /** Returns true exactly once per deadline; the caller evaluates everyone before advancing. */
     boolean tick() {
+        if (introRemaining > 0) { introRemaining--; return false; }
         return remainingTicks > 0 && --remainingTicks == 0;
     }
+
+    boolean preparing() { return introRemaining > 0; }
 
     boolean advance() {
         if (remainingTicks != 0) throw new IllegalStateException("round has not ended");

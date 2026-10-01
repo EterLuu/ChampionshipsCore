@@ -41,18 +41,6 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
 
         // Defer the area scan to the first tick so all referenced worlds and shared data are ready.
         plugin.getServer().getScheduler().runTask(plugin, task -> {
-            try {
-                BuildMartCopperAssetMigrator.Result migrated = BuildMartCopperAssetMigrator.migrate(buildMartDir);
-                if (migrated.changed()) {
-                    plugin.getLogger().info(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "迁移", "铜方块",
-                            "蓝图文件=" + migrated.blueprintFiles() + " 蓝图方块=" + migrated.blueprintBlocks()
-                                    + " 材料快照=" + migrated.schematicFiles() + " 材料方块="
-                                    + migrated.schematicBlocks()));
-                }
-            } catch (Exception exception) {
-                plugin.getLogger().severe(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "迁移", "铜方块",
-                        "持久化资产迁移失败 | " + exception.getMessage()));
-            }
             File blueprintsFolder = new File(buildMartDir, "blueprints");
             blueprintsFolder.mkdirs();
             copyExampleBlueprints(blueprintsFolder);
@@ -132,6 +120,10 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
         File blueprintsFolder = new File(new File(plugin.getDataFolder(), "buildmart"), "blueprints");
         blueprintsFolder.mkdirs();
         orderPool = BuildMartOrderPool.load(plugin, blueprintsFolder);
+    }
+
+    public void updateBlueprint(ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint blueprint) {
+        orderPool = orderPool.withBlueprint(blueprint);
     }
 
     @Override

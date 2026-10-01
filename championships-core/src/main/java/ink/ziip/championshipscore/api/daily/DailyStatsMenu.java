@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -145,16 +146,16 @@ final class DailyStatsMenu {
             holder.gamesBySlot.put(slot, game);
         }
         if (games.isEmpty()) inventory.setItem(22, item(Material.GRAY_DYE,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.empty.title"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.empty.lore", 0), NamedTextColor.DARK_GRAY)), false));
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.empty.title"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.empty.lore", 0), NamedTextColor.DARK_GRAY)), false));
 
         inventory.setItem(BACK_SLOT, configured("back", null, Map.of(), item(Material.ARROW,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.back.title"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.back.title"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
         inventory.setItem(LEADERBOARD_SLOT, configured("leaderboard", null, Map.of(), item(Material.GOLD_INGOT,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.leaderboard.title"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.leaderboard.lore", 0), NamedTextColor.GRAY),
-                        Component.text(GuiConfig.line(MENU_PATH + ".items.leaderboard.lore", 1), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)), false)));
-        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, Component.text(GuiConfig.text(MENU_PATH + ".items.close.title"), NamedTextColor.RED), List.of(), false)));
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.leaderboard.title"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.leaderboard.lore", 0), NamedTextColor.GRAY),
+                        LegacyText.component(GuiConfig.line(MENU_PATH + ".items.leaderboard.lore", 1), NamedTextColor.GREEN).decorate(TextDecoration.BOLD)), false)));
+        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, LegacyText.component(GuiConfig.text(MENU_PATH + ".items.close.title"), NamedTextColor.RED), List.of(), false)));
     }
 
     private void refresh(DetailHolder holder) {
@@ -175,42 +176,42 @@ final class DailyStatsMenu {
             inventory.setItem(slots.get(index - from), mapItem(holder.viewer, holder.game, maps.get(index)));
         }
         if (maps.isEmpty()) inventory.setItem(31, item(Material.GRAY_DYE,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.empty.title"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.empty.lore", 0), NamedTextColor.DARK_GRAY)), false));
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.empty.title"), NamedTextColor.GRAY).decorate(TextDecoration.BOLD),
+                List.of(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.empty.lore", 0), NamedTextColor.DARK_GRAY)), false));
 
         inventory.setItem(BACK_SLOT, configured("back", null, Map.of(), item(Material.ARROW,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.back.states.detail.title"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.back.states.detail.title"), NamedTextColor.WHITE).decorate(TextDecoration.BOLD), List.of(), false)));
         inventory.setItem(LEADERBOARD_SLOT, configured("leaderboard", null, Map.of(), item(Material.GOLD_INGOT,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.leaderboard.title"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.leaderboard.lore", 0), NamedTextColor.GRAY)), false)));
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.leaderboard.title"), NamedTextColor.GOLD).decorate(TextDecoration.BOLD),
+                List.of(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.leaderboard.lore", 0), NamedTextColor.GRAY)), false)));
         if (holder.page > 0) inventory.setItem(48, configured("previous", null, Map.of(), item(Material.ARROW,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.previous.title"), NamedTextColor.WHITE), List.of(), false)));
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.previous.title"), NamedTextColor.WHITE), List.of(), false)));
         inventory.setItem(REFRESH_SLOT, configured("refresh", null, Map.of(), item(Material.CLOCK,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.refresh.title"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
-                List.of(Component.text(GuiConfig.line(MENU_PATH + ".items.refresh.lore", 0), NamedTextColor.GRAY)), false)));
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.refresh.title"), NamedTextColor.YELLOW).decorate(TextDecoration.BOLD),
+                List.of(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.refresh.lore", 0), NamedTextColor.GRAY)), false)));
         inventory.setItem(PAGE_SLOT, configured("page", null,
                 Map.of("page", holder.page + 1, "pages", holder.pageCount), item(Material.PAPER,
                 GuiConfig.component(MENU_PATH + ".items.page.title", Map.of("page", holder.page + 1, "pages", holder.pageCount)),
-                List.of(Component.text(GuiConfig.text(MENU_PATH + ".items.page.lore", Map.of("maps", maps.size())), NamedTextColor.GRAY)), false)));
+                List.of(LegacyText.component(GuiConfig.text(MENU_PATH + ".items.page.lore", Map.of("maps", maps.size())), NamedTextColor.GRAY)), false)));
         if (holder.page + 1 < holder.pageCount) inventory.setItem(52, configured("next", null, Map.of(), item(Material.ARROW,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.next.title"), NamedTextColor.WHITE), List.of(), false)));
-        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, Component.text(GuiConfig.text(MENU_PATH + ".items.close.title"), NamedTextColor.RED), List.of(), false)));
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.next.title"), NamedTextColor.WHITE), List.of(), false)));
+        inventory.setItem(CLOSE_SLOT, configured("close", null, Map.of(), item(Material.BARRIER, LegacyText.component(GuiConfig.text(MENU_PATH + ".items.close.title"), NamedTextColor.RED), List.of(), false)));
     }
 
     private ItemStack playerSummary(UUID viewer, DailyStatSnapshot stat) {
         List<Component> lore = List.of(
                 LegacyText.component(GuiConfig.line(MENU_PATH + ".items.summary.lore", 0, Map.of("games", stat.gamesPlayed()))),
                 Component.empty(),
-                Component.text(GuiConfig.line(MENU_PATH + ".items.summary.lore", 2), NamedTextColor.GRAY)
+                LegacyText.component(GuiConfig.line(MENU_PATH + ".items.summary.lore", 2), NamedTextColor.GRAY)
         );
         ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta rawMeta = stack.getItemMeta();
         if (!(rawMeta instanceof SkullMeta meta)) return item(Material.PLAYER_HEAD,
-                Component.text(GuiConfig.text(MENU_PATH + ".items.summary.title"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, false);
+                LegacyText.component(GuiConfig.text(MENU_PATH + ".items.summary.title"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD), lore, false);
         meta.setOwningPlayer(Bukkit.getOfflinePlayer(viewer));
-        meta.displayName(Component.text(GuiConfig.text(MENU_PATH + ".items.summary.title"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
-                .decoration(TextDecoration.ITALIC, false));
-        meta.lore(lore.stream().map(line -> line.decoration(TextDecoration.ITALIC, false)).toList());
+        meta.displayName(LegacyText.component(GuiConfig.text(MENU_PATH + ".items.summary.title"), NamedTextColor.AQUA).decorate(TextDecoration.BOLD)
+                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+        meta.lore(lore.stream().map(line -> line.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
         stack.setItemMeta(meta);
         return stack;
     }
@@ -235,10 +236,10 @@ final class DailyStatsMenu {
         }
         lore.add(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.game.lore", 0, Map.of("games", stat.gamesPlayed()))));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.text(MENU_PATH + ".items.game.lore", Map.of("maps", daily.knownMaps(game).size())), NamedTextColor.GRAY));
+        lore.add(LegacyText.component(GuiConfig.text(MENU_PATH + ".items.game.lore", Map.of("maps", daily.knownMaps(game).size())), NamedTextColor.GRAY));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.line(MENU_PATH + ".items.game.lore", 4), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
-        return item(gameMaterial(game), Component.text(game.toString(), gameColor(game))
+        lore.add(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.game.lore", 4), NamedTextColor.GREEN).decorate(TextDecoration.BOLD));
+        return item(gameMaterial(game), LegacyText.component(game.toString(), gameColor(game))
                 .decorate(TextDecoration.BOLD), lore, recorded);
     }
 
@@ -246,8 +247,8 @@ final class DailyStatsMenu {
         List<Component> lore = new ArrayList<>();
         lore.add(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.game.lore", 0, Map.of("games", stat.gamesPlayed()))));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.line(MENU_PATH + ".items.game.lore", 2), NamedTextColor.GRAY));
-        return item(gameMaterial(game), Component.text(game.toString(), gameColor(game))
+        lore.add(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.game.lore", 2), NamedTextColor.GRAY));
+        return item(gameMaterial(game), LegacyText.component(game.toString(), gameColor(game))
                 .decorate(TextDecoration.BOLD), lore, stat.gamesPlayed() > 0);
     }
 
@@ -271,8 +272,8 @@ final class DailyStatsMenu {
         lore.add(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.game.lore", 0,
                 Map.of("games", daily.statsManager().mapStat(viewer, game, map).gamesPlayed()))));
         lore.add(Component.empty());
-        lore.add(Component.text(GuiConfig.line(MENU_PATH + ".items.map.lore", 2), NamedTextColor.GRAY));
-        return item(gameMaterial(game), Component.text(map, gameColor(game)).decorate(TextDecoration.BOLD), lore, recorded);
+        lore.add(LegacyText.component(GuiConfig.line(MENU_PATH + ".items.map.lore", 2), NamedTextColor.GRAY));
+        return item(gameMaterial(game), LegacyText.component(map, gameColor(game)).decorate(TextDecoration.BOLD), lore, recorded);
     }
 
     /** Shared game-card positions used by both the personal stats and total leaderboard menus. */
@@ -371,7 +372,7 @@ final class DailyStatsMenu {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
-    static final class StatsHolder implements InventoryHolder {
+    static final class StatsHolder implements MenuInventory {
         private final UUID viewer;
         private final Map<Integer, GameTypeEnum> gamesBySlot = new HashMap<>();
         private Inventory inventory;
@@ -386,7 +387,7 @@ final class DailyStatsMenu {
         }
     }
 
-    static final class DetailHolder implements InventoryHolder {
+    static final class DetailHolder implements MenuInventory {
         private final UUID viewer;
         private final GameTypeEnum game;
         private Inventory inventory;

@@ -9,6 +9,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.*;
 import org.bukkit.event.player.*;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.damage.DamageSource;
 import org.bukkit.inventory.EquipmentSlot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +46,50 @@ class BuildMartHandlerProtectionTest {
             assertTrue(event.isCancelled());
         }
         assertEquals(1, area.submissions);
+    }
+
+    @Test void participantsCannotTakeFallDamageDuringPreparationCountdownOrPlay() {
+        for (var stage : List.of(GameStageEnum.PREPARATION, GameStageEnum.COUNTDOWN, GameStageEnum.PROGRESS)) {
+            area.stage = stage;
+            var fall = damage(PLAYER, EntityDamageEvent.DamageCause.FALL);
+            handler.onMovementDamage(fall);
+            assertTrue(fall.isCancelled(), stage.toString());
+            var wall = damage(PLAYER, EntityDamageEvent.DamageCause.FLY_INTO_WALL);
+            handler.onMovementDamage(wall);
+            assertTrue(wall.isCancelled(), stage.toString());
+        }
+    }
+
+    @Test void fallProtectionDoesNotApplyToOutsidersOrOtherEntities() {
+        area.outsider = true;
+        var outsider = damage(PLAYER, EntityDamageEvent.DamageCause.FALL);
+        handler.onMovementDamage(outsider);
+        assertFalse(outsider.isCancelled());
+        area.outsider = false;
+        var entity = proxy(org.bukkit.entity.Entity.class, (p, m, a) -> null);
+        var nonPlayer = damage(entity, EntityDamageEvent.DamageCause.FALL);
+        handler.onMovementDamage(nonPlayer);
+        assertFalse(nonPlayer.isCancelled());
+    }
+
+    @Test void movementProtectionDoesNotCancelOtherDamageCauses() {
+        for (var cause : List.of(EntityDamageEvent.DamageCause.FIRE, EntityDamageEvent.DamageCause.LAVA,
+                EntityDamageEvent.DamageCause.VOID, EntityDamageEvent.DamageCause.ENTITY_ATTACK)) {
+            var event = damage(PLAYER, cause);
+            handler.onMovementDamage(event);
+            assertFalse(event.isCancelled(), cause.toString());
+        }
+    }
+
+    @Test void unboundHandlerDoesNotProtectUnrelatedPlayers() {
+        handler.setBuildMartArea(null);
+        var event = damage(PLAYER, EntityDamageEvent.DamageCause.FALL);
+        handler.onMovementDamage(event);
+        assertFalse(event.isCancelled());
+    }
+
+    private static EntityDamageEvent damage(org.bukkit.entity.Entity entity, EntityDamageEvent.DamageCause cause) {
+        return new EntityDamageEvent(entity, cause, proxy(DamageSource.class, (p, m, a) -> null), 5);
     }
 
     @Test void referenceInteractionIncludesEmptyCellsFloorAndHubRegardlessOfHand() {
@@ -103,6 +149,39 @@ class BuildMartHandlerProtectionTest {
         handler.onReferencePhysics(reference); assertFalse(reference.isCancelled());
     }
 
+    @Test void onlySuccessfulParticipantMaterialBreaksCountAsHarvests() {
+        var material = new BlockBreakEvent(block(40, 1, 0), PLAYER);
+        handler.onMaterialBreak(material);
+        assertEquals(1, area.harvests);
+
+        material.setCancelled(true);
+        handler.onMaterialBreak(material);
+        handler.onMaterialBreak(new BlockBreakEvent(block(0, 1, 0), PLAYER));
+        assertEquals(1, area.harvests);
+
+        material.setCancelled(false);
+        area.outsider = true;
+        handler.onMaterialBreak(material);
+        area.outsider = false;
+        area.stage = GameStageEnum.COUNTDOWN;
+        handler.onMaterialBreak(material);
+        area.stage = GameStageEnum.END;
+        handler.onMaterialBreak(material);
+        assertEquals(1, area.harvests);
+    }
+
+    @Test void successfulMaterialBucketFillsAlsoResetTheRefillDeadline() {
+        var material = new PlayerBucketFillEvent(PLAYER, block(40, 1, 0), block(40, 1, 0),
+                BlockFace.UP, Material.BUCKET, null, EquipmentSlot.HAND);
+        handler.onBucketFill(material);
+        assertFalse(material.isCancelled());
+        handler.onMaterialBucketFill(material);
+        assertEquals(1, area.harvests);
+        material.setCancelled(true);
+        handler.onMaterialBucketFill(material);
+        assertEquals(1, area.harvests);
+    }
+
     private static PlayerBucketEmptyEvent bucket(int x) {
         return new PlayerBucketEmptyEvent(PLAYER, block(x, 1, 0), block(x, 0, 0), BlockFace.UP,
                 Material.WATER_BUCKET, null, EquipmentSlot.HAND);
@@ -130,10 +209,14 @@ class BuildMartHandlerProtectionTest {
     }
     private static final class TestTeam extends ChampionshipTeam { TestTeam() { super(1, "test", "red", "", null); } }
     private static final class TestArea extends BuildMartArea {
-        GameStageEnum stage; int submissions;
+        GameStageEnum stage; int submissions; int harvests; boolean outsider;
         TestArea() { super(null, null); }
         @Override public GameStageEnum getGameStageEnum() { return stage; }
-        @Override public boolean notAreaPlayer(Player player) { return false; }
+        @Override public boolean notAreaPlayer(Player player) { return outsider; }
+        @Override public boolean isMaterialZoneBlock(World w, int x, int y, int z) { return w == WORLD && x == 40; }
+        @Override public void onMaterialHarvest(Block block) {
+            if (isMaterialZoneBlock(block.getWorld(), block.getX(), block.getY(), block.getZ())) harvests++;
+        }
         @Override public String submitSlotIdAt(ChampionshipTeam team, Location clicked) { return "G"; }
         @Override public void handleSubmitClick(Player player, String slotId) { submissions++; }
         @Override public boolean notInArea(Location location) { return location.getBlockX() < -10 || location.getBlockX() > 50; }

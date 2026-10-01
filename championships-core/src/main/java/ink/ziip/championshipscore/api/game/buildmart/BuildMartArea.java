@@ -37,13 +37,8 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.MapMeta;
-import org.bukkit.map.MapCanvas;
-import org.bukkit.map.MapCursor;
-import org.bukkit.map.MapCursorCollection;
-import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -75,6 +70,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     /** Seconds after a normal build completes before a fresh blueprint is auto-assigned to its plot. */
     private static final int AUTO_REFRESH_SECONDS = 5;
+    private static final int FIREWORK_REFILL_INTERVAL_SECONDS = 10;
 
     private final GoldenSubmitConfirmation goldenConfirmation = new GoldenSubmitConfirmation();
     private long goldenGeneration;
@@ -85,10 +81,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     private final Map<ChampionshipTeam, Integer> seatByTeam = new HashMap<>();
     /** Parsed base geometry cached by seat, so the move handler doesn't re-derive it per step. */
     private final Map<Integer, BuildMartBase> baseCache = new HashMap<>();
+    private final BuildMartMaterialDisplays materialDisplays = new BuildMartMaterialDisplays();
+    private MapView equipmentMap;
 
     private BukkitTask startGameProgressTask;
-    private BukkitTask materialRefillTask;
-    private BukkitTask windVentTask;
+    private BuildMartMaterialRefillScheduler materialRefillScheduler;
+    private BukkitTask jumpPadTask;
+    private BuildMartJumpPads jumpPads;
 
     public BuildMartArea(ChampionshipsCore plugin, BuildMartConfig buildMartConfig) {
         super(plugin, GameTypeEnum.BuildMart, new BuildMartHandler(plugin), buildMartConfig);
@@ -121,7 +120,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                 && geometry.getHub() != null
                 && getGameConfig().getHubPortalPoint() != null
                 && geometry.getHub().contains(getGameConfig().getHubPortalPoint().toVector())
-                && !getGameConfig().getWindZones().isEmpty()
+                && !getGameConfig().getJumpPads().isEmpty()
                 && geometry.getGoldenDisplay() != null
                 && base != null && base.isComplete()
                 && base.getPortalPoint() != null && getGameConfig().isInBaseTemplate(base.getPortalPoint());
@@ -146,12 +145,12 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetArea() {
+        materialDisplays.clear();
+        clearEquipmentMapRenderer();
         if (startGameProgressTask != null) startGameProgressTask.cancel();
         startGameProgressTask = null;
-        if (materialRefillTask != null) materialRefillTask.cancel();
-        materialRefillTask = null;
-        if (windVentTask != null) windVentTask.cancel();
-        windVentTask = null;
+        clearMaterialRefills();
+        clearJumpPads();
         restoreMapRegion();
         teamStates.clear();
         seatByTeam.clear();
@@ -246,6 +245,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         roundId++;
 
         // Build the live per-team state from the seats assigned during formal preparation.
+        materialDisplays.clear();
         teamStates.clear();
         for (ChampionshipTeam team : gameTeams) {
             Integer seat = seatByTeam.get(team);
@@ -282,14 +282,28 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     private void beginGameProgress() {
         goldenBlueprintScheduler = new GoldenBlueprintScheduler(getGameConfig().getTimer(),
                 getGameConfig().getGoldenRefreshSeconds(), this::rotateGoldenBlueprint);
+        clearMaterialRefills();
         refillMaterialZones();
-        if (materialRefillTask != null) materialRefillTask.cancel();
-        materialRefillTask = scheduler.runTaskTimer(plugin, this::refillMaterialZones, 2400L, 2400L);
-        if (windVentTask != null) windVentTask.cancel();
-        windVentTask = scheduler.runTaskTimer(plugin, this::applyWindVent, 1L, 1L);
+        int scheduledRound = roundId;
+        materialRefillScheduler = new BuildMartMaterialRefillScheduler(scheduler, plugin, zone -> {
+            if (getGameStageEnum() != GameStageEnum.PROGRESS || roundId != scheduledRound) return;
+            World world = Bukkit.getWorld(getWorldName());
+            if (world != null) restoreMaterialZone(world, zone);
+        });
+        clearJumpPads();
+        World world = Bukkit.getWorld(getWorldName());
+        if (world != null && !getGameConfig().getJumpPads().isEmpty()) {
+            jumpPads = new BuildMartJumpPads(world, getGameConfig().getJumpPads());
+            jumpPadTask = scheduler.runTaskTimer(plugin, this::applyJumpPads, 1L, 1L);
+        }
         startGameProgressTask = startRemainingTimer(getGameConfig().getTimer(), seconds -> {
             timer = seconds;
             goldenBlueprintScheduler.tick(seconds);
+            int elapsedSeconds = getGameConfig().getTimer() - seconds;
+            if (seconds > 0 && elapsedSeconds > 0
+                    && elapsedSeconds % FIREWORK_REFILL_INTERVAL_SECONDS == 0) {
+                refillFireworks();
+            }
             updateGameTimerBossBar(bossBarTitle(), timer, getGameConfig().getTimer());
         }, this::endGame);
     }
@@ -305,15 +319,33 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     private void restoreMaterialZones(@NotNull World world) {
         for (BuildMartMaterialZone zone : getGameConfig().getMaterialZones()) {
-            try {
-                plugin.getWorldEditManager().pasteSchematic(world,
-                        getGameConfig().getMaterialZoneSnapshotFile(zone),
-                        zone.minX(), zone.minY(), zone.minZ());
-            } catch (Exception exception) {
-                logGame(Level.WARNING, "材料区", "无法恢复快照=" + zone.snapshotId()
-                        + " | " + exception.getMessage());
-            }
+            restoreMaterialZone(world, zone);
         }
+    }
+
+    private void restoreMaterialZone(@NotNull World world, @NotNull BuildMartMaterialZone zone) {
+        try {
+            plugin.getWorldEditManager().pasteSchematic(world,
+                    getGameConfig().getMaterialZoneSnapshotFile(zone),
+                    zone.minX(), zone.minY(), zone.minZ());
+        } catch (Exception exception) {
+            logGame(Level.WARNING, "材料区", "无法恢复快照=" + zone.snapshotId()
+                    + " | " + exception.getMessage());
+        }
+    }
+
+    /** Records a successful player harvest only for the resource cuboids containing that block. */
+    public void onMaterialHarvest(@NotNull org.bukkit.block.Block block) {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || materialRefillScheduler == null
+                || !block.getWorld().getName().equals(getWorldName())) return;
+        for (BuildMartMaterialZone zone : getGameConfig().getMaterialZones()) {
+            if (inMaterialVolume(zone, block)) materialRefillScheduler.onHarvest(zone);
+        }
+    }
+
+    private void clearMaterialRefills() {
+        if (materialRefillScheduler != null) materialRefillScheduler.clear();
+        materialRefillScheduler = null;
     }
 
     /** Gives each participant the fixed Build Mart kit at the start of the live round. */
@@ -326,12 +358,6 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     /** Gives one player the fixed kit; used after a live-round death clears their inventory. */
     private void giveStartingEquipment(Player player) {
         if (player == null) return;
-        ItemStack rockets = new ItemStack(Material.FIREWORK_ROCKET, 64);
-        FireworkMeta meta = (FireworkMeta) rockets.getItemMeta();
-        if (meta != null) {
-            meta.setPower(3);
-            rockets.setItemMeta(meta);
-        }
         PlayerInventory inventory = player.getInventory();
         inventory.clear();
         inventory.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
@@ -340,21 +366,40 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         inventory.setItem(1, silkTouchPickaxe());
         inventory.setItem(2, efficientUnbreakable(new ItemStack(Material.DIAMOND_SHOVEL)));
         inventory.setItem(3, efficientUnbreakable(new ItemStack(Material.DIAMOND_AXE)));
-        inventory.setItem(8, rockets);
+        inventory.setItem(4, efficientShears());
         inventory.setHeldItemSlot(0);
         player.updateInventory();
     }
 
-    private static ItemStack map(int mapId) {
+    /** Grants one flight-duration-3 rocket to each active participant on the round clock. */
+    private void refillFireworks() {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null || !player.isOnline() || player.isDead()
+                    || player.getGameMode() == GameMode.SPECTATOR || isManagedSpectator(player)) continue;
+            ItemStack rocket = new ItemStack(Material.FIREWORK_ROCKET, 1);
+            FireworkMeta meta = (FireworkMeta) rocket.getItemMeta();
+            if (meta != null) {
+                meta.setPower(3);
+                rocket.setItemMeta(meta);
+            }
+            for (ItemStack overflow : player.getInventory().addItem(rocket).values()) {
+                player.getWorld().dropItem(player.getLocation(), overflow);
+            }
+        }
+    }
+
+    private ItemStack map(int mapId) {
         ItemStack item = new ItemStack(Material.FILLED_MAP);
         MapMeta meta = item.getItemMeta() instanceof MapMeta mapMeta ? mapMeta : null;
         if (meta != null) {
             MapView view = Bukkit.getMap(mapId);
             if (view != null) {
-                view.setTrackingPosition(false);
-                view.setUnlimitedTracking(false);
-                if (view.getRenderers().stream().noneMatch(BuildMartSelfMapRenderer.class::isInstance)) {
-                    view.addRenderer(new BuildMartSelfMapRenderer());
+                World world = Bukkit.getWorld(getWorldName());
+                if (world != null) {
+                    BuildMartSelfMapRenderer.attach(view, world);
+                    equipmentMap = view;
                 }
                 meta.setMapView(view);
             }
@@ -363,28 +408,10 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         return item;
     }
 
-    /** Replaces vanilla multiplayer cursors with one contextual cursor for the player viewing the map. */
-    private static final class BuildMartSelfMapRenderer extends MapRenderer {
-        private BuildMartSelfMapRenderer() {
-            super(true);
-        }
-
-        @Override
-        public void render(@NotNull MapView view, @NotNull MapCanvas canvas, @NotNull Player player) {
-            MapCursorCollection cursors = new MapCursorCollection();
-            if (view.getWorld() != null && view.getWorld().equals(player.getWorld())) {
-                int scale = 1 << view.getScale().getValue();
-                int cursorX = (int) Math.floor((player.getX() - view.getCenterX()) * 2.0 / scale + 0.5);
-                int cursorZ = (int) Math.floor((player.getZ() - view.getCenterZ()) * 2.0 / scale + 0.5);
-                int clampedX = Math.clamp(cursorX, -128, 127);
-                int clampedZ = Math.clamp(cursorZ, -128, 127);
-                int rotation = Math.floorMod((int) Math.floor(player.getYaw() * 16.0F / 360.0F), 16);
-                MapCursor.Type type = Math.abs(cursorX) <= 63 && Math.abs(cursorZ) <= 63
-                        ? MapCursor.Type.PLAYER : MapCursor.Type.PLAYER_OFF_MAP;
-                cursors.addCursor(new MapCursor((byte) clampedX, (byte) clampedZ,
-                        (byte) rotation, type, true));
-            }
-            canvas.setCursors(cursors);
+    private void clearEquipmentMapRenderer() {
+        if (equipmentMap != null) {
+            BuildMartSelfMapRenderer.detach(equipmentMap);
+            equipmentMap = null;
         }
     }
 
@@ -432,22 +459,28 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         return item;
     }
 
-    /** Applies a fast upward force while a participant remains above the configured wind vent. */
-    private void applyWindVent() {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
-        BuildMartConfig config = getGameConfig();
-        if (config.getWindZones().isEmpty()) return;
+    private static ItemStack efficientShears() {
+        ItemStack item = unbreakable(new ItemStack(Material.SHEARS));
+        item.addUnsafeEnchantment(Enchants.get(EnchantmentKeys.EFFICIENCY), 3);
+        return item;
+    }
+
+    /** Confirms grounded contacts before applying each pad's one-time upward/forward impulse. */
+    private void applyJumpPads() {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS || jumpPads == null) return;
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player == null) continue;
-            if (!BuildMartWindVentPolicy.affectsPlayer(player.isGliding(),
-                    config.isAboveWindZone(player.getLocation()))) continue;
-            double upward = BuildMartWindVentPolicy.upwardVelocity(player.getLocation().getY());
-            if (upward <= 0.0) continue;
-            Vector current = player.getVelocity();
-            if (current.getY() < upward)
-                player.setVelocity(new Vector(current.getX(), upward, current.getZ()));
+            if (player == null || isManagedSpectator(player)) jumpPads.forget(uuid);
+            else if (jumpPads.sample(player))
+                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, .8F, 1.35F);
         }
+    }
+
+    private void clearJumpPads() {
+        if (jumpPadTask != null) jumpPadTask.cancel();
+        jumpPadTask = null;
+        if (jumpPads != null) jumpPads.clear();
+        jumpPads = null;
     }
 
     /** Timer-bar title showing the round time left and the live golden-window countdown. */
@@ -554,6 +587,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                 BuildMartBlueprint blueprint = drawn.get(i);
                 slot.setBlueprint(blueprint);
                 ReferenceBuilder.paste(blueprint, slot.getReferenceAnchor());
+                refreshMaterialDisplay(team, slot);
                 team.sendMessageToAll(MessageConfig.BUILD_MART_BLUEPRINT_AUTO_REFRESHED
                         .replace("%blueprint%", blueprint.getDisplayName())
                         .replace("%stars%", String.valueOf(blueprint.getStars())));
@@ -578,10 +612,19 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             if (next == null) return;
             slot.setBlueprint(next);
             if (slot.getReferenceAnchor() != null) ReferenceBuilder.paste(next, slot.getReferenceAnchor());
+            refreshMaterialDisplay(team, slot);
             team.sendMessageToAll(MessageConfig.BUILD_MART_BLUEPRINT_AUTO_REFRESHED
                     .replace("%blueprint%", next.getDisplayName())
                     .replace("%stars%", String.valueOf(next.getStars())));
         }, AUTO_REFRESH_SECONDS * 20L);
+    }
+
+    private void refreshMaterialDisplay(ChampionshipTeam team, BuildSlot slot) {
+        Integer seat = seatByTeam.get(team);
+        BuildMartBase base = seat == null ? null : baseCache.get(seat);
+        Location button = base == null || slot.getIndex() >= base.getNormalSubmitAnchors().size()
+                ? null : base.getNormalSubmitAnchors().get(slot.getIndex());
+        materialDisplays.update(slot, button);
     }
 
     /** Draws a single random normal blueprint from the shared pool, or {@code null} when empty. */
@@ -653,8 +696,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             playerManager.getPlayer(player.getUniqueId()).sendMessage(MessageConfig.BUILD_MART_SUBMIT_DIFFERENCES
                     .replace("%missing%", String.valueOf(comparison.missing()))
                     .replace("%material%", String.valueOf(comparison.wrongMaterial()))
-                    .replace("%state%", String.valueOf(comparison.wrongState()))
-                    .replace("%positions%", String.join("、", comparison.positions())));
+                    .replace("%state%", String.valueOf(comparison.wrongState())));
         }
     }
 
@@ -666,15 +708,18 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         // Clear the player's copy and the reference; a fresh blueprint auto-appears shortly.
         if (slot.getBuildAnchor() != null) ReferenceBuilder.clearBuildArea(slot.getBuildAnchor());
         if (slot.getReferenceAnchor() != null) ReferenceBuilder.clear(blueprint, slot.getReferenceAnchor());
+        materialDisplays.remove(slot);
         slot.clear();
         scheduleAutoRefresh(team, slot);
 
-        sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_BUILD_COMPLETED
+        String completion = MessageConfig.BUILD_MART_BUILD_COMPLETED
                 .replace("%team%", team.getColoredName())
                 .replace("%blueprint%", blueprint.getDisplayName())
                 .replace("%stars%", String.valueOf(blueprint.getStars()))
-                .replace("%points%", String.valueOf(points)));
+                .replace("%points%", String.valueOf(points));
+        sendMessageToAllGamePlayers(completion);
         for (Player player : team.getOnlinePlayers()) {
+            Utils.sendActionBar(player, completion);
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1F, 1.5F);
         }
     }
@@ -746,11 +791,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         // Clear only this team's golden slot so they can't re-score; other teams keep building it.
         slot.clear();
 
-        sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_BUILD_COMPLETED
+        String completion = MessageConfig.BUILD_MART_GOLDEN_BUILD_COMPLETED
                 .replace("%team%", team.getColoredName())
                 .replace("%blueprint%", blueprint.getDisplayName())
-                .replace("%points%", String.valueOf(points)));
+                .replace("%points%", String.valueOf(points));
+        sendMessageToAllGamePlayers(completion);
         for (Player player : team.getOnlinePlayers()) {
+            Utils.sendActionBar(player, completion);
             player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1F);
         }
     }
@@ -760,10 +807,10 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         return stars * pointsPerStar(elapsedMinutes());
     }
 
-    /** Dynamic per-star rate: 10 in the first third, 15 in the second, 20 in the final third. */
+    /** Per-star rate: 10 before minute 5, 15 from minute 5, and 20 from minute 10. */
     private static int pointsPerStar(int minutes) {
-        if (minutes < 4) return 10;
-        if (minutes < 8) return 15;
+        if (minutes < 5) return 10;
+        if (minutes < 10) return 15;
         return 20;
     }
 
@@ -934,14 +981,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
+        materialDisplays.clear();
+        clearEquipmentMapRenderer();
+
         if (startGameProgressTask != null)
             startGameProgressTask.cancel();
-        if (materialRefillTask != null)
-            materialRefillTask.cancel();
-        materialRefillTask = null;
-        if (windVentTask != null)
-            windVentTask.cancel();
-        windVentTask = null;
+        clearMaterialRefills();
+        clearJumpPads();
         goldenBlueprintScheduler = null;
         goldenConfirmation.clear();
 

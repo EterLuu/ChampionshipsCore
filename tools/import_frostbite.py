@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""Import only Glacial Keep's terrain into four isolated identical arenas. Python stdlib only.
+"""Import Frostbite Frenzy terrain into four isolated identical arenas. Python stdlib only.
 Original datapack, player data, scoreboards and entities are deliberately not installed.
-Usage: python3 tools/import_frostbite.py SOURCE.zip OUTPUT_DIRECTORY
+Usage: python3 tools/import_frostbite.py SOURCE.zip OUTPUT_DIRECTORY [glacial_keep|frosty_fjord]
 """
 import copy, gzip, io, json, math, re, struct, sys, time, zipfile, zlib
 from pathlib import Path
 
 FORMATS={1:'b',2:'h',3:'i',4:'q',5:'f',6:'d'}
+MAPS={
+    'glacial_keep': {'source':'GlacialKeep','chunks':(range(6,14),range(52,60)),
+                     'spacing':256,'spawn':(165,132,899)},
+    'frosty_fjord': {'source':'FrostyFjord','chunks':(range(71,84),range(-151,-137)),
+                     'spacing':320,'spawn':(1235,45,-2348)},
+}
 def read_tag(f,t):
     def num(fmt): return struct.unpack('>'+fmt,f.read(struct.calcsize('>'+fmt)))[0]
     def string(): return f.read(num('H')).decode('utf-8')
@@ -73,20 +79,28 @@ def write_regions(out,chunks):
             body.extend(data);body.extend(b'\0'*(4096*count-len(data)));sector+=count
         p=out/'region'/f'r.{rx}.{rz}.mca';p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(header+body)
 
-def build(source,destination):
+def build(source,destination,map_name='glacial_keep'):
+    if map_name not in MAPS:raise ValueError(f'Unknown map: {map_name}')
+    spec=MAPS[map_name]
     out=Path(destination)
     if out.exists():raise SystemExit('Output must not exist; refusing to overwrite an existing world')
     with zipfile.ZipFile(source) as z:
         text=z.read('frostbite-frenzy/datapacks/freezetag2/data/freeze/function/game/general/map/data.mcfunction').decode()
-        section=text.split('\n  GlacialKeep:{',1)[1].split('\n  FrostyFjord:',1)[0]
+        match=re.search(r'(?ms)^  '+spec['source']+r':\{(.*?)^  \}',text)
+        if match is None:raise ValueError(f'Missing map data: {spec["source"]}')
+        section=match.group(1)
         spawns=re.findall(r'Pos:"([^"]+)",Rot:"([^"]+)",Team:',section.split('ItemGivers:',1)[0])
         items=re.findall(r'Pos:"([^"]+)",Cooldown:',section.split('ItemGivers:',1)[1])
-        chunks={(cx,cz):source_chunk(z,cx,cz) for cx in range(6,14) for cz in range(52,60)}
+        chunks={(cx,cz):source_chunk(z,cx,cz) for cx in spec['chunks'][0] for cz in spec['chunks'][1]}
         checked=[];safe=[]
         for pos,yaw in spawns:
             x,y,zz=map(float,pos.split());x=math.floor(x)+.5;zz=math.floor(zz)+.5
+            if map_name=='frosty_fjord':
+                # Place feet above slabs; move one snow-layer spawn onto adjacent solid snow.
+                if (x,zz) in ((1211.5,-2313.5),(1205.5,-2329.5)):y=13
+                if (x,zz)==(1284.5,-2279.5):y=3
+                if (x,zz)==(1237.5,-2314.5):x,zz=1236.5,-2315.5
             states=[block(chunks[(math.floor(x)//16,math.floor(zz)//16)],math.floor(x),math.floor(y+d),math.floor(zz)) for d in [-.15,0,1]]
-            # Fractional original points stand on slabs; snap down/up only when the original support warrants it.
             checked.append(dict(pos=[x,y,zz],blocks=states))
             if states[0] in ('minecraft:air','minecraft:water') or states[1] not in ('minecraft:air','minecraft:cave_air') or states[2] not in ('minecraft:air','minecraft:cave_air'):
                 continue
@@ -94,7 +108,7 @@ def build(source,destination):
         if len(safe)<16:raise ValueError(f'Only {len(safe)} clear supported spawn points')
         result={};stripped=0
         for arena in range(4):
-            dx=(arena%2)*256;dz=(arena//2)*256
+            dx=(arena%2)*spec['spacing'];dz=(arena//2)*spec['spacing']
             for (cx,cz),original in chunks.items():
                 chunk=copy.deepcopy(original);chunk['xPos']=(3,cx+dx//16);chunk['zPos']=(3,cz+dz//16)
                 chunk['block_ticks']=(9,(10,[]));chunk['fluid_ticks']=(9,(10,[]));chunk['structures']=(10,{'starts':(10,{}),'References':(10,{})})
@@ -115,13 +129,14 @@ def build(source,destination):
                 result[(cx+dx//16,cz+dz//16)]=chunk
         level=decode(gzip.decompress(z.read('frostbite-frenzy/level.dat')));data=value(level,'Data')
         for k in ['Player','DragonFight','CustomBossEvents','ScheduledEvents','WanderingTraderId']:data.pop(k,None)
-        data['LevelName']=(8,'frostbite_glacial_keep');data['SpawnX']=(3,165);data['SpawnY']=(3,132);data['SpawnZ']=(3,899)
+        data['LevelName']=(8,'frostbite_'+map_name)
+        for key,coordinate in zip(('SpawnX','SpawnY','SpawnZ'),spec['spawn']):data[key]=(3,coordinate)
         data['DataPacks']=(10,{'Enabled':(9,(8,['vanilla'])),'Disabled':(9,(8,[]))})
         data['GameType']=(3,2);data['Difficulty']=(1,0);data['allowCommands']=(1,0)
         out.mkdir(parents=True);write_regions(out,result);(out/'level.dat').write_bytes(gzip.compress(encode(level)))
         config={'spawns':safe,'items':items,'spawn_audit':checked,'copied_chunks':len(result),'stripped_command_blocks':stripped,
                 'source':'Frostbite Frenzy v1.3.1 [1.21.11] / Quillmark','original_spawn_count':len(spawns)}
-        (out.parent/'frostbite-import.json').write_text(json.dumps(config,ensure_ascii=False,indent=2)+'\n')
+        (out.parent/f'frostbite-import-{map_name}.json').write_text(json.dumps(config,ensure_ascii=False,indent=2)+'\n')
         print(json.dumps({k:v for k,v in config.items() if k not in ['spawns','items','spawn_audit']},ensure_ascii=False))
         print('Safe spawns',len(safe),'item points',len(items))
 if __name__=='__main__':build(*sys.argv[1:])

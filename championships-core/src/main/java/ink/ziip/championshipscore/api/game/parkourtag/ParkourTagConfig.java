@@ -117,23 +117,4 @@ public class ParkourTagConfig extends BaseGameConfig {
     @ConfigOption(path = "right-area.escapee-spawn-points")
     private List<String> rightAreaEscapeeSpawnPoints;
 
-    @Override
-    protected void customizeMigratedConfiguration(@NotNull YamlConfiguration oldConfiguration,
-                                                  @NotNull YamlConfiguration migratedConfiguration) {
-        if (!oldConfiguration.contains("right-prepare-spot") && oldConfiguration.contains("right-pre-spawn-point"))
-            migratedConfiguration.set("right-prepare-spot", oldConfiguration.get("right-pre-spawn-point"));
-        if (!oldConfiguration.contains("left-prepare-spot") && oldConfiguration.contains("left-pre-spawn-point"))
-            migratedConfiguration.set("left-prepare-spot", oldConfiguration.get("left-pre-spawn-point"));
-
-        if (oldConfiguration.getString("world-name", "").isBlank())
-            migratedConfiguration.set("world-name", "parkourtag");
-
-        // v8 introduces two required physical controls which cannot be inferred safely from an old map.
-        // Keep the map unavailable until an administrator captures both buttons and republishes it.
-        if (!oldConfiguration.contains("right-chaser-button")
-                || !oldConfiguration.contains("left-chaser-button")) {
-            migratedConfiguration.set("prepare.published", false);
-            migratedConfiguration.set("prepare.dirty", true);
-        }
-    }
 }
