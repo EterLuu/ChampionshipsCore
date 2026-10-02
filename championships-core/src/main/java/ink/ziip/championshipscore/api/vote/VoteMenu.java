@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -43,8 +44,8 @@ final class VoteMenu implements Listener {
         this.manager = manager;
     }
 
-    void open(@NotNull Player player) {
-        Holder holder = new Holder(player.getUniqueId());
+    void open(@NotNull Player player, boolean previewOnly) {
+        Holder holder = new Holder(player.getUniqueId(), previewOnly);
         GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, INVENTORY_SIZE, "", candidateSlots(11));
         Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.inventory = inventory;
@@ -80,6 +81,10 @@ final class VoteMenu implements Listener {
         }
         GameTypeEnum gameType = holder.gamesBySlot.get(event.getRawSlot());
         if (gameType == null) return;
+        if (holder.previewOnly) {
+            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ADMIN);
+            return;
+        }
         manager.vote(player, gameType);
         if (player.getOpenInventory().getTopInventory().getHolder() == holder) {
             refresh(holder);
@@ -222,11 +227,13 @@ final class VoteMenu implements Listener {
 
     private static final class Holder implements MenuInventory {
         private final java.util.UUID viewer;
+        private final boolean previewOnly;
         private final Map<Integer, GameTypeEnum> gamesBySlot = new HashMap<>();
         private Inventory inventory;
 
-        private Holder(java.util.UUID viewer) {
+        private Holder(java.util.UUID viewer, boolean previewOnly) {
             this.viewer = viewer;
+            this.previewOnly = previewOnly;
         }
 
         @Override

@@ -139,7 +139,7 @@ class LaserBoxPrepareFlowTest {
         config.setRightSpawnPoint(new Location(world, 72.5, 22, -38.5));
         config.setLeftSpawnPoint(new Location(world, 98.5, 22, -12.5));
         config.setSpectatorSpawnPoint(new Location(world, 80.5, 28, -30.5));
-        config.setSupplyPoints(List.of("75 22 -35"));
+        config.setSupplyPoints(List.of("shared-world:75:22:-35:0:0"));
         LaserBoxGeometry geometry = new ReplicatedSpatialLayout<>(LaserBoxGeometry.from(config),
                 config.getCopyGrid(), config.getCopyCount()).geometry(2);
         assertEquals(new Vector(424.5, 22, -38.5), geometry.rightSpawn().toVector());

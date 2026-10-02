@@ -190,6 +190,10 @@ public abstract class BaseGameInstance {
                     else if (!locations.isEmpty())
                         logGame(Level.INFO, "区块", "落地区域预热完成，区块票=" + startChunkTickets.size());
                     coordinatedStartGate = null;
+                    // Every game enters preparation through this common gate. Reset the actual
+                    // participants here so an event cannot carry inventory, experience, effects,
+                    // or hazardous player state from the lobby or a previous game into its start.
+                    resetPlayerHealthFoodEffectLevelInventory();
                     startGamePreparation();
                 }));
     }
@@ -212,6 +216,16 @@ public abstract class BaseGameInstance {
         clearEffectsForAllGamePlayers();
         cleanInventoryForAllGamePlayers();
         changeLevelForAllGamePlayers(0);
+        for (UUID uuid : getParticipantUniqueIds()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null)
+                continue;
+            // The legacy bulk methods above intentionally remain part of the public API. These
+            // direct operations complete the reset for partial team starts and clear the exp bar,
+            // total exp and transient hazards that those methods do not cover.
+            PlayerStateService.resetExperience(player);
+            PlayerStateService.resetVitals(player);
+        }
     }
 
     public void addPlayerPoints(UUID uuid, double points) {
@@ -942,7 +956,18 @@ public abstract class BaseGameInstance {
     /** A dedicated viewpoint is optional; every playable map already defines a spectator spawn. */
     private Location resolveIntroductionSpawnPoint() {
         Location configured = gameConfig.getIntroductionSpawnPoint();
-        return configured != null ? configured : gameConfig.getSpectatorSpawnPoint();
+        if (configured == null) configured = gameConfig.getSpectatorSpawnPoint();
+        if (configured == null || configured.getWorld() != null) return configured;
+
+        // Map configuration can be parsed before its physical world is loaded (LaserBox and
+        // other managers intentionally do this during startup). Bind the raw coordinates at the
+        // last possible point before chunk preloading or teleportation so Bukkit never receives a
+        // Location whose target world is null.
+        World world = Bukkit.getWorld(getWorldName());
+        if (world == null) return null;
+        Location rebound = configured.clone();
+        rebound.setWorld(world);
+        return rebound;
     }
 
     /** True while participant deaths/reconnects must be restored by the shared pre-game lifecycle. */

@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -51,6 +52,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
     private final Map<Integer, Item> supplies = new HashMap<>();
     private final ArrayDeque<String> supplyPool = new ArrayDeque<>();
     private LaserBoxRound round;
+    private ChampionshipTeam matchWinner;
     private BukkitTask tickTask;
     private int timer;
     private int strikeCooldown;
@@ -130,7 +132,12 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         startGameIntroduction(() -> {
             resetPlayerHealthFoodEffectLevelInventory();
             for (Player player : players()) spawnPlayer(player, false);
-            startFinalCountdown(gameTypeEnum.toString(), gameTypeEnum.toString(), "", this::begin);
+            announceGamePreparation(MessageConfig.LASER_BOX_START_PREPARATION,
+                    MessageConfig.LASER_BOX_START_PREPARATION_TITLE,
+                    MessageConfig.LASER_BOX_START_PREPARATION_SUBTITLE);
+            startFinalCountdown(MessageConfig.GAME_LASER_BOX,
+                    MessageConfig.LASER_BOX_GAME_START_TITLE,
+                    MessageConfig.LASER_BOX_GAME_START_SUBTITLE, this::begin);
         });
     }
     private void begin() {
@@ -139,6 +146,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                     getGameConfig().getCopyGrid(), getGameConfig().getCopyCount()).geometry(copyIndex);
         }
         round = new LaserBoxRound();
+        matchWinner = null;
         hideNameTags();
         timer = getGameConfig().getTimer();
         supplyLocations = geometry.supplyPoints().stream()
@@ -332,8 +340,9 @@ public final class LaserBoxArea extends BasePairedGameInstance {
             if (player != null) LaserBoxKillFeedback.play(player, feedbackRound.kills(killer), scheduler, plugin,
                     () -> round == feedbackRound && !notAreaPlayer(player));
         }
-        sendMessageToAllGamePlayers("&e" + (owner == null ? "场地" : plugin.getPlayerManager().getPlayerName(owner))
-                + " &7击中 " + Utils.formatPlayerName(victim));
+        sendMessageToAllGamePlayers(MessageConfig.LASER_BOX_HIT
+                .replace("%attacker%", owner == null ? "场地" : plugin.getPlayerManager().getPlayerName(owner))
+                .replace("%victim%", Utils.formatPlayerName(victim)));
         if (round.right() == 0 || round.left() == 0) endGame();
     }
     void landed(Entity projectile) {
@@ -447,27 +456,16 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         }
     }
     private Component itemHint(String type) {
-        String usage = type.equals("shield") ? "立即触发" : "右键使用";
-        String function = switch (type) {
-            case "grenade" -> "生成烟幕，遮挡激光";
-            case "strike" -> "轰击最近两名敌人的当前位置";
-            case "reveal" -> "短暂显示敌方位置";
-            default -> "阻挡 1 次激光";
+        String message = switch (type) {
+            case "grenade" -> configured(MessageConfig.LASER_BOX_ITEM_GRENADE, "获得 烟幕弹  ·  右键使用  ·  生成烟幕，遮挡激光");
+            case "strike" -> configured(MessageConfig.LASER_BOX_ITEM_STRIKE, "获得 定点爆破  ·  右键使用  ·  轰击最近两名敌人的当前位置");
+            case "reveal" -> configured(MessageConfig.LASER_BOX_ITEM_REVEAL, "获得 追踪脉冲  ·  右键使用  ·  短暂显示敌方位置");
+            default -> configured(MessageConfig.LASER_BOX_ITEM_SHIELD, "护盾 · 阻挡 1 次激光");
         };
-        String message = "shield".equals(type)
-                ? "护盾 · " + function
-                : "获得 " + itemName(type) + "  ·  " + usage + "  ·  " + function;
-        return Component.text(message,
-                NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false);
+        return Utils.toComponent(message).colorIfAbsent(NamedTextColor.YELLOW)
+                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
-    private String itemName(String type) {
-        return switch (type) {
-            case "grenade" -> "烟幕弹";
-            case "strike" -> "定点爆破";
-            case "reveal" -> "追踪脉冲";
-            default -> "护盾充能";
-        };
-    }
+    private static String configured(String value, String fallback) { return value == null ? fallback : value; }
     private void tick() {
         if (!live()) return;
         round.advance();
@@ -476,7 +474,9 @@ public final class LaserBoxArea extends BasePairedGameInstance {
             UUID id = player.getUniqueId();
             if (round.respawn(id)) spawnPlayer(player,true);
             else if (round.respawning(id) && round.tick()%20 == 0)
-                player.sendTitle("§c被击中", "§e"+(round.respawnRemaining(id)+19)/20+" 秒后重生",0,25,0);
+                player.sendTitle(Utils.translateColorCodes(MessageConfig.LASER_BOX_RESPAWN_TITLE),
+                        Utils.translateColorCodes(MessageConfig.LASER_BOX_RESPAWN_SUBTITLE
+                                .replace("%seconds%", Integer.toString((round.respawnRemaining(id)+19)/20))),0,25,0);
             if (protection.containsKey(id) && protection.get(id) <= round.tick()) protection.remove(id);
             syncChestplate(player);
             syncMovementSpeed(player);
@@ -521,9 +521,12 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         }
     }
     private void updateHud() {
-        String title = rightChampionshipTeam.getColoredName()+" &f"+getRightProgress()
-                +" &7 : &f"+getLeftProgress()+" "+leftChampionshipTeam.getColoredName()
-                +" &8| &e"+String.format("%02d:%02d",timer/60,timer%60);
+        String title = MessageConfig.LASER_BOX_BOSS_BAR
+                .replace("%right_team%", rightChampionshipTeam.getColoredName())
+                .replace("%left_team%", leftChampionshipTeam.getColoredName())
+                .replace("%right%", Integer.toString(getRightProgress()))
+                .replace("%left%", Integer.toString(getLeftProgress()))
+                .replace("%time%", String.format(Locale.ROOT, "%02d:%02d", timer / 60, timer % 60));
         updateGameTimerBossBar(title,timer,getGameConfig().getTimer());
     }
     @Override public void endGame() {
@@ -542,19 +545,28 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         cleanup();
         if (isSettlementAllowed()) {
             ChampionshipTeam winner=round.right()>round.left()?rightChampionshipTeam:round.left()>round.right()?leftChampionshipTeam:null;
+            matchWinner = winner;
             if (winner != null) addPlayerPointsToAllTeamMembers(winner,getGameConfig().getWinPoints());
             else { addPlayerPointsToAllTeamMembers(rightChampionshipTeam,getGameConfig().getDrawPoints());
                 addPlayerPointsToAllTeamMembers(leftChampionshipTeam,getGameConfig().getDrawPoints()); }
             addPlayerPointsToDatabase();
-            sendMessageToAllGamePlayers(winner==null?"&eLaserBox 平局":winner.getColoredName()+" &e赢得 LaserBox！");
+            sendMessageToAllGamePlayers(winner==null ? MessageConfig.LASER_BOX_DRAW
+                    : MessageConfig.LASER_BOX_WINNER.replace("%team%", winner.getColoredName()));
         }
-        announceGameEnd("激光方盒结束",getRightProgress()+" : "+getLeftProgress());
+        announceGameEnd(MessageConfig.LASER_BOX_END_TITLE,
+                MessageConfig.LASER_BOX_END_SUBTITLE.replace("%right%", Integer.toString(getRightProgress()))
+                        .replace("%left%", Integer.toString(getLeftProgress())));
         setGameStageEnum(GameStageEnum.END);
         beginPostGameSettlement();
         resetPlayerHealthFoodEffectLevelInventory();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         publishGameEndEvent(new TeamGameEndEvent(rightChampionshipTeam,leftChampionshipTeam,this));
         finishPostGameAfterEndEvent();
+    }
+
+    /** Winner of the most recently settled match; {@code null} means a draw or no result. */
+    public ChampionshipTeam getMatchWinner() {
+        return matchWinner;
     }
     private void cleanup() {
         if (tickTask != null) tickTask.cancel(); tickTask=null;

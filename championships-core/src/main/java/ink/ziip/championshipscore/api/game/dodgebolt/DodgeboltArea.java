@@ -107,15 +107,13 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             return false;
         List<Player> rightOnline = rightTeam.getOnlinePlayers();
         List<Player> leftOnline = leftTeam.getOnlinePlayers();
-        if (forcePartialRoster) {
-            if (rightOnline.isEmpty() || leftOnline.isEmpty()) return false;
-        } else if (rightOnline.size() != rightTeam.getMembers().size()
-                || leftOnline.size() != leftTeam.getMembers().size()) {
-            return false;
-        }
-        partialRoster = forcePartialRoster;
+        // A persisted finalist roster is authoritative. Disconnected members pause/resume the
+        // match through the normal join/quit handlers; they must never make the start request fail.
+        // Keep the explicit partial-roster mode when both sides have online participants, but fall
+        // back to the complete persisted roster if one side is entirely offline.
+        partialRoster = forcePartialRoster && !rightOnline.isEmpty() && !leftOnline.isEmpty();
         forcedParticipants.clear();
-        if (forcePartialRoster) {
+        if (partialRoster) {
             rightOnline.forEach(player -> forcedParticipants.add(player.getUniqueId()));
             leftOnline.forEach(player -> forcedParticipants.add(player.getUniqueId()));
         }

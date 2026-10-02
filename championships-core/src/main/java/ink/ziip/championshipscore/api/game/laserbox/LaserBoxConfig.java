@@ -76,19 +76,12 @@ public final class LaserBoxConfig extends BaseGameConfig {
 
     static Vector parseSupplyPoint(String raw, String worldName) {
         if (raw == null || raw.isBlank()) throw new IllegalArgumentException("补给点坐标不能为空");
-        String value = raw.trim();
-        String[] parts;
-        if (value.contains(":")) {
-            parts = value.split(":", -1);
-            if (parts.length != 6) throw new IllegalArgumentException("补给点格式应为 x y z 或 世界:x:y:z:yaw:pitch");
-            if (!parts[0].equals(worldName)) throw new IllegalArgumentException("补给点世界必须为 " + worldName);
-            finite(parts[4]);
-            finite(parts[5]);
-            return new Vector(finite(parts[1]), finite(parts[2]), finite(parts[3]));
-        }
-        parts = value.split("\\s+");
-        if (parts.length != 3) throw new IllegalArgumentException("补给点格式应为 x y z 或 世界:x:y:z:yaw:pitch");
-        return new Vector(finite(parts[0]), finite(parts[1]), finite(parts[2]));
+        String[] parts = raw.trim().split(":", -1);
+        if (parts.length != 6 || worldName == null || !worldName.equals(parts[0]))
+            throw new IllegalArgumentException("补给点格式必须为 当前世界:x:y:z:yaw:pitch");
+        finite(parts[4]);
+        finite(parts[5]);
+        return new Vector(finite(parts[1]), finite(parts[2]), finite(parts[3]));
     }
 
     private static double finite(String value) {

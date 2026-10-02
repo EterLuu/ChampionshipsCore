@@ -53,6 +53,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
     @Getter
     private final int copyIndex;
     private ParkourTagMatch match;
+    private ChampionshipTeam matchWinner;
     // Disabled wind charge: keep the once-per-round state for restoring the item later.
     // private final Set<ChampionshipTeam> windChargeUsedTeams = ConcurrentHashMap.newKeySet();
     /** Chasers currently revealed by an Ender Eye; each entry owns its expiry task. */
@@ -101,6 +102,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
             return false;
         }
         match = new ParkourTagMatch(copyIndex, right, left, geometry);
+        matchWinner = null;
         return super.tryStartGame(right, left);
     }
 
@@ -163,6 +165,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         clearParkourTagGlows();
         cleanDroppedItems();
         match = null;
+        matchWinner = null;
         // windChargeUsedTeams.clear();
         startGameProgressTask = null;
     }
@@ -401,9 +404,13 @@ public class ParkourTagArea extends BasePairedGameInstance {
         }
 
         if (match.getRightTeamSurviveTime() > match.getLeftTeamSurviveTime()) {
+            matchWinner = right;
             addPlayerPointsToAllTeamMembers(right, 30);
         } else if (match.getRightTeamSurviveTime() < match.getLeftTeamSurviveTime()) {
+            matchWinner = left;
             addPlayerPointsToAllTeamMembers(left, 30);
+        } else {
+            matchWinner = null;
         }
 
         String message = MessageConfig.PARKOUR_TAG_SHOW_POINTS
@@ -414,6 +421,12 @@ public class ParkourTagArea extends BasePairedGameInstance {
         right.sendMessageToAll(message);
         left.sendMessageToAll(message);
         sendMessageToAllSpectators(message);
+    }
+
+    /** Winner of the most recently settled match; {@code null} means a draw or no result. */
+    @Nullable
+    public ChampionshipTeam getMatchWinner() {
+        return matchWinner;
     }
 
     private void addPlayerPointsToTeamEscapees(ParkourTagMatch match, ChampionshipTeam team, int points) {

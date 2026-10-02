@@ -44,8 +44,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.io.File;
 import java.util.logging.Level;
@@ -77,6 +79,10 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
     /** Live per-team build state, keyed by team. Populated at progress start, cleared on reset. */
     private final Map<ChampionshipTeam, TeamBuildState> teamStates = new HashMap<>();
+    /** One pre-shuffled normal-order sequence shared by every team for the current round. */
+    private List<BuildMartBlueprint> normalBlueprintSequence = List.of();
+    /** Per-team cursors into the shared normal-order sequence. */
+    private final Map<ChampionshipTeam, Integer> normalSequenceCursors = new HashMap<>();
     /** Seat index (0-based grid position) assigned to each participating team for the round. */
     private final Map<ChampionshipTeam, Integer> seatByTeam = new HashMap<>();
     /** Parsed base geometry cached by seat, so the move handler doesn't re-derive it per step. */
@@ -153,6 +159,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         clearJumpPads();
         restoreMapRegion();
         teamStates.clear();
+        normalBlueprintSequence = List.of();
+        normalSequenceCursors.clear();
         seatByTeam.clear();
         baseCache.clear();
         currentGolden = null;
@@ -256,9 +264,11 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         // Send every team to its own base; incomplete geometry falls back to the hub portal landing point.
         teleportTeamsToBases();
 
-        // Auto-assign a random normal blueprint to each team's three plots and paste its reference build.
-        assignInitialNormalBlueprints();
+        // Surface the golden blueprint first so normal assignment can exclude it from every team's plots.
         rotateGoldenBlueprint(false);
+        prepareNormalBlueprintSequence();
+        // Auto-assign the same pre-shuffled sequence to each team's three plots and paste its reference build.
+        assignInitialNormalBlueprints();
 
         // Ten seconds so every team can look around its base and the reference builds while frozen.
         startFinalCountdown(10, MessageConfig.BUILD_MART_START_PREPARATION_TITLE,
@@ -571,20 +581,33 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         return a.getBlockX() == worldX && a.getBlockY() == worldY && a.getBlockZ() == worldZ;
     }
 
+    /** Builds the round's shared, pre-shuffled normal blueprint sequence. */
+    private void prepareNormalBlueprintSequence() {
+        BuildMartOrderPool pool = plugin.getGameManager().getBuildMartManager().getOrderPool();
+        if (pool == null) {
+            normalBlueprintSequence = List.of();
+        } else {
+            Set<String> excluded = currentGolden == null
+                    ? Set.of() : Set.of(currentGolden.getId());
+            normalBlueprintSequence = List.copyOf(pool.drawNormal(pool.getNormal().size(), excluded));
+        }
+        normalSequenceCursors.clear();
+        for (ChampionshipTeam team : teamStates.keySet()) {
+            normalSequenceCursors.put(team, 0);
+        }
+    }
+
     /**
-     * Auto-assigns a distinct random normal blueprint to each of every team's three plots and pastes its
-     * reference build. Called once at round start so every blueprint area shows a build from the off.
+     * Assigns the same pre-shuffled sequence to each team's three plots and pastes its reference build.
+     * Called once at round start so every team sees the same initial orders.
      */
     private void assignInitialNormalBlueprints() {
-        BuildMartOrderPool pool = plugin.getGameManager().getBuildMartManager().getOrderPool();
-        if (pool == null) return;
         for (TeamBuildState state : teamStates.values()) {
             ChampionshipTeam team = state.getTeam();
-            List<BuildMartBlueprint> drawn = pool.drawNormal(state.getNormalSlots().size());
-            for (int i = 0; i < drawn.size() && i < state.getNormalSlots().size(); i++) {
-                BuildSlot slot = state.getNormalSlots().get(i);
+            for (BuildSlot slot : state.getNormalSlots()) {
                 if (slot.getReferenceAnchor() == null) continue;
-                BuildMartBlueprint blueprint = drawn.get(i);
+                BuildMartBlueprint blueprint = nextNormalBlueprint(state, slot);
+                if (blueprint == null) continue;
                 slot.setBlueprint(blueprint);
                 ReferenceBuilder.paste(blueprint, slot.getReferenceAnchor());
                 refreshMaterialDisplay(team, slot);
@@ -596,9 +619,9 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     }
 
     /**
-     * Schedules a fresh random normal blueprint onto {@code slot} {@link #AUTO_REFRESH_SECONDS} after a
-     * completion, pasting its reference. Bails silently if the round ended, the slot was reassigned, or the
-     * slot has since been filled.
+     * Schedules the next shared-sequence normal blueprint onto {@code slot} {@link #AUTO_REFRESH_SECONDS}
+     * after a completion, pasting its reference. Bails silently if the round ended, the slot was reassigned,
+     * or the slot has since been filled.
      */
     private void scheduleAutoRefresh(ChampionshipTeam team, BuildSlot slot) {
         final int scheduledRound = roundId;
@@ -608,7 +631,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             TeamBuildState state = teamStates.get(team);
             if (state == null || !state.getNormalSlots().contains(slot)) return;
             if (!slot.isEmpty()) return;
-            BuildMartBlueprint next = drawRandomNormal();
+            BuildMartBlueprint next = nextNormalBlueprint(state, slot);
             if (next == null) return;
             slot.setBlueprint(next);
             if (slot.getReferenceAnchor() != null) ReferenceBuilder.paste(next, slot.getReferenceAnchor());
@@ -627,12 +650,44 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         materialDisplays.update(slot, button);
     }
 
-    /** Draws a single random normal blueprint from the shared pool, or {@code null} when empty. */
-    private BuildMartBlueprint drawRandomNormal() {
-        BuildMartOrderPool pool = plugin.getGameManager().getBuildMartManager().getOrderPool();
-        if (pool == null) return null;
-        List<BuildMartBlueprint> drawn = pool.drawNormal(1);
-        return drawn.isEmpty() ? null : drawn.get(0);
+    /**
+     * Takes the next blueprint for a team's slot from the shared sequence. Each team advances through the same
+     * sequence independently, so completion speed can differ without changing the order of its assignments.
+     */
+    private BuildMartBlueprint nextNormalBlueprint(TeamBuildState state, BuildSlot target) {
+        if (normalBlueprintSequence.isEmpty()) return null;
+        int cursor = normalSequenceCursors.getOrDefault(state.getTeam(), 0);
+
+        Set<String> excluded = new HashSet<>();
+        if (currentGolden != null) excluded.add(currentGolden.getId());
+        for (BuildSlot slot : state.getNormalSlots()) {
+            if (slot == target) continue;
+            BuildMartBlueprint blueprint = slot.getBlueprint();
+            if (blueprint != null) excluded.add(blueprint.getId());
+        }
+
+        int size = normalBlueprintSequence.size();
+        cursor = Math.floorMod(cursor, size);
+        for (int offset = 0; offset < size; offset++) {
+            int index = (cursor + offset) % size;
+            BuildMartBlueprint candidate = normalBlueprintSequence.get(index);
+            if (excluded.contains(candidate.getId())) continue;
+            normalSequenceCursors.put(state.getTeam(), (index + 1) % size);
+            return candidate;
+        }
+        return null;
+    }
+
+    /** IDs currently assigned to normal plots, so a new golden order does not duplicate an active normal order. */
+    private Collection<String> activeNormalBlueprintIds() {
+        Set<String> excluded = new HashSet<>();
+        for (TeamBuildState state : teamStates.values()) {
+            for (BuildSlot slot : state.getNormalSlots()) {
+                BuildMartBlueprint blueprint = slot.getBlueprint();
+                if (blueprint != null) excluded.add(blueprint.getId());
+            }
+        }
+        return excluded;
     }
 
     /**
@@ -739,7 +794,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         goldenGeneration++;
         expireCurrentGolden();
 
-        BuildMartBlueprint next = plugin.getGameManager().getBuildMartManager().getOrderPool().randomGolden();
+        BuildMartBlueprint next = plugin.getGameManager().getBuildMartManager().getOrderPool()
+                .randomGolden(activeNormalBlueprintIds());
         if (next == null) return;
         currentGolden = next;
 

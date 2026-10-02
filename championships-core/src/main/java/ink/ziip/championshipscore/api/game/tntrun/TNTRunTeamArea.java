@@ -101,11 +101,6 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         File schematic = new File(new File(new File(plugin.getDataFolder(), "tntrun/schematics"),
                 getGameConfig().getConfigName()), "arena.schem");
         if (world == null || !schematic.isFile() || getGameConfig().getCopies() < 1) {
-            if (canUseExclusiveLegacyReload()) {
-                logGame(Level.WARNING, "重置", "旧版单地图缺少完整盖章元数据，回退为独占世界模板重载");
-                loadPublishedMapOrDraft(World.Environment.NORMAL);
-                return;
-            }
             logGame(Level.SEVERE, "重置", "共享世界地图无法局部恢复：世界、arena.schem 或副本数量无效");
             setGameStageEnum(GameStageEnum.END);
             return;
@@ -118,18 +113,6 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
             logGame(Level.SEVERE, "重置", "局部恢复失败，地图保持禁用 | " + exception.getMessage());
             setGameStageEnum(GameStageEnum.END);
         }
-    }
-
-    private boolean canUseExclusiveLegacyReload() {
-        File template = new File(new File(plugin.getDataFolder(), "maps"), getWorldName());
-        ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager<?> manager =
-                plugin.getGameManager().getTntRunManager();
-        long mapsInWorld = manager.getRuntimeInstances().stream()
-                .filter(instance -> getWorldName().equals(instance.getWorldName()))
-                .map(instance -> instance.getGameConfig())
-                .distinct()
-                .count();
-        return mapsInWorld <= 1 && getGameConfig().isPrepareReady() && template.isDirectory();
     }
 
     @Override
@@ -649,13 +632,12 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     /**
      * In-bounds means inside some copy's own box. With the prepare/template model each stamped copy is a
      * self-contained sub-arena, so the play area is the set of per-copy boxes (not one box spanning the
-     * void gaps between them). Maps without per-copy boxes use their configured aggregate area boundary.
+     * void gaps between them).
      */
     @Override
     public boolean notInArea(Location location) {
         List<BoundingBox> boxes = getGameConfig().getCopyBoxes();
-        if (boxes.isEmpty()) return super.notInArea(location);
-        if (location == null || location.getWorld() == null
+        if (boxes.isEmpty() || location == null || location.getWorld() == null
                 || !location.getWorld().getName().equals(getWorldName())) {
             return true;
         }

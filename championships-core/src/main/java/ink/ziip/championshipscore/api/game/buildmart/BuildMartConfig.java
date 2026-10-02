@@ -3,9 +3,7 @@ package ink.ziip.championshipscore.api.game.buildmart;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
-import ink.ziip.championshipscore.api.game.arena.ArenaLayoutPlanner;
 import ink.ziip.championshipscore.api.game.arena.SourceAnchoredRowArenaGrid;
-import ink.ziip.championshipscore.api.game.arena.SourceAnchoredRingArenaGrid;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.util.Utils;
@@ -47,6 +45,16 @@ public class BuildMartConfig extends BaseGameConfig {
         return 17;
     }
 
+    @Override
+    public Vector getAreaPos1() {
+        return null;
+    }
+
+    @Override
+    public Vector getAreaPos2() {
+        return null;
+    }
+
     @ConfigOption(path = "name")
     private String areaName;
 
@@ -62,18 +70,12 @@ public class BuildMartConfig extends BaseGameConfig {
     @ConfigOption(path = "base-count")
     private int baseCount = 8;
 
-    @ConfigOption(path = "copy-layout.center", nullable = true)
-    private Vector copyLayoutCenter;
-
-    /** New maps use ROW. RING remains readable only so an old physical map is never moved implicitly. */
+    /** Build Mart team bases are placed in the configured row layout. */
     @ConfigOption(path = "copy-layout.type")
     private String copyLayoutType = "ROW";
 
     @ConfigOption(path = "copy-layout.source-origin", nullable = true)
     private Vector baseSourceOrigin;
-
-    @ConfigOption(path = "copy-layout.spacing", nullable = true)
-    private Integer copyLayoutSpacing;
 
     @ConfigOption(path = "copy-layout.generated-origin", nullable = true)
     private Vector copyLayoutGeneratedOrigin;
@@ -85,36 +87,23 @@ public class BuildMartConfig extends BaseGameConfig {
     private Vector baseSchematicSize;
 
     public @NotNull ArenaGrid getBaseGrid() {
-        if (isRowLayout() && baseSourceOrigin != null && copyLayoutGeneratedOrigin != null
-                && copyLayoutStep != null) {
-            return new SourceAnchoredRowArenaGrid(baseSourceOrigin, copyLayoutGeneratedOrigin, copyLayoutStep);
-        }
-        Vector center = copyLayoutCenter == null ? hubGridCenter() : copyLayoutCenter.clone();
-        Vector source = baseSourceOrigin == null ? center.clone() : baseSourceOrigin.clone();
-        int spacing = copyLayoutSpacing == null ? BuildMartLayout.SPACING : copyLayoutSpacing;
-        return new SourceAnchoredRingArenaGrid(source, center, spacing);
+        if (!isRowLayout()) throw new IllegalStateException("copy-layout.type must be ROW");
+        Vector source = baseSourceOrigin == null ? new Vector(0, 100, 0) : baseSourceOrigin.clone();
+        Vector generated = copyLayoutGeneratedOrigin == null ? source : copyLayoutGeneratedOrigin.clone();
+        Vector step = copyLayoutStep == null ? new Vector(1, 0, 0) : copyLayoutStep.clone();
+        return new SourceAnchoredRowArenaGrid(source, generated, step);
     }
 
     /**
-     * Keeps copy 0 at the source schematic's original minimum corner. ROW maps generate their playable
-     * copies east of all configured infrastructure; legacy RING maps retain their physical coordinates.
+     * Keeps copy 0 at the source schematic's original minimum corner and generates playable copies east of
+     * all configured infrastructure in the row layout.
      */
     public @NotNull ArenaGrid prepareBaseGrid(@NotNull Vector baseOrigin, @NotNull Vector baseSize) {
-        if (isRowLayout()) {
-            baseSourceOrigin = baseOrigin.clone();
-            baseSchematicSize = baseSize.clone();
-            copyLayoutGeneratedOrigin = BuildMartRowLayoutPlanner.generatedOrigin(baseOrigin,
-                    configuredInfrastructureMaxX(baseOrigin, baseSize));
-            copyLayoutStep = BuildMartRowLayoutPlanner.step(baseSize);
-            copyLayoutCenter = null;
-            copyLayoutSpacing = null;
-            return getBaseGrid();
-        }
-        Vector hubCenter = hubGridCenter();
-        copyLayoutCenter = new Vector(hubCenter.getX(), baseOrigin.getY(), hubCenter.getZ());
         baseSourceOrigin = baseOrigin.clone();
-        copyLayoutSpacing = ArenaLayoutPlanner.ringSpacing(hubFootprint(), baseSize);
         baseSchematicSize = baseSize.clone();
+        copyLayoutGeneratedOrigin = BuildMartRowLayoutPlanner.generatedOrigin(baseOrigin,
+                configuredInfrastructureMaxX(baseOrigin, baseSize));
+        copyLayoutStep = BuildMartRowLayoutPlanner.step(baseSize);
         return getBaseGrid();
     }
 
@@ -125,14 +114,12 @@ public class BuildMartConfig extends BaseGameConfig {
     /** New maps opt into row placement before their first schematic is captured. */
     public void useRowLayoutForDraft() {
         copyLayoutType = "ROW";
-        copyLayoutCenter = null;
-        copyLayoutSpacing = null;
     }
 
     /** Highest known infrastructure coordinate, used to keep a freshly generated row clear of the hub. */
     public double configuredInfrastructureMaxX(@NotNull Vector baseOrigin, @NotNull Vector baseSize) {
         double max = baseOrigin.getX() + baseSize.getBlockX();
-        max = maxX(max, areaPos1, areaPos2, hubPos1, hubPos2);
+        max = maxX(max, hubPos1, hubPos2);
         max = maxX(max, spectatorSpawnPoint, hubPortalPoint, goldenDisplayPoint, getIntroductionSpawnPoint());
         for (JumpPadZone zone : jumpPads) max = maxX(max, zone.pos1(), zone.pos2());
         for (BuildMartMaterialZone zone : getMaterialZones()) max = Math.max(max, zone.maxX());
@@ -158,28 +145,6 @@ public class BuildMartConfig extends BaseGameConfig {
         prepareWorldBuilt = false;
         saveOptions();
     }
-
-    private @NotNull Vector hubGridCenter() {
-        if (hubPos1 == null || hubPos2 == null) return BuildMartLayout.HUB.clone();
-        Vector min = Vector.getMinimum(hubPos1, hubPos2);
-        Vector max = Vector.getMaximum(hubPos1, hubPos2);
-        return new Vector((min.getX() + max.getX() + 1.0) / 2.0, min.getY(),
-                (min.getZ() + max.getZ() + 1.0) / 2.0);
-    }
-
-    private @NotNull Vector hubFootprint() {
-        if (hubPos1 == null || hubPos2 == null)
-            throw new IllegalStateException("资源大厅边界尚未设置");
-        Vector min = Vector.getMinimum(hubPos1, hubPos2);
-        Vector max = Vector.getMaximum(hubPos1, hubPos2);
-        return max.subtract(min).add(new Vector(1, 1, 1));
-    }
-
-    @ConfigOption(path = "area-pos1", nullable = true)
-    private Vector areaPos1;
-
-    @ConfigOption(path = "area-pos2", nullable = true)
-    private Vector areaPos2;
 
     @ConfigOption(path = "spectator-spawn-point", nullable = true)
     private Location spectatorSpawnPoint;
@@ -366,8 +331,6 @@ public class BuildMartConfig extends BaseGameConfig {
 
     public void invalidateMovedBaseGeometry() {
         if (configuration != null) configuration.set("base", null);
-        areaPos1 = null;
-        areaPos2 = null;
     }
 
     /** Physical grid index for a playable team seat; index 0 is reserved for the editable template. */
@@ -567,9 +530,7 @@ public class BuildMartConfig extends BaseGameConfig {
     @Override
     protected void loadCustomFileOptions() {
         List<JumpPadZone> zones = new ArrayList<>();
-        // Read old selections once for compatibility; every save writes only the renamed key.
-        String path = configuration.contains("jump-pads") ? "jump-pads" : "wind-zones";
-        for (Map<?, ?> row : configuration.getMapList(path)) {
+        for (Map<?, ?> row : configuration.getMapList("jump-pads")) {
             Vector pos1 = vector(row.get("pos1"));
             Vector pos2 = vector(row.get("pos2"));
             if (pos1 != null && pos2 != null) zones.add(new JumpPadZone(pos1, pos2));
@@ -598,7 +559,6 @@ public class BuildMartConfig extends BaseGameConfig {
             rows.add(row);
         }
         configuration.set("jump-pads", rows);
-        configuration.set("wind-zones", null);
 
         configuration.set("material-islands", materialIslandRows(materialIslandCenters));
     }

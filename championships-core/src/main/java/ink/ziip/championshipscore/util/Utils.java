@@ -355,8 +355,10 @@ public class Utils {
     }
 
     public static void sendTitleToAllPlayers(String title, String subtitle, int stayTicks) {
-        Component titleComponent = LegacyComponentSerializer.legacySection().deserialize(translateColorCodes(title));
-        Component subtitleComponent = LegacyComponentSerializer.legacySection().deserialize(translateColorCodes(subtitle));
+        // Use the shared serializer so &#RRGGBB values retain their full six-digit colour
+        // when the title is emitted outside a game instance (event round settlement, voting, etc.).
+        Component titleComponent = LegacyText.component(title);
+        Component subtitleComponent = LegacyText.component(subtitle);
         Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofMillis(stayTicks * 50L), Duration.ZERO);
         Title titleMessage = Title.title(titleComponent, subtitleComponent, times);
         for (Player player : Bukkit.getOnlinePlayers()) {

@@ -24,17 +24,10 @@ base-count: 8
 copy-layout:
   # Build Mart places the playable team bases in a chunk-aligned row; prepare fills the coordinates below.
   type: ROW
-  # Legacy RING fields remain nullable so an old configuration is never relocated implicitly.
-  center:
   source-origin:
-  spacing:
   generated-origin:
   step:
   base-size:
-# Legacy fields retained for old map files. Build Mart uses the resource-hub selection plus the stamped
-# base template cuboids as its playable boundary; no single whole-map selection is required.
-area-pos1:
-area-pos2:
 # Optional explicit spectator viewpoint; defaults to the hub portal point / world spawn when unset.
 spectator-spawn-point:
 # Hub bounding box. Inside it, flight is disabled and block placement is blocked.
@@ -90,8 +83,8 @@ rules:
   - - "&#696969==========&r &#fff566小提示 &#696969==========&r"
     - "&#ededed正式开赛后每 10 秒补充 1 个飞行时间为 3 的烟花火箭"
     - "&#ededed建材区被采集后，连续 20 秒无人再次采集就会补货"
-    - "&#fff566普通蓝图 1-5 星随机刷新，交满才清空刷新"
-    - "&#ededed黄金蓝图从 3 星建筑中抽取，完成按 7 星计分"
+    - "&#fff566普通蓝图从 1-5 星建筑中随机刷新，交满才清空刷新"
+    - "&#ededed黄金蓝图从 2 星建筑中抽取，完成按 7 星计分"
     - "&#ededed黄金提交需连点两次，失败直接清空重头来"
     - "&#ededed黄金蓝图每 3 分钟刷新，只认当前这一张"
     - "&#ededed材料不返还，采集前先规划好用量"

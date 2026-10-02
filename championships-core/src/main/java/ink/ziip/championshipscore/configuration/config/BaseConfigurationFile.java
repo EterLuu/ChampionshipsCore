@@ -98,7 +98,7 @@ public abstract class BaseConfigurationFile {
      * Save default configuration file to path folder, if not exists, and return the path
      *
      * @param path the file path
-     * @return the path of the old or new configuration file
+     * @return the path of the current configuration file
      */
     public Path saveDefaultConfigurationFile(@NotNull Path path) {
         Path ret = path.resolve(getFileName());

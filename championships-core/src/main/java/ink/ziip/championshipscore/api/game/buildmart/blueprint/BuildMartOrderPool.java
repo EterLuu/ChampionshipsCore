@@ -7,20 +7,24 @@ import lombok.Getter;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * The loaded set of blueprints split into the normal pool (1–5 stars, drawn for the per-plot auto-assignment)
- * and the golden candidate pool (the 3-star subset, surfaced one at a time on the golden timer). A blueprint
- * selected for the golden plot is still worth 7 stars; its configured rating remains 3 when it appears as a
- * normal order. Blueprints live in {@code plugin/buildmart/blueprints/*.yml}. Ratings outside 1–5 are skipped.
+ * The loaded set of blueprints split into the normal pool (1–5 star orders, drawn for the per-plot auto-assignment)
+ * and the golden candidate pool (the 2-star subset, surfaced one at a time on the golden timer).
+ * Two-star blueprints may occur in both candidate pools, but every pool contains at most one entry per blueprint ID;
+ * callers can exclude the currently displayed golden ID when drawing normal orders. A blueprint selected for the
+ * golden plot is still worth 7 stars. Blueprints live in {@code plugin/buildmart/blueprints/*.yml}. Ratings outside
+ * 1–5 are skipped.
  */
 public class BuildMartOrderPool {
     /** Configured difficulty used as the source pool for golden orders. */
-    public static final int GOLDEN_SOURCE_STARS = 3;
+    public static final int GOLDEN_SOURCE_STARS = 2;
     /** Score value of a completed golden order, independent of its configured source difficulty. */
     public static final int GOLDEN_SCORE_STARS = 7;
     public static final int MAX_NORMAL_STARS = 5;
@@ -29,7 +33,7 @@ public class BuildMartOrderPool {
     private final List<BuildMartBlueprint> normal = new ArrayList<>();
     @Getter
     private final List<BuildMartBlueprint> golden = new ArrayList<>();
-    /** Every structurally loadable file, including ratings outside the playable 1-5 pool. */
+    /** Every unique structurally loadable file, including ratings outside the playable 1-5 pool. */
     @Getter
     private final List<BuildMartBlueprint> all = new ArrayList<>();
     private final Map<String, BuildMartBlueprint> byId = new HashMap<>();
@@ -42,13 +46,14 @@ public class BuildMartOrderPool {
             for (File file : files) {
                 BuildMartBlueprint blueprint = BuildMartBlueprint.load(plugin, file);
                 if (blueprint == null) continue;
-                pool.byId.put(blueprint.getId(), blueprint);
-                pool.all.add(blueprint);
+                if (pool.byId.containsKey(blueprint.getId())) {
+                    plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "加载", "蓝图",
+                            "蓝图=" + blueprint.getId() + " 重复，已跳过文件=" + file.getName()));
+                    continue;
+                }
                 int stars = blueprint.getStars();
-                if (isNormalRating(stars)) {
-                    pool.normal.add(blueprint);
-                    if (isGoldenSourceRating(stars)) pool.golden.add(blueprint);
-                } else {
+                pool.add(blueprint);
+                if (!isNormalRating(stars)) {
                     plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "加载", "蓝图",
                             "蓝图=" + blueprint.getId() + " 星级=" + stars + " 不在普通 1-5 范围，已跳过"));
                 }
@@ -78,12 +83,16 @@ public class BuildMartOrderPool {
     }
 
     private void add(BuildMartBlueprint blueprint) {
-        all.add(blueprint);
-        byId.put(blueprint.getId(), blueprint);
-        if (isNormalRating(blueprint.getStars())) {
-            normal.add(blueprint);
-            if (isGoldenSourceRating(blueprint.getStars())) golden.add(blueprint);
+        BuildMartBlueprint previous = byId.put(blueprint.getId(), blueprint);
+        if (previous != null) {
+            all.removeIf(existing -> existing.getId().equals(blueprint.getId()));
+            normal.removeIf(existing -> existing.getId().equals(blueprint.getId()));
+            golden.removeIf(existing -> existing.getId().equals(blueprint.getId()));
         }
+        all.add(blueprint);
+        if (!isNormalRating(blueprint.getStars())) return;
+        normal.add(blueprint);
+        if (isGoldenSourceRating(blueprint.getStars())) golden.add(blueprint);
     }
 
     /**
@@ -92,7 +101,15 @@ public class BuildMartOrderPool {
      * the pool is smaller than that.
      */
     public List<BuildMartBlueprint> drawNormal(int count) {
-        List<BuildMartBlueprint> remaining = new ArrayList<>(normal);
+        return drawNormal(count, Set.of());
+    }
+
+    /** Draws distinct normal blueprints while excluding the supplied active blueprint IDs. */
+    public List<BuildMartBlueprint> drawNormal(int count, Collection<String> excludedIds) {
+        Collection<String> excluded = excludedIds == null ? Set.of() : excludedIds;
+        List<BuildMartBlueprint> remaining = normal.stream()
+                .filter(blueprint -> !excluded.contains(blueprint.getId()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         List<BuildMartBlueprint> picked = new ArrayList<>();
         ThreadLocalRandom random = ThreadLocalRandom.current();
         while (!remaining.isEmpty() && picked.size() < count) {
@@ -118,8 +135,16 @@ public class BuildMartOrderPool {
 
     /** A random golden blueprint, or {@code null} when none are configured. */
     public BuildMartBlueprint randomGolden() {
-        if (golden.isEmpty()) return null;
-        return golden.get(ThreadLocalRandom.current().nextInt(golden.size()));
+        return randomGolden(Set.of());
+    }
+
+    /** Picks a golden blueprint while excluding active normal blueprint IDs. */
+    public BuildMartBlueprint randomGolden(Collection<String> excludedIds) {
+        Collection<String> excluded = excludedIds == null ? Set.of() : excludedIds;
+        List<BuildMartBlueprint> candidates = golden.stream()
+                .filter(blueprint -> !excluded.contains(blueprint.getId())).toList();
+        if (candidates.isEmpty()) return null;
+        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
     }
 
     static boolean isNormalRating(int stars) {

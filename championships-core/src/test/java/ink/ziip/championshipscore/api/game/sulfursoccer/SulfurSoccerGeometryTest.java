@@ -69,6 +69,17 @@ class SulfurSoccerGeometryTest {
         }
     }
 
+    @Test void placesPenaltyPanesInTheAdjacentPitchRowForBothSigns() {
+        var negativeZ = SulfurSoccerPenaltyLayout.resolve(field,
+                new BoundingBox(-4, 0, -21, 4, 4, -17),
+                new BoundingBox(-4, 0, 17, 4, 4, 21), 1);
+        var positiveZ = SulfurSoccerPenaltyLayout.resolve(field,
+                new BoundingBox(-4, 0, 17, 4, 4, 21),
+                new BoundingBox(-4, 0, -21, 4, 4, -17), 1);
+        assertEquals(-16, negativeZ.paneBlocks(1).getFirst().getBlockZ());
+        assertEquals(16, positiveZ.paneBlocks(1).getFirst().getBlockZ());
+    }
+
     @Test void preventsApproachingTouchingOrJumpingIntoTheBallWhileAllowingLateralAim() {
         var layout = SulfurSoccerPenaltyLayout.resolve(field, new BoundingBox(18, 0, -2, 21, 4, 3),
                 new BoundingBox(-21, 0, -2, -18, 4, 3), 1);

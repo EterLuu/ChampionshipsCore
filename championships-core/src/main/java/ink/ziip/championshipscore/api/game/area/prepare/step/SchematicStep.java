@@ -41,11 +41,7 @@ public class SchematicStep extends PrepareStep {
 
     @Override
     public boolean isSet(PrepareSession session) {
-        // Legacy/published maps already have a complete physical world even if their original source
-        // schematic predates per-map asset storage. New drafts set world-built=false and therefore still
-        // require the explicit schematic -> stamp sequence.
-        return session != null && (file(session).isFile()
-                || session.getTarget().config().isPrepareWorldBuilt());
+        return session != null && file(session).isFile();
     }
 
     @Override

@@ -30,7 +30,11 @@ record SulfurSoccerPenaltyLayout(boolean alongX, int direction, Vector ball, Vec
         if (!field.contains(ball) || !field.contains(shooter) || !goal.contains(keeper)
                 || goal.contains(ball) || otherGoal.contains(ball) || otherGoal.contains(shooter))
             throw new IllegalArgumentException("点球球门前需要至少 8 格球场空间，用于足球与射手隔离位置");
-        int paneDepth = (int) Math.floor(face - direction * 0.5);
+        // Put the temporary glass one full block outside the goal mouth.  Using floor on
+        // the half-block expression is asymmetric for negative coordinates (for example,
+        // floor(-25.5) == -26), which points into the negative-Z goal frame instead of the
+        // empty pitch row immediately in front of it.
+        int paneDepth = (int) face - direction;
         return new SulfurSoccerPenaltyLayout(alongX, direction, ball, shooter, keeper, paneDepth, laneMin, width,
                 (int) Math.floor(floorY), (int) Math.ceil(goal.getMaxY()));
     }

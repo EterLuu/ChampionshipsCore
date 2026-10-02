@@ -4,19 +4,12 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import lombok.Getter;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
 import java.util.List;
 
 @Getter
 public class ScheduleMessageConfig extends BaseConfigurationFile {
     private final String fileName = "schedule-message.yml";
     private final String resourceName = "schedule-message.yml";
-    private List<String> defaultLaserBox = List.of();
-    private List<String> defaultLaserBoxPoints = List.of();
-
     public ScheduleMessageConfig(ChampionshipsCore plugin) {
         super(plugin);
     }
@@ -25,20 +18,6 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
     public int getLatestVersion() {
         return 14;
     }
-
-    @Override
-    protected void loadCustomDefaultOptions() {
-        defaultLaserBox = List.copyOf(LASER_BOX);
-        defaultLaserBoxPoints = List.copyOf(LASER_BOX_POINTS);
-    }
-
-    @Override
-    protected void loadCustomFileOptions() {
-        // Existing v14 files can adopt the new game without replacing their customized messages.
-        if (!configuration.contains("laser-box")) LASER_BOX = defaultLaserBox;
-        if (!configuration.contains("laser-box-points")) LASER_BOX_POINTS = defaultLaserBoxPoints;
-    }
-
 
     @ConfigOption(path = "parkour-tag")
     public static List<String> PARKOUR_TAG;

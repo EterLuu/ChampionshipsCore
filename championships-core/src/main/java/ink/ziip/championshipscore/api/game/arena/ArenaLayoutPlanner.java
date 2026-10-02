@@ -16,14 +16,6 @@ public final class ArenaLayoutPlanner {
         return new Vector(alignToChunk(copySize.getBlockX() + ISOLATION_PADDING_BLOCKS), 0, 0);
     }
 
-    public static int ringSpacing(@NotNull Vector hubSize, @NotNull Vector copySize) {
-        validateSize(hubSize, "hub");
-        validateSize(copySize, "copy");
-        int footprint = Math.max(Math.max(hubSize.getBlockX(), hubSize.getBlockZ()),
-                Math.max(copySize.getBlockX(), copySize.getBlockZ()));
-        return alignToChunk(footprint + ISOLATION_PADDING_BLOCKS);
-    }
-
     private static int alignToChunk(int blocks) {
         return Math.max(CHUNK_SIZE, Math.floorDiv(blocks + CHUNK_SIZE - 1, CHUNK_SIZE) * CHUNK_SIZE);
     }

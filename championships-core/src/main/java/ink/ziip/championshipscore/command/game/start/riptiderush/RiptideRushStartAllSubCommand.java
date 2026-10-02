@@ -26,7 +26,7 @@ public final class RiptideRushStartAllSubCommand extends BaseSubCommand {
         String message = plugin.getGameManager().joinSingleTeamAreaForAllTeams(
                         GameTypeEnum.RiptideRush, args[0])
                 ? MessageConfig.GAME_SINGLE_GAME_START_SUCCESSFUL : MessageConfig.GAME_SINGLE_GAME_START_FAILED;
-        sender.sendMessage(message.replace("%game%", GameTypeEnum.RiptideRush.toString())
+        sender.sendMessage(message.replace("%game%", MessageConfig.GAME_RIPTIDE_RUSH)
                 .replace("%area%", args[0]));
         return true;
     }

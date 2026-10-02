@@ -2217,7 +2217,7 @@ map-editor:
                 set:
                   title: "&#55ff55淘汰高度：Y=%height%"
                 unset:
-                  title: "&#aaaaaa未设置（沿用原边界底部：Y=%height%）"
+                  title: "&#aaaaaa未设置（发布前必须显式设置）"
             spawn:
               material: ELYTRA
               title: "&#55ffff模板赛道（0号）玩家出生点"

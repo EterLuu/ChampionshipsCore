@@ -36,10 +36,9 @@ public class TNTRunManager extends BaseGameInstanceManager<TNTRunTeamArea> {
                 String name = file.substring(0, file.length() - 4);
                 File configFile = new File(areasFolder, file);
                 YamlConfiguration raw = YamlConfiguration.loadConfiguration(configFile);
-                String worldName = raw.getString("world-name", "tntrun");
-                boolean pending = raw.contains("world-name") && (worldName == null || worldName.isBlank());
+                String worldName = raw.getString("world-name", "");
+                boolean pending = worldName == null || worldName.isBlank();
                 if (!pending) {
-                    if (worldName == null || worldName.isBlank()) worldName = "tntrun";
                     if (loadedWorlds.add(worldName) && !loadArenaWorld(worldName)) {
                         loadedWorlds.remove(worldName);
                         continue;

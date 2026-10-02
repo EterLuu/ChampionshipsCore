@@ -623,7 +623,7 @@ public class GameManager extends BaseManager {
         return joinDodgeboltArea(area, rightTeam, leftTeam, higherSeed, showIntroduction, false);
     }
 
-    /** Forced starts admit each team's currently-online subset while normal finals still require full rosters. */
+    /** Forced starts may use an online subset when available; persisted rosters remain valid start input. */
     public boolean joinDodgeboltArea(@NotNull String area, @NotNull ChampionshipTeam rightTeam,
                                      @NotNull ChampionshipTeam leftTeam,
                                      @NotNull ChampionshipTeam higherSeed, boolean showIntroduction,
@@ -696,10 +696,13 @@ public class GameManager extends BaseManager {
             return false;
         if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
             return false;
-        Collection<UUID> rightParticipants = forcePartialDodgeboltRoster
+        boolean usePartialRoster = forcePartialDodgeboltRoster
+                && !rightChampionshipTeam.getOnlinePlayers().isEmpty()
+                && !leftChampionshipTeam.getOnlinePlayers().isEmpty();
+        Collection<UUID> rightParticipants = usePartialRoster
                 ? rightChampionshipTeam.getOnlinePlayers().stream().map(Player::getUniqueId).toList()
                 : rightChampionshipTeam.getMembers();
-        Collection<UUID> leftParticipants = forcePartialDodgeboltRoster
+        Collection<UUID> leftParticipants = usePartialRoster
                 ? leftChampionshipTeam.getOnlinePlayers().stream().map(Player::getUniqueId).toList()
                 : leftChampionshipTeam.getMembers();
         if (rightParticipants.isEmpty() || leftParticipants.isEmpty())
@@ -743,7 +746,7 @@ public class GameManager extends BaseManager {
         if (started) {
             teamStatus.put(rightChampionshipTeam, teamArea);
             teamStatus.put(leftChampionshipTeam, teamArea);
-            if (forcePartialDodgeboltRoster) {
+            if (usePartialRoster) {
                 for (UUID uuid : teamArea.getParticipantUniqueIds()) {
                     playerStatus.put(uuid, teamArea);
                     roundTransitionHolds.remove(uuid);
@@ -1043,7 +1046,6 @@ public class GameManager extends BaseManager {
                                                        boolean showIntroduction,
                                                        @NotNull List<ChampionshipTeam> teams) {
         if (!isGameEnabled(GameTypeEnum.Bingo)) return false;
-        if (teams.stream().flatMap(team -> team.getOnlinePlayers().stream()).findAny().isEmpty()) return false;
         for (ChampionshipTeam team : teams) {
             if (teamStatus.containsKey(team)) return false;
             for (UUID playerId : team.getMembers()) {
@@ -1091,6 +1093,15 @@ public class GameManager extends BaseManager {
         }
     }
 
+    public synchronized boolean joinLaserBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
+        return joinLaserBoxArea(area, pairs, false);
+    }
+
+    public synchronized boolean joinLaserBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs,
+                                                   boolean showIntroduction) {
+        return joinLaserBoxInstances(area, pairs, showIntroduction, GameRunMode.GAME) != null;
+    }
+
     /** Starts all LaserBox pairings behind one preload gate, retaining the exact instances for settlement. */
     public synchronized @Nullable List<LaserBoxArea> joinLaserBoxInstances(
             @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction,
@@ -1099,22 +1110,20 @@ public class GameManager extends BaseManager {
         if (!isGameEnabled(game) || !plugin.getPrepareSessionManager().canStart(game, area) || pairs.isEmpty())
             return null;
         Set<ChampionshipTeam> teams = new LinkedHashSet<>();
-        Set<UUID> participants = new HashSet<>();
         for (TwoVTwoVector pair : pairs) {
             if (pair == null || pair.getTeamOne() == null || pair.getTeamTwo() == null
                     || !teams.add(pair.getTeamOne()) || !teams.add(pair.getTeamTwo())) return null;
         }
         for (ChampionshipTeam team : teams) {
-            if (teamStatus.containsKey(team) || team.getMembers().isEmpty()) return null;
-            for (UUID id : team.getMembers()) {
-                // LaserBox starts from the complete team roster, including offline members.
-                if (!participants.add(id)) return null;
-            }
+            if (teamStatus.containsKey(team)) return null;
+            for (UUID uuid : team.getMembers())
+                if (isPlayerUnavailableForStart(uuid, game, showIntroduction, runMode)) return null;
         }
-        var selected = laserBoxManager.getMapInstances(area).stream()
+        List<LaserBoxArea> selected = laserBoxManager.getMapInstances(area).stream()
                 .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
-                .limit(pairs.size()).toList();
-        if (selected.size() != pairs.size()) return null;
+                .limit(pairs.size())
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (selected.size() < pairs.size()) return null;
         try {
             for (var instance : selected) instance.getGameConfig().validate();
         } catch (RuntimeException failure) {
@@ -1123,7 +1132,8 @@ public class GameManager extends BaseManager {
         }
         CompletableFuture<Void> gate = new CompletableFuture<>();
         selected.forEach(instance -> instance.coordinateStartWith(gate));
-        for (UUID id : participants) removeSpectator(id);
+        for (ChampionshipTeam team : teams)
+            for (UUID uuid : team.getMembers()) removeSpectator(uuid);
         List<LaserBoxArea> started = new ArrayList<>();
         for (int i = 0; i < pairs.size(); i++) {
             var instance = selected.get(i);
@@ -1148,7 +1158,7 @@ public class GameManager extends BaseManager {
                 .whenComplete((unused, failure) -> plugin.getServer().getScheduler()
                         .runTask(plugin, () -> gate.complete(null)));
         focusSpectatorsOn(selected.getFirst());
-        return selected;
+        return List.copyOf(selected);
     }
 
     /** Starts one or more independent Battle Box instances from a shared map definition. */

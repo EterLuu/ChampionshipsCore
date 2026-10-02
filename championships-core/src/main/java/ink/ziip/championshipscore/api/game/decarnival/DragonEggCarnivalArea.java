@@ -117,6 +117,16 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         loadPublishedMapOrDraft(World.Environment.THE_END);
     }
 
+    /** Force a valid finalist to win when a referee must settle the finale. */
+    public boolean forceChampion(@Nullable ChampionshipTeam team) {
+        if (team == null || getGameStageEnum() == GameStageEnum.WAITING
+                || getGameStageEnum() == GameStageEnum.END
+                || (!team.equals(rightChampionshipTeam) && !team.equals(leftChampionshipTeam))) return false;
+        winningTeam = team;
+        endGame();
+        return true;
+    }
+
     @Override
     public void resetArea() {
         timer = 0;

@@ -5,25 +5,41 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 class BuildMartOrderPoolTest {
     @Test
-    void submittingAReplacementUpdatesAllPoolsWithoutMutatingExistingOrders() {
-        var original = blueprint("edit", 3);
-        var other = blueprint("keep", 2);
+    void submittingAReplacementUpdatesPoolsWithoutMutatingExistingOrders() {
+        var original = blueprint("edit", 2);
+        var other = blueprint("keep", 1);
         var before = new BuildMartOrderPool().withBlueprint(original).withBlueprint(other);
         var replacement = blueprint("edit", 5);
         var after = before.withBlueprint(replacement);
         assertSame(original, before.byId("edit"));
         assertEquals(java.util.List.of(original), before.getGolden());
+        assertEquals(java.util.List.of(original, other), before.getNormal());
         assertSame(replacement, after.byId("edit"));
         assertSame(other, after.byId("keep"));
         assertEquals(2, after.getAll().size());
-        assertEquals(2, after.getNormal().size());
+        assertEquals(java.util.List.of(other, replacement), after.getNormal());
         assertTrue(after.getGolden().isEmpty());
         assertEquals(java.util.List.of(other, replacement), after.drawNormal(2).stream()
                 .sorted(java.util.Comparator.comparing(BuildMartBlueprint::getStars)).toList());
+    }
+
+    @Test
+    void twoStarBlueprintsRemainNormalCandidatesButActiveGoldenIsExcluded() {
+        var one = blueprint("one", 1);
+        var golden = blueprint("golden", 2);
+        var three = blueprint("three", 3);
+        var pool = new BuildMartOrderPool().withBlueprint(one).withBlueprint(golden).withBlueprint(three);
+
+        assertEquals(java.util.List.of(one, golden, three), pool.getNormal());
+        assertEquals(java.util.List.of(golden), pool.getGolden());
+        assertEquals(java.util.List.of(one, three), pool.drawNormal(3, java.util.Set.of("golden")).stream()
+                .sorted(java.util.Comparator.comparing(BuildMartBlueprint::getStars)).toList());
+        assertNull(pool.randomGolden(java.util.Set.of("golden")));
     }
 
     private static BuildMartBlueprint blueprint(String id, int stars) {
@@ -46,9 +62,9 @@ class BuildMartOrderPoolTest {
     }
 
     @Test
-    void onlyThreeStarBlueprintsFeedTheGoldenPool() {
-        assertTrue(BuildMartOrderPool.isGoldenSourceRating(3));
-        assertFalse(BuildMartOrderPool.isGoldenSourceRating(2));
+    void onlyTwoStarBlueprintsFeedTheGoldenPool() {
+        assertTrue(BuildMartOrderPool.isGoldenSourceRating(2));
+        assertFalse(BuildMartOrderPool.isGoldenSourceRating(3));
         assertFalse(BuildMartOrderPool.isGoldenSourceRating(5));
         assertFalse(BuildMartOrderPool.isGoldenSourceRating(7));
     }

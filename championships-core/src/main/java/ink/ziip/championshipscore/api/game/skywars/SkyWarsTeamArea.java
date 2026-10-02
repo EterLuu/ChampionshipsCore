@@ -41,7 +41,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
 public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
@@ -69,8 +68,6 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     private final SkyWarsVariantRegistry variantRegistry;
     private SkyWarsVariant resolvedVariant;
     private SkyWarsMapGeometry mapGeometry;
-    /** Bounds asynchronous visual work without ever routing particle sends through the server thread. */
-    private final Semaphore particleTaskSlots = new Semaphore(256);
 
     @Override
     public void resetArea() {
@@ -445,70 +442,55 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
     private void setParticles(Player player, Location center, Location location,
                               double radiusSnapshot, boolean byAngle) {
-        submitAsyncParticleTask(player, () -> {
-            World world = location.getWorld();
+        // This method is called by the synchronous border task. Bukkit/Paper entity and
+        // world particle APIs must remain on the server thread; doing this asynchronously
+        // can race player death/respawn and world/chunk teardown.
+        World world = location.getWorld();
 
-            double x = center.getX();
-            double z = center.getZ();
-            double x1 = location.getX();
-            double z1 = location.getZ();
-            double y = location.getY();
+        double x = center.getX();
+        double z = center.getZ();
+        double x1 = location.getX();
+        double z1 = location.getZ();
+        double y = location.getY();
 
-            if (world != null) {
-                double alpha = Math.atan2(z1 - z, x1 - x);
+        if (world != null) {
+            double alpha = Math.atan2(z1 - z, x1 - x);
 
-                for (double h = y - 3; h < y + 5; h++) {
-                    double beta, endBeta, increment;
-                    if (byAngle) {
-                        beta = alpha - 0.0872;
-                        endBeta = alpha + 0.0872;
-                        increment = 0.01;
-                    } else {
-                        beta = 0;
-                        endBeta = 20;
-                        increment = 1;
-                    }
-                    for (; beta <= endBeta; beta += increment) {
-                        double x2 = center.getX() + radiusSnapshot * Math.cos(beta);
-                        double z2 = center.getZ() + radiusSnapshot * Math.sin(beta);
-                        Location particleLoc = new Location(center.getWorld(), x2, h, z2);
-                        player.spawnParticle(Particle.DUST, particleLoc, 1,
-                                new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
-                    }
+            for (double h = y - 3; h < y + 5; h++) {
+                double beta, endBeta, increment;
+                if (byAngle) {
+                    beta = alpha - 0.0872;
+                    endBeta = alpha + 0.0872;
+                    increment = 0.01;
+                } else {
+                    beta = 0;
+                    endBeta = 20;
+                    increment = 1;
+                }
+                for (; beta <= endBeta; beta += increment) {
+                    double x2 = center.getX() + radiusSnapshot * Math.cos(beta);
+                    double z2 = center.getZ() + radiusSnapshot * Math.sin(beta);
+                    Location particleLoc = new Location(center.getWorld(), x2, h, z2);
+                    player.spawnParticle(Particle.DUST, particleLoc, 1,
+                            new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
                 }
             }
-        });
+        }
     }
 
     private void setHeightParticles(Player player, Location location, double y) {
-        submitAsyncParticleTask(player, () -> {
-            World world = location.getWorld();
-            if (world != null) {
-                for (int radius = 1; radius < 5; radius++) {
-                    for (double beta = 0; beta <= 20; beta += 1) {
-                        double x2 = location.getX() + radius * Math.cos(beta);
-                        double z2 = location.getZ() + radius * Math.sin(beta);
-                        Location particleLoc = new Location(location.getWorld(), x2, y, z2);
-                        player.spawnParticle(Particle.DUST, particleLoc, 1,
-                                new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
-                    }
+        // Called by the synchronous border task; keep the Bukkit calls on that thread.
+        World world = location.getWorld();
+        if (world != null) {
+            for (int radius = 1; radius < 5; radius++) {
+                for (double beta = 0; beta <= 20; beta += 1) {
+                    double x2 = location.getX() + radius * Math.cos(beta);
+                    double z2 = location.getZ() + radius * Math.sin(beta);
+                    Location particleLoc = new Location(location.getWorld(), x2, y, z2);
+                    player.spawnParticle(Particle.DUST, particleLoc, 1,
+                            new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
                 }
             }
-        });
-    }
-
-    private void submitAsyncParticleTask(Player player, Runnable task) {
-        if (!particleTaskSlots.tryAcquire()) return;
-        try {
-            scheduler.runTaskAsynchronously(plugin, () -> {
-                try {
-                    task.run();
-                } finally {
-                    particleTaskSlots.release();
-                }
-            });
-        } catch (RuntimeException rejected) {
-            particleTaskSlots.release();
         }
     }
 
@@ -807,9 +789,10 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             }
 
             world.getBlockAt(location).setType(Material.CHEST);
-            Location tombParticleLocation = location.clone().add(0.5, 0.5, 0.5);
-            submitAsyncParticleTask(player, () -> world.spawnParticle(Particle.DUST, tombParticleLocation, 100,
-                    new Particle.DustOptions(Color.fromRGB(0xff0000), 1)));
+            // Death handling already runs on the server thread. Keep this Bukkit world call
+            // synchronous; the previous async submission raced respawn/chunk updates.
+            world.spawnParticle(Particle.DUST, location.clone().add(0.5, 0.5, 0.5), 100,
+                    new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
 
             Chest chest = (Chest) world.getBlockAt(location).getState();
             for (ItemStack item : items) {

@@ -29,9 +29,9 @@ final class FinaleCancelSubCommand extends BaseSubCommand {
             return true;
         }
         if (plugin.getScheduleManager().stopFinale(definition.gameType()))
-            Utils.sendAdminSuccess(sender, MessageConfig.FINALE_CANCELLED.replace("%game%", definition.gameType().name()));
+            Utils.sendAdminSuccess(sender, MessageConfig.FINALE_CANCELLED.replace("%game%", definition.gameType().toString()));
         else
-            Utils.sendAdminInfo(sender, MessageConfig.FINALE_NOT_RUNNING.replace("%game%", definition.gameType().name()));
+            Utils.sendAdminInfo(sender, MessageConfig.FINALE_NOT_RUNNING.replace("%game%", definition.gameType().toString()));
         return true;
     }
 

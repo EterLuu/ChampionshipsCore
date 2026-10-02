@@ -383,6 +383,7 @@ public class PrepareSessionManager extends BaseManager {
         if (target == null) return "不存在或尚未加载";
         if (!target.config().isPreparePublished()) return "尚未发布";
         if (target.config().isPrepareDirty()) return "有尚未发布的修改，请重新发布";
+        if (!target.config().isPrepareReady()) return "配置未完成，请重新校验并发布";
         if (mapLocks.containsKey(lockKey(gameType, mapName))) return "正在编辑，请先退出地图编辑模式";
         return null;
     }

@@ -9,10 +9,10 @@ import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.util.Utils;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -108,11 +108,9 @@ public class ChampionshipPlayer {
         Player player = getPlayer();
         if (player == null)
             return;
-        // legacySection() decodes the §-prefixed codes (incl. §x hex) that translateColorCodes emits.
-        Component titleComponent = LegacyComponentSerializer.legacySection()
-                .deserialize(Utils.translateColorCodes(setPlaceholders(title)));
-        Component subTitleComponent = LegacyComponentSerializer.legacySection()
-                .deserialize(Utils.translateColorCodes(setPlaceholders(subTitle)));
+        // Use the shared serializer so six-digit colours are handled consistently with chat and boss bars.
+        Component titleComponent = LegacyText.component(setPlaceholders(title));
+        Component subTitleComponent = LegacyText.component(setPlaceholders(subTitle));
         // fade-in 1 tick, caller-defined stay, fade-out 1 tick
         Title.Times times = Title.Times.times(Duration.ofMillis(50),
                 Duration.ofMillis(Math.max(0, stayTicks) * 50L), Duration.ofMillis(50));

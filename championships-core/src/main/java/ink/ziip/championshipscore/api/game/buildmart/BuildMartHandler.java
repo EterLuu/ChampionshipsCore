@@ -113,6 +113,12 @@ public class BuildMartHandler extends BaseListener {
         if (buildMartArea.notAreaPlayer(player)) return;
         BuildMartConfig config = buildMartArea.getGameConfig();
 
+        // Vanilla Nether portals wait for the portal animation before firing PlayerPortalEvent. Build
+        // Mart portals are local routes, so enter them immediately when the player's destination block
+        // is one of the configured hub/base portals. The PlayerPortalEvent handler below remains as a
+        // fallback for portal activation that does not produce a movement step.
+        if (isBuildMartPortal(player, to) && routePortal(player, to, event)) return;
+
         // The playable space is the disjoint hub/base union. Returning to the hub keeps players from
         // escaping through the gaps between the separated team bases.
         if (to.getWorld() == null || !to.getWorld().getName().equals(buildMartArea.getWorldName())
@@ -135,7 +141,7 @@ public class BuildMartHandler extends BaseListener {
         Player player = event.getPlayer();
         if (!portalActive(player) || !isBuildMartPortal(player, event.getFrom())) return;
         event.setCancelled(true);
-        routePortal(player, event.getFrom());
+        routePortal(player, event.getFrom(), null);
     }
 
     private boolean portalActive(Player player) {
@@ -147,30 +153,37 @@ public class BuildMartHandler extends BaseListener {
      * Only real Nether portal blocks in the player's own base or the shared hub participate. The two
      * configured points are landing locations, so admins never need separate outbound/inbound spawns.
      */
-    private boolean isBuildMartPortal(Player player, Location from) {
-        if (from == null || from.getBlock().getType() != Material.NETHER_PORTAL) return false;
+    private boolean isBuildMartPortal(Player player, Location location) {
+        if (location == null || location.getBlock().getType() != Material.NETHER_PORTAL) return false;
         BuildMartConfig config = buildMartArea.getGameConfig();
         ChampionshipTeam team = teamOf(player);
         Integer seat = team == null ? null : buildMartArea.seatOf(team);
-        return config.isInHub(from) || seat != null && config.isInBase(from, seat);
+        return config.isInHub(location) || seat != null && config.isInBase(location, seat);
     }
 
-    private void routePortal(Player player, Location from) {
+    /** Routes a portal entry and returns whether a destination was actually triggered. */
+    private boolean routePortal(Player player, Location from, PlayerMoveEvent moveEvent) {
         BuildMartConfig config = buildMartArea.getGameConfig();
         ChampionshipTeam team = teamOf(player);
         Integer seat = team == null ? null : buildMartArea.seatOf(team);
         BuildMartBase base = seat == null ? null : buildMartArea.cachedBaseForSeat(seat);
-        if (base == null || onCooldown(player)) return;
+        if (base == null || onCooldown(player)) return false;
 
         if (config.isInBase(from, seat)) {
             Location target = config.getHubPortalPoint();
-            if (target != null) triggerPortal(player, target);
-            return;
+            if (target == null) return false;
+            if (moveEvent != null) moveEvent.setTo(target);
+            triggerPortal(player, target);
+            return true;
         }
         if (config.isInHub(from)) {
             Location target = base.getPortalPoint();
-            if (target != null) triggerPortal(player, target);
+            if (target == null) return false;
+            if (moveEvent != null) moveEvent.setTo(target);
+            triggerPortal(player, target);
+            return true;
         }
+        return false;
     }
 
     private void applyFlight(Player player, BuildMartConfig config, Location to) {

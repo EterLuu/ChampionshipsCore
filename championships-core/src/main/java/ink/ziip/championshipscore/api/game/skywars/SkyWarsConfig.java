@@ -30,7 +30,7 @@ public class SkyWarsConfig extends BaseGameConfig {
     @ConfigOption(path = "name")
     private String areaName;
 
-    /** Named rules profile. Flat v3 fields remain the compatibility source while variants are introduced. */
+    /** Named rules profile; {@code inline} uses the fields stored directly in this map configuration. */
     @ConfigOption(path = "variant")
     private String variantId = "inline";
 

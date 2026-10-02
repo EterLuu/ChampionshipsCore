@@ -5,16 +5,15 @@ mode: "CHAMPIONSHIP"
 # Keep this section synchronized through /cc map rename; do not add map IDs in ScheduleManager code.
 formal-events:
   FrostbiteFrenzy:
-    maps: [glacial_keep, frosty_fjord]
+    maps: [area]
   LaserBox:
-    # 空列表自动选择已注册、已发布且不在编辑中的地图；也可填写地图注册名。
-    maps: []
+    maps: [area]
   Bingo:
     maps: [bingo]
   ParkourTag:
     maps: [towny]
   BattleBox:
-    maps: []
+    maps: [area]
   TNTRun:
     maps: [astra]
   SnowballShowdown:
@@ -22,24 +21,23 @@ formal-events:
   SkyWars:
     maps: [area2]
   TGTTOS:
-    maps: [cod, industry, badlands, tsf1, cliff, boat]
+    maps: [cod]
   DragonEggCarnival:
     maps: [area1]
   ParkourWarrior:
     maps: [TRI]
   HotyCodyDusky:
-    maps: []
+    maps: [area]
   BuildMart:
     maps: [area]
   Dodgebolt:
     maps: [dodgebolt]
   SulfurSoccer:
-    maps: []
+    maps: [area]
   AceRace:
     maps: [clouds2]
   RiptideRush:
-    # Always three rounds; cycle these maps, or use registered maps when empty.
-    maps: []
+    maps: [default]
 # DAILY opens the self-service game menu and queues. It does not disable /cc event or /cc game start.
 daily:
   enabled-games:

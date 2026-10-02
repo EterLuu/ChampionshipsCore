@@ -131,7 +131,7 @@ class LaserBoxEventStartTest {
             config.setRightSpawnPoint(new Location(world, 1, 2, 1));
             config.setLeftSpawnPoint(new Location(world, 2, 2, 2));
             config.setSpectatorSpawnPoint(new Location(world, 3, 2, 3));
-            config.setSupplyPoints(List.of("4 2 4"));
+            config.setSupplyPoints(List.of("laserbox:4:2:4:0:0"));
             set(config, "preparePublished", true); set(config, "prepareDirty", false);
             List<LaserBoxArea> copies = new ArrayList<>();
             for (int index = 0; index < 2; index++) {

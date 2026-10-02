@@ -59,7 +59,7 @@ final class FinaleDirectStartSubCommand extends BaseSubCommand {
             Utils.sendAdminSuccess(sender, (force
                     ? MessageConfig.FINALE_DIRECT_START_STARTED_FORCED
                     : MessageConfig.FINALE_DIRECT_START_STARTED)
-                    .replace("%game%", definition.gameType().name()));
+                    .replace("%game%", definition.gameType().toString()));
         } else {
             Utils.sendAdminError(sender, force
                     ? MessageConfig.FINALE_DIRECT_START_FORCED_FAILED

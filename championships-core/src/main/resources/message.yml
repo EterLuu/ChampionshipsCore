@@ -274,10 +274,10 @@ rank:
   player-board-bar: "&#bababa━━━━━━━━ &#fff566&l个人总榜 &#bababa━━━━━━━━"
   player-board-row: "&#ededed  # %player_rank%&#24abff %player% &#bababa•&#ff6b26 %player_point%分"
   player-board-entry: "&#24abff%player% &#bababa•&#ff6b26 %player_point%分"
-  not-player: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r&#696969 你是黑队的？"
+  not-player: "&#bababa[&#31e061CC&#bababa]&r&#696969 你是黑队的？"
   final-board-bar: "&#bababa━━━━━━━━ &#8a70ff&l%game%&#fff566最终积分 &#bababa━━━━━━━━"
   final-recap-hint: "&#bababa完整总榜&#ededed /cc rank teamboard &#bababa• 再次查看结果&#ededed /cc rank recap"
-  no-recap: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r&#ededed 目前没有可再次查看的结果。"
+  no-recap: "&#bababa[&#31e061CC&#bababa]&r&#ededed 目前没有可再次查看的结果。"
   final-title: "&#fff566&l本轮结算"
   final-subtitle: "&#ededed第1名 %winner% &#bababa•&#ff6b26 %points%分"
   recap-hint-actionbar: "&#bababa聊天被顶掉？ &#ededed/cc rank recap &#bababa可重看本次结算"
@@ -350,6 +350,90 @@ game:
     not-active: "该实例已结束或正在结算：%instance%&#ededed。"
     replaced: "该实例已被替换，请重新使用命令补全选择：%instance%&#ededed。"
     failed: "实例未能安全结束，请查看服务端日志：%instance%&#ededed。"
+laserbox:
+  start-preparation: "&#fff566激光方盒 &#bababa•&#ededed 2v2 多轮对战，准备进入场地"
+  start-preparation-title: "&#fff566&l激光方盒"
+  start-preparation-subtitle: "&#ededed确认装备与站位，准备开始对战"
+  game-start-title: "&#fff566&l激光方盒"
+  game-start-subtitle: "&#ededed命中敌人夺取分数，阵亡后 4 秒重生"
+  boss-bar: "&#fff566激光方盒 &#bababa•&#ededed %right_team% &#ff6b26%right% &#bababa: &#ff6b26%left% %left_team% &#bababa•&#ededed 剩余&#ff6b26%time%"
+  hit: "&e%attacker% &7击中 &f%victim%"
+  respawn-title: "&c被击中"
+  respawn-subtitle: "&e%seconds% 秒后重生"
+  winner: "%team% &e赢得激光方盒！"
+  draw: "&e激光方盒平局"
+  end-title: "&e&l激光方盒结束"
+  end-subtitle: "&f%right% : %left%"
+  item-shield: "护盾 · 阻挡 1 次激光"
+  item-grenade: "获得 烟幕弹 · 右键使用 · 生成烟幕，遮挡激光"
+  item-strike: "获得 定点爆破 · 右键使用 · 轰击最近两名敌人的当前位置"
+  item-reveal: "获得 追踪脉冲 · 右键使用 · 短暂显示敌方位置"
+frostbite:
+  start-preparation: "&#bff6ff霜冻决斗 &#bababa•&#ededed 三轮乱斗，冻结敌人并争夺补给"
+  start-preparation-title: "&#bff6ff&l霜冻决斗"
+  start-preparation-subtitle: "&#ededed确认场地与补给，准备开始乱斗"
+  game-start-title: "&#bff6ff&l霜冻决斗"
+  game-start-subtitle: "&#ededed冻结敌人，争夺补给！"
+  arena: "&#bff6ff霜冻决斗 &f第 %arena% 场地&#bababa｜&#ededed冻结 %freeze% 秒后失温，击杀得分；三轮累加队伍成绩。"
+  frozen-actionbar: "&b被冻结 &f%seconds%秒%campfire%"
+  status-actionbar: "&f击杀 &b%kills% &7｜ &f场地 %arena%%heated%"
+  kill: "&b❄ &f%killer% &7击杀了 &f%victim%"
+  respawn-title: "&b重新出发"
+  respawn-subtitle: "失温后快速重生，短暂保温保护"
+  boss-bar: "&#bff6ff霜冻决斗 &#bababa•&#ededed 剩余&#ff6b26%time%"
+  end-title: "&b本轮结束"
+  end-subtitle: "&f击杀积分与排名奖励已汇入队伍成绩"
+  phoenix-consumed: "&6凤凰余烬已消耗，抵挡了一次冻结"
+  campfire-returned: "&6营火生效，已返回营火位置"
+  freeze-success: "&b冻结成功 &f→ &b%player%"
+  freeze: "&b❄ &f%attacker% &b冻结了 &f%victim%"
+  frozen: "&b被冻结"
+  item:
+    avalanche:
+      title: "雪崩"
+      description: "右键投出一个雪球，落地生成持续减速的药水云"
+    axe:
+      title: "冰镐"
+      description: "满蓄力近战立即击杀敌人；保温可抵挡"
+    blaze:
+      title: "回归营火"
+      description: "右键放置营火；被冻结后自动返回；持续30秒，可被敌人打破"
+    bow:
+      title: "冰雪狙击弓"
+      description: "三发冰箭，命中冻结敌人"
+    beacon:
+      title: "热能信标"
+      description: "右键放置8秒保温区，靠近时持续获得短暂保温"
+    explosion:
+      title: "西伯利亚雪爆"
+      description: "右键冻结6格内敌人，也会冻结自己"
+    glow:
+      title: "追踪光点"
+      description: "右键使最近敌人发光8秒"
+    hot_rod:
+      title: "暖焰棒"
+      description: "右键获得3.5秒保温"
+    icicle:
+      title: "冰锥"
+      description: "近战成功冻结敌人后换取两件不同道具"
+    invis:
+      title: "隐形药剂"
+      description: "右键隐形10秒；攻击会解除隐形"
+    mystery:
+      title: "神秘补给箱"
+      description: "右键打开，一次随机获得一件其他道具"
+    phoenix:
+      title: "凤凰余烬"
+      description: "持有时被冻结会自动解冻一次，但清空道具且不获得保温"
+    speed:
+      title: "疾速"
+      description: "右键获得12秒速度 III"
+    frost_trap:
+      title: "冰霜陷阱"
+      description: "右键在脚下展开6秒冰区，进入的敌人会被冻结"
+    whoaball:
+      title: "霜爆雪球"
+      description: "右键投出，落点5格内敌人被冻结"
 battlebox:
   start-preparation: "&#bababa[&#fff566斗战方框&#bababa]&#ededed 选择装备，准备占领中央方框"
   start-preparation-title: "&#fff566&l斗战方框"
@@ -571,7 +655,7 @@ dodgebolt:
   resumed-subtitle: "&#ededed决赛继续"
   round-restarted: "&#bababa[&#fff566躲避箭&#bababa]&#ededed 管理员已重开当前小局"
   champion: |-
-    &#bababa━━━━━━━━ &#fff566&lS³CC冠军 &#bababa━━━━━━━━
+    &#bababa━━━━━━━━ &#fff566&lCC冠军 &#bababa━━━━━━━━
     %team%&#ededed赢得躲避箭决赛 &#bababa•&#ff6b26 %score%
   champion-title: "&#fff566&l冠军诞生"
   champion-subtitle: "%team% &#bababa•&#ff6b26 %score%"
@@ -647,11 +731,12 @@ vote:
   end-vote: "&#bababa━━━━━━━━ &#fff566&l投票结果 &#bababa━━━━━━━━"
   end-vote-title: "&#fff566&l投票结束"
   end-vote-subtitle: "&#ededed最高票：&#8a70ff%game% &#bababa•&#ff6b26 %votes%票"
-  player-vote: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r&#ededed 你投票了游戏：&#fff566%game%&#ededed。"
-  vote-failed-not-time: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r&#ededed 投票失败，当前非投票时间段。"
-  vote-failed-not-game: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r&#ededed 投票失败，游戏名称错误。"
-  vote-failed-already-played: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r&#ededed 投票失败，不能投票已经玩过的游戏。"
-  vote-failed-not-player: "&#bababa[&#31e061S²&#dbffe5&#e42d3eCC&#bababa]&r&#ededed 投票失败，非游戏玩家无法投票。"
+  player-vote: "&#bababa[&#31e061CC&#bababa]&r&#ededed 你投票了游戏：&#fff566%game%&#ededed。"
+  vote-failed-not-time: "&#bababa[&#31e061CC&#bababa]&r&#ededed 投票失败，当前非投票时间段。"
+  vote-failed-not-game: "&#bababa[&#31e061CC&#bababa]&r&#ededed 投票失败，游戏名称错误。"
+  vote-failed-already-played: "&#bababa[&#31e061CC&#bababa]&r&#ededed 投票失败，不能投票已经玩过的游戏。"
+  vote-failed-not-player: "&#bababa[&#31e061CC&#bababa]&r&#ededed 投票失败，非游戏玩家无法投票。"
+  vote-failed-admin: "&#bababa[&#31e061CC&#bababa]&r&#ededed 管理员仅可预览投票菜单，不能参与投票。"
   vote-board-row: "&#ededed  # %game_rank%&#24abff %game% &#bababa•&#ff6b26 %game_votes%票"
   boss-bar: "&#ededed剩余&#ff6b26%time% &#bababa•&#fff566 已投%votes%/%players% &#bababa•&#ededed 我的选择：&#24abff%vote%"
   not-voted: 未投票
@@ -800,19 +885,19 @@ schedule-finale:
     scheduled-forced: "躲避箭决赛已排定&#bababa • %right%&#ededed vs %left%&#bababa • &#ededed地图%map%&#bababa • &#ff6b26强制阵容&#ededed。"
     announcement: "&#bababa━━━━━━━━ &#fff566&l躲避箭决赛 &#bababa━━━━━━━━\n%right%&#ededed vs %left%\n&#ededed第一局两箭：%first%&#ededed"
     start-failed: 躲避箭决赛启动失败，请检查队员在线状态和场地占用。
-    forced-start-failed: 躲避箭决赛强制启动失败，请确保每队至少有&#fff5661&#ededed名在线玩家并检查场地占用。
+    forced-start-failed: 躲避箭决赛强制启动失败，请检查队伍名册、地图配置和场地占用。
 finale:
   direct-start-invalid: 场地或队伍无效。
   direct-start-started: "&#fff566%game%&#ededed已直接开始准备。"
   direct-start-started-forced: "&#fff566%game%&#ededed已直接开始准备，仅计入两队当前在线成员。"
   direct-start-failed: 启动失败，请检查配置、队员在线状态或场地占用。
-  direct-start-forced-failed: 启动失败，请确保每队至少有&#fff5661&#ededed名在线玩家，并检查配置或场地占用。
+  direct-start-forced-failed: 启动失败，请检查队伍名册、地图配置和场地占用。
   start-team-required: 请指定两支不同的有效队伍。
   cancelled: "已取消正式决赛：&#fff566%game%&#ededed。"
   not-running: "该正式决赛当前未运行：&#fff566%game%&#ededed。"
   dodgebolt:
-    area-missing: 找不到躲避箭场地。
-    control-executed: "躲避箭操作已执行：&#fff566%command%&#ededed。"
+    area-missing: 找不到决赛场地。
+    control-executed: "决赛操作已执行：&#fff566%command%&#ededed。"
     control-state-denied: 当前比赛状态不允许执行该操作。
     elimination-invalid: 无法判定该玩家出局。
     eliminated: "已判定&#fff566%player%&#ededed出局。"
@@ -1025,6 +1110,7 @@ riptiderush:
     &#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#ff6b26断开连接，淘汰
   winner: "&#bababa[&#fff566激流勇进&#bababa]&#ededed %player%&#fff566存活到最后"
   speed-shield-break: "&#ff6b26木筏加速！所有玩家的护盾已破碎"
+  shield-broken: "&c护盾已破碎"
   speed-boost-title: "&#ff6b26&l速度提升"
   speed-boost-subtitle: "&#ededed木筏正在加速"
   final-sprint-title: "&#fff566&l最后冲刺"
@@ -1046,6 +1132,19 @@ riptiderush:
     left-behind: 被木筏甩在后方
     fell: 坠落
     dodge: 被冲刺生物撞到
+  trial-start: "试玩将在3秒后开始；请自行跟上木筏，交换副手键（默认F）可退出，不记录成绩。"
+  trial-exit: "试玩已退出"
+  trial-finished: "试玩已结束"
+  trial-fall: "试玩结束：离开木筏或坠落"
+  trial-wrong-answer: "试玩结束：解题答案错误"
+  trial-missed-gate: "试玩结束：未从解题门通道通过"
+  trial-wrong-floor: "试玩结束：踩色站错方块"
+  trial-side-answer: "试玩结束：侧向解题答案颜色错误"
+  trial-dodge: "试玩结束：被冲刺生物撞到"
+  trial-timeout: "试玩结束：时间到"
+  trial-countdown: "交换副手键（默认F）退出试玩"
+  trial-completed: "试玩完成，用时 %seconds% 秒"
+  trial-aborted: "试玩终止：%reason%"
 
 sulfursoccer:
   upcoming-title: "&e&l硫方足球即将开始"
@@ -1061,6 +1160,11 @@ sulfursoccer:
   penalty-goal: "&a点球进球！&f%shooter% &a射门得分。"
   penalty-miss: "&e点球未进：&f%shooter% &e的射门被挡、出界或超时。"
   penalty-score: "&f%right% &7点球 &e%right_penalties% &7: &e%left_penalties% &f%left%"
+  state-end: "比赛结束"
+  state-paused: "等待选手重连"
+  state-warmup: "试踢 %time%（不计分）"
+  state-shootout: "点球 %right_penalties%:%left_penalties% 第 %round% 轮 %phase% %seconds% 秒"
+  state-regulation: "剩余 %time%"
   goal: "&e进球！%team% &f得分，当前比分 &e%right_goals% &7: &e%left_goals%"
   goal-title: "&e&l进球！"
   goal-subtitle: "%team% &f得分 &e%right_goals% &7: &e%left_goals%"

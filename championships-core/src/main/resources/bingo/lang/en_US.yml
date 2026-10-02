@@ -261,7 +261,7 @@ task:
     mining_fatigue: "Mining Fatigue"
     bad_omen: "Bad Omen"
 board:
-  title: "#3fb2ba[#31e061S#dbffe5³#e42d3eCC#bababa夏季联合锦标赛#3fb2ba]"
+  title: "#3fb2ba[#31e061CC#3fb2ba]"
   separator: "#4f4f4f&m+-------------------+"
   current_game: "#ff0808Current game: #ff7373{0}"
   current_status: "&#bababaMatch status &#696969•&#ededed {0}"

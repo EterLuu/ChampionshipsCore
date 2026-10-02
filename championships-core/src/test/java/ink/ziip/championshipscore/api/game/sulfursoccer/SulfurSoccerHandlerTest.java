@@ -326,5 +326,24 @@ class SulfurSoccerHandlerTest {
             assertEquals(Material.OAK_STAIRS, blocks.get("-24:89:-8"));
             assertFalse(blocks.containsKey("-25:88:-8"));
         }
+
+        @Test void recoloursOnlySmoothQuartzAroundEachGoalAndRestoresTheTemplate() {
+            blocks.put("-2:2:-2", Material.SMOOTH_QUARTZ);
+            blocks.put("3:2:3", Material.SMOOTH_QUARTZ);
+            blocks.put("8:2:8", Material.SMOOTH_QUARTZ);
+            var rightGoal = new BoundingBox(-1, 1, -1, 2, 3, 2);
+            var leftGoal = new BoundingBox(2, 1, 2, 5, 3, 5);
+
+            var rightOriginal = SulfurSoccerArea.applyGoalColors(world, rightGoal, Material.RED_CONCRETE);
+            var leftOriginal = SulfurSoccerArea.applyGoalColors(world, leftGoal, Material.BLUE_CONCRETE);
+            assertEquals(Material.RED_CONCRETE, blocks.get("-2:2:-2"));
+            assertEquals(Material.BLUE_CONCRETE, blocks.get("3:2:3"));
+            assertEquals(Material.SMOOTH_QUARTZ, blocks.get("8:2:8"));
+
+            SulfurSoccerArea.restoreGoalColors(world, rightOriginal);
+            SulfurSoccerArea.restoreGoalColors(world, leftOriginal);
+            assertEquals(Material.SMOOTH_QUARTZ, blocks.get("-2:2:-2"));
+            assertEquals(Material.SMOOTH_QUARTZ, blocks.get("3:2:3"));
+        }
     }
 }

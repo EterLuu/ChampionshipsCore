@@ -44,6 +44,10 @@ public class VoteSubCommand extends BaseSubCommand {
                 return true;
             }
 
+            if (player.hasPermission(MainCommand.ADMIN_PERMISSION)) {
+                player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ADMIN);
+                return true;
+            }
             plugin.getVoteManager().vote(player, gameTypeEnum);
         }
 

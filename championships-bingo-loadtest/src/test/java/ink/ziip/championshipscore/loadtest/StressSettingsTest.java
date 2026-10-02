@@ -46,6 +46,19 @@ class StressSettingsTest {
     }
 
     @Test
+    void rejectsLegacyTopLevelSpeedAndMissingPerStageValues() throws Exception {
+        YamlConfiguration config = new YamlConfiguration();
+        config.loadFromString("""
+                stage-walkers: [8]
+                stage-duration-seconds: [60]
+                stage-modes: [flight]
+                speed-blocks-per-second: 32.0
+                """);
+
+        assertThrows(IllegalArgumentException.class, () -> StressSettings.load(config));
+    }
+
+    @Test
     void rejectsOddMixedWalkerCount() throws Exception {
         YamlConfiguration config = new YamlConfiguration();
         config.loadFromString("""

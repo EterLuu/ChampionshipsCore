@@ -123,7 +123,7 @@ record AceRaceLine(@NotNull Vector pos1, @NotNull Vector pos2) {
         return fromSide == expectedSide || (fromSide == 0 && toSide == -expectedSide);
     }
 
-    /** Compatibility direction check for maps migrated from the brief single-line format. */
+    /** Checks that the line was crossed toward the side containing the reference point. */
     boolean crossedTowardReferenceSide(@NotNull Location from, @NotNull Location to,
                                        @NotNull Location reference) {
         if (!crossedAtOrAbove(from, to)) return false;

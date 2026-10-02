@@ -38,20 +38,21 @@ public class CCConfig extends BaseConfigurationFile {
         EnumMap<GameTypeEnum, List<String>> defaults = new EnumMap<>(GameTypeEnum.class);
         defaults.put(GameTypeEnum.Bingo, List.of("bingo"));
         defaults.put(GameTypeEnum.ParkourTag, List.of("towny"));
-        defaults.put(GameTypeEnum.BattleBox, List.of());
+        defaults.put(GameTypeEnum.BattleBox, List.of("area"));
         defaults.put(GameTypeEnum.TNTRun, List.of("astra"));
         defaults.put(GameTypeEnum.SnowballShowdown, List.of("area1"));
         defaults.put(GameTypeEnum.SkyWars, List.of("area2"));
-        defaults.put(GameTypeEnum.TGTTOS, List.of("cod", "industry", "badlands", "tsf1", "cliff", "boat"));
+        defaults.put(GameTypeEnum.TGTTOS, List.of("cod"));
         defaults.put(GameTypeEnum.DragonEggCarnival, List.of("area1"));
         defaults.put(GameTypeEnum.ParkourWarrior, List.of("TRI"));
-        defaults.put(GameTypeEnum.HotyCodyDusky, List.of());
+        defaults.put(GameTypeEnum.HotyCodyDusky, List.of("area"));
         defaults.put(GameTypeEnum.BuildMart, List.of("area"));
         defaults.put(GameTypeEnum.Dodgebolt, List.of("dodgebolt"));
         defaults.put(GameTypeEnum.AceRace, List.of("clouds2"));
-        defaults.put(GameTypeEnum.RiptideRush, List.of());
-        defaults.put(GameTypeEnum.FrostbiteFrenzy, List.of("glacial_keep", "frosty_fjord"));
-        defaults.put(GameTypeEnum.LaserBox, List.of());
+        defaults.put(GameTypeEnum.RiptideRush, List.of("default"));
+        defaults.put(GameTypeEnum.FrostbiteFrenzy, List.of("area"));
+        defaults.put(GameTypeEnum.LaserBox, List.of("area"));
+        defaults.put(GameTypeEnum.SulfurSoccer, List.of("area"));
         DEFAULT_FORMAL_EVENT_MAPS = Collections.unmodifiableMap(defaults);
     }
 

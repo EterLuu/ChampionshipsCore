@@ -38,11 +38,10 @@ record StressSettings(
         if (walkers.isEmpty() || walkers.size() != durations.size()) {
             throw new IllegalArgumentException("stage-walkers and stage-duration-seconds must have equal sizes");
         }
-        requireOptionalSize(modes, walkers.size(), "stage-modes");
-        requireOptionalSize(speeds, walkers.size(), "stage-speed-blocks-per-second");
-        requireOptionalSize(entityTargets, walkers.size(), "stage-target-world-entities");
+        requireSize(modes, walkers.size(), "stage-modes");
+        requireSize(speeds, walkers.size(), "stage-speed-blocks-per-second");
+        requireSize(entityTargets, walkers.size(), "stage-target-world-entities");
 
-        double legacySpeed = config.getDouble("speed-blocks-per-second", 7.0);
         List<Stage> stages = new ArrayList<>();
         int previous = 0;
         for (int index = 0; index < walkers.size(); index++) {
@@ -51,8 +50,8 @@ record StressSettings(
             if (count < previous || count < 1 || count > 64 || duration < 1) {
                 throw new IllegalArgumentException("Stages must be non-decreasing, use 1-64 walkers, and positive durations");
             }
-            Mode mode = modes.isEmpty() ? Mode.FLIGHT : Mode.parse(modes.get(index));
-            double speed = speeds.isEmpty() ? legacySpeed : speeds.get(index);
+            Mode mode = Mode.parse(modes.get(index));
+            double speed = speeds.get(index);
             speed = bounded(speed, 0.0, 100.0, "stage-speed-blocks-per-second");
             if ((mode == Mode.FLIGHT || mode == Mode.MIXED) && speed <= 0.0) {
                 throw new IllegalArgumentException("Flight and mixed stages require a positive speed");
@@ -60,7 +59,7 @@ record StressSettings(
             if (mode == Mode.MIXED && count % 2 != 0) {
                 throw new IllegalArgumentException("Mixed stages require an even walker count");
             }
-            int target = entityTargets.isEmpty() ? 0 : entityTargets.get(index);
+            int target = entityTargets.get(index);
             target = bounded(target, 0, 50000, "stage-target-world-entities");
             stages.add(new Stage(count, duration, mode, speed, target));
             previous = count;
@@ -112,9 +111,9 @@ record StressSettings(
                         "low-tps-grace-samples"));
     }
 
-    private static void requireOptionalSize(List<?> values, int expected, String key) {
-        if (!values.isEmpty() && values.size() != expected) {
-            throw new IllegalArgumentException(key + " must be empty or match stage-walkers");
+    private static void requireSize(List<?> values, int expected, String key) {
+        if (values.size() != expected) {
+            throw new IllegalArgumentException(key + " must match stage-walkers");
         }
     }
 

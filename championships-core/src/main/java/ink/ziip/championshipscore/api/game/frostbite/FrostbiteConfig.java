@@ -15,7 +15,7 @@ public final class FrostbiteConfig extends BaseGameConfig {
     private final String folderName = "frostbite/";
     @ConfigOption(path="name") private String areaName;
     @ConfigOption(path="world-name") private String worldName;
-    @ConfigOption(path="timer") private int timer = 300;
+    @ConfigOption(path="timer") private int timer = 210;
     @ConfigOption(path="freeze-seconds") private int freezeSeconds = 5;
     @ConfigOption(path="heat-seconds") private int heatSeconds = 3;
     @ConfigOption(path="item-respawn-seconds") private int itemRespawnSeconds = 30;
@@ -34,16 +34,43 @@ public final class FrostbiteConfig extends BaseGameConfig {
     @Override public Vector getAreaPos2() { return arenaMax == null ? null : arenaMax.clone().add(new Vector(copySpacing, 0, copySpacing)); }
     public Vector offset(int arena) { return new Vector((arena % 2) * copySpacing, 0, (arena / 2) * copySpacing); }
     public Location point(String text, int arena) {
-        String[] fields = text.trim().split("\\s+");
-        if (text.contains(":")) {
-            String[] serialized = text.split(":");
-            if (serialized.length != 6) throw new IllegalArgumentException("坐标格式无效");
-            fields = Arrays.copyOfRange(serialized, 1, 5);
-        }
-        if (fields.length < 3 || fields.length > 4) throw new IllegalArgumentException("坐标应为 x y z [yaw]");
-        Location location = new Location(Bukkit.getWorld(worldName), Double.parseDouble(fields[0]),
-                Double.parseDouble(fields[1]), Double.parseDouble(fields[2]), fields.length == 4 ? Float.parseFloat(fields[3]) : 0, 0);
+        Location location = parsePoint(text, worldName);
+        location.setWorld(Bukkit.getWorld(worldName));
         return location.add(offset(arena));
+    }
+
+    static Location parsePoint(String text, String worldName) {
+        String value = text == null ? "" : text.trim();
+        if (!value.contains(":")) {
+            // Imported arenas store local coordinates; the editor stores full serialized locations.
+            String[] fields = value.split("\\s+");
+            if (fields.length != 3 && fields.length != 4)
+                throw new IllegalArgumentException("坐标格式必须为 x y z [yaw]：" + text);
+            return new Location(null, finite(fields[0]), finite(fields[1]), finite(fields[2]),
+                    fields.length == 4 ? finiteAngle(fields[3]) : 0, 0);
+        }
+        String[] fields = value.split(":", -1);
+        if (fields.length != 6 || worldName == null || !worldName.equals(fields[0]))
+            throw new IllegalArgumentException("坐标格式必须为 当前世界:x:y:z:yaw:pitch：" + text);
+        double x = finite(fields[1]), y = finite(fields[2]), z = finite(fields[3]);
+        float yaw = finiteAngle(fields[4]), pitch = finiteAngle(fields[5]);
+        return new Location(null, x, y, z, yaw, pitch);
+    }
+    private static double finite(String value) {
+        try {
+            double number = Double.parseDouble(value);
+            if (Double.isFinite(number)) return number;
+        } catch (NumberFormatException ignored) {
+        }
+        throw new IllegalArgumentException("坐标必须为有限数字");
+    }
+    private static float finiteAngle(String value) {
+        try {
+            float number = Float.parseFloat(value);
+            if (Float.isFinite(number)) return number;
+        } catch (NumberFormatException ignored) {
+        }
+        throw new IllegalArgumentException("朝向必须为有限数字");
     }
     public List<Location> spawns(int arena) { return spawnPoints.stream().map(p -> point(p, arena)).toList(); }
     public boolean contains(Location location, int arena) {

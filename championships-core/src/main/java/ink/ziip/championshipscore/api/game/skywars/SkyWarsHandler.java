@@ -316,44 +316,49 @@ public class SkyWarsHandler extends BaseListener {
                     }
                 } else {
                     UUID uuid = player.getUniqueId();
-                    if (!skyWarsArea.getDeathPlayer().contains(uuid)) {
-                        Player assailant = player.getKiller();
-                        UUID assailantUuid = assailant == null ? null : assailant.getUniqueId();
-                        UUID happyGhastKiller = skyWarsArea.consumeHappyGhastKiller(player);
-                        if (happyGhastKiller != null) {
-                            assailantUuid = happyGhastKiller;
+                    // A falling player can emit many movement events before respawn. Once the
+                    // elimination has been recorded, do not enqueue another main-thread task on
+                    // every event; an unbounded queue here can make a death look like a server hang.
+                    if (skyWarsArea.getDeathPlayer().contains(uuid)) {
+                        return;
+                    }
+
+                    Player assailant = player.getKiller();
+                    UUID assailantUuid = assailant == null ? null : assailant.getUniqueId();
+                    UUID happyGhastKiller = skyWarsArea.consumeHappyGhastKiller(player);
+                    if (happyGhastKiller != null) {
+                        assailantUuid = happyGhastKiller;
+                    }
+
+                    if (assailantUuid != null) {
+                        ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
+                        ChampionshipTeam assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailantUuid);
+
+                        if (playerTeam == null || assailantTeam == null)
+                            return;
+
+                        if (playerTeam.equals(assailantTeam)) {
+                            skyWarsArea.addDeathPlayer(player);
+                            return;
                         }
 
-                        if (assailantUuid != null) {
-                            ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
-                            ChampionshipTeam assailantTeam = plugin.getTeamManager().getTeamByPlayer(assailantUuid);
+                        String message = MessageConfig.SKY_WARS_KILL_PLAYER_BY_VOID;
 
-                            if (playerTeam == null || assailantTeam == null)
-                                return;
+                        message = message
+                                .replace("%player%", Utils.formatPlayerName(player))
+                                .replace("%killer%", Utils.formatPlayerName(assailantUuid));
 
-                            if (playerTeam.equals(assailantTeam)) {
-                                skyWarsArea.addDeathPlayer(player);
-                                return;
-                            }
+                        skyWarsArea.sendMessageToAllGamePlayers(message);
+                        skyWarsArea.addPlayerPoints(assailantUuid, skyWarsArea.getKillPoints());
 
-                            String message = MessageConfig.SKY_WARS_KILL_PLAYER_BY_VOID;
+                        skyWarsArea.addDeathPlayer(player);
+                    } else {
 
-                            message = message
-                                    .replace("%player%", Utils.formatPlayerName(player))
-                                    .replace("%killer%", Utils.formatPlayerName(assailantUuid));
+                        String message = MessageConfig.SKY_WARS_PLAYER_DEATH_BY_VOID;
 
-                            skyWarsArea.sendMessageToAllGamePlayers(message);
-                            skyWarsArea.addPlayerPoints(assailantUuid, skyWarsArea.getKillPoints());
-
-                            skyWarsArea.addDeathPlayer(player);
-                        } else {
-
-                            String message = MessageConfig.SKY_WARS_PLAYER_DEATH_BY_VOID;
-
-                            message = message.replace("%player%", Utils.formatPlayerName(player));
-                            skyWarsArea.sendMessageToAllGamePlayers(message);
-                            skyWarsArea.addDeathPlayer(player);
-                        }
+                        message = message.replace("%player%", Utils.formatPlayerName(player));
+                        skyWarsArea.sendMessageToAllGamePlayers(message);
+                        skyWarsArea.addDeathPlayer(player);
                     }
                     ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
                     championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {

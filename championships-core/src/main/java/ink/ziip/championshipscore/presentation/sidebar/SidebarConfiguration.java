@@ -65,7 +65,7 @@ public final class SidebarConfiguration {
         Template lobby = template(yaml, "boards.lobby", styles, true);
         Template dailyLobby = template(yaml, "boards.daily-lobby", styles, false);
         if (dailyLobby == null) dailyLobby = new Template(
-                "&#3fb2ba[&#31e061S&#dbffe5³&#e42d3eCC&#bababa夏季联合锦标赛&#3fb2ba]", List.of(
+                "&#3fb2ba[&#31e061CC&#3fb2ba]", List.of(
                 "&#4f4f4f&m+-------------------+",
                 "&#dfff2b当前游戏: &#f6ffa8{daily.selected-game}",
                 "&#ff0808当前状态: &#ff7373{daily.queue-state}",

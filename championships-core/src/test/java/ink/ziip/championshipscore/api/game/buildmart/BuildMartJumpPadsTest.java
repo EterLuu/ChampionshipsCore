@@ -161,10 +161,10 @@ class BuildMartJumpPadsTest {
         assertEquals(1, second.launches);
     }
 
-    @Test void oldSelectedCoordinatesLoadAndSaveOnlyUnderTheNewJumpPadName() throws Exception {
+    @Test void currentJumpPadCoordinatesLoadAndSaveUnderTheConfiguredName() throws Exception {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("world-name", "buildmart_area");
-        yaml.set("wind-zones", List.of(Map.of("pos1", Map.of("x", 182, "y", 101, "z", 192),
+        yaml.set("jump-pads", List.of(Map.of("pos1", Map.of("x", 182, "y", 101, "z", 192),
                 "pos2", Map.of("x", 185, "y", 101, "z", 195))));
         yaml.set("custom", "preserved");
         BuildMartConfig config = config(yaml);
@@ -173,7 +173,6 @@ class BuildMartJumpPadsTest {
         assertEquals(new Vector(182, 101, 192), config.getJumpPads().getFirst().pos1());
         assertEquals(new Vector(185, 101, 195), config.getJumpPads().getFirst().pos2());
         config.saveCustomOptions();
-        assertFalse(yaml.contains("wind-zones"));
         assertEquals(1, yaml.getMapList("jump-pads").size());
         assertEquals("preserved", yaml.getString("custom"));
         config.loadCustomFileOptions();
@@ -185,8 +184,6 @@ class BuildMartJumpPadsTest {
     @Test void explicitlyEmptyNewJumpPadListDoesNotRestoreOldSelections() throws Exception {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("jump-pads", List.of());
-        yaml.set("wind-zones", List.of(Map.of("pos1", Map.of("x", 0, "y", 0, "z", 0),
-                "pos2", Map.of("x", 1, "y", 0, "z", 1))));
         BuildMartConfig config = config(yaml);
         config.loadCustomFileOptions();
         assertTrue(config.getJumpPads().isEmpty());

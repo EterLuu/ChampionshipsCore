@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
 /** Build Mart map geometry: one shared hub plus internal, non-instance team-base replicas. */
 @Getter
 public final class BuildMartMapGeometry {
-    @Nullable private final BoundingBox boundary;
     @Nullable private final Location spectatorSpawn;
     @Nullable private final BoundingBox hub;
     @Nullable private final Location goldenDisplay;
@@ -19,11 +18,10 @@ public final class BuildMartMapGeometry {
     @NotNull private final ArenaGrid baseGrid;
     private final int baseCount;
 
-    private BuildMartMapGeometry(@Nullable BoundingBox boundary, @Nullable Location spectatorSpawn,
+    private BuildMartMapGeometry(@Nullable Location spectatorSpawn,
                                  @Nullable BoundingBox hub, @Nullable Location goldenDisplay,
                                  @Nullable BuildMartBase baseTemplate, @NotNull ArenaGrid baseGrid,
                                  int baseCount) {
-        this.boundary = boundary;
         this.spectatorSpawn = spectatorSpawn;
         this.hub = hub;
         this.goldenDisplay = goldenDisplay;
@@ -34,8 +32,7 @@ public final class BuildMartMapGeometry {
 
     public static @NotNull BuildMartMapGeometry from(@NotNull BuildMartConfig config) {
         BuildMartBase template = config.getBaseTemplate();
-        return new BuildMartMapGeometry(box(config.getAreaPos1(), config.getAreaPos2()),
-                config.getSpectatorSpawnPoint(), box(config.getHubPos1(), config.getHubPos2()),
+        return new BuildMartMapGeometry(config.getSpectatorSpawnPoint(), box(config.getHubPos1(), config.getHubPos2()),
                 config.getGoldenDisplayPoint(), template, config.getBaseGrid(), config.getBaseCount());
     }
 

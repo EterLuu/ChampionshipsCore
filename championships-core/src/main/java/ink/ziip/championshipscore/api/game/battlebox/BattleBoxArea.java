@@ -49,6 +49,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
     @Getter
     private final int copyIndex;
     private BattleBoxMatch match;
+    private ChampionshipTeam matchWinner;
     private final ConcurrentHashMap<UUID, BBWeaponKitEnum> playerWeaponKit = new ConcurrentHashMap<>();
 
     public BattleBoxArea(ChampionshipsCore plugin, BattleBoxConfig battleBoxConfig) {
@@ -89,6 +90,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
             return false;
         }
         match = new BattleBoxMatch(copyIndex, right, left, geometry);
+        matchWinner = null;
         return super.tryStartGame(right, left);
     }
 
@@ -142,6 +144,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
         cleanDroppedItems();
 
         match = null;
+        matchWinner = null;
         playerWeaponKit.clear();
 
         startGameProgressTask = null;
@@ -278,12 +281,15 @@ public class BattleBoxArea extends BasePairedGameInstance {
 
         String message;
         if (rightWool > leftWool) {
+            matchWinner = right;
             for (UUID uuid : right.getMembers()) addPlayerPoints(uuid, 40);
             message = MessageConfig.BATTLE_BOX_WIN.replace("%team%", right.getColoredName());
         } else if (leftWool > rightWool) {
+            matchWinner = left;
             for (UUID uuid : left.getMembers()) addPlayerPoints(uuid, 40);
             message = MessageConfig.BATTLE_BOX_WIN.replace("%team%", left.getColoredName());
         } else {
+            matchWinner = null;
             for (UUID uuid : right.getMembers()) addPlayerPoints(uuid, 15);
             for (UUID uuid : left.getMembers()) addPlayerPoints(uuid, 15);
             message = MessageConfig.BATTLE_BOX_DRAW;
@@ -299,6 +305,12 @@ public class BattleBoxArea extends BasePairedGameInstance {
                 .replace("%rival%", left.getColoredName())
                 .replace("%rival_points%", Utils.formatPoints(getTeamPoints(left)));
         messageMatch(match, points);
+    }
+
+    /** Winner of the most recently settled match; {@code null} means a draw or no result. */
+    @Nullable
+    public ChampionshipTeam getMatchWinner() {
+        return matchWinner;
     }
 
     private void messageMatch(BattleBoxMatch match, String message) {

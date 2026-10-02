@@ -34,7 +34,7 @@ class EventCommandSupportTest {
     @Test
     void validatesFixedWoolColorAndMembers() {
         EventTeamImport imported = new EventTeamImport(
-                event("第四届夏季联合锦标赛"),
+                event("CC"),
                 List.of(new EventTeamImport.Team("红队", "red", "#B02E26", List.of(
                         new EventTeamImport.Member("PlayerOne", UUID.randomUUID().toString()),
                         new EventTeamImport.Member("PlayerTwo", UUID.randomUUID().toString())))));

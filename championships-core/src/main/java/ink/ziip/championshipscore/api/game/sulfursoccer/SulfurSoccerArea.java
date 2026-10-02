@@ -55,6 +55,8 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
     private boolean openingKickoff;
     private double pitchFloorY;
     private long pearlGeneration;
+    /** Original smooth-quartz goal blocks, restored when this match leaves the field. */
+    private final Map<Vector, Material> originalGoalBlocks = new LinkedHashMap<>();
 
     public SulfurSoccerArea(ChampionshipsCore plugin, SulfurSoccerConfig config, boolean firstTime, String name) {
         super(plugin, GameTypeEnum.SulfurSoccer, new SulfurSoccerHandler(plugin), config);
@@ -86,15 +88,46 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                 || getGameStageEnum() == GameStageEnum.PREPARATION && isWarmingUp();
     }
     public String getStateText() {
-        if (getGameStageEnum() == GameStageEnum.END) return "比赛结束";
-        if (paused) return "等待选手重连";
-        if (isWarmingUp()) return "试踢 " + warmupTime() + "（不计分）";
-        if (isShootout()) return "点球 " + shootout.goals(SulfurSoccerSide.RIGHT) + ":"
-                + shootout.goals(SulfurSoccerSide.LEFT) + " 第 " + shootout.round() + " 轮 "
-                + (shootout.preparing() ? "准备 " : shootout.struck() ? "判定 " : "射门 ") + getTimer() + " 秒";
-        return "剩余 " + regulationTime();
+        if (getGameStageEnum() == GameStageEnum.END) return state(MessageConfig.SULFUR_SOCCER_STATE_END, "比赛结束");
+        if (paused) return state(MessageConfig.SULFUR_SOCCER_STATE_PAUSED, "等待选手重连");
+        if (isWarmingUp()) return scoreText(state(MessageConfig.SULFUR_SOCCER_STATE_WARMUP, "试踢 %time%（不计分）").replace("%time%", warmupTime()));
+        if (isShootout()) {
+            String phase = shootout.preparing() ? "准备" : shootout.struck() ? "判定" : "射门";
+            return penaltyText(state(MessageConfig.SULFUR_SOCCER_STATE_SHOOTOUT, "点球 %right_penalties%:%left_penalties% 第 %round% 轮 %phase% %seconds% 秒")).replace("%phase%", phase);
+        }
+        return scoreText(state(MessageConfig.SULFUR_SOCCER_STATE_REGULATION, "剩余 %time%"));
     }
+    private static String state(String configured, String fallback) { return configured == null ? fallback : configured; }
     public ChampionshipTeam getChampion() { return champion; }
+
+    /** Force a valid finalist to win when a referee must settle the finale. */
+    public boolean forceChampion(ChampionshipTeam team) {
+        if (team == null || getGameStageEnum() == GameStageEnum.WAITING
+                || getGameStageEnum() == GameStageEnum.END
+                || (!team.equals(rightChampionshipTeam) && !team.equals(leftChampionshipTeam))) return false;
+        champion = team;
+        endGame();
+        return true;
+    }
+
+    /** Administrative controls shared by finale commands. */
+    public boolean pauseMatch() {
+        if (match == null || getGameStageEnum() != GameStageEnum.PROGRESS || paused) return false;
+        setPaused(true);
+        return true;
+    }
+
+    public boolean resumeMatch() {
+        if (match == null || getGameStageEnum() != GameStageEnum.PROGRESS || !paused) return false;
+        setPaused(false);
+        return true;
+    }
+
+    public boolean restartCurrentRound() {
+        if (match == null || getGameStageEnum() != GameStageEnum.PROGRESS || isShootout()) return false;
+        prepareKickoff(true);
+        return true;
+    }
 
     @Override public boolean tryStartGame(ChampionshipTeam right, ChampionshipTeam left) {
         if (getGameStageEnum() != GameStageEnum.WAITING || !readyTeam(right) || !readyTeam(left)) return false;
@@ -113,8 +146,9 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
     }
 
     private static boolean readyTeam(ChampionshipTeam team) {
-        return team != null && !team.getMembers().isEmpty() && team.getMembers().size() <= 4
-                && team.getOnlinePlayers().size() == team.getMembers().size();
+        // The persisted roster is authoritative. Offline finalists are restored when they rejoin;
+        // checking Bukkit's current online subset here can abort an otherwise valid finale start.
+        return team != null && !team.getMembers().isEmpty() && team.getMembers().size() <= 4;
     }
 
     @Override protected Collection<Location> getStartPreloadLocations() {
@@ -148,12 +182,15 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
             layout = SulfurSoccerSpawns.resolve(world, getGameConfig());
         } catch (IllegalArgumentException failure) {
             logGame(Level.WARNING, "出生点", failure.getMessage());
-            sendMessageToAllGamePlayers("&c硫方足球无法开始：" + failure.getMessage());
+            sendMessageToAllGamePlayers(MessageConfig.SULFUR_SOCCER_START_FAILED + " " + failure.getMessage());
             abortAndReset();
             return;
         }
-        applyTeamColors(Bukkit.getWorld(getWorldName()), getGameConfig(),
+        World stadium = Bukkit.getWorld(getWorldName());
+        applyTeamColors(stadium, getGameConfig(),
                 rightChampionshipTeam.getColorName(), leftChampionshipTeam.getColorName());
+        rememberGoalColors(stadium, rightGoal, concreteMaterial(rightChampionshipTeam.getColorName()));
+        rememberGoalColors(stadium, leftGoal, concreteMaterial(leftChampionshipTeam.getColorName()));
         champion = null;
         openingKickoff = true;
         pitchFloorY = layout.floorY();
@@ -166,7 +203,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
             validatePenaltySpace(world, leftPenalty);
         } catch (IllegalArgumentException failure) {
             logGame(Level.WARNING, "点球场地", failure.getMessage());
-            sendMessageToAllGamePlayers("&c硫方足球无法开始：" + failure.getMessage());
+            sendMessageToAllGamePlayers(MessageConfig.SULFUR_SOCCER_START_FAILED + " " + failure.getMessage());
             abortAndReset();
             return;
         }
@@ -203,6 +240,43 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         return changed;
     }
 
+    /**
+     * Recolours only the smooth-quartz shell immediately around a goal's configured empty volume.
+     * The returned map records the original material so a later match can restore the template.
+     */
+    static Map<Vector, Material> applyGoalColors(World world, BoundingBox goal, Material concrete) {
+        if (world == null || goal == null || concrete == null || !concrete.name().endsWith("_CONCRETE"))
+            throw new IllegalArgumentException("球门换色需要有效的世界、球门选区和混凝土颜色");
+        Map<Vector, Material> original = new LinkedHashMap<>();
+        BoundingBox shell = goal.clone().expand(1.0, 1.0, 1.0);
+        int minX = (int) Math.floor(shell.getMinX());
+        int minY = (int) Math.floor(shell.getMinY());
+        int minZ = (int) Math.floor(shell.getMinZ());
+        int maxX = (int) Math.ceil(shell.getMaxX());
+        int maxY = (int) Math.ceil(shell.getMaxY());
+        int maxZ = (int) Math.ceil(shell.getMaxZ());
+        for (int x = minX; x < maxX; x++) for (int y = minY; y < maxY; y++) for (int z = minZ; z < maxZ; z++) {
+            org.bukkit.block.Block block = world.getBlockAt(x, y, z);
+            if (block.getType() != Material.SMOOTH_QUARTZ) continue;
+            Vector point = new Vector(x, y, z);
+            original.put(point, Material.SMOOTH_QUARTZ);
+            block.setType(concrete, false);
+        }
+        return original;
+    }
+
+    static void restoreGoalColors(World world, Map<Vector, Material> original) {
+        if (world == null || original == null) return;
+        for (Map.Entry<Vector, Material> entry : original.entrySet()) {
+            Vector point = entry.getKey();
+            world.getBlockAt(point.getBlockX(), point.getBlockY(), point.getBlockZ()).setType(entry.getValue(), false);
+        }
+    }
+
+    private void rememberGoalColors(World world, BoundingBox goal, Material concrete) {
+        originalGoalBlocks.putAll(applyGoalColors(world, goal, concrete));
+    }
+
     private void assignSpawns(ChampionshipTeam team, List<Location> points) {
         int index = 0;
         for (UUID player : team.getMembers())
@@ -225,7 +299,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         resetPlayerHealthFoodEffectLevelInventory();
         for (Player player : players()) restorePlayer(player);
         updateScore();
-        Runnable countdown = () -> startFinalCountdown(getGameConfig().getKickoffCountdown(), gameTypeEnum.toString(),
+        Runnable countdown = () -> startFinalCountdown(getGameConfig().getKickoffCountdown(), MessageConfig.GAME_SULFUR_SOCCER,
                 openingKickoff ? MessageConfig.SULFUR_SOCCER_OPENING_TITLE : MessageConfig.SULFUR_SOCCER_RESTART_TITLE, "",
                 this::beginPlay);
         if (showGoal) {
@@ -387,7 +461,13 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         }
     }
 
-    private boolean everyoneOnline() { return readyTeam(rightChampionshipTeam) && readyTeam(leftChampionshipTeam); }
+    private boolean everyoneOnline() {
+        // Starting admits the persisted roster even when somebody is disconnected. Once play is
+        // live, keep the existing reconnect pause behavior based on the currently online players.
+        return rightChampionshipTeam != null && leftChampionshipTeam != null
+                && rightChampionshipTeam.getOnlinePlayers().size() == rightChampionshipTeam.getMembers().size()
+                && leftChampionshipTeam.getOnlinePlayers().size() == leftChampionshipTeam.getMembers().size();
+    }
 
     private void finishWithWinner(SulfurSoccerSide winner) {
         champion = winner == SulfurSoccerSide.RIGHT ? rightChampionshipTeam : leftChampionshipTeam;
@@ -702,6 +782,8 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         removeBall();
         removePearls();
         penaltyBarrier.clear();
+        restoreGoalColors(Bukkit.getWorld(getWorldName()), originalGoalBlocks);
+        originalGoalBlocks.clear();
         pearlReadyTicks.clear();
         for (Player player : players()) {
             player.setCooldown(Material.ENDER_PEARL, 0);

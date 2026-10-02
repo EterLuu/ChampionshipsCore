@@ -19,7 +19,7 @@ spectator-spawn-point:
 area-pos1:
 area-pos2:
 # Absolute world Y: a participant is eliminated when their position is below this value.
-# Set in the map editor; empty on existing maps preserves the original lower boundary.
+# Set in the map editor before publishing the map.
 elimination-y:
 # Prepare/template model: use /cc map edit TNTRun to capture one arena schematic,
 # set the elimination height, configure its copy layout and publish the map.

@@ -161,12 +161,12 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
         for (UUID uuid : gamePlayers)
-            plugin.getVisibilityManager().seeSelf(uuid, visibilityOwner, "激流勇进参赛者只显示自己");
+            plugin.getVisibilityManager().seeTeammates(uuid, visibilityOwner, "激流勇进参赛者显示同队队友");
         assignAndTeleportSpawns();
         announceGamePreparation(MessageConfig.RIPTIDE_RUSH_START_PREPARATION,
                 MessageConfig.RIPTIDE_RUSH_START_PREPARATION_TITLE,
                 MessageConfig.RIPTIDE_RUSH_START_PREPARATION_SUBTITLE);
-        startFinalCountdown(GameTypeEnum.RiptideRush.toString(),
+        startFinalCountdown(MessageConfig.GAME_RIPTIDE_RUSH,
                 MessageConfig.RIPTIDE_RUSH_GAME_START_TITLE,
                 MessageConfig.RIPTIDE_RUSH_GAME_START_SUBTITLE, this::beginGameProgress);
     }
@@ -174,20 +174,13 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     private void beginGameProgress() {
         passRun = new RiptidePassRun(geometry, coursePlan.levels(), getGameConfig());
         rhythmRun = new RiptideRhythmRun(geometry, coursePlan.levels());
-        List<UUID> starters = gamePlayers.stream().filter(uuid -> {
-            Player player = Bukkit.getPlayer(uuid);
-            return player != null && player.isOnline();
-        }).toList();
+        // The persisted roster owns the round.  Do not derive starters from the currently online
+        // subset: a disconnected member must never make the game start with a reduced roster or
+        // trigger an online-count failure.  Entity lookups below are only for applying live Bukkit
+        // state to players who are present.
+        List<UUID> starters = List.copyOf(gamePlayers);
         roundLedger.start(starters);
         onlinePlayersAtStart = starters.size();
-        // Keep absent roster members owned by the match for reconnects and the next round,
-        // but never give them a placement or award points for their absence.
-        gamePlayers.stream().filter(uuid -> !starters.contains(uuid)).forEach(eliminatedPlayers::add);
-        if (!canStartRound(isEventRun(), starters.size())) {
-            logGame(Level.WARNING, "参赛", "有效在线选手不足，终止本轮且不计分 | online=" + starters.size());
-            abortAndReset();
-            return;
-        }
         protectedFloorPlayers.clear();
         shieldNoticeUntil.clear();
         raftShields.clear();
@@ -323,7 +316,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
             sendActionBarToAllGamePlayers(MessageConfig.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
         if (colorFloorRun == null && speedShieldNoticeUntil <= presentationTicks) shieldNoticeUntil.forEach((uuid, until) -> {
             Player player = Bukkit.getPlayer(uuid);
-            if (until > presentationTicks && player != null) Utils.sendActionBar(player, "§c护盾已破碎");
+            if (until > presentationTicks && player != null) Utils.sendActionBar(player, MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN);
         });
         if (dodgeTicksRemaining > 0) refreshDodgePresentation();
         if (departure.active() || waitingToDepart)
@@ -553,7 +546,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 player.sendActionBar(speedShieldNoticeUntil > presentationTicks
                         ? LegacyText.component(MessageConfig.RIPTIDE_RUSH_SPEED_SHIELD_BREAK + " §7| ").append(actionbar)
                         : shieldNoticeUntil.getOrDefault(uuid, 0) > presentationTicks
-                        ? LegacyText.component("§c护盾已破碎 §7| ").append(actionbar) : actionbar);
+                        ? LegacyText.component(MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN + " §7| ").append(actionbar) : actionbar);
             }
         }
         for (var spectator : getOnlineCCSpectators()) {
@@ -667,7 +660,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     private void announceShieldBroken(Player player) {
         shieldNoticeUntil.put(player.getUniqueId(), presentationTicks + 40);
         player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_BREAK, 1F, 1F);
-        Utils.sendActionBar(player, "§c护盾已破碎");
+        Utils.sendActionBar(player, MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN);
     }
 
     private synchronized void eliminateBatch(@NotNull Collection<UUID> candidates,
@@ -732,10 +725,6 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 plugin.getVisibilityManager().reconcilePlayer(uuid);
             }
         }
-    }
-
-    static boolean canStartRound(boolean formalEvent, int onlinePlayers) {
-        return onlinePlayers >= (formalEvent ? 2 : 1);
     }
 
     static boolean shouldEndAfterElimination(int onlinePlayersAtStart, int alive) {
@@ -981,7 +970,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         }
         if ((stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN)
                 && !eliminatedPlayers.contains(player.getUniqueId()))
-            plugin.getVisibilityManager().seeSelf(player.getUniqueId(), visibilityOwner, "激流勇进参赛者只显示自己");
+            plugin.getVisibilityManager().seeTeammates(player.getUniqueId(), visibilityOwner, "激流勇进参赛者显示同队队友");
         else
             plugin.getVisibilityManager().release(player.getUniqueId(), visibilityOwner);
         plugin.getVisibilityManager().reconcilePlayer(player.getUniqueId());

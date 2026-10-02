@@ -47,7 +47,7 @@ public class TNTRunConfig extends BaseGameConfig {
     @ConfigOption(path = "area-pos2")
     private Vector areaPos2;
 
-    /** Absolute world Y below which participants are eliminated; null preserves the old lower boundary. */
+    /** Absolute world Y below which participants are eliminated; empty only while editing a draft. */
     @ConfigOption(path = "elimination-y", nullable = true)
     private Double eliminationY;
 
@@ -102,15 +102,37 @@ public class TNTRunConfig extends BaseGameConfig {
 
     /**
      * Per-copy bounding boxes (one tight box per sub-arena), derived from the grid + {@link #copySize}.
-     * Empty when the map uses its configured aggregate {@code area-pos} box. Used so each
-     * copy's players are bounded by their own sub-arena rather than one box spanning the gaps.
+     * Empty until the prepare flow has stamped the current per-copy geometry. Each copy's players are
+     * bounded by their own sub-arena rather than one box spanning the gaps.
      */
     public List<BoundingBox> getCopyBoxes() {
         if (copies <= 0 || copySize == null) return Collections.emptyList();
         return ArenaPreparer.copyBoxes(getCopyGrid(), copies, copySize);
     }
 
-    /** Suggested value for the editor; existing maps keep their original boundary until explicitly set. */
+    /**
+     * A TNT Run map is playable only after the current prepare flow has recorded every generated-map field.
+     * A published document without {@code elimination-y} is an obsolete configuration and must be repaired
+     * in the editor before it can start.
+     */
+    @Override
+    public boolean isPrepareReady() {
+        return super.isPrepareReady()
+                && !getConfiguredWorld().isBlank()
+                && isPrepareWorldBuilt()
+                && areaPos1 != null
+                && areaPos2 != null
+                && eliminationY != null
+                && Double.isFinite(eliminationY)
+                && copies > 0
+                && copySize != null
+                && copyLayoutOrigin != null
+                && copyLayoutStep != null
+                && copySpawn != null
+                && spectatorSpawnPoint != null;
+    }
+
+    /** Suggested value shown by the editor before an explicit elimination height is entered. */
     public double getDefaultEliminationY() {
         List<BoundingBox> boxes = getCopyBoxes();
         if (!boxes.isEmpty()) return boxes.stream().mapToDouble(BoundingBox::getMinY).min().orElseThrow();
@@ -118,23 +140,16 @@ public class TNTRunConfig extends BaseGameConfig {
         return getCopyGrid().origin(0).getY();
     }
 
-    /** Keeps the template's horizontal/top limits, replacing only its lower limit when configured. */
+    /** Keeps the template's horizontal/top limits and applies the configured elimination height. */
     public boolean isInsidePlayerBounds(Vector point) {
-        if (point == null) return false;
+        if (point == null || eliminationY == null || !Double.isFinite(eliminationY)) return false;
         List<BoundingBox> boxes = getCopyBoxes();
         for (BoundingBox box : boxes) {
-            double lowerY = eliminationY == null ? box.getMinY() : eliminationY;
             if (point.getX() >= box.getMinX() && point.getX() < box.getMaxX()
                     && point.getZ() >= box.getMinZ() && point.getZ() < box.getMaxZ()
-                    && point.getY() >= lowerY && point.getY() < box.getMaxY()) return true;
+                    && point.getY() >= eliminationY && point.getY() < box.getMaxY()) return true;
         }
-        if (!boxes.isEmpty() || areaPos1 == null || areaPos2 == null) return false;
-        Vector min = Vector.getMinimum(areaPos1, areaPos2);
-        Vector max = Vector.getMaximum(areaPos1, areaPos2);
-        double lowerY = eliminationY == null ? min.getY() : eliminationY;
-        return point.getX() >= min.getX() && point.getX() <= max.getX()
-                && point.getZ() >= min.getZ() && point.getZ() <= max.getZ()
-                && point.getY() >= lowerY && point.getY() <= max.getY();
+        return false;
     }
 
     /**

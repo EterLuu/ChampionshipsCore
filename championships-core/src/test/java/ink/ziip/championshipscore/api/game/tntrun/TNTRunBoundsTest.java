@@ -59,25 +59,21 @@ class TNTRunBoundsTest {
         }
 
         @Test
-        void existingPreparedMapsKeepTheirOriginalBottomWhenHeightIsMissing() {
+        void mapsWithoutExplicitHeightHaveNoPlayableBounds() {
             TNTRunConfig config = preparedConfig();
             assertNull(config.getEliminationY());
             assertEquals(80, config.getDefaultEliminationY());
-            assertTrue(config.isInsidePlayerBounds(new Vector(0, 80, 0)));
+            assertFalse(config.isInsidePlayerBounds(new Vector(0, 80, 0)));
             assertFalse(config.isInsidePlayerBounds(new Vector(0, 79.999, 0)));
         }
 
         @Test
-        void legacyMapsUseTheirConfiguredBoundsWithAnIndependentFallHeight() {
+        void mapsWithoutGeneratedCopiesHaveNoPlayableBounds() {
             TNTRunConfig config = config();
             config.setAreaPos1(new Vector(-20, 80, -10));
             config.setAreaPos2(new Vector(19, 119, 9));
-            assertFalse(config.isInsidePlayerBounds(new Vector(0, 70, 0)));
             config.setEliminationY(60.0);
-            assertTrue(config.isInsidePlayerBounds(new Vector(0, 70, 0)));
-            assertTrue(config.isInsidePlayerBounds(new Vector(19, 119, 9)), "Legacy maximum is inclusive");
-            assertFalse(config.isInsidePlayerBounds(new Vector(20, 70, 0)));
-            assertFalse(config.isInsidePlayerBounds(new Vector(0, 59.999, 0)));
+            assertFalse(config.isInsidePlayerBounds(new Vector(0, 70, 0)));
         }
 
         @Test

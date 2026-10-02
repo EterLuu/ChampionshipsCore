@@ -27,18 +27,18 @@ final class SulfurSoccerSpawns {
 
     private static List<Location> side(World world, SulfurSoccerConfig config, List<String> raw,
                                        BoundingBox half, Vector goal, boolean alongX, String name) {
-        List<Location> old = raw.stream().map(config::parseSpawn).toList();
-        double depth = old.subList(0, 3).stream().mapToDouble(p -> longitudinal(p, alongX)).average().orElseThrow();
-        double low = old.stream().mapToDouble(p -> lateral(p, alongX)).min().orElseThrow();
-        double high = old.stream().mapToDouble(p -> lateral(p, alongX)).max().orElseThrow();
+        List<Location> references = raw.stream().map(config::parseSpawn).toList();
+        double depth = references.subList(0, 3).stream().mapToDouble(p -> longitudinal(p, alongX)).average().orElseThrow();
+        double low = references.stream().mapToDouble(p -> lateral(p, alongX)).min().orElseThrow();
+        double high = references.stream().mapToDouble(p -> lateral(p, alongX)).max().orElseThrow();
         if (high - low < 2) {
             double min = alongX ? half.getMinZ() : half.getMinX();
             double max = alongX ? half.getMaxZ() : half.getMaxX();
             low = min + (max - min) / 4;
             high = max - (max - min) / 4;
         }
-        double floorY = old.getFirst().getY();
-        float yaw = old.getFirst().getYaw();
+        double floorY = references.getFirst().getY();
+        float yaw = references.getFirst().getYaw();
         List<Location> result = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             double across = low + (high - low) * i / 2;
@@ -51,7 +51,7 @@ final class SulfurSoccerSpawns {
         Location keeper = null;
         int candidates = 0;
         boolean configuredKeeper = false;
-        Location fourth = old.get(3);
+        Location fourth = references.get(3);
         double goalDepth = alongX ? goal.getX() : goal.getZ();
         double direction = Math.signum(goalDepth - depth);
         for (int x = (int) Math.floor(half.getMinX()); x < Math.ceil(half.getMaxX()); x++) {

@@ -96,11 +96,18 @@ public final class SpectatorManager extends BaseManager implements Listener {
     private static final float MAX_SPEED = 1.0F;
     private static final PotionEffect NIGHT_VISION = new PotionEffect(PotionEffectType.NIGHT_VISION,
             PotionEffect.INFINITE_DURATION, 0, true, false, false);
+    /** The common spectator presentation is invisible, while a helmet keeps the player identifiable. */
+    private static final PotionEffect INVISIBILITY = new PotionEffect(PotionEffectType.INVISIBILITY,
+            PotionEffect.INFINITE_DURATION, 0, true, false, false);
 
     private final GameManager gameManager;
     private final Map<UUID, SpectatorSession> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, InventorySnapshot> snapshots = new ConcurrentHashMap<>();
     private final Map<UUID, ItemStack> participantControlItems = new ConcurrentHashMap<>();
+    /** Original helmet for internally eliminated participants (AIR means there was no helmet). */
+    private final Map<UUID, ItemStack> participantHelmets = new ConcurrentHashMap<>();
+    /** Original invisibility effect for internally eliminated participants, if any. */
+    private final Map<UUID, PotionEffect> participantInvisibility = new ConcurrentHashMap<>();
     /** Original physics flag for internally eliminated participants. */
     private final Map<UUID, Boolean> participantNoPhysics = new ConcurrentHashMap<>();
     private BukkitTask presentationTask;
@@ -133,6 +140,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
         sessions.clear();
         snapshots.clear();
         participantControlItems.clear();
+        participantHelmets.clear();
+        participantInvisibility.clear();
         participantNoPhysics.clear();
         HandlerList.unregisterAll(this);
     }
@@ -164,6 +173,10 @@ public final class SpectatorManager extends BaseManager implements Listener {
         UUID uuid = player.getUniqueId();
         ItemStack controlSlot = player.getInventory().getItem(8);
         if (controlSlot != null) participantControlItems.putIfAbsent(uuid, controlSlot.clone());
+        ItemStack helmet = player.getInventory().getHelmet();
+        participantHelmets.putIfAbsent(uuid, helmet == null ? new ItemStack(Material.AIR) : helmet.clone());
+        PotionEffect originalInvisibility = player.getPotionEffect(PotionEffectType.INVISIBILITY);
+        if (originalInvisibility != null) participantInvisibility.putIfAbsent(uuid, originalInvisibility);
         participantNoPhysics.putIfAbsent(uuid, player.hasNoPhysics());
         sessions.computeIfAbsent(uuid, ignored -> new SpectatorSession(uuid, area, false));
         plugin.getVisibilityManager().reconcilePlayer(uuid);
@@ -179,7 +192,13 @@ public final class SpectatorManager extends BaseManager implements Listener {
             if (player != null) clearPresentation(player, session.external());
             snapshots.remove(session.uuid());
             participantControlItems.remove(session.uuid());
-            participantNoPhysics.remove(session.uuid());
+            // An offline eliminated participant cannot be restored yet. Keep the original presentation
+            // state until the next join, where onJoin() removes the core effects and restores it.
+            if (player != null) {
+                participantHelmets.remove(session.uuid());
+                participantInvisibility.remove(session.uuid());
+                participantNoPhysics.remove(session.uuid());
+            }
             plugin.getVisibilityManager().clearManualOverrides(session.uuid());
         }
     }
@@ -201,6 +220,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         BaseGameInstance area = gameManager.getBasePlayerArea(uuid);
         BaseGameInstance external = gameManager.getPlayerSpectatorStatus(uuid);
         if (external != null) {
+            snapshots.putIfAbsent(uuid, InventorySnapshot.capture(player));
             sessions.computeIfAbsent(uuid, ignored -> new SpectatorSession(uuid, external, true));
         } else if (area != null && gameManager.isInstanceActivelyRunning(area) && !area.isIntroductionPhase()) {
             prepareParticipant(player, area);
@@ -418,6 +438,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (!event.getPlayer().isOnline()) return;
             if (isSpectatorLike(uuid)) applyPresentation(event.getPlayer());
+            else restoreStaleParticipantState(event.getPlayer());
         });
     }
 
@@ -429,6 +450,10 @@ public final class SpectatorManager extends BaseManager implements Listener {
                     && gameManager.getBasePlayerArea(uuid) == null) {
                 sessions.remove(uuid);
                 snapshots.remove(uuid);
+                participantControlItems.remove(uuid);
+                participantHelmets.remove(uuid);
+                participantInvisibility.remove(uuid);
+                participantNoPhysics.remove(uuid);
                 plugin.getVisibilityManager().clearManualOverrides(uuid);
             }
         });
@@ -481,6 +506,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
         clearPresentation(player, session.external());
         snapshots.remove(uuid);
         participantControlItems.remove(uuid);
+        participantHelmets.remove(uuid);
+        participantInvisibility.remove(uuid);
         plugin.getVisibilityManager().clearManualOverrides(uuid);
     }
 
@@ -495,6 +522,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (session == null || session.external() || session.area() != area) return;
         if (!sessions.remove(uuid, session)) return;
         clearPassiveState(player);
+        restoreParticipantHelmet(player);
+        restoreParticipantInvisibility(player);
         Boolean previousNoPhysics = participantNoPhysics.remove(uuid);
         if (previousNoPhysics != null) player.setNoPhysics(previousNoPhysics);
         player.getInventory().setItem(8, participantControlItems.remove(uuid));
@@ -508,6 +537,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
         sessions.remove(uuid);
         snapshots.remove(uuid);
         participantControlItems.remove(uuid);
+        participantHelmets.remove(uuid);
+        participantInvisibility.remove(uuid);
         participantNoPhysics.remove(uuid);
         plugin.getVisibilityManager().clearManualOverrides(uuid);
     }
@@ -520,6 +551,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         // External spectators have no game-owned inventory. Internal eliminated participants (notably
         // Bingo) retain their read-only card items and only receive the common control compass.
         if (session == null || session.external()) player.getInventory().clear();
+        ensureSpectatorHelmet(player);
         if (session != null && session.external()) {
             applyExternalControlItems(player, session);
         } else {
@@ -532,11 +564,13 @@ public final class SpectatorManager extends BaseManager implements Listener {
         InventorySnapshot snapshot = restoreSnapshot ? snapshots.get(player.getUniqueId()) : null;
         if (snapshot != null) snapshot.restore(player);
         else {
+            restoreParticipantHelmet(player);
             player.getInventory().clear();
             player.setGameMode(GameMode.ADVENTURE);
             Boolean previousNoPhysics = participantNoPhysics.remove(player.getUniqueId());
             if (previousNoPhysics != null) player.setNoPhysics(previousNoPhysics);
         }
+        restoreParticipantInvisibility(player);
     }
 
     private void clearPassiveState(@NotNull Player player) {
@@ -549,6 +583,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         player.setCanPickupItems(true);
         player.setSleepingIgnored(false);
         player.removePotionEffect(PotionEffectType.NIGHT_VISION);
+        player.removePotionEffect(PotionEffectType.INVISIBILITY);
         player.setFallDistance(0F);
         player.setFireTicks(0);
     }
@@ -578,6 +613,36 @@ public final class SpectatorManager extends BaseManager implements Listener {
         player.setFireTicks(0);
         if (session == null || session.nightVision()) player.addPotionEffect(NIGHT_VISION);
         else player.removePotionEffect(PotionEffectType.NIGHT_VISION);
+        player.addPotionEffect(INVISIBILITY);
+    }
+
+    private static void ensureSpectatorHelmet(@NotNull Player player) {
+        ItemStack helmet = player.getInventory().getHelmet();
+        if (helmet == null || helmet.getType().isAir())
+            player.getInventory().setHelmet(new ItemStack(Material.LEATHER_HELMET));
+    }
+
+    private void restoreParticipantHelmet(@NotNull Player player) {
+        ItemStack original = participantHelmets.remove(player.getUniqueId());
+        if (original == null) return;
+        player.getInventory().setHelmet(original.getType().isAir() ? null : original.clone());
+    }
+
+    private void restoreParticipantInvisibility(@NotNull Player player) {
+        PotionEffect original = participantInvisibility.remove(player.getUniqueId());
+        if (original != null) player.addPotionEffect(original);
+    }
+
+    private void restoreStaleParticipantState(@NotNull Player player) {
+        UUID uuid = player.getUniqueId();
+        if (!participantHelmets.containsKey(uuid) && !participantInvisibility.containsKey(uuid)
+                && !participantNoPhysics.containsKey(uuid)) return;
+        clearPassiveState(player);
+        restoreParticipantHelmet(player);
+        restoreParticipantInvisibility(player);
+        Boolean previousNoPhysics = participantNoPhysics.remove(uuid);
+        if (previousNoPhysics != null) player.setNoPhysics(previousNoPhysics);
+        participantControlItems.remove(uuid);
     }
 
     private void applyExternalControlItems(@NotNull Player player, @NotNull SpectatorSession session) {

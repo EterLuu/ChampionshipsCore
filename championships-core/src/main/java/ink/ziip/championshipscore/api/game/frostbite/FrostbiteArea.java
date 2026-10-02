@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.*;
@@ -123,11 +124,17 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                 }
                 collisionBefore.put(id, player.isCollidable()); player.setCollidable(false);
                 spawn(player, false);
-                player.sendMessage(LegacyText.component("&b霜冻决斗 &f第 " + (round.seats().get(id).arena()+1)
-                        + " 场地｜冻结5秒后失温，击杀得分；三轮累加队伍成绩。"));
+                player.sendMessage(LegacyText.component(MessageConfig.FROSTBITE_ARENA
+                        .replace("%arena%", Integer.toString(round.seats().get(id).arena()+1))
+                        .replace("%freeze%", Integer.toString(getGameConfig().getFreezeSeconds()))));
             }
             createPickups();
-            startFinalCountdown("霜冻决斗", "&b霜冻决斗", "&f冻结敌人，争夺补给！", this::begin);
+            announceGamePreparation(MessageConfig.FROSTBITE_START_PREPARATION,
+                    MessageConfig.FROSTBITE_START_PREPARATION_TITLE,
+                    MessageConfig.FROSTBITE_START_PREPARATION_SUBTITLE);
+            startFinalCountdown(MessageConfig.GAME_FROSTBITE,
+                    MessageConfig.FROSTBITE_GAME_START_TITLE,
+                    MessageConfig.FROSTBITE_GAME_START_SUBTITLE, this::begin);
         } catch (RuntimeException failure) {
             logGame(Level.SEVERE, "准备", failure.getMessage()); abortAndReset();
         }
@@ -137,7 +144,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         tickTask=scheduler.runTaskTimer(plugin,this::tickRound,1,1);
         timerTask=startRemainingTimer(getGameConfig().getTimer(), remaining -> {
             timer=remaining;
-            updateGameTimerBossBar("&b霜冻决斗 &f" + remaining/60 + ":" + String.format(java.util.Locale.ROOT,"%02d",remaining%60),remaining,getGameConfig().getTimer());
+            updateGameTimerBossBar(MessageConfig.FROSTBITE_BOSS_BAR.replace("%time%",
+                    remaining/60 + ":" + String.format(java.util.Locale.ROOT,"%02d",remaining%60)), remaining,getGameConfig().getTimer());
         },this::endGame);
     }
     public boolean participant(Player player) { return !notAreaPlayer(player) && getGameStageEnum()!=GameStageEnum.WAITING; }
@@ -170,13 +178,16 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                 var frozen=round.freezeState(id);
                 if (frozen!=null) {
                     p.setVelocity(new Vector()); p.setFreezeTicks(130);
-                    p.sendActionBar(LegacyText.component("&b被冻结 &f"+String.format(java.util.Locale.ROOT,"%.1f",(frozen.until()-tick)/20D)+"秒"
-                            +(camp(id)!=null?" &6营火将自动返回":"")));
+                    p.sendActionBar(LegacyText.component(MessageConfig.FROSTBITE_FROZEN_ACTIONBAR
+                            .replace("%seconds%", String.format(java.util.Locale.ROOT,"%.1f",(frozen.until()-tick)/20D))
+                            .replace("%campfire%", camp(id)!=null?" &6营火将自动返回":"")));
                 } else {
                     collect(p);
                     String hint = supplyHints.current(id, tick);
-                    p.sendActionBar(LegacyText.component(hint != null ? hint : "&f击杀 &b"+round.kills(id)+" &7｜ &f场地 "+(arena(id)+1)
-                            +(round.heated(id,tick)?" &6保温中":"")));
+                    p.sendActionBar(LegacyText.component(hint != null ? hint : MessageConfig.FROSTBITE_STATUS_ACTIONBAR
+                            .replace("%kills%", Integer.toString(round.kills(id)))
+                            .replace("%arena%", Integer.toString(arena(id)+1))
+                            .replace("%heated%", round.heated(id,tick)?" &6保温中":"")));
                 }
             }
         }
@@ -214,7 +225,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         String victimName = victimPlayer == null ? Utils.formatPlayerName(victim) : Utils.formatPlayerName(victimPlayer);
         Player killerPlayer = Bukkit.getPlayer(killer);
         String killerName = killerPlayer == null ? Utils.formatPlayerName(killer) : Utils.formatPlayerName(killerPlayer);
-        sendMessageToAllGamePlayers("&b❄ &f" + killerName + " &7击杀了 &f" + victimName);
+        sendMessageToAllGamePlayers(MessageConfig.FROSTBITE_KILL.replace("%killer%", killerName).replace("%victim%", victimName));
         if (killerPlayer != null) killerPlayer.playSound(killerPlayer.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1F, 1.2F);
         if (victimPlayer != null) victimPlayer.playSound(victimPlayer.getLocation(), Sound.BLOCK_GLASS_BREAK, 1F, .6F);
     }
@@ -222,7 +233,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         Player p=Bukkit.getPlayer(id); if(p==null)return;
         clearCombat(p); removeOwnedProps(id); spawn(p,true);
         showRespawnGlow(id);
-        p.sendTitle("&b重新出发".replace('&','§'),"失温后快速重生，短暂保温保护",0,20,5);
+        p.sendTitle(Utils.translateColorCodes(MessageConfig.FROSTBITE_RESPAWN_TITLE),
+                Utils.translateColorCodes(MessageConfig.FROSTBITE_RESPAWN_SUBTITLE),0,20,5);
     }
 
     /** Shows the respawned player the other active players in their isolated arena for three seconds. */
@@ -310,7 +322,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         if(phoenix) {
             playPhoenixEffect(victim);
             round.thaw(victim.getUniqueId());equipTeamArmor(victim);updateHeatState(victim);
-            victim.sendActionBar(LegacyText.component("&6凤凰余烬已消耗，抵挡了一次冻结"));return true;}
+            victim.sendActionBar(LegacyText.component(MessageConfig.FROSTBITE_PHOENIX_CONSUMED));return true;}
         applyFrozenState(victim);
         if (camp != null) {
             frozenAt.getWorld().spawnParticle(Particle.FLAME, frozenAt.clone().add(0, 1, 0), 40, .45, .7, .45, .03);
@@ -320,15 +332,18 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
             thaw(victim);
             teleport(victim, returnLocation);
             victim.setFallDistance(0);
-            victim.sendActionBar(LegacyText.component("&6营火生效，已返回营火位置"));
+            victim.sendActionBar(LegacyText.component(MessageConfig.FROSTBITE_CAMPFIRE_RETURNED));
             return true;
         }
         Player attackerPlayer = Bukkit.getPlayer(attacker);
         if (attackerPlayer != null) {
             attackerPlayer.playSound(attackerPlayer.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 1.25F);
-            attackerPlayer.sendActionBar(LegacyText.component("&b冻结成功 &f→ &b" + Utils.formatPlayerName(victim)));
+            attackerPlayer.sendActionBar(LegacyText.component(MessageConfig.FROSTBITE_FREEZE_SUCCESS
+                    .replace("%player%", Utils.formatPlayerName(victim))));
         }
-        sendMessageToAllGamePlayers("&b❄ " + Utils.formatPlayerName(attacker) + " &b冻结了 " + Utils.formatPlayerName(victim));
+        sendMessageToAllGamePlayers(MessageConfig.FROSTBITE_FREEZE
+                .replace("%attacker%", Utils.formatPlayerName(attacker))
+                .replace("%victim%", Utils.formatPlayerName(victim)));
         return true;
     }
     private void playPhoenixEffect(Player player) {
@@ -344,7 +359,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         victim.setVelocity(new Vector());victim.setFreezeTicks(130);
         victim.getWorld().spawnParticle(Particle.SNOWFLAKE,victim.getLocation().add(0,1,0),25,.4,.7,.4,.02);
         victim.playSound(victim.getLocation(),Sound.BLOCK_GLASS_BREAK,1,.7F);
-        victim.sendActionBar(LegacyText.component("&b被冻结"));
+        victim.sendActionBar(LegacyText.component(MessageConfig.FROSTBITE_FROZEN));
     }
     private void thaw(Player p) {round.thaw(p.getUniqueId());freezeLocations.remove(p.getUniqueId());p.setFreezeTicks(0);FrostbiteFrozenEquipment.clear(p.getInventory());
         equipTeamArmor(p);updateHeatState(p);p.removePotionEffect(PotionEffectType.SLOWNESS);p.removePotionEffect(PotionEffectType.WEAKNESS);}
@@ -372,9 +387,35 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
     private boolean has(Player p,FrostbiteItem item) {for(ItemStack s:p.getInventory().getStorageContents())if(item(s)==item)return true;return false;}
     private int itemCount(Player p) {int n=0;for(ItemStack s:p.getInventory().getStorageContents())if(item(s)!=null)n++;return n;}
     private ItemStack stack(FrostbiteItem type) {
-        ItemStack stack=new ItemStack(type.material);stack.editMeta(meta->{meta.displayName(LegacyText.component("&b"+type.title));
-            meta.lore(List.of(LegacyText.component("&7"+type.description)));meta.setUnbreakable(true);
+        ItemStack stack=new ItemStack(type.material);stack.editMeta(meta->{meta.displayName(LegacyText.component("&b"+itemTitle(type)));
+            meta.lore(List.of(LegacyText.component("&7"+itemDescription(type))));meta.setUnbreakable(true);
             meta.getPersistentDataContainer().set(itemKey,PersistentDataType.STRING,type.name());});return stack;
+    }
+    private static String itemTitle(FrostbiteItem type) {
+        String value = switch (type) {
+            case AVALANCHE -> MessageConfig.FROSTBITE_ITEM_AVALANCHE_TITLE; case AXE -> MessageConfig.FROSTBITE_ITEM_AXE_TITLE;
+            case BLAZE -> MessageConfig.FROSTBITE_ITEM_BLAZE_TITLE; case BOW -> MessageConfig.FROSTBITE_ITEM_BOW_TITLE;
+            case BEACON -> MessageConfig.FROSTBITE_ITEM_BEACON_TITLE; case EXPLOSION -> MessageConfig.FROSTBITE_ITEM_EXPLOSION_TITLE;
+            case GLOW -> MessageConfig.FROSTBITE_ITEM_GLOW_TITLE; case HOT_ROD -> MessageConfig.FROSTBITE_ITEM_HOT_ROD_TITLE;
+            case ICICLE -> MessageConfig.FROSTBITE_ITEM_ICICLE_TITLE; case INVIS -> MessageConfig.FROSTBITE_ITEM_INVIS_TITLE;
+            case MYSTERY -> MessageConfig.FROSTBITE_ITEM_MYSTERY_TITLE; case PHOENIX -> MessageConfig.FROSTBITE_ITEM_PHOENIX_TITLE;
+            case SPEED -> MessageConfig.FROSTBITE_ITEM_SPEED_TITLE; case FROST_TRAP -> MessageConfig.FROSTBITE_ITEM_FROST_TRAP_TITLE;
+            case WHOABALL -> MessageConfig.FROSTBITE_ITEM_WHOABALL_TITLE;
+        };
+        return value == null ? type.title : value;
+    }
+    private static String itemDescription(FrostbiteItem type) {
+        String value = switch (type) {
+            case AVALANCHE -> MessageConfig.FROSTBITE_ITEM_AVALANCHE_DESCRIPTION; case AXE -> MessageConfig.FROSTBITE_ITEM_AXE_DESCRIPTION;
+            case BLAZE -> MessageConfig.FROSTBITE_ITEM_BLAZE_DESCRIPTION; case BOW -> MessageConfig.FROSTBITE_ITEM_BOW_DESCRIPTION;
+            case BEACON -> MessageConfig.FROSTBITE_ITEM_BEACON_DESCRIPTION; case EXPLOSION -> MessageConfig.FROSTBITE_ITEM_EXPLOSION_DESCRIPTION;
+            case GLOW -> MessageConfig.FROSTBITE_ITEM_GLOW_DESCRIPTION; case HOT_ROD -> MessageConfig.FROSTBITE_ITEM_HOT_ROD_DESCRIPTION;
+            case ICICLE -> MessageConfig.FROSTBITE_ITEM_ICICLE_DESCRIPTION; case INVIS -> MessageConfig.FROSTBITE_ITEM_INVIS_DESCRIPTION;
+            case MYSTERY -> MessageConfig.FROSTBITE_ITEM_MYSTERY_DESCRIPTION; case PHOENIX -> MessageConfig.FROSTBITE_ITEM_PHOENIX_DESCRIPTION;
+            case SPEED -> MessageConfig.FROSTBITE_ITEM_SPEED_DESCRIPTION; case FROST_TRAP -> MessageConfig.FROSTBITE_ITEM_FROST_TRAP_DESCRIPTION;
+            case WHOABALL -> MessageConfig.FROSTBITE_ITEM_WHOABALL_DESCRIPTION;
+        };
+        return value == null ? type.description : value;
     }
     private void consume(Player p) {p.getInventory().setItemInMainHand(null);}
     private void giveRandom(Player p,FrostbiteItem exclude) {
@@ -388,7 +429,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         int slot=p.getInventory().getItem(0)==null?0:1;
         p.getInventory().setItem(slot,stack(type));
         if(type==FrostbiteItem.BOW)p.getInventory().setItem(8,new ItemStack(Material.ARROW,3));
-        supplyHints.add(p.getUniqueId(), "&b"+type.title+" &7"+type.description, tick);
+        supplyHints.add(p.getUniqueId(), "&b"+itemTitle(type)+" &7"+itemDescription(type), tick);
         p.sendActionBar(LegacyText.component(supplyHints.current(p.getUniqueId(), tick)));
         p.playSound(p.getLocation(),Sound.BLOCK_NOTE_BLOCK_CHIME,.5F,1.5F);
     }
@@ -575,7 +616,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
             addPlayerPointsToDatabase();
         }
         setGameStageEnum(GameStageEnum.END);
-        announceGameEnd("&b本轮结束","&f击杀积分与排名奖励已汇入队伍成绩");
+        announceGameEnd(MessageConfig.FROSTBITE_END_TITLE, MessageConfig.FROSTBITE_END_SUBTITLE);
         beginPostGameSettlement();changeGameModelForAllGamePlayers(GameMode.ADVENTURE);resetPlayerHealthFoodEffectLevelInventory();
         publishGameEndEvent(new SingleGameEndEvent(this,List.copyOf(gameTeams)));finishPostGameAfterEndEvent();
     }

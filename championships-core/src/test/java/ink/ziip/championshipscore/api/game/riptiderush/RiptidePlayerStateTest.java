@@ -24,15 +24,6 @@ class RiptidePlayerStateTest {
     @Nested
     class RiptideRushParticipationCases {
         @Test
-        void formalRoundsRequireTwoActualStartersButPracticeAllowsOne() {
-            assertFalse(RiptideRushArea.canStartRound(true, 0));
-            assertFalse(RiptideRushArea.canStartRound(true, 1));
-            assertTrue(RiptideRushArea.canStartRound(true, 2));
-            assertFalse(RiptideRushArea.canStartRound(false, 0));
-            assertTrue(RiptideRushArea.canStartRound(false, 1));
-        }
-
-        @Test
         void eliminatingOfflineTeammatesDoesNotEndSoloRunBeforeMovementStarts() {
             // The reported roster contained one online player and one disconnected teammate.
             int rosterSize = 2;

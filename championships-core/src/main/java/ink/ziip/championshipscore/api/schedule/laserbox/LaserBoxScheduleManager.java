@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
 import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
+import ink.ziip.championshipscore.api.schedule.FormalPairingScheduler;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.util.Utils;
@@ -25,6 +26,10 @@ public final class LaserBoxScheduleManager extends BaseManager {
     private final LaserBoxScheduleHandler handler;
     private final Set<LaserBoxArea> activeRoundInstances = Collections.newSetFromMap(new IdentityHashMap<>());
     private List<List<TwoVTwoVector>> rounds = List.of();
+    private List<ChampionshipTeam> teams = List.of();
+    private final Map<ChampionshipTeam, Double> standings = new HashMap<>();
+    private final Set<String> previousOpponents = new HashSet<>();
+    private int totalRounds;
     private String map;
     private BukkitTask countdownTask;
     @Getter private boolean enabled;
@@ -38,18 +43,7 @@ public final class LaserBoxScheduleManager extends BaseManager {
     }
 
     static List<List<TwoVTwoVector>> roundPairs(List<ChampionshipTeam> teams) {
-        if (teams.size() < 2 || teams.size() % 2 != 0 || new HashSet<>(teams).size() != teams.size())
-            return List.of();
-        List<ChampionshipTeam> ring = new ArrayList<>(teams);
-        List<List<TwoVTwoVector>> rounds = new ArrayList<>();
-        for (int round = 0; round < Math.min(9, teams.size() - 1); round++) {
-            List<TwoVTwoVector> pairs = new ArrayList<>();
-            for (int pair = 0; pair < ring.size() / 2; pair++)
-                pairs.add(new TwoVTwoVector(ring.get(pair), ring.get(ring.size() - 1 - pair)));
-            rounds.add(List.copyOf(pairs));
-            ring.add(1, ring.removeLast());
-        }
-        return List.copyOf(rounds);
+        return FormalPairingScheduler.roundRobin(teams, FormalPairingScheduler.totalRounds(teams.size()));
     }
 
     @Override public void load() { }
@@ -63,7 +57,13 @@ public final class LaserBoxScheduleManager extends BaseManager {
         }
         List<ChampionshipTeam> teams = new ArrayList<>(plugin.getTeamManager().getTeamList());
         Collections.shuffle(teams);
-        rounds = roundPairs(teams);
+        this.teams = List.copyOf(teams);
+        totalRounds = FormalPairingScheduler.totalRounds(teams.size());
+        standings.clear();
+        teams.forEach(team -> standings.put(team, 0D));
+        previousOpponents.clear();
+        rounds = FormalPairingScheduler.roundRobin(teams, FormalPairingScheduler.seededRounds(teams.size()));
+        rounds.forEach(round -> FormalPairingScheduler.rememberOpponents(round, previousOpponents));
         if (rounds.isEmpty()) return reject("至少需要两支队伍，队伍数必须为偶数");
         List<String> maps = FormalEventMapResolver.maps(plugin, GAME);
         if (maps.isEmpty()) return reject("没有已加载的激光方盒地图");
@@ -87,7 +87,6 @@ public final class LaserBoxScheduleManager extends BaseManager {
         plugin.getScheduleManager().addRound(GAME);
         enabled = true;
         subRound = 0;
-        handler.register();
         countdown(true);
         return true;
     }
@@ -122,20 +121,49 @@ public final class LaserBoxScheduleManager extends BaseManager {
 
     private void startRound() {
         if (!enabled) return;
-        var started = plugin.getGameManager().joinLaserBoxInstances(map, rounds.get(subRound),
-                subRound == 0, GameRunMode.EVENT);
+        subRound++;
+        if (subRound > totalRounds) {
+            endSchedule();
+            return;
+        }
+        handler.register();
+        startRoundBattle();
+    }
+
+    private void startRoundBattle() {
+        List<TwoVTwoVector> pairs = rounds.get(subRound - 1);
+        var started = plugin.getGameManager().joinLaserBoxInstances(map, pairs,
+                subRound == 1, GameRunMode.EVENT);
         if (started == null) {
             plugin.getLogger().warning(Utils.formatGameLog(GAME, map, "调度", "中止", "本轮对阵启动失败"));
             endSchedule();
             return;
         }
-        subRound++;
+        activeRoundInstances.clear();
         activeRoundInstances.addAll(started);
+        plugin.getLogger().info(Utils.formatGameLog(GAME, map, "调度", "轮次",
+                "第 " + subRound + " 轮开始，对局数=" + pairs.size()));
     }
 
     public synchronized void onInstanceComplete(LaserBoxArea instance) {
-        if (!enabled || !activeRoundInstances.remove(instance) || !activeRoundInstances.isEmpty()) return;
-        boolean next = hasNextRound();
+        onInstanceComplete(instance, instance.getMatchWinner());
+    }
+
+    public synchronized void onInstanceComplete(LaserBoxArea instance, ChampionshipTeam winner) {
+        if (!enabled || !activeRoundInstances.remove(instance)) return;
+        ChampionshipTeam right = instance.getRightChampionshipTeam();
+        ChampionshipTeam left = instance.getLeftChampionshipTeam();
+        if (right != null && left != null) {
+            if (winner != null) standings.merge(winner, 1D, Double::sum);
+            else {
+                standings.merge(right, 0.5D, Double::sum);
+                standings.merge(left, 0.5D, Double::sum);
+            }
+        }
+        // Every parallel match contributes to the round standings. Only after all
+        // instances have reported may the scheduler settle and advance the event.
+        if (!activeRoundInstances.isEmpty()) return;
+        boolean next = prepareNextRound();
         plugin.getScheduleManager().settleEventRound(GAME, next, () -> {
             if (!enabled) return;
             if (!next) { endSchedule(); return; }
@@ -144,7 +172,26 @@ public final class LaserBoxScheduleManager extends BaseManager {
         });
     }
 
-    public boolean hasNextRound() { return enabled && subRound < rounds.size(); }
+    public boolean hasNextRound() {
+        int configuredRounds = totalRounds > 0 ? totalRounds : rounds.size();
+        return enabled && subRound < configuredRounds;
+    }
+
+    private boolean prepareNextRound() {
+        if (!hasNextRound()) return false;
+        if (rounds.size() > subRound) return true;
+        List<TwoVTwoVector> next = FormalPairingScheduler.standingsRound(teams, standings, previousOpponents);
+        if (next.isEmpty()) {
+            plugin.getLogger().warning(Utils.formatGameLog(GAME, map == null ? "-" : map,
+                    "调度", "对阵", "无法在不重复对手的前提下生成第 " + (subRound + 1) + " 轮"));
+            return false;
+        }
+        List<List<TwoVTwoVector>> updated = new ArrayList<>(rounds);
+        updated.add(next);
+        rounds = List.copyOf(updated);
+        FormalPairingScheduler.rememberOpponents(next, previousOpponents);
+        return true;
+    }
 
     public void endSchedule() {
         enabled = false;
@@ -153,6 +200,10 @@ public final class LaserBoxScheduleManager extends BaseManager {
         handler.unRegister();
         activeRoundInstances.clear();
         rounds = List.of();
+        teams = List.of();
+        standings.clear();
+        previousOpponents.clear();
+        totalRounds = 0;
         map = null;
         plugin.getScheduleManager().clearRoundPreparationCountdown();
         plugin.getGameManager().releaseEventSpectatorsForGame(GAME);

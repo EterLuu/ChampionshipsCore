@@ -78,7 +78,7 @@ public class BuildMartBase implements SpatialTemplate<BuildMartBase> {
     /**
      * Returns a copy of this base (treated as seat 0's template) with all anchors translated by
      * {@code delta} and re-keyed to {@code seat}. Used to derive every seat's geometry from one configured
-     * template; see {@link BuildMartLayout}.
+     * template; see {@link BuildMartConfig#getSeatBase(int)}.
      */
     @Override
     public @NotNull BuildMartBase transform(@NotNull SpatialTransform transform) {

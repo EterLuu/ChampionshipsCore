@@ -110,38 +110,38 @@ public final class RiptideCourseTrial implements Listener {
             try { trial.tick(); }
             catch (RuntimeException error) {
                 session.getPlugin().getLogger().log(java.util.logging.Level.SEVERE, "激流试玩失败", error);
-                trial.finish("试玩终止：" + error.getMessage());
+                trial.finish(MessageConfig.RIPTIDE_RUSH_TRIAL_ABORTED.replace("%reason%", String.valueOf(error.getMessage())));
             }
         }, 1L, 1L);
-        Utils.sendAdminInfo(player, "试玩将在3秒后开始；请自行跟上木筏，交换副手键（默认F）可退出，不记录成绩。");
+        Utils.sendAdminInfo(player, MessageConfig.RIPTIDE_RUSH_TRIAL_START);
     }
 
     public static void stop(Player player) {
         var trial = ACTIVE.get(player.getUniqueId());
-        if (trial != null) trial.finish("试玩已退出");
+        if (trial != null) trial.finish(MessageConfig.RIPTIDE_RUSH_TRIAL_EXIT);
     }
-    public static void stopAll() { for (var trial : List.copyOf(ACTIVE.values())) trial.finish("试玩已结束"); }
+    public static void stopAll() { for (var trial : List.copyOf(ACTIVE.values())) trial.finish(MessageConfig.RIPTIDE_RUSH_TRIAL_FINISHED); }
 
     private void tick() {
         if (stopped) return;
         if (!player.isOnline() || manager.getSession(player) != session || !player.hasPermission("cc.admin")
-                || !session.getTarget().worldName().equals(player.getWorld().getName())) { finish("试玩已退出"); return; }
+                || !session.getTarget().worldName().equals(player.getWorld().getName())) { finish(MessageConfig.RIPTIDE_RUSH_TRIAL_EXIT); return; }
         if (countdown > 0) {
-            if (countdown % 20 == 0) player.sendTitle(Integer.toString(countdown / 20), "交换副手键（默认F）退出试玩", 0, 21, 0);
+            if (countdown % 20 == 0) player.sendTitle(Integer.toString(countdown / 20), MessageConfig.RIPTIDE_RUSH_TRIAL_COUNTDOWN, 0, 21, 0);
             countdown--; return;
         }
         elapsed++;
         Location feet = player.getLocation();
         if (fallCheck.sample(geometry, feet, step, config.getHorizontalPadding(), config.getFallDistance(),
                 player.isInWater() || player.isInLava(), RiptideFallCheck.deckPresent(geometry, feet, step), Bukkit.getCurrentTick())) {
-            finish("试玩结束：离开木筏或坠落"); return;
+            finish(MessageConfig.RIPTIDE_RUSH_TRIAL_FALL); return;
         }
         courseReveal.tick(step);
         answers.addAll(math.sample(player.getLocation()));
         for (var answer : answers) {
             player.resetTitle();
             if (answer.result() != RiptideMathRun.Result.CORRECT) {
-                finish(answer.result() == RiptideMathRun.Result.WRONG ? "试玩结束：解题答案错误" : "试玩结束：未从解题门通道通过"); return;
+                finish(answer.result() == RiptideMathRun.Result.WRONG ? MessageConfig.RIPTIDE_RUSH_TRIAL_WRONG_ANSWER : MessageConfig.RIPTIDE_RUSH_TRIAL_MISSED_GATE); return;
             }
             player.sendActionBar(LegacyText.component(MessageConfig.RIPTIDE_RUSH_MATH_CORRECT));
         }
@@ -151,13 +151,13 @@ public final class RiptideCourseTrial implements Listener {
             // Use the same post-challenge stop as a scored round.
         } else if (passRun.active()) {
             var sideAnswers = passRun.tick(List.of(player));
-            if (sideAnswers.stream().anyMatch(a -> !a.correct())) { finish("试玩结束：侧向解题答案颜色错误"); return; }
+            if (sideAnswers.stream().anyMatch(a -> !a.correct())) { finish(MessageConfig.RIPTIDE_RUSH_TRIAL_SIDE_ANSWER); return; }
             if (!sideAnswers.isEmpty()) player.sendActionBar(LegacyText.component(MessageConfig.RIPTIDE_RUSH_MATH_CORRECT));
             if (!passRun.active()) departure.begin();
         } else if (floor != null) {
             boolean preparing = floor.preparing();
             if (floor.tick()) {
-                if (!floor.matches(player.getLocation(), geometry, step)) { finish("试玩结束：踩色站错方块"); return; }
+                if (!floor.matches(player.getLocation(), geometry, step)) { finish(MessageConfig.RIPTIDE_RUSH_TRIAL_WRONG_FLOOR); return; }
                 if (floor.advance()) paintFloor();
                 else { platform.restore(); platform = null; floor = null;
                     player.getInventory().setStorageContents(new ItemStack[player.getInventory().getStorageContents().length]);
@@ -203,8 +203,8 @@ public final class RiptideCourseTrial implements Listener {
         }
         if (departure.active() || waitingToDepart)
             player.sendActionBar(LegacyText.component(departure.active() ? MessageConfig.RIPTIDE_RUSH_DEPARTURE_ACTIONBAR : ""));
-        if (!departure.active() && !waitingToDepart && step >= end && floor == null && dodgeTicks == 0 && !passRun.active()) finish("试玩完成，用时 " + String.format(Locale.ROOT, "%.2f", elapsed / 20D) + " 秒");
-        else if (elapsed >= config.getTimer() * 20) finish("试玩结束：时间到");
+        if (!departure.active() && !waitingToDepart && step >= end && floor == null && dodgeTicks == 0 && !passRun.active()) finish(MessageConfig.RIPTIDE_RUSH_TRIAL_COMPLETED.replace("%seconds%", String.format(Locale.ROOT, "%.2f", elapsed / 20D)));
+        else if (elapsed >= config.getTimer() * 20) finish(MessageConfig.RIPTIDE_RUSH_TRIAL_TIMEOUT);
     }
 
     private Material trail() {
@@ -236,7 +236,7 @@ public final class RiptideCourseTrial implements Listener {
     private void tickDodge() {
         if (dodgeRun == null) { dodgeTicks = 0; return; }
         for (var collision : dodgeEntities.tick(dodgeRun)) {
-            if (collision.overlaps(player.getBoundingBox())) { finish("试玩结束：被冲刺生物撞到"); return; }
+            if (collision.overlaps(player.getBoundingBox())) { finish(MessageConfig.RIPTIDE_RUSH_TRIAL_DODGE); return; }
         }
         dodgeTicks = RiptideDodgeRun.DURATION_TICKS - dodgeRun.tickNumber();
         if (dodgeRun.complete()) { clearDodge(); departure.begin(); }
@@ -286,7 +286,7 @@ public final class RiptideCourseTrial implements Listener {
         if (e.getPlayer() != player) return;
         e.setCancelled(true);
         // Restore the saved inventory after the cancelled swap event has finished processing.
-        Bukkit.getScheduler().runTask(session.getPlugin(), () -> finish("试玩已退出"));
+        Bukkit.getScheduler().runTask(session.getPlugin(), () -> finish(MessageConfig.RIPTIDE_RUSH_TRIAL_EXIT));
     }
     @EventHandler public void click(InventoryClickEvent e) { if (e.getWhoClicked() == player) e.setCancelled(true); }
     @EventHandler public void drag(InventoryDragEvent e) { if (e.getWhoClicked() == player) e.setCancelled(true); }

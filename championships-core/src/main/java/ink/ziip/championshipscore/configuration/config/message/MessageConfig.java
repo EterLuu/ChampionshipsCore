@@ -4,17 +4,11 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import lombok.Getter;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
-import java.util.List;
 
 @Getter
 public class MessageConfig extends BaseConfigurationFile {
     private final String fileName = "message.yml";
     private final String resourceName = "message.yml";
-    private String defaultEventStartUnavailable;
 
     public MessageConfig(ChampionshipsCore plugin) {
         super(plugin);
@@ -24,22 +18,6 @@ public class MessageConfig extends BaseConfigurationFile {
     public int getLatestVersion() {
         return 62;
     }
-
-    @Override
-    protected void loadCustomDefaultOptions() {
-        defaultEventStartUnavailable = EVENT_START_UNAVAILABLE;
-    }
-
-    @Override
-    protected void loadCustomFileOptions() {
-        // Replace the old shared Bingo-only default while preserving customized administrator text.
-        if ("宾果执行端尚未就绪、已有比赛运行，或参赛者当前不可用。".equals(EVENT_START_UNAVAILABLE)) {
-            EVENT_START_UNAVAILABLE = defaultEventStartUnavailable;
-            configuration.set("event.start.unavailable", defaultEventStartUnavailable);
-        }
-    }
-
-
 
     // Player
     @ConfigOption(path = "server-full")
@@ -1249,6 +1227,72 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "game.laserbox") public static String GAME_LASER_BOX;
     @ConfigOption(path = "game.sulfursoccer") public static String GAME_SULFUR_SOCCER;
+    @ConfigOption(path = "laserbox.start-preparation") public static String LASER_BOX_START_PREPARATION;
+    @ConfigOption(path = "laserbox.start-preparation-title") public static String LASER_BOX_START_PREPARATION_TITLE;
+    @ConfigOption(path = "laserbox.start-preparation-subtitle") public static String LASER_BOX_START_PREPARATION_SUBTITLE;
+    @ConfigOption(path = "laserbox.game-start-title") public static String LASER_BOX_GAME_START_TITLE;
+    @ConfigOption(path = "laserbox.game-start-subtitle") public static String LASER_BOX_GAME_START_SUBTITLE;
+    @ConfigOption(path = "laserbox.boss-bar") public static String LASER_BOX_BOSS_BAR;
+    @ConfigOption(path = "laserbox.hit") public static String LASER_BOX_HIT;
+    @ConfigOption(path = "laserbox.respawn-title") public static String LASER_BOX_RESPAWN_TITLE;
+    @ConfigOption(path = "laserbox.respawn-subtitle") public static String LASER_BOX_RESPAWN_SUBTITLE;
+    @ConfigOption(path = "laserbox.winner") public static String LASER_BOX_WINNER;
+    @ConfigOption(path = "laserbox.draw") public static String LASER_BOX_DRAW;
+    @ConfigOption(path = "laserbox.end-title") public static String LASER_BOX_END_TITLE;
+    @ConfigOption(path = "laserbox.end-subtitle") public static String LASER_BOX_END_SUBTITLE;
+    @ConfigOption(path = "laserbox.item-shield") public static String LASER_BOX_ITEM_SHIELD;
+    @ConfigOption(path = "laserbox.item-grenade") public static String LASER_BOX_ITEM_GRENADE;
+    @ConfigOption(path = "laserbox.item-strike") public static String LASER_BOX_ITEM_STRIKE;
+    @ConfigOption(path = "laserbox.item-reveal") public static String LASER_BOX_ITEM_REVEAL;
+    @ConfigOption(path = "frostbite.start-preparation") public static String FROSTBITE_START_PREPARATION;
+    @ConfigOption(path = "frostbite.start-preparation-title") public static String FROSTBITE_START_PREPARATION_TITLE;
+    @ConfigOption(path = "frostbite.start-preparation-subtitle") public static String FROSTBITE_START_PREPARATION_SUBTITLE;
+    @ConfigOption(path = "frostbite.game-start-title") public static String FROSTBITE_GAME_START_TITLE;
+    @ConfigOption(path = "frostbite.game-start-subtitle") public static String FROSTBITE_GAME_START_SUBTITLE;
+    @ConfigOption(path = "frostbite.arena") public static String FROSTBITE_ARENA;
+    @ConfigOption(path = "frostbite.frozen-actionbar") public static String FROSTBITE_FROZEN_ACTIONBAR;
+    @ConfigOption(path = "frostbite.status-actionbar") public static String FROSTBITE_STATUS_ACTIONBAR;
+    @ConfigOption(path = "frostbite.kill") public static String FROSTBITE_KILL;
+    @ConfigOption(path = "frostbite.respawn-title") public static String FROSTBITE_RESPAWN_TITLE;
+    @ConfigOption(path = "frostbite.respawn-subtitle") public static String FROSTBITE_RESPAWN_SUBTITLE;
+    @ConfigOption(path = "frostbite.boss-bar") public static String FROSTBITE_BOSS_BAR;
+    @ConfigOption(path = "frostbite.end-title") public static String FROSTBITE_END_TITLE;
+    @ConfigOption(path = "frostbite.end-subtitle") public static String FROSTBITE_END_SUBTITLE;
+    @ConfigOption(path = "frostbite.phoenix-consumed") public static String FROSTBITE_PHOENIX_CONSUMED;
+    @ConfigOption(path = "frostbite.campfire-returned") public static String FROSTBITE_CAMPFIRE_RETURNED;
+    @ConfigOption(path = "frostbite.freeze-success") public static String FROSTBITE_FREEZE_SUCCESS;
+    @ConfigOption(path = "frostbite.freeze") public static String FROSTBITE_FREEZE;
+    @ConfigOption(path = "frostbite.frozen") public static String FROSTBITE_FROZEN;
+    @ConfigOption(path = "frostbite.item.avalanche.title") public static String FROSTBITE_ITEM_AVALANCHE_TITLE;
+    @ConfigOption(path = "frostbite.item.avalanche.description") public static String FROSTBITE_ITEM_AVALANCHE_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.axe.title") public static String FROSTBITE_ITEM_AXE_TITLE;
+    @ConfigOption(path = "frostbite.item.axe.description") public static String FROSTBITE_ITEM_AXE_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.blaze.title") public static String FROSTBITE_ITEM_BLAZE_TITLE;
+    @ConfigOption(path = "frostbite.item.blaze.description") public static String FROSTBITE_ITEM_BLAZE_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.bow.title") public static String FROSTBITE_ITEM_BOW_TITLE;
+    @ConfigOption(path = "frostbite.item.bow.description") public static String FROSTBITE_ITEM_BOW_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.beacon.title") public static String FROSTBITE_ITEM_BEACON_TITLE;
+    @ConfigOption(path = "frostbite.item.beacon.description") public static String FROSTBITE_ITEM_BEACON_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.explosion.title") public static String FROSTBITE_ITEM_EXPLOSION_TITLE;
+    @ConfigOption(path = "frostbite.item.explosion.description") public static String FROSTBITE_ITEM_EXPLOSION_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.glow.title") public static String FROSTBITE_ITEM_GLOW_TITLE;
+    @ConfigOption(path = "frostbite.item.glow.description") public static String FROSTBITE_ITEM_GLOW_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.hot_rod.title") public static String FROSTBITE_ITEM_HOT_ROD_TITLE;
+    @ConfigOption(path = "frostbite.item.hot_rod.description") public static String FROSTBITE_ITEM_HOT_ROD_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.icicle.title") public static String FROSTBITE_ITEM_ICICLE_TITLE;
+    @ConfigOption(path = "frostbite.item.icicle.description") public static String FROSTBITE_ITEM_ICICLE_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.invis.title") public static String FROSTBITE_ITEM_INVIS_TITLE;
+    @ConfigOption(path = "frostbite.item.invis.description") public static String FROSTBITE_ITEM_INVIS_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.mystery.title") public static String FROSTBITE_ITEM_MYSTERY_TITLE;
+    @ConfigOption(path = "frostbite.item.mystery.description") public static String FROSTBITE_ITEM_MYSTERY_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.phoenix.title") public static String FROSTBITE_ITEM_PHOENIX_TITLE;
+    @ConfigOption(path = "frostbite.item.phoenix.description") public static String FROSTBITE_ITEM_PHOENIX_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.speed.title") public static String FROSTBITE_ITEM_SPEED_TITLE;
+    @ConfigOption(path = "frostbite.item.speed.description") public static String FROSTBITE_ITEM_SPEED_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.frost_trap.title") public static String FROSTBITE_ITEM_FROST_TRAP_TITLE;
+    @ConfigOption(path = "frostbite.item.frost_trap.description") public static String FROSTBITE_ITEM_FROST_TRAP_DESCRIPTION;
+    @ConfigOption(path = "frostbite.item.whoaball.title") public static String FROSTBITE_ITEM_WHOABALL_TITLE;
+    @ConfigOption(path = "frostbite.item.whoaball.description") public static String FROSTBITE_ITEM_WHOABALL_DESCRIPTION;
     @ConfigOption(path = "sulfursoccer.score") public static String SULFUR_SOCCER_SCORE;
     @ConfigOption(path = "sulfursoccer.goal") public static String SULFUR_SOCCER_GOAL;
     @ConfigOption(path = "sulfursoccer.goal-title") public static String SULFUR_SOCCER_GOAL_TITLE;
@@ -1264,6 +1308,11 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "sulfursoccer.penalty-goal", nullable = true) public static String SULFUR_SOCCER_PENALTY_GOAL;
     @ConfigOption(path = "sulfursoccer.penalty-miss", nullable = true) public static String SULFUR_SOCCER_PENALTY_MISS;
     @ConfigOption(path = "sulfursoccer.penalty-score", nullable = true) public static String SULFUR_SOCCER_PENALTY_SCORE;
+    @ConfigOption(path = "sulfursoccer.state-end") public static String SULFUR_SOCCER_STATE_END;
+    @ConfigOption(path = "sulfursoccer.state-paused") public static String SULFUR_SOCCER_STATE_PAUSED;
+    @ConfigOption(path = "sulfursoccer.state-warmup") public static String SULFUR_SOCCER_STATE_WARMUP;
+    @ConfigOption(path = "sulfursoccer.state-shootout") public static String SULFUR_SOCCER_STATE_SHOOTOUT;
+    @ConfigOption(path = "sulfursoccer.state-regulation") public static String SULFUR_SOCCER_STATE_REGULATION;
     @ConfigOption(path = "sulfursoccer.pearl-rejected", nullable = true) public static String SULFUR_SOCCER_PEARL_REJECTED;
     @ConfigOption(path = "sulfursoccer.ball-reset") public static String SULFUR_SOCCER_BALL_RESET;
     @ConfigOption(path = "sulfursoccer.paused") public static String SULFUR_SOCCER_PAUSED;
@@ -2110,6 +2159,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "vote.vote-failed-not-player")
     public static String VOTE_VOTE_FAILED_NOT_PLAYER;
 
+    @ConfigOption(path = "vote.vote-failed-admin")
+    public static String VOTE_VOTE_FAILED_ADMIN;
+
     @ConfigOption(path = "vote.vote-board-row")
     public static String VOTE_VOTE_BOARD_ROW;
 
@@ -2297,6 +2349,7 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "riptiderush.eliminated-disconnected") public static String RIPTIDE_RUSH_ELIMINATED_DISCONNECTED;
     @ConfigOption(path = "riptiderush.winner") public static String RIPTIDE_RUSH_WINNER;
     @ConfigOption(path = "riptiderush.speed-shield-break") public static String RIPTIDE_RUSH_SPEED_SHIELD_BREAK;
+    @ConfigOption(path = "riptiderush.shield-broken") public static String RIPTIDE_RUSH_SHIELD_BROKEN;
     @ConfigOption(path = "riptiderush.speed-boost-title") public static String RIPTIDE_RUSH_SPEED_BOOST_TITLE;
     @ConfigOption(path = "riptiderush.speed-boost-subtitle") public static String RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE;
     @ConfigOption(path = "riptiderush.final-sprint-title") public static String RIPTIDE_RUSH_FINAL_SPRINT_TITLE;
@@ -2315,6 +2368,19 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "riptiderush.reason.wrong-answer") public static String RIPTIDE_RUSH_REASON_WRONG_ANSWER;
     @ConfigOption(path = "riptiderush.reason.missed-gate") public static String RIPTIDE_RUSH_REASON_MISSED_GATE;
     @ConfigOption(path = "riptiderush.reason.left-behind") public static String RIPTIDE_RUSH_REASON_LEFT_BEHIND;
+    @ConfigOption(path = "riptiderush.trial-start") public static String RIPTIDE_RUSH_TRIAL_START;
+    @ConfigOption(path = "riptiderush.trial-exit") public static String RIPTIDE_RUSH_TRIAL_EXIT;
+    @ConfigOption(path = "riptiderush.trial-finished") public static String RIPTIDE_RUSH_TRIAL_FINISHED;
+    @ConfigOption(path = "riptiderush.trial-fall") public static String RIPTIDE_RUSH_TRIAL_FALL;
+    @ConfigOption(path = "riptiderush.trial-wrong-answer") public static String RIPTIDE_RUSH_TRIAL_WRONG_ANSWER;
+    @ConfigOption(path = "riptiderush.trial-missed-gate") public static String RIPTIDE_RUSH_TRIAL_MISSED_GATE;
+    @ConfigOption(path = "riptiderush.trial-wrong-floor") public static String RIPTIDE_RUSH_TRIAL_WRONG_FLOOR;
+    @ConfigOption(path = "riptiderush.trial-side-answer") public static String RIPTIDE_RUSH_TRIAL_SIDE_ANSWER;
+    @ConfigOption(path = "riptiderush.trial-dodge") public static String RIPTIDE_RUSH_TRIAL_DODGE;
+    @ConfigOption(path = "riptiderush.trial-timeout") public static String RIPTIDE_RUSH_TRIAL_TIMEOUT;
+    @ConfigOption(path = "riptiderush.trial-countdown") public static String RIPTIDE_RUSH_TRIAL_COUNTDOWN;
+    @ConfigOption(path = "riptiderush.trial-completed") public static String RIPTIDE_RUSH_TRIAL_COMPLETED;
+    @ConfigOption(path = "riptiderush.trial-aborted") public static String RIPTIDE_RUSH_TRIAL_ABORTED;
     @ConfigOption(path = "riptiderush.departure-actionbar") public static String RIPTIDE_RUSH_DEPARTURE_ACTIONBAR;
     @ConfigOption(path = "riptiderush.sweep-title") public static String RIPTIDE_RUSH_SWEEP_TITLE;
     @ConfigOption(path = "riptiderush.reason.fell") public static String RIPTIDE_RUSH_REASON_FELL;

@@ -87,6 +87,7 @@ public class WorldManager extends BaseManager {
         lobby.setGameRule(GameRules.PVP, true);
         lobby.setGameRule(GameRules.SEND_COMMAND_FEEDBACK, false);
         lobby.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+        lobby.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
         plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("WorldManager", "大厅",
                 "世界=" + lobby.getName() + " 类型=服务端管理 naturalMonsters=" + lobby.getAllowMonsters()
                         + " naturalAnimals=" + lobby.getAllowAnimals()
@@ -162,6 +163,9 @@ public class WorldManager extends BaseManager {
         world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
         world.setGameRule(GameRules.ADVANCE_TIME, false);
         world.setGameRule(GameRules.LOCATOR_BAR, false);
+        // All server-managed worlds use the immediate-respawn flow. This keeps lobby and arena
+        // behavior consistent with Bingo and games that configure the rule explicitly.
+        world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
         plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("WorldManager", "加载",
                 "小游戏世界=" + worldName + " 生成器=虚空 naturalMonsters=" + world.getAllowMonsters()
                         + " naturalAnimals=" + world.getAllowAnimals()
@@ -190,6 +194,8 @@ public class WorldManager extends BaseManager {
             return false;
         }
 
+        // BingoWorldRules owns Bingo's survival-specific gamerules, including its intentional
+        // immediate-respawn setting; do not override that policy with the ordinary arena default.
         BingoWorldRules.configure(world);
         BingoWorldRules.applyPhase(world, BingoWorldRules.Phase.RUNNING, false);
         plugin.getLogger().log(Level.INFO, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "世界",

@@ -26,7 +26,7 @@ public final class FrostbiteStartAllSubCommand extends BaseSubCommand {
         String message = plugin.getGameManager().joinSingleTeamAreaForAllTeams(
                         GameTypeEnum.FrostbiteFrenzy, args[0])
                 ? MessageConfig.GAME_SINGLE_GAME_START_SUCCESSFUL : MessageConfig.GAME_SINGLE_GAME_START_FAILED;
-        sender.sendMessage(message.replace("%game%", GameTypeEnum.FrostbiteFrenzy.toString())
+        sender.sendMessage(message.replace("%game%", MessageConfig.GAME_FROSTBITE)
                 .replace("%area%", args[0]));
         return true;
     }

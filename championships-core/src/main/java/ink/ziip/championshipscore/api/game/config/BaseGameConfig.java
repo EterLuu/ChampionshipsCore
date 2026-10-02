@@ -87,7 +87,7 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
     /**
      * Rebinds this map definition from one physical world to another. Map worlds contain a mixture
-     * of raw Location sections and legacy string-serialized locations, so both representations must
+     * of raw Location sections and string-serialized locations, so both representations must
      * move together with the {@code world-name} field.
      *
      * @return whether this configuration owned {@code oldWorldName} and was saved successfully
@@ -119,7 +119,7 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         return configuration != null && worldName.equals(configuration.getString("world-name"));
     }
 
-    /** Stores/reads the physical world binding for map types that historically derived it from the map id. */
+    /** Stores/reads the physical world binding for map types with a configurable world. */
     public void bindConfiguredWorld(@NotNull String worldName) {
         configuration.set("world-name", worldName);
         for (Field field : getConfigFields()) {
@@ -217,6 +217,30 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                     plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "加载",
                             "配置文件=" + getFileName() + " 路径=" + configOption.path() + " 加载失败"), exception);
                 }
+            }
+        }
+        rebindUnresolvedLocationWorlds();
+    }
+
+    /**
+     * Map locations may be read while their physical world is not loaded yet. Once a map is
+     * reloaded after its world has been loaded, attach that world to every raw location section so
+     * shared lifecycle teleports (including the rule-introduction spawn) cannot pass a null world to
+     * Bukkit. Locations that already resolve to a world are left untouched.
+     */
+    private void rebindUnresolvedLocationWorlds() {
+        String configuredWorld = getConfiguredWorld();
+        if (configuredWorld == null || configuredWorld.isBlank()) return;
+        World world = plugin.getServer().getWorld(configuredWorld);
+        if (world == null) return;
+        for (Field field : getConfigFields()) {
+            if (field.getType() != Location.class) continue;
+            try {
+                field.setAccessible(true);
+                Location location = (Location) field.get(this);
+                if (location != null && location.getWorld() == null) location.setWorld(world);
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("无法绑定地图位置世界: " + field.getName(), exception);
             }
         }
     }

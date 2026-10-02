@@ -30,6 +30,13 @@ class SulfurSoccerAreaRulesTest {
     class SulfurSoccerAreaRulesCases {
         private SulfurSoccerArea area;
 
+        @Test void startRosterValidationUsesPersistedMembersWhenAPlayerIsOffline() throws Exception {
+            var team = new ChampionshipTeam(1, "red", "red", "", Set.of(UUID.randomUUID()), null) { };
+            var method = SulfurSoccerArea.class.getDeclaredMethod("readyTeam", ChampionshipTeam.class);
+            method.setAccessible(true);
+            assertTrue((Boolean) method.invoke(null, team));
+        }
+
         @BeforeEach void setup() throws Exception {
             var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe"); field.setAccessible(true);
             area = (SulfurSoccerArea) ((sun.misc.Unsafe) field.get(null)).allocateInstance(SulfurSoccerArea.class);

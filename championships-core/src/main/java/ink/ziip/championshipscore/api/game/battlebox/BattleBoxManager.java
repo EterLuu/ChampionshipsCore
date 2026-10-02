@@ -41,14 +41,13 @@ public class BattleBoxManager extends BaseGameInstanceManager<BattleBoxArea> {
                     String name = file.substring(0, file.length() - 4);
                     File configFile = new File(areasFolder, file);
                     YamlConfiguration raw = YamlConfiguration.loadConfiguration(configFile);
-                    String worldName = raw.getString("world-name", "battlebox");
-                    if (raw.contains("world-name") && (worldName == null || worldName.isBlank())) {
+                    String worldName = raw.getString("world-name", "");
+                    if (worldName == null || worldName.isBlank()) {
                         BattleBoxConfig config = new BattleBoxConfig(plugin, name);
                         config.initializeConfiguration(plugin.getFolder());
                         createInstances(name, config);
                         continue;
                     }
-                    if (worldName == null || worldName.isBlank()) worldName = "battlebox";
                     if (loadedWorlds.add(worldName) && !loadArenaWorld(worldName)) {
                         loadedWorlds.remove(worldName);
                         continue;

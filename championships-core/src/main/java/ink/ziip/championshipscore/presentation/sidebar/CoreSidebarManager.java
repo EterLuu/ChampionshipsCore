@@ -68,7 +68,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         if (!file.isFile()) plugin.saveResource("scoreboards.yml", false);
         reload();
         SidebarConfiguration config = configuration;
-        Component initialTitle = config == null ? Component.text("SCC") : Utils.toComponent(config.lobby().title());
+        Component initialTitle = config == null ? Component.text("CC") : Utils.toComponent(config.lobby().title());
         sidebar = new SharedSidebar("cc_sidebar", initialTitle,
                 warning -> plugin.getLogger().warning(Utils.formatModuleLog("Sidebar", "发包", warning)));
         Bukkit.getPluginManager().registerEvents(this, plugin);

@@ -135,10 +135,11 @@ class LaserBoxRulesTest {
     }
 
     @Test
-    void acceptsEditorLocationAndLegacyCoordinates() {
+    void acceptsEditorLocationFormatOnly() {
         Vector expected = new Vector(88.5, 91.0, 26.5);
         assertEquals(expected, LaserBoxConfig.parseSupplyPoint("laserbox:88.5:91.0:26.5:90.135254:2.604332", "laserbox"));
-        assertEquals(expected, LaserBoxConfig.parseSupplyPoint("88.5 91.0 26.5", "laserbox"));
+        assertThrows(IllegalArgumentException.class,
+                () -> LaserBoxConfig.parseSupplyPoint("88.5 91.0 26.5", "laserbox"));
     }
 
     @Test
@@ -148,7 +149,7 @@ class LaserBoxRulesTest {
         assertThrows(IllegalArgumentException.class,
                 () -> LaserBoxConfig.parseSupplyPoint("laserbox:88.5:91:26.5:0", "laserbox"));
         assertThrows(IllegalArgumentException.class,
-                () -> LaserBoxConfig.parseSupplyPoint("NaN 91 26", "laserbox"));
+                () -> LaserBoxConfig.parseSupplyPoint("laserbox:NaN:91:26:0:0", "laserbox"));
     }
 
     @Test

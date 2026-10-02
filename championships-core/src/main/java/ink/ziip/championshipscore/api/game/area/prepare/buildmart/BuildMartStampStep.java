@@ -51,10 +51,8 @@ final class BuildMartStampStep extends PrepareStep {
             Vector baseSize = session.getPlugin().getWorldEditManager().getSchematicDimensions(base);
             var previousGrid = config.getBaseGrid();
             Vector previousBaseSize = config.getBaseSchematicSize();
-            // The persisted count excludes the 0th source template, so clear only physical copies 1..N.
-            // Include one extra historical index so maps stamped before copy 0 became the true source do not
-            // leave their final generated base behind after the layout is corrected.
-            ArenaPreparer.clearAdditionalCopies(session.getPlugin(), world, previousGrid, config.getBaseCount() + 2,
+            // The persisted count excludes the 0th source template, so clear physical copies 1..N.
+            ArenaPreparer.clearAdditionalCopies(session.getPlugin(), world, previousGrid, config.getBaseCount() + 1,
                     previousBaseSize);
             var grid = config.prepareBaseGrid(baseOrigin, baseSize);
             // Index 0 remains the editable source template. Indices 1..N are the bases players actually use.

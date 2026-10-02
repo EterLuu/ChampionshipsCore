@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.command.MainCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.Utils;
 import org.bukkit.Bukkit;
@@ -117,7 +118,8 @@ public class VoteManager extends BaseManager {
         removeVoteBars();
         voteMenu.closeAll();
 
-        playerVotes.entrySet().removeIf(entry -> plugin.getTeamManager().getTeamByPlayer(entry.getKey()) == null
+        playerVotes.entrySet().removeIf(entry -> isAdmin(entry.getKey())
+                || plugin.getTeamManager().getTeamByPlayer(entry.getKey()) == null
                 || !canVoteFor(entry.getValue()));
 
         Map<GameTypeEnum, Integer> votes = new EnumMap<>(GameTypeEnum.class);
@@ -191,6 +193,11 @@ public class VoteManager extends BaseManager {
     }
 
     public void vote(Player player, GameTypeEnum gameTypeEnum) {
+        if (player.hasPermission(MainCommand.ADMIN_PERMISSION)) {
+            playerVotes.remove(player.getUniqueId());
+            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ADMIN);
+            return;
+        }
         if (!vote) {
             player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_TIME);
             return;
@@ -224,11 +231,12 @@ public class VoteManager extends BaseManager {
             player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_TIME);
             return;
         }
-        if (plugin.getTeamManager().getTeamByPlayer(player) == null) {
+        boolean adminPreview = player.hasPermission(MainCommand.ADMIN_PERMISSION);
+        if (!adminPreview && plugin.getTeamManager().getTeamByPlayer(player) == null) {
             player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_PLAYER);
             return;
         }
-        voteMenu.open(player);
+        voteMenu.open(player, adminPreview);
     }
 
     int getRemainingSeconds() {
@@ -268,8 +276,14 @@ public class VoteManager extends BaseManager {
 
     private boolean isValidVote(UUID uuid, GameTypeEnum gameTypeEnum) {
         return gameTypeEnum != null
+                && !isAdmin(uuid)
                 && plugin.getTeamManager().getTeamByPlayer(uuid) != null
                 && canVoteFor(gameTypeEnum);
+    }
+
+    private boolean isAdmin(UUID uuid) {
+        Player player = Bukkit.getPlayer(uuid);
+        return player != null && player.hasPermission(MainCommand.ADMIN_PERMISSION);
     }
 
     @Override
