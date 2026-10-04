@@ -1,2 +1,17 @@
-__pycache__/
-*.py[cod]
+# Dated, local audit evidence and migration reports; keep reusable documentation.
+/buildmart-*-20??-??-??*.json
+/buildmart-*-20??-??-??*.csv
+/buildmart-*-20??-??-??*.md
+/*-audit-20??-??-??.md
+/*-performance-20??-??-??.md
+/test-cleanup-20??-??-??.md
+
+# Generated simulation data and rendered replays. replay.html beside render.py
+# is the source template and must remain available.
+/riptide-dodge-sim/results/
+
+# Rebuilt by build_catalog.py from sources.json; keep the source catalog,
+# scripts, tests and the production resource files under src/.
+/riptide-hitw/adapted.json
+/riptide-hitw/preview.html
+/riptide-hitw/legacy-v*.json
